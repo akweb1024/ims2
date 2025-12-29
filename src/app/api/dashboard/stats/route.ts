@@ -140,6 +140,7 @@ async function fetchRecentActivities(whereClause: any, customerProfileId?: strin
             type: 'subscription',
             message: `Subscription ${s.status === 'ACTIVE' ? 'activated' : 'updated'} for ${s.customerProfile.name}`,
             time: formatTimeAgo(s.createdAt),
+            timestamp: s.createdAt.getTime(),
             icon: '✅',
         })),
         ...payments.map((p: any) => ({
@@ -147,11 +148,12 @@ async function fetchRecentActivities(whereClause: any, customerProfileId?: strin
             type: 'payment',
             message: `Payment received: $${p.amount.toLocaleString()}`,
             time: formatTimeAgo(p.createdAt),
+            timestamp: p.createdAt.getTime(),
             icon: '💳',
         }))
     ];
 
-    return activities.sort((a, b) => 0); // Simplified sort
+    return activities.sort((a, b) => b.timestamp - a.timestamp);
 }
 
 async function fetchUpcomingRenewals(whereClause: any, customerProfileId?: string) {

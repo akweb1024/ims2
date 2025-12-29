@@ -72,39 +72,50 @@ export default function DashboardPage() {
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
                     <div>
                         <h1 className="text-3xl font-bold text-secondary-900">
-                            Welcome back, {user?.customerProfile?.name || 'User'}!
+                            Welcome back, {user?.customerProfile?.name || user?.name || 'User'}!
                         </h1>
                         <p className="text-secondary-600 mt-1">
-                            Here's what's happening with your subscriptions today
+                            {user?.role === 'CUSTOMER'
+                                ? "Manage your subscriptions and journals in one place"
+                                : "Here's the latest update on your business metrics"}
                         </p>
                     </div>
-                    <div className="mt-4 sm:mt-0">
-                        <Link href="/dashboard/subscriptions/new" className="btn btn-primary">
-                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                            </svg>
-                            New Subscription
-                        </Link>
-                    </div>
+                    {user?.role !== 'CUSTOMER' && (
+                        <div className="mt-4 sm:mt-0">
+                            <Link href="/dashboard/subscriptions/new" className="btn btn-primary">
+                                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                                </svg>
+                                New Subscription
+                            </Link>
+                        </div>
+                    )}
                 </div>
 
                 {/* Stats Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                    {stats?.map((stat: any) => (
-                        <div key={stat.name} className="stat-card">
-                            <div className="flex items-center justify-between mb-4">
-                                <div className={`stat-card-icon ${stat.color} text-white`}>
-                                    {stat.icon}
+                {stats && stats.length > 0 ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                        {stats.map((stat: any) => (
+                            <div key={stat.name} className="stat-card group hover:shadow-xl transition-all duration-300">
+                                <div className="flex items-center justify-between mb-4">
+                                    <div className={`stat-card-icon ${stat.color} text-white`}>
+                                        {stat.icon}
+                                    </div>
                                 </div>
+                                <h3 className="text-secondary-600 text-sm font-medium">{stat.name}</h3>
+                                <p className="text-3xl font-bold text-secondary-900 mt-2">{stat.value}</p>
+                                <p className={`text-sm mt-2 flex items-center ${stat.changePositive ? 'text-success-600' : 'text-warning-600'}`}>
+                                    {stat.changePositive && <span className="mr-1">↑</span>}
+                                    {stat.change}
+                                </p>
                             </div>
-                            <h3 className="text-secondary-600 text-sm font-medium">{stat.name}</h3>
-                            <p className="text-3xl font-bold text-secondary-900 mt-2">{stat.value}</p>
-                            <p className={`text-sm mt-2 ${stat.changePositive ? 'text-success-600' : 'text-warning-600'}`}>
-                                {stat.change}
-                            </p>
-                        </div>
-                    ))}
-                </div>
+                        ))}
+                    </div>
+                ) : (
+                    <div className="p-8 text-center bg-white rounded-2xl border border-dashed border-secondary-300">
+                        <p className="text-secondary-500 italic">No statistics available for this account yet.</p>
+                    </div>
+                )}
 
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     {/* Recent Activity */}
@@ -116,15 +127,22 @@ export default function DashboardPage() {
                             </button>
                         </div>
                         <div className="space-y-4">
-                            {recentActivities?.map((activity: any) => (
-                                <div key={activity.id} className="flex items-start space-x-3 pb-4 border-b border-secondary-100 last:border-0 last:pb-0">
-                                    <div className="text-2xl">{activity.icon}</div>
-                                    <div className="flex-1">
-                                        <p className="text-secondary-900">{activity.message}</p>
-                                        <p className="text-sm text-secondary-500 mt-1">{activity.time}</p>
+                            {recentActivities && recentActivities.length > 0 ? (
+                                recentActivities.map((activity: any) => (
+                                    <div key={activity.id} className="flex items-start space-x-3 pb-4 border-b border-secondary-100 last:border-0 last:pb-0">
+                                        <div className="text-2xl">{activity.icon}</div>
+                                        <div className="flex-1">
+                                            <p className="text-secondary-900">{activity.message}</p>
+                                            <p className="text-sm text-secondary-500 mt-1">{activity.time}</p>
+                                        </div>
                                     </div>
+                                ))
+                            ) : (
+                                <div className="py-10 text-center">
+                                    <div className="text-4xl mb-3">🎐</div>
+                                    <p className="text-secondary-500">No recent activity found.</p>
                                 </div>
-                            ))}
+                            )}
                         </div>
                     </div>
 
@@ -137,24 +155,30 @@ export default function DashboardPage() {
                             </button>
                         </div>
                         <div className="space-y-4">
-                            {upcomingRenewals?.map((renewal: any) => (
-                                <div key={renewal.id} className="p-4 bg-secondary-50 rounded-lg hover:bg-secondary-100 transition-colors">
-                                    <div className="flex items-start justify-between mb-2">
-                                        <div>
-                                            <h4 className="font-semibold text-secondary-900">{renewal.customer}</h4>
-                                            <p className="text-sm text-secondary-600">{renewal.journal}</p>
+                            {upcomingRenewals && upcomingRenewals.length > 0 ? (
+                                upcomingRenewals.map((renewal: any) => (
+                                    <div key={renewal.id} className="p-4 bg-secondary-50 rounded-lg hover:bg-secondary-100 transition-colors border border-transparent hover:border-secondary-200">
+                                        <div className="flex items-start justify-between mb-2">
+                                            <div>
+                                                <h4 className="font-semibold text-secondary-900">{renewal.customer}</h4>
+                                                <p className="text-sm text-secondary-600">{renewal.journal}</p>
+                                            </div>
+                                            <span className={`badge ${renewal.status === 'auto-renew' ? 'badge-success' : 'badge-warning'}`}>
+                                                {renewal.status}
+                                            </span>
                                         </div>
-                                        <span className={`badge ${renewal.status === 'contacted' ? 'badge-success' : 'badge-warning'
-                                            }`}>
-                                            {renewal.status}
-                                        </span>
+                                        <div className="flex items-center justify-between text-sm">
+                                            <span className="text-secondary-600">Due: {renewal.dueDate}</span>
+                                            <span className="font-bold text-secondary-900">{renewal.amount}</span>
+                                        </div>
                                     </div>
-                                    <div className="flex items-center justify-between text-sm">
-                                        <span className="text-secondary-600">Due: {renewal.dueDate}</span>
-                                        <span className="font-bold text-secondary-900">{renewal.amount}</span>
-                                    </div>
+                                ))
+                            ) : (
+                                <div className="py-10 text-center">
+                                    <div className="text-4xl mb-3">📅</div>
+                                    <p className="text-secondary-500">No renewals due in the next 30 days.</p>
                                 </div>
-                            ))}
+                            )}
                         </div>
                     </div>
                 </div>
