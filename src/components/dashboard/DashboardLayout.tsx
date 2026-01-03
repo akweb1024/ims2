@@ -147,20 +147,34 @@ export default function DashboardLayout({ children, userRole = 'CUSTOMER' }: Das
                 ]
             },
             {
-                title: 'Client Operations',
+                title: 'Operations',
                 items: [
                     { name: 'Companies', href: '/dashboard/companies', icon: '🏢', roles: ['SUPER_ADMIN'] },
                     { name: 'Customers', href: '/dashboard/customers', icon: '🙍‍♂️', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'TEAM_LEADER', 'SALES_EXECUTIVE'] },
                     { name: 'Subscriptions', href: '/dashboard/subscriptions', icon: '📋', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'SALES_EXECUTIVE', 'FINANCE_ADMIN', 'AGENCY', 'CUSTOMER'] },
                     { name: 'Invoices', href: '/dashboard/invoices', icon: '🧾', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'SALES_EXECUTIVE', 'FINANCE_ADMIN', 'AGENCY', 'CUSTOMER'] },
+                    { name: 'Logistics', href: '/dashboard/logistics', icon: '🚚', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER'] },
                     { name: 'Follow Ups', href: '/dashboard/follow-ups', icon: '🗓️', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'TEAM_LEADER', 'SALES_EXECUTIVE'] },
                     { name: 'Support Tickets', href: '/dashboard/tickets', icon: '🎫', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'SALES_EXECUTIVE', 'CUSTOMER'] },
                 ]
             },
             {
-                title: 'Content & Resources',
+                title: 'Publishing & Editorial',
                 items: [
-                    { name: 'Journals Library', href: '/dashboard/journals', icon: '📰', roles: ['SUPER_ADMIN'] },
+                    { name: 'Journals', href: '/dashboard/journals', icon: '📰', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER'] },
+                    { name: 'Editorial Workflow', href: '/dashboard/editorial', icon: '✍️', roles: ['SUPER_ADMIN', 'ADMIN', 'EDITOR'] },
+                ]
+            },
+            {
+                title: 'Academy & Events',
+                items: [
+                    { name: 'LMS / Courses', href: '/dashboard/courses', icon: '🎓', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'CUSTOMER', 'STUDENT'] },
+                    { name: 'Conferences', href: '/dashboard/events', icon: '🎤', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'CUSTOMER'] },
+                ]
+            },
+            {
+                title: 'Resources & Team',
+                items: [
                     { name: 'Knowledge Base', href: '/dashboard/knowledge-base', icon: '📚', roles: ['*'] },
                     { name: 'User Directory', href: '/dashboard/users', icon: '👥', roles: ['SUPER_ADMIN', 'ADMIN'] },
                     { name: 'Manage Team', href: '/dashboard/team', icon: '👥', roles: ['MANAGER', 'TEAM_LEADER'] },

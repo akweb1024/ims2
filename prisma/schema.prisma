@@ -48,6 +48,9 @@ model Company {
   salarySlips   SalarySlip[]
   performanceReviews PerformanceReview[]
   leaveRequests LeaveRequest[]
+  dispatchOrders DispatchOrder[]
+  conferences    Conference[]
+  courses        Course[]
   
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -133,6 +136,8 @@ model User {
   pushSubscriptions PushSubscription[]
   announcements Announcement[]
   knowledgeArticles KnowledgeArticle[]
+  courseEnrollments CourseEnrollment[]
+  lessonProgress    UserLessonProgress[]
 
   @@index([email])
   @@index([role])
@@ -303,6 +308,8 @@ model Journal {
   // Relations
   plans           Plan[]
   subscriptionItems SubscriptionItem[]
+  volumes         JournalVolume[]
+  articles        Article[]
 
   @@index([isActive])
   @@index([name])
@@ -1015,4 +1022,321 @@ model RecruitmentInterview {
   updatedAt       DateTime @updatedAt
 
   @@unique([applicationId, level])
+}
+
+// ============================================
+// LOGISTICS & DISPATCH
+// ============================================
+
+model Courier {
+  id          String   @id @default(uuid())
+  name        String
+  website     String?
+  apiEndpoint String?
+  apiKey      String?
+  isActive    Boolean  @default(true)
+  
+  dispatches  DispatchOrder[]
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model DispatchOrder {
+  id              String   @id @default(uuid())
+  subscriptionId  String?
+  invoiceId       String?
+  
+  recipientName   String
+  address         String
+  city            String
+  state           String
+  pincode         String
+  country         String
+  phone           String
+  
+  items           Json     // Details of what is inside
+  weight          Float?   // in kg
+  
+  courierId       String?
+  courier         Courier? @relation(fields: [courierId], references: [id])
+  
+  trackingNumber  String?
+  status          DispatchStatus @default(PENDING)
+  shippedDate     DateTime?
+  deliveredDate   DateTime?
+  
+  generatedLabelUrl String?
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  companyId       String?
+  company         Company?  @relation(fields: [companyId], references: [id])
+  @@index([companyId])
+  @@index([status])
+  @@index([trackingNumber])
+}
+
+enum DispatchStatus {
+  PENDING
+  PROCESSING
+  READY_TO_SHIP
+  SHIPPED
+  IN_TRANSIT
+  DELIVERED
+  RETURNED
+  LOST
+}
+
+// ============================================
+// PUBLICATION MANAGEMENT (JMS)
+// ============================================
+
+model JournalVolume {
+  id          String   @id @default(uuid())
+  journalId   String
+  journal     Journal  @relation(fields: [journalId], references: [id])
+  
+  volumeNumber Int
+  year         Int
+  
+  issues      JournalIssue[]
+  
+  isActive    Boolean @default(true)
+}
+
+model JournalIssue {
+  id          String   @id @default(uuid())
+  volumeId    String
+  volume      JournalVolume @relation(fields: [volumeId], references: [id])
+  
+  issueNumber Int
+  month       String?
+  title       String? // Special issue title
+  
+  status      IssueStatus @default(PLANNED)
+  publishedAt DateTime?
+  
+  articles    Article[]
+}
+
+enum IssueStatus {
+  PLANNED
+  IN_PROGRESS
+  PUBLISHED
+  ARCHIVED
+}
+
+model Article {
+  id          String   @id @default(uuid())
+  title       String
+  abstract    String?
+  keywords    String?
+  
+  journalId   String
+  journal     Journal  @relation(fields: [journalId], references: [id])
+  
+  issueId     String?
+  issue       JournalIssue? @relation(fields: [issueId], references: [id])
+  
+  authors     ArticleAuthor[]
+  
+  submissionDate DateTime @default(now())
+  acceptanceDate DateTime?
+  publicationDate DateTime?
+  
+  status      ArticleStatus @default(SUBMITTED)
+  fileUrl     String?   // Manuscript
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+enum ArticleStatus {
+  SUBMITTED
+  UNDER_REVIEW
+  REVISION_REQUESTED
+  ACCEPTED
+  REJECTED
+  PUBLISHED
+}
+
+model ArticleAuthor {
+  id          String   @id @default(uuid())
+  articleId   String
+  article     Article  @relation(fields: [articleId], references: [id])
+  
+  userId      String?  // If they are a registered user
+  
+  name        String
+  email       String
+  affiliation String?
+  isCorresponding Boolean @default(false)
+  displayOrder Int     @default(0)
+}
+
+// ============================================
+// CONFERENCE MANAGEMENT
+// ============================================
+
+model Conference {
+  id          String   @id @default(uuid())
+  title       String
+  description String
+  startDate   DateTime
+  endDate     DateTime
+  venue       String?  // Or "Virtual"
+  
+  organizer   String?
+  website     String?
+  
+  ticketTypes ConferenceTicketType[]
+  registrations ConferenceRegistration[]
+  papers      ConferencePaper[]
+  
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  companyId   String?
+  company     Company? @relation(fields: [companyId], references: [id])
+}
+
+model ConferenceTicketType {
+  id            String   @id @default(uuid())
+  conferenceId  String
+  conference    Conference @relation(fields: [conferenceId], references: [id])
+  
+  name          String   // Early Bird, Regular, Student
+  price         Float
+  currency      String   @default("INR")
+  limit         Int?
+  
+  soldCount     Int      @default(0)
+  
+  registrations ConferenceRegistration[]
+}
+
+model ConferenceRegistration {
+  id            String   @id @default(uuid())
+  conferenceId  String
+  conference    Conference @relation(fields: [conferenceId], references: [id])
+  
+  userId        String?
+  name          String
+  email         String
+  organization  String?
+  
+  ticketTypeId  String
+  ticketType    ConferenceTicketType @relation(fields: [ticketTypeId], references: [id])
+  
+  amountPaid    Float
+  status        String   @default("REGISTERED") // REGISTERED, CANCELLED, ATTENDED
+  
+  paymentId     String? // check reference
+  
+  createdAt     DateTime @default(now())
+}
+
+model ConferencePaper {
+  id            String   @id @default(uuid())
+  conferenceId  String
+  conference    Conference @relation(fields: [conferenceId], references: [id])
+  
+  title         String
+  abstract      String
+  authors       String   // Text or Relation
+  
+  status        String   @default("SUBMITTED") // SUBMITTED, ACCEPTED, REJECTED
+  
+  presenterName String?
+  presentedAt   DateTime?
+  
+  fileUrl       String?
+  
+  createdAt     DateTime @default(now())
+}
+
+// ============================================
+// COURSES & LMS
+// ============================================
+
+model Course {
+  id          String   @id @default(uuid())
+  title       String
+  description String
+  thumbnailUrl String?
+  
+  price       Float    @default(0)
+  currency    String   @default("INR")
+  
+  instructorId String?
+  
+  modules     CourseModule[]
+  enrollments CourseEnrollment[]
+  
+  isPublished Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  companyId       String?
+  company         Company?  @relation(fields: [companyId], references: [id])
+}
+
+model CourseModule {
+  id          String   @id @default(uuid())
+  courseId    String
+  course      Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  
+  title       String
+  order       Int
+  
+  lessons     CourseLesson[]
+}
+
+model CourseLesson {
+  id          String   @id @default(uuid())
+  moduleId    String
+  module      CourseModule @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  
+  title       String
+  order       Int
+  type        String   @default("VIDEO") // VIDEO, TEXT, QUIZ
+  contentUrl  String?
+  textContent String?
+  duration    Int?     // in seconds
+  
+  progress    UserLessonProgress[]
+}
+
+model CourseEnrollment {
+  id          String   @id @default(uuid())
+  courseId    String
+  course      Course   @relation(fields: [courseId], references: [id])
+  
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+  
+  enrolledAt  DateTime @default(now())
+  completedAt DateTime?
+  progress    Float    @default(0) // 0-100
+  
+  certificateUrl String?
+}
+
+model UserLessonProgress {
+  id          String   @id @default(uuid())
+  lessonId    String
+  lesson      CourseLesson @relation(fields: [lessonId], references: [id])
+  
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+  
+  isCompleted Boolean  @default(false)
+  lastPosition Int?    // Video timestamp
+  
+  updatedAt   DateTime @updatedAt
+  
+  @@unique([userId, lessonId])
 }
