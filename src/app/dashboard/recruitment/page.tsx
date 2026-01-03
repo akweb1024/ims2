@@ -201,6 +201,24 @@ export default function RecruitmentDashboard() {
                                         Edit Details
                                     </button>
                                 </div>
+                                <div className="mt-4 pt-4 border-t border-secondary-50 flex justify-between items-center">
+                                    <button
+                                        onClick={() => {
+                                            navigator.clipboard.writeText(`${window.location.origin}/careers?jobId=${job.id}`);
+                                            alert('Public Job Link Copied!');
+                                        }}
+                                        className="text-[10px] font-bold text-secondary-500 hover:text-primary-600 uppercase tracking-widest flex items-center gap-2"
+                                    >
+                                        <span>🔗</span> Copy Public Link
+                                    </button>
+                                    <a
+                                        href={`/careers`}
+                                        target="_blank"
+                                        className="text-[10px] font-bold text-secondary-400 hover:text-primary-600 uppercase tracking-widest"
+                                    >
+                                        View Live
+                                    </a>
+                                </div>
                             </div>
                         ))}
                     </div>
