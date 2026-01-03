@@ -46,7 +46,12 @@ export default function KnowledgeBasePage() {
                         <p className="text-secondary-600 mt-2 text-lg">Central storage for SOPs, guides, and company documentation.</p>
                     </div>
                     {['SUPER_ADMIN', 'ADMIN'].includes(userRole) && (
-                        <button className="btn btn-primary shadow-xl">+ Create Article</button>
+                        <button
+                            onClick={() => window.location.href = '/dashboard/knowledge-base/new'}
+                            className="btn btn-primary shadow-xl"
+                        >
+                            + Create Article
+                        </button>
                     )}
                 </div>
 
