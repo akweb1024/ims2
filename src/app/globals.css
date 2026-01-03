@@ -217,3 +217,35 @@
     @apply bg-white/80 backdrop-blur-md;
   }
 }
+@media print {
+  /* Hide sidebar, header, and non-printable elements */
+  aside, nav, header, footer, button, .no-print {
+    display: none !important;
+  }
+
+  /* Reset layout constraints for full-page print */
+  body, main {
+    padding: 0 !important;
+    margin: 0 !important;
+    background: white !important;
+    color: black !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
+
+  /* Ensure card looks like a document */
+  .card-premium {
+    box-shadow: none !important;
+    border: none !important;
+    padding: 0 !important;
+  }
+
+  /* Make sure the main content is visible */
+  .print-content {
+    display: block !important;
+    width: 100% !important;
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+  }
+}

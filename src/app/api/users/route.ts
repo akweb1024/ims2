@@ -91,7 +91,11 @@ export async function POST(req: NextRequest) {
                 role,
                 isActive: true,
                 companyId: targetCompanyId,
-                managerId: managerId || (decoded.role === 'MANAGER' ? decoded.id : undefined)
+                managerId: managerId || (decoded.role === 'MANAGER' ? decoded.id : undefined),
+                // Auto-create profile for staff roles
+                employeeProfile: !['CUSTOMER', 'AGENCY'].includes(role) ? {
+                    create: {}
+                } : undefined
             }
         });
 

@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import Link from 'next/link';
+import DataTransferActions from '@/components/dashboard/DataTransferActions';
 
 export default function JournalsPage() {
     const [journals, setJournals] = useState<any[]>([]);
@@ -60,11 +61,16 @@ export default function JournalsPage() {
                         <h1 className="text-3xl font-bold text-secondary-900">Journal Catalog</h1>
                         <p className="text-secondary-600 mt-1">Browse and manage available scientific journals and pricing plans</p>
                     </div>
-                    {userRole === 'SUPER_ADMIN' && (
-                        <Link href="/dashboard/journals/new" className="btn btn-primary px-6">
-                            Add Journal
-                        </Link>
-                    )}
+                    <div className="flex items-center gap-3">
+                        {userRole === 'SUPER_ADMIN' && (
+                            <>
+                                <DataTransferActions type="journals" onSuccess={fetchJournals} />
+                                <Link href="/dashboard/journals/new" className="btn btn-primary px-6">
+                                    Add Journal
+                                </Link>
+                            </>
+                        )}
+                    </div>
                 </div>
 
                 {/* Search & Filters */}

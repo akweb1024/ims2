@@ -8,6 +8,8 @@ export interface TokenPayload {
     email: string;
     role: string;
     companyId?: string;
+    isImpersonated?: boolean;
+    impersonatorId?: string;
 }
 
 export const generateToken = (payload: TokenPayload): string => {

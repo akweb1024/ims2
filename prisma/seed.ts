@@ -6,8 +6,9 @@ import bcrypt from 'bcryptjs';
 async function main() {
     console.log('🌱 Starting seed...');
 
-    // Clear existing data
+    // Clear existing data (including new modules)
     console.log('🗑️  Clearing existing data...');
+    // HR & Recruitment
     await prisma.notification.deleteMany();
     await prisma.pushSubscription.deleteMany();
     await prisma.auditLog.deleteMany();
@@ -17,6 +18,27 @@ async function main() {
     await prisma.chatParticipant.deleteMany();
     await prisma.chatRoom.deleteMany();
     await prisma.communicationLog.deleteMany();
+
+    // Recruitment
+    await prisma.examAttempt.deleteMany();
+    await prisma.jobApplication.deleteMany();
+    await prisma.jobPosting.deleteMany();
+    await prisma.recruitmentExam.deleteMany();
+
+    // Supply Chain
+    await prisma.productionOrder.deleteMany();
+    await prisma.inventoryItem.deleteMany();
+
+    // HR Core
+    await prisma.salarySlip.deleteMany();
+    await prisma.leaveRequest.deleteMany();
+    await prisma.attendance.deleteMany();
+    await prisma.employeeDocument.deleteMany();
+    await prisma.workReport.deleteMany();
+    await prisma.performanceReview.deleteMany();
+    await prisma.employeeProfile.deleteMany();
+
+    // Sales & Core
     await prisma.payment.deleteMany();
     await prisma.invoice.deleteMany();
     await prisma.subscriptionItem.deleteMany();
@@ -692,6 +714,36 @@ async function main() {
     console.log(`- Tasks: ${await prisma.task.count()}`);
 
     console.log('\n🔑 Test Credentials (password for all: password123):');
+    console.log('- Super Admin: admin@stm.com');
+    console.log('- Sales Exec: john.sales@stm.com');
+    console.log('- Manager: manager@stm.com');
+    console.log('- Finance: finance@stm.com');
+    console.log('- Agency: agency@partner.com');
+    // 13. Create Inventory Items (Supply Chain Mock)
+    console.log('🏭 Seeding supply chain data...');
+    const inventoryItems = [
+        { name: 'Printing Paper (A4)', sku: 'RAW-PAP-001', stock: 5000, min: 1000, cat: 'RAW_MATERIAL', price: 0.5 },
+        { name: 'Ink Cartridge (Black)', sku: 'RAW-INK-BLK', stock: 50, min: 20, cat: 'RAW_MATERIAL', price: 120 },
+        { name: 'Binding Glue', sku: 'RAW-GLU-005', stock: 5, min: 10, cat: 'RAW_MATERIAL', price: 45 }, // Low Stock
+        { name: 'Nature Journal (Print Ed.)', sku: 'FG-NAT-2024', stock: 150, min: 200, cat: 'FINISHED_GOOD', price: 15 }, // Low Stock + High Demand
+        { name: 'Science Direct (Hardcopy)', sku: 'FG-SCI-2024', stock: 800, min: 100, cat: 'FINISHED_GOOD', price: 25 },
+        { name: 'Packaging Boxes', sku: 'PKG-BOX-M', stock: 2000, min: 500, cat: 'PACKAGING', price: 2 },
+    ];
+
+    for (const item of inventoryItems) {
+        await prisma.inventoryItem.create({
+            data: {
+                name: item.name,
+                sku: item.sku,
+                currentStock: item.stock,
+                minThreshold: item.min,
+                category: item.cat,
+                price: item.price
+            }
+        });
+    }
+
+    console.log(`- Inventory Items: ${await prisma.inventoryItem.count()}`);
     console.log('- Super Admin: admin@stm.com');
     console.log('- Sales Exec: john.sales@stm.com');
     console.log('- Manager: manager@stm.com');

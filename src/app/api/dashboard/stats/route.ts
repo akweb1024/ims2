@@ -107,6 +107,14 @@ export async function GET(req: NextRequest) {
             where: { ...whereClause, status: 'REQUESTED' },
         });
 
+        const openTicketsCount = await (prisma as any).supportTicket.count({
+            where: {
+                companyId: userCompanyId,
+                status: 'OPEN',
+                ...(role === 'CUSTOMER' ? { customerProfileId } : {})
+            }
+        });
+
         const recentActivities = await fetchRecentActivities(whereClause, customerProfileId);
         const upcomingRenewals = await fetchUpcomingRenewals(whereClause, customerProfileId);
 
@@ -119,6 +127,14 @@ export async function GET(req: NextRequest) {
                     icon: '📋',
                     color: 'bg-primary-500',
                     changePositive: true,
+                },
+                {
+                    name: 'Open Tickets',
+                    value: openTicketsCount.toString(),
+                    change: 'Requires attention',
+                    icon: '🎫',
+                    color: 'bg-danger-500',
+                    changePositive: openTicketsCount === 0,
                 },
                 {
                     name: role === 'CUSTOMER' ? 'Total Spent' : 'Total Revenue',

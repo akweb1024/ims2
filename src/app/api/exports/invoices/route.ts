@@ -21,8 +21,9 @@ export async function GET(req: NextRequest) {
         });
 
         // Generate CSV
-        const headers = ['Invoice Number', 'Customer', 'Email', 'Status', 'Amount', 'Currency', 'Due Date', 'Paid Date', 'Created At'];
+        const headers = ['Subscription ID', 'Invoice Number', 'Customer', 'Email', 'Status', 'Amount', 'Currency', 'Due Date', 'Paid Date', 'Created At'];
         const rows = invoices.map(inv => [
+            inv.subscription.id,
             inv.invoiceNumber,
             inv.subscription.customerProfile.name,
             inv.subscription.customerProfile.primaryEmail,

@@ -3,6 +3,54 @@ import { prisma } from '@/lib/prisma';
 import { getAuthenticatedUser } from '@/lib/auth';
 import { createNotification } from '@/lib/notifications';
 
+export async function GET(
+    req: NextRequest,
+    { params }: { params: Promise<{ id: string }> }
+) {
+    try {
+        const { id } = await params;
+        const decoded = await getAuthenticatedUser();
+        if (!decoded) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+        const ticket = await (prisma as any).supportTicket.findUnique({
+            where: { id },
+            include: {
+                customerProfile: {
+                    select: { id: true, name: true, primaryEmail: true, userId: true }
+                },
+                assignedTo: {
+                    select: { id: true, email: true, role: true }
+                },
+                chatRoom: {
+                    select: { id: true }
+                }
+            }
+        });
+
+        if (!ticket) {
+            return NextResponse.json({ error: 'Ticket not found' }, { status: 404 });
+        }
+
+        // Access Control
+        const userCompanyId = (decoded as any).companyId;
+        if (decoded.role !== 'SUPER_ADMIN' && ticket.companyId !== userCompanyId) {
+            return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+        }
+
+        if (decoded.role === 'CUSTOMER') {
+            const profile = await prisma.customerProfile.findUnique({ where: { userId: decoded.id } });
+            if (ticket.customerProfileId !== profile?.id) {
+                return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+            }
+        }
+
+        return NextResponse.json(ticket);
+    } catch (error: any) {
+        console.error('Support Ticket GET Error:', error);
+        return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+    }
+}
+
 export async function PATCH(
     req: NextRequest,
     { params }: { params: Promise<{ id: string }> }

@@ -126,6 +126,12 @@ export default function TicketsPage() {
                             <option value="RESOLVED">Resolved</option>
                             <option value="CLOSED">Closed</option>
                         </select>
+                        <Link href="/dashboard/tickets/new" className="btn btn-primary text-sm whitespace-nowrap">
+                            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                            </svg>
+                            New Ticket
+                        </Link>
                     </div>
                 </div>
 
@@ -153,14 +159,17 @@ export default function TicketsPage() {
                                             <span className="text-xs font-bold text-primary-600">#{ticket.id.split('-')[0].toUpperCase()}</span>
                                             <span className="text-xs text-secondary-400 font-medium">| {new Date(ticket.createdAt).toLocaleString()}</span>
                                         </div>
-                                        <h3 className="text-lg font-bold text-secondary-900">{ticket.subject}</h3>
+                                        <Link href={`/dashboard/tickets/${ticket.id}`} className="block hover:opacity-75 transition-opacity">
+                                            <h3 className="text-lg font-bold text-secondary-900 group-hover:text-primary-600 transition-colors uppercase tracking-tight">{ticket.subject}</h3>
+                                        </Link>
                                         <div className="flex items-center space-x-4 text-sm">
                                             <p className="text-secondary-700">
-                                                <span className="font-bold">Customer:</span> {ticket.customerProfile?.name}
+                                                <span className="font-bold text-secondary-400 text-[10px] uppercase tracking-widest mr-2">Client</span>
+                                                <span className="font-medium">{ticket.customerProfile?.name}</span>
                                                 <span className="text-secondary-400 text-xs ml-2">({ticket.customerProfile?.primaryEmail})</span>
                                             </p>
                                         </div>
-                                        <p className="text-sm text-secondary-600 line-clamp-2 mt-2">{ticket.description}</p>
+                                        <p className="text-sm text-secondary-600 line-clamp-1 mt-2">{ticket.description}</p>
                                     </div>
 
                                     <div className="flex flex-col items-end space-y-3 min-w-[200px]">

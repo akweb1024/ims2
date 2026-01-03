@@ -14,6 +14,8 @@ export default function CustomersPage() {
     const [userRole, setUserRole] = useState<string>('CUSTOMER');
     const [search, setSearch] = useState('');
     const [typeFilter, setTypeFilter] = useState<string>('');
+    const [stateFilter, setStateFilter] = useState<string>('');
+    const [countryFilter, setCountryFilter] = useState<string>('');
     const [pagination, setPagination] = useState({
         page: 1,
         limit: 10,
@@ -63,7 +65,9 @@ export default function CustomersPage() {
                 page: pagination.page.toString(),
                 limit: pagination.limit.toString(),
                 search,
-                ...(typeFilter && { type: typeFilter })
+                ...(typeFilter && { type: typeFilter }),
+                ...(stateFilter && { state: stateFilter }),
+                ...(countryFilter && { country: countryFilter })
             });
 
             const res = await fetch(`/api/customers?${params}`, {
@@ -91,7 +95,7 @@ export default function CustomersPage() {
             fetchCustomers();
         }, 300);
         return () => clearTimeout(timer);
-    }, [search, typeFilter, pagination.page]);
+    }, [search, typeFilter, stateFilter, countryFilter, pagination.page]);
 
     const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.checked) {
@@ -125,7 +129,13 @@ export default function CustomersPage() {
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
-                    customerIds: Array.from(selectedIds),
+                    customerIds: selectedIds.size > 0 ? Array.from(selectedIds) : null,
+                    filters: selectedIds.size === 0 ? {
+                        country: countryFilter,
+                        state: stateFilter,
+                        customerType: typeFilter,
+                        organizationName: search
+                    } : null,
                     assignedToUserId: assignTargetId
                 })
             });
@@ -247,7 +257,25 @@ export default function CustomersPage() {
                                 onChange={(e) => setSearch(e.target.value)}
                             />
                         </div>
-                        <div className="w-full md:w-48">
+                        <div className="w-full md:w-40">
+                            <input
+                                type="text"
+                                placeholder="Country..."
+                                className="input w-full"
+                                value={countryFilter}
+                                onChange={(e) => setCountryFilter(e.target.value)}
+                            />
+                        </div>
+                        <div className="w-full md:w-40">
+                            <input
+                                type="text"
+                                placeholder="State..."
+                                className="input w-full"
+                                value={stateFilter}
+                                onChange={(e) => setStateFilter(e.target.value)}
+                            />
+                        </div>
+                        <div className="w-full md:w-40">
                             <select
                                 className="input w-full"
                                 value={typeFilter}
@@ -259,6 +287,15 @@ export default function CustomersPage() {
                                 <option value="AGENCY">Agency</option>
                             </select>
                         </div>
+                        {['SUPER_ADMIN', 'MANAGER'].includes(userRole) && (
+                            <button
+                                onClick={() => setShowBulkModal(true)}
+                                className="btn btn-secondary border-dashed border-2 hover:border-primary-500 hover:text-primary-600 font-bold"
+                                title="Assign all customers matching the current filters"
+                            >
+                                🎯 Bulk Assign
+                            </button>
+                        )}
                     </div>
                 </div>
 
@@ -422,8 +459,24 @@ export default function CustomersPage() {
                 {showBulkModal && (
                     <div className="fixed inset-0 z-50 flex items-center justify-center bg-secondary-900/50 backdrop-blur-sm p-4">
                         <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-xl">
-                            <h3 className="text-xl font-bold text-secondary-900 mb-2">Assign Customers</h3>
-                            <p className="text-secondary-500 mb-6">Assign {selectedIds.size} selected customers to a sales executive.</p>
+                            <h3 className="text-xl font-bold text-secondary-900 mb-2">Bulk Assign Customers</h3>
+                            <p className="text-secondary-500 mb-4 font-medium text-sm">
+                                {selectedIds.size > 0
+                                    ? `Reassigning ${selectedIds.size} manually selected customers.`
+                                    : "Reassigning ALL customers matching current filters (search, type, country, state)."}
+                            </p>
+
+                            {selectedIds.size === 0 && (
+                                <div className="bg-warning-50 border border-warning-200 p-3 rounded-xl mb-4 flex items-start gap-2">
+                                    <span className="text-lg">⚠️</span>
+                                    <div>
+                                        <p className="text-xs font-bold text-warning-900 leading-none mb-1">High Impact Action</p>
+                                        <p className="text-[10px] text-warning-700 leading-tight">
+                                            This will affect every customer that fits your current search results.
+                                        </p>
+                                    </div>
+                                </div>
+                            )}
 
                             <div className="mb-6">
                                 <label className="label">Select Executive</label>

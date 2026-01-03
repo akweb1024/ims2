@@ -42,6 +42,12 @@ model Company {
   payments    Payment[]
   chatRooms   ChatRoom[]
   supportTickets SupportTicket[]
+  jobPostings   JobPosting[]
+  workReports   WorkReport[]
+  attendance    Attendance[]
+  salarySlips   SalarySlip[]
+  performanceReviews PerformanceReview[]
+  leaveRequests LeaveRequest[]
   
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -102,6 +108,12 @@ model User {
   // Department Leadership
   headOfDepartments Department[] @relation("DepartmentHead")
 
+  // HR & Work Management Relations
+  employeeProfile EmployeeProfile?
+  performanceReviews PerformanceReview[] @relation("Reviewer")
+  approvedLeaves     LeaveRequest[]      @relation("LeaveApprover")
+  interviews         RecruitmentInterview[] @relation("Interviewer")
+
   // Chat
   chatParticipants ChatParticipant[]
   sentMessages    ChatMessage[]
@@ -119,11 +131,44 @@ model User {
   assignedTickets SupportTicket[] @relation("AssignedTickets")
   notifications Notification[]
   pushSubscriptions PushSubscription[]
+  announcements Announcement[]
+  knowledgeArticles KnowledgeArticle[]
 
   @@index([email])
   @@index([role])
   @@index([companyId])
   @@index([departmentId])
+}
+
+model Announcement {
+  id              String   @id @default(uuid())
+  title           String
+  content         String
+  authorId        String
+  author          User     @relation(fields: [authorId], references: [id])
+  
+  targetRole      String   @default("ALL") // ALL, STAFF, CUSTOMER
+  priority        String   @default("NORMAL") // NORMAL, IMPORTANT, URGENT
+  
+  isActive        Boolean  @default(true)
+  expiresAt       DateTime?
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model KnowledgeArticle {
+  id              String   @id @default(uuid())
+  title           String
+  content         String   
+  category        String   
+  targetRole      String   @default("ALL") 
+  authorId        String
+  author          User     @relation(fields: [authorId], references: [id])
+  views           Int      @default(0)
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 }
 
 enum UserRole {
@@ -687,4 +732,287 @@ model SystemSettings {
   companyName     String   @default("STM Journal Solutions")
   
   updatedAt       DateTime @updatedAt
+}
+
+// ============================================
+// HR & WORK MANAGEMENT
+// ============================================
+
+model EmployeeProfile {
+  id              String   @id @default(uuid())
+  userId          String   @unique
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  employeeId      String?  @unique
+  designation     String?
+  dateOfJoining   DateTime?
+  dateOfBirth     DateTime?
+  
+  // Salary Info
+  baseSalary      Float?
+  bankName        String?
+  accountNumber   String?
+  ifscCode        String?
+  panNumber       String?
+  
+  personalEmail   String?
+  phoneNumber     String?
+  emergencyContact String?
+  address         String?
+  
+  attendance      Attendance[]
+  workReports     WorkReport[]
+  salarySlips     SalarySlip[]
+  performance     PerformanceReview[]
+  leaveRequests   LeaveRequest[]
+  documents       EmployeeDocument[]
+  
+  // Document URLs (Primary)
+  offerLetterUrl  String?
+  contractUrl     String?
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model EmployeeDocument {
+  id              String   @id @default(uuid())
+  employeeId      String
+  employee        EmployeeProfile @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  
+  name            String   // ID Proof, Degree, etc.
+  fileUrl         String
+  fileType        String?  // PDF, Image
+  uploadedAt      DateTime @default(now())
+}
+
+model Attendance {
+  id              String   @id @default(uuid())
+  employeeId      String
+  employee        EmployeeProfile @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  
+  date            DateTime @default(now())
+  checkIn         DateTime?
+  checkOut        DateTime?
+  status          String   @default("PRESENT") // PRESENT, ABSENT, LEAVE, HALF_DAY
+  workFrom        String   @default("OFFICE") // OFFICE, HOME, FIELD
+
+  // Smart Ops
+  latitude        Float?
+  longitude       Float?
+  isGeofenced     Boolean   @default(false)
+  locationName    String?
+  deviceInfo      String?
+
+  companyId       String?
+  company         Company?  @relation(fields: [companyId], references: [id])
+
+  @@unique([employeeId, date])
+  @@index([companyId])
+}
+
+model WorkReport {
+  id              String   @id @default(uuid())
+  employeeId      String
+  employee        EmployeeProfile @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  
+  date            DateTime @default(now())
+  title           String
+  content         String?
+  
+  // Advanced Metrics
+  category        String   @default("GENERAL") // SALES, DEVELOPMENT, SUPPORT, ADMIN, LEARNING
+  keyOutcome      String?  // e.g. "Closed $500 deal"
+  hoursSpent      Float?
+  revenueGenerated Float   @default(0)
+  tasksCompleted  Int      @default(0)
+  ticketsResolved Int      @default(0)
+  chatsHandled    Int      @default(0)
+  followUpsCompleted Int   @default(0)
+  
+  // Scoring
+  selfRating      Int?     @default(5) // 1-10
+  managerRating   Int?     // 1-5 (Stars)
+  managerComment  String?
+  
+  status          String   @default("SUBMITTED") // SUBMITTED, REVIEWED, APPROVED
+  createdAt       DateTime @default(now())
+
+  companyId       String?
+  company         Company?  @relation(fields: [companyId], references: [id])
+
+  @@index([companyId])
+  @@index([employeeId])
+}
+
+// SUPPLY CHAIN & OPS
+model InventoryItem {
+  id            String   @id @default(uuid())
+  name          String
+  sku           String   @unique
+  currentStock  Int
+  minThreshold  Int      @default(10)
+  category      String   // RAW_MATERIAL, FINISHED_GOOD, PACKAGING
+  price         Float    @default(0)
+  updatedAt     DateTime @updatedAt
+}
+
+model ProductionOrder {
+  id          String   @id @default(uuid())
+  itemSku     String
+  quantity    Int
+  status      String   @default("PLANNED") // PLANNED, IN_PROGRESS, COMPLETED
+  priority    String   @default("MEDIUM")  // HIGH, MEDIUM, LOW
+  reason      String?  // AI Generated Reason
+  targetDate  DateTime
+  createdAt   DateTime @default(now())
+}
+
+model SalarySlip {
+  id              String   @id @default(uuid())
+  employeeId      String
+  employee        EmployeeProfile @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  
+  month           Int
+  year            Int
+  amountPaid      Float
+  status          String   @default("GENERATED") // GENERATED, PAID
+  fileUrl         String?
+  generatedAt     DateTime @default(now())
+  
+  companyId       String?
+  company         Company?  @relation(fields: [companyId], references: [id])
+  @@index([companyId])
+}
+
+model PerformanceReview {
+  id              String   @id @default(uuid())
+  employeeId      String
+  employee        EmployeeProfile @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  
+  reviewerId      String
+  reviewer        User     @relation("Reviewer", fields: [reviewerId], references: [id])
+  
+  date            DateTime @default(now())
+  rating          Int      // 1-5
+  feedback        String?
+  period          String?  // Q1, 2024, Annual, etc.
+
+  companyId       String?
+  company         Company?  @relation(fields: [companyId], references: [id])
+  @@index([companyId])
+}
+
+model LeaveRequest {
+  id              String   @id @default(uuid())
+  employeeId      String
+  employee        EmployeeProfile @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  
+  startDate       DateTime
+  endDate         DateTime
+  reason          String
+  type            String   // SICK, CASUAL, ANNUAL
+  status          String   @default("PENDING") // PENDING, APPROVED, REJECTED
+  approvedById    String?
+  approvedBy      User?    @relation("LeaveApprover", fields: [approvedById], references: [id])
+  
+  createdAt       DateTime @default(now())
+
+  companyId       String?
+  company         Company?  @relation(fields: [companyId], references: [id])
+  @@index([companyId])
+}
+
+// ============================================
+// RECRUITMENT & HIRING SYSTEM
+// ============================================
+
+model JobPosting {
+  id              String   @id @default(uuid())
+  companyId       String
+  company         Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  
+  title           String
+  description     String
+  requirements    String?
+  location        String?
+  salaryRange     String?
+  type            String   @default("FULL_TIME") // FULL_TIME, PART_TIME, CONTRACT
+  status          String   @default("OPEN") // OPEN, CLOSED, DRAFT
+  
+  applications    JobApplication[]
+  exam            RecruitmentExam?
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model JobApplication {
+  id              String   @id @default(uuid())
+  jobPostingId    String
+  jobPosting      JobPosting @relation(fields: [jobPostingId], references: [id], onDelete: Cascade)
+  
+  applicantName   String
+  applicantEmail  String
+  applicantPhone  String?
+  resumeUrl       String?
+  status          String   @default("APPLIED") // APPLIED, EXAM_PENDING, EXAM_PASSED, EXAM_FAILED, INTERVIEW_L1, INTERVIEW_L2, INTERVIEW_L3, SELECTED, REJECTED, ONBOARDED
+  
+  examAttempt     ExamAttempt?
+  interviews      RecruitmentInterview[]
+  
+  // Final Docs
+  offerLetterUrl  String?
+  contractUrl     String?
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model RecruitmentExam {
+  id              String   @id @default(uuid())
+  jobPostingId    String   @unique
+  jobPosting      JobPosting @relation(fields: [jobPostingId], references: [id], onDelete: Cascade)
+  
+  questions       Json     // Array of { question: string, options: string[], correctOption: number }
+  timeLimit       Int      @default(30) // in minutes
+  passPercentage  Float    @default(75.0)
+  
+  attempts        ExamAttempt[]
+}
+
+model ExamAttempt {
+  id              String   @id @default(uuid())
+  applicationId   String   @unique
+  application     JobApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  
+  examId          String
+  exam            RecruitmentExam @relation(fields: [examId], references: [id])
+  
+  score           Float
+  isPassed        Boolean
+  answers         Json     // Array of selected option indices
+  
+  startedAt       DateTime @default(now())
+  completedAt     DateTime?
+}
+
+model RecruitmentInterview {
+  id              String   @id @default(uuid())
+  applicationId   String
+  application     JobApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  
+  level           Int      // 1, 2, or 3
+  interviewerId   String?
+  interviewer     User?    @relation("Interviewer", fields: [interviewerId], references: [id])
+  
+  scheduledAt     DateTime?
+  status          String   @default("SCHEDULED") // SCHEDULED, COMPLETED, CANCELLED
+  result          String   @default("PENDING") // PENDING, PASSED, FAILED
+  feedback        String?
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([applicationId, level])
 }

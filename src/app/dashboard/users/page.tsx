@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import FormattedDate from '@/components/common/FormattedDate';
+import DataTransferActions from '@/components/dashboard/DataTransferActions';
 
 export default function UsersPage() {
     const [users, setUsers] = useState<any[]>([]);
@@ -191,6 +192,40 @@ export default function UsersPage() {
         }
     };
 
+    const handleImpersonate = async (userId: string) => {
+        if (!confirm('Are you sure you want to login as this user? You can switch back later.')) return;
+
+        try {
+            const token = localStorage.getItem('token');
+            const res = await fetch('/api/auth/impersonate', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ targetUserId: userId })
+            });
+
+            if (res.ok) {
+                const data = await res.json();
+                // Store original admin token to revert back
+                localStorage.setItem('adminToken', token!);
+                localStorage.setItem('adminUser', localStorage.getItem('user')!);
+
+                // Set impersonated credentials
+                localStorage.setItem('token', data.token);
+                localStorage.setItem('user', JSON.stringify(data.user));
+
+                window.location.href = '/dashboard';
+            } else {
+                const err = await res.json();
+                alert(err.error || 'Failed to impersonate');
+            }
+        } catch (err) {
+            alert('Impersonation error');
+        }
+    };
+
     return (
         <DashboardLayout userRole={userRole}>
             <div className="space-y-6">
@@ -206,6 +241,7 @@ export default function UsersPage() {
                         >
                             Bulk Assign Customers
                         </button>
+                        <DataTransferActions type="users" onSuccess={fetchUsers} />
                         <button
                             onClick={() => setShowNewModal(true)}
                             className="btn btn-primary px-6"
@@ -277,12 +313,23 @@ export default function UsersPage() {
                                             <FormattedDate date={user.createdAt} />
                                         </td>
                                         <td className="text-right">
-                                            <button
-                                                onClick={() => setEditingUser(user)}
-                                                className="p-2 border border-secondary-200 rounded-lg text-secondary-600 hover:bg-secondary-50 transition-colors"
-                                            >
-                                                Edit
-                                            </button>
+                                            <div className="flex justify-end gap-2">
+                                                {userRole === 'SUPER_ADMIN' && user.role !== 'SUPER_ADMIN' && (
+                                                    <button
+                                                        onClick={() => handleImpersonate(user.id)}
+                                                        className="p-2 border border-primary-200 rounded-lg text-primary-600 hover:bg-primary-50 transition-colors flex items-center gap-1 text-xs font-bold"
+                                                        title="Login as this user"
+                                                    >
+                                                        <span>👤</span> Login As
+                                                    </button>
+                                                )}
+                                                <button
+                                                    onClick={() => setEditingUser(user)}
+                                                    className="p-2 border border-secondary-200 rounded-lg text-secondary-600 hover:bg-secondary-50 transition-colors"
+                                                >
+                                                    Edit
+                                                </button>
+                                            </div>
                                         </td>
                                     </tr>
                                 ))}

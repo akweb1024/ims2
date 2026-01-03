@@ -4,7 +4,7 @@ export default function Home() {
     return (
         <div className="min-h-screen">
             {/* Hero Section */}
-            <section className="gradient-primary min-h-screen flex items-center relative overflow-hidden">
+            <section className="gradient-primary bg-primary-700 min-h-screen flex items-center relative overflow-hidden">
                 {/* Animated Background Shapes */}
                 <div className="absolute inset-0 overflow-hidden opacity-10">
                     <div className="absolute top-20 left-20 w-72 h-72 bg-white rounded-full blur-3xl animate-pulse-subtle"></div>

@@ -13,6 +13,9 @@ interface DashboardLayoutProps {
 export default function DashboardLayout({ children, userRole = 'CUSTOMER' }: DashboardLayoutProps) {
     const [sidebarOpen, setSidebarOpen] = useState(true);
     const [notifications, setNotifications] = useState<any[]>([]);
+    const [isImpersonating, setIsImpersonating] = useState(false);
+    const [mounted, setMounted] = useState(false);
+    const [user, setUser] = useState<any>(null);
     const pathname = usePathname();
     const router = useRouter();
 
@@ -35,8 +38,16 @@ export default function DashboardLayout({ children, userRole = 'CUSTOMER' }: Das
     }, []);
 
     useEffect(() => {
+        setMounted(true);
         fetchNotifications();
         registerPush();
+
+        // Check if impersonating
+        if (typeof window !== 'undefined') {
+            setIsImpersonating(!!localStorage.getItem('adminToken'));
+            const savedUser = localStorage.getItem('user');
+            if (savedUser) setUser(JSON.parse(savedUser));
+        }
 
         // Polling for notifications every 60 seconds, only if visible
         const interval = setInterval(() => {
@@ -95,97 +106,111 @@ export default function DashboardLayout({ children, userRole = 'CUSTOMER' }: Das
     const handleLogout = () => {
         localStorage.removeItem('token');
         localStorage.removeItem('user');
+        localStorage.removeItem('adminToken');
+        localStorage.removeItem('adminUser');
         router.push('/login');
     };
 
+    const handleRevertAdmin = () => {
+        const adminToken = localStorage.getItem('adminToken');
+        const adminUser = localStorage.getItem('adminUser');
+
+        if (adminToken && adminUser) {
+            localStorage.setItem('token', adminToken);
+            localStorage.setItem('user', adminUser);
+            localStorage.removeItem('adminToken');
+            localStorage.removeItem('adminUser');
+            window.location.href = '/dashboard';
+        }
+    };
+
+    const displayRole = mounted && user?.company?.name ? user.company.name : userRole.replace('_', ' ');
+    const displayEmail = mounted && user?.email ? user.email.split('@')[0] : 'User';
+    const displayFullEmail = mounted && user?.email ? user.email : 'user@example.com';
+
     // Navigation items based on role
-    const navigationItems = useMemo(() => {
-        const commonItems = [
-            { name: 'Dashboard', href: '/dashboard', icon: '📊' },
-            { name: 'Chat', href: '/dashboard/chat', icon: '💬' },
-            { name: 'Appearance', href: '/dashboard/settings/theme', icon: '🎨' },
-            { name: 'Profile', href: '/dashboard/profile', icon: '👤' },
+    const navigationCategories = useMemo(() => {
+        const categories = [
+            {
+                title: 'Core Workspace',
+                items: [
+                    { name: 'Dashboard', href: '/dashboard', icon: '📊', roles: ['*'] },
+                    { name: 'Staff Portal', href: '/dashboard/staff-portal', icon: '🏢', roles: ['*'] },
+                    { name: 'Direct Chat', href: '/dashboard/chat', icon: '💬', roles: ['*'] },
+                ]
+            },
+            {
+                title: 'Talent & HR',
+                items: [
+                    { name: 'HR Management', href: '/dashboard/hr-management', icon: '👨‍💼', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER'] },
+                    { name: 'Recruitment', href: '/dashboard/recruitment', icon: '🎯', roles: ['SUPER_ADMIN'] },
+                ]
+            },
+            {
+                title: 'Client Operations',
+                items: [
+                    { name: 'Companies', href: '/dashboard/companies', icon: '🏢', roles: ['SUPER_ADMIN'] },
+                    { name: 'Customers', href: '/dashboard/customers', icon: '🙍‍♂️', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'TEAM_LEADER', 'SALES_EXECUTIVE'] },
+                    { name: 'Subscriptions', href: '/dashboard/subscriptions', icon: '📋', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'SALES_EXECUTIVE', 'FINANCE_ADMIN', 'AGENCY', 'CUSTOMER'] },
+                    { name: 'Invoices', href: '/dashboard/invoices', icon: '🧾', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'SALES_EXECUTIVE', 'FINANCE_ADMIN', 'AGENCY', 'CUSTOMER'] },
+                    { name: 'Follow Ups', href: '/dashboard/follow-ups', icon: '🗓️', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'TEAM_LEADER', 'SALES_EXECUTIVE'] },
+                    { name: 'Support Tickets', href: '/dashboard/tickets', icon: '🎫', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'SALES_EXECUTIVE', 'CUSTOMER'] },
+                ]
+            },
+            {
+                title: 'Content & Resources',
+                items: [
+                    { name: 'Journals Library', href: '/dashboard/journals', icon: '📰', roles: ['SUPER_ADMIN'] },
+                    { name: 'Knowledge Base', href: '/dashboard/knowledge-base', icon: '📚', roles: ['*'] },
+                    { name: 'User Directory', href: '/dashboard/users', icon: '👥', roles: ['SUPER_ADMIN', 'ADMIN'] },
+                    { name: 'Manage Team', href: '/dashboard/team', icon: '👥', roles: ['MANAGER', 'TEAM_LEADER'] },
+                ]
+            },
+            {
+                title: 'Insights & Tools',
+                items: [
+                    { name: 'Analytics', href: '/dashboard/analytics', icon: '📈', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER'] },
+                    { name: 'AI Predictions', href: '/dashboard/ai-insights', icon: '🤖', roles: ['SUPER_ADMIN', 'MANAGER', 'SALES_EXECUTIVE', 'FINANCE_ADMIN', 'AGENCY'] },
+                    { name: 'Data Hub', href: '/dashboard/data-hub', icon: '📂', roles: ['SUPER_ADMIN'] },
+                    { name: 'System Logs', href: '/dashboard/admin/logs', icon: '📜', roles: ['SUPER_ADMIN'] },
+                ]
+            },
+            {
+                title: 'Preferences',
+                items: [
+                    { name: 'My Profile', href: '/dashboard/profile', icon: '👤', roles: ['*'] },
+                    { name: 'App Theme', href: '/dashboard/settings/theme', icon: '🎨', roles: ['*'] },
+                    { name: 'System Settings', href: '/dashboard/settings', icon: '⚙️', roles: ['SUPER_ADMIN'] },
+                ]
+            }
         ];
 
-        const roleSpecificItems: Record<string, any[]> = {
-            SUPER_ADMIN: [
-                { name: 'Companies', href: '/dashboard/companies', icon: '🏢' },
-                { name: 'Users', href: '/dashboard/users', icon: '👥' },
-                { name: 'Customers', href: '/dashboard/customers', icon: '🙍‍♂️' },
-                { name: 'Subscriptions', href: '/dashboard/subscriptions', icon: '📋' },
-                { name: 'Tickets', href: '/dashboard/tickets', icon: '🎫' },
-                { name: 'Invoices', href: '/dashboard/invoices', icon: '🧾' },
-                { name: 'Journals', href: '/dashboard/journals', icon: '📰' },
-                { name: 'Follow Ups', href: '/dashboard/follow-ups', icon: '🗓️' },
-                { name: 'Analytics', href: '/dashboard/analytics', icon: '📈' },
-                { name: 'AI Predictions', href: '/dashboard/ai-insights', icon: '🤖' },
-                { name: 'Settings', href: '/dashboard/settings', icon: '⚙️' },
-            ],
-            ADMIN: [
-                { name: 'Company', href: '/dashboard/company', icon: '🏢' },
-                { name: 'Users', href: '/dashboard/users', icon: '👥' },
-                { name: 'Customers', href: '/dashboard/customers', icon: '🙍‍♂️' },
-                { name: 'Subscriptions', href: '/dashboard/subscriptions', icon: '📋' },
-                { name: 'Tickets', href: '/dashboard/tickets', icon: '🎫' },
-                { name: 'Invoices', href: '/dashboard/invoices', icon: '🧾' },
-                { name: 'Follow Ups', href: '/dashboard/follow-ups', icon: '🗓️' },
-                { name: 'Analytics', href: '/dashboard/analytics', icon: '📈' },
-            ],
-            MANAGER: [
-                { name: 'Customers', href: '/dashboard/customers', icon: '🙍‍♂️' },
-                { name: 'Subscriptions', href: '/dashboard/subscriptions', icon: '📋' },
-                { name: 'Tickets', href: '/dashboard/tickets', icon: '🎫' },
-                { name: 'Invoices', href: '/dashboard/invoices', icon: '🧾' },
-                { name: 'Team', href: '/dashboard/team', icon: '👥' },
-                { name: 'Follow Ups', href: '/dashboard/follow-ups', icon: '🗓️' },
-                { name: 'Analytics', href: '/dashboard/analytics', icon: '📈' },
-                { name: 'AI Predictions', href: '/dashboard/ai-insights', icon: '🤖' },
-            ],
-            TEAM_LEADER: [
-                { name: 'Customers', href: '/dashboard/customers', icon: '🙍‍♂️' },
-                { name: 'Subscriptions', href: '/dashboard/subscriptions', icon: '📋' },
-                { name: 'Team', href: '/dashboard/team', icon: '👥' },
-                { name: 'Tasks', href: '/dashboard/tasks', icon: '✅' },
-                { name: 'Follow Ups', href: '/dashboard/follow-ups', icon: '🗓️' },
-            ],
-            SALES_EXECUTIVE: [
-                { name: 'My Customers', href: '/dashboard/customers', icon: '🏢' },
-                { name: 'Subscriptions', href: '/dashboard/subscriptions', icon: '📋' },
-                { name: 'Tickets', href: '/dashboard/tickets', icon: '🎫' },
-                { name: 'Invoices', href: '/dashboard/invoices', icon: '🧾' },
-                { name: 'Tasks', href: '/dashboard/tasks', icon: '✅' },
-                { name: 'Follow Ups', href: '/dashboard/follow-ups', icon: '🗓️' },
-                { name: 'Communications', href: '/dashboard/communications', icon: '💬' },
-                { name: 'AI Predictions', href: '/dashboard/ai-insights', icon: '🤖' },
-            ],
-            FINANCE_ADMIN: [
-                { name: 'Invoices', href: '/dashboard/invoices', icon: '🧾' },
-                { name: 'Payments', href: '/dashboard/payments', icon: '💳' },
-                { name: 'Subscriptions', href: '/dashboard/subscriptions', icon: '📋' },
-                { name: 'AI Predictions', href: '/dashboard/ai-insights', icon: '🤖' },
-            ],
-            AGENCY: [
-                { name: 'My Clients', href: '/dashboard/clients', icon: '🏢' },
-                { name: 'Subscriptions', href: '/dashboard/subscriptions', icon: '📋' },
-                { name: 'Invoices', href: '/dashboard/invoices', icon: '🧾' },
-                { name: 'Commission', href: '/dashboard/commission', icon: '💰' },
-                { name: 'AI Predictions', href: '/dashboard/ai-insights', icon: '🤖' },
-            ],
-            CUSTOMER: [
-                { name: 'Browse Journals', href: '/dashboard/subscriptions/new', icon: '📖' },
-                { name: 'My Subscriptions', href: '/dashboard/subscriptions', icon: '📋' },
-                { name: 'Invoices', href: '/dashboard/invoices', icon: '🧾' },
-                { name: 'Support', href: '/dashboard/support', icon: '❓' },
-            ],
-        };
-
-        return [...commonItems, ...(roleSpecificItems[userRole] || roleSpecificItems.CUSTOMER)];
+        return categories.map(cat => ({
+            ...cat,
+            items: cat.items.filter(item => item.roles.includes('*') || item.roles.includes(userRole))
+        })).filter(cat => cat.items.length > 0);
     }, [userRole]);
 
     return (
         <div className="min-h-screen bg-secondary-50">
+            {/* Impersonation Warning Bar */}
+            {isImpersonating && (
+                <div className="bg-primary-600 text-white px-4 py-2 flex items-center justify-between fixed w-full z-50 top-0 shadow-lg animate-in slide-in-from-top duration-300">
+                    <div className="flex items-center gap-2 text-sm font-bold">
+                        <span className="text-xl">👤</span>
+                        <span>Impersonation Mode Active: Viewing as {mounted && user ? user.email : 'User'}</span>
+                    </div>
+                    <button
+                        onClick={handleRevertAdmin}
+                        className="bg-white text-primary-600 px-4 py-1 rounded-full text-xs font-black uppercase hover:bg-secondary-50 transition-all shadow-sm"
+                    >
+                        Back to Admin Identity
+                    </button>
+                </div>
+            )}
+
             {/* Top Navigation Bar */}
-            <nav className="bg-white border-b border-secondary-200 fixed w-full z-30 top-0">
+            <nav className={`bg-white border-b border-secondary-200 fixed w-full z-30 transition-all ${isImpersonating ? 'top-10' : 'top-0'}`}>
                 <div className="px-4 sm:px-6 lg:px-8">
                     <div className="flex justify-between h-16">
                         <div className="flex items-center">
@@ -265,14 +290,10 @@ export default function DashboardLayout({ children, userRole = 'CUSTOMER' }: Das
                                     </div>
                                     <div className="hidden md:block text-left">
                                         <p className="text-sm font-semibold text-secondary-900 leading-tight">
-                                            {typeof window !== 'undefined' && localStorage.getItem('user')
-                                                ? JSON.parse(localStorage.getItem('user') || '{}').company?.name || userRole.replace('_', ' ')
-                                                : userRole.replace('_', ' ')}
+                                            {displayRole}
                                         </p>
                                         <p className="text-xs text-secondary-500">
-                                            {typeof window !== 'undefined' && localStorage.getItem('user')
-                                                ? JSON.parse(localStorage.getItem('user') || '{}').email?.split('@')[0]
-                                                : 'User'}
+                                            {displayEmail}
                                         </p>
                                     </div>
                                     <svg className="h-4 w-4 text-secondary-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -285,9 +306,7 @@ export default function DashboardLayout({ children, userRole = 'CUSTOMER' }: Das
                                     {/* User Info Header */}
                                     <div className="px-4 py-3 border-b border-secondary-100">
                                         <p className="text-sm font-bold text-secondary-900">
-                                            {typeof window !== 'undefined' && localStorage.getItem('user')
-                                                ? JSON.parse(localStorage.getItem('user') || '{}').email
-                                                : 'user@example.com'}
+                                            {displayFullEmail}
                                         </p>
                                         <p className="text-xs text-secondary-500 mt-1">
                                             Role: <span className="font-semibold text-primary-600">{userRole.replace('_', ' ')}</span>
@@ -339,29 +358,43 @@ export default function DashboardLayout({ children, userRole = 'CUSTOMER' }: Das
 
             {/* Sidebar */}
             <aside
-                className={`fixed left-0 top-16 h-full bg-white border-r border-secondary-200 transition-all duration-300 z-20 ${sidebarOpen ? 'w-64' : 'w-0 lg:w-20'
+                className={`fixed left-0 h-full bg-white border-r border-secondary-200 transition-all duration-300 z-20 ${sidebarOpen ? 'w-64' : 'w-0 lg:w-20'} ${isImpersonating ? 'top-[calc(4rem+2.5rem)]' : 'top-16'}
                     }`}
             >
-                <nav className="p-4 space-y-2 h-full flex flex-col">
-                    <div className="flex-1">
-                        {navigationItems.map((item: any) => {
-                            const isActive = pathname === item.href;
-                            return (
-                                <Link
-                                    key={item.href}
-                                    href={item.href}
-                                    className={`flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ${isActive
-                                        ? 'bg-primary-100 text-primary-700 font-semibold'
-                                        : 'text-secondary-700 hover:bg-secondary-100'
-                                        }`}
-                                >
-                                    <span className="text-xl">{item.icon}</span>
-                                    <span className={`${sidebarOpen ? 'block' : 'hidden lg:hidden'}`}>
-                                        {item.name}
-                                    </span>
-                                </Link>
-                            );
-                        })}
+                <nav className="p-4 space-y-6 h-full flex flex-col overflow-y-auto custom-scrollbar">
+                    <div className="flex-1 space-y-6">
+                        {navigationCategories.map((category) => (
+                            <div key={category.title} className="space-y-1">
+                                {sidebarOpen && (
+                                    <h3 className="px-4 text-[10px] font-bold text-secondary-400 uppercase tracking-[0.2em] mb-2">
+                                        {category.title}
+                                    </h3>
+                                )}
+                                <div className="space-y-1">
+                                    {category.items.map((item: any) => {
+                                        const isActive = pathname === item.href;
+                                        return (
+                                            <Link
+                                                key={item.href}
+                                                href={item.href}
+                                                className={`flex items-center space-x-3 px-4 py-2.5 rounded-xl transition-all duration-200 group ${isActive
+                                                    ? 'bg-primary-50 text-primary-700 shadow-sm border border-primary-100/50'
+                                                    : 'text-secondary-600 hover:bg-secondary-50 hover:text-secondary-900'
+                                                    }`}
+                                            >
+                                                <span className={`text-xl transition-transform duration-200 ${isActive ? 'scale-110' : 'group-hover:scale-110'}`}>
+                                                    {item.icon}
+                                                </span>
+                                                <span className={`text-sm font-medium ${sidebarOpen ? 'block' : 'hidden md:hidden lg:hidden'}`}>
+                                                    {item.name}
+                                                </span>
+                                            </Link>
+                                        );
+                                    })}
+                                </div>
+                                {sidebarOpen && <div className="pt-2 border-b border-secondary-50 last:hidden"></div>}
+                            </div>
+                        ))}
                     </div>
 
                     {/* Logout Button in Sidebar */}
@@ -381,7 +414,7 @@ export default function DashboardLayout({ children, userRole = 'CUSTOMER' }: Das
 
             {/* Main Content */}
             <main
-                className={`pt-16 transition-all duration-300 ${sidebarOpen ? 'lg:pl-64' : 'lg:pl-20'
+                className={`transition-all duration-300 ${sidebarOpen ? 'lg:pl-64' : 'lg:pl-20'} ${isImpersonating ? 'pt-[calc(4rem+2.5rem)]' : 'pt-16'}
                     }`}
             >
                 <div className="p-6 lg:p-8">

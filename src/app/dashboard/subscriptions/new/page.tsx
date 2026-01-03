@@ -14,6 +14,8 @@ export default function NewSubscriptionPage() {
     const [customers, setCustomers] = useState<any[]>([]);
     const [journals, setJournals] = useState<any[]>([]);
 
+    const [searchTerm, setSearchTerm] = useState('');
+
     // Form State
     const [formData, setFormData] = useState({
         customerProfileId: '',
@@ -196,24 +198,45 @@ export default function NewSubscriptionPage() {
                 {step === 2 && (
                     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4">
                         <div className="card-premium p-6">
-                            <div className="flex justify-between items-center mb-6">
+                            <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
                                 <h3 className="text-xl font-bold text-secondary-900">Step 2: Selection Catalog</h3>
-                                <select
-                                    className="input py-1 px-3 w-auto"
-                                    value={formData.currency}
-                                    onChange={(e) => {
-                                        if (formData.items.length > 0) {
-                                            if (!confirm('Changing currency will clear your current selection. Continue?')) return;
-                                        }
-                                        setFormData({ ...formData, currency: e.target.value, items: [] });
-                                    }}
-                                >
-                                    <option value="INR">INR (₹)</option>
-                                    <option value="USD">USD ($)</option>
-                                </select>
+                                <div className="flex items-center gap-3 w-full md:w-auto">
+                                    <input
+                                        type="text"
+                                        placeholder="Search journals..."
+                                        className="input py-1 px-3 w-full md:w-64"
+                                        value={searchTerm}
+                                        onChange={(e) => setSearchTerm(e.target.value)}
+                                    />
+                                    <select
+                                        className="input py-1 px-3 w-auto"
+                                        value={formData.currency}
+                                        onChange={(e) => {
+                                            if (formData.items.length > 0) {
+                                                if (!confirm('Changing currency will clear your current selection. Continue?')) return;
+                                            }
+                                            setFormData({ ...formData, currency: e.target.value, items: [] });
+                                        }}
+                                    >
+                                        <option value="INR">INR (₹)</option>
+                                        <option value="USD">USD ($)</option>
+                                    </select>
+                                </div>
                             </div>
+
                             <div className="space-y-4 max-h-[500px] overflow-y-auto pr-2">
-                                {journals.map((j) => (
+                                {journals.filter(j => {
+                                    const term = searchTerm.toLowerCase();
+                                    return j.name.toLowerCase().includes(term) || (j.frequency && j.frequency.toLowerCase().includes(term));
+                                }).length === 0 && (
+                                        <div className="text-center py-10 text-secondary-400">
+                                            No journals found matching your search.
+                                        </div>
+                                    )}
+                                {journals.filter(j => {
+                                    const term = searchTerm.toLowerCase();
+                                    return j.name.toLowerCase().includes(term) || (j.frequency && j.frequency.toLowerCase().includes(term));
+                                }).map((j) => (
                                     <div key={j.id} className="p-4 rounded-xl border border-secondary-100 hover:border-primary-200 transition-colors">
                                         <div className="flex justify-between items-start mb-4">
                                             <div>

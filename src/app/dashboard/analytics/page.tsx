@@ -5,6 +5,7 @@ import DashboardLayout from '@/components/dashboard/DashboardLayout';
 
 export default function AnalyticsPage() {
     const [data, setData] = useState<any>(null);
+    const [leakageData, setLeakageData] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [userRole, setUserRole] = useState('CUSTOMER');
 
@@ -18,13 +19,13 @@ export default function AnalyticsPage() {
         const fetchAnalytics = async () => {
             try {
                 const token = localStorage.getItem('token');
-                const res = await fetch('/api/analytics', {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-                if (res.ok) {
-                    const json = await res.json();
-                    setData(json);
-                }
+                const [res, leakRes] = await Promise.all([
+                    fetch('/api/analytics', { headers: { 'Authorization': `Bearer ${token}` } }),
+                    fetch('/api/analytics/leakage', { headers: { 'Authorization': `Bearer ${token}` } })
+                ]);
+
+                if (res.ok) setData(await res.json());
+                if (leakRes.ok) setLeakageData(await leakRes.json());
             } catch (err) {
                 console.error(err);
             } finally {
@@ -50,9 +51,18 @@ export default function AnalyticsPage() {
     return (
         <DashboardLayout userRole={userRole}>
             <div className="space-y-8">
-                <div>
-                    <h1 className="text-3xl font-bold text-secondary-900">Advanced Analytics</h1>
-                    <p className="text-secondary-600">Real-time business intelligence and growth metrics</p>
+                <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+                    <div>
+                        <h1 className="text-4xl font-extrabold text-secondary-900 tracking-tight font-primary">Advanced Analytics</h1>
+                        <p className="text-secondary-600 mt-2 text-lg">Real-time business intelligence and data-driven insights.</p>
+                    </div>
+                    <div className="flex bg-white p-1 rounded-2xl shadow-sm border border-secondary-100">
+                        {['7D', '30D', '90D', '1Y'].map(range => (
+                            <button key={range} className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${range === '30D' ? 'bg-primary-600 text-white shadow-lg' : 'text-secondary-400 hover:text-secondary-600'}`}>
+                                {range}
+                            </button>
+                        ))}
+                    </div>
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -100,8 +110,8 @@ export default function AnalyticsPage() {
                                         <div className="w-full bg-secondary-100 rounded-full h-3 overflow-hidden">
                                             <div
                                                 className={`h-full transition-all duration-1000 ${status.name === 'ACTIVE' ? 'bg-success-500' :
-                                                        status.name === 'EXPIRED' ? 'bg-danger-500' :
-                                                            'bg-warning-500'
+                                                    status.name === 'EXPIRED' ? 'bg-danger-500' :
+                                                        'bg-warning-500'
                                                     }`}
                                                 style={{ width: `${percentage}%` }}
                                             />
@@ -151,10 +161,129 @@ export default function AnalyticsPage() {
                                 </div>
                             ))}
                         </div>
-                        <div className="mt-8 pt-8 border-t border-secondary-100 italic text-sm text-secondary-400 text-center">
-                            Direct sales currently accounts for {((data.channelSplit.find((c: any) => c.name === 'DIRECT')?.value || 0) / data.statusSplit.reduce((a: any, s: any) => a + s.value, 0) * 100).toFixed(1)}% of all acquisitions.
+                    </div>
+
+                    {/* Revenue Forecast */}
+                    <div className="card-premium bg-gradient-to-br from-secondary-900 to-secondary-800 text-white border-0">
+                        <h3 className="text-lg font-bold mb-6 flex items-center">
+                            <span className="mr-2">🔮</span> Revenue Forecast
+                        </h3>
+                        <div className="space-y-6">
+                            <div>
+                                <div className="flex justify-between text-sm mb-2">
+                                    <span className="text-secondary-300 font-bold uppercase tracking-widest text-[10px]">Projected Growth (Q4)</span>
+                                    <span className="text-success-400 font-bold">+24.5%</span>
+                                </div>
+                                <div className="text-4xl font-black">$42,500.00</div>
+                                <p className="text-secondary-400 text-xs mt-2 italic">Based on current subscription renewal rates and pipeline.</p>
+                            </div>
+
+                            <div className="pt-6 border-t border-white/10 grid grid-cols-2 gap-4">
+                                <div>
+                                    <p className="text-[10px] font-bold text-secondary-400 uppercase tracking-widest">Optimistic</p>
+                                    <p className="text-xl font-bold">$48,200</p>
+                                </div>
+                                <div>
+                                    <p className="text-[10px] font-bold text-secondary-400 uppercase tracking-widest">Conservative</p>
+                                    <p className="text-xl font-bold">$38,900</p>
+                                </div>
+                            </div>
                         </div>
                     </div>
+
+                    {/* Conversion Metrics */}
+                    <div className="card-premium lg:col-span-2">
+                        <h3 className="text-lg font-bold text-secondary-900 mb-6 flex items-center">
+                            <span className="mr-2">🎯</span> Conversion Funnel
+                        </h3>
+                        <div className="flex flex-col md:flex-row items-center justify-between gap-8 py-4 px-8">
+                            <div className="text-center group">
+                                <div className="w-32 h-32 rounded-full border-[10px] border-primary-100 flex items-center justify-center relative transition-transform group-hover:scale-110">
+                                    <div className="absolute inset-0 rounded-full border-[10px] border-primary-500 border-t-transparent animate-spin-slow" style={{ animationDuration: '3s' }}></div>
+                                    <span className="text-2xl font-black text-secondary-900">82%</span>
+                                </div>
+                                <p className="mt-4 font-bold text-secondary-600 text-sm">Lead to Quote</p>
+                            </div>
+
+                            <div className="hidden md:block text-secondary-200">
+                                <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                                </svg>
+                            </div>
+
+                            <div className="text-center group">
+                                <div className="w-32 h-32 rounded-full border-[10px] border-success-100 flex items-center justify-center relative transition-transform group-hover:scale-110">
+                                    <div className="absolute inset-0 rounded-full border-[10px] border-success-500 border-r-transparent animate-spin-slow" style={{ animationDuration: '4s' }}></div>
+                                    <span className="text-2xl font-black text-secondary-900">45%</span>
+                                </div>
+                                <p className="mt-4 font-bold text-secondary-600 text-sm">Quote to Paid</p>
+                            </div>
+
+                            <div className="hidden md:block text-secondary-200">
+                                <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                                </svg>
+                            </div>
+
+                            <div className="text-center group">
+                                <div className="w-32 h-32 rounded-full border-[10px] border-warning-100 flex items-center justify-center relative transition-transform group-hover:scale-110">
+                                    <div className="absolute inset-0 rounded-full border-[10px] border-warning-500 border-b-transparent animate-spin-slow" style={{ animationDuration: '5s' }}></div>
+                                    <span className="text-2xl font-black text-secondary-900">12%</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Revenue Leakage Detection */}
+                    {['SUPER_ADMIN', 'FINANCE_ADMIN'].includes(userRole) && leakageData && (
+                        <div className="card-premium lg:col-span-2 border-danger-200 bg-danger-50/20">
+                            <div className="flex justify-between items-center mb-6">
+                                <h3 className="text-lg font-bold text-danger-900 flex items-center">
+                                    <span className="mr-2">🚨</span> Revenue Leakage Detection
+                                </h3>
+                                <div className="text-right">
+                                    <p className="text-sm font-bold text-danger-600">Total Unrecovered: ${leakageData.totalLost.toLocaleString()}</p>
+                                    <p className="text-[10px] uppercase font-black tracking-widest text-danger-400">Action Required</p>
+                                </div>
+                            </div>
+
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-left">
+                                    <thead>
+                                        <tr className="text-[10px] font-black uppercase tracking-widest text-secondary-400 border-b border-danger-100">
+                                            <th className="pb-3">Customer</th>
+                                            <th className="pb-3 text-right">Potential Revenue</th>
+                                            <th className="pb-3 text-center">Last Status</th>
+                                            <th className="pb-3 text-right">Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-danger-50">
+                                        {leakageData.leakage.map((item: any) => (
+                                            <tr key={item.id} className="text-sm">
+                                                <td className="py-4 font-bold text-secondary-900">{item.customer}</td>
+                                                <td className="py-4 text-right font-black text-secondary-700">${item.total.toLocaleString()}</td>
+                                                <td className="py-4 text-center">
+                                                    <span className="px-2 py-1 bg-danger-100 text-danger-700 text-[10px] font-black rounded-lg uppercase">
+                                                        {item.lastStatus}
+                                                    </span>
+                                                </td>
+                                                <td className="py-4 text-right">
+                                                    <button className="text-primary-600 font-bold hover:underline">Generate Invoice</button>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                        {leakageData.leakage.length === 0 && (
+                                            <tr>
+                                                <td colSpan={4} className="py-10 text-center text-success-600 font-bold">
+                                                    ✅ No revenue leakage detected for the current period.
+                                                </td>
+                                            </tr>
+                                        )}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    )}
                 </div>
             </div>
         </DashboardLayout>

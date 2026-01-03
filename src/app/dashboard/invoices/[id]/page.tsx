@@ -12,7 +12,13 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [userRole, setUserRole] = useState('CUSTOMER');
+    const [showPaymentModal, setShowPaymentModal] = useState(false);
     const [isPaying, setIsPaying] = useState(false);
+    const [paymentForm, setPaymentForm] = useState({
+        method: 'card',
+        reference: '',
+        notes: ''
+    });
 
     useEffect(() => {
         const userData = localStorage.getItem('user');
@@ -45,11 +51,8 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
         }
     };
 
-
-    const handleSimulatePayment = async () => {
-        const method = prompt('Enter payment method (card, bank-transfer, razorpay):', 'razorpay');
-        if (!method) return;
-
+    const handlePaymentSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
         setIsPaying(true);
         try {
             const token = localStorage.getItem('token');
@@ -61,17 +64,20 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
                 },
                 body: JSON.stringify({
                     amount: invoice.total,
-                    paymentMethod: method,
-                    transactionId: `SIM-${Date.now()}`,
-                    notes: 'Simulated payment via dashboard'
+                    paymentMethod: paymentForm.method,
+                    transactionId: paymentForm.reference || `TXN-${Date.now()}`, // Auto-gen if empty
+                    notes: paymentForm.notes || 'Payment via Portal'
                 })
             });
 
             if (res.ok) {
                 await fetchInvoice(); // Refresh data
+                setShowPaymentModal(false);
+                setPaymentForm({ method: 'card', reference: '', notes: '' });
+                alert('Payment processed successfully!');
             } else {
                 const err = await res.json();
-                alert(err.error);
+                alert(err.error || 'Payment failed');
             }
         } catch (err) {
             alert('Payment simulation failed');
@@ -79,10 +85,6 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
             setIsPaying(false);
         }
     };
-
-    // ... (rest of the file until rendering prices)
-    // I will use replace_file_content on specific chunks to update '$' to {currencySymbol}
-
 
     if (loading) {
         return (
@@ -112,7 +114,7 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
         <DashboardLayout userRole={userRole}>
             <div className="max-w-5xl mx-auto space-y-6 pb-12">
                 {/* Header Actions */}
-                <div className="flex justify-between items-center">
+                <div className="flex justify-between items-center no-print">
                     <button onClick={() => router.back()} className="btn btn-secondary flex items-center space-x-2">
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
@@ -148,18 +150,17 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
                         </button>
                         {invoice.status !== 'PAID' && invoice.status !== 'CANCELLED' && (
                             <button
-                                className="btn btn-primary"
-                                onClick={handleSimulatePayment}
-                                disabled={isPaying}
+                                className="btn btn-primary shadow-lg shadow-primary-200"
+                                onClick={() => setShowPaymentModal(true)}
                             >
-                                {isPaying ? 'Processing...' : 'Settle Invoice'}
+                                Settle Invoice
                             </button>
                         )}
                     </div>
                 </div>
 
                 {/* Invoice Document */}
-                <div className="card-premium p-0 overflow-hidden shadow-2xl border-0 ring-1 ring-secondary-200">
+                <div className="card-premium p-0 overflow-hidden shadow-2xl border-0 ring-1 ring-secondary-200 print-content">
                     <div className="p-8 sm:p-12 space-y-12">
                         {/* Top Branding & Status */}
                         <div className="flex flex-col sm:flex-row justify-between gap-8">
@@ -168,7 +169,7 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
                                 <p className="text-secondary-500 mt-2 font-medium">Subscription Management Division</p>
                             </div>
                             <div className="text-right">
-                                <span className={`inline-block px-4 py-1.5 rounded-full font-bold text-sm mb-4 ${invoice.status === 'PAID' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                                <span className={`inline-block px-4 py-1.5 rounded-full font-bold text-sm mb-4 ${invoice.status === 'PAID' ? 'bg-success-100 text-success-700' : 'bg-danger-100 text-danger-700'
                                     }`}>
                                     {invoice.status.replace('_', ' ')}
                                 </span>
@@ -260,13 +261,13 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
 
                 {/* Payment History (if any) */}
                 {invoice.payments.length > 0 && (
-                    <div className="card-premium">
+                    <div className="card-premium no-print">
                         <h3 className="text-lg font-bold text-secondary-900 mb-4">Payment History</h3>
                         <div className="space-y-4">
                             {invoice.payments.map((p: any) => (
                                 <div key={p.id} className="flex justify-between items-center p-4 bg-secondary-50 rounded-xl">
                                     <div className="flex items-center space-x-4">
-                                        <div className="w-10 h-10 rounded-full bg-green-100 text-green-600 flex items-center justify-center">
+                                        <div className="w-10 h-10 rounded-full bg-success-100 text-success-600 flex items-center justify-center">
                                             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                                             </svg>
@@ -279,7 +280,7 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
                                         </div>
                                     </div>
                                     <div className="text-right">
-                                        <p className="font-bold text-green-600">+ {currencySymbol}{p.amount.toLocaleString()}</p>
+                                        <p className="font-bold text-success-600">+ {currencySymbol}{p.amount.toLocaleString()}</p>
                                         <p className="text-[10px] text-secondary-400 font-mono italic">{p.transactionId}</p>
                                     </div>
                                 </div>
@@ -288,6 +289,68 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
                     </div>
                 )}
             </div>
+
+            {/* Payment Modal */}
+            {showPaymentModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-secondary-900/50 backdrop-blur-sm p-4 no-print">
+                    <div className="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl animate-in zoom-in duration-200">
+                        <div className="flex justify-between items-center mb-6">
+                            <h3 className="text-2xl font-bold text-secondary-900 font-primary">Settle Invoice</h3>
+                            <button onClick={() => setShowPaymentModal(false)} className="text-secondary-400 hover:text-secondary-600">✕</button>
+                        </div>
+
+                        <div className="bg-primary-50 p-4 rounded-xl mb-6 flex justify-between items-center">
+                            <span className="text-primary-800 font-medium">Total Payable</span>
+                            <span className="text-2xl font-black text-primary-700">{currencySymbol}{invoice.total.toLocaleString()}</span>
+                        </div>
+
+                        <form onSubmit={handlePaymentSubmit} className="space-y-4">
+                            <div>
+                                <label className="label">Payment Method</label>
+                                <select
+                                    className="input"
+                                    value={paymentForm.method}
+                                    onChange={e => setPaymentForm({ ...paymentForm, method: e.target.value })}
+                                >
+                                    <option value="card">Credit/Debit Card</option>
+                                    <option value="bank-transfer">Bank Transfer (NEFT/RTGS)</option>
+                                    <option value="cheque">Cheque/DD</option>
+                                    <option value="upi">UPI / QR Code</option>
+                                </select>
+                            </div>
+
+                            <div>
+                                <label className="label">Transaction Reference (Optional)</label>
+                                <input
+                                    className="input"
+                                    placeholder="e.g. UTR Number or Cheque#"
+                                    value={paymentForm.reference}
+                                    onChange={e => setPaymentForm({ ...paymentForm, reference: e.target.value })}
+                                />
+                            </div>
+
+                            <div>
+                                <label className="label">Notes</label>
+                                <textarea
+                                    className="input"
+                                    rows={2}
+                                    placeholder="Any additional remarks..."
+                                    value={paymentForm.notes}
+                                    onChange={e => setPaymentForm({ ...paymentForm, notes: e.target.value })}
+                                ></textarea>
+                            </div>
+
+                            <button
+                                type="submit"
+                                disabled={isPaying}
+                                className="btn btn-primary w-full py-4 text-lg font-bold shadow-xl mt-4"
+                            >
+                                {isPaying ? 'Processing Payment...' : 'Confirm Payment'}
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            )}
         </DashboardLayout>
     );
 }

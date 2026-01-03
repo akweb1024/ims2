@@ -5,8 +5,9 @@ const nextConfig = {
     images: {
         domains: ['localhost'],
     },
+    outputFileTracingRoot: __dirname,
     experimental: {
-        outputFileTracingRoot: __dirname,
+        // experimental options
     },
     eslint: {
         ignoreDuringBuilds: true,

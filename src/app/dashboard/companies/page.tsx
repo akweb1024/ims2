@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import Link from 'next/link';
 import FormattedDate from '@/components/common/FormattedDate';
+import DataTransferActions from '@/components/dashboard/DataTransferActions';
 
 export default function CompaniesPage() {
     const [companies, setCompanies] = useState<any[]>([]);
@@ -81,12 +82,15 @@ export default function CompaniesPage() {
                         <p className="text-secondary-600">Administrative control over multi-tenant organizations</p>
                     </div>
                     {userRole === 'SUPER_ADMIN' && (
-                        <button
-                            onClick={() => setShowNewModal(true)}
-                            className="btn btn-primary px-6"
-                        >
-                            + Register Company
-                        </button>
+                        <div className="flex items-center gap-3">
+                            <DataTransferActions type="companies" onSuccess={fetchCompanies} />
+                            <button
+                                onClick={() => setShowNewModal(true)}
+                                className="btn btn-primary px-6"
+                            >
+                                + Register Company
+                            </button>
+                        </div>
                     )}
                 </div>
 
