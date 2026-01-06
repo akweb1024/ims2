@@ -62,6 +62,7 @@ model Company {
   documentTemplates  DocumentTemplate[]
   itAssets           ITAsset[]
   itTickets          ITSupportTicket[]
+  institutions       Institution[]
 
   createdAt DateTime   @default(now())
   updatedAt DateTime   @updatedAt
@@ -162,6 +163,9 @@ model User {
   itRequests            ITSupportTicket[] @relation("ITRequestor")
   itResolutions         ITSupportTicket[] @relation("ITResolver")
 
+  // Customer Assignments
+  customerAssignments   CustomerAssignment[] @relation("EmployeeAssignments")
+
   @@index([email])
   @@index([role])
   @@index([companyId])
@@ -248,6 +252,11 @@ model CustomerProfile {
   notes            String?
   tags             String? // Comma-separated tags for SQLite compatibility
 
+  // Institution relationship
+  institutionId String?
+  institution   Institution? @relation(fields: [institutionId], references: [id])
+  designation   CustomerDesignation?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -255,16 +264,19 @@ model CustomerProfile {
   company   Company? @relation(fields: [companyId], references: [id])
 
   // Relations
-  user               User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user               User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
   institutionDetails InstitutionDetails?
   agencyDetails      AgencyDetails?
   subscriptions      Subscription[]
   communications     CommunicationLog[]
   supportTickets     SupportTicket[]
+  assignments        CustomerAssignment[]
 
   @@index([customerType])
   @@index([primaryEmail])
   @@index([companyId])
+  @@index([institutionId])
+  @@index([designation])
 }
 
 enum CustomerType {
@@ -307,6 +319,117 @@ model AgencyDetails {
   // Relations
   customerProfile CustomerProfile @relation(fields: [customerProfileId], references: [id], onDelete: Cascade)
   subscriptions   Subscription[]
+}
+
+// ============================================
+// INSTITUTION MANAGEMENT
+// ============================================
+
+model Institution {
+  id   String @id @default(uuid())
+  name String
+  code String @unique // Short code for institution (e.g., "MIT", "HARVARD")
+
+  // Institution Details
+  type            InstitutionType
+  category        String? // University/College/Research Institute/Corporate/Library/Government
+  establishedYear Int?
+  accreditation   String? // NAAC/NBA/UGC etc.
+  
+  // Contact Information
+  primaryEmail    String?
+  secondaryEmail  String?
+  primaryPhone    String?
+  secondaryPhone  String?
+  website         String?
+  
+  // Address
+  address  String?
+  city     String?
+  state    String?
+  country  String  @default("India")
+  pincode  String?
+  
+  // Additional Info
+  totalStudents   Int?
+  totalFaculty    Int?
+  totalStaff      Int?
+  libraryBudget   Float?
+  ipRange         String?
+  notes           String?
+  logo            String? // URL to logo
+  
+  // Status
+  isActive Boolean @default(true)
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  companyId String?
+  company   Company? @relation(fields: [companyId], references: [id])
+  
+  // Relations
+  customers      CustomerProfile[]
+  subscriptions  Subscription[]
+  communications CommunicationLog[]
+  
+  @@index([code])
+  @@index([type])
+  @@index([companyId])
+}
+
+enum InstitutionType {
+  UNIVERSITY
+  COLLEGE
+  SCHOOL
+  RESEARCH_INSTITUTE
+  CORPORATE
+  LIBRARY
+  GOVERNMENT
+  HOSPITAL
+  NGO
+  OTHER
+}
+
+enum CustomerDesignation {
+  STUDENT
+  TEACHER
+  FACULTY
+  HOD
+  PRINCIPAL
+  DEAN
+  RESEARCHER
+  LIBRARIAN
+  ACCOUNTANT
+  DIRECTOR
+  REGISTRAR
+  VICE_CHANCELLOR
+  CHANCELLOR
+  STAFF
+  OTHER
+}
+
+// Many-to-Many relationship for customer-employee assignments
+model CustomerAssignment {
+  id         String   @id @default(uuid())
+  customerId String
+  employeeId String
+  
+  // Assignment details
+  assignedAt DateTime @default(now())
+  assignedBy String? // User ID who made the assignment
+  role       String? // Primary/Secondary/Support
+  isActive   Boolean  @default(true)
+  notes      String?
+  
+  // Relations
+  customer CustomerProfile @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  employee User            @relation("EmployeeAssignments", fields: [employeeId], references: [id], onDelete: Cascade)
+  
+  @@unique([customerId, employeeId])
+  @@index([customerId])
+  @@index([employeeId])
+  @@index([isActive])
 }
 
 // ============================================
@@ -405,6 +528,9 @@ model Subscription {
   companyId String?
   company   Company? @relation(fields: [companyId], references: [id])
 
+  institutionId String?
+  institution   Institution? @relation(fields: [institutionId], references: [id])
+
   // Relations
   customerProfile    CustomerProfile    @relation(fields: [customerProfileId], references: [id])
   agency             AgencyDetails?     @relation(fields: [agencyId], references: [id])
@@ -419,6 +545,7 @@ model Subscription {
   @@index([salesChannel])
   @@index([startDate, endDate])
   @@index([companyId])
+  @@index([institutionId])
 }
 
 enum SalesChannel {
@@ -570,6 +697,9 @@ model CommunicationLog {
   companyId String?
   company   Company? @relation(fields: [companyId], references: [id])
 
+  institutionId String?
+  institution   Institution? @relation(fields: [institutionId], references: [id])
+
   // Relations
   customerProfile CustomerProfile @relation(fields: [customerProfileId], references: [id])
   user            User?           @relation("UserCommunications", fields: [userId], references: [id])
@@ -579,6 +709,7 @@ model CommunicationLog {
   @@index([date])
   @@index([nextFollowUpDate])
   @@index([companyId])
+  @@index([institutionId])
 }
 
 enum CommunicationType {
