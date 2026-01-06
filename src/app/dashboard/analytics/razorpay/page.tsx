@@ -264,17 +264,6 @@ export default function RazorpayTrackerPage() {
                         <div className="flex gap-2">
                             <select
                                 className="select select-sm border-secondary-200 rounded-xl font-bold text-xs"
-                                value={filterMethod}
-                                onChange={(e) => setFilterMethod(e.target.value)}
-                            >
-                                <option value="ALL">All Methods</option>
-                                <option value="card">Card</option>
-                                <option value="wallet">Wallet</option>
-                                <option value="upi">UPI</option>
-                                <option value="netbanking">Net Banking</option>
-                            </select>
-                            <select
-                                className="select select-sm border-secondary-200 rounded-xl font-bold text-xs"
                                 value={filterStatus}
                                 onChange={(e) => setFilterStatus(e.target.value)}
                             >
@@ -294,20 +283,21 @@ export default function RazorpayTrackerPage() {
                             <thead className="bg-secondary-50 text-[10px] font-black text-secondary-400 uppercase tracking-wider">
                                 <tr>
                                     <th className="px-6 py-4 text-left">Payment ID</th>
-                                    <th className="px-6 py-4 text-left">Customer</th>
-                                    <th className="px-6 py-4 text-left">Method</th>
+                                    <th className="px-6 py-4 text-left">Description</th>
+                                    <th className="px-6 py-4 text-left">Customer Details</th>
+                                    <th className="px-6 py-4 text-left">Created On</th>
                                     <th className="px-6 py-4 text-left">Amount</th>
-                                    <th className="px-6 py-4 text-left">INR Equiv.</th>
                                     <th className="px-6 py-4 text-left">Status</th>
-                                    <th className="px-6 py-4 text-left">Date</th>
-                                    <th className="px-6 py-4 text-left">Details</th>
+                                    <th className="px-6 py-4 text-left">Actions</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-secondary-100">
                                 {filteredPayments.map((payment: any) => (
                                     <tr key={payment.id} className="hover:bg-primary-50/30 transition-colors group">
                                         <td className="px-6 py-4">
-                                            <div className="font-mono text-xs font-bold text-secondary-900">{payment.razorpayPaymentId}</div>
+                                            <div className="font-mono text-xs font-bold text-secondary-900">
+                                                {payment.razorpayPaymentId || payment.id}
+                                            </div>
                                             {payment.international && (
                                                 <span className="inline-block mt-1 px-2 py-0.5 bg-purple-100 text-purple-700 text-[9px] font-black rounded-full">
                                                     <Globe size={10} className="inline mr-1" />INTL
@@ -315,60 +305,70 @@ export default function RazorpayTrackerPage() {
                                             )}
                                         </td>
                                         <td className="px-6 py-4">
+                                            <div className="text-sm font-bold text-secondary-900 max-w-xs truncate">
+                                                {payment.description || 'No description'}
+                                            </div>
+                                        </td>
+                                        <td className="px-6 py-4">
                                             <div className="font-bold text-secondary-900">{payment.email || 'N/A'}</div>
                                             <div className="text-xs text-secondary-500">{payment.contact || '-'}</div>
                                         </td>
                                         <td className="px-6 py-4">
-                                            <div className="flex items-center gap-2">
-                                                {getPaymentIcon(payment.method)}
-                                                <span className="font-bold text-secondary-700 capitalize">{payment.method}</span>
+                                            <div className="text-xs font-bold text-secondary-700">
+                                                {new Date(payment.created_at * 1000).toLocaleDateString('en-GB', {
+                                                    day: '2-digit',
+                                                    month: 'short',
+                                                    year: 'numeric'
+                                                })}
                                             </div>
-                                            {payment.wallet && (
-                                                <div className="text-[10px] text-secondary-500 mt-1">{payment.wallet}</div>
-                                            )}
-                                            {payment.card && (
-                                                <div className="text-[10px] text-secondary-500 mt-1">
-                                                    {payment.card.network} •••• {payment.card.last4}
-                                                </div>
-                                            )}
+                                            <div className="text-[10px] text-secondary-500">
+                                                {new Date(payment.created_at * 1000).toLocaleTimeString([], {
+                                                    hour: '2-digit',
+                                                    minute: '2-digit'
+                                                })}
+                                            </div>
                                         </td>
                                         <td className="px-6 py-4">
                                             <div className="font-mono font-bold text-secondary-900">
                                                 {payment.currency} {formatCurrency(payment.amount, payment.currency)}
                                             </div>
-                                        </td>
-                                        <td className="px-6 py-4">
-                                            <div className="font-mono font-bold text-primary-600">
-                                                ₹{formatCurrency(payment.base_amount || payment.amount, 'INR')}
-                                            </div>
+                                            {payment.currency !== 'INR' && (
+                                                <div className="text-[10px] text-secondary-500 mt-1">
+                                                    ≈ ₹{formatCurrency(payment.base_amount || payment.amount, 'INR')}
+                                                </div>
+                                            )}
                                         </td>
                                         <td className="px-6 py-4">
                                             <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase ${payment.status === 'captured' ? 'bg-green-100 text-green-700' :
-                                                payment.status === 'authorized' ? 'bg-yellow-100 text-yellow-700' :
-                                                    payment.status === 'failed' ? 'bg-red-100 text-red-700' :
-                                                        'bg-gray-100 text-gray-700'
+                                                    payment.status === 'authorized' ? 'bg-yellow-100 text-yellow-700' :
+                                                        payment.status === 'failed' ? 'bg-red-100 text-red-700' :
+                                                            'bg-gray-100 text-gray-700'
                                                 }`}>
                                                 {payment.status}
                                             </span>
-                                        </td>
-                                        <td className="px-6 py-4">
-                                            <div className="text-xs font-bold text-secondary-700">
-                                                {new Date(payment.created_at * 1000).toLocaleDateString()}
-                                            </div>
-                                            <div className="text-[10px] text-secondary-500">
-                                                {new Date(payment.created_at * 1000).toLocaleTimeString()}
-                                            </div>
                                         </td>
                                         <td className="px-6 py-4">
                                             <button
                                                 onClick={() => setSelectedPayment(payment)}
                                                 className="px-3 py-1 bg-secondary-100 hover:bg-secondary-900 hover:text-white text-secondary-900 rounded-lg text-xs font-bold transition-all"
                                             >
-                                                View
+                                                View Details
                                             </button>
                                         </td>
                                     </tr>
                                 ))}
+                                {filteredPayments.length === 0 && (
+                                    <tr>
+                                        <td colSpan={7} className="px-6 py-20 text-center">
+                                            <div className="flex flex-col items-center justify-center space-y-3 opacity-40">
+                                                <DollarSign size={48} className="text-secondary-300" />
+                                                <p className="text-sm font-black text-secondary-400 uppercase tracking-widest">
+                                                    No transactions found
+                                                </p>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                )}
                             </tbody>
                         </table>
                     </div>
