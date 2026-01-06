@@ -19,7 +19,7 @@ export const generateToken = (payload: TokenPayload): string => {
 export const verifyToken = (token: string): TokenPayload | null => {
     try {
         return jwt.verify(token, JWT_SECRET) as TokenPayload;
-    } catch (error) {
+    } catch (_error) {
         return null;
     }
 };
@@ -44,7 +44,7 @@ export const getAuthenticatedUser = async (): Promise<TokenPayload | null> => {
         if (!token) return null;
 
         return verifyToken(token);
-    } catch (error) {
+    } catch (_error) {
         return null;
     }
 };

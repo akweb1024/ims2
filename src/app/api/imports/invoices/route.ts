@@ -17,7 +17,7 @@ export async function POST(req: NextRequest) {
 
         let createdCount = 0;
         let skippedCount = 0;
-        let errors: string[] = [];
+        const errors: string[] = [];
 
         for (const rawItem of data) {
             // Normalize keys
@@ -68,9 +68,9 @@ export async function POST(req: NextRequest) {
                     }
                 });
                 createdCount++;
-            } catch (err) {
+            } catch (_err) {
                 // Check unique constraint on invoiceNumber
-                console.error(`Failed to create invoice ${item.invoicenumber}`, err);
+                console.error(`Failed to create invoice ${item.invoicenumber}`, _err);
                 skippedCount++;
             }
         }
@@ -81,8 +81,8 @@ export async function POST(req: NextRequest) {
             errors: errors.slice(0, 5)
         });
 
-    } catch (error: any) {
-        console.error('Import Error:', error);
+    } catch (_error) {
+        console.error('Import Error:', _error);
         return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
     }
 }

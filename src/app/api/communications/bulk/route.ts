@@ -18,7 +18,7 @@ export async function POST(req: NextRequest) {
         }
 
         // 1. Fetch target customers
-        let where: any = {};
+        const where: any = {};
         if (target !== 'ALL') {
             where.customerType = target;
         }

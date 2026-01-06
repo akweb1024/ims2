@@ -81,7 +81,7 @@ export async function POST(req: NextRequest) {
         const totalRevenue = subscriptions.reduce((acc, sub) => acc + sub.total, 0);
 
         // 8. Build AI-like Summary
-        let summaryParts = [];
+        const summaryParts: string[] = [];
         let keyOutcome = "";
 
         if (subscriptions.length > 0) {

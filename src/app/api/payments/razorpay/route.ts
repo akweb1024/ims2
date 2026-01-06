@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { Prisma } from '@prisma/client';
 import { getAuthenticatedUser } from '@/lib/auth';
 
 export async function GET(req: NextRequest) {
@@ -110,15 +111,15 @@ export async function GET(req: NextRequest) {
             }));
         }
 
-        const dailyRevenue = await prisma.$queryRaw`
+        const dailyRevenue: any[] = await prisma.$queryRaw`
             SELECT 
-                DATE("paymentDate") as date,
+                CAST("paymentDate" AS DATE) as date,
                 SUM(amount) as revenue
             FROM "Payment"
             WHERE "razorpayPaymentId" IS NOT NULL
-            ${user.role !== 'SUPER_ADMIN' ? prisma.$queryRaw`AND "companyId" = ${user.companyId}` : prisma.$queryRaw``}
-            GROUP BY DATE("paymentDate")
-            ORDER BY DATE("paymentDate") DESC
+            ${user.role !== 'SUPER_ADMIN' ? Prisma.sql`AND "companyId" = ${user.companyId}` : Prisma.empty}
+            GROUP BY CAST("paymentDate" AS DATE)
+            ORDER BY date DESC
             LIMIT 30
         `;
 

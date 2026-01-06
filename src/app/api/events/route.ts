@@ -10,7 +10,7 @@ export async function GET(req: NextRequest) {
 
         const { searchParams } = new URL(req.url);
 
-        let where: any = {};
+        const where: any = {};
         // If user is not admin, maybe only show what they registered for?
         // Or show all public conferences.
 

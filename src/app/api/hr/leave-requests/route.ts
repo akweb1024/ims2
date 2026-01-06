@@ -13,7 +13,7 @@ export async function GET(req: NextRequest) {
 
         // If employeeId is provided, fetch for that employee (for managers)
         // Otherwise, fetch for the current user's profile
-        let where: any = {};
+        const where: any = {};
 
         if (employeeId) {
             // Check if manager/admin

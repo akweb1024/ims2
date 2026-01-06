@@ -145,7 +145,7 @@ export async function POST(req: NextRequest) {
         }
 
         // Determine target company
-        let targetCompanyId = companyId || decoded.companyId;
+        const targetCompanyId = companyId || decoded.companyId;
 
         const result = await prisma.$transaction(async (tx) => {
             // Check if email already exists

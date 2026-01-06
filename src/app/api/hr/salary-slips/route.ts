@@ -11,7 +11,7 @@ export async function GET(req: NextRequest) {
         const employeeId = searchParams.get('employeeId');
         const showAll = searchParams.get('all') === 'true';
 
-        let where: any = {};
+        const where: any = {};
 
         if (employeeId) {
             if (!['SUPER_ADMIN', 'ADMIN', 'MANAGER'].includes(user.role)) {

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { Prisma } from '@prisma/client';
 import { getAuthenticatedUser } from '@/lib/auth';
 
 export async function GET(req: Request) {
@@ -10,7 +11,7 @@ export async function GET(req: Request) {
         const { searchParams } = new URL(req.url);
         const companyId = searchParams.get('companyId');
 
-        let filter: any = {};
+        const filter: any = {};
         const targetCompanyId = companyId || user.companyId;
         if (targetCompanyId) {
             filter.companyId = targetCompanyId;
@@ -34,7 +35,7 @@ export async function GET(req: Request) {
                     SUM(amount) as total
                 FROM "Payment"
                 WHERE "status" = 'captured'
-                ${targetCompanyId ? prisma.$queryRaw`AND "companyId" = ${targetCompanyId}` : prisma.$queryRaw``}
+                ${targetCompanyId ? Prisma.sql`AND "companyId" = ${targetCompanyId}` : Prisma.empty}
                 GROUP BY TO_CHAR("paymentDate", 'YYYY-MM')
                 ORDER BY month ASC
                 LIMIT 12

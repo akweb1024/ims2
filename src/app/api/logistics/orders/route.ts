@@ -12,7 +12,7 @@ export async function GET(req: NextRequest) {
         const { searchParams } = new URL(req.url);
         const limit = parseInt(searchParams.get('limit') || '50');
 
-        let where: any = {};
+        const where: any = {};
         if (user.role !== 'SUPER_ADMIN') {
             where.companyId = user.companyId;
         }

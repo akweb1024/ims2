@@ -88,8 +88,8 @@ export async function GET(req: NextRequest) {
         const skip = (page - 1) * limit;
 
         // Build where clause based on hierarchy and multi-tenancy
-        const userCompanyId = (decoded as any).companyId;
-        let where: any = {};
+        const userCompanyId = decoded.companyId;
+        const where: any = {};
 
         // Restrict to company if not SUPER_ADMIN
         if (decoded.role !== 'SUPER_ADMIN' && userCompanyId) {

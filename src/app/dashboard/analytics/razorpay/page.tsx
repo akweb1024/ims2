@@ -38,17 +38,19 @@ export default function RazorpayTrackerPage() {
         setIsSyncing(true);
         try {
             const token = localStorage.getItem('token');
-            const res = await fetch('/api/cron/razorpay-sync', {
+            const res = await fetch('/api/cron/razorpay-sync?force=true', {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
+            const result = await res.json();
             if (res.ok) {
-                alert('Sync successful!');
+                alert(`Sync completed. Found ${result.syncedCount} new transactions.`);
                 fetchData();
             } else {
-                alert('Sync failed. Please check credentials.');
+                alert(`Sync failed: ${result.error || 'Unknown error'}`);
             }
         } catch (err) {
             console.error(err);
+            alert('A network error occurred during sync.');
         } finally {
             setIsSyncing(false);
         }

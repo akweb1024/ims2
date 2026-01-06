@@ -16,7 +16,7 @@ export async function GET(req: NextRequest) {
         const year = parseInt(searchParams.get('year') || String(new Date().getFullYear()));
         const showAll = searchParams.get('all') === 'true';
 
-        let where: Prisma.AttendanceWhereInput = {
+        const where: Prisma.AttendanceWhereInput = {
             date: {
                 gte: new Date(year, month - 1, 1),
                 lte: new Date(year, month, 0)
