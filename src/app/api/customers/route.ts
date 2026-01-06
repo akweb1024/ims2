@@ -86,6 +86,26 @@ export async function GET(req: NextRequest) {
                             // id: true // id is implicitly available
                         }
                     },
+                    institution: {
+                        select: {
+                            id: true,
+                            name: true,
+                            code: true,
+                            type: true
+                        }
+                    },
+                    assignments: {
+                        where: { isActive: true },
+                        include: {
+                            employee: {
+                                select: {
+                                    id: true,
+                                    email: true,
+                                    role: true
+                                }
+                            }
+                        }
+                    },
                     _count: {
                         select: { subscriptions: true }
                     }
@@ -136,6 +156,8 @@ export async function POST(req: NextRequest) {
             gstVatTaxId,
             tags,
             institutionDetails,
+            institutionId, // New field
+            designation, // New field
             assignedToUserId, // Optional override
             companyId // Optional override for SUPER_ADMIN
         } = body;
@@ -191,6 +213,8 @@ export async function POST(req: NextRequest) {
                     pincode,
                     gstVatTaxId,
                     tags,
+                    institutionId: institutionId || null,
+                    designation: designation || null,
                 }
             });
 
