@@ -12,7 +12,7 @@ export async function GET(req: NextRequest) {
 
         const role = decoded.role;
         const userId = decoded.id;
-        const userCompanyId = (decoded as any).companyId;
+        const userCompanyId = decoded.companyId;
 
         // Determine filter based on role and company context
         let customerProfileId: string | undefined;
@@ -48,7 +48,7 @@ export async function GET(req: NextRequest) {
                 select: { id: true }
             });
 
-            const subordinateIds = subordinates.map((s: any) => s.id);
+            const subordinateIds = subordinates.map((s) => s.id);
 
             // 2. Include Manager's own direct sales + Subordinates' sales
             whereClause = {
@@ -240,7 +240,7 @@ async function fetchRecentActivities(whereClause: any, customerProfileId?: strin
     });
 
     const activities = [
-        ...subscriptions.map((s: any) => ({
+        ...subscriptions.map((s) => ({
             id: `sub-${s.id}`,
             type: 'subscription',
             message: `Subscription ${s.status === 'ACTIVE' ? 'activated' : 'updated'} for ${s.customerProfile.name}`,
@@ -248,7 +248,7 @@ async function fetchRecentActivities(whereClause: any, customerProfileId?: strin
             date: s.createdAt,
             icon: '✅',
         })),
-        ...payments.map((p: any) => ({
+        ...payments.map((p) => ({
             id: `pay-${p.id}`,
             type: 'payment',
             message: `Payment received: $${p.amount.toLocaleString()}`,
@@ -279,7 +279,7 @@ async function fetchUpcomingRenewals(whereClause: any, customerProfileId?: strin
         orderBy: { endDate: 'asc' },
     });
 
-    return renewals.map((r: any) => ({
+    return renewals.map((r) => ({
         id: r.id,
         customerProfileId: r.customerProfile.id,
         customer: r.customerProfile.name,

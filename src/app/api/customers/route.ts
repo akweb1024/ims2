@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { Prisma } from '@prisma/client';
 import { getAuthenticatedUser } from '@/lib/auth';
 import { CustomerType } from '@/types';
 
@@ -29,8 +30,8 @@ export async function GET(req: NextRequest) {
 
         const skip = (page - 1) * limit;
 
-        const where: any = {};
-        const userCompanyId = (decoded as any).companyId;
+        const where: Prisma.CustomerProfileWhereInput = {};
+        const userCompanyId = decoded.companyId;
 
         if (userCompanyId) {
             where.companyId = userCompanyId;
@@ -103,12 +104,12 @@ export async function GET(req: NextRequest) {
             }
         });
 
-    } catch (error: any) {
+    } catch (error) {
         console.error('Customer API Error:', error);
         return NextResponse.json({
             error: 'Internal Server Error',
-            message: error.message,
-            stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+            message: error instanceof Error ? error.message : 'Unknown error',
+            stack: process.env.NODE_ENV === 'development' && error instanceof Error ? error.stack : undefined
         }, { status: 500 });
     }
 }
@@ -144,9 +145,9 @@ export async function POST(req: NextRequest) {
         }
 
         // Determine target company
-        let targetCompanyId = companyId || (decoded as any).companyId;
+        let targetCompanyId = companyId || decoded.companyId;
 
-        const result = await prisma.$transaction(async (tx: any) => {
+        const result = await prisma.$transaction(async (tx) => {
             // Check if email already exists
             const existing = await tx.customerProfile.findFirst({
                 where: { primaryEmail }
@@ -222,8 +223,8 @@ export async function POST(req: NextRequest) {
 
         return NextResponse.json(result);
 
-    } catch (error: any) {
+    } catch (error) {
         console.error('Create Customer Error:', error);
-        return NextResponse.json({ error: error.message || 'Internal Server Error' }, { status: 500 });
+        return NextResponse.json({ error: error instanceof Error ? error.message : 'Internal Server Error' }, { status: 500 });
     }
 }

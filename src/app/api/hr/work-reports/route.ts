@@ -16,7 +16,7 @@ export async function GET(req: NextRequest) {
         const endDate = searchParams.get('endDate');
         const category = searchParams.get('category');
 
-        let where: any = {};
+        const where: any = {};
 
         // Company Isolation
         if (user.companyId) {
@@ -89,8 +89,8 @@ export async function POST(req: NextRequest) {
         }
 
         // Safe Parsing
-        const parseSafely = (val: any) => {
-            const num = parseFloat(val);
+        const parseSafely = (val: unknown) => {
+            const num = typeof val === 'string' ? parseFloat(val) : (typeof val === 'number' ? val : NaN);
             return isNaN(num) ? 0 : num;
         };
 

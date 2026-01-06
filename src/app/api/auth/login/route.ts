@@ -67,12 +67,11 @@ export async function POST(request: NextRequest) {
         const requiresCompanySelection = isInternalRole && availableCompanies.length > 1;
 
         // Generate JWT token
-        const userAny = user as any;
         const token = generateToken({
             id: user.id,
             email: user.email,
             role: user.role,
-            companyId: (requiresCompanySelection ? undefined : (userAny.companyId || (availableCompanies.length === 1 ? availableCompanies[0].id : undefined)))
+            companyId: (requiresCompanySelection ? undefined : (user.companyId || (availableCompanies.length === 1 ? availableCompanies[0].id : undefined)))
         });
 
         // Update last login
@@ -106,7 +105,7 @@ export async function POST(request: NextRequest) {
             },
             { status: 200 }
         );
-    } catch (error: any) {
+    } catch (error) {
         console.error('Login error:', error);
         return NextResponse.json(
             { error: 'An error occurred during login' },

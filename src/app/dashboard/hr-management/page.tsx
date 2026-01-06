@@ -1426,7 +1426,7 @@ export default function HRManagementPage() {
                                     <div className="col-span-1">
                                         <label className="label-premium">Email Address</label>
                                         <input type="email" required className="input-premium" placeholder="new.staff@example.com" value={empForm.email} onChange={e => setEmpForm({ ...empForm, email: e.target.value })} />
-                                        <p className="text-[10px] text-primary-600 font-bold mt-1 leading-tight">💡 Enter an existing user's email to add them to your company.</p>
+                                        <p className="text-[10px] text-primary-600 font-bold mt-1 leading-tight">💡 Enter an existing user&apos;s email to add them to your company.</p>
                                     </div>
                                 )}
                                 <div className="col-span-1">

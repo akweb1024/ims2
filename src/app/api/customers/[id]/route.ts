@@ -3,7 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { getAuthenticatedUser } from '@/lib/auth';
 
 export async function GET(
-    req: NextRequest,
+    _req: NextRequest,
     { params }: { params: Promise<{ id: string }> }
 ) {
     try {
@@ -58,7 +58,7 @@ export async function GET(
 
         // 3. Authorization Check (for Sales Executives)
         const isAssigned = customer.assignedToUserId === decoded.id ||
-            customer.assignedExecutives.some((e: any) => e.id === decoded.id);
+            (customer.assignedExecutives as any[]).some((e) => e.id === decoded.id);
 
         if (decoded.role === 'SALES_EXECUTIVE' && !isAssigned) {
             return NextResponse.json({ error: 'Forbidden: You are not assigned to this customer' }, { status: 403 });
@@ -66,7 +66,7 @@ export async function GET(
 
         // Apply restricted visibility for communications
         if (decoded.role === 'SALES_EXECUTIVE') {
-            customer.communications = customer.communications.map((log: any) => {
+            (customer as any).communications = customer.communications.map((log) => {
                 if (log.userId !== decoded.id) {
                     return {
                         ...log,
@@ -75,7 +75,7 @@ export async function GET(
                     };
                 }
                 return log;
-            }) as any;
+            });
         }
 
         return NextResponse.json(customer);
@@ -145,8 +145,8 @@ export async function PATCH(
 
         return NextResponse.json(result);
 
-    } catch (error: any) {
+    } catch (error) {
         console.error('Update Customer Error:', error);
-        return NextResponse.json({ error: error.message || 'Internal Server Error' }, { status: 500 });
+        return NextResponse.json({ error: error instanceof Error ? error.message : 'Internal Server Error' }, { status: 500 });
     }
 }

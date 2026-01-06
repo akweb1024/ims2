@@ -610,7 +610,7 @@ export default function CustomerDetailPage({ params }: { params: Promise<{ id: s
                                                     )}
                                                 </div>
                                                 <div className="text-sm text-secondary-700 bg-secondary-50 p-3 rounded-lg border border-secondary-100 italic">
-                                                    "{log.notes}"
+                                                    &quot;{log.notes}&quot;
                                                 </div>
                                                 {log.nextFollowUpDate && (
                                                     <div className="mt-3 text-xs font-bold text-primary-600 flex items-center">

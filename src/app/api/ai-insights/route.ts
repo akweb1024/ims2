@@ -1,6 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { Prisma } from '@prisma/client';
 import { getAuthenticatedUser } from '@/lib/auth';
+
+interface WorkReportAgg {
+    hours: number;
+    rating: number;
+    tickets: number;
+    chats: number;
+    followups: number;
+}
+
+type PerformanceMetrics = {
+    tasks: number;
+    tickets: number;
+    revenue: number;
+    rating: number;
+    ratingCount: number;
+    hours: number;
+};
 
 export async function GET(req: NextRequest) {
     try {
@@ -60,7 +78,7 @@ export async function GET(req: NextRequest) {
                 }
             });
 
-            const aggData = (recentReports as any[]).reduce((acc: any, curr: any) => ({
+            const aggData = (recentReports as any[]).reduce((acc: WorkReportAgg, curr: any) => ({
                 hours: acc.hours + (curr.hoursSpent || 0),
                 rating: acc.rating + (curr.selfRating || 0),
                 tickets: acc.tickets + (curr.ticketsResolved || 0),
@@ -126,16 +144,16 @@ export async function GET(req: NextRequest) {
             const employees = await prisma.employeeProfile.findMany({
                 where: { user: { isActive: true, companyId: user.companyId } },
                 include: {
-                    user: { select: { name: true, email: true } },
+                    user: { select: { name: true, email: true } as any },
                     workReports: {
                         where: { date: { gte: startDate, lte: endDate } }
                     }
                 }
             });
 
-            const analysis = employees.map((emp: any) => {
+            const analysis = (employees as any[]).map((emp) => {
                 const reports = emp.workReports;
-                const totals = reports.reduce((acc: any, curr: any) => ({
+                const totals = reports.reduce((acc: PerformanceMetrics, curr: any) => ({
                     tasks: acc.tasks + (curr.tasksCompleted || 0),
                     tickets: acc.tickets + (curr.ticketsResolved || 0),
                     revenue: acc.revenue + (curr.revenueGenerated || 0),
@@ -154,12 +172,12 @@ export async function GET(req: NextRequest) {
                     metrics: totals,
                     avgRating
                 };
-            }).sort((a: any, b: any) => b.score - a.score);
+            }).sort((a, b) => b.score - a.score);
 
             const topPerformers = analysis.slice(0, 3);
             const lowPerformers = analysis.filter((emp: any) => emp.score < 50 || emp.avgRating < 2.5);
 
-            const summaries = topPerformers.map((emp: any) => {
+            const summaries = topPerformers.map((emp) => {
                 const reasons = [];
                 if (emp.metrics.revenue > 10000) reasons.push(`generating ₹${emp.metrics.revenue.toLocaleString()} in revenue`);
                 if (emp.metrics.tasks > 20) reasons.push(`completing ${emp.metrics.tasks} high-priority tasks`);
@@ -212,7 +230,7 @@ export async function GET(req: NextRequest) {
 
         // Group by month
         const monthlyRevenue: Record<string, number> = {};
-        payments.forEach((p: any) => {
+        payments.forEach((p) => {
             const key = `${p.paymentDate.getFullYear()}-${p.paymentDate.getMonth()}`;
             monthlyRevenue[key] = (monthlyRevenue[key] || 0) + p.amount;
         });
@@ -310,7 +328,7 @@ export async function GET(req: NextRequest) {
             insights: insights
         });
 
-    } catch (error: any) {
+    } catch (error) {
         console.error('AI Insights Error:', error);
         return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
     }

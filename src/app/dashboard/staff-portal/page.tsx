@@ -225,7 +225,7 @@ export default function StaffPortalPage() {
                     {activeTab === 'overview' && (
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                             <div className="card-premium p-6 border-t-4 border-primary-500">
-                                <h3 className="text-sm font-bold text-secondary-400 uppercase tracking-widest mb-4">Today's Status</h3>
+                                <h3 className="text-sm font-bold text-secondary-400 uppercase tracking-widest mb-4">Today&apos;s Status</h3>
                                 <div className="space-y-4">
                                     <div className="flex justify-between items-center text-sm">
                                         <span className="text-secondary-500">Check In</span>
@@ -591,7 +591,7 @@ export default function StaffPortalPage() {
                                         </div>
                                     </div>
                                     <p className="text-lg text-secondary-700 leading-relaxed font-medium bg-primary-50/30 p-6 rounded-2xl border border-primary-100/50 italic">
-                                        "{review.feedback}"
+                                        &quot;{review.feedback}&quot;
                                     </p>
                                 </div>
                             ))}

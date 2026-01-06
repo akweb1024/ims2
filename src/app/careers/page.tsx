@@ -72,7 +72,7 @@ export default function CareersPage() {
                 <div className="absolute top-0 right-0 w-96 h-96 bg-indigo-500 rounded-full blur-[128px] opacity-40 -mr-20 -mt-20"></div>
                 <div className="max-w-7xl mx-auto px-6 relative z-10 text-center">
                     <h1 className="text-5xl md:text-7xl font-black mb-6 tracking-tight">Build the Future of <span className="text-indigo-400">Intelligence.</span></h1>
-                    <p className="text-xl text-slate-300 max-w-2xl mx-auto">Join a team that is redefining how enterprises operate with AI-driven decisions. We don't just record data; we act on it.</p>
+                    <p className="text-xl text-slate-300 max-w-2xl mx-auto">Join a team that is redefining how enterprises operate with AI-driven decisions. We don&apos;t just record data; we act on it.</p>
                 </div>
             </div>
 

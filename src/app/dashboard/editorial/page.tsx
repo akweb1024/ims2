@@ -353,8 +353,8 @@ export default function EditorialPage() {
                                                             </div>
                                                             <div className="text-right">
                                                                 <span className={`px-2 py-1 rounded-lg text-[10px] font-black uppercase ${review.recommendation === 'ACCEPT' ? 'bg-success-100 text-success-700' :
-                                                                        review.recommendation === 'REJECT' ? 'bg-danger-100 text-danger-700' :
-                                                                            'bg-warning-100 text-warning-700'
+                                                                    review.recommendation === 'REJECT' ? 'bg-danger-100 text-danger-700' :
+                                                                        'bg-warning-100 text-warning-700'
                                                                     }`}>
                                                                     {review.recommendation || 'No Rec.'}
                                                                 </span>
@@ -364,12 +364,12 @@ export default function EditorialPage() {
                                                         <div className="space-y-3">
                                                             <div>
                                                                 <p className="text-[10px] font-bold text-secondary-400 uppercase">Comments to Author</p>
-                                                                <p className="text-sm text-secondary-700 italic">"{review.commentsToAuthor}"</p>
+                                                                <p className="text-sm text-secondary-700 italic">&quot;{review.commentsToAuthor}&quot;</p>
                                                             </div>
                                                             {review.commentsToEditor && (
                                                                 <div className="pt-3 border-t border-secondary-100">
                                                                     <p className="text-[10px] font-bold text-primary-500 uppercase">Confidential to Editor</p>
-                                                                    <p className="text-sm text-secondary-700 italic">"{review.commentsToEditor}"</p>
+                                                                    <p className="text-sm text-secondary-700 italic">&quot;{review.commentsToEditor}&quot;</p>
                                                                 </div>
                                                             )}
                                                         </div>

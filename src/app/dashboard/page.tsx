@@ -109,7 +109,7 @@ export default function DashboardPage() {
                             Welcome back, {user?.customerProfile?.name || user?.employeeProfile?.designation || user?.email?.split('@')[0] || 'User'}!
                         </h1>
                         <p className="text-secondary-600 mt-1">
-                            Here's what's happening with your subscriptions today
+                            Here&apos;s what&apos;s happening with your subscriptions today
                         </p>
                     </div>
                     <div className="mt-4 sm:mt-0">

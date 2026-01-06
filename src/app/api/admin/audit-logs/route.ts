@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getAuthenticatedUser } from '@/lib/auth';
 
-export async function GET(req: NextRequest) {
+export async function GET(_req: NextRequest) {
     try {
         const user = await getAuthenticatedUser();
         if (!user || user.role !== 'SUPER_ADMIN') {
@@ -18,7 +18,7 @@ export async function GET(req: NextRequest) {
         });
 
         return NextResponse.json(logs);
-    } catch (error: any) {
-        return NextResponse.json({ error: error.message }, { status: 500 });
+    } catch (error) {
+        return NextResponse.json({ error: error instanceof Error ? error.message : 'Unknown error' }, { status: 500 });
     }
 }

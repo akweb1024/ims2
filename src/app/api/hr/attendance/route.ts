@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { Prisma } from '@prisma/client';
 import { getAuthenticatedUser } from '@/lib/auth';
 
 export async function GET(req: NextRequest) {
@@ -15,7 +16,7 @@ export async function GET(req: NextRequest) {
         const year = parseInt(searchParams.get('year') || String(new Date().getFullYear()));
         const showAll = searchParams.get('all') === 'true';
 
-        let where: any = {
+        let where: Prisma.AttendanceWhereInput = {
             date: {
                 gte: new Date(year, month - 1, 1),
                 lte: new Date(year, month, 0)
@@ -63,9 +64,9 @@ export async function GET(req: NextRequest) {
         }
 
         return NextResponse.json(attendance);
-    } catch (error: any) {
+    } catch (error) {
         console.error('❌ Attendance GET Error:', error);
-        return NextResponse.json({ error: error.message }, { status: 500 });
+        return NextResponse.json({ error: error instanceof Error ? error.message : 'Unknown error' }, { status: 500 });
     }
 }
 
@@ -92,7 +93,7 @@ export async function POST(req: NextRequest) {
                 });
             } catch (e: any) {
                 // If race condition happens and profile created by another req, find it again
-                if (e.code === 'P2002') {
+                if (e && typeof e === 'object' && 'code' in e && e.code === 'P2002') {
                     profile = await prisma.employeeProfile.findUnique({
                         where: { userId: user.id }
                     });
@@ -196,9 +197,9 @@ export async function POST(req: NextRequest) {
         }
 
         return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
-    } catch (error: any) {
+    } catch (error) {
         console.error('Attendance POST Error:', error);
-        return NextResponse.json({ error: error.message }, { status: 500 });
+        return NextResponse.json({ error: error instanceof Error ? error.message : 'Unknown error' }, { status: 500 });
     }
 }
 
@@ -222,7 +223,7 @@ export async function PATCH(req: NextRequest) {
         });
 
         return NextResponse.json(updated);
-    } catch (error: any) {
-        return NextResponse.json({ error: error.message }, { status: 500 });
+    } catch (error) {
+        return NextResponse.json({ error: error instanceof Error ? error.message : 'Unknown error' }, { status: 500 });
     }
 }

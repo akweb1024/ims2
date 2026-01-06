@@ -11,7 +11,7 @@ export async function GET(req: NextRequest) {
         const employeeId = searchParams.get('employeeId');
         const showAll = searchParams.get('all') === 'true';
 
-        let where: any = {};
+        const where: any = {};
 
         if (showAll && ['SUPER_ADMIN', 'ADMIN', 'MANAGER'].includes(user.role)) {
             if (user.companyId) {
@@ -50,8 +50,8 @@ export async function GET(req: NextRequest) {
         });
 
         return NextResponse.json(reviews);
-    } catch (error: any) {
-        return NextResponse.json({ error: error.message }, { status: 500 });
+    } catch (error) {
+        return NextResponse.json({ error: error instanceof Error ? error.message : 'Unknown error' }, { status: 500 });
     }
 }
 
@@ -75,7 +75,7 @@ export async function POST(req: NextRequest) {
         });
 
         return NextResponse.json(review);
-    } catch (error: any) {
-        return NextResponse.json({ error: error.message }, { status: 500 });
+    } catch (error) {
+        return NextResponse.json({ error: error instanceof Error ? error.message : 'Unknown error' }, { status: 500 });
     }
 }

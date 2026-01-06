@@ -214,7 +214,7 @@ export default function FollowUpsPage() {
                                 <h4 className="text-xs font-bold text-secondary-400 uppercase tracking-widest mb-3">Closing Previous Task</h4>
                                 <div className="mb-2">
                                     <p className="text-sm font-bold text-secondary-900">{editingItem.subject}</p>
-                                    <p className="text-xs text-secondary-500 italic">"{editingItem.notes}"</p>
+                                    <p className="text-xs text-secondary-500 italic">&quot;{editingItem.notes}&quot;</p>
                                 </div>
                                 <div>
                                     <label className="label">Outcome of this task</label>

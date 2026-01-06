@@ -13,7 +13,7 @@ export async function POST(req: NextRequest, props: { params: Promise<{ id: stri
         const body = await req.json();
         const { title, order } = body;
 
-        const module = await (prisma as any).courseModule.create({
+        const courseModule = await (prisma as any).courseModule.create({
             data: {
                 courseId,
                 title,
@@ -21,8 +21,8 @@ export async function POST(req: NextRequest, props: { params: Promise<{ id: stri
             }
         });
 
-        return NextResponse.json(module);
-    } catch (error: any) {
-        return NextResponse.json({ error: error.message }, { status: 500 });
+        return NextResponse.json(courseModule);
+    } catch (error) {
+        return NextResponse.json({ error: error instanceof Error ? error.message : 'Unknown error' }, { status: 500 });
     }
 }
