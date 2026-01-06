@@ -6,6 +6,7 @@ import FormattedDate from '@/components/common/FormattedDate';
 import AchievementSection from '@/components/dashboard/AchievementSection';
 import WorkPlanSection from '@/components/dashboard/WorkPlanSection';
 import OnboardingPortal from '@/components/dashboard/OnboardingPortal';
+import DigitalWallet from '@/components/dashboard/DigitalWallet';
 
 export default function StaffPortalPage() {
     const [user, setUser] = useState<any>(null);
@@ -781,6 +782,7 @@ export default function StaffPortalPage() {
                             )}
                         </div>
                     )}
+                    {activeTab === 'documents' && <DigitalWallet />}
                 </div>
             </div>
         </DashboardLayout>

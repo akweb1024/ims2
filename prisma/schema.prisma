@@ -59,6 +59,7 @@ model Company {
   courses            Course[]
   workPlans          WorkPlan[]
   onboardingModules  OnboardingModule[]
+  documentTemplates  DocumentTemplate[]
 
   createdAt DateTime   @default(now())
   updatedAt DateTime   @updatedAt
@@ -817,6 +818,7 @@ model EmployeeProfile {
 
   workPlans WorkPlan[]
   onboardingProgress OnboardingProgress[]
+  digitalDocuments   DigitalDocument[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -1083,6 +1085,45 @@ model WorkPlanComment {
 
   content   String
   createdAt DateTime @default(now())
+}
+
+model DocumentTemplate {
+  id        String   @id @default(uuid())
+  title     String
+  type      String   // OFFER, CONTRACT, NDA, POLICY
+  content   String   // HTML with placeholders
+  
+  companyId String
+  company   Company  @relation(fields: [companyId], references: [id])
+  
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  digitalDocuments DigitalDocument[]
+
+  @@index([companyId])
+}
+
+model DigitalDocument {
+  id          String   @id @default(uuid())
+  templateId  String
+  template    DocumentTemplate @relation(fields: [templateId], references: [id])
+  
+  employeeId  String
+  employee    EmployeeProfile @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  title       String
+  content     String   // The resolved content (snapshot)
+  status      String   @default("PENDING") // PENDING, SIGNED, REVOKED
+  
+  signedAt    DateTime?
+  signatureIp String?
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([employeeId])
 }
 
 // ============================================

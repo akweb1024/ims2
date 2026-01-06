@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import FormattedDate from '@/components/common/FormattedDate';
 import OnboardingManager from '@/components/dashboard/OnboardingManager';
+import DocumentManager from '@/components/dashboard/DocumentManager';
 
 const FormattedTime = ({ date }: { date: string | Date | null }) => {
     if (!date) return <span>--:--</span>;
@@ -650,82 +651,87 @@ export default function HRManagementPage() {
                 )}
 
                 {activeTab === 'documents' && (
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 h-[600px]">
-                        {/* Employee List Sidebar */}
-                        <div className="md:col-span-1 card-premium overflow-y-auto">
-                            <h3 className="font-bold text-secondary-900 mb-4 sticky top-0 bg-white z-10 py-2 border-b">Select Employee</h3>
-                            <div className="space-y-2">
-                                {employees.map(emp => (
-                                    <button
-                                        key={emp.id}
-                                        onClick={() => {
-                                            setSelectedDocEmp(emp);
-                                            fetchDocuments(emp.id);
-                                        }}
-                                        className={`w-full text-left p-3 rounded-xl flex items-center gap-3 transition-all ${selectedDocEmp?.id === emp.id ? 'bg-primary-50 border border-primary-200 shadow-sm' : 'hover:bg-secondary-50 border border-transparent'}`}
-                                    >
-                                        <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs ${selectedDocEmp?.id === emp.id ? 'bg-primary-600 text-white' : 'bg-secondary-100 text-secondary-500'}`}>
-                                            {emp.user.email[0].toUpperCase()}
+                    <div className="space-y-6">
+                        <DocumentManager employees={employees} />
+                        <hr className="border-secondary-200" />
+                        <h3 className="text-lg font-bold">Employee Uploaded Documents</h3>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 h-[600px]">
+                            {/* Employee List Sidebar */}
+                            <div className="md:col-span-1 card-premium overflow-y-auto">
+                                <h3 className="font-bold text-secondary-900 mb-4 sticky top-0 bg-white z-10 py-2 border-b">Select Employee</h3>
+                                <div className="space-y-2">
+                                    {employees.map(emp => (
+                                        <button
+                                            key={emp.id}
+                                            onClick={() => {
+                                                setSelectedDocEmp(emp);
+                                                fetchDocuments(emp.id);
+                                            }}
+                                            className={`w-full text-left p-3 rounded-xl flex items-center gap-3 transition-all ${selectedDocEmp?.id === emp.id ? 'bg-primary-50 border border-primary-200 shadow-sm' : 'hover:bg-secondary-50 border border-transparent'}`}
+                                        >
+                                            <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs ${selectedDocEmp?.id === emp.id ? 'bg-primary-600 text-white' : 'bg-secondary-100 text-secondary-500'}`}>
+                                                {emp.user.email[0].toUpperCase()}
+                                            </div>
+                                            <div className="overflow-hidden">
+                                                <p className={`text-sm font-bold truncate ${selectedDocEmp?.id === emp.id ? 'text-primary-900' : 'text-secondary-900'}`}>{emp.user.email.split('@')[0]}</p>
+                                                <p className="text-[10px] text-secondary-400 truncate">{emp.designation}</p>
+                                            </div>
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Document View Area */}
+                            <div className="md:col-span-2 space-y-6">
+                                {selectedDocEmp ? (
+                                    <>
+                                        <div className="card-premium bg-primary-900 text-white flex justify-between items-center bg-[url('https://grainy-gradients.vercel.app/noise.svg')]">
+                                            <div>
+                                                <h3 className="text-xl font-black">{selectedDocEmp.user.email}</h3>
+                                                <p className="text-primary-200 text-sm">Employee Digital File</p>
+                                            </div>
+                                            <div className="text-right">
+                                                <p className="text-2xl font-black">{empDocuments.length}</p>
+                                                <p className="text-[10px] uppercase tracking-widest opacity-60">Documents Stored</p>
+                                            </div>
                                         </div>
-                                        <div className="overflow-hidden">
-                                            <p className={`text-sm font-bold truncate ${selectedDocEmp?.id === emp.id ? 'text-primary-900' : 'text-secondary-900'}`}>{emp.user.email.split('@')[0]}</p>
-                                            <p className="text-[10px] text-secondary-400 truncate">{emp.designation}</p>
+
+                                        <form onSubmit={handleDocumentUpload} className="bg-white p-4 rounded-2xl border border-dashed border-secondary-300 flex gap-2 items-center">
+                                            <div className="flex-1">
+                                                <input name="name" className="input text-xs py-2" placeholder="Document Name (e.g. ID Proof)" required />
+                                            </div>
+                                            <div className="flex-1">
+                                                <input name="fileUrl" className="input text-xs py-2" placeholder="Document URL (https://...)" required />
+                                            </div>
+                                            <button className="btn btn-primary py-2 px-4 rounded-lg text-xs font-bold whitespace-nowrap">+ Upload</button>
+                                        </form>
+
+                                        <div className="space-y-3 overflow-y-auto h-[350px] pr-2">
+                                            {empDocuments.length === 0 ? (
+                                                <div className="text-center py-10 text-secondary-300 font-bold italic">No documents uploaded for this employee.</div>
+                                            ) : empDocuments.map(doc => (
+                                                <div key={doc.id} className="group bg-white p-4 rounded-xl border border-secondary-100 hover:border-primary-300 hover:shadow-md transition-all flex justify-between items-center">
+                                                    <div className="flex items-center gap-4">
+                                                        <div className="w-10 h-10 bg-secondary-50 text-2xl flex items-center justify-center rounded-lg">📄</div>
+                                                        <div>
+                                                            <a href={doc.fileUrl} target="_blank" rel="noreferrer" className="font-bold text-secondary-900 hover:text-primary-600 hover:underline">{doc.name}</a>
+                                                            <p className="text-[10px] text-secondary-400">Uploaded {new Date(doc.uploadedAt).toLocaleDateString()}</p>
+                                                        </div>
+                                                    </div>
+                                                    <button onClick={() => handleDeleteDocument(doc.id)} className="text-danger-400 hover:text-danger-600 p-2 opacity-0 group-hover:opacity-100 transition-opacity">🗑️</button>
+                                                </div>
+                                            ))}
                                         </div>
-                                    </button>
-                                ))}
+                                    </>
+                                ) : (
+                                    <div className="h-full flex items-center justify-center text-secondary-400 font-bold bg-secondary-50/50 rounded-3xl border border-dashed border-secondary-200">
+                                        select an employee to view documents
+                                    </div>
+                                )}
                             </div>
                         </div>
-
-                        {/* Document View Area */}
-                        <div className="md:col-span-2 space-y-6">
-                            {selectedDocEmp ? (
-                                <>
-                                    <div className="card-premium bg-primary-900 text-white flex justify-between items-center bg-[url('https://grainy-gradients.vercel.app/noise.svg')]">
-                                        <div>
-                                            <h3 className="text-xl font-black">{selectedDocEmp.user.email}</h3>
-                                            <p className="text-primary-200 text-sm">Employee Digital File</p>
-                                        </div>
-                                        <div className="text-right">
-                                            <p className="text-2xl font-black">{empDocuments.length}</p>
-                                            <p className="text-[10px] uppercase tracking-widest opacity-60">Documents Stored</p>
-                                        </div>
-                                    </div>
-
-                                    <form onSubmit={handleDocumentUpload} className="bg-white p-4 rounded-2xl border border-dashed border-secondary-300 flex gap-2 items-center">
-                                        <div className="flex-1">
-                                            <input name="name" className="input text-xs py-2" placeholder="Document Name (e.g. ID Proof)" required />
-                                        </div>
-                                        <div className="flex-1">
-                                            <input name="fileUrl" className="input text-xs py-2" placeholder="Document URL (https://...)" required />
-                                        </div>
-                                        <button className="btn btn-primary py-2 px-4 rounded-lg text-xs font-bold whitespace-nowrap">+ Upload</button>
-                                    </form>
-
-                                    <div className="space-y-3 overflow-y-auto h-[350px] pr-2">
-                                        {empDocuments.length === 0 ? (
-                                            <div className="text-center py-10 text-secondary-300 font-bold italic">No documents uploaded for this employee.</div>
-                                        ) : empDocuments.map(doc => (
-                                            <div key={doc.id} className="group bg-white p-4 rounded-xl border border-secondary-100 hover:border-primary-300 hover:shadow-md transition-all flex justify-between items-center">
-                                                <div className="flex items-center gap-4">
-                                                    <div className="w-10 h-10 bg-secondary-50 text-2xl flex items-center justify-center rounded-lg">📄</div>
-                                                    <div>
-                                                        <a href={doc.fileUrl} target="_blank" rel="noreferrer" className="font-bold text-secondary-900 hover:text-primary-600 hover:underline">{doc.name}</a>
-                                                        <p className="text-[10px] text-secondary-400">Uploaded {new Date(doc.uploadedAt).toLocaleDateString()}</p>
-                                                    </div>
-                                                </div>
-                                                <button onClick={() => handleDeleteDocument(doc.id)} className="text-danger-400 hover:text-danger-600 p-2 opacity-0 group-hover:opacity-100 transition-opacity">🗑️</button>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </>
-                            ) : (
-                                <div className="h-full flex items-center justify-center text-secondary-400 font-bold bg-secondary-50/50 rounded-3xl border border-dashed border-secondary-200">
-                                    select an employee to view documents
-                                </div>
-                            )}
-                        </div>
                     </div>
-                )}
+                )} { /* End of documents tab */}
 
                 {activeTab === 'reports' && (
                     <div className="space-y-6">
