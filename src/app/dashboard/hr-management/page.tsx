@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import FormattedDate from '@/components/common/FormattedDate';
+import OnboardingManager from '@/components/dashboard/OnboardingManager';
 
 const FormattedTime = ({ date }: { date: string | Date | null }) => {
     if (!date) return <span>--:--</span>;
@@ -521,7 +522,7 @@ export default function HRManagementPage() {
                 </div>
 
                 <div className="flex gap-2 bg-white p-2 rounded-2xl shadow-sm border border-secondary-100 w-fit overflow-x-auto max-w-full">
-                    {['employees', 'documents', 'recruitment', 'map', 'reports', 'leaves', 'attendance', 'payroll', 'analytics', 'holidays', 'productivity'].map(tab => (
+                    {['employees', 'documents', 'recruitment', 'onboarding', 'map', 'reports', 'leaves', 'attendance', 'payroll', 'analytics', 'holidays', 'productivity'].map(tab => (
                         <button
                             key={tab}
                             onClick={() => setActiveTab(tab)}
@@ -1405,13 +1406,20 @@ export default function HRManagementPage() {
                                                         {item.productivityIndex}
                                                     </div>
                                                 </td>
-                                                <td className="p-4">
-                                                    <div className="flex items-center gap-3 text-[10px] font-bold uppercase">
-                                                        <span>{item.metrics.totalTasks} Tasks</span>
-                                                        <span className="text-secondary-300">|</span>
-                                                        <span className="text-yellow-600">★ {item.metrics.avgManagerRating}</span>
-                                                        <span className="text-secondary-300">|</span>
-                                                        <span>₹{item.metrics.totalRevenue.toLocaleString()} Ref</span>
+                                                <td className="p-4 text-center">
+                                                    <div className="flex justify-center gap-2">
+                                                        <div className="text-center" title="Tasks">
+                                                            <span className="block text-[9px] text-secondary-400 font-bold uppercase">Tsk</span>
+                                                            <span className="block font-bold">{item.metrics.totalTasks}</span>
+                                                        </div>
+                                                        <div className="text-center" title="Tickets">
+                                                            <span className="block text-[9px] text-secondary-400 font-bold uppercase">Tkt</span>
+                                                            <span className="block font-bold">{item.metrics.totalTickets}</span>
+                                                        </div>
+                                                        <div className="text-center" title="Chats">
+                                                            <span className="block text-[9px] text-secondary-400 font-bold uppercase">Cht</span>
+                                                            <span className="block font-bold">{item.metrics.totalChats}</span>
+                                                        </div>
                                                     </div>
                                                 </td>
                                             </tr>
@@ -1424,9 +1432,11 @@ export default function HRManagementPage() {
                     </div>
                 )}
 
+                {activeTab === 'onboarding' && <OnboardingManager />}
+
                 {/* MODAL */}
                 {showEmpModal && (
-                    <div className="fixed inset-0 bg-secondary-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
                         <div className="bg-white rounded-3xl w-full max-w-2xl overflow-hidden shadow-2xl animate-in zoom-in duration-200">
                             <div className="bg-secondary-50 p-6 border-b border-secondary-100 flex justify-between items-center">
                                 <h3 className="text-xl font-bold text-secondary-900">{selectedEmp ? 'Edit Profile' : 'New Onboarding'}</h3>

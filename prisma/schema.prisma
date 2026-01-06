@@ -58,6 +58,7 @@ model Company {
   conferences        Conference[]
   courses            Course[]
   workPlans          WorkPlan[]
+  onboardingModules  OnboardingModule[]
 
   createdAt DateTime   @default(now())
   updatedAt DateTime   @updatedAt
@@ -81,6 +82,7 @@ model Department {
 
   company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
   users   User[]  @relation("DepartmentMembers")
+  onboardingModules OnboardingModule[]
 
   isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
@@ -814,6 +816,7 @@ model EmployeeProfile {
   kra            String? // Key Responsibility Areas (comma separated or multiline)
 
   workPlans WorkPlan[]
+  onboardingProgress OnboardingProgress[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -998,8 +1001,7 @@ model WorkPlan {
   date     DateTime // The day this plan is for
   agenda   String // Next day work agenda
   strategy String? // Plan/Strategy
-
-  status String @default("SHARED") // DRAFT, SHARED, REVIEWED
+  status   String @default("SHARED") // DRAFT, SHARED, REVIEWED
 
   comments WorkPlanComment[]
 
@@ -1009,10 +1011,67 @@ model WorkPlan {
   companyId String?
   company   Company? @relation(fields: [companyId], references: [id])
 
-  @@index([employeeId])
+  @@unique([employeeId, date])
   @@index([companyId])
-  @@index([date])
 }
+
+model OnboardingModule {
+  id          String @id @default(uuid())
+  title       String
+  type        String // COMPANY, ROLE, DEPARTMENT
+  description String?
+  content     String // Markdown content for study material
+
+  departmentId String?
+  department   Department? @relation(fields: [departmentId], references: [id])
+  
+  // Filtering 
+  companyId String
+  company   Company @relation(fields: [companyId], references: [id])
+
+  requiredForDesignation String? // Optional: Only for specific designations
+
+  questions    QuizQuestion[]
+  progress     OnboardingProgress[]
+
+  order       Int @default(0)
+  isActive    Boolean @default(true)
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([companyId])
+}
+
+model QuizQuestion {
+  id          String @id @default(uuid())
+  moduleId    String
+  module      OnboardingModule @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  
+  question    String
+  options     String[] // Stored as array
+  correctAnswer Int // Index (0-3)
+
+  createdAt   DateTime @default(now())
+}
+
+model OnboardingProgress {
+  id          String @id @default(uuid())
+  employeeId  String
+  employee    EmployeeProfile @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  
+  moduleId    String
+  module      OnboardingModule @relation(fields: [moduleId], references: [id])
+  
+  status      String @default("LOCKED") // LOCKED, UNLOCKED, COMPLETED, FAILED
+  score       Float?
+  
+  completedAt DateTime?
+  updatedAt   DateTime @updatedAt
+
+  @@unique([employeeId, moduleId])
+}
+
 
 model WorkPlanComment {
   id         String   @id @default(uuid())

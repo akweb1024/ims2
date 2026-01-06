@@ -5,6 +5,7 @@ import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import FormattedDate from '@/components/common/FormattedDate';
 import AchievementSection from '@/components/dashboard/AchievementSection';
 import WorkPlanSection from '@/components/dashboard/WorkPlanSection';
+import OnboardingPortal from '@/components/dashboard/OnboardingPortal';
 
 export default function StaffPortalPage() {
     const [user, setUser] = useState<any>(null);
@@ -139,6 +140,7 @@ export default function StaffPortalPage() {
         { id: 'performance', name: 'Performance', icon: '📈' },
         { id: 'salary', name: 'Salary', icon: '💵' },
         { id: 'documents', name: 'Documents', icon: '📁' },
+        { id: 'onboarding', name: 'Onboarding', icon: '🎓' },
     ];
 
     return (
@@ -217,8 +219,9 @@ export default function StaffPortalPage() {
                     ))}
                 </div>
 
-                {/* Content Area */}
                 <div className="min-h-[400px]">
+                    {activeTab === 'onboarding' && <OnboardingPortal />}
+
                     {activeTab === 'overview' && (
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                             <div className="card-premium p-6 border-t-4 border-primary-500">
