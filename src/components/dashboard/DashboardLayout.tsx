@@ -176,6 +176,7 @@ export default function DashboardLayout({ children, userRole = 'CUSTOMER' }: Das
                 title: 'Operations',
                 items: [
                     { name: 'Companies', href: '/dashboard/companies', icon: '🏢', roles: ['SUPER_ADMIN'] },
+                    { name: 'Institutions', href: '/dashboard/institutions', icon: '🏛️', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER'] },
                     { name: 'Customers', href: '/dashboard/customers', icon: '🙍‍♂️', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'TEAM_LEADER', 'SALES_EXECUTIVE'] },
                     { name: 'Subscriptions', href: '/dashboard/subscriptions', icon: '📋', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'SALES_EXECUTIVE', 'FINANCE_ADMIN', 'AGENCY', 'CUSTOMER'] },
                     { name: 'Invoices', href: '/dashboard/invoices', icon: '🧾', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'SALES_EXECUTIVE', 'FINANCE_ADMIN', 'AGENCY', 'CUSTOMER'] },
