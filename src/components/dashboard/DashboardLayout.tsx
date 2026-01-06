@@ -17,6 +17,7 @@ export default function DashboardLayout({ children, userRole = 'CUSTOMER' }: Das
     const [isImpersonating, setIsImpersonating] = useState(false);
     const [mounted, setMounted] = useState(false);
     const [user, setUser] = useState<any>(null);
+    const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>({});
     const pathname = usePathname();
     const router = useRouter();
 
@@ -452,40 +453,55 @@ export default function DashboardLayout({ children, userRole = 'CUSTOMER' }: Das
                 className={`fixed left-0 h-full bg-white border-r border-secondary-200 transition-all duration-300 z-20 ${sidebarOpen ? 'w-64' : 'w-0 lg:w-20'} ${isImpersonating ? 'top-[calc(4rem+2.5rem)]' : 'top-16'}
                     }`}
             >
-                <nav className="p-4 space-y-6 h-full flex flex-col overflow-y-auto custom-scrollbar">
-                    <div className="flex-1 space-y-6">
-                        {navigationCategories.map((category) => (
-                            <div key={category.title} className="space-y-1">
-                                {sidebarOpen && (
-                                    <h3 className="px-4 text-[10px] font-bold text-secondary-400 uppercase tracking-[0.2em] mb-2">
-                                        {category.title}
-                                    </h3>
-                                )}
-                                <div className="space-y-1">
-                                    {category.items.map((item: any) => {
-                                        const isActive = pathname === item.href;
-                                        return (
-                                            <Link
-                                                key={item.href}
-                                                href={item.href}
-                                                className={`flex items-center space-x-3 px-4 py-2.5 rounded-xl transition-all duration-200 group ${isActive
-                                                    ? 'bg-primary-50 text-primary-700 shadow-sm border border-primary-100/50'
-                                                    : 'text-secondary-600 hover:bg-secondary-50 hover:text-secondary-900'
-                                                    }`}
+                <nav className="p-4 space-y-2 h-full flex flex-col overflow-y-auto custom-scrollbar">
+                    <div className="flex-1 space-y-2">
+                        {navigationCategories.map((category) => {
+                            const [isExpanded, setIsExpanded] = useState(true);
+
+                            return (
+                                <div key={category.title} className="space-y-1">
+                                    {sidebarOpen && (
+                                        <button
+                                            onClick={() => setIsExpanded(!isExpanded)}
+                                            className="w-full flex items-center justify-between px-3 py-2 text-[10px] font-black text-secondary-400 uppercase tracking-[0.15em] hover:text-secondary-600 transition-colors rounded-lg hover:bg-secondary-50"
+                                        >
+                                            <span>{category.title}</span>
+                                            <svg
+                                                className={`w-3 h-3 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
+                                                fill="none"
+                                                stroke="currentColor"
+                                                viewBox="0 0 24 24"
                                             >
-                                                <span className={`text-xl transition-transform duration-200 ${isActive ? 'scale-110' : 'group-hover:scale-110'}`}>
-                                                    {item.icon}
-                                                </span>
-                                                <span className={`text-sm font-medium ${sidebarOpen ? 'block' : 'hidden md:hidden lg:hidden'}`}>
-                                                    {item.name}
-                                                </span>
-                                            </Link>
-                                        );
-                                    })}
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                            </svg>
+                                        </button>
+                                    )}
+                                    <div className={`space-y-0.5 ${sidebarOpen && !isExpanded ? 'hidden' : ''}`}>
+                                        {category.items.map((item: any) => {
+                                            const isActive = pathname === item.href;
+                                            return (
+                                                <Link
+                                                    key={item.href}
+                                                    href={item.href}
+                                                    className={`flex items-center space-x-3 px-3 py-2 rounded-lg transition-all duration-200 group ${isActive
+                                                        ? 'bg-primary-50 text-primary-700 shadow-sm border border-primary-100/50'
+                                                        : 'text-secondary-600 hover:bg-secondary-50 hover:text-secondary-900'
+                                                        }`}
+                                                    title={!sidebarOpen ? item.name : ''}
+                                                >
+                                                    <span className={`text-lg transition-transform duration-200 ${isActive ? 'scale-110' : 'group-hover:scale-110'}`}>
+                                                        {item.icon}
+                                                    </span>
+                                                    <span className={`text-xs font-medium ${sidebarOpen ? 'block' : 'hidden md:hidden lg:hidden'}`}>
+                                                        {item.name}
+                                                    </span>
+                                                </Link>
+                                            );
+                                        })}
+                                    </div>
                                 </div>
-                                {sidebarOpen && <div className="pt-2 border-b border-secondary-50 last:hidden"></div>}
-                            </div>
-                        ))}
+                            );
+                        })}
                     </div>
 
                     {/* Logout Button in Sidebar */}
