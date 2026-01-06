@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import FormattedDate from '@/components/common/FormattedDate';
+import AchievementSection from '@/components/dashboard/AchievementSection';
+import WorkPlanSection from '@/components/dashboard/WorkPlanSection';
 
 export default function StaffPortalPage() {
     const [user, setUser] = useState<any>(null);
@@ -11,6 +13,7 @@ export default function StaffPortalPage() {
     const [salarySlips, setSalarySlips] = useState<any[]>([]);
     const [leaves, setLeaves] = useState<any[]>([]);
     const [performance, setPerformance] = useState<any[]>([]);
+    const [workPlans, setWorkPlans] = useState<any[]>([]);
     const [documents, setDocuments] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState('overview');
@@ -38,9 +41,10 @@ export default function StaffPortalPage() {
         setLoading(true);
         const token = localStorage.getItem('token');
         try {
-            const [attendanceRes, reportsRes, slipsRes, leavesRes, perfRes, docsRes] = await Promise.all([
+            const [attendanceRes, reportsRes, plansRes, slipsRes, leavesRes, perfRes, docsRes] = await Promise.all([
                 fetch('/api/hr/attendance', { headers: { 'Authorization': `Bearer ${token}` } }),
                 fetch('/api/hr/work-reports', { headers: { 'Authorization': `Bearer ${token}` } }),
+                fetch('/api/hr/work-plans', { headers: { 'Authorization': `Bearer ${token}` } }),
                 fetch('/api/hr/salary-slips', { headers: { 'Authorization': `Bearer ${token}` } }),
                 fetch('/api/hr/leave-requests', { headers: { 'Authorization': `Bearer ${token}` } }),
                 fetch('/api/hr/performance', { headers: { 'Authorization': `Bearer ${token}` } }),
@@ -48,17 +52,9 @@ export default function StaffPortalPage() {
             ]);
 
             if (docsRes.ok) setDocuments(await docsRes.json());
-
-            if (attendanceRes.ok) {
-                const attendanceData = await attendanceRes.json();
-                console.log('📊 Attendance API Response:', attendanceData);
-                console.log('📊 Total attendance records:', attendanceData.length);
-                setAttendance(attendanceData);
-            } else {
-                console.error('❌ Attendance fetch failed:', attendanceRes.status);
-            }
-
+            if (attendanceRes.ok) setAttendance(await attendanceRes.json());
             if (reportsRes.ok) setWorkReports(await reportsRes.json());
+            if (plansRes.ok) setWorkPlans(await plansRes.json());
             if (slipsRes.ok) setSalarySlips(await slipsRes.json());
             if (leavesRes.ok) setLeaves(await leavesRes.json());
             if (perfRes.ok) setPerformance(await perfRes.json());
@@ -138,6 +134,7 @@ export default function StaffPortalPage() {
         { id: 'overview', name: 'Overview', icon: '🏠' },
         { id: 'attendance', name: 'Attendance', icon: '🕒' },
         { id: 'work-reports', name: 'Work Reports', icon: '📝' },
+        { id: 'work-agenda', name: 'Work Agenda', icon: '🎯' },
         { id: 'leaves', name: 'Leaves', icon: '🏝️' },
         { id: 'performance', name: 'Performance', icon: '📈' },
         { id: 'salary', name: 'Salary', icon: '💵' },
@@ -305,6 +302,21 @@ export default function StaffPortalPage() {
                     {activeTab === 'work-reports' && (
                         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                             <div className="lg:col-span-1">
+                                {/* Todays Realtime Achievement Preview */}
+                                {todayAttendance?.checkIn && (
+                                    <AchievementSection report={workReports.find(r => {
+                                        const rd = new Date(r.date);
+                                        const td = new Date();
+                                        return rd.getDate() === td.getDate() && rd.getMonth() === td.getMonth();
+                                    }) || {
+                                        revenueGenerated: 0,
+                                        tasksCompleted: 0,
+                                        ticketsResolved: 0,
+                                        selfRating: 5,
+                                        keyOutcome: "Activity in progress..."
+                                    }} />
+                                )}
+
                                 <div className="card-premium p-6">
                                     <div className="flex justify-between items-center mb-6">
                                         <h3 className="text-xl font-bold text-secondary-900">Submit Report</h3>
@@ -372,11 +384,31 @@ export default function StaffPortalPage() {
                                             setSubmittingReport(false);
                                         }
                                     }} className="space-y-4">
-                                        <input type="hidden" name="revenueGenerated" value="0" />
-                                        <input type="hidden" name="tasksCompleted" value="0" />
-                                        <input type="hidden" name="ticketsResolved" value="0" />
-                                        <input type="hidden" name="chatsHandled" value="0" />
-                                        <input type="hidden" name="followUpsCompleted" value="0" />
+                                        <div className="grid grid-cols-2 gap-4 bg-secondary-50 p-4 rounded-2xl border border-secondary-100 mb-4">
+                                            <div>
+                                                <label className="text-[10px] font-black text-secondary-400 uppercase tracking-widest block mb-1">Today&apos;s Revenue</label>
+                                                <div className="relative">
+                                                    <span className="absolute left-3 top-2.5 text-secondary-400 font-bold">₹</span>
+                                                    <input name="revenueGenerated" type="number" className="input pl-7" defaultValue="0" />
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <label className="text-[10px] font-black text-secondary-400 uppercase tracking-widest block mb-1">Tasks Done</label>
+                                                <input name="tasksCompleted" type="number" className="input" defaultValue="0" />
+                                            </div>
+                                            <div>
+                                                <label className="text-[10px] font-black text-secondary-400 uppercase tracking-widest block mb-1">Tickets Fixed</label>
+                                                <input name="ticketsResolved" type="number" className="input" defaultValue="0" />
+                                            </div>
+                                            <div>
+                                                <label className="text-[10px] font-black text-secondary-400 uppercase tracking-widest block mb-1">Chats Handled</label>
+                                                <input name="chatsHandled" type="number" className="input" defaultValue="0" />
+                                            </div>
+                                            <div className="col-span-2">
+                                                <label className="text-[10px] font-black text-secondary-400 uppercase tracking-widest block mb-1">Followups Done</label>
+                                                <input name="followUpsCompleted" type="number" className="input" defaultValue="0" />
+                                            </div>
+                                        </div>
                                         <div className="grid grid-cols-2 gap-4">
                                             <div>
                                                 <label className="label">Category</label>
@@ -662,6 +694,14 @@ export default function StaffPortalPage() {
                                 )}
                             </div>
                         </div>
+                    )}
+
+                    {activeTab === 'work-agenda' && (
+                        <WorkPlanSection
+                            plans={workPlans}
+                            onPlanSubmitted={fetchAllData}
+                            user={user}
+                        />
                     )}
 
                     {activeTab === 'documents' && (

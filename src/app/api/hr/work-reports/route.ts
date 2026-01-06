@@ -94,6 +94,28 @@ export async function POST(req: NextRequest) {
             return isNaN(num) ? 0 : num;
         };
 
+        // Trace performance against JD/KRA and generate alerts
+        let kraMatchRatio = 1.0;
+        if ((profile as any).kra && body.content) {
+            const kraKeywords = (profile as any).kra.toLowerCase().split(/[,\s\n\.]+/).filter((k: any) => k.length > 3);
+            const reportContent = (body.content + ' ' + (body.title || '')).toLowerCase();
+
+            const matchCount = kraKeywords.filter((k: any) => reportContent.includes(k)).length;
+            kraMatchRatio = matchCount / (kraKeywords.length || 1);
+
+            if (kraMatchRatio < 0.2 && body.content.length > 50) {
+                // Low compliance with KRA - Create notification
+                await prisma.notification.create({
+                    data: {
+                        userId: user.id,
+                        title: 'KRA Alignment Alert',
+                        message: 'Today\'s work report shows low keywords alignment with your defined KRA. Ensure your tasks contribute to your primary goals.',
+                        type: 'WARNING'
+                    }
+                });
+            }
+        }
+
         const report = await prisma.workReport.create({
             data: {
                 employeeId: profile.id,
@@ -111,8 +133,9 @@ export async function POST(req: NextRequest) {
                 tasksCompleted: parseInt(body.tasksCompleted) || 0,
                 ticketsResolved: parseInt(body.ticketsResolved) || 0,
                 chatsHandled: parseInt(body.chatsHandled) || 0,
-                followUpsCompleted: parseInt(body.followUpsCompleted) || 0
-            }
+                followUpsCompleted: parseInt(body.followUpsCompleted) || 0,
+                kraMatchRatio: kraMatchRatio
+            } as any
         });
 
         return NextResponse.json(report);

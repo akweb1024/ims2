@@ -18,6 +18,7 @@ type PerformanceMetrics = {
     rating: number;
     ratingCount: number;
     hours: number;
+    kraCompliance: number;
 };
 
 export async function GET(req: NextRequest) {
@@ -136,6 +137,69 @@ export async function GET(req: NextRequest) {
             });
         }
 
+        if (type === 'hr') {
+            const today = new Date();
+            const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+
+            // 1. Team Performance Aggregation
+            const employees = await prisma.employeeProfile.findMany({
+                where: { user: { companyId: user.companyId, isActive: true } },
+                include: {
+                    workReports: {
+                        where: { date: { gte: startOfMonth } }
+                    }
+                }
+            });
+
+            const metrics = employees.map(emp => {
+                const reports = emp.workReports;
+                const avgCompliance = reports.length ?
+                    reports.reduce((acc, curr) => acc + (curr.kraMatchRatio || 0), 0) / reports.length : 0;
+                const totalRevenue = reports.reduce((acc, curr) => acc + (curr.revenueGenerated || 0), 0);
+
+                return {
+                    name: (emp as any).user?.name || (emp as any).user?.email?.split('@')[0],
+                    role: (emp as any).designation || (emp as any).user?.role,
+                    avgCompliance,
+                    totalRevenue,
+                    reportCount: reports.length
+                };
+            });
+
+            // 2. High Value Alerts
+            const lowCompliance = metrics.filter(m => m.reportCount > 3 && m.avgCompliance < 0.4);
+            const highContributors = metrics.filter(m => m.totalRevenue > 20000 || (m.avgCompliance > 0.8 && m.reportCount > 5));
+
+            const insights = [
+                ...lowCompliance.map(m => ({
+                    title: `KRA Drift: ${m.name}`,
+                    description: `${m.name} is consistently logging tasks that don't align with their defined KRA (${(m.avgCompliance * 100).toFixed(0)}% match).`,
+                    severity: 'warning',
+                    icon: '🎯'
+                })),
+                ...highContributors.map(m => ({
+                    title: `Elite Performer: ${m.name}`,
+                    description: `${m.name} shows exceptional alignment and contribution this month.`,
+                    severity: 'success',
+                    icon: '⭐'
+                }))
+            ];
+
+            return NextResponse.json({
+                metrics: {
+                    avgDailyProductivity: (metrics.reduce((acc, m) => acc + m.reportCount, 0) / (employees.length || 1)).toFixed(1),
+                    flightRiskCount: employees.length - metrics.filter(m => m.reportCount > 10).length,
+                    teamCount: employees.length
+                },
+                insights: insights.slice(0, 5),
+                teamAnalysis: metrics.map(m => ({
+                    role: m.role,
+                    headcount: 1, // Simplified for this view
+                    avgRating: (m.avgCompliance * 5).toFixed(1),
+                    avgAttendance: m.reportCount
+                }))
+            });
+        }
         if (type === 'productivity') {
             const { searchParams } = new URL(req.url);
             const startDate = searchParams.get('startDate') ? new Date(searchParams.get('startDate')!) : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
@@ -159,18 +223,21 @@ export async function GET(req: NextRequest) {
                     revenue: acc.revenue + (curr.revenueGenerated || 0),
                     rating: acc.rating + (curr.managerRating || 0),
                     ratingCount: acc.ratingCount + (curr.managerRating ? 1 : 0),
-                    hours: acc.hours + (curr.hoursSpent || 0)
-                }), { tasks: 0, tickets: 0, revenue: 0, rating: 0, ratingCount: 0, hours: 0 });
+                    hours: acc.hours + (curr.hoursSpent || 0),
+                    kraCompliance: acc.kraCompliance + (curr.kraMatchRatio || 0)
+                }), { tasks: 0, tickets: 0, revenue: 0, rating: 0, ratingCount: 0, hours: 0, kraCompliance: 0 });
 
                 const avgRating = totals.ratingCount > 0 ? totals.rating / totals.ratingCount : 0;
-                const score = (totals.tasks * 20) + (totals.tickets * 25) + (totals.revenue * 0.05) + (avgRating * 50);
+                const avgKRA = reports.length > 0 ? totals.kraCompliance / reports.length : 0;
+                const score = (totals.tasks * 20) + (totals.tickets * 25) + (totals.revenue * 0.05) + (avgRating * 50) + (avgKRA * 100);
 
                 return {
                     id: emp.id,
                     name: emp.user.name || emp.user.email.split('@')[0],
                     score,
                     metrics: totals,
-                    avgRating
+                    avgRating,
+                    avgKRA
                 };
             }).sort((a, b) => b.score - a.score);
 

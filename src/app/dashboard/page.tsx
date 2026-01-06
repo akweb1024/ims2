@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import Link from 'next/link';
 import BulletinBoard from '@/components/dashboard/BulletinBoard';
+import MarketMonitor from '@/components/dashboard/MarketMonitor';
+import AIInsightsWidget from '@/components/dashboard/AIInsightsWidget';
 
 export default function DashboardPage() {
     const router = useRouter();
@@ -170,7 +172,15 @@ export default function DashboardPage() {
 
                     {/* Sidebar Column - Right 1/3 */}
                     <div className="space-y-6">
-                        {/* Bulletin Board */}
+                        {/* Executive AI & Market Widgets */}
+                        {['SUPER_ADMIN', 'MANAGER', 'FINANCE_ADMIN'].includes(user?.role) && (
+                            <>
+                                <AIInsightsWidget role={user?.role} />
+                                <MarketMonitor />
+                            </>
+                        )}
+
+                        {/* Announcements for Management or Bulletin Board */}
                         <div className="card-premium">
                             <h2 className="text-xl font-bold text-secondary-900 mb-6 flex items-center gap-2">
                                 <span className="text-2xl">📢</span> Announcement Board

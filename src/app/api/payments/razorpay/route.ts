@@ -79,8 +79,22 @@ export async function GET(req: NextRequest) {
         const lastMonthRevenue = lastMonthStats._sum.amount || 0;
         const momGrowth = lastMonthRevenue === 0 ? 100 : ((currentMonthRevenue - lastMonthRevenue) / lastMonthRevenue) * 100;
 
-        // Total Stats Aggregation
-        const stats = await prisma.payment.aggregate({
+        // Currency Rates (Approximate Real-time for demonstration, ideally from an API)
+        const exchangeRates: Record<string, number> = {
+            'INR': 1,
+            'Paise': 0.01,
+            'USD': 83.5,
+            'EUR': 90.2,
+            'GBP': 105.8,
+            'AED': 22.7,
+            'SGD': 61.5,
+            'AUD': 55.4,
+            'CAD': 61.2
+        };
+
+        // Aggregated Stats by Currency
+        const currencyStats = await prisma.payment.groupBy({
+            by: ['currency'],
             where: {
                 ...where,
                 razorpayPaymentId: { not: null }
@@ -89,11 +103,27 @@ export async function GET(req: NextRequest) {
             _count: { id: true }
         });
 
+        let totalRevenueINR = 0;
+        const revenueByCurrency = currencyStats.map(c => {
+            const currency = (c.currency || 'INR').toUpperCase();
+            const amount = c._sum.amount || 0;
+            const rate = exchangeRates[currency] || 1;
+            const inrValue = amount * rate;
+            totalRevenueINR += inrValue;
+
+            return {
+                currency,
+                amount,
+                count: c._count.id,
+                inrEquivalent: inrValue
+            };
+        });
+
         // Company Comparison (For Super Admins)
         let companyComparison: any[] = [];
         if (user.role === 'SUPER_ADMIN') {
             const rawCompanyComparison = await prisma.payment.groupBy({
-                by: ['companyId'],
+                by: ['companyId', 'currency'],
                 where: { razorpayPaymentId: { not: null } },
                 _sum: { amount: true },
                 _count: { id: true },
@@ -105,36 +135,61 @@ export async function GET(req: NextRequest) {
                 select: { id: true, name: true }
             });
 
-            companyComparison = rawCompanyComparison.map((stat: any) => ({
-                ...stat,
-                companyName: companies.find((c: any) => c.id === stat.companyId)?.name || 'Unknown'
-            }));
+            companyComparison = rawCompanyComparison.map((stat: any) => {
+                const currency = (stat.currency || 'INR').toUpperCase();
+                const amount = stat._sum.amount || 0;
+                const rate = exchangeRates[currency] || 1;
+
+                return {
+                    ...stat,
+                    currency,
+                    inrValue: amount * rate,
+                    companyName: companies.find((c: any) => c.id === stat.companyId)?.name || 'Unknown'
+                };
+            });
         }
 
         const dailyRevenue: any[] = await prisma.$queryRaw`
             SELECT 
                 CAST("paymentDate" AS DATE) as date,
+                currency,
                 SUM(amount) as revenue
             FROM "Payment"
             WHERE "razorpayPaymentId" IS NOT NULL
             ${user.role !== 'SUPER_ADMIN' ? Prisma.sql`AND "companyId" = ${user.companyId}` : Prisma.empty}
-            GROUP BY CAST("paymentDate" AS DATE)
+            GROUP BY CAST("paymentDate" AS DATE), currency
             ORDER BY date DESC
-            LIMIT 30
+            LIMIT 60
         `;
+
+        // Process daily revenue to INR for charts
+        const processedDaily = dailyRevenue.reduce((acc: any[], curr: any) => {
+            const dateStr = curr.date.toISOString().split('T')[0];
+            const existing = acc.find(a => a.date === dateStr);
+            const rate = exchangeRates[(curr.currency || 'INR').toUpperCase()] || 1;
+            const inrVal = curr.revenue * rate;
+
+            if (existing) {
+                existing.revenue += inrVal;
+            } else {
+                acc.push({ date: dateStr, revenue: inrVal });
+            }
+            return acc;
+        }, []).slice(0, 30);
 
         return NextResponse.json({
             payments,
             total,
             stats: {
-                totalRevenue: stats._sum.amount || 0,
-                totalCount: stats._count.id || 0,
+                totalRevenue: totalRevenueINR, // Combined in INR
+                revenueByCurrency, // Split by original currency
+                totalCount: total || 0,
                 currentMonthRevenue,
                 lastMonthRevenue,
                 momGrowth: momGrowth.toFixed(1)
             },
             lastSync,
-            dailyRevenue,
+            dailyRevenue: processedDaily,
             companyComparison
         });
 

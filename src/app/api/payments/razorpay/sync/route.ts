@@ -66,6 +66,7 @@ export async function POST() {
                     await prisma.payment.create({
                         data: {
                             amount: rpPayment.amount / 100,
+                            currency: rpPayment.currency || 'INR',
                             paymentMethod: rpPayment.method,
                             paymentDate: new Date(rpPayment.created_at * 1000),
                             razorpayPaymentId: rpPayment.id,

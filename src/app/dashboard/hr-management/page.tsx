@@ -46,7 +46,9 @@ export default function HRManagementPage() {
         accountNumber: '',
         panNumber: '',
         offerLetterUrl: '',
-        contractUrl: ''
+        contractUrl: '',
+        jobDescription: '',
+        kra: ''
     });
 
     // Attendance correction
@@ -488,7 +490,7 @@ export default function HRManagementPage() {
                         <button
                             onClick={() => {
                                 setSelectedEmp(null);
-                                setEmpForm({ email: '', password: '', role: 'SALES_EXECUTIVE', designation: '', baseSalary: '', bankName: '', accountNumber: '', panNumber: '', offerLetterUrl: '', contractUrl: '' });
+                                setEmpForm({ email: '', password: '', role: 'SALES_EXECUTIVE', designation: '', baseSalary: '', bankName: '', accountNumber: '', panNumber: '', offerLetterUrl: '', contractUrl: '', jobDescription: '', kra: '' });
                                 setShowEmpModal(true);
                             }}
                             className="btn btn-primary shadow-xl"
@@ -596,7 +598,9 @@ export default function HRManagementPage() {
                                                             accountNumber: emp.accountNumber || '',
                                                             panNumber: emp.panNumber || '',
                                                             offerLetterUrl: emp.offerLetterUrl || '',
-                                                            contractUrl: emp.contractUrl || ''
+                                                            contractUrl: emp.contractUrl || '',
+                                                            jobDescription: emp.jobDescription || '',
+                                                            kra: emp.kra || ''
                                                         });
                                                         setShowEmpModal(true);
                                                     }}
@@ -1370,8 +1374,9 @@ export default function HRManagementPage() {
                                         <tr className="text-[10px] uppercase font-black text-secondary-400 border-b border-secondary-50">
                                             <th className="p-4">Staff Member</th>
                                             <th className="p-4">Output Score</th>
+                                            <th className="p-4">JD/KRA Match</th>
                                             <th className="p-4">Efficiency (Idx)</th>
-                                            <th className="p-4">Workload Distribution</th>
+                                            <th className="p-4 text-center">Workload Distribution</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-secondary-50">
@@ -1382,7 +1387,18 @@ export default function HRManagementPage() {
                                                     <p className="text-[9px] text-secondary-400 font-bold uppercase">{item.role}</p>
                                                 </td>
                                                 <td className="p-4">
-                                                    <p className="text-xl font-black text-secondary-900">{item.score}</p>
+                                                    <p className="text-xl font-black text-secondary-900">{item.score.toFixed(0)}</p>
+                                                </td>
+                                                <td className="p-4">
+                                                    <div className="flex items-center gap-2">
+                                                        <div className="flex-1 h-1.5 bg-secondary-100 rounded-full overflow-hidden w-24">
+                                                            <div
+                                                                className={`h-full rounded-full ${item.avgKRA > 0.7 ? 'bg-success-500' : item.avgKRA > 0.4 ? 'bg-warning-500' : 'bg-danger-500'}`}
+                                                                style={{ width: `${(item.avgKRA || 0) * 100}%` }}
+                                                            ></div>
+                                                        </div>
+                                                        <span className="text-[10px] font-black text-secondary-600">{(item.avgKRA * 100).toFixed(0)}%</span>
+                                                    </div>
                                                 </td>
                                                 <td className="p-4">
                                                     <div className={`inline-block px-2 py-1 rounded-lg text-xs font-black ${item.productivityIndex > prodAnalysis.teamSummary.avgProductivity ? 'bg-success-100 text-success-700' : 'bg-secondary-100 text-secondary-600'}`}>
@@ -1445,6 +1461,26 @@ export default function HRManagementPage() {
                                 <div>
                                     <label className="label-premium">Base Salary (Monthly)</label>
                                     <input type="number" className="input-premium" value={empForm.baseSalary} onChange={e => setEmpForm({ ...empForm, baseSalary: e.target.value })} />
+                                </div>
+                                <div className="col-span-2">
+                                    <label className="label-premium text-[10px] uppercase tracking-widest text-primary-600 font-bold mb-2 block">Key Responsibility Areas (KRA)</label>
+                                    <textarea
+                                        rows={3}
+                                        className="input-premium"
+                                        placeholder="Enter KRA points (one per line)..."
+                                        value={empForm.kra}
+                                        onChange={e => setEmpForm({ ...empForm, kra: e.target.value })}
+                                    />
+                                </div>
+                                <div className="col-span-2">
+                                    <label className="label-premium text-[10px] uppercase tracking-widest text-primary-600 font-bold mb-2 block">Job Description (Detailed)</label>
+                                    <textarea
+                                        rows={4}
+                                        className="input-premium"
+                                        placeholder="Detailed job description..."
+                                        value={empForm.jobDescription}
+                                        onChange={e => setEmpForm({ ...empForm, jobDescription: e.target.value })}
+                                    />
                                 </div>
                                 <div className="col-span-2 grid grid-cols-3 gap-4 border-t border-secondary-50 pt-6">
                                     <div>

@@ -54,7 +54,8 @@ export async function GET(req: NextRequest) {
                 followUps: acc.followUps + (curr.followUpsCompleted || 0),
                 managerRatings: curr.managerRating ? [...acc.managerRatings, curr.managerRating] : acc.managerRatings,
                 selfRatings: curr.selfRating ? [...acc.selfRatings, curr.selfRating] : acc.selfRatings,
-            }), { hours: 0, revenue: 0, tasks: 0, tickets: 0, chats: 0, followUps: 0, managerRatings: [], selfRatings: [] });
+                kraMatchRatioSum: acc.kraMatchRatioSum + (curr.kraMatchRatio || 0)
+            }), { hours: 0, revenue: 0, tasks: 0, tickets: 0, chats: 0, followUps: 0, managerRatings: [], selfRatings: [], kraMatchRatioSum: 0 });
 
             const avgManagerRating = totals.managerRatings.length > 0
                 ? totals.managerRatings.reduce((a: number, b: number) => a + b, 0) / totals.managerRatings.length
@@ -62,6 +63,7 @@ export async function GET(req: NextRequest) {
             const avgSelfRating = totals.selfRatings.length > 0
                 ? totals.selfRatings.reduce((a: number, b: number) => a + b, 0) / totals.selfRatings.length
                 : 5; // Assume neutral 5 if not set
+            const avgKRA = reports.length > 0 ? (totals.kraMatchRatioSum / reports.length) : 0;
 
             // Refined Heuristic:
             // High Focus Tasks: 20pts | Critical Tickets: 25pts | Active Engagement (Chats): 10pts
@@ -72,7 +74,8 @@ export async function GET(req: NextRequest) {
                 (totals.followUps * 10) +
                 (totals.revenue * 0.05) +
                 (avgManagerRating * 50) +
-                (avgSelfRating * 5);
+                (avgSelfRating * 5) +
+                (avgKRA * 100);
 
             const productivityIndex = totals.hours > 0 ? (score / totals.hours) : 0;
 
@@ -90,8 +93,10 @@ export async function GET(req: NextRequest) {
                     attendanceDays: attendanceCount,
                     avgHoursPerDay: attendanceCount > 0 ? (totals.hours / attendanceCount) : 0,
                     avgManagerRating: Number(avgManagerRating.toFixed(1)),
-                    avgSelfRating: Number(avgSelfRating.toFixed(1))
+                    avgSelfRating: Number(avgSelfRating.toFixed(1)),
+                    avgKRA: Number(avgKRA.toFixed(2))
                 },
+                avgKRA: avgKRA,
                 score: Math.round(score),
                 productivityIndex: Number(productivityIndex.toFixed(2)),
                 reportCount: reports.length

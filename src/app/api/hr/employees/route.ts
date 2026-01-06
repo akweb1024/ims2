@@ -91,8 +91,10 @@ export async function PATCH(req: NextRequest) {
                 accountNumber: data.accountNumber,
                 panNumber: data.panNumber,
                 offerLetterUrl: data.offerLetterUrl,
-                contractUrl: data.contractUrl
-            }
+                contractUrl: data.contractUrl,
+                jobDescription: data.jobDescription,
+                kra: data.kra
+            } as any
         });
 
         return NextResponse.json(updated);
@@ -118,6 +120,8 @@ export async function POST(req: NextRequest) {
         if (profileData.panNumber) cleanProfileData.panNumber = profileData.panNumber;
         if (profileData.offerLetterUrl) cleanProfileData.offerLetterUrl = profileData.offerLetterUrl;
         if (profileData.contractUrl) cleanProfileData.contractUrl = profileData.contractUrl;
+        if (profileData.jobDescription) cleanProfileData.jobDescription = profileData.jobDescription;
+        if (profileData.kra) cleanProfileData.kra = profileData.kra;
 
         if (profileData.baseSalary !== undefined && profileData.baseSalary !== '') {
             const salary = parseFloat(profileData.baseSalary);
@@ -168,7 +172,7 @@ export async function POST(req: NextRequest) {
             // Update existing profile
             profile = await prisma.employeeProfile.update({
                 where: { id: existingProfile.id },
-                data: cleanProfileData
+                data: cleanProfileData as any
             });
         } else {
             // Create new profile
@@ -176,7 +180,7 @@ export async function POST(req: NextRequest) {
                 data: {
                     userId: targetUser.id,
                     ...cleanProfileData
-                }
+                } as any
             });
         }
 

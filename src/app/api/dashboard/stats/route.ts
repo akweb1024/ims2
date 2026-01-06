@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getAuthenticatedUser } from '@/lib/auth';
+import { convertToINR, getLiveRates } from '@/lib/exchange-rates';
 
 export async function GET(req: NextRequest) {
     try {
@@ -13,6 +14,9 @@ export async function GET(req: NextRequest) {
         const role = decoded.role;
         const userId = decoded.id;
         const userCompanyId = decoded.companyId;
+
+        // Fetch latest rates for precision
+        await getLiveRates();
 
         // Determine filter based on role and company context
         let customerProfileId: string | undefined;
@@ -86,10 +90,16 @@ export async function GET(req: NextRequest) {
             where: { ...whereClause, status: 'ACTIVE' },
         });
 
-        const totalRevenue = await prisma.payment.aggregate({
+        const paymentsByCurrency = await (prisma.payment as any).groupBy({
             where: revenueWhere,
+            by: ['currency'],
             _sum: { amount: true },
-        });
+        }) as any[];
+
+        const totalRevenueINR = paymentsByCurrency.reduce((acc, curr) => {
+            const amount = curr._sum?.amount || 0;
+            return acc + convertToINR(amount, curr.currency || 'INR');
+        }, 0);
 
         const renewalsCount = await prisma.subscription.count({
             where: {
@@ -143,6 +153,14 @@ export async function GET(req: NextRequest) {
                     change: 'Active status',
                     icon: '📋',
                     color: 'bg-primary-500',
+                    changePositive: true,
+                },
+                {
+                    name: 'Global Revenue',
+                    value: `₹${totalRevenueINR.toLocaleString()}`,
+                    change: 'Unified (INR)',
+                    icon: '🌍',
+                    color: 'bg-emerald-600',
                     changePositive: true,
                 },
                 ...(role !== 'CUSTOMER' ? [
