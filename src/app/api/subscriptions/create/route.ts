@@ -61,6 +61,7 @@ export async function POST(request: NextRequest) {
                 const subscription = await tx.subscription.create({
                     data: {
                         customerProfileId,
+                        companyId: (decoded as any).companyId,
                         startDate: new Date(startDate),
                         endDate: new Date(endDate),
                         salesChannel,
@@ -82,6 +83,7 @@ export async function POST(request: NextRequest) {
                 const invoice = await tx.invoice.create({
                     data: {
                         subscriptionId: subscription.id,
+                        companyId: (decoded as any).companyId,
                         invoiceNumber,
                         currency,
                         amount: total,

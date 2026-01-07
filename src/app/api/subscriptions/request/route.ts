@@ -61,6 +61,7 @@ export async function POST(request: NextRequest) {
         const subscription = await prisma.subscription.create({
             data: {
                 customerProfileId: customerProfile.id,
+                companyId: customerProfile.companyId,
                 startDate: new Date(startDate || new Date()),
                 endDate: new Date(endDate || new Date(new Date().setFullYear(new Date().getFullYear() + 1))),
                 salesChannel: 'DIRECT',

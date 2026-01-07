@@ -15,6 +15,7 @@ export default function NewSubscriptionPage() {
     const [journals, setJournals] = useState<any[]>([]);
 
     const [searchTerm, setSearchTerm] = useState('');
+    const [customerSearch, setCustomerSearch] = useState('');
 
     // Form State
     const [formData, setFormData] = useState({
@@ -167,29 +168,72 @@ export default function NewSubscriptionPage() {
                 {/* Step 1: Select Customer */}
                 {step === 1 && (
                     <div className="card-premium p-6 space-y-6 animate-in fade-in slide-in-from-bottom-4">
-                        <h3 className="text-xl font-bold text-secondary-900">Step 1: Select Customer</h3>
-                        <div className="grid grid-cols-1 gap-4">
-                            {customers.map((c) => (
-                                <button
-                                    key={c.id}
-                                    onClick={() => {
-                                        setFormData({ ...formData, customerProfileId: c.id });
-                                        setStep(2);
-                                    }}
-                                    className={`flex items-center justify-between p-4 rounded-xl border-2 transition-all ${formData.customerProfileId === c.id
-                                        ? 'border-primary-600 bg-primary-50 ring-4 ring-primary-50'
-                                        : 'border-secondary-100 hover:border-primary-200 hover:bg-secondary-50'
-                                        }`}
-                                >
-                                    <div className="text-left">
-                                        <div className="font-bold text-secondary-900">{c.name}</div>
-                                        <div className="text-sm text-secondary-500">{c.organizationName || c.primaryEmail}</div>
+                        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                            <h3 className="text-xl font-bold text-secondary-900">Step 1: Select Customer</h3>
+                            <div className="relative w-full md:w-72">
+                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-secondary-400">
+                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                    </svg>
+                                </span>
+                                <input
+                                    type="text"
+                                    placeholder="Search customers..."
+                                    className="input pl-10 w-full"
+                                    value={customerSearch}
+                                    onChange={(e) => setCustomerSearch(e.target.value)}
+                                />
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 gap-4 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+                            {customers
+                                .filter(c => {
+                                    const term = customerSearch.toLowerCase();
+                                    return (
+                                        c.name.toLowerCase().includes(term) ||
+                                        (c.organizationName && c.organizationName.toLowerCase().includes(term)) ||
+                                        c.primaryEmail.toLowerCase().includes(term)
+                                    );
+                                })
+                                .map((c) => (
+                                    <button
+                                        key={c.id}
+                                        onClick={() => {
+                                            setFormData({ ...formData, customerProfileId: c.id });
+                                            setStep(2);
+                                        }}
+                                        className={`flex items-center justify-between p-4 rounded-xl border-2 transition-all group ${formData.customerProfileId === c.id
+                                            ? 'border-primary-600 bg-primary-50 ring-4 ring-primary-50'
+                                            : 'border-secondary-100 hover:border-primary-200 hover:bg-secondary-50'
+                                            }`}
+                                    >
+                                        <div className="text-left">
+                                            <div className="font-bold text-secondary-900 group-hover:text-primary-700 transition-colors">{c.name}</div>
+                                            <div className="text-sm text-secondary-500">{c.organizationName || c.primaryEmail}</div>
+                                        </div>
+                                        <div className="flex items-center gap-3">
+                                            <div className={`badge ${c.customerType === 'INSTITUTION' ? 'badge-success' : 'badge-primary'}`}>
+                                                {c.customerType}
+                                            </div>
+                                            <svg className={`w-5 h-5 transition-transform ${formData.customerProfileId === c.id ? 'text-primary-600 translate-x-1' : 'text-secondary-300 group-hover:translate-x-1'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                            </svg>
+                                        </div>
+                                    </button>
+                                ))}
+                            {customers.filter(c => {
+                                const term = customerSearch.toLowerCase();
+                                return (
+                                    c.name.toLowerCase().includes(term) ||
+                                    (c.organizationName && c.organizationName.toLowerCase().includes(term)) ||
+                                    c.primaryEmail.toLowerCase().includes(term)
+                                );
+                            }).length === 0 && (
+                                    <div className="text-center py-10 text-secondary-400 italic">
+                                        No customers found matching "{customerSearch}"
                                     </div>
-                                    <div className={`badge ${c.customerType === 'INSTITUTION' ? 'badge-success' : 'badge-primary'}`}>
-                                        {c.customerType}
-                                    </div>
-                                </button>
-                            ))}
+                                )}
                         </div>
                     </div>
                 )}
