@@ -137,11 +137,23 @@ export const GET = authorizedRoute(
             if (userCompanyId) dispatchWhere.companyId = userCompanyId;
 
             if (customerProfileId) {
-                dispatchWhere.subscription = { customerProfileId };
+                const subIds = await prisma.subscription.findMany({
+                    where: { customerProfileId },
+                    select: { id: true }
+                }).then(s => s.map(x => x.id));
+                dispatchWhere.subscriptionId = { in: subIds };
             } else if (whereClause.salesExecutiveId) {
-                dispatchWhere.subscription = { salesExecutiveId: whereClause.salesExecutiveId };
+                const subIds = await prisma.subscription.findMany({
+                    where: { salesExecutiveId: whereClause.salesExecutiveId },
+                    select: { id: true }
+                }).then(s => s.map(x => x.id));
+                dispatchWhere.subscriptionId = { in: subIds };
             } else if (whereClause.agencyId) {
-                dispatchWhere.subscription = { agencyId: whereClause.agencyId };
+                const subIds = await prisma.subscription.findMany({
+                    where: { agencyId: whereClause.agencyId },
+                    select: { id: true }
+                }).then(s => s.map(x => x.id));
+                dispatchWhere.subscriptionId = { in: subIds };
             }
 
             const pendingDispatches = await (prisma as any).dispatchOrder.count({
