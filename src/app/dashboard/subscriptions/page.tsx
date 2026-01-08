@@ -91,37 +91,48 @@ export default function SubscriptionsPage() {
                     </div>
                     <div className="flex gap-3">
                         {['SUPER_ADMIN', 'MANAGER', 'FINANCE_ADMIN'].includes(userRole) && (
-                            <button
-                                onClick={async () => {
-                                    try {
-                                        const token = localStorage.getItem('token');
-                                        const res = await fetch('/api/exports/subscriptions', {
-                                            headers: { 'Authorization': `Bearer ${token}` }
-                                        });
-                                        if (res.ok) {
-                                            const blob = await res.blob();
-                                            const url = window.URL.createObjectURL(blob);
-                                            const a = document.createElement('a');
-                                            a.href = url;
-                                            a.download = `subscriptions-${new Date().toISOString().split('T')[0]}.csv`;
-                                            document.body.appendChild(a);
-                                            a.click();
-                                            window.URL.revokeObjectURL(url);
-                                            document.body.removeChild(a);
-                                        } else {
-                                            alert('Failed to export data');
+                            <>
+                                <button
+                                    onClick={() => setStatusFilter('REQUESTED')}
+                                    className="btn btn-outline flex items-center gap-2 mr-2"
+                                >
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                                    </svg>
+                                    View Requests
+                                </button>
+                                <button
+                                    onClick={async () => {
+                                        try {
+                                            const token = localStorage.getItem('token');
+                                            const res = await fetch('/api/exports/subscriptions', {
+                                                headers: { 'Authorization': `Bearer ${token}` }
+                                            });
+                                            if (res.ok) {
+                                                const blob = await res.blob();
+                                                const url = window.URL.createObjectURL(blob);
+                                                const a = document.createElement('a');
+                                                a.href = url;
+                                                a.download = `subscriptions-${new Date().toISOString().split('T')[0]}.csv`;
+                                                document.body.appendChild(a);
+                                                a.click();
+                                                window.URL.revokeObjectURL(url);
+                                                document.body.removeChild(a);
+                                            } else {
+                                                alert('Failed to export data');
+                                            }
+                                        } catch (err) {
+                                            alert('Export failed');
                                         }
-                                    } catch (err) {
-                                        alert('Export failed');
-                                    }
-                                }}
-                                className="btn btn-secondary flex items-center gap-2"
-                            >
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a2 2 0 002 2h12a2 2 0 002-2v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                                </svg>
-                                Export CSV
-                            </button>
+                                    }}
+                                    className="btn btn-secondary flex items-center gap-2"
+                                >
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a2 2 0 002 2h12a2 2 0 002-2v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                                    </svg>
+                                    Export CSV
+                                </button>
+                            </>
                         )}
                         <Link href="/dashboard/subscriptions/new" className="btn btn-primary px-6">
                             {userRole === 'CUSTOMER' ? 'Request Subscription' : 'New Subscription'}

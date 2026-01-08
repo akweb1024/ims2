@@ -130,7 +130,7 @@
   /* Form Input Styles */
   .input {
     background-color: rgb(var(--surface));
-    border-color: rgb(var(--border));
+    border-color: rgb(var(--text-muted) / 0.3);
     color: rgb(var(--text-main));
     @apply w-full px-4 py-3 rounded-lg border focus:ring-2 focus:ring-primary-200 outline-none transition-all duration-200;
   }
