@@ -91,21 +91,20 @@ export const PATCH = authorizedRoute(
 
             // 2. Handle Salary History
             const currentProfile = await prisma.employeeProfile.findUnique({ where: { id } });
-            if (currentProfile && validUpdates.baseSalary !== undefined && validUpdates.baseSalary !== currentProfile.baseSalary) {
+            if (currentProfile && typeof validUpdates.baseSalary === 'number' && validUpdates.baseSalary !== currentProfile.baseSalary) {
                 const oldSalary = currentProfile.baseSalary || 0;
                 const newSalary = validUpdates.baseSalary;
                 const increment = newSalary - oldSalary;
                 const percentage = oldSalary > 0 ? (increment / oldSalary) * 100 : 0;
-
                 await prisma.salaryIncrementRecord.create({
                     data: {
-                        employeeId: id,
+                        employeeProfileId: id,
                         oldSalary,
                         newSalary,
                         incrementAmount: increment,
                         percentage,
                         reason: 'Performance Review / Adjustment',
-                        approvedBy: user.id
+                        approvedByUserId: user.id
                     }
                 });
             }

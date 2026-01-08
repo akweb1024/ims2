@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import FormattedDate from '@/components/common/FormattedDate';
@@ -29,7 +29,7 @@ const FormattedTime = ({ date }: { date: string | Date | null }) => {
     return <span>{new Date(date).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}</span>
 };
 
-export default function HRManagementPage() {
+const HRManagementContent = () => {
     const searchParams = useSearchParams();
 
     // React Query Hooks - Basic
@@ -1132,5 +1132,13 @@ export default function HRManagementPage() {
             </div >
 
         </DashboardLayout >
+    );
+}
+
+export default function HRManagementPage() {
+    return (
+        <Suspense fallback={<div className="p-10 text-center">Loading HR Dashboard...</div>}>
+            <HRManagementContent />
+        </Suspense>
     );
 }

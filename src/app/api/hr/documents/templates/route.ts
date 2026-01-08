@@ -30,6 +30,7 @@ export const POST = authorizedRoute(
             const body = await req.json();
             const { title, type, content } = body;
             const userCompanyId = user.companyId;
+            if (!userCompanyId) return createErrorResponse('Company context required', 400);
 
             const template = await prisma.documentTemplate.create({
                 data: {
