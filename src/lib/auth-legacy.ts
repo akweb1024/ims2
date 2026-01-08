@@ -37,6 +37,22 @@ import { headers } from 'next/headers';
 
 export const getAuthenticatedUser = async (): Promise<TokenPayload | null> => {
     try {
+        // 1. Try NextAuth Session (Dynamic import to avoid circular dependency)
+        // This is crucial for fixing "Unable to create company" errors where cookies are used instead of Bearer tokens
+        const { auth } = await import('@/lib/nextauth');
+        const session = await auth();
+
+        if (session?.user) {
+            return {
+                id: session.user.id,
+                email: session.user.email!,
+                role: session.user.role,
+                companyId: session.user.companyId || undefined,
+                // Add any other mapped fields if necessary
+            };
+        }
+
+        // 2. Fallback to Legacy Header
         const headersList = await headers();
         const authHeader = headersList.get('authorization');
         const token = authHeader?.split(' ')[1];
@@ -44,7 +60,8 @@ export const getAuthenticatedUser = async (): Promise<TokenPayload | null> => {
         if (!token) return null;
 
         return verifyToken(token);
-    } catch {
+    } catch (error) {
+        console.error("Auth Verification Error:", error);
         return null;
     }
 };
