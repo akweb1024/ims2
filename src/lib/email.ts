@@ -1,4 +1,5 @@
 import nodemailer from 'nodemailer';
+import { SESClient, SendRawEmailCommand } from '@aws-sdk/client-ses';
 
 interface EmailOptions {
     to: string;
@@ -7,15 +8,35 @@ interface EmailOptions {
     html: string;
 }
 
-const transporter = nodemailer.createTransport({
-    host: process.env.EMAIL_HOST || 'smtp.ethereal.email',
-    port: parseInt(process.env.EMAIL_PORT || '587'),
-    secure: process.env.EMAIL_SECURE === 'true',
-    auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS,
-    },
-});
+const createTransporter = () => {
+    // 1. Try AWS SES if keys are present
+    if (process.env.AWS_ACCESS_KEY_ID && process.env.AWS_SECRET_ACCESS_KEY) {
+        console.log('📧 configuring AWS SES transport...');
+        const ses = new SESClient({
+            region: process.env.AWS_REGION || 'us-east-1',
+            credentials: {
+                accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+                secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+            },
+        });
+        return nodemailer.createTransport({
+            SES: { ses, aws: { SendRawEmailCommand } },
+        } as any);
+    }
+
+    // 2. Fallback to Standard SMTP
+    return nodemailer.createTransport({
+        host: process.env.EMAIL_HOST || 'smtp.ethereal.email',
+        port: parseInt(process.env.EMAIL_PORT || '587'),
+        secure: process.env.EMAIL_SECURE === 'true',
+        auth: {
+            user: process.env.EMAIL_USER,
+            pass: process.env.EMAIL_PASS,
+        },
+    });
+};
+
+const transporter = createTransporter();
 
 export async function sendEmail({ to, subject, text, html }: EmailOptions) {
     if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
