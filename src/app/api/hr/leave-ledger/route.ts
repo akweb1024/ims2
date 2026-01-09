@@ -55,12 +55,27 @@ export const POST = authorizedRoute(
     ['SUPER_ADMIN', 'ADMIN', 'MANAGER'],
     async (req: NextRequest, user) => {
         try {
-            const body = await req.json();
+            let body;
+            try {
+                body = await req.json();
+            } catch (e) {
+                return createErrorResponse('Invalid JSON', 400);
+            }
+
             const { employeeId, month, year, openingBalance, takenLeaves, closingBalance, remarks } = body;
 
             if (!employeeId || !month || !year) {
-                return createErrorResponse('Missing required fields', 400);
+                return createErrorResponse('Missing required fields (employeeId, month, year)', 400);
             }
+
+            const parseNum = (v: any) => {
+                const n = parseFloat(v);
+                return isNaN(n) ? 0 : n;
+            };
+
+            const safeOpening = parseNum(openingBalance);
+            const safeTaken = parseNum(takenLeaves);
+            const safeClosing = parseNum(closingBalance);
 
             const ledger = await prisma.leaveLedger.upsert({
                 where: {
@@ -71,9 +86,9 @@ export const POST = authorizedRoute(
                     }
                 },
                 update: {
-                    openingBalance: parseFloat(openingBalance),
-                    takenLeaves: parseFloat(takenLeaves),
-                    closingBalance: parseFloat(closingBalance),
+                    openingBalance: safeOpening,
+                    takenLeaves: safeTaken,
+                    closingBalance: safeClosing,
                     remarks,
                     companyId: user.companyId
                 },
@@ -81,9 +96,9 @@ export const POST = authorizedRoute(
                     employeeId,
                     month,
                     year,
-                    openingBalance: parseFloat(openingBalance),
-                    takenLeaves: parseFloat(takenLeaves),
-                    closingBalance: parseFloat(closingBalance),
+                    openingBalance: safeOpening,
+                    takenLeaves: safeTaken,
+                    closingBalance: safeClosing,
                     remarks,
                     companyId: user.companyId
                 }
@@ -93,7 +108,7 @@ export const POST = authorizedRoute(
             // For simplicity, we update it whenever a ledger is saved
             await prisma.employeeProfile.update({
                 where: { id: employeeId },
-                data: { leaveBalance: parseFloat(closingBalance) }
+                data: { leaveBalance: safeClosing }
             });
 
             return NextResponse.json(ledger);
