@@ -484,6 +484,7 @@ const HRManagementContent = () => {
                             setSelectedEmp(emp);
                             setShowEmpModal(true);
                         }}
+                        managers={employees.filter(e => ['MANAGER', 'TEAM_LEADER'].includes(e.user?.role || ''))}
                         onDelete={handleDeactivateEmp}
                         onPay={(emp) => {
                             const amount = prompt("Salary Amount:");
@@ -1354,6 +1355,7 @@ const HRManagementContent = () => {
                     }}
                     employee={selectedEmp}
                     designations={designations}
+                    managers={employees.filter((e: any) => ['MANAGER', 'TEAM_LEADER', 'ADMIN', 'SUPER_ADMIN'].includes(e.user?.role || ''))}
                     onSave={handleEmpSubmit}
                 />
 

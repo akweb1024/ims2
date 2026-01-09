@@ -70,6 +70,7 @@ export const updateEmployeeSchema = z.object({
     panNumber: z.preprocess(emptyToUndefined, z.string().optional()),
     isActive: z.preprocess(emptyToUndefined, z.boolean().optional()),
     employeeId: z.preprocess(emptyToUndefined, z.string().optional()),
+    managerId: z.preprocess(emptyToNull, z.string().nullable().optional()), // Allow assigning a manager
 
     // Additional EmployeeProfile fields
     dateOfBirth: z.preprocess(emptyToNull, z.coerce.date().nullable().optional()),

@@ -12,6 +12,7 @@ interface EmployeeListProps {
     onPay: (emp: any) => void;
     onReview: (emp: any) => void;
     onViewProfile: (id: string) => void;
+    managers?: any[];
 }
 
 export default function EmployeeList({
@@ -21,7 +22,8 @@ export default function EmployeeList({
     onDelete,
     onPay,
     onReview,
-    onViewProfile
+    onViewProfile,
+    managers
 }: EmployeeListProps) {
     const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
 
@@ -157,6 +159,11 @@ export default function EmployeeList({
                                         <div className="flex flex-col gap-1">
                                             <span className="w-fit px-2 py-0.5 bg-secondary-100 text-secondary-700 text-[9px] font-black rounded uppercase tracking-wider">{emp.user.role.replace('_', ' ')}</span>
                                             <p className="text-xs font-bold text-secondary-600">{emp.designatRef?.name || emp.designation || 'No Designation'}</p>
+                                            {emp.manager && (
+                                                <p className="text-[10px] text-secondary-400 mt-1">
+                                                    Reports to: <span className="font-bold text-primary-600">{emp.manager.name || emp.manager.email.split('@')[0]}</span>
+                                                </p>
+                                            )}
                                         </div>
                                     </td>
                                     <td className="px-6 py-4">

@@ -218,7 +218,7 @@ export default function PayrollPage() {
                                 {loading ? (
                                     <tr><td colSpan={6} className="text-center py-10">Loading...</td></tr>
                                 ) : slips.length === 0 ? (
-                                    <tr><td colSpan={6} className="text-center py-10 text-secondary-500">No salary slips found for {months.find(m => m.value === selectedMonth)?.label} {selectedYear}. Click "Generate Slip" to process payroll.</td></tr>
+                                    <tr><td colSpan={6} className="text-center py-10 text-secondary-500">No salary slips found for {months.find(m => m.value === selectedMonth)?.label} {selectedYear}. Click &quot;Generate Slip&quot; to process payroll.</td></tr>
                                 ) : (
                                     slips.map((slip) => (
                                         <tr key={slip.id} className="hover:bg-secondary-50">

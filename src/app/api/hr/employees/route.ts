@@ -37,7 +37,15 @@ export const GET = authorizedRoute(
                             email: true,
                             name: true,
                             role: true,
-                            isActive: true
+                            isActive: true,
+                            managerId: true,
+                            manager: {
+                                select: {
+                                    id: true,
+                                    name: true,
+                                    email: true
+                                }
+                            }
                         }
                     },
                     workReports: {
@@ -88,8 +96,8 @@ export const PATCH = authorizedRoute(
             }
             const validUpdates = result.data;
 
-            // 1. Handle User-level updates (Role, Active Status, Name)
-            if (validUpdates.role || validUpdates.isActive !== undefined || validUpdates.name) {
+            // 1. Handle User-level updates (Role, Active Status, Name, Manager)
+            if (validUpdates.role || validUpdates.isActive !== undefined || validUpdates.name || validUpdates.managerId !== undefined) {
                 const emp = await prisma.employeeProfile.findUnique({ where: { id }, select: { userId: true } });
                 if (emp) {
                     await prisma.user.update({
@@ -97,7 +105,8 @@ export const PATCH = authorizedRoute(
                         data: {
                             ...(validUpdates.role && { role: validUpdates.role }),
                             ...(validUpdates.isActive !== undefined && { isActive: validUpdates.isActive }),
-                            ...(validUpdates.name && { name: validUpdates.name })
+                            ...(validUpdates.name && { name: validUpdates.name }),
+                            ...(validUpdates.managerId !== undefined && { managerId: validUpdates.managerId })
                         }
                     });
                 }
@@ -124,7 +133,7 @@ export const PATCH = authorizedRoute(
             }
 
             // 3. Update Employee Profile
-            const { role, id: _unusedId, isActive, name, designationId, email, password, ...profileData } = validUpdates;
+            const { role, id: _unusedId, isActive, name, designationId, email, password, managerId, ...profileData } = validUpdates;
 
             // Handle designation relation separately if provided
             const updateData: any = { ...profileData };

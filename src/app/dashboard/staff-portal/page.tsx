@@ -713,7 +713,7 @@ export default function StaffPortalPage() {
                                                 ></div>
                                             </div>
                                             <p className="text-xs text-secondary-500 font-medium">
-                                                Based on 'Publication' reports or 'Accepted' outcomes.
+                                                Based on &apos;Publication&apos; reports or &apos;Accepted&apos; outcomes.
                                             </p>
                                         </div>
                                     )}

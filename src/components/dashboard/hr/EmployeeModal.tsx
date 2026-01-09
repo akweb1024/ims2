@@ -8,6 +8,7 @@ interface EmployeeModalProps {
     onClose: () => void;
     employee: any | null; // null for new employee
     designations: any[]; // for the dropdown
+    managers?: any[]; // For selecting reports to
     onSave: (data: any) => Promise<void>;
 }
 
@@ -51,10 +52,11 @@ const initialFormState = {
     isActive: true,
     dateOfJoining: '',
     profilePicture: '',
-    employeeId: ''
+    employeeId: '',
+    managerId: ''
 };
 
-export default function EmployeeModal({ isOpen, onClose, employee, designations, onSave }: EmployeeModalProps) {
+export default function EmployeeModal({ isOpen, onClose, employee, designations, managers = [], onSave }: EmployeeModalProps) {
 
 
     const [empForm, setEmpForm] = useState(initialFormState);
@@ -102,7 +104,8 @@ export default function EmployeeModal({ isOpen, onClose, employee, designations,
                 isActive: employee.user.isActive,
                 dateOfJoining: employee.dateOfJoining?.split('T')[0] || '',
                 profilePicture: employee.profilePicture || '',
-                employeeId: employee.employeeId || ''
+                employeeId: employee.employeeId || '',
+                managerId: employee.user.managerId || ''
             });
         } else {
             setEmpForm(initialFormState);
@@ -161,8 +164,24 @@ export default function EmployeeModal({ isOpen, onClose, employee, designations,
                         <select className="input-premium" value={empForm.role} onChange={e => setEmpForm({ ...empForm, role: e.target.value })}>
                             <option value="SALES_EXECUTIVE">Sales Executive</option>
                             <option value="MANAGER">Manager</option>
+                            <option value="TEAM_LEADER">Team Leader</option>
                             <option value="FINANCE_ADMIN">Finance Admin</option>
                             <option value="ADMIN">Admin</option>
+                        </select>
+                    </div>
+                    <div className="col-span-1">
+                        <label className="label-premium">Reports To (Manager)</label>
+                        <select
+                            className="input-premium"
+                            value={empForm.managerId}
+                            onChange={e => setEmpForm({ ...empForm, managerId: e.target.value })}
+                        >
+                            <option value="">No Manager (Top Level)</option>
+                            {managers.filter(m => m.user.id !== employee?.user?.id).map(m => (
+                                <option key={m.id} value={m.user.id}>
+                                    {m.user.name || m.user.email} ({m.designation || m.user.role})
+                                </option>
+                            ))}
                         </select>
                     </div>
                     <div>

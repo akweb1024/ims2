@@ -562,7 +562,7 @@ export default function UsersPage() {
                                     <label className="label">Primary Company</label>
                                     <select name="companyId" className="input" defaultValue={editingUser.companyId} required>
                                         <option value="">None / System Staff</option>
-                                        {companies.map(c => (
+                                        {Array.isArray(companies) && companies.map(c => (
                                             <option key={c.id} value={c.id}>{c.name}</option>
                                         ))}
                                     </select>
