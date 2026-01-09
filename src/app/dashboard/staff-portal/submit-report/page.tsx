@@ -28,7 +28,8 @@ export default function SubmitReportPage() {
         finance: { invoice: 0, proforma: 0 },
         sales: { copiesSold: 0 },
         content: { posters: 0, videos: 0, mails: 0, courses: 0, workshops: 0 },
-        distribution: { recordingShare: 0, programShare: 0, certificateShare: 0 }
+        distribution: { recordingShare: 0, programShare: 0, certificateShare: 0 },
+        formatting: { paperFormatting: 0, correctionCount: 0 }
     });
 
     useEffect(() => {
@@ -136,7 +137,9 @@ export default function SubmitReportPage() {
                         <option value="GENERAL">General Staff</option>
                         <option value="SALES">Sales Executive</option>
                         <option value="PUBLICATION">Publication Exec</option>
+                        <option value="PUBLICATION">Publication Exec</option>
                         <option value="PROGRAM">Program Executive</option>
+                        <option value="FORMATTING">Formatting Team</option>
                     </select>
                 </div>
 
@@ -264,6 +267,22 @@ export default function SubmitReportPage() {
                                     <div className="grid grid-cols-2 gap-2">
                                         <input placeholder="Courses" type="number" className="input h-8 text-xs" onChange={e => handleMetricChange('content', 'courses', e.target.value)} />
                                         <input placeholder="Certificates" type="number" className="input h-8 text-xs" onChange={e => handleMetricChange('distribution', 'certificateShare', e.target.value)} />
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {template === 'FORMATTING' && (
+                            <div className="card-premium p-6 border-t-4 border-cyan-500">
+                                <h3 className="font-bold text-sm uppercase tracking-widest mb-4 flex items-center gap-2 text-secondary-900">Formatting Stats</h3>
+                                <div className="space-y-3">
+                                    <div>
+                                        <label className="text-xs font-bold text-secondary-500">Paper Formatting Count</label>
+                                        <input type="number" className="input h-10" onChange={e => handleMetricChange('formatting', 'paperFormatting', e.target.value)} />
+                                    </div>
+                                    <div>
+                                        <label className="text-xs font-bold text-secondary-500">Correction Count</label>
+                                        <input type="number" className="input h-10" onChange={e => handleMetricChange('formatting', 'correctionCount', e.target.value)} />
                                     </div>
                                 </div>
                             </div>

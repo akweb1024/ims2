@@ -23,7 +23,7 @@ export const GET = authorizedRoute(
                     user: { companyId: companyId || undefined }
                 },
                 include: {
-                    user: { select: { email: true } },
+                    user: { select: { email: true, name: true } },
                     leaveLedgers: {
                         where: { month, year }
                     }
@@ -35,6 +35,7 @@ export const GET = authorizedRoute(
                 return {
                     employeeId: emp.id,
                     email: emp.user.email,
+                    name: emp.user.name,
                     month,
                     year,
                     openingBalance: ledger?.openingBalance || 0,

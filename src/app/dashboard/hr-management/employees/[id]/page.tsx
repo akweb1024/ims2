@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import FormattedDate from '@/components/common/FormattedDate';
@@ -102,53 +103,6 @@ export default function EmployeeProfilePage() {
             .catch(err => console.error('Error fetching designations:', err));
     }, []);
 
-    const handleEditClick = () => {
-        if (!employee) return;
-        setEmpForm({
-            email: employee.user.email,
-            password: '',
-            role: employee.user.role,
-            designation: employee.designation || '',
-            baseSalary: employee.baseSalary || '',
-            bankName: employee.bankName || '',
-            accountNumber: employee.accountNumber || '',
-            panNumber: employee.panNumber || '',
-            offerLetterUrl: employee.offerLetterUrl || '',
-            contractUrl: employee.contractUrl || '',
-            jobDescription: employee.jobDescription || '',
-            kra: employee.kra || '',
-            totalExperienceYears: employee.totalExperienceYears || 0,
-            totalExperienceMonths: employee.totalExperienceMonths || 0,
-            relevantExperienceYears: employee.relevantExperienceYears || 0,
-            relevantExperienceMonths: employee.relevantExperienceMonths || 0,
-            qualification: employee.qualification || '',
-            grade: employee.grade || '',
-            lastPromotionDate: employee.lastPromotionDate?.split('T')[0] || '',
-            lastIncrementDate: employee.lastIncrementDate?.split('T')[0] || '',
-            nextReviewDate: employee.nextReviewDate?.split('T')[0] || '',
-            lastIncrementPercentage: employee.lastIncrementPercentage || 0,
-            designationId: employee.designationId || '',
-
-            phoneNumber: employee.phoneNumber || '',
-            officePhone: employee.officePhone || '',
-            personalEmail: employee.personalEmail || '',
-            emergencyContact: employee.emergencyContact || '',
-            address: employee.address || '',
-            permanentAddress: employee.permanentAddress || '',
-            bloodGroup: employee.bloodGroup || '',
-            ifscCode: employee.ifscCode || '',
-            aadharNumber: employee.aadharNumber || '',
-            isActive: employee.user.isActive,
-            dateOfJoining: employee.dateOfJoining?.split('T')[0] || '',
-            uanNumber: employee.uanNumber || '',
-            pfNumber: employee.pfNumber || '',
-            esicNumber: employee.esicNumber || '',
-            profilePicture: employee.profilePicture || '',
-            employeeId: employee.employeeId || '',
-            manualLeaveAdjustment: employee.manualLeaveAdjustment || 0
-        });
-        setShowEmpModal(true);
-    };
 
     const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -248,9 +202,9 @@ export default function EmployeeProfilePage() {
                         </p>
                     </div>
                     <div className="ml-auto flex gap-2">
-                        <button onClick={handleEditClick} className="btn btn-secondary flex items-center gap-2">
+                        <Link href={`/dashboard/hr-management/employees/${params.id}/edit`} className="btn btn-secondary flex items-center gap-2">
                             <Edit size={16} /> Edit Profile
-                        </button>
+                        </Link>
                     </div>
                 </div>
 

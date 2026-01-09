@@ -51,7 +51,7 @@ export const PATCH = authorizedRoute(
         try {
             const { id } = await params;
             const body = await req.json();
-            const { role, isActive, password, companyId, companyIds, email } = body;
+            const { role, name, isActive, password, companyId, companyIds, email } = body;
 
             const existingUser = await prisma.user.findUnique({ where: { id } });
             if (!existingUser) return createErrorResponse('User not found', 404);
@@ -68,11 +68,18 @@ export const PATCH = authorizedRoute(
 
             const updateData: any = {};
             if (role) updateData.role = role;
+            if (name) updateData.name = name;
             if (isActive !== undefined) updateData.isActive = isActive;
-            if (email && user.role === 'SUPER_ADMIN') updateData.email = email;
-            if (password) {
+
+            // SUPER_ADMIN can update email
+            if (email && user.role === 'SUPER_ADMIN') {
+                updateData.email = email;
+            }
+
+            if (password && password.trim().length > 0) {
                 updateData.password = await bcrypt.hash(password, 10);
             }
+
             if (companyId !== undefined && user.role === 'SUPER_ADMIN') {
                 updateData.companyId = companyId;
                 // If companyId is being changed, we should also update the EmployeeProfile

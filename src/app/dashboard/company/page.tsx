@@ -69,7 +69,8 @@ export default function CompanyPage() {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 if (staffRes.ok) {
-                    const staffData = await staffRes.json();
+                    const staffResponse = await staffRes.json();
+                    const staffData = Array.isArray(staffResponse) ? staffResponse : (staffResponse.data || []);
                     setStaffList(staffData);
                 }
             }
@@ -79,8 +80,9 @@ export default function CompanyPage() {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             if (usersRes.ok) {
-                const usersData = await usersRes.json();
-                setUsers(usersData);
+                const usersResponse = await usersRes.json();
+                const usersList = Array.isArray(usersResponse) ? usersResponse : (usersResponse.data || []);
+                setUsers(usersList);
             }
         } catch (err) {
             console.error('Failed to fetch data', err);

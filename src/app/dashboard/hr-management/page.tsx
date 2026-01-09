@@ -51,7 +51,7 @@ const LeaveLedgerRow = ({ row, onSave }: { row: any, onSave: (data: any) => Prom
     return (
         <tr className="hover:bg-secondary-50/30 transition-colors">
             <td className="px-6 py-4">
-                <p className="font-bold text-secondary-900 text-sm">{row.email.split('@')[0]}</p>
+                <p className="font-bold text-secondary-900 text-sm">{row.name || row.email.split('@')[0]}</p>
                 <p className="text-[10px] text-secondary-400 font-medium">{row.email}</p>
             </td>
             <td className="px-6 py-4">
@@ -799,10 +799,10 @@ const HRManagementContent = () => {
                                 <div key={record.id} className="card-premium p-6 flex justify-between items-center group">
                                     <div className="flex items-center gap-4">
                                         <div className="w-12 h-12 bg-secondary-900 text-white rounded-2xl flex items-center justify-center text-xl font-black">
-                                            {record.employee.user.email.charAt(0).toUpperCase()}
+                                            {(record.employee.user.name?.[0] || record.employee.user.email[0]).toUpperCase()}
                                         </div>
                                         <div>
-                                            <p className="font-bold text-secondary-900">{record.employee.user.email}</p>
+                                            <p className="font-bold text-secondary-900">{record.employee.user.name || record.employee.user.email}</p>
                                             <p className="text-[10px] font-bold text-secondary-400 uppercase"><FormattedDate date={record.date} /></p>
                                         </div>
                                     </div>
@@ -864,7 +864,7 @@ const HRManagementContent = () => {
                                     ) : allSlips.map(slip => (
                                         <tr key={slip.id} className="hover:bg-secondary-50 transition-colors text-sm">
                                             <td className="p-4">
-                                                <p className="font-bold text-secondary-900">{slip.employee?.user?.email?.split('@')[0] || 'Unknown'}</p>
+                                                <p className="font-bold text-secondary-900">{slip.employee?.user?.name || slip.employee?.user?.email?.split('@')[0] || 'Unknown'}</p>
                                                 <p className="text-[10px] text-secondary-400 font-bold uppercase">{slip.employee?.designation}</p>
                                             </td>
                                             <td className="p-4 font-bold text-secondary-600">

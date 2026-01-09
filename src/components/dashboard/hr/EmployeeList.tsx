@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
+import Link from 'next/link';
 import { Edit, Filter, Search, X } from 'lucide-react';
 
 interface EmployeeListProps {
@@ -179,13 +180,13 @@ export default function EmployeeList({
                                     </td>
                                     <td className="px-6 py-4 text-right">
                                         <div className="flex justify-end gap-1 opacity-60 group-hover:opacity-100 transition-opacity">
-                                            <button
-                                                onClick={() => onEdit(emp)}
-                                                className="p-2 hover:bg-primary-50 rounded-lg text-secondary-500 hover:text-primary-600 transition-colors"
+                                            <Link
+                                                href={`/dashboard/hr-management/employees/${emp.id}/edit`}
+                                                className="p-2 hover:bg-primary-50 rounded-lg text-secondary-500 hover:text-primary-600 transition-colors inline-block"
                                                 title="Edit Profile"
                                             >
                                                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} /></svg>
-                                            </button>
+                                            </Link>
                                             <button
                                                 onClick={() => onReview(emp)}
                                                 className="p-2 hover:bg-warning-50 rounded-lg text-secondary-500 hover:text-warning-600 transition-colors"

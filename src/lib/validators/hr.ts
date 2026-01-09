@@ -92,10 +92,10 @@ export const updateEmployeeSchema = z.object({
     designationId: z.preprocess(emptyToNull, z.string().uuid().nullable().optional()).or(z.literal(null)).optional(),
 
     // Experience tracking
-    totalExperienceYears: z.preprocess(emptyToNull, z.coerce.number().min(0).nullable().optional()),
-    totalExperienceMonths: z.preprocess(emptyToNull, z.coerce.number().min(0).max(11).nullable().optional()),
-    relevantExperienceYears: z.preprocess(emptyToNull, z.coerce.number().min(0).nullable().optional()),
-    relevantExperienceMonths: z.preprocess(emptyToNull, z.coerce.number().min(0).max(11).nullable().optional()),
+    totalExperienceYears: z.preprocess(emptyToUndefined, z.coerce.number().min(0).optional()),
+    totalExperienceMonths: z.preprocess(emptyToUndefined, z.coerce.number().min(0).max(11).optional()),
+    relevantExperienceYears: z.preprocess(emptyToUndefined, z.coerce.number().min(0).optional()),
+    relevantExperienceMonths: z.preprocess(emptyToUndefined, z.coerce.number().min(0).max(11).optional()),
     qualification: z.preprocess(emptyToNull, z.string().nullable().optional()),
     educationDetails: z.preprocess(emptyToNull, z.any().nullable().optional()),
     experienceDetails: z.preprocess(emptyToNull, z.any().nullable().optional()),
@@ -105,13 +105,15 @@ export const updateEmployeeSchema = z.object({
     lastPromotionDate: z.preprocess(emptyToNull, z.coerce.date().nullable().optional()),
     lastIncrementDate: z.preprocess(emptyToNull, z.coerce.date().nullable().optional()),
     nextReviewDate: z.preprocess(emptyToNull, z.coerce.date().nullable().optional()),
-    lastIncrementPercentage: z.preprocess(emptyToNull, z.coerce.number().nullable().optional()),
+    lastIncrementPercentage: z.preprocess(emptyToUndefined, z.coerce.number().optional()),
 
     // Leave corrections
-    manualLeaveAdjustment: z.preprocess(emptyToNull, z.coerce.number().nullable().optional()),
+    manualLeaveAdjustment: z.preprocess(emptyToUndefined, z.coerce.number().optional()),
 
     // ID field for updates
     id: z.preprocess(emptyToUndefined, z.string().uuid().optional()),
+
+    metrics: z.any().optional(),
 }).passthrough(); // Allow extra fields to pass through
 
 

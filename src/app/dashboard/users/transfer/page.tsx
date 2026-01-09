@@ -40,10 +40,15 @@ export default function EmployeeTransferPage() {
             ]);
 
             if (usersRes.ok && companiesRes.ok) {
-                const usersData = await usersRes.json();
-                const companiesData = await companiesRes.json();
-                setUsers(usersData.filter((u: any) => u.role !== 'CUSTOMER'));
-                setCompanies(companiesData);
+                const usersResponse = await usersRes.json();
+                const companiesResponse = await companiesRes.json();
+
+                // Fix: Handle both direct array and paginated response { data: [...] }
+                const usersList = Array.isArray(usersResponse) ? usersResponse : (usersResponse.data || []);
+                const companiesList = Array.isArray(companiesResponse) ? companiesResponse : (companiesResponse.data || []);
+
+                setUsers(usersList.filter((u: any) => u.role !== 'CUSTOMER'));
+                setCompanies(companiesList);
             }
         } catch (err) {
             console.error('Fetch error:', err);
@@ -152,7 +157,9 @@ export default function EmployeeTransferPage() {
                                 >
                                     <option value="">-- Choose Employee --</option>
                                     {users.map(u => (
-                                        <option key={u.id} value={u.id}>{u.name || u.email.split('@')[0]} ({u.email} - {u.role})</option>
+                                        <option key={u.id} value={u.id}>
+                                            {u.name ? `${u.name} (${u.email})` : u.email} - {u.role}
+                                        </option>
                                     ))}
                                 </select>
                             </div>
@@ -160,7 +167,8 @@ export default function EmployeeTransferPage() {
                             {selectedUser && (
                                 <div className="p-4 bg-secondary-50 rounded-xl space-y-2">
                                     <p className="text-xs font-bold text-secondary-400 uppercase">Current Status</p>
-                                    <p className="text-sm font-bold text-secondary-900">{selectedUser.email}</p>
+                                    <p className="text-sm font-bold text-secondary-900">{selectedUser.name || selectedUser.email.split('@')[0]}</p>
+                                    <p className="text-xs font-medium text-secondary-500">{selectedUser.email}</p>
                                     <p className="text-xs text-secondary-600">
                                         Role: <span className="font-bold text-primary-600">{selectedUser.role}</span>
                                     </p>

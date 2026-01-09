@@ -1044,6 +1044,8 @@ model EmployeeProfile {
   leaveBalance          Float @default(0) // Available paid leaves
   manualLeaveAdjustment Float @default(0) // Correction factor for leave balance
 
+  metrics               Json?   // Custom role-specific targets/metrics
+
   salaryAdvances SalaryAdvance[]
   leaveLedgers   LeaveLedger[]
 

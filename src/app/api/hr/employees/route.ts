@@ -132,6 +132,18 @@ export const PATCH = authorizedRoute(
                 }
             }
 
+            // Safety: Remove any nulls that shouldn't be null (Prisma Float/Int with default)
+            const nonNullableNumbers = [
+                'totalExperienceYears', 'totalExperienceMonths',
+                'relevantExperienceYears', 'relevantExperienceMonths',
+                'lastIncrementPercentage', 'manualLeaveAdjustment', 'leaveBalance'
+            ];
+            nonNullableNumbers.forEach(key => {
+                if (updateData[key] === null) {
+                    delete updateData[key];
+                }
+            });
+
             const updated = await prisma.employeeProfile.update({
                 where: { id },
                 data: updateData

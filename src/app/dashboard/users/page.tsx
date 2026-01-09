@@ -58,7 +58,7 @@ export default function UsersPage() {
                 }
             }
         } catch (err) {
-            console.error(err);
+            // console.error(err); // Removed console.error
         } finally {
             setLoading(false);
         }
@@ -141,12 +141,14 @@ export default function UsersPage() {
         const formData = new FormData(form);
         const payload: any = {
             role: formData.get('role'),
+            name: formData.get('name'),
         };
         if (userRole === 'SUPER_ADMIN') {
             payload.email = formData.get('email');
+            payload.companyId = formData.get('companyId');
         }
-        const password = formData.get('password');
-        if (password) payload.password = password;
+        const password = formData.get('password') as string;
+        if (password && password.trim().length > 0) payload.password = password;
 
         try {
             const token = localStorage.getItem('token');
@@ -171,7 +173,34 @@ export default function UsersPage() {
         } finally {
             setActionLoading(false);
         }
-    }; // Closed handleUpdateUser
+    };
+
+    const handleDeleteUser = async (userId: string) => {
+        if (!confirm('Are you sure you want to permanently delete this user? This action cannot be undone.')) return;
+
+        setActionLoading(true);
+        try {
+            const token = localStorage.getItem('token');
+            const res = await fetch(`/api/users/${userId}`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            if (res.ok) {
+                setUsers(users.filter(u => u.id !== userId));
+                setPagination(prev => ({ ...prev, total: prev.total - 1 }));
+            } else {
+                const err = await res.json();
+                alert(err.error || 'Failed to delete user');
+            }
+        } catch (err) {
+            alert('Error deleting user');
+        } finally {
+            setActionLoading(false);
+        }
+    };
 
     const handleBulkAssign = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
@@ -394,6 +423,15 @@ export default function UsersPage() {
                                                 >
                                                     Edit
                                                 </button>
+                                                {userRole === 'SUPER_ADMIN' && user.role !== 'SUPER_ADMIN' && (
+                                                    <button
+                                                        onClick={() => handleDeleteUser(user.id)}
+                                                        className="p-2 border border-red-200 rounded-lg text-red-600 hover:bg-red-50 transition-colors"
+                                                        title="Delete User"
+                                                    >
+                                                        🗑️
+                                                    </button>
+                                                )}
                                             </div>
                                         </td>
                                     </tr>
@@ -495,6 +533,16 @@ export default function UsersPage() {
                         <h2 className="text-2xl font-bold text-secondary-900 mb-6 font-primary">Edit User</h2>
                         <form onSubmit={handleUpdateUser} className="space-y-4">
                             <div>
+                                <label className="label">Full Name</label>
+                                <input
+                                    name="name"
+                                    type="text"
+                                    className="input"
+                                    defaultValue={editingUser.name}
+                                    placeholder="Enter full name"
+                                />
+                            </div>
+                            <div>
                                 <label className="label">Work Email {userRole !== 'SUPER_ADMIN' && '(Read Only)'}</label>
                                 <input
                                     name="email"
@@ -509,6 +557,18 @@ export default function UsersPage() {
                                 <label className="label">New Password (Optional)</label>
                                 <input name="password" type="password" className="input" placeholder="Leave blank to keep current" />
                             </div>
+                            {userRole === 'SUPER_ADMIN' && (
+                                <div>
+                                    <label className="label">Primary Company</label>
+                                    <select name="companyId" className="input" defaultValue={editingUser.companyId} required>
+                                        <option value="">None / System Staff</option>
+                                        {companies.map(c => (
+                                            <option key={c.id} value={c.id}>{c.name}</option>
+                                        ))}
+                                    </select>
+                                    <p className="text-[10px] text-secondary-400 mt-1 italic">Note: Transferring will reset designation.</p>
+                                </div>
+                            )}
                             <div>
                                 <label className="label">System Role</label>
                                 <select name="role" className="input" defaultValue={editingUser.role} required>
