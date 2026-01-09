@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { authorizedRoute } from '@/lib/middleware-auth';
 import { createErrorResponse } from '@/lib/api-utils';
+import { getDownlineUserIds } from '@/lib/hierarchy';
+
 
 export const GET = authorizedRoute(
     [],
@@ -20,10 +22,34 @@ export const GET = authorizedRoute(
                 where.companyId = user.companyId;
             }
 
+
+
+            // ...
+
             // Role-based Access & Filtering
-            if (['SUPER_ADMIN', 'ADMIN', 'MANAGER'].includes(user.role)) {
+            if (['SUPER_ADMIN', 'ADMIN'].includes(user.role)) {
                 if (employeeId && employeeId !== 'all') {
                     where.employeeId = employeeId;
+                }
+            } else if (['MANAGER', 'TEAM_LEADER'].includes(user.role)) {
+                const subIds = await getDownlineUserIds(user.id, user.companyId || undefined);
+                // Can see own + downline
+                // subIds usually doesn't include SELF, let's explicit allow SELF or DOWNLINE
+                const allowedUserIds = [...subIds, user.id];
+
+                if (employeeId && employeeId !== 'all') {
+                    // Check if requested employee is in allowed list
+                    const targetEmp = await prisma.employeeProfile.findUnique({ where: { id: employeeId }, select: { userId: true } });
+                    if (targetEmp && allowedUserIds.includes(targetEmp.userId)) {
+                        where.employeeId = employeeId;
+                    } else {
+                        // Default to showing all team reports + self if no specific ID requested? 
+                        // Or if strictly requested ID is invalid, return empty?
+                        return NextResponse.json([], { status: 200 });
+                    }
+                } else {
+                    // Show reports from self AND team
+                    where.employee = { userId: { in: allowedUserIds } };
                 }
             } else {
                 // Regular employees only see their own

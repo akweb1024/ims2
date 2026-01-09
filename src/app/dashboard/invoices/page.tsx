@@ -5,6 +5,8 @@ import Link from 'next/link';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import FormattedDate from '@/components/common/FormattedDate';
 
+import CreateInvoiceModal from '@/components/dashboard/CreateInvoiceModal';
+
 export default function InvoicesPage() {
     const [invoices, setInvoices] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
@@ -13,6 +15,7 @@ export default function InvoicesPage() {
     const [pagination, setPagination] = useState({ page: 1, totalPages: 1 });
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState('');
+    const [showCreateModal, setShowCreateModal] = useState(false);
 
     useEffect(() => {
         const userData = localStorage.getItem('user');
@@ -72,6 +75,8 @@ export default function InvoicesPage() {
             case 'PARTIALLY_PAID': return 'badge-warning';
             case 'UNPAID': return 'badge-danger';
             case 'OVERDUE': return 'bg-red-600 text-white';
+            case 'VOID': return 'bg-gray-400 text-white';
+            case 'CANCELLED': return 'bg-gray-400 text-white';
             default: return 'badge-secondary';
         }
     };
@@ -79,44 +84,53 @@ export default function InvoicesPage() {
     return (
         <DashboardLayout userRole={userRole}>
             <div className="space-y-6">
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                     <div>
                         <h1 className="text-3xl font-bold text-secondary-900">Billing & Invoices</h1>
                         <p className="text-secondary-600 mt-1">Manage your payments, view invoices, and track billing history</p>
                     </div>
-                    {['SUPER_ADMIN', 'MANAGER', 'FINANCE_ADMIN'].includes(userRole) && (
-                        <button
-                            onClick={async () => {
-                                try {
-                                    const token = localStorage.getItem('token');
-                                    const res = await fetch('/api/exports/invoices', {
-                                        headers: { 'Authorization': `Bearer ${token}` }
-                                    });
-                                    if (res.ok) {
-                                        const blob = await res.blob();
-                                        const url = window.URL.createObjectURL(blob);
-                                        const a = document.createElement('a');
-                                        a.href = url;
-                                        a.download = `invoices-${new Date().toISOString().split('T')[0]}.csv`;
-                                        document.body.appendChild(a);
-                                        a.click();
-                                        window.URL.revokeObjectURL(url);
-                                        document.body.removeChild(a);
-                                    } else {
-                                        alert('Failed to export invoices');
-                                    }
-                                } catch (err) {
-                                    alert('Export failed');
-                                }
-                            }}
-                            className="btn btn-secondary flex items-center gap-2"
-                        >
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a2 2 0 002 2h12a2 2 0 002-2v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                            </svg>
-                            Export CSV
-                        </button>
-                    )}
+                    <div className="flex items-center gap-3">
+                        {['SUPER_ADMIN', 'MANAGER', 'FINANCE_ADMIN'].includes(userRole) && (
+                            <>
+                                <button
+                                    onClick={() => setShowCreateModal(true)}
+                                    className="btn btn-primary flex items-center gap-2 shadow-lg shadow-primary-200"
+                                >
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                                    Create Invoice
+                                </button>
+                                <button
+                                    onClick={async () => {
+                                        try {
+                                            const token = localStorage.getItem('token');
+                                            const res = await fetch('/api/exports/invoices', {
+                                                headers: { 'Authorization': `Bearer ${token}` }
+                                            });
+                                            if (res.ok) {
+                                                const blob = await res.blob();
+                                                const url = window.URL.createObjectURL(blob);
+                                                const a = document.createElement('a');
+                                                a.href = url;
+                                                a.download = `invoices-${new Date().toISOString().split('T')[0]}.csv`;
+                                                document.body.appendChild(a);
+                                                a.click();
+                                                window.URL.revokeObjectURL(url);
+                                                document.body.removeChild(a);
+                                            } else {
+                                                alert('Failed to export invoices');
+                                            }
+                                        } catch (err) {
+                                            alert('Export failed');
+                                        }
+                                    }}
+                                    className="btn btn-secondary flex items-center gap-2 bg-white"
+                                >
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                                    Export CSV
+                                </button>
+                            </>
+                        )}
+                    </div>
                 </div>
 
                 {/* Filters */}
@@ -146,6 +160,7 @@ export default function InvoicesPage() {
                             <option value="UNPAID">Unpaid</option>
                             <option value="PARTIALLY_PAID">Partially Paid</option>
                             <option value="OVERDUE">Overdue</option>
+                            <option value="VOID">Void</option>
                         </select>
                     </div>
                 </div>
@@ -189,15 +204,18 @@ export default function InvoicesPage() {
                                     invoices.map((inv) => (
                                         <tr key={inv.id} className="hover:bg-secondary-50 transition-colors">
                                             <td className="px-6 py-4 whitespace-nowrap">
-                                                <span className="font-mono text-sm font-bold text-secondary-900">{inv.invoiceNumber}</span>
+                                                <div className="flex flex-col">
+                                                    <span className="font-mono text-sm font-bold text-secondary-900">{inv.invoiceNumber}</span>
+                                                    {inv.description && <span className="text-[10px] text-secondary-400 max-w-[150px] truncate">{inv.description}</span>}
+                                                </div>
                                             </td>
                                             <td className="px-6 py-4">
                                                 <div className="flex flex-col">
                                                     <span className="text-sm font-semibold text-secondary-900">
-                                                        {inv.subscription?.customerProfile?.name}
+                                                        {inv.customerProfile?.name || inv.subscription?.customerProfile?.name || 'Unknown'}
                                                     </span>
                                                     <span className="text-xs text-secondary-500">
-                                                        {inv.subscription?.customerProfile?.organizationName || 'Individual'}
+                                                        {inv.customerProfile?.organizationName || inv.subscription?.customerProfile?.organizationName || 'Individual'}
                                                     </span>
                                                 </div>
                                             </td>
@@ -205,7 +223,7 @@ export default function InvoicesPage() {
                                                 <FormattedDate date={inv.dueDate} />
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap">
-                                                <span className="text-sm font-bold text-primary-700">${inv.total.toLocaleString()}</span>
+                                                <span className="text-sm font-bold text-primary-700">₹{inv.total.toLocaleString()}</span>
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap">
                                                 <span className={`badge ${getStatusBadgeClass(inv.status)}`}>
@@ -251,6 +269,16 @@ export default function InvoicesPage() {
                     )}
                 </div>
             </div>
+
+            <CreateInvoiceModal
+                isOpen={showCreateModal}
+                onClose={() => setShowCreateModal(false)}
+                onSuccess={() => {
+                    fetchInvoices();
+                    // Optional: Show success toast
+                }}
+            />
         </DashboardLayout>
     );
 }
+

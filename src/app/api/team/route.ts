@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { authorizedRoute } from '@/lib/middleware-auth';
 import { createErrorResponse } from '@/lib/api-utils';
+import { getDownlineUserIds } from '@/lib/hierarchy';
 
 export const GET = authorizedRoute(
     ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'TEAM_LEADER'],
@@ -11,9 +12,19 @@ export const GET = authorizedRoute(
                 role: { in: ['SALES_EXECUTIVE', 'FINANCE_ADMIN', 'MANAGER', 'SUPER_ADMIN', 'ADMIN', 'TEAM_LEADER'] }
             };
 
+            // ...
+
             const userCompanyId = user.companyId;
             if (userCompanyId && user.role !== 'SUPER_ADMIN') {
                 where.companyId = userCompanyId;
+            }
+
+            if (['MANAGER', 'TEAM_LEADER'].includes(user.role)) {
+                const subIds = await getDownlineUserIds(user.id, userCompanyId || undefined);
+                // Usually Managers want to see their team AND themselves in a list? 
+                // Or just team? The page component says "Our Team".
+                // Let's include self + subordinates.
+                where.id = { in: [...subIds, user.id] };
             }
 
             const team = await prisma.user.findMany({

@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { authorizedRoute } from '@/lib/middleware-auth';
 import { createErrorResponse } from '@/lib/api-utils';
 import { leaveRequestSchema, updateLeaveRequestSchema } from '@/lib/validators/hr';
+import { getDownlineUserIds } from '@/lib/hierarchy';
 
 export const GET = authorizedRoute(
     [],
@@ -12,21 +13,44 @@ export const GET = authorizedRoute(
             const employeeId = searchParams.get('employeeId');
             const showAll = searchParams.get('all') === 'true';
 
+
+
+            // ...
+
             const where: any = {};
 
             if (employeeId) {
-                // Manager/Admin viewing specific employee
-                if (!['SUPER_ADMIN', 'ADMIN', 'MANAGER'].includes(user.role)) {
+                // Manager/Team Leader/Admin viewing specific employee
+                if (!['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'TEAM_LEADER'].includes(user.role)) {
                     return createErrorResponse('Forbidden', 403);
                 }
+
+                // For Manager/Team Leader, verify target is in hierarchy
+                if (['MANAGER', 'TEAM_LEADER'].includes(user.role)) {
+                    const subIds = await getDownlineUserIds(user.id, user.companyId || undefined);
+                    const allowedUserIds = [...subIds, user.id]; // Can see self too
+                    const targetEmp = await prisma.employeeProfile.findUnique({ where: { id: employeeId }, select: { userId: true } });
+
+                    if (!targetEmp || !allowedUserIds.includes(targetEmp.userId)) {
+                        return createErrorResponse('Forbidden: Not in your team', 403);
+                    }
+                }
+
                 where.employeeId = employeeId;
                 if (user.companyId) {
                     where.employee = { user: { companyId: user.companyId } };
                 }
-            } else if (showAll && ['SUPER_ADMIN', 'ADMIN', 'MANAGER'].includes(user.role)) {
-                // Manager/Admin viewing all
-                if (user.companyId) {
-                    where.employee = { user: { companyId: user.companyId } };
+            } else if (showAll && ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'TEAM_LEADER'].includes(user.role)) {
+
+                if (['MANAGER', 'TEAM_LEADER'].includes(user.role)) {
+                    const subIds = await getDownlineUserIds(user.id, user.companyId || undefined);
+                    // Usually "All" for a manager means "My Team"
+                    where.employee = { userId: { in: subIds } };
+                } else {
+                    // Admin sees all in company
+                    if (user.companyId) {
+                        where.employee = { user: { companyId: user.companyId } };
+                    }
                 }
             } else {
                 // Employee viewing own

@@ -278,6 +278,7 @@ model CustomerProfile {
   communications     CommunicationLog[]
   supportTickets     SupportTicket[]
   assignments        CustomerAssignment[]
+  invoices           Invoice[]
 
   @@index([customerType])
   @@index([primaryEmail])
@@ -602,7 +603,8 @@ model SubscriptionItem {
 
 model Invoice {
   id             String @id @default(uuid())
-  subscriptionId String
+  subscriptionId String? // Made optional for one-off invoices
+  customerProfileId String? // Direct link to customer for one-off
   invoiceNumber  String @unique
 
   currency String @default("INR")
@@ -613,6 +615,10 @@ model Invoice {
   status   InvoiceStatus @default(UNPAID)
   dueDate  DateTime
   paidDate DateTime?
+  
+  // Ad-hoc fields
+  description String? @db.Text
+  lineItems   Json?   // Array of { description, quantity, price }
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -621,10 +627,12 @@ model Invoice {
   company   Company? @relation(fields: [companyId], references: [id])
 
   // Relations
-  subscription Subscription @relation(fields: [subscriptionId], references: [id])
-  payments     Payment[]
+  subscription    Subscription?    @relation(fields: [subscriptionId], references: [id])
+  customerProfile CustomerProfile? @relation(fields: [customerProfileId], references: [id])
+  payments        Payment[]
 
   @@index([subscriptionId])
+  @@index([customerProfileId])
   @@index([status])
   @@index([invoiceNumber])
   @@index([companyId])
@@ -636,6 +644,7 @@ enum InvoiceStatus {
   PARTIALLY_PAID
   OVERDUE
   CANCELLED
+  VOID
 }
 
 model Payment {

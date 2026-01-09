@@ -4,6 +4,7 @@ import { Prisma } from '@prisma/client';
 import { authorizedRoute } from '@/lib/middleware-auth';
 import { createErrorResponse } from '@/lib/api-utils';
 import { attendanceCorrectionSchema, selfServiceAttendanceSchema } from '@/lib/validators/hr';
+import { getDownlineUserIds } from '@/lib/hierarchy';
 
 export const GET = authorizedRoute(
     [],
@@ -21,12 +22,22 @@ export const GET = authorizedRoute(
                 }
             };
 
+
+
+            // ...
+
             if (user.companyId) {
                 where.companyId = user.companyId;
             }
 
-            if (showAll && ['SUPER_ADMIN', 'ADMIN', 'MANAGER'].includes(user.role)) {
+            if (showAll && ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'TEAM_LEADER'].includes(user.role)) {
                 // Admin/Managers see their company/team
+                if (['MANAGER', 'TEAM_LEADER'].includes(user.role)) {
+                    const subIds = await getDownlineUserIds(user.id, user.companyId || undefined);
+                    // Include self if needed? Usually "All" means Team + Me in dashboard context
+                    const allowedIds = [...subIds, user.id];
+                    where.employee = { userId: { in: allowedIds } };
+                }
             } else {
                 const profile = await prisma.employeeProfile.findUnique({
                     where: { userId: user.id }

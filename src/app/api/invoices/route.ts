@@ -3,6 +3,8 @@ import { prisma } from '@/lib/prisma';
 import { getAuthenticatedUser } from '@/lib/auth-legacy';
 import { InvoiceStatus } from '@/types';
 
+// ... imports
+
 export async function GET(req: NextRequest) {
     try {
         // 1. Verify Authentication
@@ -36,17 +38,23 @@ export async function GET(req: NextRequest) {
             where.OR = [
                 { invoiceNumber: { contains: search } },
                 { subscription: { customerProfile: { name: { contains: search } } } },
-                { subscription: { customerProfile: { organizationName: { contains: search } } } }
+                { subscription: { customerProfile: { organizationName: { contains: search } } } },
+                { customerProfile: { name: { contains: search } } },
+                { customerProfile: { organizationName: { contains: search } } }
             ];
         }
 
         // Role-based filtering: Customers only see their own invoices
         if (decoded.role === 'CUSTOMER') {
-            where.subscription = {
-                customerProfile: {
-                    userId: decoded.id
-                }
-            };
+            const profile = await prisma.customerProfile.findUnique({ where: { userId: decoded.id } });
+            if (profile) {
+                where.OR = [
+                    { customerProfileId: profile.id }, // Direct one-off
+                    { subscription: { customerProfileId: profile.id } } // Via subscription
+                ];
+            } else {
+                return NextResponse.json({ data: [], pagination: { page, limit, total: 0, totalPages: 0 } });
+            }
         }
 
         // 4. Fetch Invoices
@@ -57,6 +65,13 @@ export async function GET(req: NextRequest) {
                 take: limit,
                 orderBy: { createdAt: 'desc' },
                 include: {
+                    customerProfile: { // Direct link
+                        select: {
+                            id: true,
+                            name: true,
+                            organizationName: true
+                        }
+                    },
                     subscription: {
                         include: {
                             customerProfile: {
@@ -88,3 +103,62 @@ export async function GET(req: NextRequest) {
         return NextResponse.json({ error: 'Internal Server Error', details: error.message }, { status: 500 });
     }
 }
+
+export async function POST(req: NextRequest) {
+    try {
+        const decoded = await getAuthenticatedUser();
+        if (!decoded || !['SUPER_ADMIN', 'FINANCE_ADMIN', 'MANAGER'].includes(decoded.role)) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+        }
+
+        const body = await req.json();
+        const { customerProfileId, dueDate, lineItems, description, taxRate = 0 } = body;
+
+        console.log("Receiving Invoice Creation Request:", body);
+
+        if (!customerProfileId || !lineItems || lineItems.length === 0) {
+            return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+        }
+
+        // Calculate Totals
+        let subtotal = 0;
+        const processedItems = lineItems.map((item: any) => {
+            const amount = Number(item.quantity) * Number(item.price);
+            subtotal += amount;
+            return {
+                ...item,
+                amount
+            };
+        });
+
+        const tax = subtotal * (Number(taxRate) / 100);
+        const total = subtotal + tax;
+
+        // Generate Invoice Number
+        const year = new Date().getFullYear();
+        const count = await prisma.invoice.count();
+        const invoiceNumber = `INV-${year}-${(count + 1).toString().padStart(5, '0')}`;
+
+        const newInvoice = await prisma.invoice.create({
+            data: {
+                invoiceNumber,
+                customerProfileId,
+                dueDate: new Date(dueDate),
+                amount: subtotal,
+                tax,
+                total,
+                status: 'UNPAID',
+                description,
+                lineItems: processedItems, // Saved as JSON
+                companyId: (decoded as any).companyId
+            }
+        });
+
+        return NextResponse.json(newInvoice);
+
+    } catch (error: any) {
+        console.error('Create Invoice Error:', error);
+        return NextResponse.json({ error: 'Internal Server Error', details: error.message }, { status: 500 });
+    }
+}
+

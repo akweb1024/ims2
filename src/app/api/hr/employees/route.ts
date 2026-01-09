@@ -3,9 +3,10 @@ import { prisma } from '@/lib/prisma';
 import { createEmployeeSchema, updateEmployeeSchema } from '@/lib/validators/hr';
 import { authorizedRoute } from '@/lib/middleware-auth';
 import { createErrorResponse } from '@/lib/api-utils';
+import { getDownlineUserIds } from '@/lib/hierarchy';
 
 export const GET = authorizedRoute(
-    ['SUPER_ADMIN', 'ADMIN', 'MANAGER'],
+    ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'TEAM_LEADER'], // Added TEAM_LEADER
     async (req: NextRequest, user) => {
         try {
             if (!user.companyId && user.role !== 'SUPER_ADMIN') {
@@ -19,9 +20,13 @@ export const GET = authorizedRoute(
                 where.user = { companyId: user.companyId };
             }
 
-            // Role-based restrictions within the context
-            if (user.role === 'MANAGER') {
-                where.user = { ...where.user, managerId: user.id };
+            // Role-based restrictions: Manager & Team Leader see full hierarchy
+            if (['MANAGER', 'TEAM_LEADER'].includes(user.role)) {
+                const subIds = await getDownlineUserIds(user.id, user.companyId || undefined);
+                where.user = {
+                    ...where.user,
+                    id: { in: subIds }
+                };
             }
 
             const employees = await prisma.employeeProfile.findMany({

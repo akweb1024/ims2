@@ -2,28 +2,56 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { authorizedRoute } from '@/lib/middleware-auth';
 import { createErrorResponse } from '@/lib/api-utils';
+import { getDownlineUserIds } from '@/lib/hierarchy';
 
 export const GET = authorizedRoute(
     [],
     async (req: NextRequest, user) => {
         try {
+
+
             const { searchParams } = new URL(req.url);
             const employeeId = searchParams.get('employeeId');
             const showAll = searchParams.get('all') === 'true';
+            const month = searchParams.get('month');
+            const year = searchParams.get('year');
 
             const where: any = {};
 
+            if (month) where.month = parseInt(month);
+            if (year) where.year = parseInt(year);
+
             if (employeeId) {
-                if (!['SUPER_ADMIN', 'ADMIN', 'MANAGER'].includes(user.role)) {
+                // Check authorization for specific employee view
+                if (!['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'TEAM_LEADER'].includes(user.role)) {
                     return createErrorResponse('Forbidden', 403);
                 }
+
+                if (['MANAGER', 'TEAM_LEADER'].includes(user.role)) {
+                    const subIds = await getDownlineUserIds(user.id, user.companyId || undefined);
+                    const allowedIds = [...subIds, user.id];
+                    const targetEmp = await prisma.employeeProfile.findUnique({ where: { id: employeeId }, select: { userId: true } });
+
+                    if (!targetEmp || !allowedIds.includes(targetEmp.userId)) {
+                        return createErrorResponse('Forbidden: Not in your team', 403);
+                    }
+                }
+
                 where.employeeId = employeeId;
                 if (user.companyId) {
                     where.employee = { user: { companyId: user.companyId } };
                 }
-            } else if (showAll && ['SUPER_ADMIN', 'ADMIN', 'MANAGER'].includes(user.role)) {
-                if (user.companyId) {
-                    where.employee = { user: { companyId: user.companyId } };
+            } else if (showAll && ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'TEAM_LEADER'].includes(user.role)) {
+
+                if (['MANAGER', 'TEAM_LEADER'].includes(user.role)) {
+                    const subIds = await getDownlineUserIds(user.id, user.companyId || undefined);
+                    const allowedIds = [...subIds, user.id]; // Include self
+                    where.employee = { userId: { in: allowedIds } };
+                } else {
+                    // Admin/Super Admin
+                    if (user.companyId) {
+                        where.employee = { user: { companyId: user.companyId } };
+                    }
                 }
             } else {
                 const profile = await prisma.employeeProfile.findUnique({
