@@ -71,8 +71,8 @@ export default function UsersPage() {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             if (res.ok) {
-                const data = await res.json();
-                setCompanies(data);
+                const result = await res.json();
+                setCompanies(result.data || []);
             }
         } catch (err) {
             console.error('Failed to fetch companies', err);
