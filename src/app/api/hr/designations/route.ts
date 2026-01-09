@@ -11,7 +11,15 @@ export const GET = authorizedRoute(
             if (!companyId) return createErrorResponse('No company context', 400);
 
             const designations = await prisma.designation.findMany({
-                where: { companyId },
+                where: {
+                    companies: {
+                        some: { id: companyId }
+                    }
+                },
+                include: {
+                    companies: { select: { id: true, name: true } },
+                    departments: { select: { id: true, name: true } }
+                },
                 orderBy: { level: 'asc' }
             });
 
@@ -29,13 +37,25 @@ export const POST = authorizedRoute(
             const companyId = user.companyId;
             if (!companyId) return createErrorResponse('No company context', 400);
             const body = await req.json();
-            const { name, code, jobDescription, kra, expectedExperience, promotionWaitPeriod, incrementGuidelines, level } = body;
+            const {
+                name, code, jobDescription, kra,
+                expectedExperience, promotionWaitPeriod, incrementGuidelines, level,
+                companyIds, departmentIds
+            } = body;
 
             if (!name) return createErrorResponse('Name is required', 400);
 
+            // Default to current company if no companyIds provided
+            const companiesToConnect = (companyIds && Array.isArray(companyIds) && companyIds.length > 0)
+                ? companyIds.map((id: string) => ({ id }))
+                : [{ id: companyId }];
+
+            const departmentsToConnect = (departmentIds && Array.isArray(departmentIds))
+                ? departmentIds.map((id: string) => ({ id }))
+                : [];
+
             const designation = await prisma.designation.create({
                 data: {
-                    companyId,
                     name,
                     code,
                     jobDescription,
@@ -43,7 +63,17 @@ export const POST = authorizedRoute(
                     expectedExperience: parseFloat(expectedExperience) || 0,
                     promotionWaitPeriod: parseInt(promotionWaitPeriod) || 12,
                     incrementGuidelines,
-                    level: parseInt(level) || 1
+                    level: parseInt(level) || 1,
+                    companies: {
+                        connect: companiesToConnect
+                    },
+                    departments: {
+                        connect: departmentsToConnect
+                    }
+                },
+                include: {
+                    companies: true,
+                    departments: true
                 }
             });
 

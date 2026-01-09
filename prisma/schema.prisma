@@ -58,12 +58,13 @@ model Company {
   conferences        Conference[]
   courses            Course[]
   workPlans          WorkPlan[]
+
+  designations       Designation[]
   onboardingModules  OnboardingModule[]
   documentTemplates  DocumentTemplate[]
   itAssets           ITAsset[]
   itTickets          ITSupportTicket[]
   institutions       Institution[]
-  designations       Designation[]
   financialRecords   FinancialRecord[]
   salaryAdvances     SalaryAdvance[]
   leaveLedgers       LeaveLedger[]
@@ -91,6 +92,7 @@ model Department {
   company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
   users   User[]  @relation("DepartmentMembers")
   onboardingModules OnboardingModule[]
+  designations      Designation[]
 
   isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
@@ -943,7 +945,7 @@ model SystemSettings {
 
 model Designation {
   id             String  @id @default(uuid())
-  companyId      String
+  
   name           String
   code           String? // e.g., "SE-1"
   jobDescription String? @db.Text
@@ -957,14 +959,13 @@ model Designation {
   // Hierarchy
   level Int @default(1) // To help decide senior/junior roles
   
-  company          Company           @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  employeeProfiles EmployeeProfile[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@unique([companyId, name])
-  @@index([companyId])
+  companies        Company[]
+  departments      Department[]
+  
+  employees      EmployeeProfile[]
+  
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 }
 
 model EmployeeProfile {
