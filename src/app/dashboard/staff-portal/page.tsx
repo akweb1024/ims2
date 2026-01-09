@@ -150,6 +150,7 @@ export default function StaffPortalPage() {
 
     const tabs = [
         { id: 'overview', name: 'Overview', icon: '🏠' },
+        { id: 'profile', name: 'My Profile', icon: '👤' },
         { id: 'attendance', name: 'Attendance', icon: '🕒' },
         { id: 'work-reports', name: 'Work Reports', icon: '📝' },
         { id: 'work-agenda', name: 'Work Agenda', icon: '🎯' },
@@ -270,6 +271,137 @@ export default function StaffPortalPage() {
                 <div className="bg-white rounded-2xl shadow-sm border border-secondary-100 min-h-[500px] relative">
                     {activeTab === 'onboarding' && <OnboardingPortal />}
 
+                    {activeTab === 'profile' && fullProfile && (
+                        <div className="max-w-5xl mx-auto space-y-8 p-4 md:p-8">
+                            {/* Profile Header Card */}
+                            <div className="card-premium p-8 relative overflow-hidden bg-white border border-secondary-100 shadow-xl rounded-[2rem]">
+                                <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-br from-primary-50 to-primary-100 rounded-full -mr-32 -mt-32 opacity-60 blur-3xl"></div>
+                                <div className="relative z-10 flex flex-col md:flex-row items-center md:items-start gap-8">
+                                    <div className="w-32 h-32 rounded-3xl bg-white p-2 shadow-lg ring-4 ring-primary-50">
+                                        <div className="w-full h-full rounded-2xl bg-gradient-to-br from-secondary-800 to-secondary-900 flex items-center justify-center text-4xl font-black text-white overflow-hidden">
+                                            {fullProfile.profilePicture ? (
+                                                <img src={fullProfile.profilePicture} alt="Profile" className="w-full h-full object-cover" />
+                                            ) : (
+                                                user?.email?.charAt(0).toUpperCase()
+                                            )}
+                                        </div>
+                                    </div>
+                                    <div className="text-center md:text-left space-y-2 flex-1">
+                                        <h2 className="text-3xl font-black text-secondary-900">{user?.email?.split('@')[0]}</h2>
+                                        <div className="flex flex-wrap justify-center md:justify-start gap-2">
+                                            <span className="badge badge-primary px-3 py-1 text-sm">{fullProfile.designatRef?.name || fullProfile.designation || 'Specialist'}</span>
+                                            <span className="badge badge-secondary px-3 py-1 text-sm">{user?.role?.replace('_', ' ')}</span>
+                                            <span className={`badge ${fullProfile.isActive ? 'badge-success' : 'badge-danger'} px-3 py-1 text-sm`}>
+                                                {fullProfile.isActive ? 'Active Staff' : 'Inactive'}
+                                            </span>
+                                        </div>
+                                        <p className="text-secondary-500 font-medium max-w-lg mx-auto md:mx-0 pt-2">
+                                            {fullProfile.jobDescription || 'No professional summary available.'}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                {/* Personal Info */}
+                                <div className="card-premium p-6 hover:shadow-lg transition-all space-y-6">
+                                    <div className="flex items-center gap-3 mb-2">
+                                        <div className="p-2 bg-primary-100 text-primary-600 rounded-lg"><span className="text-xl">📋</span></div>
+                                        <h3 className="text-lg font-bold text-secondary-900">Personal Information</h3>
+                                    </div>
+                                    <dl className="grid grid-cols-1 gap-y-4">
+                                        <div className="grid grid-cols-3 border-b border-secondary-50 pb-2">
+                                            <dt className="text-xs font-bold text-secondary-400 uppercase pt-1">Email</dt>
+                                            <dd className="col-span-2 text-sm font-bold text-secondary-900 truncate" title={fullProfile.personalEmail}>{fullProfile.personalEmail || user?.email}</dd>
+                                        </div>
+                                        <div className="grid grid-cols-3 border-b border-secondary-50 pb-2">
+                                            <dt className="text-xs font-bold text-secondary-400 uppercase pt-1">Phone</dt>
+                                            <dd className="col-span-2 text-sm font-bold text-secondary-900">{fullProfile.phoneNumber || '--'}</dd>
+                                        </div>
+                                        <div className="grid grid-cols-3 border-b border-secondary-50 pb-2">
+                                            <dt className="text-xs font-bold text-secondary-400 uppercase pt-1">Office Ext</dt>
+                                            <dd className="col-span-2 text-sm font-bold text-secondary-900">{fullProfile.officePhone || '--'}</dd>
+                                        </div>
+                                        <div className="grid grid-cols-3 border-b border-secondary-50 pb-2">
+                                            <dt className="text-xs font-bold text-secondary-400 uppercase pt-1">DOB</dt>
+                                            <dd className="col-span-2 text-sm font-bold text-secondary-900"><FormattedDate date={fullProfile.dateOfBirth} /></dd>
+                                        </div>
+                                        <div className="grid grid-cols-3 border-b border-secondary-50 pb-2">
+                                            <dt className="text-xs font-bold text-secondary-400 uppercase pt-1">Blood Group</dt>
+                                            <dd className="col-span-2 text-sm font-bold text-secondary-900">{fullProfile.bloodGroup || '--'}</dd>
+                                        </div>
+                                        <div className="grid grid-cols-3">
+                                            <dt className="text-xs font-bold text-secondary-400 uppercase pt-1">Address</dt>
+                                            <dd className="col-span-2 text-sm font-medium text-secondary-700">{fullProfile.address || '--'}</dd>
+                                        </div>
+                                    </dl>
+                                </div>
+
+                                {/* Professional Info */}
+                                <div className="card-premium p-6 hover:shadow-lg transition-all space-y-6">
+                                    <div className="flex items-center gap-3 mb-2">
+                                        <div className="p-2 bg-indigo-100 text-indigo-600 rounded-lg"><span className="text-xl">💼</span></div>
+                                        <h3 className="text-lg font-bold text-secondary-900">Professional Details</h3>
+                                    </div>
+                                    <dl className="grid grid-cols-1 gap-y-4">
+                                        <div className="grid grid-cols-3 border-b border-secondary-50 pb-2">
+                                            <dt className="text-xs font-bold text-secondary-400 uppercase pt-1">Employee ID</dt>
+                                            <dd className="col-span-2 text-sm font-black text-secondary-900 font-mono tracking-wider">{fullProfile.employeeId || 'STM-???'}</dd>
+                                        </div>
+                                        <div className="grid grid-cols-3 border-b border-secondary-50 pb-2">
+                                            <dt className="text-xs font-bold text-secondary-400 uppercase pt-1">Joined On</dt>
+                                            <dd className="col-span-2 text-sm font-bold text-secondary-900"><FormattedDate date={fullProfile.dateOfJoining} /></dd>
+                                        </div>
+                                        <div className="grid grid-cols-3 border-b border-secondary-50 pb-2">
+                                            <dt className="text-xs font-bold text-secondary-400 uppercase pt-1">Experience</dt>
+                                            <dd className="col-span-2 text-sm font-bold text-secondary-900">{fullProfile.totalExperienceYears || 0} Y {fullProfile.totalExperienceMonths || 0} M</dd>
+                                        </div>
+                                        <div className="grid grid-cols-3 border-b border-secondary-50 pb-2">
+                                            <dt className="text-xs font-bold text-secondary-400 uppercase pt-1">Department</dt>
+                                            <dd className="col-span-2 text-sm font-bold text-secondary-900">{fullProfile.department?.name || 'General'}</dd>
+                                        </div>
+                                        <div className="grid grid-cols-3">
+                                            <dt className="text-xs font-bold text-secondary-400 uppercase pt-1">Emergency</dt>
+                                            <dd className="col-span-2 text-sm font-bold text-danger-600">{fullProfile.emergencyContact || '--'}</dd>
+                                        </div>
+                                    </dl>
+                                </div>
+
+                                {/* Financial Info (Private) */}
+                                <div className="card-premium p-6 hover:shadow-lg transition-all space-y-6 border-t-4 border-success-500">
+                                    <div className="flex items-center gap-3 mb-2">
+                                        <div className="p-2 bg-success-100 text-success-600 rounded-lg"><span className="text-xl">💰</span></div>
+                                        <h3 className="text-lg font-bold text-secondary-900">Financial & Statutory</h3>
+                                    </div>
+                                    <dl className="grid grid-cols-1 gap-y-4">
+                                        <div className="grid grid-cols-3 border-b border-secondary-50 pb-2">
+                                            <dt className="text-xs font-bold text-secondary-400 uppercase pt-1">Bank</dt>
+                                            <dd className="col-span-2 text-sm font-bold text-secondary-900">{fullProfile.bankName || '--'}</dd>
+                                        </div>
+                                        <div className="grid grid-cols-3 border-b border-secondary-50 pb-2">
+                                            <dt className="text-xs font-bold text-secondary-400 uppercase pt-1">Account</dt>
+                                            <dd className="col-span-2 text-sm font-mono text-secondary-900">{fullProfile.accountNumber ? `XXXX-XXXX-${fullProfile.accountNumber.slice(-4)}` : '--'}</dd>
+                                        </div>
+                                        <div className="grid grid-cols-3 border-b border-secondary-50 pb-2">
+                                            <dt className="text-xs font-bold text-secondary-400 uppercase pt-1">IFSC</dt>
+                                            <dd className="col-span-2 text-sm font-mono text-secondary-900">{fullProfile.ifscCode || '--'}</dd>
+                                        </div>
+                                        <div className="grid grid-cols-3 border-b border-secondary-50 pb-2">
+                                            <dt className="text-xs font-bold text-secondary-400 uppercase pt-1">PAN Card</dt>
+                                            <dd className="col-span-2 text-sm font-bold text-secondary-900">{fullProfile.panNumber || '--'}</dd>
+                                        </div>
+                                        <div className="grid grid-cols-3">
+                                            <dt className="text-xs font-bold text-secondary-400 uppercase pt-1">UAN / PF</dt>
+                                            <dd className="col-span-2 text-sm font-bold text-secondary-900">{fullProfile.uanNumber || '--'} / {fullProfile.pfNumber || '--'}</dd>
+                                        </div>
+                                    </dl>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {activeTab === 'onboarding' && <OnboardingPortal />}
+
                     {activeTab === 'overview' && (
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                             <div className="card-premium p-6 border-t-4 border-primary-500">
@@ -368,149 +500,15 @@ export default function StaffPortalPage() {
                                     }} />
                                 )}
 
-                                <div className="card-premium p-6">
-                                    <div className="flex justify-between items-center mb-6">
-                                        <h3 className="text-xl font-bold text-secondary-900">Submit Report</h3>
-                                        <button
-                                            type="button"
-                                            onClick={async () => {
-                                                const btn = document.getElementById('magic-btn');
-                                                if (btn) btn.innerHTML = '✨ Generating...';
-                                                try {
-                                                    const token = localStorage.getItem('token');
-                                                    const res = await fetch('/api/hr/work-reports/generate', {
-                                                        method: 'POST',
-                                                        headers: { 'Authorization': `Bearer ${token}` }
-                                                    });
-                                                    if (res.ok) {
-                                                        const data = await res.json();
-                                                        const form = document.querySelector('form[name="reportForm"]') as HTMLFormElement;
-                                                        if (form) {
-                                                            if (data.content) (form.elements.namedItem('content') as HTMLTextAreaElement).value = data.content;
-                                                            if (data.keyOutcome) (form.elements.namedItem('keyOutcome') as HTMLInputElement).value = data.keyOutcome;
-                                                            (form.elements.namedItem('title') as HTMLInputElement).value = `Daily Report - ${new Date().toLocaleDateString()}`;
-                                                            // Populate new fields
-                                                            if (data.revenue) (form.elements.namedItem('revenueGenerated') as HTMLInputElement).value = data.revenue;
-                                                            if (data.tasksCount) (form.elements.namedItem('tasksCompleted') as HTMLInputElement).value = data.tasksCount;
-                                                            if (data.ticketsCount) (form.elements.namedItem('ticketsResolved') as HTMLInputElement).value = data.ticketsCount;
-                                                            if (data.chatsCount) (form.elements.namedItem('chatsHandled') as HTMLInputElement).value = data.chatsCount;
-                                                            if (data.followUpsCount) (form.elements.namedItem('followUpsCompleted') as HTMLInputElement).value = data.followUpsCount;
-                                                        }
-                                                    }
-                                                } catch (e) {
-                                                    console.error(e);
-                                                } finally {
-                                                    if (btn) btn.innerHTML = '✨ Auto-Generate';
-                                                }
-                                            }}
-                                            id="magic-btn"
-                                            className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-bold transition-all shadow-lg shadow-indigo-200 flex items-center gap-2"
-                                        >
-                                            ✨ Auto-Generate
-                                        </button>
+                                <div className="card-premium p-8 text-center bg-gradient-to-br from-primary-50 to-white border-2 border-primary-100 border-dashed">
+                                    <div className="w-20 h-20 bg-primary-100 text-primary-600 rounded-full flex items-center justify-center mx-auto mb-6">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
                                     </div>
-                                    <form name="reportForm" onSubmit={async (e) => {
-                                        if (submittingReport) return;
-                                        setSubmittingReport(true);
-                                        const form = e.currentTarget;
-                                        const formData = new FormData(form);
-                                        const token = localStorage.getItem('token');
-                                        try {
-                                            const res = await fetch('/api/hr/work-reports', {
-                                                method: 'POST',
-                                                headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-                                                body: JSON.stringify(Object.fromEntries(formData))
-                                            });
-                                            if (res.ok) {
-                                                alert('Report submitted successfully!');
-                                                form.reset();
-                                                fetchAllData();
-                                            } else {
-                                                const err = await res.json();
-                                                alert(`Error: ${err.error}`);
-                                            }
-                                        } catch (e) {
-                                            console.error(e);
-                                        } finally {
-                                            setSubmittingReport(false);
-                                        }
-                                    }} className="space-y-4">
-                                        <div className="grid grid-cols-2 gap-4 bg-secondary-50 p-4 rounded-2xl border border-secondary-100 mb-4">
-                                            <div>
-                                                <label className="text-[10px] font-black text-secondary-400 uppercase tracking-widest block mb-1">Today&apos;s Revenue</label>
-                                                <div className="relative">
-                                                    <span className="absolute left-3 top-2.5 text-secondary-400 font-bold">₹</span>
-                                                    <input name="revenueGenerated" type="number" className="input pl-7" defaultValue="0" />
-                                                </div>
-                                            </div>
-                                            <div>
-                                                <label className="text-[10px] font-black text-secondary-400 uppercase tracking-widest block mb-1">Tasks Done</label>
-                                                <input name="tasksCompleted" type="number" className="input" defaultValue="0" />
-                                            </div>
-                                            <div>
-                                                <label className="text-[10px] font-black text-secondary-400 uppercase tracking-widest block mb-1">Tickets Fixed</label>
-                                                <input name="ticketsResolved" type="number" className="input" defaultValue="0" />
-                                            </div>
-                                            <div>
-                                                <label className="text-[10px] font-black text-secondary-400 uppercase tracking-widest block mb-1">Chats Handled</label>
-                                                <input name="chatsHandled" type="number" className="input" defaultValue="0" />
-                                            </div>
-                                            <div className="col-span-2">
-                                                <label className="text-[10px] font-black text-secondary-400 uppercase tracking-widest block mb-1">Followups Done</label>
-                                                <input name="followUpsCompleted" type="number" className="input" defaultValue="0" />
-                                            </div>
-                                        </div>
-                                        <div className="grid grid-cols-2 gap-4">
-                                            <div>
-                                                <label className="label">Category</label>
-                                                <select name="category" className="input" required>
-                                                    <option value="GENERAL">General/Admin</option>
-                                                    <option value="SALES">Sales & Growth</option>
-                                                    <option value="DEVELOPMENT">Product & Tech</option>
-                                                    <option value="SUPPORT">Customer Support</option>
-                                                    <option value="LEARNING">Training & Learning</option>
-                                                </select>
-                                            </div>
-                                            <div>
-                                                <label className="label">Productivity (1-10)</label>
-                                                <input name="selfRating" type="number" min="1" max="10" className="input" required placeholder="10" />
-                                            </div>
-                                        </div>
-                                        <div>
-                                            <label className="label">Focus Area / Title</label>
-                                            <input name="title" className="input" required placeholder="e.g. Sales Outreach, IT Support" />
-                                        </div>
-                                        <div>
-                                            <label className="label">Key Outcome / Revenue Impact</label>
-                                            <input name="keyOutcome" className="input" placeholder="e.g. Closed $500 deal, Fixed 3 critical bugs" />
-                                        </div>
-                                        <div>
-                                            <label className="label">Detailed Accomplishments</label>
-                                            <textarea name="content" className="input h-32" required placeholder="Describe what you did today..." />
-                                        </div>
-                                        <div className="grid grid-cols-2 gap-4">
-                                            <div>
-                                                <label className="label">Hours Spent</label>
-                                                <input name="hoursSpent" type="number" step="0.5" className="input" required />
-                                            </div>
-                                            <div>
-                                                <label className="label">Date</label>
-                                                <input name="date" type="date" className="input" defaultValue={new Date().toISOString().split('T')[0]} />
-                                            </div>
-                                        </div>
-                                        <button
-                                            type="submit"
-                                            disabled={submittingReport}
-                                            className="btn btn-primary w-full py-3 rounded-xl font-bold shadow-lg flex items-center justify-center gap-2"
-                                        >
-                                            {submittingReport ? (
-                                                <>
-                                                    <span className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></span>
-                                                    Submitting...
-                                                </>
-                                            ) : 'Submit Impact Report'}
-                                        </button>
-                                    </form>
+                                    <h3 className="text-2xl font-black text-secondary-900 mb-2">Submit Daily Work Report</h3>
+                                    <p className="text-secondary-500 mb-6 max-w-md mx-auto">Click below to access the detailed reporting tool. Track your revenue, meetings, and daily achievements.</p>
+                                    <a href="/dashboard/staff-portal/submit-report" className="btn btn-primary px-8 py-3 text-lg shadow-xl shadow-primary-200 hover:shadow-primary-300 transition-all inline-block">
+                                        Open Reporting Tool
+                                    </a>
                                 </div>
                             </div>
                             <div className="lg:col-span-2 space-y-4">

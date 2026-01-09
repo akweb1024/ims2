@@ -9,6 +9,7 @@ export default function DesignationsPage() {
     const [loading, setLoading] = useState(true);
     const [userRole, setUserRole] = useState('CUSTOMER');
     const [searchTerm, setSearchTerm] = useState('');
+    const [levelFilter, setLevelFilter] = useState('ALL');
     const [showModal, setShowModal] = useState(false);
     const [selectedDesignation, setSelectedDesignation] = useState<any>(null);
 
@@ -104,10 +105,14 @@ export default function DesignationsPage() {
         }
     };
 
-    const filtered = designations.filter(d =>
-        d.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        d.code?.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    const filtered = designations.filter(d => {
+        const matchesSearch = d.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            d.code?.toLowerCase().includes(searchTerm.toLowerCase());
+        const matchesLevel = levelFilter === 'ALL' || d.level.toString() === levelFilter;
+        return matchesSearch && matchesLevel;
+    });
+
+    const uniqueLevels = Array.from(new Set(designations.map(d => d.level))).sort((a, b) => a - b);
 
     return (
         <DashboardLayout userRole={userRole}>
@@ -137,15 +142,27 @@ export default function DesignationsPage() {
 
                 {/* Stats & Search */}
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                    <div className="md:col-span-3 relative">
-                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-secondary-400" size={20} />
-                        <input
-                            type="text"
-                            placeholder="Search by name or code..."
-                            className="input pl-12 h-14"
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                        />
+                    <div className="md:col-span-3 relative flex gap-4">
+                        <div className="relative flex-1">
+                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-secondary-400" size={20} />
+                            <input
+                                type="text"
+                                placeholder="Search by name or code..."
+                                className="input pl-12 h-14"
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                            />
+                        </div>
+                        <select
+                            className="input w-40 h-14 font-bold"
+                            value={levelFilter}
+                            onChange={(e) => setLevelFilter(e.target.value)}
+                        >
+                            <option value="ALL">All Levels</option>
+                            {uniqueLevels.map(lvl => (
+                                <option key={lvl} value={lvl}>Level {lvl}</option>
+                            ))}
+                        </select>
                     </div>
                     <div className="card-premium p-4 flex items-center justify-between">
                         <div>

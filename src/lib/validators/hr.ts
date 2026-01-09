@@ -105,6 +105,9 @@ export const updateEmployeeSchema = z.object({
     nextReviewDate: z.preprocess(emptyToNull, z.coerce.date().nullable().optional()),
     lastIncrementPercentage: z.preprocess(emptyToNull, z.coerce.number().nullable().optional()),
 
+    // Leave corrections
+    manualLeaveAdjustment: z.preprocess(emptyToNull, z.coerce.number().nullable().optional()),
+
     // ID field for updates
     id: z.preprocess(emptyToUndefined, z.string().uuid().optional()),
 }).passthrough(); // Allow extra fields to pass through

@@ -39,7 +39,10 @@ const createTransporter = () => {
 const transporter = createTransporter();
 
 export async function sendEmail({ to, subject, text, html }: EmailOptions) {
-    if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
+    const hasAws = process.env.AWS_ACCESS_KEY_ID && process.env.AWS_SECRET_ACCESS_KEY;
+    const hasSmtp = process.env.EMAIL_USER && process.env.EMAIL_PASS;
+
+    if (!hasAws && !hasSmtp) {
         console.log('-------------------------------------------');
         console.log('📧 MOCK EMAIL SENT (No credentials provided)');
         console.log(`To: ${to}`);

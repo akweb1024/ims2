@@ -89,7 +89,8 @@ export default function EmployeeProfilePage() {
         profilePicture: '',
         employeeId: '',
         isActive: true,
-        dateOfJoining: ''
+        dateOfJoining: '',
+        manualLeaveAdjustment: 0
     });
 
     useEffect(() => {
@@ -141,7 +142,8 @@ export default function EmployeeProfilePage() {
             pfNumber: employee.pfNumber || '',
             esicNumber: employee.esicNumber || '',
             profilePicture: employee.profilePicture || '',
-            employeeId: employee.employeeId || ''
+            employeeId: employee.employeeId || '',
+            manualLeaveAdjustment: employee.manualLeaveAdjustment || 0
         });
         setShowEmpModal(true);
     };
@@ -177,6 +179,9 @@ export default function EmployeeProfilePage() {
             Object.entries(empForm).map(([key, value]) => {
                 // Skip these fields
                 if (key === 'email' || key === 'password') return [key, value];
+
+                // Convert numbers
+                if (key === 'manualLeaveAdjustment') return [key, parseFloat(value as string) || 0];
 
                 // Convert empty strings to null
                 if (value === '' || value === 'null' || value === 'undefined') {
@@ -312,7 +317,7 @@ export default function EmployeeProfilePage() {
                                     <dl className="space-y-4">
                                         <div className="grid grid-cols-2">
                                             <dt className="text-xs font-bold text-secondary-400 uppercase">Designation</dt>
-                                            <dd className="font-medium text-secondary-900">{employee.designation || '-'}</dd>
+                                            <dd className="font-medium text-secondary-900">{employee.designatRef?.name || employee.designation || '-'}</dd>
                                         </div>
                                         <div className="grid grid-cols-2">
                                             <dt className="text-xs font-bold text-secondary-400 uppercase">Department</dt>
@@ -546,7 +551,12 @@ export default function EmployeeProfilePage() {
                                                                 return acc + days;
                                                             }, 0) || 0;
 
-                                                        const balance = accrued - taken;
+                                                        // Manual Adjustment included
+                                                        const adjustment = employee.manualLeaveAdjustment || 0;
+                                                        const balance = accrued - taken + adjustment;
+
+                                                        // Display logic to show breakdown if hovered? For now just the balance.
+                                                        // return `${balance.toFixed(1)} ${adjustment !== 0 ? `(${adjustment > 0 ? '+' : ''}${adjustment} adj)` : ''}`;
                                                         return balance.toFixed(1);
                                                     })()}
                                                 </p>
@@ -792,6 +802,19 @@ export default function EmployeeProfilePage() {
                                                 </div>
                                             </div>
                                         </div>
+
+
+                                        <div className="col-span-2">
+                                            <h4 className="label-premium font-black text-rose-600 border-b border-rose-100 pb-2 mb-4 block uppercase tracking-tighter">Admin Corrections</h4>
+                                            <div className="grid grid-cols-2 gap-4">
+                                                <div>
+                                                    <label className="label-premium">Leave Balance Adjustment (Days)</label>
+                                                    <p className="text-[10px] text-secondary-400 mb-1">Negative to deduct, positive to add extra days.</p>
+                                                    <input type="number" step="0.5" className="input-premium border-rose-200 focus:border-rose-500" value={empForm.manualLeaveAdjustment} onChange={e => setEmpForm({ ...empForm, manualLeaveAdjustment: parseFloat(e.target.value) })} />
+                                                </div>
+                                            </div>
+                                        </div>
+
                                         <div className="col-span-2">
                                             <label className="label-premium font-black text-warning-600 border-b border-warning-100 pb-2 mb-4 block uppercase tracking-tighter">Growth & Review Track</label>
                                             <div className="grid grid-cols-2 gap-4">
@@ -852,8 +875,8 @@ export default function EmployeeProfilePage() {
                             </div>
                         )}
                     </div>
-                </div>
-            </div>
-        </DashboardLayout>
+                </div >
+            </div >
+        </DashboardLayout >
     );
 }

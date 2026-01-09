@@ -994,6 +994,7 @@ model EmployeeProfile {
   attendance    Attendance[]
   workReports   WorkReport[]
   salarySlips   SalarySlip[]
+  salaryStructure SalaryStructure?
   performance   PerformanceReview[]
   leaveRequests LeaveRequest[]
   documents     EmployeeDocument[]
@@ -1034,6 +1035,10 @@ model EmployeeProfile {
   // HR History
   incrementHistory  SalaryIncrementRecord[]
   hrComments        EmployeeComment[]
+
+  // Leave Management
+  manualLeaveAdjustment Float @default(0) // Correction factor for leave balance
+
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -1134,6 +1139,8 @@ model WorkReport {
   ticketsResolved    Int     @default(0)
   chatsHandled       Int     @default(0)
   followUpsCompleted Int     @default(0)
+  
+  metrics            Json?   // Custom role-specific metrics (Sales, Creation, etc.)
 
   // Scoring
   selfRating     Int?    @default(5) // 1-10
@@ -1207,6 +1214,44 @@ model SalarySlip {
   company   Company? @relation(fields: [companyId], references: [id])
 
   @@index([companyId])
+}
+
+model SalaryStructure {
+  id                String          @id @default(uuid())
+  employeeId        String          @unique
+  employee          EmployeeProfile @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  // Earnings
+  basicSalary       Float   @default(0)
+  hra               Float   @default(0)
+  conveyance        Float   @default(0)
+  medical           Float   @default(0)
+  specialAllowance  Float   @default(0)
+  otherAllowances   Float   @default(0)
+
+  // Computed
+  grossSalary       Float   @default(0)
+
+  // Deductions
+  pfEmployee        Float   @default(0) // 12% typically
+  esicEmployee      Float   @default(0) // 0.75% typically
+  professionalTax   Float   @default(0)
+  tds               Float   @default(0)
+  totalDeductions   Float   @default(0)
+
+  // Employer Contributions (Cost to Company)
+  pfEmployer        Float   @default(0)
+  esicEmployer      Float   @default(0)
+  gratuity          Float   @default(0)
+  insurance         Float   @default(0)
+
+  netSalary         Float   @default(0) // In Hand
+  ctc               Float   @default(0) // annual or monthly total
+
+  effectiveFrom     DateTime @default(now())
+  
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
 }
 
 model PerformanceReview {

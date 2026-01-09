@@ -43,6 +43,13 @@ export const GET = authorizedRoute(
                             attendance: true,
                             workReports: true
                         }
+                    },
+                    designatRef: {
+                        select: {
+                            name: true,
+                            level: true,
+                            code: true
+                        }
                     }
                 }
             });

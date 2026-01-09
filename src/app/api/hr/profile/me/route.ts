@@ -15,17 +15,25 @@ export const GET = authorizedRoute(
                             name: true,
                             email: true,
                             role: true,
-                            companies: { select: { name: true, website: true, address: true, logoUrl: true } }
+                            companies: { select: { name: true, website: true, address: true, logoUrl: true } },
+                            department: { select: { id: true, name: true } }
                         }
                     },
                     documents: true,
-                    digitalDocuments: true
+                    digitalDocuments: true,
+                    designatRef: true
                 }
             });
 
             if (!profile) return createErrorResponse('Profile not found', 404);
 
-            return NextResponse.json(profile);
+            // Flatten department for frontend compatibility
+            const response = {
+                ...profile,
+                department: profile.user?.department
+            };
+
+            return NextResponse.json(response);
         } catch (error) {
             return createErrorResponse(error);
         }

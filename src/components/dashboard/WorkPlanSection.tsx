@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { Target } from 'lucide-react';
 import FormattedDate from '@/components/common/FormattedDate';
 
 interface WorkPlanSectionProps {
@@ -153,9 +154,11 @@ export default function WorkPlanSection({ plans, onPlanSubmitted, user }: WorkPl
                             </div>
 
                             <div className="space-y-4 mb-6">
-                                <div className="bg-secondary-50 p-4 rounded-2xl border border-secondary-100">
-                                    <p className="text-[10px] font-black text-secondary-400 uppercase tracking-widest mb-1">Agenda</p>
-                                    <p className="text-sm text-secondary-800 whitespace-pre-wrap">{plan.agenda}</p>
+                                <div className="bg-amber-50 p-4 rounded-xl border-l-4 border-amber-400 shadow-sm relative overflow-hidden">
+                                    <p className="text-[10px] font-black text-amber-600 uppercase tracking-widest mb-2 flex items-center gap-1">
+                                        <Target size={12} /> Agenda
+                                    </p>
+                                    <p className="text-sm font-medium text-secondary-900 whitespace-pre-wrap leading-relaxed">{plan.agenda}</p>
                                 </div>
                                 {plan.strategy && (
                                     <div className="bg-primary-50/50 p-4 rounded-2xl border border-primary-50">

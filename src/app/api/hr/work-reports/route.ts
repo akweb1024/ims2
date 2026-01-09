@@ -131,7 +131,8 @@ export const POST = authorizedRoute(
                     ticketsResolved: parseInt(body.ticketsResolved) || 0,
                     chatsHandled: parseInt(body.chatsHandled) || 0,
                     followUpsCompleted: parseInt(body.followUpsCompleted) || 0,
-                    kraMatchRatio: kraMatchRatio
+                    kraMatchRatio: kraMatchRatio,
+                    metrics: body.metrics || null
                 }
             });
 
