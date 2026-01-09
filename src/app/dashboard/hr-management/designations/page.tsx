@@ -8,6 +8,7 @@ import SafeHTML from '@/components/common/SafeHTML';
 
 export default function DesignationsPage() {
     const [designations, setDesignations] = useState<any[]>([]);
+    const [departments, setDepartments] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [userRole, setUserRole] = useState('CUSTOMER');
     const [searchTerm, setSearchTerm] = useState('');
@@ -24,7 +25,8 @@ export default function DesignationsPage() {
         expectedExperience: 0,
         promotionWaitPeriod: 12,
         incrementGuidelines: '',
-        level: 1
+        level: 1,
+        departmentIds: [] as string[]
     });
 
     useEffect(() => {
@@ -33,7 +35,17 @@ export default function DesignationsPage() {
             setUserRole(JSON.parse(userData).role);
         }
         fetchDesignations();
+        fetchDepartments();
     }, []);
+
+    const fetchDepartments = async () => {
+        try {
+            const res = await fetch('/api/hr/departments');
+            if (res.ok) setDepartments(await res.json());
+        } catch (error) {
+            console.error('Failed to fetch departments');
+        }
+    };
 
     const fetchDesignations = async () => {
         setLoading(true);
@@ -60,7 +72,8 @@ export default function DesignationsPage() {
             expectedExperience: des.expectedExperience || 0,
             promotionWaitPeriod: des.promotionWaitPeriod || 12,
             incrementGuidelines: des.incrementGuidelines || '',
-            level: des.level || 1
+            level: des.level || 1,
+            departmentIds: des.departments ? des.departments.map((d: any) => d.id) : []
         });
         setShowModal(true);
     };
@@ -96,7 +109,7 @@ export default function DesignationsPage() {
                 setFormData({
                     name: '', code: '', jobDescription: '', kra: '',
                     expectedExperience: 0, promotionWaitPeriod: 12,
-                    incrementGuidelines: '', level: 1
+                    incrementGuidelines: '', level: 1, departmentIds: []
                 });
             } else {
                 const err = await res.json();
@@ -131,7 +144,7 @@ export default function DesignationsPage() {
                             setFormData({
                                 name: '', code: '', jobDescription: '', kra: '',
                                 expectedExperience: 0, promotionWaitPeriod: 12,
-                                incrementGuidelines: '', level: 1
+                                incrementGuidelines: '', level: 1, departmentIds: []
                             });
                             setShowModal(true);
                         }}
@@ -191,6 +204,13 @@ export default function DesignationsPage() {
                                             <span className="badge badge-primary text-[10px]">{des.code || 'N/A'}</span>
                                         </div>
                                         <p className="text-sm text-secondary-500">Level {des.level}</p>
+                                        <div className="flex flex-wrap gap-1 mt-1">
+                                            {des.departments?.map((dept: any) => (
+                                                <span key={dept.id} className="text-[10px] bg-secondary-100 text-secondary-600 px-2 py-0.5 rounded-full">
+                                                    {dept.name}
+                                                </span>
+                                            ))}
+                                        </div>
                                     </div>
                                     <div className="flex gap-2">
                                         <button onClick={() => handleEdit(des)} className="p-2 hover:bg-primary-50 text-secondary-400 hover:text-primary-600 rounded-lg transition-colors">
@@ -255,6 +275,32 @@ export default function DesignationsPage() {
                                 <div className="col-span-2 md:col-span-1">
                                     <label className="label">Hierarchy Level (1=Top)</label>
                                     <input type="number" className="input" value={formData.level} onChange={e => setFormData({ ...formData, level: parseInt(e.target.value) })} />
+                                </div>
+                            </div>
+
+                            <div className="col-span-2">
+                                <label className="label">Applicable Departments</label>
+                                <div className="flex flex-wrap gap-2 mt-2">
+                                    {departments.map((dept) => (
+                                        <button
+                                            key={dept.id}
+                                            type="button"
+                                            onClick={() => {
+                                                const current = formData.departmentIds;
+                                                const updated = current.includes(dept.id)
+                                                    ? current.filter(id => id !== dept.id)
+                                                    : [...current, dept.id];
+                                                setFormData({ ...formData, departmentIds: updated });
+                                            }}
+                                            className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors border ${formData.departmentIds.includes(dept.id)
+                                                    ? 'bg-primary-50 border-primary-500 text-primary-700'
+                                                    : 'bg-white border-secondary-200 text-secondary-600 hover:border-primary-300'
+                                                }`}
+                                        >
+                                            {dept.name}
+                                        </button>
+                                    ))}
+                                    {departments.length === 0 && <span className="text-sm text-secondary-400">No departments found.</span>}
                                 </div>
                             </div>
 
