@@ -34,6 +34,7 @@ export const GET = authorizedRoute(
                 include: {
                     user: {
                         select: {
+                            id: true,
                             email: true,
                             name: true,
                             role: true,
