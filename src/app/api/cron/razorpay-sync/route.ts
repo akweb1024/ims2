@@ -96,6 +96,7 @@ export async function GET(req: Request) {
                             razorpayOrderId: rpPayment.order_id,
                             status: rpPayment.status,
                             notes: rpPayment.notes ? JSON.stringify(rpPayment.notes) : null,
+                            metadata: JSON.stringify(rpPayment), // Store full object for rich details (email, description, etc.)
                             companyId: companyId || null,
                         },
                     });

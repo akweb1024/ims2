@@ -159,6 +159,9 @@ export async function GET(req: NextRequest) {
         const currencyMap = new Map<string, { amount: number, count: number }>();
 
         payments.forEach(p => {
+            // Goal 1: Exclude FAILED status from revenue
+            if (p.status === 'failed') return;
+
             const curr = (p.currency || 'INR').toUpperCase();
             const rate = exchangeRates[curr] || 1;
             const inrValue = p.amount * rate;
@@ -178,11 +181,13 @@ export async function GET(req: NextRequest) {
             inrEquivalent: data.amount * (exchangeRates[currency] || 1)
         }));
 
-        // Daily Revenue Trend
+        // Goal 3: Daily Revenue Trend with Status Split
         const dailyRevenue: any[] = await prisma.$queryRaw`
             SELECT 
                 CAST("paymentDate" AS DATE) as date,
-                SUM(amount) as revenue
+                SUM(CASE WHEN status != 'failed' THEN amount ELSE 0 END) as total_revenue,
+                SUM(CASE WHEN status = 'captured' THEN amount ELSE 0 END) as captured_revenue,
+                SUM(CASE WHEN status = 'failed' THEN amount ELSE 0 END) as failed_revenue
             FROM "Payment"
             WHERE "razorpayPaymentId" IS NOT NULL
             ${user.role !== 'SUPER_ADMIN' ? Prisma.sql`AND "companyId" = ${user.companyId}` : Prisma.empty}
@@ -194,7 +199,12 @@ export async function GET(req: NextRequest) {
         // Process daily revenue to INR for charts
         const processedDaily = dailyRevenue.map((curr: any) => {
             const dateStr = curr.date.toISOString().split('T')[0];
-            return { date: dateStr, revenue: curr.revenue };
+            return {
+                date: dateStr,
+                revenue: curr.total_revenue,
+                captured: curr.captured_revenue,
+                failed: curr.failed_revenue
+            };
         }).slice(0, 30);
 
         return NextResponse.json({

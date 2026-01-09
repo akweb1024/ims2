@@ -67,18 +67,18 @@ export const POST = authorizedRoute(
 
                 if (!employeeId) continue;
 
-                // Calculate Totals
+                // Calculate Totals (with 2 decimal precision)
                 // Earnings
-                const earnings = (basicSalary || 0) + (hra || 0) + (conveyance || 0) + (medical || 0) + (specialAllowance || 0);
+                const earnings = Number(((basicSalary || 0) + (hra || 0) + (conveyance || 0) + (medical || 0) + (specialAllowance || 0)).toFixed(2));
 
                 // Deductions
-                const deductions = (pfEmployee || 0) + (esicEmployee || 0) + (professionalTax || 0) + (tds || 0);
+                const deductions = Number(((pfEmployee || 0) + (esicEmployee || 0) + (professionalTax || 0) + (tds || 0)).toFixed(2));
 
                 // Employer contribs
-                const employerContrib = (pfEmployer || 0) + (esicEmployer || 0) + (gratuity || 0) + (insurance || 0);
+                const employerContrib = Number(((pfEmployer || 0) + (esicEmployer || 0) + (gratuity || 0) + (insurance || 0)).toFixed(2));
 
-                const netSalary = earnings - deductions;
-                const ctc = earnings + employerContrib;
+                const netSalary = Number((earnings - deductions).toFixed(2));
+                const ctc = Number((earnings + employerContrib).toFixed(2));
 
                 // Upsert
                 const saved = await prisma.salaryStructure.upsert({

@@ -64,16 +64,18 @@ export default function RazorpayTrackerPage() {
 
     const chartData = data?.dailyRevenue?.map((d: any) => ({
         date: new Date(d.date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' }),
-        revenue: d.revenue
+        revenue: d.revenue,   // Total (Blue)
+        captured: d.captured, // Captured (Green)
+        failed: d.failed      // Failed (Red)
     })).reverse() || [];
 
     const formatCurrency = (amount: number, currency: string = 'INR') => {
-        // Database stores amounts in actual currency value (e.g., 2799 = ₹2799, not paise)
-        return new Intl.NumberFormat('en-IN', {
-            style: 'currency',
-            currency: currency.toUpperCase() === 'PAISE' ? 'INR' : currency.toUpperCase(),
-            minimumFractionDigits: 2
+        // Goal 2: Code + Amount only (no symbol)
+        const val = new Intl.NumberFormat('en-IN', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
         }).format(amount);
+        return `${currency.toUpperCase()} ${val}`;
     };
 
     // Payment Method Distribution
@@ -203,12 +205,15 @@ export default function RazorpayTrackerPage() {
                                     </defs>
                                     <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
                                     <XAxis dataKey="date" tick={{ fontSize: 10, fill: '#94a3b8' }} />
-                                    <YAxis tick={{ fontSize: 10, fill: '#94a3b8' }} tickFormatter={(val) => `₹${val / 1000}k`} />
+                                    <YAxis tick={{ fontSize: 10, fill: '#94a3b8' }} tickFormatter={(val) => `${val / 1000}k`} />
                                     <Tooltip
                                         contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 25px rgba(0,0,0,0.1)' }}
-                                        formatter={(value: any) => [`₹${value.toLocaleString()}`, 'Revenue']}
+                                        formatter={(value: any, name: any) => [`${value.toLocaleString()}`, name ? name.charAt(0).toUpperCase() + name.slice(1) : '']}
                                     />
-                                    <Area type="monotone" dataKey="revenue" stroke="#2563eb" strokeWidth={3} fill="url(#colorRevenue)" />
+                                    {/* Goal 3: Multi-colored graph lines */}
+                                    <Area type="monotone" dataKey="revenue" name="Total" stroke="#2563eb" strokeWidth={2} fill="url(#colorRevenue)" fillOpacity={0.1} />
+                                    <Area type="monotone" dataKey="captured" name="Captured" stroke="#10b981" strokeWidth={2} fillOpacity={0} />
+                                    <Area type="monotone" dataKey="failed" name="Failed" stroke="#ef4444" strokeWidth={2} fillOpacity={0} />
                                 </AreaChart>
                             </ResponsiveContainer>
                         </div>
