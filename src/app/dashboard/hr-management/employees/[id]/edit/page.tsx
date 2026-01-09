@@ -52,7 +52,8 @@ const initialFormState = {
         revenue: '',
         publication: '',
         development: ''
-    }
+    },
+    managerId: ''
 };
 
 export default function EditEmployeePage() {
@@ -61,6 +62,7 @@ export default function EditEmployeePage() {
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [designations, setDesignations] = useState<any[]>([]);
+    const [managers, setManagers] = useState<any[]>([]);
     const [empForm, setEmpForm] = useState(initialFormState);
     const [userRole, setUserRole] = useState('MANAGER');
 
@@ -79,6 +81,18 @@ export default function EditEmployeePage() {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 if (desRes.ok) setDesignations(await desRes.ok ? await desRes.json() : []);
+
+                // Fetch Potential Managers (All Employees)
+                const managersRes = await fetch('/api/hr/employees', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (managersRes.ok) {
+                    const allEmps = await managersRes.json();
+                    const eligibleManagers = allEmps.filter((e: any) =>
+                        ['MANAGER', 'TEAM_LEADER', 'ADMIN', 'SUPER_ADMIN'].includes(e.user.role)
+                    );
+                    setManagers(eligibleManagers);
+                }
 
                 // Fetch Employee
                 const empRes = await fetch(`/api/hr/employees/${params.id}`, {
@@ -128,7 +142,8 @@ export default function EditEmployeePage() {
                         profilePicture: data.profilePicture || '',
                         employeeId: data.employeeId || '',
                         manualLeaveAdjustment: data.manualLeaveAdjustment || 0,
-                        targets: data.metrics?.targets || { revenue: '', publication: '', development: '' }
+                        targets: data.metrics?.targets || { revenue: '', publication: '', development: '' },
+                        managerId: data.user.managerId || ''
                     });
                 }
             } catch (err) {
@@ -318,6 +333,21 @@ export default function EditEmployeePage() {
                                     <option value="MANAGER">Manager</option>
                                     <option value="ADMIN">Admin</option>
                                     <option value="FINANCE_ADMIN">Finance Admin</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label className="label-premium">Reports To (Manager)</label>
+                                <select
+                                    className="input-premium"
+                                    value={empForm.managerId}
+                                    onChange={e => setEmpForm({ ...empForm, managerId: e.target.value })}
+                                >
+                                    <option value="">No Manager (Top Level)</option>
+                                    {managers.filter(m => m.user.id !== params.id).map(m => (
+                                        <option key={m.id} value={m.user.id}>
+                                            {m.user.name || m.user.email} ({m.designation || m.user.role})
+                                        </option>
+                                    ))}
                                 </select>
                             </div>
                             <div>
