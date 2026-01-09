@@ -35,6 +35,7 @@ const emptyToUndefined = (val: unknown): unknown => {
 // --- Employee Schemas ---
 export const createEmployeeSchema = z.object({
     email: z.string().email("Invalid email address"),
+    name: z.string().min(1, "Name is required"),
     password: z.string().min(6, "Password must be at least 6 characters"),
     role: UserRole.default("SALES_EXECUTIVE"),
     designation: z.string().min(1, "Designation is required"),
@@ -56,6 +57,7 @@ export const createEmployeeSchema = z.object({
 export const updateEmployeeSchema = z.object({
     // Basic fields
     role: z.preprocess(emptyToUndefined, UserRole.optional()),
+    name: z.preprocess(emptyToUndefined, z.string().optional()),
     designation: z.preprocess(emptyToUndefined, z.string().optional()),
     department: z.preprocess(emptyToUndefined, z.string().optional()),
     dateOfJoining: z.preprocess(emptyToNull, z.coerce.date().nullable().optional()),

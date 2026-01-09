@@ -30,6 +30,7 @@ export const GET = authorizedRoute(
                     user: {
                         select: {
                             email: true,
+                            name: true,
                             role: true,
                             isActive: true
                         }
@@ -82,15 +83,16 @@ export const PATCH = authorizedRoute(
             }
             const validUpdates = result.data;
 
-            // 1. Handle User-level updates (Role, Active Status)
-            if (validUpdates.role || validUpdates.isActive !== undefined) {
+            // 1. Handle User-level updates (Role, Active Status, Name)
+            if (validUpdates.role || validUpdates.isActive !== undefined || validUpdates.name) {
                 const emp = await prisma.employeeProfile.findUnique({ where: { id }, select: { userId: true } });
                 if (emp) {
                     await prisma.user.update({
                         where: { id: emp.userId },
                         data: {
                             ...(validUpdates.role && { role: validUpdates.role }),
-                            ...(validUpdates.isActive !== undefined && { isActive: validUpdates.isActive })
+                            ...(validUpdates.isActive !== undefined && { isActive: validUpdates.isActive }),
+                            ...(validUpdates.name && { name: validUpdates.name })
                         }
                     });
                 }
@@ -117,7 +119,7 @@ export const PATCH = authorizedRoute(
             }
 
             // 3. Update Employee Profile
-            const { role, id: _unusedId, isActive, designationId, email, password, ...profileData } = validUpdates;
+            const { role, id: _unusedId, isActive, name, designationId, email, password, ...profileData } = validUpdates;
 
             // Handle designation relation separately if provided
             const updateData: any = { ...profileData };
@@ -153,7 +155,7 @@ export const POST = authorizedRoute(
             if (!result.success) {
                 return createErrorResponse(result.error);
             }
-            const { email, password, role, ...profileData } = result.data;
+            const { email, name, password, role, ...profileData } = result.data;
 
             // Check if user already exists
             let targetUser = await prisma.user.findUnique({ where: { email } });
@@ -164,7 +166,8 @@ export const POST = authorizedRoute(
                     where: { email },
                     data: {
                         companyId: user.companyId,
-                        role: role || targetUser.role
+                        role: role || targetUser.role,
+                        name: name || targetUser.name
                     }
                 });
             } else {
@@ -172,6 +175,7 @@ export const POST = authorizedRoute(
                 targetUser = await prisma.user.create({
                     data: {
                         email,
+                        name,
                         password: password,
                         role: role,
                         companyId: user.companyId

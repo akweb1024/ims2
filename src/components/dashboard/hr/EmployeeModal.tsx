@@ -13,6 +13,7 @@ interface EmployeeModalProps {
 
 const initialFormState = {
     email: '',
+    name: '',
     password: '',
     role: 'SALES_EXECUTIVE',
     designation: '',
@@ -63,9 +64,10 @@ export default function EmployeeModal({ isOpen, onClose, employee, designations,
         if (employee) {
             setEmpForm({
                 email: employee.user.email,
+                name: employee.user.name || '',
                 password: '', // Don't fill password for edit
                 role: employee.user.role,
-                designation: employee.designation || '',
+                designation: employee.designatRef?.name || employee.designation || '',
                 baseSalary: employee.baseSalary || '',
                 bankName: employee.bankName || '',
                 accountNumber: employee.accountNumber || '',
@@ -151,6 +153,10 @@ export default function EmployeeModal({ isOpen, onClose, employee, designations,
                         </div>
                     )}
                     <div className="col-span-1">
+                        <label className="label-premium">Employee Name</label>
+                        <input type="text" required className="input-premium" placeholder="John Doe" value={empForm.name} onChange={e => setEmpForm({ ...empForm, name: e.target.value })} />
+                    </div>
+                    <div className="col-span-1">
                         <label className="label-premium">System Role</label>
                         <select className="input-premium" value={empForm.role} onChange={e => setEmpForm({ ...empForm, role: e.target.value })}>
                             <option value="SALES_EXECUTIVE">Sales Executive</option>
@@ -181,6 +187,7 @@ export default function EmployeeModal({ isOpen, onClose, employee, designations,
                                 <option key={d.id} value={d.id}>{d.name}</option>
                             ))}
                         </select>
+                        <p className="text-[10px] text-secondary-500 mt-1 pl-1">Selected: <span className="font-bold text-primary-600">{empForm.designation || 'None'}</span></p>
                     </div>
                     <div className="col-span-1">
                         <label className="label-premium">Account Status</label>

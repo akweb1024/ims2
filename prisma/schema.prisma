@@ -66,6 +66,7 @@ model Company {
   designations       Designation[]
   financialRecords   FinancialRecord[]
   salaryAdvances     SalaryAdvance[]
+  leaveLedgers       LeaveLedger[]
 
   createdAt DateTime   @default(now())
   updatedAt DateTime   @updatedAt
@@ -1044,6 +1045,7 @@ model EmployeeProfile {
   manualLeaveAdjustment Float @default(0) // Correction factor for leave balance
 
   salaryAdvances SalaryAdvance[]
+  leaveLedgers   LeaveLedger[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -2002,6 +2004,31 @@ model FinancialRecord {
   @@index([type])
   @@index([category])
   @@index([date])
+}
+
+
+model LeaveLedger {
+  id         String          @id @default(uuid())
+  employeeId String
+  employee   EmployeeProfile @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  month Int
+  year  Int
+
+  openingBalance Float @default(0) // "old leave"
+  takenLeaves    Float @default(0) // "taken leave"
+  closingBalance Float @default(0) // "balance leave"
+
+  remarks String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  companyId String?
+  company   Company? @relation(fields: [companyId], references: [id])
+
+  @@unique([employeeId, month, year])
+  @@index([companyId])
 }
 
 enum FinancialType {

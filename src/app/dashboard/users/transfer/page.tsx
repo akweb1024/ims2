@@ -152,7 +152,7 @@ export default function EmployeeTransferPage() {
                                 >
                                     <option value="">-- Choose Employee --</option>
                                     {users.map(u => (
-                                        <option key={u.id} value={u.id}>{u.email} ({u.role})</option>
+                                        <option key={u.id} value={u.id}>{u.name || u.email.split('@')[0]} ({u.email} - {u.role})</option>
                                     ))}
                                 </select>
                             </div>
@@ -206,8 +206,8 @@ export default function EmployeeTransferPage() {
                                                         type="button"
                                                         onClick={() => handleToggleSharedCompany(c.id)}
                                                         className={`p-3 text-left rounded-xl border-2 transition-all flex items-center justify-between group ${sharedCompanyIds.includes(c.id)
-                                                                ? 'border-primary-500 bg-primary-50 ring-2 ring-primary-100'
-                                                                : 'border-secondary-100 hover:border-secondary-300'
+                                                            ? 'border-primary-500 bg-primary-50 ring-2 ring-primary-100'
+                                                            : 'border-secondary-100 hover:border-secondary-300'
                                                             }`}
                                                     >
                                                         <div className="truncate pr-2">

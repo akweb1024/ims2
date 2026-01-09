@@ -140,10 +140,11 @@ export default function EmployeeList({
                                     <td className="px-6 py-4">
                                         <div className="flex items-center gap-3 cursor-pointer" onClick={() => onViewProfile(emp.id)}>
                                             <div className="w-10 h-10 bg-gradient-to-br from-secondary-100 to-secondary-200 rounded-xl flex items-center justify-center font-black text-secondary-600 shadow-sm group-hover:from-primary-100 group-hover:to-primary-200 group-hover:text-primary-600 transition-all">
-                                                {emp.user.email.charAt(0).toUpperCase()}
+                                                {emp.user.name?.[0] || emp.user.email[0].toUpperCase()}
                                             </div>
                                             <div>
-                                                <p className="font-bold text-secondary-900 group-hover:text-primary-700 transition-colors text-sm">{emp.user.email}</p>
+                                                <p className="font-bold text-secondary-900 group-hover:text-primary-700 transition-colors text-sm">{emp.user.name || emp.user.email.split('@')[0]}</p>
+                                                <p className="text-[10px] text-secondary-400 font-medium">{emp.user.email}</p>
                                                 <div className="flex gap-2 items-center mt-0.5">
                                                     <span className={`w-2 h-2 rounded-full ${emp.user.isActive ? 'bg-emerald-500' : 'bg-red-500'}`}></span>
                                                     <span className="text-[10px] text-secondary-400 font-medium uppercase tracking-wide">{emp.user.isActive ? 'Active' : 'Inactive'}</span>

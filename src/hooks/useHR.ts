@@ -250,6 +250,24 @@ export const useHolidayMutations = () => {
     return { create, update, remove };
 };
 
+export const useLeaveLedger = (month: number, year: number) => {
+    return useQuery<any[]>({
+        queryKey: ['leave-ledger', { month, year }],
+        queryFn: () => fetchJson(`/api/hr/leave-ledger?month=${month}&year=${year}`),
+    });
+};
+
+export const useUpdateLeaveLedger = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: (data: any) => fetchJson('/api/hr/leave-ledger', 'POST', data),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['leave-ledger'] });
+            queryClient.invalidateQueries({ queryKey: ['employees'] });
+        },
+    });
+};
+
 export const useLeaveMonitor = (month: number, year: number) => {
     return useQuery<any[]>({
         queryKey: ['leave-monitor', { month, year }],

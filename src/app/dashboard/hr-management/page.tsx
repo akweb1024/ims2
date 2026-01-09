@@ -21,12 +21,86 @@ import {
     useDeleteEmployee, useLeaveRequests, useSalarySlips, useAttendance,
     useWorkReports, useProductivity, useDocuments, useLeaveRequestMutations,
     useDocumentMutations, usePerformanceReviews, useHRInsights,
-    useBulkSalaryMutation, useLeaveMonitor, useAdvances, useAdvanceMutations
+    useBulkSalaryMutation, useLeaveMonitor, useAdvances, useAdvanceMutations,
+    useLeaveLedger, useUpdateLeaveLedger
 } from '@/hooks/useHR';
 
 const FormattedTime = ({ date }: { date: string | Date | null }) => {
     if (!date) return <span>--:--</span>;
     return <span>{new Date(date).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}</span>
+};
+
+const LeaveLedgerRow = ({ row, onSave }: { row: any, onSave: (data: any) => Promise<any> }) => {
+    const [editData, setEditData] = useState({ ...row });
+    const [saving, setSaving] = useState(false);
+
+    const handleSave = async () => {
+        setSaving(true);
+        try {
+            // Auto calculate closing balance if opening/taken changed? 
+            // User requested balance leave as an option too, so we let them edit everything.
+            await onSave(editData);
+            alert('Saved!');
+        } catch (err) {
+            alert('Failed to save');
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    return (
+        <tr className="hover:bg-secondary-50/30 transition-colors">
+            <td className="px-6 py-4">
+                <p className="font-bold text-secondary-900 text-sm">{row.email.split('@')[0]}</p>
+                <p className="text-[10px] text-secondary-400 font-medium">{row.email}</p>
+            </td>
+            <td className="px-6 py-4">
+                <input
+                    type="number"
+                    step="0.5"
+                    className="input py-1 text-center w-24 text-sm font-bold bg-secondary-50 border-secondary-200"
+                    value={editData.openingBalance}
+                    onChange={e => setEditData({ ...editData, openingBalance: parseFloat(e.target.value) || 0 })}
+                />
+            </td>
+            <td className="px-6 py-4">
+                <input
+                    type="number"
+                    step="0.5"
+                    className="input py-1 text-center w-24 text-sm font-bold bg-secondary-50 border-secondary-200"
+                    value={editData.takenLeaves}
+                    onChange={e => setEditData({ ...editData, takenLeaves: parseFloat(e.target.value) || 0 })}
+                />
+            </td>
+            <td className="px-6 py-4">
+                <input
+                    type="number"
+                    step="0.5"
+                    className="input py-1 text-center w-24 text-sm font-bold bg-primary-50 border-primary-200 text-primary-700"
+                    value={editData.closingBalance}
+                    onChange={e => setEditData({ ...editData, closingBalance: parseFloat(e.target.value) || 0 })}
+                />
+            </td>
+            <td className="px-6 py-4">
+                <input
+                    type="text"
+                    className="input py-1 text-sm w-full min-w-[150px]"
+                    placeholder="Remarks..."
+                    value={editData.remarks}
+                    onChange={e => setEditData({ ...editData, remarks: e.target.value })}
+                />
+            </td>
+            <td className="px-6 py-4 text-right">
+                <button
+                    onClick={handleSave}
+                    disabled={saving}
+                    className={`btn py-1 px-4 text-[10px] font-black uppercase tracking-widest ${saving ? 'bg-secondary-100 text-secondary-400' : 'bg-primary-600 text-white shadow-sm hover:bg-primary-700'}`}
+                >
+                    {saving ? '...' : 'Save'}
+                </button>
+            </td>
+        </tr>
+    );
 };
 
 const HRManagementContent = () => {
@@ -66,6 +140,9 @@ const HRManagementContent = () => {
     const { data: allReviews = [] } = usePerformanceReviews();
     const { data: hrInsights } = useHRInsights(activeTab === 'analytics');
     const { data: leaveLedger = [] } = useLeaveMonitor(new Date().getMonth() + 1, new Date().getFullYear());
+    const [ledgerFilter, setLedgerFilter] = useState({ month: new Date().getMonth() + 1, year: new Date().getFullYear() });
+    const { data: manualLedger = [] } = useLeaveLedger(ledgerFilter.month, ledgerFilter.year);
+    const updateLedgerMutation = useUpdateLeaveLedger();
     const { data: advances = [] } = useAdvances();
 
     // Mutations
@@ -651,46 +728,67 @@ const HRManagementContent = () => {
                 )}
 
                 {activeTab === 'leave-ledger' && (
-                    <div className="card-premium overflow-hidden">
-                        <div className="p-6 border-b border-secondary-100 flex justify-between items-center">
-                            <h3 className="font-bold text-secondary-900">Monthly Leave Analysis & Deductions</h3>
-                            <span className="text-xs font-bold text-secondary-400 uppercase">Current Month: {new Date().toLocaleString('default', { month: 'long', year: 'numeric' })}</span>
+                    <div className="card-premium overflow-hidden border border-secondary-100 shadow-xl bg-white">
+                        <div className="p-8 border-b border-secondary-100 flex flex-col md:flex-row justify-between items-center bg-secondary-50/30 gap-6">
+                            <div>
+                                <h3 className="text-xl font-black text-secondary-900 flex items-center gap-2">
+                                    <span className="w-8 h-8 rounded-lg bg-primary-600 text-white flex items-center justify-center text-sm shadow-lg shadow-primary-200">🗓️</span>
+                                    Manual Leave Ledger Management
+                                </h3>
+                                <p className="text-[10px] text-secondary-500 font-black uppercase tracking-[0.2em] mt-1 pl-10">Adjust opening/closing balances for precise payroll sync</p>
+                            </div>
+                            <div className="flex bg-white p-1 rounded-2xl shadow-inner border border-secondary-100">
+                                <select
+                                    className="input py-2 px-4 text-xs font-bold border-none bg-transparent focus:ring-0"
+                                    value={ledgerFilter.month}
+                                    onChange={e => setLedgerFilter({ ...ledgerFilter, month: parseInt(e.target.value) })}
+                                >
+                                    {Array.from({ length: 12 }, (_, i) => (
+                                        <option key={i + 1} value={i + 1}>{new Date(2024, i).toLocaleString('default', { month: 'long' })}</option>
+                                    ))}
+                                </select>
+                                <div className="w-[1px] bg-secondary-100 my-2"></div>
+                                <select
+                                    className="input py-2 px-4 text-xs font-bold border-none bg-transparent focus:ring-0"
+                                    value={ledgerFilter.year}
+                                    onChange={e => setLedgerFilter({ ...ledgerFilter, year: parseInt(e.target.value) })}
+                                >
+                                    {[2024, 2025, 2026].map(y => (
+                                        <option key={y} value={y}>{y}</option>
+                                    ))}
+                                </select>
+                            </div>
                         </div>
-                        <table className="table">
-                            <thead>
-                                <tr className="text-[10px] uppercase font-black text-secondary-400">
-                                    <th className="pb-4">Name</th>
-                                    <th className="pb-4">Department</th>
-                                    <th className="pb-4">Available Bal</th>
-                                    <th className="pb-4">Leaves Taken</th>
-                                    <th className="pb-4">Overhead (LWP)</th>
-                                    <th className="pb-4 text-right">Status</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-secondary-50">
-                                {leaveLedger.map(row => (
-                                    <tr key={row.id} className="hover:bg-secondary-50/50">
-                                        <td className="py-4">
-                                            <p className="font-bold text-secondary-900">{row.name}</p>
-                                            <p className="text-[10px] text-secondary-400">{row.designation}</p>
-                                        </td>
-                                        <td className="py-4 text-xs font-bold text-secondary-500 uppercase">{row.department}</td>
-                                        <td className="py-4">
-                                            <span className={`font-mono font-bold ${row.balLeave === 0 ? 'text-danger-500' : 'text-success-600'}`}>{row.balLeave} Days</span>
-                                        </td>
-                                        <td className="py-4 font-mono font-bold text-secondary-700">{row.leaveTaken} Days</td>
-                                        <td className="py-4">
-                                            <span className={`px-2 py-1 rounded-lg font-black text-[10px] ${row.overheadLeave > 0 ? 'bg-danger-50 text-danger-700 border border-danger-100' : 'bg-secondary-50 text-secondary-400'}`}>
-                                                {row.overheadLeave > 0 ? `${row.overheadLeave} DAYS DEDUCT` : 'NONE'}
-                                            </span>
-                                        </td>
-                                        <td className="py-4 text-right">
-                                            <div className="w-2 h-2 rounded-full bg-success-500 inline-block" title="Synced with Payroll"></div>
-                                        </td>
+                        <div className="overflow-x-auto">
+                            <table className="table w-full border-collapse">
+                                <thead className="bg-secondary-50/50">
+                                    <tr className="text-[10px] uppercase font-black text-secondary-400 tracking-wider">
+                                        <th className="px-8 py-5 text-left">Staff Details</th>
+                                        <th className="px-8 py-5 text-center">Old Leave (Opening)</th>
+                                        <th className="px-8 py-5 text-center">Leaves Taken</th>
+                                        <th className="px-8 py-5 text-center">Balance (Closing)</th>
+                                        <th className="px-8 py-5 text-left">Internal Remarks</th>
+                                        <th className="px-8 py-5 text-right">Action</th>
                                     </tr>
-                                ))}
-                            </tbody>
-                        </table>
+                                </thead>
+                                <tbody className="divide-y divide-secondary-50">
+                                    {manualLedger.map(row => (
+                                        <LeaveLedgerRow
+                                            key={row.employeeId}
+                                            row={row}
+                                            onSave={(data) => updateLedgerMutation.mutateAsync(data)}
+                                        />
+                                    ))}
+                                    {manualLedger.length === 0 && (
+                                        <tr>
+                                            <td colSpan={6} className="px-8 py-20 text-center text-secondary-400 font-bold italic bg-secondary-50/20">
+                                                No employee records found for this period.
+                                            </td>
+                                        </tr>
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 )}
 

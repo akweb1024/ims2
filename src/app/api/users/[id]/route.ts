@@ -73,7 +73,21 @@ export const PATCH = authorizedRoute(
             if (password) {
                 updateData.password = await bcrypt.hash(password, 10);
             }
-            if (companyId !== undefined) updateData.companyId = companyId;
+            if (companyId !== undefined && user.role === 'SUPER_ADMIN') {
+                updateData.companyId = companyId;
+                // If companyId is being changed, we should also update the EmployeeProfile
+                // to reset company-specific fields like designationId
+                if (companyId !== existingUser.companyId) {
+                    await prisma.employeeProfile.updateMany({
+                        where: { userId: id },
+                        data: {
+                            designationId: null,
+                            designation: null
+                        }
+                    });
+                }
+            }
+
             if (companyIds !== undefined && user.role === 'SUPER_ADMIN') {
                 updateData.companies = {
                     set: companyIds.map((cid: string) => ({ id: cid }))
