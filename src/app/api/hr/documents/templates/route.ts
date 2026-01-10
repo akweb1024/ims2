@@ -5,7 +5,7 @@ import { createErrorResponse } from '@/lib/api-utils';
 
 // GET: Fetch all templates for company
 export const GET = authorizedRoute(
-    ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'HR_MANAGER'],
+    ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'MANAGER'],
     async (req: NextRequest, user) => {
         try {
             const userCompanyId = user.companyId;
@@ -24,7 +24,7 @@ export const GET = authorizedRoute(
 
 // POST: Create a new template
 export const POST = authorizedRoute(
-    ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'HR_MANAGER'],
+    ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'MANAGER'],
     async (req: NextRequest, user) => {
         try {
             const body = await req.json();

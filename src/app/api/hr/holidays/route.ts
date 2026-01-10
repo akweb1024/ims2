@@ -30,7 +30,7 @@ export const GET = authorizedRoute(
 );
 
 export const POST = authorizedRoute(
-    ['SUPER_ADMIN', 'ADMIN', 'HR_MANAGER', 'MANAGER'],
+    ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'MANAGER'],
     async (req: NextRequest, user) => {
         try {
             const body = await req.json();
@@ -82,7 +82,7 @@ export const POST = authorizedRoute(
 );
 
 export const PUT = authorizedRoute(
-    ['SUPER_ADMIN', 'ADMIN', 'HR_MANAGER', 'MANAGER'],
+    ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'MANAGER'],
     async (req: NextRequest, user) => {
         try {
             const body = await req.json();
@@ -108,7 +108,7 @@ export const PUT = authorizedRoute(
 );
 
 export const DELETE = authorizedRoute(
-    ['SUPER_ADMIN', 'ADMIN', 'HR_MANAGER', 'MANAGER'],
+    ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'MANAGER'],
     async (req: NextRequest, user) => {
         try {
             const { searchParams } = new URL(req.url);

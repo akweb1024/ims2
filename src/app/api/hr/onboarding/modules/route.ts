@@ -5,7 +5,7 @@ import { createErrorResponse } from '@/lib/api-utils';
 
 // GET: Fetch all onboarding modules for the company
 export const GET = authorizedRoute(
-    ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'HR_MANAGER', 'TEAM_LEADER'],
+    ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'MANAGER', 'TEAM_LEADER'],
     async (req: NextRequest, user) => {
         try {
             if (!user.companyId) return createErrorResponse('Company association required', 403);
@@ -25,7 +25,7 @@ export const GET = authorizedRoute(
 
 // POST: Create a new onboarding module
 export const POST = authorizedRoute(
-    ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'HR_MANAGER'],
+    ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'MANAGER'],
     async (req: NextRequest, user) => {
         try {
             if (!user.companyId) return createErrorResponse('Company association required', 403);
@@ -67,7 +67,7 @@ export const POST = authorizedRoute(
 
 // PATCH: Update an onboarding module
 export const PATCH = authorizedRoute(
-    ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'HR_MANAGER'],
+    ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'MANAGER'],
     async (req: NextRequest, user) => {
         try {
             const body = await req.json();
@@ -101,7 +101,7 @@ export const PATCH = authorizedRoute(
 
 // DELETE: Remove an onboarding module
 export const DELETE = authorizedRoute(
-    ['SUPER_ADMIN', 'ADMIN', 'HR_MANAGER'],
+    ['SUPER_ADMIN', 'ADMIN', 'MANAGER'],
     async (req: NextRequest, user) => {
         try {
             const { searchParams } = new URL(req.url);

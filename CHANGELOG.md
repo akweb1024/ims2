@@ -15,6 +15,9 @@ Comprehensive UI/UX overhaul of the HR Management module and critical bug fixes 
   - Fixed `prisma.jobApplication` and `prisma.recruitmentInterview` incorrect model referencing.
   - Resolved `companies.map` error by correctly handling paginated API responses.
 - **Data Integrity**: Corrected company ID filtering logic across all recruitment APIs.
+- **Permissions Framework**:
+  - Resolved `FORBIDDEN` errors in Payroll, Shifts, and Performance APIs by replacing the invalid `HR_MANAGER` role with system-standard `MANAGER` and `FINANCE_ADMIN` roles.
+  - Standardized authorization checks across 18+ HR-related API endpoints.
 
 ## [1.1.0] - 2026-01-10
 

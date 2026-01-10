@@ -5,7 +5,7 @@ import { createErrorResponse } from '@/lib/api-utils';
 import { PayrollCalculator } from '@/lib/payroll';
 
 export const POST = authorizedRoute(
-    ['SUPER_ADMIN', 'ADMIN', 'HR_MANAGER'],
+    ['SUPER_ADMIN', 'ADMIN', 'MANAGER'],
     async (req: NextRequest, user) => {
         try {
             const body = await req.json();

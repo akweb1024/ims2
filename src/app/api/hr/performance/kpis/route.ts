@@ -5,7 +5,7 @@ import { createErrorResponse } from '@/lib/api-utils';
 
 // GET: Fetch KPIs for the company or a specific employee
 export const GET = authorizedRoute(
-    ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'HR_MANAGER', 'EMPLOYEE'],
+    ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'MANAGER', 'EMPLOYEE'],
     async (req: NextRequest, user) => {
         try {
             const { searchParams } = new URL(req.url);
@@ -41,7 +41,7 @@ export const GET = authorizedRoute(
 
 // POST: Create or Update KPI
 export const POST = authorizedRoute(
-    ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'HR_MANAGER'],
+    ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'MANAGER'],
     async (req: NextRequest, user) => {
         try {
             if (!user.companyId) return createErrorResponse('Company association required', 403);
@@ -81,7 +81,7 @@ export const POST = authorizedRoute(
 
 // DELETE: Remove a KPI
 export const DELETE = authorizedRoute(
-    ['SUPER_ADMIN', 'ADMIN', 'HR_MANAGER'],
+    ['SUPER_ADMIN', 'ADMIN', 'MANAGER'],
     async (req: NextRequest, user) => {
         try {
             const { searchParams } = new URL(req.url);

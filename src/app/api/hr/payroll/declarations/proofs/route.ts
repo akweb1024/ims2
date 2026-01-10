@@ -52,7 +52,7 @@ export const POST = authorizedRoute(
 
 // Admin Action on Proof
 export const PATCH = authorizedRoute(
-    ['SUPER_ADMIN', 'ADMIN', 'HR_MANAGER'],
+    ['SUPER_ADMIN', 'ADMIN', 'MANAGER'],
     async (req: NextRequest, user) => {
         try {
             const { id, status } = await req.json();

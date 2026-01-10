@@ -13,7 +13,7 @@ export const GET = authorizedRoute(
 
             // If employeeId is provided, requester must be admin/manager
             if (employeeId && employeeId !== 'self') {
-                if (!['SUPER_ADMIN', 'ADMIN', 'HR_MANAGER'].includes(user.role)) {
+                if (!['SUPER_ADMIN', 'ADMIN', 'MANAGER'].includes(user.role)) {
                     return createErrorResponse('Forbidden', 403);
                 }
 
@@ -98,7 +98,7 @@ export const POST = authorizedRoute(
 
 // Admin Approval
 export const PATCH = authorizedRoute(
-    ['SUPER_ADMIN', 'ADMIN', 'HR_MANAGER'],
+    ['SUPER_ADMIN', 'ADMIN', 'MANAGER'],
     async (req: NextRequest, user) => {
         try {
             const { id, status, adminComment } = await req.json();
