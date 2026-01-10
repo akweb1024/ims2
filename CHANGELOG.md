@@ -1,6 +1,21 @@
 # Changelog & Project History
 
 
+## [1.2.0] - 2026-01-10
+
+### Summary
+Comprehensive UI/UX overhaul of the HR Management module and critical bug fixes for Recruitment and Payroll APIs.
+
+### Changed
+- **HR Navigation**: Replaced the previous grid-based navigation with a modern, space-efficient horizontal tab bar featuring hover-activated dropdown menus.
+- **Recruitment Dashboard**: Split into dedicated "Job Postings" and "Applicant Pipeline" views for better workflow management.
+
+### Fixed
+- **API Relations**:
+  - Fixed `prisma.jobApplication` and `prisma.recruitmentInterview` incorrect model referencing.
+  - Resolved `companies.map` error by correctly handling paginated API responses.
+- **Data Integrity**: Corrected company ID filtering logic across all recruitment APIs.
+
 ## [1.1.0] - 2026-01-10
 
 ### Summary

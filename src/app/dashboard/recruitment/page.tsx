@@ -58,7 +58,10 @@ export default function RecruitmentDashboard() {
             const res = await fetch('/api/companies', {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
-            if (res.ok) setCompanies(await res.json());
+            if (res.ok) {
+                const data = await res.json();
+                setCompanies(Array.isArray(data) ? data : data.data || []);
+            }
         } catch (err) {
             console.error(err);
         }

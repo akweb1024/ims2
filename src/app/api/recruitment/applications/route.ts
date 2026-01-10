@@ -27,7 +27,7 @@ export const POST = authorizedRoute(
                     candidatePhone,
                     resumeUrl,
                     status: 'APPLIED',
-                    companyId: user.companyId
+                    status: 'APPLIED'
                 }
             });
 
@@ -49,7 +49,7 @@ export const GET = authorizedRoute(
             // Simplified check based on updated schema where JobApplication has companyId directly?
             // Checking schema above... yes added companyId to JobApplication.
             if (user.companyId) {
-                where.companyId = user.companyId;
+                where.jobPosting = { companyId: user.companyId };
             }
 
             if (jobId) where.jobId = jobId;
@@ -57,7 +57,7 @@ export const GET = authorizedRoute(
             const applications = await prisma.jobApplication.findMany({
                 where,
                 include: {
-                    job: { select: { title: true } }
+                    jobPosting: { select: { title: true, companyId: true } }
                 },
                 orderBy: { createdAt: 'desc' }
             });

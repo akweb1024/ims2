@@ -15,12 +15,14 @@ export const GET = authorizedRoute(
 
             // To filter by company, we need to join the application -> job -> company
             // Or use the interviewer's company if they are internal
-            where.interviewer = { companyId: user.companyId };
+            if (user.companyId) {
+                where.application = { jobPosting: { companyId: user.companyId } };
+            }
 
-            const interviews = await prisma.interview.findMany({
+            const interviews = await prisma.recruitmentInterview.findMany({
                 where,
                 include: {
-                    application: { select: { candidateName: true, job: { select: { title: true } } } },
+                    application: { select: { applicantName: true, jobPosting: { select: { title: true } } } },
                     interviewer: { select: { name: true } }
                 },
                 orderBy: { scheduledAt: 'asc' }
@@ -44,7 +46,7 @@ export const POST = authorizedRoute(
                 return createErrorResponse('Missing required fields', 400);
             }
 
-            const interview = await prisma.interview.create({
+            const interview = await prisma.recruitmentInterview.create({
                 data: {
                     applicationId,
                     interviewerId,
@@ -53,7 +55,8 @@ export const POST = authorizedRoute(
                     type: type || 'VIRTUAL',
                     meetingLink,
                     location,
-                    status: 'SCHEDULED'
+                    status: 'SCHEDULED',
+                    level: 1 // Default level if not provided
                 }
             });
 
@@ -79,7 +82,7 @@ export const PATCH = authorizedRoute(
 
             if (!id) return createErrorResponse('Interview ID required', 400);
 
-            const interview = await prisma.interview.update({
+            const interview = await prisma.recruitmentInterview.update({
                 where: { id },
                 data: {
                     status,
