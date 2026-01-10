@@ -146,7 +146,7 @@ export const POST = authorizedRoute(
 
                 const now = new Date();
                 let lateMinutes = 0;
-                let shiftId = roster?.shiftId;
+                const shiftId = roster?.shiftId;
 
                 if (roster?.shift) {
                     const shift = roster.shift;

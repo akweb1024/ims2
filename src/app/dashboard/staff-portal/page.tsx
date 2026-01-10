@@ -12,7 +12,7 @@ import TaxDeclarationPortal from '@/components/dashboard/staff/TaxDeclarationPor
 import EmployeeOnboarding from '@/components/dashboard/staff/EmployeeOnboarding';
 import EmployeeDocuments from '@/components/dashboard/staff/EmployeeDocuments';
 import EmployeeKPIView from '@/components/dashboard/staff/EmployeeKPIView';
-import { Lock, AlertOctagon } from 'lucide-react';
+import { Lock, AlertOctagon, FileText } from 'lucide-react';
 
 export default function StaffPortalPage() {
     const [user, setUser] = useState<any>(null);
@@ -53,7 +53,7 @@ export default function StaffPortalPage() {
         try {
             const [attendanceRes, reportsRes, plansRes, slipsRes, leavesRes, perfRes, docsRes, profileRes, complRes] = await Promise.all([
                 fetch('/api/hr/attendance', { headers: { 'Authorization': `Bearer ${token}` } }),
-                fetch('/api/hr/work-reports', { headers: { 'Authorization': `Bearer ${token}` } }),
+                fetch('/api/hr/work-reports?employeeId=self', { headers: { 'Authorization': `Bearer ${token}` } }),
                 fetch('/api/hr/work-plans', { headers: { 'Authorization': `Bearer ${token}` } }),
                 fetch('/api/hr/salary-slips', { headers: { 'Authorization': `Bearer ${token}` } }),
                 fetch('/api/hr/leave-requests', { headers: { 'Authorization': `Bearer ${token}` } }),
@@ -142,21 +142,13 @@ export default function StaffPortalPage() {
             d.getFullYear() === today.getFullYear();
     });
 
-    // Debug logging
-    if (typeof window !== 'undefined') {
-        console.log('Today Attendance Check:', {
-            totalRecords: attendance.length,
-            todayFound: !!todayAttendance,
-            todayData: todayAttendance,
-            allDates: attendance.map(a => new Date(a.date).toLocaleDateString())
-        });
-    }
+
 
     const tabs = [
         { id: 'overview', name: 'Overview', icon: '🏠' },
         { id: 'profile', name: 'My Profile', icon: '👤' },
         { id: 'attendance', name: 'Attendance', icon: '📅' },
-        { id: 'reports', name: 'Work Reports', icon: '📝' },
+        { id: 'work-reports', name: 'Work Reports', icon: '📝' },
         { id: 'tax-declarations', name: 'Tax Declarations', icon: '🛡️' },
         { id: 'leaves', name: 'Leave Requests', icon: '🏃' },
         { id: 'performance', name: 'Performance', icon: '📈' },
@@ -232,6 +224,7 @@ export default function StaffPortalPage() {
                         const isLocked = !compliance.isCompliant &&
                             tab.id !== 'documents' &&
                             tab.id !== 'onboarding' &&
+                            tab.id !== 'work-reports' &&
                             tab.id !== 'attendance'; // Allow Check-in
 
                         return (
@@ -408,7 +401,7 @@ export default function StaffPortalPage() {
 
 
                     {activeTab === 'overview' && (
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                             <div className="card-premium p-6 border-t-4 border-primary-500">
                                 <h3 className="text-sm font-bold text-secondary-400 uppercase tracking-widest mb-4">Today&apos;s Status</h3>
                                 <div className="space-y-4">
@@ -443,6 +436,17 @@ export default function StaffPortalPage() {
                                     <p className="text-xs text-secondary-500 italic">
                                         {performance[0]?.feedback ? `"${performance[0].feedback.slice(0, 60)}..."` : "No reviews yet"}
                                     </p>
+                                </div>
+                            </div>
+                            <div className="card-premium p-6 border-t-4 border-indigo-500 bg-indigo-50/30">
+                                <h3 className="text-sm font-bold text-secondary-400 uppercase tracking-widest mb-4">Quick Actions</h3>
+                                <div className="space-y-3">
+                                    <a href="/dashboard/staff-portal/submit-report" className="btn btn-primary w-full py-2 text-xs font-black shadow-lg">
+                                        Submit Daily Report 📝
+                                    </a>
+                                    <button onClick={() => setActiveTab('work-reports')} className="text-[10px] w-full text-center font-bold text-primary-600 uppercase hover:underline">
+                                        View Past Reports
+                                    </button>
                                 </div>
                             </div>
                         </div>
@@ -501,19 +505,17 @@ export default function StaffPortalPage() {
                             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                                 <div className="lg:col-span-1">
                                     {/* Todays Realtime Achievement Preview */}
-                                    {todayAttendance?.checkIn && (
-                                        <AchievementSection report={workReports.find(r => {
-                                            const rd = new Date(r.date);
-                                            const td = new Date();
-                                            return rd.getDate() === td.getDate() && rd.getMonth() === td.getMonth();
-                                        }) || {
-                                            revenueGenerated: 0,
-                                            tasksCompleted: 0,
-                                            ticketsResolved: 0,
-                                            selfRating: 5,
-                                            keyOutcome: "Activity in progress..."
-                                        }} />
-                                    )}
+                                    <AchievementSection report={workReports.find(r => {
+                                        const rd = new Date(r.date);
+                                        const td = new Date();
+                                        return rd.getDate() === td.getDate() && rd.getMonth() === td.getMonth();
+                                    }) || {
+                                        revenueGenerated: 0,
+                                        tasksCompleted: 0,
+                                        ticketsResolved: 0,
+                                        selfRating: 5,
+                                        keyOutcome: "Activity in progress..."
+                                    }} />
 
                                     <div className="card-premium p-8 text-center bg-gradient-to-br from-primary-50 to-white border-2 border-primary-100 border-dashed">
                                         <div className="w-20 h-20 bg-primary-100 text-primary-600 rounded-full flex items-center justify-center mx-auto mb-6">
@@ -521,13 +523,26 @@ export default function StaffPortalPage() {
                                         </div>
                                         <h3 className="text-2xl font-black text-secondary-900 mb-2">Submit Daily Work Report</h3>
                                         <p className="text-secondary-500 mb-6 max-w-md mx-auto">Click below to access the detailed reporting tool. Track your revenue, meetings, and daily achievements.</p>
+                                        {!todayAttendance?.checkIn && (
+                                            <p className="text-[10px] text-warning-600 font-bold uppercase mb-4 flex items-center justify-center gap-1">
+                                                <span>⚠️</span> Not Checked-in
+                                            </p>
+                                        )}
                                         <a href="/dashboard/staff-portal/submit-report" className="btn btn-primary px-8 py-3 text-lg shadow-xl shadow-primary-200 hover:shadow-primary-300 transition-all inline-block">
                                             Open Reporting Tool
                                         </a>
                                     </div>
                                 </div>
                                 <div className="lg:col-span-2 space-y-4">
-                                    {workReports.map(report => (
+                                    {workReports.length === 0 ? (
+                                        <div className="card-premium p-12 text-center">
+                                            <div className="w-16 h-16 bg-secondary-50 text-secondary-300 rounded-full flex items-center justify-center mx-auto mb-4">
+                                                <FileText size={32} />
+                                            </div>
+                                            <h3 className="text-lg font-bold text-secondary-900">No Reports Yet</h3>
+                                            <p className="text-secondary-500 text-sm">Your submitted work reports will appear here for review.</p>
+                                        </div>
+                                    ) : workReports.map(report => (
                                         <div key={report.id} className="card-premium p-6 hover:shadow-lg transition-all border-l-4 border-primary-500">
                                             <div className="flex justify-between items-start mb-2">
                                                 <h4 className="font-bold text-secondary-900">{report.title}</h4>

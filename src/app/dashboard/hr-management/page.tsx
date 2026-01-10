@@ -138,22 +138,24 @@ const HRManagementContent = () => {
     }, [searchParams]);
 
     const [selectedDocEmp, setSelectedDocEmp] = useState<any>(null);
+    // State management
+    const [reportFilter, setReportFilter] = useState({ employeeId: 'all', category: 'ALL', startDate: '', endDate: '' });
     const [prodDateRange, setProdDateRange] = useState({
         startDate: new Date(new Date().setDate(new Date().getDate() - 30)).toISOString().split('T')[0],
         endDate: new Date().toISOString().split('T')[0]
     });
+    const [ledgerFilter, setLedgerFilter] = useState({ month: new Date().getMonth() + 1, year: new Date().getFullYear() });
 
     // React Query Hooks - Tab Specific
     const { data: leaves = [] } = useLeaveRequests();
     const { data: allSlips = [] } = useSalarySlips();
     const { data: allAttendance = [] } = useAttendance();
-    const { data: workReports = [], refetch: refetchWorkReports } = useWorkReports();
+    const { data: workReports = [], refetch: refetchWorkReports } = useWorkReports(reportFilter);
     const { data: prodAnalysis } = useProductivity(prodDateRange.startDate, prodDateRange.endDate);
     const { data: empDocuments = [] } = useDocuments(selectedDocEmp?.id);
     const { data: allReviews = [] } = usePerformanceReviews();
     const { data: hrInsights } = useHRInsights(activeTab === 'analytics');
     const { data: leaveLedger = [] } = useLeaveMonitor(new Date().getMonth() + 1, new Date().getFullYear());
-    const [ledgerFilter, setLedgerFilter] = useState({ month: new Date().getMonth() + 1, year: new Date().getFullYear() });
     const { data: manualLedger = [] } = useLeaveLedger(ledgerFilter.month, ledgerFilter.year);
     const updateLedgerMutation = useUpdateLeaveLedger();
     const { data: advances = [] } = useAdvances();
@@ -242,7 +244,6 @@ const HRManagementContent = () => {
 
     // Work Reports Analysis
     // const [workReports, setWorkReports] = useState<any[]>([]); // Replaced by useWorkReports hook
-    const [reportFilter, setReportFilter] = useState({ employeeId: 'all', category: 'ALL', startDate: '', endDate: '' });
 
     // fetchWorkReports removed, now handled by useWorkReports hook
 
@@ -695,7 +696,12 @@ const HRManagementContent = () => {
                                     <option value="GENERAL">General</option>
                                 </select>
                             </div>
-                            <button onClick={() => refetchWorkReports()} className="btn btn-primary h-[42px] px-8 shadow-lg">Refresh Analytics</button>
+                            <div className="flex gap-2">
+                                <button onClick={() => refetchWorkReports()} className="btn border-secondary-200 hover:bg-secondary-100 h-[42px] px-4 shadow-sm text-sm font-bold">Refresh</button>
+                                <a href="/dashboard/staff-portal/submit-report" className="btn btn-primary h-[42px] px-6 shadow-lg flex items-center gap-2">
+                                    <span className="text-lg">📝</span> Submit My Own Report
+                                </a>
+                            </div>
                         </div>
 
                         {/* Analytic Summary */}

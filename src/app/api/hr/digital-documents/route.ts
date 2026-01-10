@@ -10,7 +10,7 @@ export const GET = authorizedRoute(
             const { searchParams } = new URL(req.url);
             const employeeId = searchParams.get('employeeId');
 
-            let where: any = {};
+            const where: any = {};
 
             if (user.role === 'EMPLOYEE') {
                 const profile = await prisma.employeeProfile.findUnique({

@@ -14,6 +14,13 @@ export const GET = authorizedRoute(
             const startDate = searchParams.get('startDate');
             const endDate = searchParams.get('endDate');
             const category = searchParams.get('category');
+            let targetEmployeeId = employeeId;
+
+            // Handle 'self' keyword early
+            if (employeeId === 'self') {
+                const myProfile = await prisma.employeeProfile.findUnique({ where: { userId: user.id } });
+                if (myProfile) targetEmployeeId = myProfile.id;
+            }
 
             const where: any = {};
 
@@ -28,8 +35,8 @@ export const GET = authorizedRoute(
 
             // Role-based Access & Filtering
             if (['SUPER_ADMIN', 'ADMIN'].includes(user.role)) {
-                if (employeeId && employeeId !== 'all') {
-                    where.employeeId = employeeId;
+                if (targetEmployeeId && targetEmployeeId !== 'all') {
+                    where.employeeId = targetEmployeeId;
                 }
             } else if (['MANAGER', 'TEAM_LEADER'].includes(user.role)) {
                 const subIds = await getDownlineUserIds(user.id, user.companyId || undefined);
@@ -37,11 +44,11 @@ export const GET = authorizedRoute(
                 // subIds usually doesn't include SELF, let's explicit allow SELF or DOWNLINE
                 const allowedUserIds = [...subIds, user.id];
 
-                if (employeeId && employeeId !== 'all') {
+                if (targetEmployeeId && targetEmployeeId !== 'all') {
                     // Check if requested employee is in allowed list
-                    const targetEmp = await prisma.employeeProfile.findUnique({ where: { id: employeeId }, select: { userId: true } });
+                    const targetEmp = await prisma.employeeProfile.findUnique({ where: { id: targetEmployeeId }, select: { userId: true } });
                     if (targetEmp && allowedUserIds.includes(targetEmp.userId)) {
-                        where.employeeId = employeeId;
+                        where.employeeId = targetEmployeeId;
                     } else {
                         // Default to showing all team reports + self if no specific ID requested? 
                         // Or if strictly requested ID is invalid, return empty?

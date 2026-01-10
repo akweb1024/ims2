@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import Link from 'next/link';
+import CompanyAnalyticsOverview from '@/components/dashboard/company/CompanyAnalyticsOverview';
+import WorkforceAnalytics from '@/components/dashboard/company/WorkforceAnalytics';
 
 export default function CompanyPage() {
     const [company, setCompany] = useState<any>(null);
@@ -10,6 +12,9 @@ export default function CompanyPage() {
     const [users, setUsers] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [userRole, setUserRole] = useState('CUSTOMER');
+    const [activeTab, setActiveTab] = useState<'OVERVIEW' | 'WORKFORCE' | 'DETAILS'>('OVERVIEW');
+
+    // Original Modals State
     const [showEditModal, setShowEditModal] = useState(false);
     const [showDeptModal, setShowDeptModal] = useState(false);
     const [showUserModal, setShowUserModal] = useState(false);
@@ -177,7 +182,7 @@ export default function CompanyPage() {
         setActionLoading(true);
         const form = e.currentTarget;
         const formData = new FormData(form);
-        const payload = Object.fromEntries(formData.entries());
+        const payload: any = Object.fromEntries(formData.entries());
 
         // Force the companyId to be the current company
         payload.companyId = company.id;
@@ -218,225 +223,266 @@ export default function CompanyPage() {
         );
     }
 
+    if (!company) {
+        return (
+            <DashboardLayout userRole={userRole}>
+                <div className="bg-white p-8 rounded-xl text-center shadow">
+                    <h3 className="text-xl font-bold text-secondary-900">No Company Found</h3>
+                    <p className="text-secondary-500">Please contact support or initialize the company details.</p>
+                </div>
+            </DashboardLayout>
+        );
+    }
+
     return (
         <DashboardLayout userRole={userRole}>
             <div className="space-y-6">
                 <div className="flex justify-between items-center">
                     <div>
-                        <h1 className="text-3xl font-bold text-secondary-900">Company Management</h1>
-                        <p className="text-secondary-600">Manage your organization, departments, and settings.</p>
+                        <h1 className="text-3xl font-bold text-secondary-900">{company.name}</h1>
+                        <p className="text-secondary-600">Strategic Dashboard</p>
                     </div>
-                    {['SUPER_ADMIN', 'ADMIN'].includes(userRole) && (
-                        <button
-                            onClick={() => setShowEditModal(true)}
-                            className="btn btn-primary"
-                        >
-                            Edit Company
-                        </button>
-                    )}
                 </div>
 
-                {company ? (
-                    <>
-                        {/* Company Overview */}
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                            <div className="card-premium p-6">
-                                <h2 className="text-xl font-bold mb-4 font-primary">Organization Details</h2>
-                                <div className="space-y-3">
-                                    <div>
-                                        <label className="text-xs text-secondary-500 uppercase font-bold">Company Name</label>
-                                        <p className="text-lg font-medium text-secondary-900">{company.name}</p>
-                                    </div>
-                                    <div>
-                                        <label className="text-xs text-secondary-500 uppercase font-bold">Domain</label>
-                                        <p className="text-secondary-900">{company.domain || 'N/A'}</p>
-                                    </div>
-                                    <div>
-                                        <label className="text-xs text-secondary-500 uppercase font-bold">Website</label>
-                                        <a href={company.website} target="_blank" rel="noreferrer" className="text-primary-600 hover:underline">
-                                            {company.website || 'N/A'}
-                                        </a>
-                                    </div>
-                                </div>
-                            </div>
+                {/* Navigation Tabs */}
+                <div className="flex space-x-1 bg-secondary-100 p-1 rounded-xl w-fit">
+                    <button
+                        onClick={() => setActiveTab('OVERVIEW')}
+                        className={`px-6 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === 'OVERVIEW' ? 'bg-white text-primary-600 shadow' : 'text-secondary-500 hover:text-secondary-700'}`}
+                    >
+                        Growth & Financials
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('WORKFORCE')}
+                        className={`px-6 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === 'WORKFORCE' ? 'bg-white text-primary-600 shadow' : 'text-secondary-500 hover:text-secondary-700'}`}
+                    >
+                        Workforce Intelligence
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('DETAILS')}
+                        className={`px-6 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === 'DETAILS' ? 'bg-white text-primary-600 shadow' : 'text-secondary-500 hover:text-secondary-700'}`}
+                    >
+                        Company Settings
+                    </button>
+                </div>
 
-                            <div className="card-premium p-6">
-                                <h2 className="text-xl font-bold mb-4 font-primary">Contact Information</h2>
-                                <div className="space-y-3">
-                                    <div>
-                                        <label className="text-xs text-secondary-500 uppercase font-bold">Email</label>
-                                        <p className="text-secondary-900">{company.email || 'N/A'}</p>
-                                    </div>
-                                    <div>
-                                        <label className="text-xs text-secondary-500 uppercase font-bold">Phone</label>
-                                        <p className="text-secondary-900">{company.phone || 'N/A'}</p>
-                                    </div>
-                                    <div>
-                                        <label className="text-xs text-secondary-500 uppercase font-bold">Address</label>
-                                        <p className="text-secondary-900">{company.address || 'N/A'}</p>
-                                    </div>
-                                </div>
-                            </div>
+                {/* Tab Content */}
+                <div className="mt-6">
+                    {activeTab === 'OVERVIEW' && (
+                        <CompanyAnalyticsOverview companyId={company.id} />
+                    )}
 
-                            <div className="card-premium p-6">
-                                <h2 className="text-xl font-bold mb-4 font-primary">Settings</h2>
-                                <div className="space-y-3">
-                                    <div>
-                                        <label className="text-xs text-secondary-500 uppercase font-bold">Currency</label>
-                                        <p className="text-secondary-900">{company.currency || 'INR'}</p>
-                                    </div>
-                                    <div>
-                                        <label className="text-xs text-secondary-500 uppercase font-bold">Timezone</label>
-                                        <p className="text-secondary-900">{company.timezone || 'Asia/Kolkata'}</p>
-                                    </div>
-                                    <div>
-                                        <label className="text-xs text-secondary-500 uppercase font-bold">Employees</label>
-                                        <p className="text-secondary-900 text-2xl font-bold">{company._count?.users || 0}</p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+                    {activeTab === 'WORKFORCE' && (
+                        <WorkforceAnalytics companyId={company.id} />
+                    )}
 
-                        {/* Departments Section */}
-                        <div className="card-premium p-6">
-                            <div className="flex justify-between items-center mb-6">
-                                <div>
-                                    <h2 className="text-2xl font-bold font-primary">Departments</h2>
-                                    <p className="text-secondary-600">Organizational structure and hierarchy</p>
-                                </div>
+                    {activeTab === 'DETAILS' && (
+                        <div className="space-y-6 animate-fadeIn">
+                            {/* Company Overview */}
+                            <div className="flex justify-end">
                                 {['SUPER_ADMIN', 'ADMIN'].includes(userRole) && (
                                     <button
-                                        onClick={() => setShowDeptModal(true)}
+                                        onClick={() => setShowEditModal(true)}
                                         className="btn btn-primary"
                                     >
-                                        + Add Department
+                                        Edit Company Details
                                     </button>
                                 )}
                             </div>
-
-                            {departments.length > 0 ? (
-                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                    {departments.map(dept => (
-                                        <div key={dept.id} className="border border-secondary-200 rounded-xl p-4 hover:shadow-lg transition-shadow">
-                                            <div className="flex items-start justify-between mb-3">
-                                                <div>
-                                                    <h3 className="font-bold text-lg text-secondary-900">{dept.name}</h3>
-                                                    {dept.code && (
-                                                        <span className="text-xs bg-secondary-100 text-secondary-600 px-2 py-1 rounded">{dept.code}</span>
-                                                    )}
-                                                </div>
-                                                <span className={`px-2 py-1 rounded-full text-xs font-bold ${dept.isActive ? 'bg-success-100 text-success-700' : 'bg-danger-100 text-danger-700'}`}>
-                                                    {dept.isActive ? 'Active' : 'Inactive'}
-                                                </span>
-                                            </div>
-
-                                            {dept.description && (
-                                                <p className="text-sm text-secondary-600 mb-3">{dept.description}</p>
-                                            )}
-
-                                            <div className="space-y-2 text-sm">
-                                                {dept.headUser && (
-                                                    <div>
-                                                        <span className="text-secondary-500">Head:</span>
-                                                        <span className="ml-2 font-medium">{dept.headUser.email}</span>
-                                                    </div>
-                                                )}
-                                                {dept.parentDepartment && (
-                                                    <div>
-                                                        <span className="text-secondary-500">Parent:</span>
-                                                        <span className="ml-2">{dept.parentDepartment.name}</span>
-                                                    </div>
-                                                )}
-                                                <div className="flex justify-between pt-2 border-t border-secondary-100">
-                                                    <span className="text-secondary-500">👥 {dept._count.users} members</span>
-                                                    <span className="text-secondary-500">📁 {dept._count.subDepartments} sub-depts</span>
-                                                </div>
-                                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                <div className="card-premium p-6">
+                                    <h2 className="text-xl font-bold mb-4 font-primary">Organization Details</h2>
+                                    <div className="space-y-3">
+                                        <div>
+                                            <label className="text-xs text-secondary-500 uppercase font-bold">Company Name</label>
+                                            <p className="text-lg font-medium text-secondary-900">{company.name}</p>
                                         </div>
-                                    ))}
+                                        <div>
+                                            <label className="text-xs text-secondary-500 uppercase font-bold">Domain</label>
+                                            <p className="text-secondary-900">{company.domain || 'N/A'}</p>
+                                        </div>
+                                        <div>
+                                            <label className="text-xs text-secondary-500 uppercase font-bold">Website</label>
+                                            <a href={company.website} target="_blank" rel="noreferrer" className="text-primary-600 hover:underline">
+                                                {company.website || 'N/A'}
+                                            </a>
+                                        </div>
+                                    </div>
                                 </div>
-                            ) : (
-                                <div className="text-center py-12 bg-secondary-50 rounded-xl">
-                                    <p className="text-secondary-500">No departments created yet.</p>
+
+                                <div className="card-premium p-6">
+                                    <h2 className="text-xl font-bold mb-4 font-primary">Contact Information</h2>
+                                    <div className="space-y-3">
+                                        <div>
+                                            <label className="text-xs text-secondary-500 uppercase font-bold">Email</label>
+                                            <p className="text-secondary-900">{company.email || 'N/A'}</p>
+                                        </div>
+                                        <div>
+                                            <label className="text-xs text-secondary-500 uppercase font-bold">Phone</label>
+                                            <p className="text-secondary-900">{company.phone || 'N/A'}</p>
+                                        </div>
+                                        <div>
+                                            <label className="text-xs text-secondary-500 uppercase font-bold">Address</label>
+                                            <p className="text-secondary-900">{company.address || 'N/A'}</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="card-premium p-6">
+                                    <h2 className="text-xl font-bold mb-4 font-primary">Settings</h2>
+                                    <div className="space-y-3">
+                                        <div>
+                                            <label className="text-xs text-secondary-500 uppercase font-bold">Currency</label>
+                                            <p className="text-secondary-900">{company.currency || 'INR'}</p>
+                                        </div>
+                                        <div>
+                                            <label className="text-xs text-secondary-500 uppercase font-bold">Timezone</label>
+                                            <p className="text-secondary-900">{company.timezone || 'Asia/Kolkata'}</p>
+                                        </div>
+                                        <div>
+                                            <label className="text-xs text-secondary-500 uppercase font-bold">Employees</label>
+                                            <p className="text-secondary-900 text-2xl font-bold">{company._count?.users || 0}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Departments Section */}
+                            <div className="card-premium p-6">
+                                <div className="flex justify-between items-center mb-6">
+                                    <div>
+                                        <h2 className="text-2xl font-bold font-primary">Departments</h2>
+                                        <p className="text-secondary-600">Organizational structure and hierarchy</p>
+                                    </div>
                                     {['SUPER_ADMIN', 'ADMIN'].includes(userRole) && (
                                         <button
                                             onClick={() => setShowDeptModal(true)}
-                                            className="mt-4 btn btn-secondary"
+                                            className="btn btn-primary"
                                         >
-                                            Create First Department
+                                            + Add Department
                                         </button>
                                     )}
                                 </div>
-                            )}
-                        </div>
 
-                        {/* Staff Members Section */}
-                        <div className="card-premium p-6">
-                            <div className="flex justify-between items-center mb-6">
-                                <div>
-                                    <h2 className="text-2xl font-bold font-primary">Staff Members</h2>
-                                    <p className="text-secondary-600">Personnel associated with this organization</p>
-                                </div>
-                                {['SUPER_ADMIN', 'ADMIN', 'MANAGER'].includes(userRole) && (
-                                    <button
-                                        onClick={() => setShowUserModal(true)}
-                                        className="btn btn-primary"
-                                    >
-                                        + Invite Member
-                                    </button>
+                                {departments.length > 0 ? (
+                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                        {departments.map(dept => (
+                                            <div key={dept.id} className="border border-secondary-200 rounded-xl p-4 hover:shadow-lg transition-shadow">
+                                                <div className="flex items-start justify-between mb-3">
+                                                    <div>
+                                                        <h3 className="font-bold text-lg text-secondary-900">{dept.name}</h3>
+                                                        {dept.code && (
+                                                            <span className="text-xs bg-secondary-100 text-secondary-600 px-2 py-1 rounded">{dept.code}</span>
+                                                        )}
+                                                    </div>
+                                                    <span className={`px-2 py-1 rounded-full text-xs font-bold ${dept.isActive ? 'bg-success-100 text-success-700' : 'bg-danger-100 text-danger-700'}`}>
+                                                        {dept.isActive ? 'Active' : 'Inactive'}
+                                                    </span>
+                                                </div>
+
+                                                {dept.description && (
+                                                    <p className="text-sm text-secondary-600 mb-3">{dept.description}</p>
+                                                )}
+
+                                                <div className="space-y-2 text-sm">
+                                                    {dept.headUser && (
+                                                        <div>
+                                                            <span className="text-secondary-500">Head:</span>
+                                                            <span className="ml-2 font-medium">{dept.headUser.email}</span>
+                                                        </div>
+                                                    )}
+                                                    {dept.parentDepartment && (
+                                                        <div>
+                                                            <span className="text-secondary-500">Parent:</span>
+                                                            <span className="ml-2">{dept.parentDepartment.name}</span>
+                                                        </div>
+                                                    )}
+                                                    <div className="flex justify-between pt-2 border-t border-secondary-100">
+                                                        <span className="text-secondary-500">👥 {dept._count.users} members</span>
+                                                        <span className="text-secondary-500">📁 {dept._count.subDepartments} sub-depts</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <div className="text-center py-12 bg-secondary-50 rounded-xl">
+                                        <p className="text-secondary-500">No departments created yet.</p>
+                                        {['SUPER_ADMIN', 'ADMIN'].includes(userRole) && (
+                                            <button
+                                                onClick={() => setShowDeptModal(true)}
+                                                className="mt-4 btn btn-secondary"
+                                            >
+                                                Create First Department
+                                            </button>
+                                        )}
+                                    </div>
                                 )}
                             </div>
 
-                            <div className="overflow-x-auto">
-                                <table className="w-full text-left">
-                                    <thead>
-                                        <tr className="border-b border-secondary-100">
-                                            <th className="pb-3 font-bold text-secondary-500 uppercase text-xs">User</th>
-                                            <th className="pb-3 font-bold text-secondary-500 uppercase text-xs">Role</th>
-                                            <th className="pb-3 font-bold text-secondary-500 uppercase text-xs">Department</th>
-                                            <th className="pb-3 font-bold text-secondary-500 uppercase text-xs text-right">Action</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {staffList.length > 0 ? staffList.map(staff => (
-                                            <tr key={staff.id} className="border-b border-secondary-50 hover:bg-secondary-50">
-                                                <td className="py-4">
-                                                    <div>
-                                                        <p className="font-medium text-secondary-900">{staff.email}</p>
-                                                        <p className="text-xs text-secondary-400">ID: {staff.id.split('-')[0]}</p>
-                                                    </div>
-                                                </td>
-                                                <td className="py-4">
-                                                    <span className="badge badge-secondary">{staff.role.replace('_', ' ')}</span>
-                                                </td>
-                                                <td className="py-4">
-                                                    <p className="text-sm text-secondary-600">{staff.department?.name || 'Unassigned'}</p>
-                                                </td>
-                                                <td className="py-4 text-right">
-                                                    <Link
-                                                        href={`/dashboard/users?search=${encodeURIComponent(staff.email)}`}
-                                                        className="text-primary-600 hover:text-primary-800 font-medium text-sm"
-                                                    >
-                                                        View Details
-                                                    </Link>
-                                                </td>
+                            {/* Staff Members Section */}
+                            <div className="card-premium p-6">
+                                <div className="flex justify-between items-center mb-6">
+                                    <div>
+                                        <h2 className="text-2xl font-bold font-primary">Staff Members</h2>
+                                        <p className="text-secondary-600">Personnel associated with this organization</p>
+                                    </div>
+                                    {['SUPER_ADMIN', 'ADMIN', 'MANAGER'].includes(userRole) && (
+                                        <button
+                                            onClick={() => setShowUserModal(true)}
+                                            className="btn btn-primary"
+                                        >
+                                            + Invite Member
+                                        </button>
+                                    )}
+                                </div>
+
+                                <div className="overflow-x-auto">
+                                    <table className="w-full text-left">
+                                        <thead>
+                                            <tr className="border-b border-secondary-100">
+                                                <th className="pb-3 font-bold text-secondary-500 uppercase text-xs">User</th>
+                                                <th className="pb-3 font-bold text-secondary-500 uppercase text-xs">Role</th>
+                                                <th className="pb-3 font-bold text-secondary-500 uppercase text-xs">Department</th>
+                                                <th className="pb-3 font-bold text-secondary-500 uppercase text-xs text-right">Action</th>
                                             </tr>
-                                        )) : (
-                                            <tr>
-                                                <td colSpan={4} className="py-8 text-center text-secondary-500">No staff members found.</td>
-                                            </tr>
-                                        )}
-                                    </tbody>
-                                </table>
+                                        </thead>
+                                        <tbody>
+                                            {staffList.length > 0 ? staffList.map(staff => (
+                                                <tr key={staff.id} className="border-b border-secondary-50 hover:bg-secondary-50">
+                                                    <td className="py-4">
+                                                        <div>
+                                                            <p className="font-medium text-secondary-900">{staff.email}</p>
+                                                            <p className="text-xs text-secondary-400">ID: {staff.id.split('-')[0]}</p>
+                                                        </div>
+                                                    </td>
+                                                    <td className="py-4">
+                                                        <span className="badge badge-secondary">{staff.role.replace('_', ' ')}</span>
+                                                    </td>
+                                                    <td className="py-4">
+                                                        <p className="text-sm text-secondary-600">{staff.department?.name || 'Unassigned'}</p>
+                                                    </td>
+                                                    <td className="py-4 text-right">
+                                                        <Link
+                                                            href={`/dashboard/users?search=${encodeURIComponent(staff.email)}`}
+                                                            className="text-primary-600 hover:text-primary-800 font-medium text-sm"
+                                                        >
+                                                            View Details
+                                                        </Link>
+                                                    </td>
+                                                </tr>
+                                            )) : (
+                                                <tr>
+                                                    <td colSpan={4} className="py-8 text-center text-secondary-500">No staff members found.</td>
+                                                </tr>
+                                            )}
+                                        </tbody>
+                                    </table>
+                                </div>
                             </div>
                         </div>
-                    </>
-                ) : (
-                    <div className="bg-white p-8 rounded-xl text-center shadow">
-                        <h3 className="text-xl font-bold text-secondary-900">No Company Found</h3>
-                        <p className="text-secondary-500">Please contact support or initialize the company details.</p>
-                    </div>
-                )}
+                    )}
+                </div>
             </div>
 
             {/* Edit Company Modal */}

@@ -11,7 +11,7 @@ export const GET = authorizedRoute(
             const { searchParams } = new URL(req.url);
             const employeeId = searchParams.get('employeeId');
 
-            let where: any = {};
+            const where: any = {};
             if (user.companyId) where.companyId = user.companyId;
 
             if (user.role === 'EMPLOYEE') {
