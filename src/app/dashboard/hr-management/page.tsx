@@ -24,6 +24,8 @@ import PerformanceAnalytics from '@/components/dashboard/hr/PerformanceAnalytics
 import BudgetManager from '@/components/dashboard/hr/BudgetManager';
 import FinalSettlementManager from '@/components/dashboard/hr/FinalSettlementManager';
 import RecruitmentDashboard from '@/components/dashboard/hr/RecruitmentDashboard';
+import HRNavigation from '@/components/dashboard/hr/HRNavigation';
+import HelpSidebar from '@/components/dashboard/hr/HelpSidebar';
 import { Briefcase, Info, Target, TrendingUp, Award, GraduationCap, Edit, Trash2 } from 'lucide-react';
 import {
     useEmployees, useHolidays, useDesignations, useJobs, useApplications,
@@ -212,8 +214,10 @@ const HRManagementContent = () => {
     // Keep handleDeactivateEmp with manual fetch for now or add mutation later
 
 
+
     // Modal state
     const [showEmpModal, setShowEmpModal] = useState(false);
+    const [showHelpSidebar, setShowHelpSidebar] = useState(false);
     const [showReviewModal, setShowReviewModal] = useState(false);
     const [reviewForm, setReviewForm] = useState({ rating: 5, feedback: '' });
     const [selectedEmp, setSelectedEmp] = useState<any>(null);
@@ -476,17 +480,21 @@ const HRManagementContent = () => {
                     </div>
                 </div>
 
-                <div className="flex gap-2 bg-white p-2 rounded-2xl shadow-sm border border-secondary-100 w-fit overflow-x-auto max-w-full">
-                    {['employees', 'departments', 'documents', 'document-templates', 'recruitment', 'onboarding', 'map', 'reports', 'leaves', 'leave-ledger', 'attendance', 'payroll', 'salary-structures', 'shifts', 'roster', 'statutory', 'advances', 'analytics', 'budgets', 'final-settlement', 'holidays', 'productivity'].map(tab => (
-                        <button
-                            key={tab}
-                            onClick={() => setActiveTab(tab)}
-                            className={`px-6 py-2 rounded-xl font-bold transition-all uppercase text-[10px] tracking-widest whitespace-nowrap ${activeTab === tab ? 'bg-primary-600 text-white shadow-lg' : 'text-secondary-400 hover:bg-secondary-50'}`}
-                        >
-                            {tab}
-                        </button>
-                    ))}
-                </div>
+            </div>
+
+            <HRNavigation
+                activeTab={activeTab}
+                onTabChange={setActiveTab}
+                onHelpClick={() => setShowHelpSidebar(true)}
+            />
+
+            <HelpSidebar
+                isOpen={showHelpSidebar}
+                onClose={() => setShowHelpSidebar(false)}
+                activeTab={activeTab}
+            />
+
+            <div className="mt-8 transition-all duration-300">
 
                 {activeTab === 'employees' && (
                     <EmployeeList
@@ -1597,7 +1605,6 @@ const HRManagementContent = () => {
                     onSave={handleJobSubmit}
                 />
             </div>
-
         </DashboardLayout >
     );
 }
