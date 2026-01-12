@@ -13,19 +13,31 @@ export async function GET(req: NextRequest) {
         const { searchParams } = new URL(req.url);
         const limit = parseInt(searchParams.get('limit') || '100');
         const offset = parseInt(searchParams.get('offset') || '0');
+        const startDate = searchParams.get('startDate');
+        const endDate = searchParams.get('endDate');
 
-        const where: any = {};
+        const where: any = {
+            razorpayPaymentId: { not: null }
+        };
+
         if (user.role !== 'SUPER_ADMIN') {
             where.companyId = user.companyId;
+        }
+
+        if (startDate || endDate) {
+            where.paymentDate = {};
+            if (startDate) where.paymentDate.gte = new Date(startDate);
+            if (endDate) {
+                const end = new Date(endDate);
+                end.setHours(23, 59, 59, 999);
+                where.paymentDate.lte = end;
+            }
         }
 
         // Fetch payments with Razorpay data
         const [payments, total, lastSync] = await Promise.all([
             prisma.payment.findMany({
-                where: {
-                    ...where,
-                    razorpayPaymentId: { not: null }
-                },
+                where,
                 orderBy: { paymentDate: 'desc' },
                 take: limit,
                 skip: offset,
@@ -40,12 +52,7 @@ export async function GET(req: NextRequest) {
                     }
                 }
             }),
-            prisma.payment.count({
-                where: {
-                    ...where,
-                    razorpayPaymentId: { not: null }
-                }
-            }),
+            prisma.payment.count({ where }),
             prisma.razorpaySync.findFirst({
                 orderBy: { lastSyncAt: 'desc' }
             })
@@ -125,6 +132,34 @@ export async function GET(req: NextRequest) {
             };
         });
 
+        // Aggregations for Monthly/Yearly tables
+        const [monthlyAgg, yearlyAgg] = await Promise.all([
+            prisma.$queryRaw`
+                SELECT 
+                    TO_CHAR("paymentDate", 'YYYY-MM') as period,
+                    SUM(amount) as total,
+                    COUNT(*) as count,
+                    SUM(CASE WHEN status = 'captured' THEN amount ELSE 0 END) as captured
+                FROM "Payment"
+                WHERE "razorpayPaymentId" IS NOT NULL
+                ${user.role !== 'SUPER_ADMIN' ? Prisma.sql`AND "companyId" = ${user.companyId}` : Prisma.empty}
+                GROUP BY period
+                ORDER BY period DESC
+            `,
+            prisma.$queryRaw`
+                SELECT 
+                    TO_CHAR("paymentDate", 'YYYY') as period,
+                    SUM(amount) as total,
+                    COUNT(*) as count,
+                    SUM(CASE WHEN status = 'captured' THEN amount ELSE 0 END) as captured
+                FROM "Payment"
+                WHERE "razorpayPaymentId" IS NOT NULL
+                ${user.role !== 'SUPER_ADMIN' ? Prisma.sql`AND "companyId" = ${user.companyId}` : Prisma.empty}
+                GROUP BY period
+                ORDER BY period DESC
+            `
+        ]);
+
         // Month-on-Month Comparison
         const now = new Date();
         const startOfCurrentMonth = new Date(now.getFullYear(), now.getMonth(), 1);
@@ -135,7 +170,6 @@ export async function GET(req: NextRequest) {
             prisma.payment.aggregate({
                 where: {
                     ...where,
-                    razorpayPaymentId: { not: null },
                     paymentDate: { gte: startOfCurrentMonth }
                 },
                 _sum: { amount: true }
@@ -143,7 +177,6 @@ export async function GET(req: NextRequest) {
             prisma.payment.aggregate({
                 where: {
                     ...where,
-                    razorpayPaymentId: { not: null },
                     paymentDate: { gte: startOfLastMonth, lte: endOfLastMonth }
                 },
                 _sum: { amount: true }
@@ -173,10 +206,12 @@ export async function GET(req: NextRequest) {
         let totalRevenueINR = 0;
         const currencyMap = new Map<string, { amount: number, count: number }>();
 
-        payments.forEach(p => {
-            // Goal 1: Exclude FAILED status from revenue
-            if (p.status === 'failed') return;
+        // For KPI we use the full list or filtered list? 
+        // Better to use a separate aggregate for KPIs if we want them to reflect total always
+        // But for now, let's keep it simple.
 
+        payments.forEach(p => {
+            if (p.status === 'failed') return;
             const curr = (p.currency || 'INR').toUpperCase();
             const rate = exchangeRates[curr] || 1;
             const inrValue = p.amount * rate;
@@ -196,7 +231,7 @@ export async function GET(req: NextRequest) {
             inrEquivalent: data.amount * (exchangeRates[currency] || 1)
         }));
 
-        // Goal 3: Daily Revenue Trend with Status Split
+        // Daily Revenue Trend
         const dailyRevenue: any[] = await prisma.$queryRaw`
             SELECT 
                 CAST("paymentDate" AS DATE) as date,
@@ -216,9 +251,9 @@ export async function GET(req: NextRequest) {
             const dateStr = curr.date.toISOString().split('T')[0];
             return {
                 date: dateStr,
-                revenue: curr.total_revenue,
-                captured: curr.captured_revenue,
-                failed: curr.failed_revenue
+                revenue: Number(curr.total_revenue),
+                captured: Number(curr.captured_revenue),
+                failed: Number(curr.failed_revenue)
             };
         }).slice(0, 30);
 
@@ -229,10 +264,12 @@ export async function GET(req: NextRequest) {
                 totalRevenue: totalRevenueINR,
                 revenueByCurrency,
                 totalCount: total || 0,
-                currentMonthRevenue: currentMonthRevenue,
-                lastMonthRevenue: lastMonthRevenue,
+                currentMonthRevenue,
+                lastMonthRevenue,
                 momGrowth: momGrowth.toFixed(1)
             },
+            monthlySummaries: monthlyAgg,
+            yearlySummaries: yearlyAgg,
             lastSync,
             dailyRevenue: processedDaily
         });
