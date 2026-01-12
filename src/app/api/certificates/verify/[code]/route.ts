@@ -2,51 +2,30 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { createErrorResponse } from '@/lib/api-utils';
 
-export async function GET(req: NextRequest, context: { params: Promise<{ code: string }> }) {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ code: string }> }) {
     try {
-        const params = await context.params;
-        const { code } = params;
+        const { code } = await params;
 
         const certificate = await prisma.certificate.findUnique({
             where: { verificationCode: code },
-            include: {
-                user: {
-                    select: {
-                        name: true,
-                        email: true
-                    }
-                },
-                enrollment: {
-                    include: {
-                        course: {
-                            select: {
-                                title: true,
-                                description: true
-                            }
-                        }
-                    }
-                }
-            }
+            include: { user: { select: { name: true, email: true } }, enrollment: { include: { course: true } } }
         });
 
-        if (!certificate) {
-            return NextResponse.json({
-                valid: false,
-                message: 'Certificate not found'
-            }, { status: 404 });
-        }
+        if (!certificate) return NextResponse.json({ valid: false, message: 'Invalid Certificate' }, { status: 404 });
 
         return NextResponse.json({
             valid: true,
             certificate: {
                 verificationCode: certificate.verificationCode,
                 issuedAt: certificate.issuedAt,
-                recipientName: certificate.user.name,
-                courseName: certificate.enrollment.course.title,
-                courseDescription: certificate.enrollment.course.description
+                recipientName: certificate.recipientName || certificate.user.name || certificate.user.email,
+                title: certificate.title || (certificate.enrollment?.course?.title ? `Course Completion: ${certificate.enrollment.course.title}` : 'Certificate'),
+                description: certificate.description,
+                type: certificate.type
             }
         });
-    } catch (error) {
-        return createErrorResponse(error);
+
+    } catch (error: any) {
+        return NextResponse.json({ error: error.message }, { status: 500 });
     }
 }

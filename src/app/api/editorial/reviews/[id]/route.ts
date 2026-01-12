@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getAuthenticatedUser } from '@/lib/auth-legacy';
 import { createNotification } from '@/lib/notifications';
+import { generateCertificate } from '@/lib/certificate-utils';
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     try {
@@ -35,8 +36,15 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
             }
         });
 
+        // 2b. Generate Certificate for Reviewer
+        await generateCertificate({
+            userId: user.id,
+            type: 'REVIEWER',
+            title: 'Certificate of Reviewing',
+            description: `Verify that ${user.name || user.email} has completed a peer review for the article "${existing.article.title}".`
+        });
+
         // 3. Notify the Editorial Team
-        // (Assuming admins/managers are the editorial team)
         const staff = await prisma.user.findMany({
             where: { role: { in: ['SUPER_ADMIN', 'EDITOR', 'MANAGER'] } },
             select: { id: true }
