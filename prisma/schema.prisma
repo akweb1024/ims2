@@ -154,6 +154,7 @@ model User {
   discussionReplies     DiscussionReply[]
   certificates          Certificate[]
   paperReviews          PaperReview[]
+  conferenceRegistrations ConferenceRegistration[]
 
   @@index([email])
   @@index([role])
@@ -1558,6 +1559,15 @@ model ConferenceRegistration {
   createdAt    DateTime             @default(now())
   conference   Conference           @relation(fields: [conferenceId], references: [id])
   ticketType   ConferenceTicketType @relation(fields: [ticketTypeId], references: [id])
+  user         User?                @relation(fields: [userId], references: [id])
+  
+  // Phase 3 Fields
+  phone               String?
+  dietaryRequirements String?
+  tshirtSize          String?  // S, M, L, XL, XXL
+  checkInTime         DateTime?
+  certificateIssued   Boolean  @default(false)
+  notes               String?
 }
 
 model ConferencePaper {

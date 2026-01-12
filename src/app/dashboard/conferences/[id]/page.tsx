@@ -205,6 +205,12 @@ export default function ConferenceDetailPage() {
                         >
                             <FileText size={16} /> Submit Paper
                         </Link>
+                        <Link
+                            href={`/dashboard/conferences/${conferenceId}/registrations`}
+                            className="btn btn-secondary flex items-center gap-2"
+                        >
+                            <Users size={16} /> Registrations
+                        </Link>
                         {['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'REVIEWER'].includes(userRole) && (
                             <Link
                                 href={`/dashboard/conferences/${conferenceId}/papers`}
@@ -235,6 +241,26 @@ export default function ConferenceDetailPage() {
                         )}
                     </div>
                 </div>
+
+
+
+                {/* Registration CTA (Public) */}
+                {conference.status === 'PUBLISHED' && (
+                    <div className="card-premium p-8 bg-gradient-to-r from-primary-600 to-purple-600 text-white shadow-xl shadow-primary-200">
+                        <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+                            <div>
+                                <h2 className="text-3xl font-black mb-2">Registration is Open!</h2>
+                                <p className="text-primary-100 text-lg">Secure your spot at {conference.title} today.</p>
+                            </div>
+                            <Link
+                                href={`/dashboard/conferences/${conferenceId}/register`}
+                                className="btn bg-white text-primary-700 hover:bg-gray-100 px-8 py-4 text-lg font-bold shadow-lg transform hover:-translate-y-1 transition-all"
+                            >
+                                <Ticket className="inline mr-2" /> Register Now
+                            </Link>
+                        </div>
+                    </div>
+                )}
 
                 {/* Status Banner */}
                 <div className={`p-4 rounded-2xl ${conference.status === 'PUBLISHED' ? 'bg-success-50 border border-success-200' :
@@ -679,6 +705,6 @@ export default function ConferenceDetailPage() {
                     </div>
                 )}
             </div>
-        </DashboardLayout>
+        </DashboardLayout >
     );
 }
