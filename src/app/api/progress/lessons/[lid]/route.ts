@@ -108,18 +108,51 @@ export const POST = authorizedRoute(
                     ? (completedLessons / totalLessons) * 100
                     : 0;
 
-                await prisma.courseEnrollment.updateMany({
+                const enrollment = await prisma.courseEnrollment.findFirst({
                     where: {
                         userId: user.id,
                         courseId
-                    },
-                    data: {
-                        progress: progressPercentage,
-                        lastAccessedAt: new Date(),
-                        completedAt: progressPercentage === 100 ? new Date() : null,
-                        status: progressPercentage === 100 ? 'COMPLETED' : 'ACTIVE'
                     }
                 });
+
+                if (enrollment) {
+                    await prisma.courseEnrollment.update({
+                        where: { id: enrollment.id },
+                        data: {
+                            progress: progressPercentage,
+                            lastAccessedAt: new Date(),
+                            completedAt: progressPercentage === 100 ? new Date() : null,
+                            status: progressPercentage === 100 ? 'COMPLETED' : 'ACTIVE'
+                        }
+                    });
+
+                    // Auto-generate certificate if course just completed
+                    if (progressPercentage === 100 && enrollment.progress < 100) {
+                        const existingCert = await prisma.certificate.findUnique({
+                            where: { enrollmentId: enrollment.id }
+                        });
+
+                        if (!existingCert) {
+                            // Generate verification code
+                            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+                            let code = '';
+                            for (let i = 0; i < 12; i++) {
+                                code += chars.charAt(Math.floor(Math.random() * chars.length));
+                                if ((i + 1) % 4 === 0 && i < 11) code += '-';
+                            }
+
+                            await prisma.certificate.create({
+                                data: {
+                                    enrollmentId: enrollment.id,
+                                    userId: user.id,
+                                    courseId,
+                                    verificationCode: code,
+                                    certificateUrl: `/api/certificates/${enrollment.id}/download`
+                                }
+                            });
+                        }
+                    }
+                }
             }
 
             return NextResponse.json({
