@@ -33,7 +33,7 @@
             ]
         },
         "start": {
-            "cmd": "npm run start"
+            "cmd": "npm start"
         }
     }
 }
