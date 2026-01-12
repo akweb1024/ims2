@@ -37,14 +37,13 @@ export default function CustomersPage() {
 
             // Fetch executives if eligible
             if (['SUPER_ADMIN', 'MANAGER'].includes(user.role)) {
-                fetch('/api/users', {
+                fetch('/api/users?limit=100', {
                     headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
                 })
                     .then(res => res.json())
                     .then(data => {
-                        if (Array.isArray(data)) {
-                            setExecutives(data.filter((u: any) => ['SALES_EXECUTIVE', 'MANAGER'].includes(u.role)));
-                        }
+                        const users = Array.isArray(data) ? data : (data.data || []);
+                        setExecutives(users.filter((u: any) => ['SALES_EXECUTIVE', 'MANAGER', 'TEAM_LEADER'].includes(u.role)));
                     })
                     .catch(err => console.error('Failed to fetch staff', err));
             }

@@ -366,7 +366,7 @@ export default function CourseBuilderPage() {
                                             ))
                                         ) : (
                                             <p className="text-center text-secondary-400 py-4 text-sm">
-                                                No lessons yet. Click "Add Lesson" to get started.
+                                                No lessons yet. Click &quot;Add Lesson&quot; to get started.
                                             </p>
                                         )}
                                     </div>

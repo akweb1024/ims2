@@ -47,7 +47,7 @@ export const POST = authorizedRoute(
 
             const newOrder = (lastModule?.order || 0) + 1;
 
-            const module = await prisma.courseModule.create({
+            const newModule = await prisma.courseModule.create({
                 data: {
                     courseId,
                     title,
@@ -56,7 +56,7 @@ export const POST = authorizedRoute(
                 }
             });
 
-            return NextResponse.json(module);
+            return NextResponse.json(newModule);
         } catch (error) {
             return createErrorResponse(error);
         }

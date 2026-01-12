@@ -150,7 +150,8 @@ function ChatContent() {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             if (res.ok) {
-                const data = await res.json();
+                const result = await res.json();
+                const data = Array.isArray(result) ? result : (result.data || []);
                 // Filter out self
                 setAvailableUsers(data.filter((u: any) => u.id !== user?.id));
             }

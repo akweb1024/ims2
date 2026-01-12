@@ -185,6 +185,12 @@ export default function JournalsPage() {
                                 {userRole === 'SUPER_ADMIN' && (
                                     <>
                                         <Link
+                                            href={`/dashboard/journals/${selectedJournal.id}/reviewers`}
+                                            className="btn btn-secondary border-primary-200 text-primary-600 hover:bg-primary-50 px-6 py-2"
+                                        >
+                                            Manage Reviewers
+                                        </Link>
+                                        <Link
                                             href={`/dashboard/journals/${selectedJournal.id}/edit`}
                                             className="btn btn-secondary border-primary-200 text-primary-600 hover:bg-primary-50 px-6 py-2"
                                         >

@@ -11,12 +11,12 @@ export const PATCH = authorizedRoute(
             const { mid } = params;
             const body = await req.json();
 
-            const module = await prisma.courseModule.update({
+            const courseModule = await prisma.courseModule.update({
                 where: { id: mid },
                 data: body
             });
 
-            return NextResponse.json(module);
+            return NextResponse.json(courseModule);
         } catch (error) {
             return createErrorResponse(error);
         }

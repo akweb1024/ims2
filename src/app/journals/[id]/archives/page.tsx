@@ -64,7 +64,7 @@ export default function ArchivesPage({ params }: { params: Promise<{ id: string 
                                             <Layers size={16} />
                                         </div>
                                     </div>
-                                    {issue.title && <p className="text-sm text-secondary-600 italic mb-4">"{issue.title}"</p>}
+                                    {issue.title && <p className="text-sm text-secondary-600 italic mb-4">&quot;{issue.title}&quot;</p>}
                                     <div className="flex items-center justify-between text-xs font-bold text-secondary-400 uppercase tracking-wider">
                                         <span>{issue._count.articles} Articles</span>
                                         <span className="group-hover:translate-x-1 transition-transform">View Issue &rarr;</span>

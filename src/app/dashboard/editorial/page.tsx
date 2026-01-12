@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { Upload, FileText, CheckCircle, AlertTriangle, Clock, BookOpen, UserCheck, Calendar } from 'lucide-react';
+import Link from 'next/link';
 
 export default function EditorialPage() {
     const [articles, setArticles] = useState<any[]>([]);
@@ -231,9 +232,9 @@ export default function EditorialPage() {
                                     <td className="p-4 font-mono text-xs">v{(article.versions?.length || 0)}</td>
                                     <td className="p-4">
                                         <span className={`px-2 py-1 rounded-lg text-[10px] font-bold uppercase ${article.status === 'ACCEPTED' ? 'bg-success-100 text-success-700' :
-                                                article.status === 'REJECTED' ? 'bg-danger-100 text-danger-700' :
-                                                    article.status === 'PUBLISHED' ? 'bg-primary-100 text-primary-700' :
-                                                        'bg-warning-100 text-warning-700'
+                                            article.status === 'REJECTED' ? 'bg-danger-100 text-danger-700' :
+                                                article.status === 'PUBLISHED' ? 'bg-primary-100 text-primary-700' :
+                                                    'bg-warning-100 text-warning-700'
                                             }`}>
                                             {article.status.replace('_', ' ')}
                                         </span>
@@ -338,7 +339,7 @@ export default function EditorialPage() {
                                                     <div>
                                                         <p className="font-bold text-xs text-secondary-900">Version {v.versionNumber}</p>
                                                         <p className="text-[10px] text-secondary-500">{new Date(v.submittedAt).toLocaleString()}</p>
-                                                        {v.changelog && <p className="text-[10px] text-secondary-600 mt-1 italic">"{v.changelog}"</p>}
+                                                        {v.changelog && <p className="text-[10px] text-secondary-600 mt-1 italic">&quot;{v.changelog}&quot;</p>}
                                                     </div>
                                                     <a href={v.fileUrl} target="_blank" rel="noopener noreferrer" className="text-primary-600 text-xs font-bold hover:underline flex items-center gap-1"><FileText size={12} /> View File</a>
                                                 </div>
@@ -358,10 +359,10 @@ export default function EditorialPage() {
                                                             <div className="text-xs font-bold">{review.reviewer.email}</div>
                                                         </div>
                                                         <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${review.recommendation === 'ACCEPT' ? 'bg-success-100 text-success-700' :
-                                                                review.recommendation === 'REJECT' ? 'bg-danger-100 text-danger-700' : 'bg-warning-100 text-warning-700'
+                                                            review.recommendation === 'REJECT' ? 'bg-danger-100 text-danger-700' : 'bg-warning-100 text-warning-700'
                                                             }`}>{review.recommendation || 'Pending'}</span>
                                                     </div>
-                                                    <p className="text-xs text-secondary-600 italic">"{review.commentsToAuthor}"</p>
+                                                    <p className="text-xs text-secondary-600 italic">&quot;{review.commentsToAuthor}&quot;</p>
                                                 </div>
                                             ))}
                                             {articleReviews.length === 0 && <p className="text-xs text-secondary-400 italic">No reviews yet.</p>}
@@ -407,6 +408,15 @@ export default function EditorialPage() {
                                                 </select>
                                             </div>
                                         )}
+
+                                        <div className="space-y-2 mb-4">
+                                            <Link
+                                                href={`/dashboard/articles/${viewingArticle.id}/assign`}
+                                                className="w-full btn bg-secondary-900 text-white text-xs py-2 rounded-lg hover:bg-black font-black uppercase tracking-widest flex items-center justify-center gap-2"
+                                            >
+                                                🛡️ Assign Reviewer
+                                            </Link>
+                                        </div>
 
                                         <div className="grid grid-cols-2 gap-2">
                                             <button onClick={() => handleDecision('ACCEPTED')} className="btn bg-success-600 text-white text-xs py-2 rounded-lg hover:bg-success-700">Accept</button>

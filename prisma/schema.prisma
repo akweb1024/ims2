@@ -157,6 +157,12 @@ model User {
   paperReviews          PaperReview[]
   conferenceRegistrations ConferenceRegistration[]
   committeeRoles          ConferenceCommitteeMember[]
+  
+  // Reviewer Management Relations
+  reviewerProfiles        JournalReviewer[]      @relation("ReviewerProfile")
+  assignedReviews         ReviewAssignment[]     @relation("AssignedReviews")
+  validatedReports        ReviewReport[]         @relation("ValidatedReports")
+  issuedCertificates      ReviewCertificate[]    @relation("IssuedCertificates")
 
   @@index([email])
   @@index([role])
@@ -354,6 +360,8 @@ model Journal {
   volumes           JournalVolume[]
   plans             Plan[]
   subscriptionItems SubscriptionItem[]
+  reviewers         JournalReviewer[]
+  certificates      ReviewCertificate[]
 
   @@index([isActive])
   @@index([name])
@@ -1469,6 +1477,8 @@ model Article {
   reviews          Review[]
   versions         ArticleVersion[]
   currentRound     Int             @default(1)
+  reviewAssignments ReviewAssignment[]
+  certificates     ReviewCertificate[]
 }
 
 model Review {
@@ -2219,6 +2229,7 @@ model ArticleVersion {
   @@index([articleId])
 }
 
+
 model ConferenceCommitteeMember {
   id           String     @id @default(uuid())
   conferenceId String
@@ -2233,4 +2244,137 @@ model ConferenceCommitteeMember {
 
   conference   Conference @relation(fields: [conferenceId], references: [id], onDelete: Cascade)
   user         User?      @relation(fields: [userId], references: [id])
+}
+
+// ============================================
+// JOURNAL REVIEWER MANAGEMENT SYSTEM
+// ============================================
+
+model JournalReviewer {
+  id                String   @id @default(uuid())
+  journalId         String
+  userId            String
+  specialization    String[] // Areas of expertise
+  bio               String?
+  isActive          Boolean  @default(true)
+  joinedDate        DateTime @default(now())
+  totalReviews      Int      @default(0)
+  completedReviews  Int      @default(0)
+  averageRating     Float?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  journal           Journal  @relation(fields: [journalId], references: [id], onDelete: Cascade)
+  user              User     @relation("ReviewerProfile", fields: [userId], references: [id])
+  assignments       ReviewAssignment[]
+  certificates      ReviewCertificate[]
+  
+  @@unique([journalId, userId])
+  @@index([journalId])
+  @@index([userId])
+  @@index([isActive])
+}
+
+model ReviewAssignment {
+  id                String       @id @default(uuid())
+  articleId         String
+  reviewerId        String
+  assignedBy        String
+  assignedDate      DateTime     @default(now())
+  dueDate           DateTime
+  status            ReviewStatus @default(PENDING)
+  priority          ReviewPriority @default(NORMAL)
+  round             Int          @default(1)
+  reminderSent      Boolean      @default(false)
+  lastReminderDate  DateTime?
+  notes             String?
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+  
+  article           Article      @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  reviewer          JournalReviewer @relation(fields: [reviewerId], references: [id])
+  assignedByUser    User         @relation("AssignedReviews", fields: [assignedBy], references: [id])
+  report            ReviewReport?
+  
+  @@index([articleId])
+  @@index([reviewerId])
+  @@index([status])
+  @@index([dueDate])
+}
+
+model ReviewReport {
+  id                    String         @id @default(uuid())
+  assignmentId          String         @unique
+  overallRating         Int            // 1-5
+  originality           Int            // 1-5
+  methodology           Int            // 1-5
+  clarity               Int            // 1-5
+  significance          Int            // 1-5
+  commentsToEditor      String
+  commentsToAuthor      String?
+  recommendation        Recommendation
+  confidentialComments  String?
+  submittedDate         DateTime       @default(now())
+  validatedBy           String?
+  validatedDate         DateTime?
+  isValidated           Boolean        @default(false)
+  rejectionReason       String?
+  createdAt             DateTime       @default(now())
+  updatedAt             DateTime       @updatedAt
+  
+  assignment            ReviewAssignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  validator             User?          @relation("ValidatedReports", fields: [validatedBy], references: [id])
+  
+  @@index([assignmentId])
+  @@index([isValidated])
+}
+
+model ReviewCertificate {
+  id                String   @id @default(uuid())
+  reviewerId        String
+  articleId         String
+  journalId         String
+  certificateNumber String   @unique
+  issueDate         DateTime @default(now())
+  reviewDate        DateTime
+  articleTitle      String
+  reviewerName      String
+  journalName       String
+  pdfUrl            String?
+  issuedBy          String
+  metadata          Json?    // Additional certificate data
+  createdAt         DateTime @default(now())
+  
+  reviewer          JournalReviewer @relation(fields: [reviewerId], references: [id])
+  article           Article  @relation(fields: [articleId], references: [id])
+  journal           Journal  @relation(fields: [journalId], references: [id])
+  issuer            User     @relation("IssuedCertificates", fields: [issuedBy], references: [id])
+  
+  @@index([reviewerId])
+  @@index([certificateNumber])
+  @@index([journalId])
+}
+
+enum ReviewStatus {
+  PENDING
+  IN_PROGRESS
+  SUBMITTED
+  VALIDATED
+  REJECTED
+  EXPIRED
+}
+
+enum ReviewPriority {
+  LOW
+  NORMAL
+  HIGH
+  URGENT
+}
+
+enum Recommendation {
+  ACCEPT
+  MINOR_REVISION
+  MAJOR_REVISION
+  REJECT
+  REJECT_RESUBMIT
 }

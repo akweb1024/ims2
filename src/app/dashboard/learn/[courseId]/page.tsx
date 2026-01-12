@@ -60,8 +60,8 @@ export default function CoursePlayerPage() {
     };
 
     const findFirstIncompleteLesson = (progressData: any) => {
-        for (const module of progressData.course?.modules || []) {
-            for (const lesson of module.lessons || []) {
+        for (const courseModule of progressData.course?.modules || []) {
+            for (const lesson of courseModule.lessons || []) {
                 const lessonProgress = progressData.progress.lessonsProgress.find(
                     (p: any) => p.lesson.id === lesson.id
                 );
@@ -170,8 +170,8 @@ export default function CoursePlayerPage() {
         if (!course || !currentLesson) return null;
 
         let foundCurrent = false;
-        for (const module of course.modules) {
-            for (const lesson of module.lessons) {
+        for (const courseModule of course.modules) {
+            for (const lesson of courseModule.lessons) {
                 if (foundCurrent) return lesson;
                 if (lesson.id === currentLesson.id) foundCurrent = true;
             }
@@ -183,8 +183,8 @@ export default function CoursePlayerPage() {
         if (!course || !currentLesson) return null;
 
         let previousLesson = null;
-        for (const module of course.modules) {
-            for (const lesson of module.lessons) {
+        for (const courseModule of course.modules) {
+            for (const lesson of courseModule.lessons) {
                 if (lesson.id === currentLesson.id) return previousLesson;
                 previousLesson = lesson;
             }

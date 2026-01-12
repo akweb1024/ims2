@@ -197,7 +197,9 @@ export default function DashboardLayout({ children, userRole: propUserRole = 'CU
                     { name: 'Production Hub', href: '/dashboard/production', icon: '🏭', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'EDITOR'] },
                     { name: 'Journals', href: '/dashboard/journals', icon: '📰', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'EDITOR', 'CUSTOMER', 'AGENCY', 'SALES_EXECUTIVE'] },
                     { name: 'Editorial Workflow', href: '/dashboard/editorial', icon: '✍️', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'EDITOR'] },
-                    { name: 'My Reviews', href: '/dashboard/editorial/reviews', icon: '📝', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'EDITOR'] },
+                    { name: 'Validate Reports', href: '/dashboard/reviews/validate', icon: '📋', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'EDITOR'] },
+                    { name: 'Reviewer Dashboard', href: '/dashboard/reviewer', icon: '🛡️', roles: ['*'] },
+                    { name: 'My Certificates', href: '/dashboard/reviewer/certificates', icon: '🏅', roles: ['*'] },
                 ]
             },
             {

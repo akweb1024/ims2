@@ -352,7 +352,7 @@ export default function ConferenceDetailPage() {
                                         {conference.ticketTypes?.length > 0 ? '✓' : '✗'} At least one ticket type required
                                         <div className="tooltip">
                                             <HelpCircle size={12} className="text-secondary-400" />
-                                            <span className="tooltip-text">Add tickets in the 'Tickets' tab to allow registrations.</span>
+                                            <span className="tooltip-text">Add tickets in the &apos;Tickets&apos; tab to allow registrations.</span>
                                         </div>
                                     </li>
                                     <li className={`flex items-center gap-1 ${conference.title ? 'text-success-600' : 'text-danger-600'}`}>
