@@ -133,12 +133,12 @@ export async function GET(req: NextRequest) {
         });
 
         // Aggregations for Monthly/Yearly tables
-        const [monthlyAgg, yearlyAgg] = await Promise.all([
+        const [monthlyAggRaw, yearlyAggRaw] = await Promise.all([
             prisma.$queryRaw`
                 SELECT 
                     TO_CHAR("paymentDate", 'YYYY-MM') as period,
                     SUM(amount) as total,
-                    COUNT(*) as count,
+                    COUNT(*)::integer as count,
                     SUM(CASE WHEN status = 'captured' THEN amount ELSE 0 END) as captured
                 FROM "Payment"
                 WHERE "razorpayPaymentId" IS NOT NULL
@@ -150,7 +150,7 @@ export async function GET(req: NextRequest) {
                 SELECT 
                     TO_CHAR("paymentDate", 'YYYY') as period,
                     SUM(amount) as total,
-                    COUNT(*) as count,
+                    COUNT(*)::integer as count,
                     SUM(CASE WHEN status = 'captured' THEN amount ELSE 0 END) as captured
                 FROM "Payment"
                 WHERE "razorpayPaymentId" IS NOT NULL
@@ -159,6 +159,9 @@ export async function GET(req: NextRequest) {
                 ORDER BY period DESC
             `
         ]);
+
+        const monthlyAgg = Array.isArray(monthlyAggRaw) ? monthlyAggRaw : [];
+        const yearlyAgg = Array.isArray(yearlyAggRaw) ? yearlyAggRaw : [];
 
         // Month-on-Month Comparison
         const now = new Date();
@@ -232,28 +235,34 @@ export async function GET(req: NextRequest) {
         }));
 
         // Daily Revenue Trend
-        const dailyRevenue: any[] = await prisma.$queryRaw`
+        const dailyRevenueRaw: any[] = await prisma.$queryRaw`
             SELECT 
-                CAST("paymentDate" AS DATE) as date,
-                SUM(CASE WHEN status != 'failed' THEN amount ELSE 0 END) as total_revenue,
-                SUM(CASE WHEN status = 'captured' THEN amount ELSE 0 END) as captured_revenue,
-                SUM(CASE WHEN status = 'failed' THEN amount ELSE 0 END) as failed_revenue
+                "paymentDate"::date as date,
+                SUM(CASE WHEN status != 'failed' THEN amount ELSE 0 END)::numeric as total_revenue,
+                SUM(CASE WHEN status = 'captured' THEN amount ELSE 0 END)::numeric as captured_revenue,
+                SUM(CASE WHEN status = 'failed' THEN amount ELSE 0 END)::numeric as failed_revenue
             FROM "Payment"
             WHERE "razorpayPaymentId" IS NOT NULL
             ${user.role !== 'SUPER_ADMIN' ? Prisma.sql`AND "companyId" = ${user.companyId}` : Prisma.empty}
-            GROUP BY CAST("paymentDate" AS DATE)
+            GROUP BY date
             ORDER BY date DESC
             LIMIT 60
         `;
 
+        const dailyRevenue = Array.isArray(dailyRevenueRaw) ? dailyRevenueRaw : [];
+
         // Process daily revenue to INR for charts
         const processedDaily = dailyRevenue.map((curr: any) => {
-            const dateStr = curr.date.toISOString().split('T')[0];
+            let dateStr = 'unknown';
+            try {
+                dateStr = curr.date instanceof Date ? curr.date.toISOString().split('T')[0] : String(curr.date);
+            } catch (e) { }
+
             return {
                 date: dateStr,
-                revenue: Number(curr.total_revenue),
-                captured: Number(curr.captured_revenue),
-                failed: Number(curr.failed_revenue)
+                revenue: Number(curr.total_revenue) || 0,
+                captured: Number(curr.captured_revenue) || 0,
+                failed: Number(curr.failed_revenue) || 0
             };
         }).slice(0, 30);
 
