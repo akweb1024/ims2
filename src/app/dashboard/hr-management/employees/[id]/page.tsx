@@ -19,6 +19,7 @@ export default function EmployeeProfilePage() {
     const [employee, setEmployee] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState('overview');
+    const [growthData, setGrowthData] = useState<any>(null);
 
     // Increment Form State
     const [showIncrementForm, setShowIncrementForm] = useState(false);
@@ -52,6 +53,27 @@ export default function EmployeeProfilePage() {
             setLoading(false);
         }
     };
+
+    const fetchGrowthData = async () => {
+        if (growthData) return;
+        try {
+            const token = localStorage.getItem('token');
+            const res = await fetch(`/api/hr/employees/${params.id}/growth`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (res.ok) {
+                setGrowthData(await res.json());
+            }
+        } catch (err) {
+            console.error(err);
+        }
+    };
+
+    useEffect(() => {
+        if (activeTab === 'growth') {
+            fetchGrowthData();
+        }
+    }, [activeTab]);
 
     const handleAddIncrement = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -249,7 +271,7 @@ export default function EmployeeProfilePage() {
                     <div className="lg:col-span-3 space-y-6">
                         {/* Tabs */}
                         <div className="flex gap-2 border-b border-secondary-200 overflow-x-auto">
-                            {['overview', 'history', 'documents', 'performance', 'attendance', 'leaves'].map(tab => (
+                            {['overview', 'history', 'documents', 'performance', 'attendance', 'leaves', 'growth'].map(tab => (
                                 <button
                                     key={tab}
                                     onClick={() => setActiveTab(tab)}
@@ -576,6 +598,151 @@ export default function EmployeeProfilePage() {
                                             )}
                                         </tbody>
                                     </table>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Growth Tab */}
+                        {activeTab === 'growth' && (
+                            <div className="space-y-8">
+                                {/* Courses Section */}
+                                <div className="space-y-4">
+                                    <h3 className="font-bold text-lg text-secondary-900 flex items-center gap-2">
+                                        <TrendingUp className="text-primary-600" size={20} />
+                                        Learning & Development
+                                    </h3>
+                                    {!growthData ? (
+                                        <div className="p-8 text-center text-secondary-500">Loading learning data...</div>
+                                    ) : growthData.courses.length === 0 ? (
+                                        <div className="p-8 text-center bg-secondary-50 rounded-xl border-dashed border-2 border-secondary-200 text-secondary-400">
+                                            No courses enrolled yet.
+                                        </div>
+                                    ) : (
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            {growthData.courses.map((course: any) => (
+                                                <div key={course.id} className="card-premium p-4 flex gap-4">
+                                                    <div className="w-16 h-16 rounded-lg bg-secondary-200 flex-shrink-0 overflow-hidden">
+                                                        {course.thumbnailUrl ? (
+                                                            <img src={course.thumbnailUrl} alt="" className="w-full h-full object-cover" />
+                                                        ) : (
+                                                            <div className="w-full h-full flex items-center justify-center text-xs font-bold text-secondary-400">IMG</div>
+                                                        )}
+                                                    </div>
+                                                    <div className="flex-1 min-w-0">
+                                                        <h4 className="font-bold text-secondary-900 truncate">{course.title}</h4>
+                                                        <p className="text-xs text-secondary-500 mb-2">{course.level} • {course.category}</p>
+                                                        <div className="w-full bg-secondary-100 rounded-full h-2 overflow-hidden">
+                                                            <div
+                                                                className="bg-primary-500 h-full rounded-full transition-all duration-500"
+                                                                style={{ width: `${course.progress}%` }}
+                                                            />
+                                                        </div>
+                                                        <div className="flex justify-between items-center mt-1">
+                                                            <span className="text-[10px] font-bold text-secondary-600 uppercase">{course.status}</span>
+                                                            <span className="text-[10px] text-secondary-500">{Math.round(course.progress)}%</span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Conferences Section */}
+                                <div className="space-y-4">
+                                    <h3 className="font-bold text-lg text-secondary-900 flex items-center gap-2">
+                                        <Briefcase className="text-purple-600" size={20} />
+                                        Conferences & Papers
+                                    </h3>
+
+                                    {!growthData ? null : (
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            {/* Registrations */}
+                                            <div className="card-premium p-0 overflow-hidden">
+                                                <div className="bg-secondary-50 px-4 py-3 border-b border-secondary-100 font-bold text-sm text-secondary-700">
+                                                    Conference Attendance
+                                                </div>
+                                                {growthData.conferences.length === 0 ? (
+                                                    <div className="p-6 text-center text-sm text-secondary-400">No conferences attended.</div>
+                                                ) : (
+                                                    <div className="divide-y divide-secondary-100">
+                                                        {growthData.conferences.map((conf: any) => (
+                                                            <div key={conf.id} className="p-4 hover:bg-secondary-50">
+                                                                <h5 className="font-bold text-secondary-900 text-sm">{conf.title}</h5>
+                                                                <p className="text-xs text-secondary-500 mb-1">
+                                                                    <FormattedDate date={conf.startDate} /> • {conf.mode}
+                                                                </p>
+                                                                <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-success-50 text-success-700 uppercase border border-success-100">
+                                                                    {conf.ticketType}
+                                                                </span>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                )}
+                                            </div>
+
+                                            {/* Papers */}
+                                            <div className="card-premium p-0 overflow-hidden">
+                                                <div className="bg-secondary-50 px-4 py-3 border-b border-secondary-100 font-bold text-sm text-secondary-700">
+                                                    Research Submissions
+                                                </div>
+                                                {growthData.papers.length === 0 ? (
+                                                    <div className="p-6 text-center text-sm text-secondary-400">No papers submitted.</div>
+                                                ) : (
+                                                    <div className="divide-y divide-secondary-100">
+                                                        {growthData.papers.map((paper: any) => (
+                                                            <div key={paper.id} className="p-4 hover:bg-secondary-50">
+                                                                <h5 className="font-bold text-secondary-900 text-sm truncate" title={paper.title}>{paper.title}</h5>
+                                                                <p className="text-xs text-secondary-500 mb-1">
+                                                                    {paper.conference}
+                                                                </p>
+                                                                <div className="flex justify-between items-center">
+                                                                    <span className="text-[10px] text-secondary-400">{paper.track}</span>
+                                                                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase border ${paper.reviewStatus === 'ACCEPTED' ? 'bg-success-50 text-success-700 border-success-100' :
+                                                                            paper.reviewStatus === 'REJECTED' ? 'bg-danger-50 text-danger-700 border-danger-100' :
+                                                                                'bg-warning-50 text-warning-700 border-warning-100'
+                                                                        }`}>
+                                                                        {paper.reviewStatus}
+                                                                    </span>
+                                                                </div>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Recent Activity / Quizzes */}
+                                <div className="space-y-4">
+                                    <h3 className="font-bold text-lg text-secondary-900 flex items-center gap-2">
+                                        <Award className="text-orange-500" size={20} />
+                                        Quiz Performance (Last 10)
+                                    </h3>
+                                    {!growthData ? null : growthData.recentQuizzes.length === 0 ? (
+                                        <div className="p-4 text-center text-secondary-400 text-sm border border-secondary-200 rounded-xl border-dashed">No quiz data available.</div>
+                                    ) : (
+                                        <div className="overflow-x-auto">
+                                            <div className="flex gap-4 pb-2">
+                                                {growthData.recentQuizzes.map((quiz: any) => (
+                                                    <div key={quiz.id} className="flex-none w-64 card-premium p-4 border-l-4" style={{ borderColor: quiz.passed ? '#22c55e' : '#ef4444' }}>
+                                                        <h5 className="font-bold text-sm text-secondary-900 truncate" title={quiz.quizTitle}>{quiz.quizTitle}</h5>
+                                                        <p className="text-xs text-secondary-500 mb-2 truncate">{quiz.courseTitle}</p>
+                                                        <div className="flex justify-between items-end">
+                                                            <div>
+                                                                <p className="text-[10px] uppercase font-bold text-secondary-400">Score</p>
+                                                                <p className={`text-xl font-black ${quiz.passed ? 'text-success-600' : 'text-danger-600'}`}>{quiz.score}%</p>
+                                                            </div>
+                                                            <div className="text-right">
+                                                                <p className="text-[10px] text-secondary-400"><FormattedDate date={quiz.date} /></p>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         )}
