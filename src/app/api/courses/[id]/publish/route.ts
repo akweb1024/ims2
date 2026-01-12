@@ -5,7 +5,7 @@ import { createErrorResponse } from '@/lib/api-utils';
 
 export const POST = authorizedRoute(
     ['SUPER_ADMIN', 'ADMIN', 'MANAGER'],
-    async (req: NextRequest, context: { params: Promise<{ id: string }> }) => {
+    async (req: NextRequest, user: any, context: { params: Promise<{ id: string }> }) => {
         try {
             const params = await context.params;
             const { id } = params;
@@ -33,9 +33,11 @@ export const POST = authorizedRoute(
 
             const hasLessons = course.modules.some(m => m.lessons.length > 0);
             if (!hasLessons) {
+                console.log('Publish validation failed for course:', id, 'No lessons found');
                 return createErrorResponse('Cannot publish: Modules must have at least one lesson', 400);
             }
 
+            console.log('Publishing course:', id);
             // Publish the course
             const updated = await prisma.course.update({
                 where: { id },
@@ -49,6 +51,7 @@ export const POST = authorizedRoute(
             });
 
         } catch (error) {
+            console.error('API Course Publish Error:', error);
             return createErrorResponse(error);
         }
     }

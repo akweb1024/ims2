@@ -156,6 +156,7 @@ model User {
   certificates          Certificate[]
   paperReviews          PaperReview[]
   conferenceRegistrations ConferenceRegistration[]
+  committeeRoles          ConferenceCommitteeMember[]
 
   @@index([email])
   @@index([role])
@@ -1536,6 +1537,7 @@ model Conference {
   ticketTypes     ConferenceTicketType[]
   tracks          ConferenceTrack[]
   sponsors        ConferenceSponsor[]
+  committeeMembers ConferenceCommitteeMember[]
 }
 
 model ConferenceTicketType {
@@ -2215,4 +2217,20 @@ model ArticleVersion {
   article       Article  @relation(fields: [articleId], references: [id])
 
   @@index([articleId])
+}
+
+model ConferenceCommitteeMember {
+  id           String     @id @default(uuid())
+  conferenceId String
+  userId       String?    // Link to registered user if available
+  name         String
+  role         String     // CHAIR, EDITOR, REVIEWER, ORGANIZER
+  affiliation  String?
+  bio          String?
+  photoUrl     String?
+  displayOrder Int        @default(0)
+  createdAt    DateTime   @default(now())
+
+  conference   Conference @relation(fields: [conferenceId], references: [id], onDelete: Cascade)
+  user         User?      @relation(fields: [userId], references: [id])
 }

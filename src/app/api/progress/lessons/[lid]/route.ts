@@ -5,7 +5,7 @@ import { createErrorResponse } from '@/lib/api-utils';
 
 export const GET = authorizedRoute(
     [],
-    async (req: NextRequest, context: { params: Promise<{ lid: string }> }, user) => {
+    async (req: NextRequest, user: any, context: { params: Promise<{ lid: string }> }) => {
         try {
             const params = await context.params;
             const { lid: lessonId } = params;
@@ -34,7 +34,7 @@ export const GET = authorizedRoute(
 
 export const POST = authorizedRoute(
     [],
-    async (req: NextRequest, context: { params: Promise<{ lid: string }> }, user) => {
+    async (req: NextRequest, user: any, context: { params: Promise<{ lid: string }> }) => {
         try {
             const params = await context.params;
             const { lid: lessonId } = params;

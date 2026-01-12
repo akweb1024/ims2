@@ -5,7 +5,7 @@ import { useRouter, useParams } from 'next/navigation';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import {
     BookOpen, Plus, Edit2, Trash2, Save, Eye, Upload,
-    Video, FileText, CheckCircle, GripVertical, X
+    Video, FileText, CheckCircle, GripVertical, X, HelpCircle
 } from 'lucide-react';
 
 export default function CourseBuilderPage() {
@@ -149,15 +149,19 @@ export default function CourseBuilderPage() {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
 
+            console.log('Course Publish Response:', res.status);
             if (res.ok) {
+                const result = await res.json();
+                console.log('Course Publish Result:', result);
                 fetchCourse();
                 alert('Course published successfully!');
             } else {
                 const error = await res.json();
+                console.error('Course Publish Failed:', error);
                 alert(error.error || 'Failed to publish course');
             }
         } catch (error) {
-            console.error(error);
+            console.error('handlePublish Error:', error);
             alert('Failed to publish course');
         }
     };
@@ -203,16 +207,34 @@ export default function CourseBuilderPage() {
                     <div>
                         <h1 className="text-3xl font-black text-secondary-900">{course.title}</h1>
                         <p className="text-secondary-500">Course Builder</p>
-                        <div className="flex gap-2 mt-2">
+                        <div className="flex flex-wrap gap-2 mt-2 items-center">
                             <span className={`px-3 py-1 rounded-full text-xs font-bold ${course.isPublished
-                                    ? 'bg-success-100 text-success-700'
-                                    : 'bg-warning-100 text-warning-700'
+                                ? 'bg-success-100 text-success-700'
+                                : 'bg-warning-100 text-warning-700'
                                 }`}>
                                 {course.isPublished ? 'PUBLISHED' : 'DRAFT'}
                             </span>
                             <span className="px-3 py-1 rounded-full text-xs font-bold bg-primary-100 text-primary-700">
                                 {modules.length} Modules
                             </span>
+                            {!course.isPublished && (
+                                <div className="flex gap-4 ml-4 text-[10px] font-bold uppercase tracking-wider items-center">
+                                    <span className={`flex items-center gap-1 ${modules.length > 0 ? 'text-success-600' : 'text-danger-600'}`}>
+                                        {modules.length > 0 ? '✓' : '✗'} 1+ Module
+                                        <div className="tooltip">
+                                            <HelpCircle size={10} className="text-secondary-400" />
+                                            <span className="tooltip-text">Courses need at least one module for structure.</span>
+                                        </div>
+                                    </span>
+                                    <span className={`flex items-center gap-1 ${modules.some(m => m.lessons?.length > 0) ? 'text-success-600' : 'text-danger-600'}`}>
+                                        {modules.some(m => (m.lessons?.length || 0) > 0) ? '✓' : '✗'} 1+ Lesson
+                                        <div className="tooltip">
+                                            <HelpCircle size={10} className="text-secondary-400" />
+                                            <span className="tooltip-text">Add at least one lesson to any module to publish.</span>
+                                        </div>
+                                    </span>
+                                </div>
+                            )}
                         </div>
                     </div>
                     <div className="flex gap-2">
@@ -225,6 +247,7 @@ export default function CourseBuilderPage() {
                         {!course.isPublished && (
                             <button
                                 onClick={handlePublish}
+                                disabled={modules.length === 0 || !modules.some(m => m.lessons?.length > 0)}
                                 className="btn btn-success flex items-center gap-2"
                             >
                                 <Eye size={16} /> Publish Course
@@ -238,6 +261,7 @@ export default function CourseBuilderPage() {
                         </button>
                     </div>
                 </div>
+
 
                 {/* Course Content */}
                 <div className="card-premium p-6">
@@ -485,6 +509,6 @@ export default function CourseBuilderPage() {
                     </div>
                 )}
             </div>
-        </DashboardLayout>
+        </DashboardLayout >
     );
 }

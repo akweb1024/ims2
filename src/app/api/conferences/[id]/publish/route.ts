@@ -49,12 +49,14 @@ export const POST = authorizedRoute(
             }
 
             if (errors.length > 0) {
+                console.log('Publish validation failed for:', id, errors);
                 return NextResponse.json({
                     success: false,
                     errors
                 }, { status: 400 });
             }
 
+            console.log('Publishing conference:', id);
             // Publish the conference
             const updated = await prisma.conference.update({
                 where: { id },
@@ -70,6 +72,7 @@ export const POST = authorizedRoute(
                 message: 'Conference published successfully'
             });
         } catch (error) {
+            console.error('API Publish Error:', error);
             return createErrorResponse(error);
         }
     }

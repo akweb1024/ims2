@@ -1,0 +1,337 @@
+
+> stm-customer@0.1.0 build
+> prisma generate && next build
+
+Loaded Prisma config from prisma.config.ts.
+
+Prisma schema loaded from prisma/schema.prisma.
+
+✔ Generated Prisma Client (v7.2.0) to ./node_modules/@prisma/client in 588ms
+
+Start by importing your Prisma Client (See: https://pris.ly/d/importing-client)
+
+Tip: Interested in query caching in just a few lines of code? Try Accelerate today! https://pris.ly/tip-3-accelerate
+
+   ▲ Next.js 15.5.9
+   - Environments: .env
+
+   Creating an optimized production build ...
+ ✓ Compiled successfully in 13.4s
+   Skipping validation of types
+   Skipping linting
+   Collecting page data ...
+   Generating static pages (0/206) ...
+   Generating static pages (51/206) 
+   Generating static pages (102/206) 
+   Generating static pages (154/206) 
+ ✓ Generating static pages (206/206)
+   Finalizing page optimization ...
+   Collecting build traces ...
+
+Route (app)                                                Size  First Load JS
+┌ ○ /                                                     166 B         105 kB
+├ ○ /_not-found                                            1 kB         103 kB
+├ ƒ /api/admin/audit-logs                                 591 B         102 kB
+├ ƒ /api/ai-insights                                      591 B         102 kB
+├ ƒ /api/analytics                                        591 B         102 kB
+├ ƒ /api/analytics/company/employees                      591 B         102 kB
+├ ƒ /api/analytics/company/growth                         591 B         102 kB
+├ ƒ /api/analytics/company/potential                      591 B         102 kB
+├ ƒ /api/analytics/leakage                                591 B         102 kB
+├ ƒ /api/announcements                                    591 B         102 kB
+├ ƒ /api/auth/[...nextauth]                               591 B         102 kB
+├ ƒ /api/auth/impersonate                                 591 B         102 kB
+├ ƒ /api/auth/login                                       591 B         102 kB
+├ ƒ /api/auth/me                                          591 B         102 kB
+├ ƒ /api/auth/register                                    591 B         102 kB
+├ ƒ /api/auth/select-company                              591 B         102 kB
+├ ƒ /api/certificates                                     591 B         102 kB
+├ ƒ /api/certificates/verify/[code]                       591 B         102 kB
+├ ƒ /api/chat/messages                                    591 B         102 kB
+├ ƒ /api/chat/rooms                                       591 B         102 kB
+├ ƒ /api/commissions/stats                                591 B         102 kB
+├ ƒ /api/communication/send                               591 B         102 kB
+├ ƒ /api/communications                                   591 B         102 kB
+├ ƒ /api/communications/[id]                              591 B         102 kB
+├ ƒ /api/communications/bulk                              591 B         102 kB
+├ ƒ /api/companies                                        591 B         102 kB
+├ ƒ /api/companies/[id]                                   591 B         102 kB
+├ ƒ /api/conferences                                      591 B         102 kB
+├ ƒ /api/conferences/[id]                                 591 B         102 kB
+├ ƒ /api/conferences/[id]/committee                       591 B         102 kB
+├ ƒ /api/conferences/[id]/committee/[memberId]            591 B         102 kB
+├ ƒ /api/conferences/[id]/papers                          591 B         102 kB
+├ ƒ /api/conferences/[id]/publish                         591 B         102 kB
+├ ƒ /api/conferences/[id]/registrations                   591 B         102 kB
+├ ƒ /api/conferences/[id]/sponsors                        591 B         102 kB
+├ ƒ /api/conferences/[id]/tickets                         591 B         102 kB
+├ ƒ /api/conferences/[id]/tracks                          591 B         102 kB
+├ ƒ /api/courses                                          591 B         102 kB
+├ ƒ /api/courses/[id]                                     591 B         102 kB
+├ ƒ /api/courses/[id]/enroll                              591 B         102 kB
+├ ƒ /api/courses/[id]/enrollments                         591 B         102 kB
+├ ƒ /api/courses/[id]/modules                             591 B         102 kB
+├ ƒ /api/courses/[id]/publish                             591 B         102 kB
+├ ƒ /api/courses/lessons/[lid]                            591 B         102 kB
+├ ƒ /api/courses/lessons/[lid]/quizzes                    591 B         102 kB
+├ ƒ /api/courses/modules/[mid]                            591 B         102 kB
+├ ƒ /api/courses/modules/[mid]/lessons                    591 B         102 kB
+├ ƒ /api/cron/process-renewals                            591 B         102 kB
+├ ƒ /api/cron/razorpay-sync                               591 B         102 kB
+├ ƒ /api/customers                                        591 B         102 kB
+├ ƒ /api/customers/[id]                                   591 B         102 kB
+├ ƒ /api/customers/assignments                            591 B         102 kB
+├ ƒ /api/customers/bulk-assign                            591 B         102 kB
+├ ƒ /api/dashboard/data-hub                               591 B         102 kB
+├ ƒ /api/dashboard/follow-ups                             591 B         102 kB
+├ ƒ /api/dashboard/stats                                  591 B         102 kB
+├ ƒ /api/departments                                      591 B         102 kB
+├ ƒ /api/departments/[id]                                 591 B         102 kB
+├ ƒ /api/editorial/articles                               591 B         102 kB
+├ ƒ /api/editorial/articles/[id]/assign                   591 B         102 kB
+├ ƒ /api/editorial/articles/[id]/decision                 591 B         102 kB
+├ ƒ /api/editorial/articles/[id]/reviews                  591 B         102 kB
+├ ƒ /api/editorial/articles/[id]/versions                 591 B         102 kB
+├ ƒ /api/editorial/reviewers                              591 B         102 kB
+├ ƒ /api/editorial/reviews                                591 B         102 kB
+├ ƒ /api/editorial/reviews/[id]                           591 B         102 kB
+├ ƒ /api/events                                           591 B         102 kB
+├ ƒ /api/exports/companies                                591 B         102 kB
+├ ƒ /api/exports/customers                                591 B         102 kB
+├ ƒ /api/exports/institutions                             591 B         102 kB
+├ ƒ /api/exports/invoices                                 591 B         102 kB
+├ ƒ /api/exports/journals                                 591 B         102 kB
+├ ƒ /api/exports/subscriptions                            591 B         102 kB
+├ ƒ /api/exports/users                                    591 B         102 kB
+├ ƒ /api/finance                                          591 B         102 kB
+├ ƒ /api/finance/[id]                                     591 B         102 kB
+├ ƒ /api/finance/analytics                                591 B         102 kB
+├ ƒ /api/finance/export                                   591 B         102 kB
+├ ƒ /api/finance/import                                   591 B         102 kB
+├ ƒ /api/finance/validate-revenue                         591 B         102 kB
+├ ƒ /api/hr/advances                                      591 B         102 kB
+├ ƒ /api/hr/attendance                                    591 B         102 kB
+├ ƒ /api/hr/attendance/out-of-bounds                      591 B         102 kB
+├ ƒ /api/hr/departments                                   591 B         102 kB
+├ ƒ /api/hr/designations                                  591 B         102 kB
+├ ƒ /api/hr/designations/[id]                             591 B         102 kB
+├ ƒ /api/hr/digital-documents                             591 B         102 kB
+├ ƒ /api/hr/document-templates                            591 B         102 kB
+├ ƒ /api/hr/documents                                     591 B         102 kB
+├ ƒ /api/hr/documents/issue                               591 B         102 kB
+├ ƒ /api/hr/documents/issue-bulk                          591 B         102 kB
+├ ƒ /api/hr/documents/my-digital                          591 B         102 kB
+├ ƒ /api/hr/documents/templates                           591 B         102 kB
+├ ƒ /api/hr/employees                                     591 B         102 kB
+├ ƒ /api/hr/employees/[id]                                591 B         102 kB
+├ ƒ /api/hr/employees/[id]/growth                         591 B         102 kB
+├ ƒ /api/hr/holidays                                      591 B         102 kB
+├ ƒ /api/hr/leave-ledger                                  591 B         102 kB
+├ ƒ /api/hr/leave-monitoring                              591 B         102 kB
+├ ƒ /api/hr/leave-requests                                591 B         102 kB
+├ ƒ /api/hr/my-documents                                  591 B         102 kB
+├ ƒ /api/hr/onboarding/compliance                         591 B         102 kB
+├ ƒ /api/hr/onboarding/modules                            591 B         102 kB
+├ ƒ /api/hr/onboarding/progress                           591 B         102 kB
+├ ƒ /api/hr/payroll/budgets                               591 B         102 kB
+├ ƒ /api/hr/payroll/config                                591 B         102 kB
+├ ƒ /api/hr/payroll/declarations                          591 B         102 kB
+├ ƒ /api/hr/payroll/declarations/proofs                   591 B         102 kB
+├ ƒ /api/hr/payroll/final-settlement                      591 B         102 kB
+├ ƒ /api/hr/payroll/structures                            591 B         102 kB
+├ ƒ /api/hr/performance                                   591 B         102 kB
+├ ƒ /api/hr/performance/analytics                         591 B         102 kB
+├ ƒ /api/hr/performance/goals                             591 B         102 kB
+├ ƒ /api/hr/performance/insights                          591 B         102 kB
+├ ƒ /api/hr/performance/kpis                              591 B         102 kB
+├ ƒ /api/hr/productivity                                  591 B         102 kB
+├ ƒ /api/hr/profile/me                                    591 B         102 kB
+├ ƒ /api/hr/profile/upload-photo                          591 B         102 kB
+├ ƒ /api/hr/rewards/bonus-schemas                         591 B         102 kB
+├ ƒ /api/hr/rewards/incentive-schemas                     591 B         102 kB
+├ ƒ /api/hr/salary-slips                                  591 B         102 kB
+├ ƒ /api/hr/salary-slips/[id]/download                    591 B         102 kB
+├ ƒ /api/hr/shifts                                        591 B         102 kB
+├ ƒ /api/hr/shifts/roster                                 591 B         102 kB
+├ ƒ /api/hr/work-plans                                    591 B         102 kB
+├ ƒ /api/hr/work-plans/comments                           591 B         102 kB
+├ ƒ /api/hr/work-reports                                  591 B         102 kB
+├ ƒ /api/hr/work-reports/comments                         591 B         102 kB
+├ ƒ /api/hr/work-reports/generate                         591 B         102 kB
+├ ƒ /api/imports/companies                                591 B         102 kB
+├ ƒ /api/imports/customers                                591 B         102 kB
+├ ƒ /api/imports/institutions                             591 B         102 kB
+├ ƒ /api/imports/invoices                                 591 B         102 kB
+├ ƒ /api/imports/journals                                 591 B         102 kB
+├ ƒ /api/imports/subscriptions                            591 B         102 kB
+├ ƒ /api/imports/users                                    591 B         102 kB
+├ ƒ /api/institutions                                     591 B         102 kB
+├ ƒ /api/institutions/activity                            591 B         102 kB
+├ ƒ /api/invoices                                         591 B         102 kB
+├ ƒ /api/invoices/[id]                                    591 B         102 kB
+├ ƒ /api/invoices/[id]/metadata                           591 B         102 kB
+├ ƒ /api/invoices/[id]/pay                                591 B         102 kB
+├ ƒ /api/it/assets                                        591 B         102 kB
+├ ƒ /api/it/tickets                                       591 B         102 kB
+├ ƒ /api/journals                                         591 B         102 kB
+├ ƒ /api/journals/[id]                                    591 B         102 kB
+├ ƒ /api/journals/[id]/editorial-board                    591 B         102 kB
+├ ƒ /api/journals/[id]/editorial-board/[memberId]         591 B         102 kB
+├ ƒ /api/journals/[id]/volumes                            591 B         102 kB
+├ ƒ /api/journals/[id]/volumes/[volumeId]/issues          591 B         102 kB
+├ ƒ /api/knowledge-base                                   591 B         102 kB
+├ ƒ /api/logistics/couriers                               591 B         102 kB
+├ ƒ /api/logistics/orders                                 591 B         102 kB
+├ ƒ /api/logistics/orders/[id]                            591 B         102 kB
+├ ƒ /api/my-learning                                      591 B         102 kB
+├ ƒ /api/notifications                                    591 B         102 kB
+├ ƒ /api/notifications/[id]                               591 B         102 kB
+├ ƒ /api/notifications/push-subscription                  591 B         102 kB
+├ ƒ /api/notifications/vapid-public-key                   591 B         102 kB
+├ ƒ /api/papers/[id]                                      591 B         102 kB
+├ ƒ /api/papers/[id]/assign                               591 B         102 kB
+├ ƒ /api/papers/[id]/decision                             591 B         102 kB
+├ ƒ /api/papers/[id]/review                               591 B         102 kB
+├ ƒ /api/payments                                         591 B         102 kB
+├ ƒ /api/payments/razorpay                                591 B         102 kB
+├ ƒ /api/payments/razorpay/sync                           591 B         102 kB
+├ ƒ /api/production/articles/[id]/apc                     591 B         102 kB
+├ ƒ /api/production/issues                                591 B         102 kB
+├ ƒ /api/production/issues/[id]                           591 B         102 kB
+├ ƒ /api/production/my-activity                           591 B         102 kB
+├ ƒ /api/profile                                          591 B         102 kB
+├ ƒ /api/progress/courses/[id]                            591 B         102 kB
+├ ƒ /api/progress/lessons/[lid]                           591 B         102 kB
+├ ƒ /api/public/articles/[id]                             591 B         102 kB
+├ ƒ /api/public/issues/[issueId]/articles                 591 B         102 kB
+├ ƒ /api/public/journals                                  591 B         102 kB
+├ ƒ /api/public/journals/[id]                             591 B         102 kB
+├ ƒ /api/public/journals/[id]/archives                    591 B         102 kB
+├ ƒ /api/quizzes/[qid]                                    591 B         102 kB
+├ ƒ /api/recruitment/applications                         591 B         102 kB
+├ ƒ /api/recruitment/apply                                591 B         102 kB
+├ ƒ /api/recruitment/exam                                 591 B         102 kB
+├ ƒ /api/recruitment/interviews                           591 B         102 kB
+├ ƒ /api/recruitment/jobs                                 591 B         102 kB
+├ ƒ /api/recruitment/onboard                              591 B         102 kB
+├ ƒ /api/registrations/[id]/check-in                      591 B         102 kB
+├ ƒ /api/search                                           591 B         102 kB
+├ ƒ /api/settings/system                                  591 B         102 kB
+├ ƒ /api/settings/user                                    591 B         102 kB
+├ ƒ /api/subscriptions                                    591 B         102 kB
+├ ƒ /api/subscriptions/[id]                               591 B         102 kB
+├ ƒ /api/subscriptions/[id]/renew                         591 B         102 kB
+├ ƒ /api/subscriptions/create                             591 B         102 kB
+├ ƒ /api/subscriptions/request                            591 B         102 kB
+├ ƒ /api/supply-chain/ai-plan                             591 B         102 kB
+├ ƒ /api/supply-chain/inventory                           591 B         102 kB
+├ ƒ /api/support/tickets                                  591 B         102 kB
+├ ƒ /api/support/tickets/[id]                             591 B         102 kB
+├ ƒ /api/tasks                                            591 B         102 kB
+├ ƒ /api/tasks/[id]                                       591 B         102 kB
+├ ƒ /api/team                                             591 B         102 kB
+├ ƒ /api/test-notifications                               591 B         102 kB
+├ ƒ /api/upload                                           591 B         102 kB
+├ ƒ /api/users                                            591 B         102 kB
+├ ƒ /api/users/[id]                                       591 B         102 kB
+├ ƒ /api/users/profile                                    591 B         102 kB
+├ ○ /careers                                             3.6 kB         109 kB
+├ ƒ /careers/[id]                                       3.23 kB         105 kB
+├ ○ /careers/exam                                       2.04 kB         104 kB
+├ ○ /dashboard                                          7.36 kB         123 kB
+├ ○ /dashboard/admin/logs                               1.41 kB         117 kB
+├ ○ /dashboard/ai-insights                              2.69 kB         118 kB
+├ ○ /dashboard/analytics                                5.65 kB         246 kB
+├ ○ /dashboard/analytics/razorpay                       5.49 kB         240 kB
+├ ○ /dashboard/chat                                      3.8 kB         119 kB
+├ ○ /dashboard/clients                                  1.43 kB         117 kB
+├ ○ /dashboard/commission                               1.65 kB         117 kB
+├ ○ /dashboard/communications                           2.54 kB         118 kB
+├ ○ /dashboard/communications/bulk                      2.17 kB         117 kB
+├ ○ /dashboard/companies                                3.38 kB         119 kB
+├ ○ /dashboard/company                                  12.8 kB         248 kB
+├ ○ /dashboard/conferences                              4.39 kB         120 kB
+├ ƒ /dashboard/conferences/[id]                         7.36 kB         123 kB
+├ ƒ /dashboard/conferences/[id]/papers                  2.98 kB         118 kB
+├ ƒ /dashboard/conferences/[id]/papers/[paperId]        4.06 kB         119 kB
+├ ƒ /dashboard/conferences/[id]/register                3.67 kB         119 kB
+├ ƒ /dashboard/conferences/[id]/registrations            3.4 kB         119 kB
+├ ƒ /dashboard/conferences/[id]/submit                  2.68 kB         118 kB
+├ ○ /dashboard/courses                                  2.11 kB         117 kB
+├ ƒ /dashboard/courses/[id]                              5.1 kB         120 kB
+├ ƒ /dashboard/courses/[id]/lessons/[lid]               1.75 kB         117 kB
+├ ○ /dashboard/customers                                4.48 kB         120 kB
+├ ƒ /dashboard/customers/[id]                           8.89 kB         134 kB
+├ ○ /dashboard/customers/new                            2.48 kB         118 kB
+├ ○ /dashboard/data-hub                                  3.4 kB         119 kB
+├ ○ /dashboard/editorial                                5.26 kB         120 kB
+├ ○ /dashboard/editorial/reviews                        2.06 kB         117 kB
+├ ○ /dashboard/events                                   2.22 kB         117 kB
+├ ○ /dashboard/executive                                2.39 kB         118 kB
+├ ○ /dashboard/finance                                  6.32 kB         241 kB
+├ ○ /dashboard/follow-ups                                3.1 kB         118 kB
+├ ○ /dashboard/hr-management                              50 kB         212 kB
+├ ○ /dashboard/hr-management/communication              3.23 kB         118 kB
+├ ○ /dashboard/hr-management/designations                4.2 kB         124 kB
+├ ƒ /dashboard/hr-management/employees/[id]             9.61 kB         129 kB
+├ ƒ /dashboard/hr-management/employees/[id]/edit        4.86 kB         124 kB
+├ ○ /dashboard/hr-management/holidays                   3.37 kB         119 kB
+├ ○ /dashboard/hr-management/payroll                    3.62 kB         119 kB
+├ ○ /dashboard/hr-management/payroll/salary-structures  3.41 kB         119 kB
+├ ○ /dashboard/hr-management/productivity               3.31 kB         238 kB
+├ ○ /dashboard/institutions                             7.12 kB         122 kB
+├ ƒ /dashboard/institutions/[id]                        5.72 kB         121 kB
+├ ○ /dashboard/invoices                                 5.66 kB         121 kB
+├ ƒ /dashboard/invoices/[id]                            3.66 kB         119 kB
+├ ○ /dashboard/it/assets                                3.96 kB         119 kB
+├ ○ /dashboard/it/tickets                               3.66 kB         119 kB
+├ ○ /dashboard/journals                                 3.47 kB         119 kB
+├ ƒ /dashboard/journals/[id]/edit                        4.6 kB         120 kB
+├ ○ /dashboard/journals/new                             2.26 kB         117 kB
+├ ○ /dashboard/knowledge-base                           3.94 kB         119 kB
+├ ○ /dashboard/knowledge-base/new                       1.76 kB         117 kB
+├ ƒ /dashboard/learn/[courseId]                         4.34 kB         120 kB
+├ ○ /dashboard/logistics                                3.98 kB         239 kB
+├ ○ /dashboard/my-learning                              3.37 kB         119 kB
+├ ○ /dashboard/payments                                 3.61 kB         229 kB
+├ ○ /dashboard/production                               5.21 kB         120 kB
+├ ○ /dashboard/profile                                  2.15 kB         117 kB
+├ ƒ /dashboard/quizzes/[qid]                            3.67 kB         119 kB
+├ ○ /dashboard/recruitment                              1.76 kB         160 kB
+├ ○ /dashboard/settings                                 2.57 kB         118 kB
+├ ○ /dashboard/settings/theme                           4.51 kB         106 kB
+├ ○ /dashboard/staff-portal                              108 kB         235 kB
+├ ○ /dashboard/staff-portal/submit-report               4.94 kB         120 kB
+├ ○ /dashboard/subscriptions                            3.28 kB         118 kB
+├ ƒ /dashboard/subscriptions/[id]                       3.09 kB         118 kB
+├ ○ /dashboard/subscriptions/new                        3.83 kB         119 kB
+├ ○ /dashboard/supply-chain                             2.99 kB         118 kB
+├ ○ /dashboard/support                                  2.36 kB         118 kB
+├ ○ /dashboard/tasks                                    2.78 kB         118 kB
+├ ○ /dashboard/team                                     1.38 kB         128 kB
+├ ○ /dashboard/tickets                                  2.89 kB         118 kB
+├ ƒ /dashboard/tickets/[id]                             2.84 kB         118 kB
+├ ○ /dashboard/tickets/new                              1.93 kB         117 kB
+├ ○ /dashboard/users                                    5.74 kB         121 kB
+├ ○ /dashboard/users/transfer                           2.38 kB         118 kB
+├ ○ /journals                                           2.87 kB         108 kB
+├ ƒ /journals/[id]                                      3.47 kB         109 kB
+├ ƒ /journals/[id]/archives                             2.72 kB         108 kB
+├ ƒ /journals/[id]/articles/[articleId]                 3.09 kB         108 kB
+├ ƒ /journals/[id]/issues/[issueId]                     2.65 kB         108 kB
+├ ○ /login                                              2.78 kB         111 kB
+├ ○ /recruitment                                        1.81 kB         104 kB
+├ ƒ /recruitment/exam/[applicationId]                   1.74 kB         104 kB
+├ ○ /register                                           2.21 kB         108 kB
+└ ○ /verify                                             2.18 kB         107 kB
++ First Load JS shared by all                            102 kB
+  ├ chunks/1255-8befde0980f5cba9.js                     45.6 kB
+  ├ chunks/4bd1b696-100b9d70ed4e49c1.js                 54.2 kB
+  └ other shared chunks (total)                         2.03 kB
+
+
+ƒ Middleware                                            86.5 kB
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+

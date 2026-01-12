@@ -39,11 +39,14 @@ export const GET = authorizedRoute(
             // For now, simpler: user.id === paper.userId || role >= MANAGER
 
             const isAuthor = user.id === paper.userId;
-            const isStaff = ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'REVIEWER'].includes(user.role);
+            const isManager = ['SUPER_ADMIN', 'ADMIN', 'MANAGER'].includes(user.role);
+            const isAssignedReviewer = paper.reviews.some((r: any) => r.reviewerId === user.id);
 
-            if (!isAuthor && !isStaff) {
-                return createErrorResponse('Unauthorized', 403);
+            if (!isAuthor && !isManager && !isAssignedReviewer) {
+                return createErrorResponse('Unauthorized to view this paper', 403);
             }
+
+            const isStaff = isManager || user.role === 'REVIEWER';
 
             // Hide review details from author if strict double-blind (optional, but good practice)
             // For this phase, we'll strip reviewer info if user is author

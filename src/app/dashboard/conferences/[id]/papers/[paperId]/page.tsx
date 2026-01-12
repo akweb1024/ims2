@@ -25,6 +25,9 @@ export default function PaperDetailPage() {
     const [reviewComment, setReviewComment] = useState('');
     const [reviewDecision, setReviewDecision] = useState('PENDING'); // Suggestion
     const [submittingReview, setSubmittingReview] = useState(false);
+    const [committee, setCommittee] = useState<any[]>([]);
+    const [assigning, setAssigning] = useState(false);
+    const [selectedReviewer, setSelectedReviewer] = useState('');
 
     // Final Decision Form
     const [finalDecision, setFinalDecision] = useState('');
@@ -38,7 +41,48 @@ export default function PaperDetailPage() {
             setUserId(userData.id);
         }
         fetchPaper();
+        fetchCommittee();
     }, [paperId]);
+
+    const fetchCommittee = async () => {
+        try {
+            const token = localStorage.getItem('token');
+            const res = await fetch(`/api/conferences/${conferenceId}/committee`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (res.ok) {
+                const data = await res.json();
+                // Filter only members with REVIEWER or EDITOR roles who have a userId
+                setCommittee(data.filter((m: any) => m.userId && ['REVIEWER', 'EDITOR'].includes(m.role)));
+            }
+        } catch (error) { console.error(error); }
+    };
+
+    const assignReviewer = async () => {
+        if (!selectedReviewer) return;
+        setAssigning(true);
+        try {
+            const token = localStorage.getItem('token');
+            const res = await fetch(`/api/papers/${paperId}/assign`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ reviewerId: selectedReviewer })
+            });
+
+            if (res.ok) {
+                alert('Reviewer assigned successfully');
+                fetchPaper();
+                setSelectedReviewer('');
+            } else {
+                const err = await res.json();
+                alert(err.error || 'Failed to assign reviewer');
+            }
+        } catch (error) { console.error(error); }
+        finally { setAssigning(false); }
+    };
 
     const fetchPaper = async () => {
         try {
@@ -214,8 +258,8 @@ export default function PaperDetailPage() {
                                             </div>
                                             <div className="mb-2">
                                                 <span className={`text-xs px-2 py-0.5 rounded ${review.decision === 'ACCEPT' ? 'bg-green-100 text-green-700' :
-                                                        review.decision === 'REJECT' ? 'bg-red-100 text-red-700' :
-                                                            'bg-orange-100 text-orange-700'
+                                                    review.decision === 'REJECT' ? 'bg-red-100 text-red-700' :
+                                                        'bg-orange-100 text-orange-700'
                                                     }`}>
                                                     Recommendation: {review.decision}
                                                 </span>
@@ -237,8 +281,8 @@ export default function PaperDetailPage() {
                                 <div>
                                     <label className="text-xs font-bold text-secondary-500 uppercase">Review Status</label>
                                     <div className={`mt-1 inline-flex items-center gap-2 px-3 py-1 rounded-full font-bold text-sm ${paper.reviewStatus === 'REVIEWED' ? 'bg-green-100 text-green-700' :
-                                            paper.reviewStatus === 'UNDER_REVIEW' ? 'bg-blue-100 text-blue-700' :
-                                                'bg-yellow-100 text-yellow-700'
+                                        paper.reviewStatus === 'UNDER_REVIEW' ? 'bg-blue-100 text-blue-700' :
+                                            'bg-yellow-100 text-yellow-700'
                                         }`}>
                                         {paper.reviewStatus.replace('_', ' ')}
                                     </div>
@@ -246,15 +290,44 @@ export default function PaperDetailPage() {
                                 <div>
                                     <label className="text-xs font-bold text-secondary-500 uppercase">Final Decision</label>
                                     <div className={`mt-1 inline-flex items-center gap-2 px-3 py-1 rounded-full font-bold text-sm ${paper.finalDecision === 'ACCEPTED' ? 'bg-green-100 text-green-700' :
-                                            paper.finalDecision === 'REJECTED' ? 'bg-red-100 text-red-700' :
-                                                paper.finalDecision === 'REVISION_REQUIRED' ? 'bg-orange-100 text-orange-700' :
-                                                    'bg-gray-100 text-gray-700'
+                                        paper.finalDecision === 'REJECTED' ? 'bg-red-100 text-red-700' :
+                                            paper.finalDecision === 'REVISION_REQUIRED' ? 'bg-orange-100 text-orange-700' :
+                                                'bg-gray-100 text-gray-700'
                                         }`}>
                                         {paper.finalDecision || 'PENDING'}
                                     </div>
                                 </div>
                             </div>
                         </div>
+
+                        {/* Assign Reviewer (Staff Only) */}
+                        {isStaff && (
+                            <div className="card-premium p-6 border-l-4 border-blue-500">
+                                <h3 className="font-bold text-lg mb-4">Assign Reviewer</h3>
+                                <div className="space-y-4">
+                                    <select
+                                        className="input w-full"
+                                        value={selectedReviewer}
+                                        onChange={(e) => setSelectedReviewer(e.target.value)}
+                                    >
+                                        <option value="">Select Reviewer from Committee...</option>
+                                        {committee.map((m: any) => (
+                                            <option key={m.id} value={m.userId}>
+                                                {m.name} ({m.role})
+                                            </option>
+                                        ))}
+                                    </select>
+                                    <button
+                                        onClick={assignReviewer}
+                                        disabled={!selectedReviewer || assigning}
+                                        className="btn btn-secondary w-full"
+                                    >
+                                        {assigning ? 'Assigning...' : 'Assign Reviewer'}
+                                    </button>
+                                    <p className="text-[10px] text-secondary-400">Only committee members with a linked system account are shown.</p>
+                                </div>
+                            </div>
+                        )}
 
                         {/* Final Decision Form (Admin/Manager Only) */}
                         {isStaff && (

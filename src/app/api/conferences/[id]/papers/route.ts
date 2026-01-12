@@ -22,15 +22,22 @@ export const GET = authorizedRoute(
             if (status && status !== 'all') where.status = status;
             if (userId) where.userId = userId;
 
-            // Security: If not staff, enforce userId filter to self
-            const isStaff = ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'REVIEWER'].includes(user.role);
+            // Security: Role-based filtering
+            const isStaff = ['SUPER_ADMIN', 'ADMIN', 'MANAGER'].includes(user.role);
+            const isReviewer = user.role === 'REVIEWER';
+
             if (!isStaff) {
-                // If user tries to filter by someone else's ID, forbid it. 
-                // Alternatively, just force it to their ID.
-                if (userId && userId !== user.id) {
-                    return createErrorResponse('Unauthorized to view these papers', 403);
+                if (isReviewer) {
+                    // Reviewers only see papers where they are assigned a review
+                    where.reviews = {
+                        some: {
+                            reviewerId: user.id
+                        }
+                    };
+                } else {
+                    // Standard users only see their own submissions
+                    where.userId = user.id;
                 }
-                where.userId = user.id;
             }
 
             const papers = await prisma.conferencePaper.findMany({

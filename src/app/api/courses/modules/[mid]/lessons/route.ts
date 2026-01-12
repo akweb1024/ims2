@@ -5,7 +5,7 @@ import { createErrorResponse } from '@/lib/api-utils';
 
 export const GET = authorizedRoute(
     [],
-    async (req: NextRequest, context: { params: Promise<{ mid: string }> }) => {
+    async (req: NextRequest, user: any, context: { params: Promise<{ mid: string }> }) => {
         try {
             const params = await context.params;
             const { mid: moduleId } = params;
@@ -24,7 +24,7 @@ export const GET = authorizedRoute(
 
 export const POST = authorizedRoute(
     ['SUPER_ADMIN', 'ADMIN', 'MANAGER'],
-    async (req: NextRequest, context: { params: Promise<{ mid: string }> }) => {
+    async (req: NextRequest, user: any, context: { params: Promise<{ mid: string }> }) => {
         try {
             const params = await context.params;
             const { mid: moduleId } = params;
