@@ -146,6 +146,7 @@ model User {
   workReportComments    WorkReportComment[]    @relation("WorkReportCommentAuthor")
   assignedToCustomers   CustomerProfile[]      @relation("CustomerToExecutives")
   companies             Company[]              @relation("UserCompanies")
+  editorialMemberships  EditorialBoardMember[]
   
   // LMS Relations
   quizAttempts          QuizAttempt[]
@@ -346,6 +347,7 @@ model Journal {
   apcWoSINR         Float              @default(0)
   apcWoSUSD         Float              @default(0)
   editorId          String?
+  editorialBoard    EditorialBoardMember[]
   articles          Article[]
   editor            User?              @relation("JournalEditor", fields: [editorId], references: [id])
   volumes           JournalVolume[]
@@ -1823,15 +1825,19 @@ model CourseAnnouncement {
 
 model Certificate {
   id               String           @id @default(uuid())
-  enrollmentId     String           @unique
+  enrollmentId     String?          @unique
+  courseId         String?
   userId           String
-  courseId         String
+  recipientName    String?
+  type             CertificateType? @default(COURSE_COMPLETION)
+  title            String?
+  description      String?
   issuedAt         DateTime         @default(now())
   certificateUrl   String?
   verificationCode String           @unique
   
-  enrollment       CourseEnrollment @relation(fields: [enrollmentId], references: [id])
-  user             User             @relation(fields: [userId], references: [id])
+  enrollment       CourseEnrollment? @relation(fields: [enrollmentId], references: [id])
+  user             User              @relation(fields: [userId], references: [id])
 }
 
 model ITAsset {
@@ -2165,4 +2171,33 @@ enum GoalType {
 enum RewardType {
   PERCENTAGE
   FIXED_AMOUNT
+}
+
+
+model EditorialBoardMember {
+  id             String   @id @default(uuid())
+  journalId      String
+  userId         String?
+  name           String
+  email          String
+  designation    String
+  affiliation    String?
+  bio            String?
+  profilePicture String?
+  displayOrder   Int      @default(0)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  journal        Journal  @relation(fields: [journalId], references: [id])
+  user           User?    @relation(fields: [userId], references: [id])
+
+  @@index([journalId])
+}
+
+enum CertificateType {
+  COURSE_COMPLETION
+  REVIEWER
+  EDITOR
+  AUTHOR
+  BEST_PAPER
+  CONFERENCE_PARTICIPATION
 }
