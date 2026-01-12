@@ -11,7 +11,8 @@ export async function GET(req: NextRequest) {
             include: {
                 journal: { select: { name: true } },
                 authors: true,
-                issue: { select: { title: true, issueNumber: true } }
+                issue: { select: { title: true, issueNumber: true, volume: { select: { volumeNumber: true } } } },
+                versions: { orderBy: { versionNumber: 'desc' }, take: 1, select: { versionNumber: true, submittedAt: true } }
             },
             orderBy: { submissionDate: 'desc' }
         });
@@ -29,22 +30,39 @@ export async function POST(req: NextRequest) {
         if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
         const body = await req.json();
-        const { title, abstract, journalId, authorName } = body; // Simplified for MVP
+        const { title, abstract, journalId, authorName, fileUrl } = body;
 
-        const article = await prisma.article.create({
-            data: {
-                title,
-                abstract,
-                journalId,
-                status: 'SUBMITTED',
-                authors: {
-                    create: {
-                        name: authorName,
-                        email: user.email,
-                        isCorresponding: true
+        // Transaction to ensure atomicity
+        const article = await prisma.$transaction(async (tx) => {
+            const newArticle = await tx.article.create({
+                data: {
+                    title,
+                    abstract,
+                    journalId,
+                    status: 'SUBMITTED',
+                    currentRound: 1,
+                    authors: {
+                        create: {
+                            name: authorName,
+                            email: user.email,
+                            isCorresponding: true
+                        }
                     }
                 }
+            });
+
+            if (fileUrl) {
+                await tx.articleVersion.create({
+                    data: {
+                        articleId: newArticle.id,
+                        versionNumber: 1,
+                        fileUrl: fileUrl,
+                        changelog: 'Initial Submission'
+                    }
+                });
             }
+
+            return newArticle;
         });
 
         // Log Audit
@@ -54,7 +72,7 @@ export async function POST(req: NextRequest) {
                 action: 'create',
                 entity: 'article',
                 entityId: article.id,
-                changes: JSON.stringify({ title, journalId, authorName })
+                changes: JSON.stringify({ title, journalId, authorName, fileUrl })
             }
         });
 

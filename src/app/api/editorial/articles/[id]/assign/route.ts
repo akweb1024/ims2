@@ -48,3 +48,31 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         return NextResponse.json({ error: error.message }, { status: 500 });
     }
 }
+
+export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+    try {
+        const user = await getAuthenticatedUser();
+        const { id } = await params;
+
+        if (!user || !['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'EDITOR'].includes(user.role)) {
+            return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+        }
+
+        const { issueId } = await req.json();
+
+        if (!issueId) return NextResponse.json({ error: 'Issue ID required' }, { status: 400 });
+
+        const article = await prisma.article.update({
+            where: { id },
+            data: {
+                issueId,
+                status: 'ACCEPTED' 
+            }
+        });
+
+        return NextResponse.json(article);
+
+    } catch (error: any) {
+        return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+}

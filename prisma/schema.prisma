@@ -1466,6 +1466,8 @@ model Article {
   journal          Journal         @relation(fields: [journalId], references: [id])
   authors          ArticleAuthor[]
   reviews          Review[]
+  versions         ArticleVersion[]
+  currentRound     Int             @default(1)
 }
 
 model Review {
@@ -1480,6 +1482,7 @@ model Review {
   dueDate          DateTime?
   createdAt        DateTime  @default(now())
   updatedAt        DateTime  @updatedAt
+  round            Int       @default(1)
   article          Article   @relation(fields: [articleId], references: [id])
   reviewer         User      @relation(fields: [reviewerId], references: [id])
 
@@ -2200,4 +2203,16 @@ enum CertificateType {
   AUTHOR
   BEST_PAPER
   CONFERENCE_PARTICIPATION
+}
+
+model ArticleVersion {
+  id            String   @id @default(uuid())
+  articleId     String
+  versionNumber Int
+  fileUrl       String
+  submittedAt   DateTime @default(now())
+  changelog     String?
+  article       Article  @relation(fields: [articleId], references: [id])
+
+  @@index([articleId])
 }
