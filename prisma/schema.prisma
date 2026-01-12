@@ -1496,22 +1496,39 @@ model ArticleAuthor {
 }
 
 model Conference {
-  id            String                   @id @default(uuid())
-  title         String
-  description   String
-  startDate     DateTime
-  endDate       DateTime
-  venue         String?
-  organizer     String?
-  website       String?
-  isActive      Boolean                  @default(true)
-  createdAt     DateTime                 @default(now())
-  updatedAt     DateTime                 @updatedAt
-  companyId     String?
-  company       Company?                 @relation(fields: [companyId], references: [id])
-  papers        ConferencePaper[]
-  registrations ConferenceRegistration[]
-  ticketTypes   ConferenceTicketType[]
+  id              String                   @id @default(uuid())
+  title           String
+  description     String
+  startDate       DateTime
+  endDate         DateTime
+  venue           String?
+  organizer       String?
+  website         String?
+  isActive        Boolean                  @default(true)
+  createdAt       DateTime                 @default(now())
+  updatedAt       DateTime                 @updatedAt
+  companyId       String?
+  
+  // Enhanced fields for Phase 1
+  logoUrl         String?
+  bannerUrl       String?
+  primaryColor    String?                  @default("#3B82F6")
+  mode            String                   @default("IN_PERSON") // IN_PERSON, VIRTUAL, HYBRID
+  maxAttendees    Int?
+  cfpStartDate    DateTime?
+  cfpEndDate      DateTime?
+  reviewDeadline  DateTime?
+  timezone        String                   @default("UTC")
+  status          String                   @default("DRAFT") // DRAFT, PUBLISHED, ONGOING, COMPLETED, CANCELLED
+  registrationFee Float?                   @default(0)
+  currency        String                   @default("INR")
+  
+  company         Company?                 @relation(fields: [companyId], references: [id])
+  papers          ConferencePaper[]
+  registrations   ConferenceRegistration[]
+  ticketTypes     ConferenceTicketType[]
+  tracks          ConferenceTrack[]
+  sponsors        ConferenceSponsor[]
 }
 
 model ConferenceTicketType {
@@ -1554,6 +1571,32 @@ model ConferencePaper {
   fileUrl       String?
   createdAt     DateTime   @default(now())
   conference    Conference @relation(fields: [conferenceId], references: [id])
+}
+
+model ConferenceTrack {
+  id           String     @id @default(uuid())
+  conferenceId String
+  name         String
+  description  String?
+  color        String?    @default("#3B82F6")
+  order        Int        @default(0)
+  createdAt    DateTime   @default(now())
+  
+  conference   Conference @relation(fields: [conferenceId], references: [id], onDelete: Cascade)
+}
+
+model ConferenceSponsor {
+  id           String     @id @default(uuid())
+  conferenceId String
+  name         String
+  logo         String?
+  tier         String     @default("BRONZE") // PLATINUM, GOLD, SILVER, BRONZE
+  website      String?
+  description  String?
+  order        Int        @default(0)
+  createdAt    DateTime   @default(now())
+  
+  conference   Conference @relation(fields: [conferenceId], references: [id], onDelete: Cascade)
 }
 
 model Course {
