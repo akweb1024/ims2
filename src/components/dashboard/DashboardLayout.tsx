@@ -205,7 +205,7 @@ export default function DashboardLayout({ children, userRole: propUserRole = 'CU
                 items: [
                     { name: 'My Learning', href: '/dashboard/my-learning', icon: '📖', roles: ['*'] },
                     { name: 'LMS / Courses', href: '/dashboard/courses', icon: '🎓', roles: ['*'] },
-                    { name: 'Conferences', href: '/dashboard/events', icon: '🎤', roles: ['*'] },
+                    { name: 'Conferences', href: '/dashboard/conferences', icon: '🎤', roles: ['*'] },
                 ]
             },
             {
