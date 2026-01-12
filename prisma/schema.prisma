@@ -153,6 +153,7 @@ model User {
   courseDiscussions     CourseDiscussion[]
   discussionReplies     DiscussionReply[]
   certificates          Certificate[]
+  paperReviews          PaperReview[]
 
   @@index([email])
   @@index([role])
@@ -1570,7 +1571,31 @@ model ConferencePaper {
   presentedAt   DateTime?
   fileUrl       String?
   createdAt     DateTime   @default(now())
-  conference    Conference @relation(fields: [conferenceId], references: [id])
+  
+  // Phase 2 Fields
+  submissionType String    @default("ABSTRACT") // ABSTRACT, FULL_PAPER
+  keywords       String?
+  trackId        String?
+  reviewStatus   String    @default("PENDING") // PENDING, UNDER_REVIEW, REVIEWED
+  finalDecision  String?   // ACCEPTED, REJECTED, REVISION_REQUIRED
+  userId         String?   // Link to user account
+  
+  conference     Conference @relation(fields: [conferenceId], references: [id])
+  track          ConferenceTrack? @relation(fields: [trackId], references: [id])
+  reviews        PaperReview[]
+}
+
+model PaperReview {
+  id           String          @id @default(uuid())
+  paperId      String
+  reviewerId   String
+  score        Int             // 1-5 or 1-10
+  comments     String?
+  decision     String          @default("PENDING") // ACCEPT, REJECT, REVISE
+  submittedAt  DateTime        @default(now())
+  
+  paper        ConferencePaper @relation(fields: [paperId], references: [id], onDelete: Cascade)
+  reviewer     User            @relation(fields: [reviewerId], references: [id])
 }
 
 model ConferenceTrack {
@@ -1583,6 +1608,7 @@ model ConferenceTrack {
   createdAt    DateTime   @default(now())
   
   conference   Conference @relation(fields: [conferenceId], references: [id], onDelete: Cascade)
+  papers       ConferencePaper[]
 }
 
 model ConferenceSponsor {
