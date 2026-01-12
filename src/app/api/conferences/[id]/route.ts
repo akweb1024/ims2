@@ -5,7 +5,7 @@ import { createErrorResponse } from '@/lib/api-utils';
 
 export const GET = authorizedRoute(
     [],
-    async (req: NextRequest, context: { params: Promise<{ id: string }> }) => {
+    async (req: NextRequest, user: any, context: { params: Promise<{ id: string }> }) => {
         try {
             const params = await context.params;
             const { id } = params;
@@ -44,7 +44,7 @@ export const GET = authorizedRoute(
 
 export const PATCH = authorizedRoute(
     ['SUPER_ADMIN', 'ADMIN', 'MANAGER'],
-    async (req: NextRequest, context: { params: Promise<{ id: string }> }) => {
+    async (req: NextRequest, user: any, context: { params: Promise<{ id: string }> }) => {
         try {
             const params = await context.params;
             const { id } = params;
@@ -86,7 +86,7 @@ export const PATCH = authorizedRoute(
 
 export const DELETE = authorizedRoute(
     ['SUPER_ADMIN', 'ADMIN'],
-    async (req: NextRequest, context: { params: Promise<{ id: string }> }) => {
+    async (req: NextRequest, user: any, context: { params: Promise<{ id: string }> }) => {
         try {
             const params = await context.params;
             const { id } = params;
