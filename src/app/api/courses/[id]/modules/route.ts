@@ -1,28 +1,64 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { getAuthenticatedUser } from '@/lib/auth-legacy';
+import { authorizedRoute } from '@/lib/middleware-auth';
+import { createErrorResponse } from '@/lib/api-utils';
 
-export async function POST(req: NextRequest, props: { params: Promise<{ id: string }> }) {
-    try {
-        const { id: courseId } = await props.params;
-        const user = await getAuthenticatedUser();
-        if (!user || !['SUPER_ADMIN', 'ADMIN', 'MANAGER'].includes(user.role)) {
-            return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+export const GET = authorizedRoute(
+    [],
+    async (req: NextRequest, context: { params: Promise<{ id: string }> }) => {
+        try {
+            const params = await context.params;
+            const { id } = params;
+
+            const modules = await prisma.courseModule.findMany({
+                where: { courseId: id },
+                include: {
+                    lessons: {
+                        orderBy: { order: 'asc' }
+                    },
+                    _count: {
+                        select: { lessons: true }
+                    }
+                },
+                orderBy: { order: 'asc' }
+            });
+
+            return NextResponse.json(modules);
+        } catch (error) {
+            return createErrorResponse(error);
         }
-
-        const body = await req.json();
-        const { title, order } = body;
-
-        const courseModule = await (prisma as any).courseModule.create({
-            data: {
-                courseId,
-                title,
-                order: order || 0
-            }
-        });
-
-        return NextResponse.json(courseModule);
-    } catch (error) {
-        return NextResponse.json({ error: error instanceof Error ? error.message : 'Unknown error' }, { status: 500 });
     }
-}
+);
+
+export const POST = authorizedRoute(
+    ['SUPER_ADMIN', 'ADMIN', 'MANAGER'],
+    async (req: NextRequest, context: { params: Promise<{ id: string }> }) => {
+        try {
+            const params = await context.params;
+            const { id: courseId } = params;
+            const body = await req.json();
+            const { title, description } = body;
+
+            // Get the highest order number
+            const lastModule = await prisma.courseModule.findFirst({
+                where: { courseId },
+                orderBy: { order: 'desc' }
+            });
+
+            const newOrder = (lastModule?.order || 0) + 1;
+
+            const module = await prisma.courseModule.create({
+                data: {
+                    courseId,
+                    title,
+                    description,
+                    order: newOrder
+                }
+            });
+
+            return NextResponse.json(module);
+        } catch (error) {
+            return createErrorResponse(error);
+        }
+    }
+);

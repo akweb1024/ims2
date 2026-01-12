@@ -2,33 +2,46 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import Link from 'next/link';
+import DashboardLayout from '@/components/dashboard/DashboardLayout';
+import {
+    BookOpen, Plus, Edit2, Trash2, Save, Eye, Upload,
+    Video, FileText, CheckCircle, GripVertical, X
+} from 'lucide-react';
 
-export default function CourseDetailPage() {
-    const { id } = useParams();
+export default function CourseBuilderPage() {
     const router = useRouter();
+    const params = useParams();
+    const courseId = params.id as string;
+
     const [course, setCourse] = useState<any>(null);
+    const [modules, setModules] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
-    const [userRole, setUserRole] = useState<string>('');
+    const [saving, setSaving] = useState(false);
+    const [userRole, setUserRole] = useState('');
+
+    // Modal states
+    const [showCourseEdit, setShowCourseEdit] = useState(false);
     const [showModuleModal, setShowModuleModal] = useState(false);
-    const [showLessonModal, setShowLessonModal] = useState<{ show: boolean, moduleId: string }>({ show: false, moduleId: '' });
+    const [showLessonModal, setShowLessonModal] = useState(false);
+    const [selectedModule, setSelectedModule] = useState<any>(null);
+    const [selectedLesson, setSelectedLesson] = useState<any>(null);
 
     useEffect(() => {
         const user = localStorage.getItem('user');
         if (user) setUserRole(JSON.parse(user).role);
         fetchCourse();
-    }, [id]);
+    }, [courseId]);
 
     const fetchCourse = async () => {
         try {
             const token = localStorage.getItem('token');
-            const res = await fetch(`/api/courses/${id}`, {
+            const res = await fetch(`/api/courses/${courseId}`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             if (res.ok) {
-                setCourse(await res.json());
-            } else {
-                router.push('/dashboard/courses');
+                const data = await res.json();
+                setCourse(data);
+                setModules(data.modules || []);
             }
         } catch (error) {
             console.error(error);
@@ -37,255 +50,441 @@ export default function CourseDetailPage() {
         }
     };
 
-    const handlePublishToggle = async () => {
-        if (!confirm(`Are you sure you want to ${course.isPublished ? 'unpublish' : 'publish'} this course?`)) return;
+    const handleUpdateCourse = async (e: React.FormEvent) => {
+        e.preventDefault();
+        const form = e.target as HTMLFormElement;
+        const formData = new FormData(form);
+        const data = Object.fromEntries(formData);
 
         try {
+            setSaving(true);
             const token = localStorage.getItem('token');
-            const res = await fetch(`/api/courses/${id}`, {
+            const res = await fetch(`/api/courses/${courseId}`, {
                 method: 'PATCH',
                 headers: {
                     'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({ isPublished: !course.isPublished })
+                body: JSON.stringify(data)
+            });
+
+            if (res.ok) {
+                const updated = await res.json();
+                setCourse(updated);
+                setShowCourseEdit(false);
+                alert('Course updated successfully!');
+            }
+        } catch (error) {
+            console.error(error);
+            alert('Failed to update course');
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    const handleAddModule = async (e: React.FormEvent) => {
+        e.preventDefault();
+        const form = e.target as HTMLFormElement;
+        const formData = new FormData(form);
+        const data = Object.fromEntries(formData);
+
+        try {
+            const token = localStorage.getItem('token');
+            const res = await fetch(`/api/courses/${courseId}/modules`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(data)
             });
 
             if (res.ok) {
                 fetchCourse();
+                setShowModuleModal(false);
+                form.reset();
             }
         } catch (error) {
             console.error(error);
         }
     };
 
-    const handleAddModule = async (e: React.FormEvent<HTMLFormElement>) => {
+    const handleAddLesson = async (e: React.FormEvent) => {
         e.preventDefault();
-        const formData = new FormData(e.currentTarget);
+        if (!selectedModule) return;
+
+        const form = e.target as HTMLFormElement;
+        const formData = new FormData(form);
         const data = Object.fromEntries(formData);
 
         try {
             const token = localStorage.getItem('token');
-            const res = await fetch(`/api/courses/${id}/modules`, {
+            const res = await fetch(`/api/courses/modules/${selectedModule.id}/lessons`, {
                 method: 'POST',
-                headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
                 body: JSON.stringify(data)
             });
+
             if (res.ok) {
-                setShowModuleModal(false);
                 fetchCourse();
+                setShowLessonModal(false);
+                setSelectedModule(null);
+                form.reset();
             }
-        } catch (error) { console.error(error); }
+        } catch (error) {
+            console.error(error);
+        }
     };
 
-    const handleAddLesson = async (e: React.FormEvent<HTMLFormElement>) => {
-        e.preventDefault();
-        const formData = new FormData(e.currentTarget);
-        const data = Object.fromEntries(formData);
+    const handlePublish = async () => {
+        if (!confirm('Are you sure you want to publish this course? It will be visible to students.')) return;
 
         try {
             const token = localStorage.getItem('token');
-            const res = await fetch(`/api/courses/modules/${showLessonModal.moduleId}/lessons`, {
+            const res = await fetch(`/api/courses/${courseId}/publish`, {
                 method: 'POST',
-                headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-                body: JSON.stringify(data)
+                headers: { 'Authorization': `Bearer ${token}` }
             });
+
             if (res.ok) {
-                setShowLessonModal({ show: false, moduleId: '' });
                 fetchCourse();
+                alert('Course published successfully!');
+            } else {
+                const error = await res.json();
+                alert(error.error || 'Failed to publish course');
             }
-        } catch (error) { console.error(error); }
+        } catch (error) {
+            console.error(error);
+            alert('Failed to publish course');
+        }
     };
 
-    if (loading) return <div className="p-8 text-center text-secondary-500">Loading course details...</div>;
-    if (!course) return null;
+    const handleDeleteModule = async (moduleId: string) => {
+        if (!confirm('Delete this module and all its lessons?')) return;
 
-    const isInstructor = ['SUPER_ADMIN', 'ADMIN', 'MANAGER'].includes(userRole);
-    const enrolled = course.enrollments && course.enrollments.length > 0;
+        try {
+            const token = localStorage.getItem('token');
+            await fetch(`/api/courses/modules/${moduleId}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            fetchCourse();
+        } catch (error) {
+            console.error(error);
+        }
+    };
+
+    const handleDeleteLesson = async (lessonId: string) => {
+        if (!confirm('Delete this lesson?')) return;
+
+        try {
+            const token = localStorage.getItem('token');
+            await fetch(`/api/courses/lessons/${lessonId}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            fetchCourse();
+        } catch (error) {
+            console.error(error);
+        }
+    };
+
+    if (loading) return <div className="p-8 text-center">Loading course...</div>;
+    if (!course) return <div className="p-8 text-center">Course not found</div>;
 
     return (
-        <div className="space-y-6">
-            {/* Header */}
-            <div className="bg-white rounded-3xl p-8 border border-secondary-200 shadow-sm relative overflow-hidden">
-                <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-primary-500 to-secondary-500"></div>
-                <div className="flex flex-col md:flex-row gap-8">
-                    <div className="w-full md:w-1/3 aspect-video bg-secondary-100 rounded-2xl overflow-hidden relative">
-                        {course.thumbnailUrl ? (
-                            <img src={course.thumbnailUrl} alt={course.title} className="w-full h-full object-cover" />
-                        ) : (
-                            <div className="w-full h-full flex items-center justify-center text-6xl opacity-20">🎓</div>
-                        )}
-                    </div>
-                    <div className="flex-1 space-y-4">
-                        <div className="flex justify-between items-start">
-                            <h1 className="text-3xl font-black text-secondary-900">{course.title}</h1>
-                            {isInstructor && (
-                                <button
-                                    onClick={handlePublishToggle}
-                                    className={`px-3 py-1 rounded-full text-xs font-bold uppercase ${course.isPublished ? 'bg-success-100 text-success-700' : 'bg-warning-100 text-warning-700'}`}
-                                >
-                                    {course.isPublished ? 'Published' : 'Draft'}
-                                </button>
-                            )}
-                        </div>
-                        <p className="text-secondary-600 leading-relaxed">{course.description}</p>
-
-                        <div className="flex items-center gap-6 text-sm text-secondary-500">
-                            <span>👤 {course.instructor?.email?.split('@')[0] || 'Unknown Instructor'}</span>
-                            <span>💳 {course.price === 0 ? 'Free' : `${course.currency} ${course.price}`}</span>
-                            <span>📅 Created: {new Date(course.createdAt).toLocaleDateString()}</span>
-                        </div>
-
-                        <div className="pt-4">
-                            {enrolled ? (
-                                <div className="space-y-2">
-                                    <div className="flex justify-between text-xs font-bold text-secondary-600">
-                                        <span>Your Progress</span>
-                                        <span>{Math.round(course.enrollments[0].progress)}%</span>
-                                    </div>
-                                    <div className="w-full bg-secondary-100 rounded-full h-2">
-                                        <div className="bg-success-500 h-2 rounded-full" style={{ width: `${course.enrollments[0].progress}%` }}></div>
-                                    </div>
-                                    <Link
-                                        href={`/dashboard/courses/${id}/lessons/${course.modules?.[0]?.lessons?.[0]?.id || ''}`}
-                                        className="btn btn-primary w-full mt-4 flex items-center justify-center"
-                                    >
-                                        Continue Learning
-                                    </Link>
-                                </div>
-                            ) : (
-                                <button className="btn btn-primary w-full md:w-1/2 py-3 text-lg font-bold">
-                                    {course.price === 0 ? 'Enroll Now for Free' : `Buy Course for ${course.currency} ${course.price}`}
-                                </button>
-                            )}
+        <DashboardLayout userRole={userRole}>
+            <div className="space-y-6">
+                {/* Header */}
+                <div className="flex justify-between items-start">
+                    <div>
+                        <h1 className="text-3xl font-black text-secondary-900">{course.title}</h1>
+                        <p className="text-secondary-500">Course Builder</p>
+                        <div className="flex gap-2 mt-2">
+                            <span className={`px-3 py-1 rounded-full text-xs font-bold ${course.isPublished
+                                    ? 'bg-success-100 text-success-700'
+                                    : 'bg-warning-100 text-warning-700'
+                                }`}>
+                                {course.isPublished ? 'PUBLISHED' : 'DRAFT'}
+                            </span>
+                            <span className="px-3 py-1 rounded-full text-xs font-bold bg-primary-100 text-primary-700">
+                                {modules.length} Modules
+                            </span>
                         </div>
                     </div>
-                </div>
-            </div>
-
-            {/* Curriculum */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <div className="lg:col-span-2 space-y-6">
-                    <div className="flex justify-between items-center">
-                        <h2 className="text-xl font-bold text-secondary-900">Course Curriculum</h2>
-                        {isInstructor && (
+                    <div className="flex gap-2">
+                        <button
+                            onClick={() => setShowCourseEdit(true)}
+                            className="btn btn-secondary flex items-center gap-2"
+                        >
+                            <Edit2 size={16} /> Edit Details
+                        </button>
+                        {!course.isPublished && (
                             <button
-                                onClick={() => setShowModuleModal(true)}
-                                className="text-primary-600 text-sm font-bold hover:underline"
+                                onClick={handlePublish}
+                                className="btn btn-success flex items-center gap-2"
                             >
-                                + Add Module
+                                <Eye size={16} /> Publish Course
                             </button>
                         )}
-                    </div>
-
-                    <div className="space-y-4">
-                        {course.modules && course.modules.length > 0 ? (
-                            course.modules.map((module: any) => (
-                                <div key={module.id} className="bg-white rounded-2xl border border-secondary-200 overflow-hidden">
-                                    <div className="p-4 bg-secondary-50 border-b border-secondary-100 flex justify-between items-center">
-                                        <h3 className="font-bold text-secondary-800">{module.title}</h3>
-                                        {isInstructor && (
-                                            <button
-                                                onClick={() => setShowLessonModal({ show: true, moduleId: module.id })}
-                                                className="text-xs text-primary-600 font-bold hover:underline"
-                                            >
-                                                + Lesson
-                                            </button>
-                                        )}
-                                    </div>
-                                    <div className="divide-y divide-secondary-50">
-                                        {module.lessons.map((lesson: any) => (
-                                            <Link
-                                                key={lesson.id}
-                                                href={`/dashboard/courses/${id}/lessons/${lesson.id}`}
-                                                className="p-4 flex justify-between items-center hover:bg-secondary-50 transition-colors cursor-pointer group"
-                                            >
-                                                <div className="flex items-center gap-3">
-                                                    <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs ${lesson.progress?.length > 0 && lesson.progress[0].isCompleted ? 'bg-success-100 text-success-600' : 'bg-secondary-200 text-secondary-500'}`}>
-                                                        {lesson.progress?.length > 0 && lesson.progress[0].isCompleted ? '✓' : (lesson.type === 'VIDEO' ? '▶' : '📄')}
-                                                    </div>
-                                                    <span className="text-sm font-medium text-secondary-700 group-hover:text-primary-600">{lesson.title}</span>
-                                                </div>
-                                                <span className="text-xs text-secondary-400">{lesson.duration ? `${Math.floor(lesson.duration / 60)}m` : 'Text'}</span>
-                                            </Link>
-                                        ))}
-                                        {module.lessons.length === 0 && (
-                                            <div className="p-4 text-center text-xs text-secondary-400 italic">No lessons in this module yet.</div>
-                                        )}
-                                    </div>
-                                </div>
-                            ))
-                        ) : (
-                            <div className="text-center py-10 bg-secondary-50 rounded-2xl border border-dashed border-secondary-200">
-                                <p className="text-secondary-500">No content added yet.</p>
-                            </div>
-                        )}
+                        <button
+                            onClick={() => router.push(`/dashboard/courses/${courseId}/preview`)}
+                            className="btn btn-primary flex items-center gap-2"
+                        >
+                            <Eye size={16} /> Preview
+                        </button>
                     </div>
                 </div>
 
-                {/* Sidebar (Instructor Tools / Stats) */}
-                <div className="space-y-6">
-                    {isInstructor && (
-                        <div className="card-premium p-6 space-y-4">
-                            <h3 className="font-bold text-secondary-900 border-b border-secondary-100 pb-2">Instructor Tools</h3>
-                            <div className="space-y-2">
-                                <button className="w-full text-left px-4 py-2 bg-secondary-50 hover:bg-secondary-100 rounded-xl text-sm font-medium transition-colors">
-                                    ⚙️ Course Settings
-                                </button>
-                                <button className="w-full text-left px-4 py-2 bg-secondary-50 hover:bg-secondary-100 rounded-xl text-sm font-medium transition-colors">
-                                    👥 Manage Students
-                                </button>
-                                <button className="w-full text-left px-4 py-2 bg-secondary-50 hover:bg-secondary-100 rounded-xl text-sm font-medium transition-colors">
-                                    📊 Course Analytics
-                                </button>
-                            </div>
+                {/* Course Content */}
+                <div className="card-premium p-6">
+                    <div className="flex justify-between items-center mb-6">
+                        <h2 className="text-xl font-bold text-secondary-900">Course Content</h2>
+                        <button
+                            onClick={() => setShowModuleModal(true)}
+                            className="btn btn-primary flex items-center gap-2"
+                        >
+                            <Plus size={16} /> Add Module
+                        </button>
+                    </div>
+
+                    {modules.length === 0 ? (
+                        <div className="text-center py-12 bg-secondary-50 rounded-2xl border-2 border-dashed border-secondary-200">
+                            <BookOpen size={48} className="mx-auto text-secondary-300 mb-4" />
+                            <h3 className="font-bold text-secondary-900 mb-2">No Modules Yet</h3>
+                            <p className="text-secondary-500 mb-4">Start building your course by adding modules</p>
+                            <button
+                                onClick={() => setShowModuleModal(true)}
+                                className="btn btn-primary"
+                            >
+                                Add First Module
+                            </button>
+                        </div>
+                    ) : (
+                        <div className="space-y-4">
+                            {modules.map((module, idx) => (
+                                <div key={module.id} className="border border-secondary-200 rounded-2xl overflow-hidden">
+                                    <div className="bg-secondary-50 p-4 flex justify-between items-center">
+                                        <div className="flex items-center gap-3">
+                                            <GripVertical size={20} className="text-secondary-400 cursor-move" />
+                                            <div>
+                                                <h3 className="font-bold text-secondary-900">
+                                                    Module {idx + 1}: {module.title}
+                                                </h3>
+                                                {module.description && (
+                                                    <p className="text-sm text-secondary-500">{module.description}</p>
+                                                )}
+                                            </div>
+                                        </div>
+                                        <div className="flex gap-2">
+                                            <button
+                                                onClick={() => {
+                                                    setSelectedModule(module);
+                                                    setShowLessonModal(true);
+                                                }}
+                                                className="btn btn-sm btn-primary"
+                                            >
+                                                <Plus size={14} /> Add Lesson
+                                            </button>
+                                            <button
+                                                onClick={() => handleDeleteModule(module.id)}
+                                                className="btn btn-sm btn-danger"
+                                            >
+                                                <Trash2 size={14} />
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    {/* Lessons */}
+                                    <div className="p-4 space-y-2">
+                                        {module.lessons && module.lessons.length > 0 ? (
+                                            module.lessons.map((lesson: any, lessonIdx: number) => (
+                                                <div
+                                                    key={lesson.id}
+                                                    className="flex justify-between items-center p-3 bg-white rounded-xl border border-secondary-100 hover:border-primary-200 transition-colors"
+                                                >
+                                                    <div className="flex items-center gap-3">
+                                                        <GripVertical size={16} className="text-secondary-300" />
+                                                        {lesson.type === 'VIDEO' ? (
+                                                            <Video size={16} className="text-primary-600" />
+                                                        ) : (
+                                                            <FileText size={16} className="text-secondary-600" />
+                                                        )}
+                                                        <div>
+                                                            <p className="font-medium text-secondary-900">
+                                                                {lessonIdx + 1}. {lesson.title}
+                                                            </p>
+                                                            <div className="flex gap-2 text-xs text-secondary-400">
+                                                                <span>{lesson.type}</span>
+                                                                {lesson.duration && <span>• {lesson.duration} min</span>}
+                                                                {lesson.isFree && <span className="text-success-600">• FREE PREVIEW</span>}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div className="flex gap-2">
+                                                        <button
+                                                            onClick={() => router.push(`/dashboard/courses/lessons/${lesson.id}/edit`)}
+                                                            className="text-secondary-400 hover:text-primary-600"
+                                                        >
+                                                            <Edit2 size={16} />
+                                                        </button>
+                                                        <button
+                                                            onClick={() => handleDeleteLesson(lesson.id)}
+                                                            className="text-secondary-400 hover:text-danger-600"
+                                                        >
+                                                            <Trash2 size={16} />
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            ))
+                                        ) : (
+                                            <p className="text-center text-secondary-400 py-4 text-sm">
+                                                No lessons yet. Click "Add Lesson" to get started.
+                                            </p>
+                                        )}
+                                    </div>
+                                </div>
+                            ))}
                         </div>
                     )}
                 </div>
-            </div>
-            {/* Modals */}
-            {showModuleModal && (
-                <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-                    <div className="bg-white rounded-3xl p-8 max-w-md w-full">
-                        <h3 className="text-xl font-bold mb-4">Add New Module</h3>
-                        <form onSubmit={handleAddModule} className="space-y-4">
-                            <div>
-                                <label className="label">Module Title</label>
-                                <input name="title" className="input" required placeholder="e.g. Introduction" />
-                            </div>
-                            <div className="flex gap-2">
-                                <button type="submit" className="btn btn-primary flex-1">Create</button>
-                                <button type="button" onClick={() => setShowModuleModal(false)} className="btn btn-secondary">Cancel</button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            )}
 
-            {showLessonModal.show && (
-                <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-                    <div className="bg-white rounded-3xl p-8 max-w-md w-full">
-                        <h3 className="text-xl font-bold mb-4">Add New Lesson</h3>
-                        <form onSubmit={handleAddLesson} className="space-y-4">
-                            <div>
-                                <label className="label">Lesson Title</label>
-                                <input name="title" className="input" required />
+                {/* Edit Course Modal */}
+                {showCourseEdit && (
+                    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+                        <div className="bg-white rounded-3xl p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+                            <div className="flex justify-between items-center mb-6">
+                                <h3 className="text-2xl font-bold">Edit Course Details</h3>
+                                <button onClick={() => setShowCourseEdit(false)} className="text-secondary-400 hover:text-secondary-900">
+                                    <X size={24} />
+                                </button>
                             </div>
-                            <div>
-                                <label className="label">Type</label>
-                                <select name="type" className="input">
-                                    <option value="VIDEO">Video</option>
-                                    <option value="TEXT">Text/Article</option>
-                                </select>
-                            </div>
-                            <div className="flex gap-2">
-                                <button type="submit" className="btn btn-primary flex-1">Add Lesson</button>
-                                <button type="button" onClick={() => setShowLessonModal({ show: false, moduleId: '' })} className="btn btn-secondary">Cancel</button>
-                            </div>
-                        </form>
+                            <form onSubmit={handleUpdateCourse} className="space-y-4">
+                                <div>
+                                    <label className="label">Title</label>
+                                    <input name="title" className="input" defaultValue={course.title} required />
+                                </div>
+                                <div>
+                                    <label className="label">Description</label>
+                                    <textarea name="description" className="input h-24" defaultValue={course.description} required />
+                                </div>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="label">Category</label>
+                                        <input name="category" className="input" defaultValue={course.category || ''} />
+                                    </div>
+                                    <div>
+                                        <label className="label">Level</label>
+                                        <select name="level" className="input" defaultValue={course.level || 'BEGINNER'}>
+                                            <option value="BEGINNER">Beginner</option>
+                                            <option value="INTERMEDIATE">Intermediate</option>
+                                            <option value="ADVANCED">Advanced</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="label">Price</label>
+                                        <input name="price" type="number" step="0.01" className="input" defaultValue={course.price} />
+                                    </div>
+                                    <div>
+                                        <label className="label">Estimated Hours</label>
+                                        <input name="estimatedHours" type="number" className="input" defaultValue={course.estimatedHours || ''} />
+                                    </div>
+                                </div>
+                                <div>
+                                    <label className="label">Thumbnail URL</label>
+                                    <input name="thumbnailUrl" className="input" defaultValue={course.thumbnailUrl || ''} />
+                                </div>
+                                <div className="flex gap-2 pt-4">
+                                    <button type="submit" disabled={saving} className="btn btn-primary flex-1">
+                                        {saving ? 'Saving...' : 'Save Changes'}
+                                    </button>
+                                    <button type="button" onClick={() => setShowCourseEdit(false)} className="btn btn-secondary">
+                                        Cancel
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
                     </div>
-                </div>
-            )}
-        </div>
+                )}
+
+                {/* Add Module Modal */}
+                {showModuleModal && (
+                    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+                        <div className="bg-white rounded-3xl p-8 max-w-lg w-full">
+                            <h3 className="text-2xl font-bold mb-6">Add New Module</h3>
+                            <form onSubmit={handleAddModule} className="space-y-4">
+                                <div>
+                                    <label className="label">Module Title</label>
+                                    <input name="title" className="input" required placeholder="e.g. Introduction to React" />
+                                </div>
+                                <div>
+                                    <label className="label">Description (Optional)</label>
+                                    <textarea name="description" className="input h-20" placeholder="Brief description of this module..." />
+                                </div>
+                                <div className="flex gap-2 pt-4">
+                                    <button type="submit" className="btn btn-primary flex-1">Add Module</button>
+                                    <button type="button" onClick={() => setShowModuleModal(false)} className="btn btn-secondary">Cancel</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                )}
+
+                {/* Add Lesson Modal */}
+                {showLessonModal && selectedModule && (
+                    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+                        <div className="bg-white rounded-3xl p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+                            <h3 className="text-2xl font-bold mb-6">Add Lesson to: {selectedModule.title}</h3>
+                            <form onSubmit={handleAddLesson} className="space-y-4">
+                                <div>
+                                    <label className="label">Lesson Title</label>
+                                    <input name="title" className="input" required placeholder="e.g. Understanding Components" />
+                                </div>
+                                <div>
+                                    <label className="label">Description (Optional)</label>
+                                    <textarea name="description" className="input h-20" placeholder="What will students learn..." />
+                                </div>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="label">Type</label>
+                                        <select name="type" className="input">
+                                            <option value="VIDEO">Video</option>
+                                            <option value="TEXT">Text/Article</option>
+                                            <option value="DOCUMENT">Document</option>
+                                            <option value="QUIZ">Quiz</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label className="label">Duration (minutes)</label>
+                                        <input name="duration" type="number" className="input" placeholder="e.g. 15" />
+                                    </div>
+                                </div>
+                                <div>
+                                    <label className="label">Content URL (Video/Document link)</label>
+                                    <input name="contentUrl" className="input" placeholder="https://..." />
+                                </div>
+                                <div>
+                                    <label className="label">Text Content (for text lessons)</label>
+                                    <textarea name="textContent" className="input h-32" placeholder="Lesson content in markdown or plain text..." />
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <input type="checkbox" name="isFree" id="isFree" className="w-4 h-4" />
+                                    <label htmlFor="isFree" className="text-sm font-medium">Free Preview (accessible without enrollment)</label>
+                                </div>
+                                <div className="flex gap-2 pt-4">
+                                    <button type="submit" className="btn btn-primary flex-1">Add Lesson</button>
+                                    <button type="button" onClick={() => { setShowLessonModal(false); setSelectedModule(null); }} className="btn btn-secondary">Cancel</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                )}
+            </div>
+        </DashboardLayout>
     );
 }
