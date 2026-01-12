@@ -12,7 +12,10 @@ export default function PaymentsPage() {
     const [history, setHistory] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [syncing, setSyncing] = useState(false);
-    const [userRole, setUserRole] = useState<string>('');
+    const [dateRange, setDateRange] = useState({ start: '', end: '' });
+    const [period, setPeriod] = useState<'day' | 'week' | 'month' | 'year' | 'all'>('all');
+    const [searchQuery, setSearchQuery] = useState('');
+    const [userRole, setUserRole] = useState('');
     const [lastSync, setLastSync] = useState<any>(null);
 
     useEffect(() => {
@@ -20,12 +23,17 @@ export default function PaymentsPage() {
         if (user) setUserRole(JSON.parse(user).role);
         fetchPayments();
         fetchLastSync();
-    }, []);
+    }, [period, dateRange]);
 
     const fetchPayments = async () => {
         try {
             const token = localStorage.getItem('token');
-            const res = await fetch('/api/payments', {
+            const queryParams = new URLSearchParams({
+                period,
+                start: dateRange.start,
+                end: dateRange.end
+            });
+            const res = await fetch(`/api/payments?${queryParams.toString()}`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             if (res.ok) {
@@ -75,7 +83,12 @@ export default function PaymentsPage() {
         return lastMonth * (1 + growth);
     };
 
-    const isAdmin = ['SUPER_ADMIN', 'ADMIN'].includes(userRole);
+    const canSync = ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'TL'].includes(userRole);
+
+    const filteredPayments = payments.filter(p =>
+        p.razorpayPaymentId?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        p.company?.name?.toLowerCase().includes(searchQuery.toLowerCase())
+    );
 
     if (loading) return <div className="p-8 text-center text-secondary-500">Processing financial data...</div>;
 
@@ -87,7 +100,7 @@ export default function PaymentsPage() {
                         <h1 className="text-3xl font-black text-secondary-900 tracking-tighter">Finance & Reconciliation</h1>
                         <p className="text-secondary-500 font-medium italic">Tracing Razorpay settlements against subscription invoices.</p>
                     </div>
-                    {isAdmin && (
+                    {canSync && (
                         <div className="flex items-center gap-4">
                             <div className="text-right">
                                 <p className="text-[9px] font-black text-secondary-400 uppercase tracking-widest">Gateway Health</p>
@@ -105,6 +118,46 @@ export default function PaymentsPage() {
                             </button>
                         </div>
                     )}
+                </div>
+
+                {/* Filters Row */}
+                <div className="card-premium flex flex-wrap items-center justify-between gap-6 p-6">
+                    <div className="flex gap-2 p-1 bg-secondary-100 rounded-xl">
+                        {(['all', 'day', 'week', 'month', 'year'] as const).map(p => (
+                            <button
+                                key={p}
+                                onClick={() => setPeriod(p)}
+                                className={`px-4 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${period === p ? 'bg-white text-primary-600 shadow-sm' : 'text-secondary-500 hover:text-secondary-700'}`}
+                            >
+                                {p}
+                            </button>
+                        ))}
+                    </div>
+
+                    <div className="flex items-center gap-4 flex-1 max-w-2xl">
+                        <div className="flex items-center gap-2 bg-secondary-50 p-2 rounded-xl border border-secondary-100">
+                            <input
+                                type="date"
+                                className="bg-transparent border-0 text-[10px] font-black uppercase text-secondary-600 focus:ring-0"
+                                value={dateRange.start}
+                                onChange={e => setDateRange({ ...dateRange, start: e.target.value })}
+                            />
+                            <span className="text-secondary-300 font-black">→</span>
+                            <input
+                                type="date"
+                                className="bg-transparent border-0 text-[10px] font-black uppercase text-secondary-600 focus:ring-0"
+                                value={dateRange.end}
+                                onChange={e => setDateRange({ ...dateRange, end: e.target.value })}
+                            />
+                        </div>
+                        <input
+                            type="text"
+                            placeholder="Search by Payment ID or Client..."
+                            className="input h-10 flex-1 rounded-xl text-xs font-bold"
+                            value={searchQuery}
+                            onChange={e => setSearchQuery(e.target.value)}
+                        />
+                    </div>
                 </div>
 
                 {/* Financial KPIs */}
@@ -202,7 +255,9 @@ export default function PaymentsPage() {
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-secondary-50">
-                                {payments.map(p => (
+                                {filteredPayments.length === 0 ? (
+                                    <tr><td colSpan={6} className="px-8 py-20 text-center text-secondary-400 italic font-black">No transactions found for the selected criteria.</td></tr>
+                                ) : filteredPayments.map(p => (
                                     <tr key={p.id} className="hover:bg-secondary-50/50 transition-colors">
                                         <td className="px-8 py-5">
                                             <p className="font-black text-secondary-900 text-xs">{p.razorpayPaymentId || p.transactionId}</p>
@@ -224,7 +279,7 @@ export default function PaymentsPage() {
                                             <p className="font-bold text-secondary-900 text-[10px]">{new Date(p.paymentDate).toLocaleDateString(undefined, { month: 'short', day: '2-digit', year: 'numeric' })}</p>
                                             <p className="text-[9px] text-secondary-400 font-medium uppercase mt-0.5">{new Date(p.paymentDate).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', hour12: true })}</p>
                                         </td>
-                                        <td className="px-8 py-5">
+                                        <td className="px-8 py-5 text-right">
                                             <span className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-tight 
                                                 ${p.status === 'captured' ? 'bg-success-100 text-success-700' :
                                                     p.status === 'failed' ? 'bg-red-100 text-red-700' :

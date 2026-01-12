@@ -154,6 +154,29 @@ export const POST = authorizedRoute(
                 }
             }
 
+            // Sync Production Work
+            const todayStart = new Date();
+            todayStart.setHours(0, 0, 0, 0);
+
+            const prodLogs = await prisma.auditLog.findMany({
+                where: {
+                    userId: user.id,
+                    createdAt: { gte: todayStart },
+                    entity: { in: ['journal', 'journal_issue', 'article_apc', 'article'] }
+                }
+            });
+
+            if (prodLogs.length > 0) {
+                const articlesCount = prodLogs.filter(l => l.entity === 'article' || l.entity === 'article_apc').length;
+                const issuesCount = prodLogs.filter(l => l.entity === 'journal_issue').length;
+                const publicationSummary = `\n\n[Auto-Synced Publication Activity]\n- Processed ${articlesCount} manuscripts/APCs\n- Managed ${issuesCount} journal issues`;
+
+                if (body.content && !body.content.includes('[Auto-Synced')) {
+                    body.content += publicationSummary;
+                }
+                body.tasksCompleted = (parseInt(body.tasksCompleted) || 0) + prodLogs.length;
+            }
+
             // Auto-calculate Hours Spent from Attendance if not provided
             let hoursSpent = parseSafely(body.hoursSpent);
             const reportDate = body.date ? new Date(body.date) : new Date();
@@ -227,13 +250,9 @@ export const PUT = authorizedRoute(
                 return createErrorResponse('Cannot modify after review/approval', 400);
             }
 
-            // If owner, check if it's the same day
-            if (isOwner && !isManager) {
-                const today = new Date().toISOString().split('T')[0];
-                const reportDate = new Date(existing.date).toISOString().split('T')[0];
-                if (today !== reportDate) {
-                    return createErrorResponse('Can only modify reports on the same day', 400);
-                }
+            // If owner, check if it's the same day (REMOVED - Allow edit if SUBMITTED)
+            if (isOwner && !isManager && existing.status !== 'SUBMITTED') {
+                return createErrorResponse('Cannot modify after review/approval', 400);
             }
 
             const updated = await prisma.workReport.update({

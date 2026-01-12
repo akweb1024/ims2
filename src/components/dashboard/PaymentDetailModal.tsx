@@ -31,7 +31,9 @@ export default function PaymentDetailModal({ payment, onClose }: PaymentDetailMo
                 <div className="p-6 border-b border-secondary-100 flex justify-between items-center bg-secondary-50/50">
                     <div>
                         <h2 className="text-xl font-black text-secondary-900 tracking-tight">Transaction Details</h2>
-                        <p className="text-xs text-secondary-500 font-bold uppercase tracking-widest">{payment.razorpayPaymentId}</p>
+                        <p className="text-xs text-secondary-500 font-bold uppercase tracking-widest">
+                            {payment.razorpayPaymentId ? (payment.razorpayPaymentId.slice(0, -4) + '****') : 'N/A'}
+                        </p>
                     </div>
                     <button onClick={onClose} className="p-2 hover:bg-secondary-200 rounded-full transition-colors">
                         <X size={20} className="text-secondary-500" />
@@ -75,7 +77,7 @@ export default function PaymentDetailModal({ payment, onClose }: PaymentDetailMo
                                 <DetailItem label="Customer" value={payment.invoice?.subscription?.customerProfile?.name || 'Manual / Walk-in'} />
                                 <DetailItem label="Organization" value={payment.company?.name || 'Direct'} />
                                 <DetailItem label="Invoice No" value={payment.invoice?.invoiceNumber || 'N/A'} />
-                                <DetailItem label="Gateway ID" value={payment.razorpayPaymentId} />
+                                <DetailItem label="Gateway ID" value={payment.razorpayPaymentId ? (payment.razorpayPaymentId.slice(0, -4) + '****') : 'N/A'} />
                             </div>
                         </div>
                     </div>
@@ -121,8 +123,8 @@ function DetailItem({ label, value, isBadge, status }: { label: string, value: s
             <p className="text-[9px] font-black text-secondary-400 uppercase tracking-tight mb-1">{label}</p>
             {isBadge ? (
                 <span className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase ${status === 'captured' ? 'bg-success-100 text-success-700' :
-                        status === 'failed' ? 'bg-danger-100 text-danger-700' :
-                            'bg-warning-100 text-warning-700'
+                    status === 'failed' ? 'bg-danger-100 text-danger-700' :
+                        'bg-warning-100 text-warning-700'
                     }`}>
                     {value}
                 </span>

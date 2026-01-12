@@ -63,7 +63,7 @@ export const POST = authorizedRoute(
             // Update application status
             await prisma.jobApplication.update({
                 where: { id: applicationId },
-                data: { status: 'INTERVIEW', currentStage: 'ROUND_1' }
+                data: { status: 'INTERVIEW' }
             });
 
             return NextResponse.json(interview);

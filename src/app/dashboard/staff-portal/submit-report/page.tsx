@@ -32,15 +32,45 @@ export default function SubmitReportPage() {
         formatting: { paperFormatting: 0, correctionCount: 0 }
     });
 
+    const [prodActivity, setProdActivity] = useState<any>(null);
+
     useEffect(() => {
         const userData = localStorage.getItem('user');
+        const token = localStorage.getItem('token');
         if (userData) {
             const u = JSON.parse(userData);
             setUser(u);
-            // Auto-select template based on role if possible, else default
+
+            // Auto-select template based on role
             if (u.role === 'SALES_EXECUTIVE') setTemplate('SALES');
             else if (u.role === 'EDITOR') setTemplate('PUBLICATION');
-            else setTemplate('General');
+            else if (u.role === 'HR_MANAGER') setTemplate('GENERAL');
+            else if (u.department?.name?.toLowerCase().includes('publication')) setTemplate('PUBLICATION');
+            else setTemplate('GENERAL');
+
+            // Fetch today's attendance to calculate hours
+            fetch('/api/hr/attendance', { headers: { 'Authorization': `Bearer ${token}` } })
+                .then(res => res.json())
+                .then(data => {
+                    const today = new Date().toISOString().split('T')[0];
+                    const record = data.find((a: any) => a.date.startsWith(today));
+                    if (record && record.checkIn) {
+                        const checkIn = new Date(record.checkIn);
+                        const checkOut = record.checkOut ? new Date(record.checkOut) : new Date();
+                        const diffMs = checkOut.getTime() - checkIn.getTime();
+                        const hours = Math.round((diffMs / (1000 * 60 * 60)) * 2) / 2; // Round to nearest 0.5
+                        setCommonData(prev => ({ ...prev, hoursSpent: hours }));
+                    }
+                })
+                .catch(err => console.error("Error fetching attendance", err));
+
+            // Fetch production activity
+            fetch('/api/production/my-activity', { headers: { 'Authorization': `Bearer ${token}` } })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.totalActions > 0) setProdActivity(data);
+                })
+                .catch(err => console.error("Error fetching activity", err));
         }
     }, []);
 
@@ -74,6 +104,7 @@ export default function SubmitReportPage() {
             const payload = {
                 ...commonData,
                 category: template,
+                userRole: user?.role, // Auto reflect from profile
                 revenueGenerated: totalRevenue,
                 tasksCompleted,
                 chatsHandled: metrics.communication.whatsapp,
@@ -169,6 +200,30 @@ export default function SubmitReportPage() {
                                             value={commonData.hoursSpent} onChange={e => setCommonData({ ...commonData, hoursSpent: parseFloat(e.target.value) })} />
                                     </div>
                                 </div>
+
+                                {prodActivity && (
+                                    <div className="bg-primary-50 p-4 rounded-xl border border-primary-100 animate-in fade-in slide-in-from-bottom duration-500">
+                                        <div className="flex items-center justify-between mb-2">
+                                            <h4 className="text-xs font-black text-primary-700 uppercase tracking-wider flex items-center gap-2">
+                                                <Settings size={14} className="animate-spin-slow" />
+                                                Synced Publication Work
+                                            </h4>
+                                            <span className="badge badge-primary">{prodActivity.totalActions} Actions</span>
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div className="bg-white/50 p-2 rounded-lg text-center">
+                                                <p className="text-[10px] font-bold text-secondary-500 uppercase">Manuscripts</p>
+                                                <p className="text-lg font-black text-primary-600">{prodActivity.articles}</p>
+                                            </div>
+                                            <div className="bg-white/50 p-2 rounded-lg text-center">
+                                                <p className="text-[10px] font-bold text-secondary-500 uppercase">Issues</p>
+                                                <p className="text-lg font-black text-primary-600">{prodActivity.issues}</p>
+                                            </div>
+                                        </div>
+                                        <p className="text-[10px] text-primary-400 mt-2 italic text-center">These activities will be automatically appended to your report summary.</p>
+                                    </div>
+                                )}
+
                                 <div>
                                     <label className="label">Detailed Content</label>
                                     <textarea required rows={5} className="input" placeholder="Describe your activities..."

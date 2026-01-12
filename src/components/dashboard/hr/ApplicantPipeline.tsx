@@ -166,7 +166,7 @@ export default function ApplicantPipeline() {
                                 >
                                     <option value="">Select Interviewer</option>
                                     {employees?.filter(e => e.userId).map(e => (
-                                        <option key={e.userId} value={e.userId}>{e.user?.name || e.employeeId}</option>
+                                        <option key={e.userId} value={e.userId}>{(e.user as any)?.name || e.employeeId}</option>
                                     ))}
                                 </select>
                             </div>

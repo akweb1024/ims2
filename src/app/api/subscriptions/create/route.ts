@@ -30,7 +30,9 @@ export async function POST(request: NextRequest) {
         }
 
         // 3. Calculate Totals
-        let total = 0;
+        let selectedCurrencyTotal = 0;
+        let totalInINR = 0;
+        let totalInUSD = 0;
         const subscriptionItems: any[] = [];
 
         for (const item of items) {
@@ -42,8 +44,10 @@ export async function POST(request: NextRequest) {
             if (!plan) return NextResponse.json({ error: `Plan ${item.planId} not found` }, { status: 404 });
 
             const price = currency === 'USD' ? plan.priceUSD : plan.priceINR;
-            const itemPrice = price * (item.quantity || 1);
-            total += itemPrice;
+            selectedCurrencyTotal += price * (item.quantity || 1);
+
+            totalInINR += plan.priceINR * (item.quantity || 1);
+            totalInUSD += plan.priceUSD * (item.quantity || 1);
 
             subscriptionItems.push({
                 journalId: plan.journalId,
@@ -68,8 +72,12 @@ export async function POST(request: NextRequest) {
                         autoRenew: autoRenew || false,
                         status: 'PENDING_PAYMENT',
                         currency,
-                        subtotal: total,
-                        total: total,
+                        subtotal: selectedCurrencyTotal,
+                        total: selectedCurrencyTotal,
+                        subtotalInINR: totalInINR,
+                        subtotalInUSD: totalInUSD,
+                        totalInINR: totalInINR,
+                        totalInUSD: totalInUSD,
                         salesExecutiveId: decoded.id,
                         items: {
                             create: subscriptionItems
@@ -86,9 +94,9 @@ export async function POST(request: NextRequest) {
                         companyId: (decoded as any).companyId,
                         invoiceNumber,
                         currency,
-                        amount: total,
+                        amount: selectedCurrencyTotal,
                         tax: 0,
-                        total: total,
+                        total: selectedCurrencyTotal,
                         status: 'UNPAID',
                         dueDate: new Date(new Date().getTime() + 15 * 24 * 60 * 60 * 1000)
                     }
@@ -102,7 +110,7 @@ export async function POST(request: NextRequest) {
                         action: 'create',
                         entity: 'subscription',
                         entityId: subscription.id,
-                        changes: JSON.stringify({ total, startDate, endDate, itemsCount: items.length })
+                        changes: JSON.stringify({ total: selectedCurrencyTotal, totalInINR, totalInUSD, startDate, endDate, itemsCount: items.length })
                     }
                 });
 

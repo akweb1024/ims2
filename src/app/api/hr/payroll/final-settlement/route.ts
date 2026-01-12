@@ -29,20 +29,22 @@ export const POST = authorizedRoute(
             // 1. Calculate Pro-rata Salary for the last month
             const config = await PayrollCalculator.getStatutoryConfig(user.companyId!);
 
+            const baseSalary = employee.baseSalary || 0;
+
             // Assume 0 LWP for FF calculation unless specified
             const breakdown = PayrollCalculator.calculate({
-                basicSalary: employee.baseSalary * 0.5, // 50% Basic
-                hra: employee.baseSalary * 0.25,
+                basicSalary: baseSalary * 0.5, // 50% Basic
+                hra: baseSalary * 0.25,
                 conveyance: 1600,
                 medical: 1250,
-                specialAllowance: (employee.baseSalary * 0.25) - 2850,
+                specialAllowance: (baseSalary * 0.25) - 2850,
                 otherAllowances: 0,
                 lwpDays: daysInMonth - workedDays, // Deduction for days not worked in final month
                 daysInMonth: daysInMonth
             }, config);
 
             // 2. Additionals
-            const totalArrears = (bonus || 0) + (gratuity || 0) + (otherDues || 0) + (leaveEncashmentDays * (employee.baseSalary / 30));
+            const totalArrears = (bonus || 0) + (gratuity || 0) + (otherDues || 0) + (leaveEncashmentDays * (baseSalary / 30));
             const totalDeductions = deductions || 0;
 
             const finalNet = breakdown.netPayable + totalArrears - totalDeductions;

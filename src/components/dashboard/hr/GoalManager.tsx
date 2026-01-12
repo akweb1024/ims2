@@ -27,7 +27,8 @@ interface Goal {
 interface Employee {
     id: string;
     user?: {
-        name: string;
+        name?: string;
+        email?: string;
     };
     designation?: string;
 }
@@ -238,7 +239,7 @@ export default function GoalManager({ employees }: { employees: Employee[] }) {
                                     onChange={e => setFormData({ ...formData, employeeId: e.target.value })}
                                 >
                                     <option value="">Select Staff</option>
-                                    {employees.map(e => <option key={e.id} value={e.id}>{e.user?.name} ({e.designation})</option>)}
+                                    {employees.map(e => <option key={e.id} value={e.id}>{e.user?.name || e.user?.email} ({e.designation})</option>)}
                                 </select>
                             </div>
                             <div className="grid grid-cols-2 gap-4">

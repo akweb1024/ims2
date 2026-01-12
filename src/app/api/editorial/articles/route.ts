@@ -47,6 +47,17 @@ export async function POST(req: NextRequest) {
             }
         });
 
+        // Log Audit
+        await prisma.auditLog.create({
+            data: {
+                userId: user.id,
+                action: 'create',
+                entity: 'article',
+                entityId: article.id,
+                changes: JSON.stringify({ title, journalId, authorName })
+            }
+        });
+
         return NextResponse.json(article);
 
     } catch (error: any) {

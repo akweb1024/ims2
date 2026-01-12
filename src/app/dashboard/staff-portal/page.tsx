@@ -12,7 +12,8 @@ import TaxDeclarationPortal from '@/components/dashboard/staff/TaxDeclarationPor
 import EmployeeOnboarding from '@/components/dashboard/staff/EmployeeOnboarding';
 import EmployeeDocuments from '@/components/dashboard/staff/EmployeeDocuments';
 import EmployeeKPIView from '@/components/dashboard/staff/EmployeeKPIView';
-import { Lock, AlertOctagon, FileText } from 'lucide-react';
+import AttendanceCalendar from '@/components/dashboard/staff/AttendanceCalendar';
+import { Lock, AlertOctagon, FileText, Calendar as CalendarIcon, Wallet } from 'lucide-react';
 
 export default function StaffPortalPage() {
     const [user, setUser] = useState<any>(null);
@@ -427,6 +428,13 @@ export default function StaffPortalPage() {
                                     <p className="text-xs font-bold text-secondary-400 mt-1 uppercase tracking-widest">Active Days</p>
                                 </div>
                             </div>
+                            <div className="card-premium p-6 border-t-4 border-amber-500">
+                                <h3 className="text-sm font-bold text-secondary-400 uppercase tracking-widest mb-4">Leave Balance</h3>
+                                <div className="text-center py-4">
+                                    <p className="text-4xl font-black text-secondary-900">{fullProfile?.leaveBalance || 0}</p>
+                                    <p className="text-xs font-bold text-secondary-400 mt-1 uppercase tracking-widest">Available Days</p>
+                                </div>
+                            </div>
                             <div className="card-premium p-6 border-t-4 border-warning-500">
                                 <h3 className="text-sm font-bold text-secondary-400 uppercase tracking-widest mb-4">Latest Rating</h3>
                                 <div className="text-center py-2">
@@ -462,40 +470,51 @@ export default function StaffPortalPage() {
 
                     {
                         activeTab === 'attendance' && (
-                            <div className="card-premium overflow-hidden">
-                                <table className="table">
-                                    <thead>
-                                        <tr>
-                                            <th>Date</th>
-                                            <th>Check In</th>
-                                            <th>Check Out</th>
-                                            <th>Mode</th>
-                                            <th>Status</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {attendance.length === 0 ? (
-                                            <tr><td colSpan={6} className="text-center py-10 text-secondary-500">No records found</td></tr>
-                                        ) : attendance.map(a => (
-                                            <tr key={a.id}>
-                                                <td className="font-bold"><FormattedDate date={a.date} /></td>
-                                                <td className="text-success-600 font-medium">{a.checkIn ? new Date(a.checkIn).toLocaleTimeString() : '-'}</td>
-                                                <td className="text-danger-600 font-medium">{a.checkOut ? new Date(a.checkOut).toLocaleTimeString() : '-'}</td>
-                                                <td><span className="badge badge-secondary">{a.workFrom}</span></td>
-                                                <td>
-                                                    <div className="flex items-center gap-2">
-                                                        <span className="badge badge-success">{a.status}</span>
-                                                        {a.workFrom === 'OFFICE' && (
-                                                            <span title={a.isGeofenced ? "Verified Location" : "Outside Geofence"} className={`text-[10px] ${a.isGeofenced ? 'text-success-500' : 'text-danger-500'} font-black`}>
-                                                                {a.isGeofenced ? '📍 IN' : '⚠️ OUT'}
-                                                            </span>
-                                                        )}
-                                                    </div>
-                                                </td>
+                            <div className="space-y-6">
+                                <AttendanceCalendar attendance={attendance} workReports={workReports} />
+
+                                <div className="card-premium overflow-hidden">
+                                    <div className="p-6 border-b border-secondary-100 flex justify-between items-center bg-secondary-50/30">
+                                        <h3 className="font-bold text-secondary-900 flex items-center gap-2">
+                                            <CalendarIcon size={18} className="text-primary-600" />
+                                            Detailed Log
+                                        </h3>
+                                        <span className="text-[10px] font-black text-secondary-400 uppercase tracking-widest">All Records</span>
+                                    </div>
+                                    <table className="table">
+                                        <thead>
+                                            <tr>
+                                                <th>Date</th>
+                                                <th>Check In</th>
+                                                <th>Check Out</th>
+                                                <th>Mode</th>
+                                                <th>Status</th>
                                             </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
+                                        </thead>
+                                        <tbody>
+                                            {attendance.length === 0 ? (
+                                                <tr><td colSpan={6} className="text-center py-10 text-secondary-500">No records found</td></tr>
+                                            ) : attendance.map(a => (
+                                                <tr key={a.id}>
+                                                    <td className="font-bold"><FormattedDate date={a.date} /></td>
+                                                    <td className="text-success-600 font-medium">{a.checkIn ? new Date(a.checkIn).toLocaleTimeString() : '-'}</td>
+                                                    <td className="text-danger-600 font-medium">{a.checkOut ? new Date(a.checkOut).toLocaleTimeString() : '-'}</td>
+                                                    <td><span className="badge badge-secondary">{a.workFrom}</span></td>
+                                                    <td>
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="badge badge-success">{a.status}</span>
+                                                            {a.workFrom === 'OFFICE' && (
+                                                                <span title={a.isGeofenced ? "Verified Location" : "Outside Geofence"} className={`text-[10px] ${a.isGeofenced ? 'text-success-500' : 'text-danger-500'} font-black`}>
+                                                                    {a.isGeofenced ? '📍 IN' : '⚠️ OUT'}
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
                             </div>
                         )
                     }
@@ -626,8 +645,8 @@ export default function StaffPortalPage() {
                                                 </div>
                                             </div>
 
-                                            {/* Edit Option for Pending same-day reports */}
-                                            {report.status === 'SUBMITTED' && new Date(report.date).toDateString() === new Date().toDateString() && (
+                                            {/* Edit Option for non-evaluated reports */}
+                                            {report.status === 'SUBMITTED' && (
                                                 <div className="mt-4 flex justify-end">
                                                     <button
                                                         onClick={() => {
@@ -644,9 +663,9 @@ export default function StaffPortalPage() {
                                                                 });
                                                             }
                                                         }}
-                                                        className="text-[10px] font-black text-primary-600 hover:text-primary-700 uppercase tracking-tighter"
+                                                        className="text-[10px] font-black text-primary-600 hover:text-primary-700 uppercase tracking-tighter bg-primary-50 px-3 py-1.5 rounded-lg border border-primary-100 transition-all shadow-sm"
                                                     >
-                                                        Edit Report Content
+                                                        Edit Report details
                                                     </button>
                                                 </div>
                                             )}
@@ -660,7 +679,20 @@ export default function StaffPortalPage() {
                     {
                         activeTab === 'leaves' && (
                             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                                <div className="lg:col-span-1">
+                                <div className="lg:col-span-1 space-y-6">
+                                    <div className="card-premium p-8 bg-gradient-to-br from-primary-600 to-primary-800 text-white relative overflow-hidden">
+                                        <div className="absolute top-0 right-0 p-4 opacity-10">
+                                            <Wallet size={64} />
+                                        </div>
+                                        <div className="relative z-10">
+                                            <h3 className="text-sm font-bold uppercase tracking-[0.2em] mb-1 opacity-80">Leave Balance</h3>
+                                            <p className="text-5xl font-black mb-4">{fullProfile?.leaveBalance || 0} <span className="text-lg font-bold opacity-70">Days</span></p>
+                                            <div className="flex items-center gap-2 bg-white/10 px-3 py-1.5 rounded-lg text-[10px] font-bold">
+                                                <span>ℹ️</span> Paid leaves remaining for this year
+                                            </div>
+                                        </div>
+                                    </div>
+
                                     <div className="card-premium p-6">
                                         <h3 className="text-xl font-bold text-secondary-900 mb-6">Request Leave</h3>
                                         <form onSubmit={async (e) => {

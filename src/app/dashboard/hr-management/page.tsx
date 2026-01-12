@@ -177,6 +177,19 @@ const HRManagementContent = () => {
     const [userRole, setUserRole] = useState('CUSTOMER');
     const [activeTab, setActiveTab] = useState('employees');
 
+    const [viewModes, setViewModes] = useState<Record<string, 'grid' | 'table'>>({
+        attendance: 'grid',
+        workReports: 'table',
+        jobs: 'grid',
+        holidays: 'table'
+    });
+    const [filters, setFilters] = useState({
+        staffSearch: '',
+        status: 'ALL',
+        date: '',
+        category: 'ALL'
+    });
+
     useEffect(() => {
         const tab = searchParams.get('tab');
         if (tab) {
@@ -752,7 +765,7 @@ const HRManagementContent = () => {
                         </div>
 
                         {/* Analytic Summary */}
-                        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
+                        <div className="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-7 gap-4">
                             <div className="card-premium p-3 border-l-4 border-indigo-500">
                                 <p className="text-[9px] font-black text-secondary-400 uppercase tracking-widest">Reports</p>
                                 <p className="text-xl font-black text-secondary-900">{workReports.length}</p>
@@ -1068,55 +1081,120 @@ const HRManagementContent = () => {
 
                 {activeTab === 'attendance' && (
                     <div className="space-y-6">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            {allAttendance.map(record => (
-                                <div key={record.id} className="card-premium p-6 flex justify-between items-center group">
-                                    <div className="flex items-center gap-4">
-                                        <div className="w-12 h-12 bg-secondary-900 text-white rounded-2xl flex items-center justify-center text-xl font-black">
-                                            {(record.employee.user.name?.[0] || record.employee.user.email[0]).toUpperCase()}
-                                        </div>
-                                        <div>
-                                            <div className="flex items-center gap-2">
-                                                <p className="font-bold text-secondary-900">{record.employee.user.name || record.employee.user.email}</p>
-                                                {record.shift && <span className="px-1.5 py-0.5 bg-secondary-100 text-secondary-600 rounded text-[8px] font-black uppercase">{record.shift.name}</span>}
-                                            </div>
-                                            <div className="flex items-center gap-2 mt-0.5">
-                                                <p className="text-[10px] font-bold text-secondary-400 uppercase"><FormattedDate date={record.date} /></p>
-                                                {record.lateMinutes > 0 && <span className="text-[9px] font-black text-rose-500 uppercase tracking-tighter">LATE {record.lateMinutes}m</span>}
-                                                {record.otMinutes > 0 && <span className="text-[9px] font-black text-indigo-500 uppercase tracking-tighter">OT {record.otMinutes}m</span>}
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div className="text-right">
-                                        <div className="flex gap-4">
-                                            <div>
-                                                <p className="text-xs font-black text-secondary-900">{record.checkIn ? new Date(record.checkIn).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '--:--'}</p>
-                                                <p className="text-[8px] font-black text-secondary-400 uppercase">Check In</p>
-                                            </div>
-                                            <div>
-                                                <p className="text-xs font-black text-secondary-900">{record.checkOut ? new Date(record.checkOut).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Work...'}</p>
-                                                <p className="text-[8px] font-black text-secondary-400 uppercase">Check Out</p>
-                                            </div>
-                                        </div>
-                                        <span className={`mt-2 block text-[9px] font-black px-2 py-0.5 rounded uppercase ${record.status === 'PRESENT' ? 'bg-success-50 text-success-700' : 'bg-warning-50 text-warning-700'}`}>{record.workFrom}</span>
-                                    </div>
-                                    <button
-                                        onClick={() => {
-                                            setAttendanceForm({
-                                                id: record.id,
-                                                checkIn: record.checkIn ? new Date(record.checkIn).toISOString().slice(0, 16) : '',
-                                                checkOut: record.checkOut ? new Date(record.checkOut).toISOString().slice(0, 16) : '',
-                                                status: record.status
-                                            });
-                                            setShowAttendanceModal(true);
-                                        }}
-                                        className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 p-1 bg-secondary-100 rounded text-secondary-500 hover:text-secondary-900"
-                                    >
-                                        ✏️
-                                    </button>
+                        <div className="flex flex-wrap items-center justify-between gap-4 bg-white p-6 rounded-[2rem] border border-secondary-100 shadow-sm">
+                            <div>
+                                <h3 className="text-xl font-black text-secondary-900 uppercase tracking-tighter italic border-l-4 border-primary-500 pl-4">Staff Presence</h3>
+                                <p className="text-xs font-bold text-secondary-400 pl-4">Monitoring {allAttendance.length} personnel</p>
+                            </div>
+
+                            <div className="flex items-center gap-4">
+                                <div className="flex gap-1 p-1 bg-secondary-100 rounded-lg">
+                                    <button onClick={() => setViewModes({ ...viewModes, attendance: 'grid' })} className={`px-2 py-1 rounded-md text-[10px] font-black uppercase transition-all ${viewModes.attendance === 'grid' ? 'bg-white text-primary-600 shadow-sm' : 'text-secondary-400'}`}>Grid</button>
+                                    <button onClick={() => setViewModes({ ...viewModes, attendance: 'table' })} className={`px-2 py-1 rounded-md text-[10px] font-black uppercase transition-all ${viewModes.attendance === 'table' ? 'bg-white text-primary-600 shadow-sm' : 'text-secondary-400'}`}>Table</button>
                                 </div>
-                            ))}
+                                <div className="flex items-center gap-2">
+                                    <input
+                                        type="text"
+                                        placeholder="Search staff..."
+                                        className="input h-9 text-xs w-48"
+                                        value={filters.staffSearch}
+                                        onChange={e => setFilters({ ...filters, staffSearch: e.target.value })}
+                                    />
+                                    <select
+                                        className="input h-9 text-[10px] font-black uppercase w-32"
+                                        value={filters.status}
+                                        onChange={e => setFilters({ ...filters, status: e.target.value })}
+                                    >
+                                        <option value="ALL">All Status</option>
+                                        <option value="PRESENT">Present</option>
+                                        <option value="ABSENT">Absent</option>
+                                        <option value="LEAVE">On Leave</option>
+                                    </select>
+                                </div>
+                            </div>
                         </div>
+
+                        {viewModes.attendance === 'grid' ? (
+                            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                                {allAttendance.filter(a => (filters.status === 'ALL' || a.status === filters.status) && (a.employee?.user?.name || '').toLowerCase().includes(filters.staffSearch.toLowerCase())).map(record => (
+                                    <div key={record.id} className="card-premium relative group hover:shadow-xl transition-all border border-secondary-100">
+                                        <div className="flex flex-col items-center text-center">
+                                            <div className="w-16 h-16 rounded-2xl bg-primary-50 flex items-center justify-center text-2xl mb-4 text-primary-600 font-black border border-primary-100 shadow-inner">
+                                                {record.employee?.user?.name?.[0] || 'S'}
+                                            </div>
+                                            <h4 className="font-bold text-secondary-900">{record.employee?.user?.name || record.employee?.user?.email?.split('@')[0]}</h4>
+                                            <p className="text-[10px] text-secondary-400 font-bold uppercase tracking-widest">{record.employee?.designation}</p>
+
+                                            <div className="mt-6 w-full space-y-3 pt-4 border-t border-secondary-50">
+                                                <div className="flex justify-between items-center">
+                                                    <span className="text-[9px] font-bold text-secondary-400 uppercase">Check In</span>
+                                                    <span className="text-xs font-black text-secondary-900">{record.checkIn ? new Date(record.checkIn).toLocaleTimeString() : '--:--'}</span>
+                                                </div>
+                                                <div className="flex justify-between items-center">
+                                                    <span className="text-[9px] font-bold text-secondary-400 uppercase">Check Out</span>
+                                                    <span className="text-xs font-black text-secondary-900">{record.checkOut ? new Date(record.checkOut).toLocaleTimeString() : '--:--'}</span>
+                                                </div>
+                                            </div>
+                                            <span className={`mt-2 block text-[9px] font-black px-2 py-0.5 rounded uppercase ${record.status === 'PRESENT' ? 'bg-success-50 text-success-700' : 'bg-warning-50 text-warning-700'}`}>{record.workFrom}</span>
+                                        </div>
+                                        <button
+                                            onClick={() => {
+                                                setAttendanceForm({
+                                                    id: record.id,
+                                                    checkIn: record.checkIn ? new Date(record.checkIn).toISOString().slice(0, 16) : '',
+                                                    checkOut: record.checkOut ? new Date(record.checkOut).toISOString().slice(0, 16) : '',
+                                                    status: record.status
+                                                });
+                                                setShowAttendanceModal(true);
+                                            }}
+                                            className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 p-1 bg-secondary-100 rounded text-secondary-500 hover:text-secondary-900"
+                                        >
+                                            ✏️
+                                        </button>
+                                    </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="card-premium p-0 overflow-hidden">
+                                <table className="table w-full text-left">
+                                    <thead>
+                                        <tr className="bg-secondary-50/50 text-[10px] font-black text-secondary-400 uppercase tracking-widest border-b border-secondary-100">
+                                            <th className="p-4">Staff</th>
+                                            <th className="p-4">Date</th>
+                                            <th className="p-4">Check In</th>
+                                            <th className="p-4">Check Out</th>
+                                            <th className="p-4">Work From</th>
+                                            <th className="p-4">Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-secondary-50">
+                                        {allAttendance.filter(a => (filters.status === 'ALL' || a.status === filters.status) && (a.employee?.user?.name || '').toLowerCase().includes(filters.staffSearch.toLowerCase())).map(record => (
+                                            <tr key={record.id} className="hover:bg-secondary-50/30 transition-all">
+                                                <td className="p-4">
+                                                    <p className="font-bold text-secondary-900">{record.employee?.user?.name}</p>
+                                                    <p className="text-[10px] text-secondary-400 font-bold uppercase">{record.employee?.designation}</p>
+                                                </td>
+                                                <td className="p-4 text-xs font-bold text-secondary-600">
+                                                    {new Date(record.date).toLocaleDateString()}
+                                                </td>
+                                                <td className="p-4 text-xs font-black text-primary-600">
+                                                    {record.checkIn ? new Date(record.checkIn).toLocaleTimeString() : '--:--'}
+                                                </td>
+                                                <td className="p-4 text-xs font-black text-secondary-900">
+                                                    {record.checkOut ? new Date(record.checkOut).toLocaleTimeString() : '--:--'}
+                                                </td>
+                                                <td className="p-4">
+                                                    <span className="badge badge-secondary">{record.workFrom}</span>
+                                                </td>
+                                                <td className="p-4">
+                                                    <span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase ${record.status === 'PRESENT' ? 'bg-success-50 text-success-700' : 'bg-warning-50 text-warning-700'}`}>{record.status}</span>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        )}
                     </div>
                 )}
                 {activeTab === 'payroll' && (

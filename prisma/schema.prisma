@@ -1,6 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider   = "prisma-client-js"
   engineType = "client"
@@ -10,190 +7,145 @@ datasource db {
   provider = "postgresql"
 }
 
-// ============================================
-// USER & AUTHENTICATION
-// ============================================
-
 model Company {
-  id                 String  @id @default(uuid())
-  name               String
-  registrationNumber String?
-  domain             String?
-
-  // Contact
-  address String?
-  phone   String?
-  email   String?
-  website String?
-  logoUrl String?
-
-  // Geofencing for HQ
-  latitude  Float?
-  longitude Float?
-
-  // Settings
-  fiscalYearStart Int? // Month (1-12)
-  currency        String @default("INR")
-  timezone        String @default("Asia/Kolkata")
-
-  users              User[]              @relation("UserCompanies")
-  primaryUsers       User[]              @relation("PrimaryCompany")
-  departments        Department[]
-  customers          CustomerProfile[]
-  subscriptions      Subscription[]
-  communications     CommunicationLog[]
-  tasks              Task[]
-  invoices           Invoice[]
-  payments           Payment[]
-  chatRooms          ChatRoom[]
-  supportTickets     SupportTicket[]
-  jobPostings        JobPosting[]
-  workReports        WorkReport[]
-  attendance         Attendance[]
-  salarySlips        SalarySlip[]
-  performanceReviews PerformanceReview[]
-  leaveRequests      LeaveRequest[]
-  holidays           Holiday[]
-  dispatchOrders     DispatchOrder[]
-  conferences        Conference[]
-  courses            Course[]
-  workPlans          WorkPlan[]
-
-  // Phase 1 HRMS Upgrade
-  statutoryConfig    StatutoryConfig?
-
-  // Phase 2 HRMS Upgrade
-  shifts             Shift[]
-  shiftRosters       ShiftRoster[]
-  employeeKpis       EmployeeKPI[]
+  id                  String               @id @default(uuid())
+  name                String
+  registrationNumber  String?
+  domain              String?
+  address             String?
+  phone               String?
+  email               String?
+  website             String?
+  logoUrl             String?
+  fiscalYearStart     Int?
+  currency            String               @default("INR")
+  timezone            String               @default("Asia/Kolkata")
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+  latitude            Float?
+  longitude           Float?
+  attendance          Attendance[]
+  bonusSchemas        BonusSchema[]
+  chatRooms           ChatRoom[]
+  communications      CommunicationLog[]
+  potential           CompanyPotential?
+  conferences         Conference[]
+  courses             Course[]
+  customers           CustomerProfile[]
+  departments         Department[]
+  departmentBudgets   DepartmentBudget[]
+  dispatchOrders      DispatchOrder[]
+  documentTemplates   DocumentTemplate[]
+  employeeGoals       EmployeeGoal[]
+  employeeKpis        EmployeeKPI[]
+  financialRecords    FinancialRecord[]
+  holidays            Holiday[]
+  itAssets            ITAsset[]
+  itTickets           ITSupportTicket[]
+  incentiveSchemas    IncentiveSchema[]
+  institutions        Institution[]
+  invoices            Invoice[]
+  jobPostings         JobPosting[]
+  leaveLedgers        LeaveLedger[]
+  leaveRequests       LeaveRequest[]
+  onboardingModules   OnboardingModule[]
+  payments            Payment[]
   performanceInsights PerformanceInsight[]
-
-  designations       Designation[]
-  onboardingModules  OnboardingModule[]
-  documentTemplates  DocumentTemplate[]
-  itAssets           ITAsset[]
-  itTickets          ITSupportTicket[]
-  institutions       Institution[]
-  financialRecords   FinancialRecord[]
-  departmentBudgets  DepartmentBudget[]
-  salaryAdvances     SalaryAdvance[]
-  leaveLedgers       LeaveLedger[]
-
-  // Upgrades
-  employeeGoals      EmployeeGoal[]
-  incentiveSchemas   IncentiveSchema[]
-  bonusSchemas       BonusSchema[]
-  potential          CompanyPotential?
-
-  createdAt DateTime   @default(now())
-  updatedAt DateTime   @updatedAt
+  performanceReviews  PerformanceReview[]
+  salaryAdvances      SalaryAdvance[]
+  salarySlips         SalarySlip[]
+  shifts              Shift[]
+  shiftRosters        ShiftRoster[]
+  statutoryConfig     StatutoryConfig?
+  subscriptions       Subscription[]
+  supportTickets      SupportTicket[]
+  tasks               Task[]
+  primaryUsers        User[]               @relation("PrimaryCompany")
+  workPlans           WorkPlan[]
+  workReports         WorkReport[]
+  designations        Designation[]        @relation("CompanyToDesignation")
+  users               User[]               @relation("UserCompanies")
 }
 
 model Department {
-  id          String  @id @default(uuid())
-  companyId   String
-  name        String
-  code        String? // e.g., "SALES", "FIN", "IT"
-  description String?
-
-  // Hierarchy
+  id                 String             @id @default(uuid())
+  companyId          String
+  name               String
+  code               String?
+  description        String?
   parentDepartmentId String?
-  parentDepartment   Department?  @relation("DepartmentHierarchy", fields: [parentDepartmentId], references: [id])
-  subDepartments     Department[] @relation("DepartmentHierarchy")
-
-  // Head of Department
-  headUserId String?
-  headUser   User?   @relation("DepartmentHead", fields: [headUserId], references: [id])
-
-  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  users   User[]  @relation("DepartmentMembers")
-  onboardingModules OnboardingModule[]
-  designations      Designation[]
-  budgets           DepartmentBudget[]
-  jobPostings       JobPosting[]
-  jobApplications   JobApplication[]
-
-  isActive  Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  headUserId         String?
+  isActive           Boolean            @default(true)
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+  company            Company            @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  headUser           User?              @relation("DepartmentHead", fields: [headUserId], references: [id])
+  parentDepartment   Department?        @relation("DepartmentHierarchy", fields: [parentDepartmentId], references: [id])
+  subDepartments     Department[]       @relation("DepartmentHierarchy")
+  budgets            DepartmentBudget[]
+  jobApplications    JobApplication[]
+  jobPostings        JobPosting[]
+  onboardingModules  OnboardingModule[]
+  users              User[]             @relation("DepartmentMembers")
+  designations       Designation[]      @relation("DepartmentToDesignation")
 
   @@unique([companyId, code])
   @@index([companyId])
 }
 
 model User {
-  id            String    @id @default(uuid())
-  email         String    @unique
-  name          String?
-  password      String
-  role          UserRole
-  isActive      Boolean   @default(true)
-  emailVerified Boolean   @default(false)
-  lastLogin     DateTime?
-
-  // Preferences
-  theme                String  @default("light")
-  notificationsEnabled Boolean @default(true)
-
-  // Organization
-  companyId String?
-  company   Company? @relation("PrimaryCompany", fields: [companyId], references: [id])
-
-  companies Company[] @relation("UserCompanies")
-
-  departmentId String?
-  department   Department? @relation("DepartmentMembers", fields: [departmentId], references: [id])
-
-  // Hierarchy
-  managerId    String?
-  manager      User?   @relation("ManagementChain", fields: [managerId], references: [id])
-  subordinates User[]  @relation("ManagementChain")
-
-  // Department Leadership
-  headOfDepartments Department[] @relation("DepartmentHead")
-
-  // HR & Work Management Relations
-  employeeProfile    EmployeeProfile?
-  performanceReviews PerformanceReview[]    @relation("Reviewer")
-  approvedLeaves     LeaveRequest[]         @relation("LeaveApprover")
-  interviewsConducted RecruitmentInterview[] @relation("RecruitmentInterviewer")
-
-  // Chat
-  chatParticipants ChatParticipant[]
-  sentMessages     ChatMessage[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  createdFinanceRecords FinancialRecord[] @relation("FinanceCreator")
-
-  // Messaging & Notifications
-  customerProfile       CustomerProfile?
-  assignedSubscriptions Subscription[]       @relation("AssignedSalesExecutive")
-  assignedCustomers     CustomerProfile[]    @relation("AssignedCustomers")
-  assignedInstitutions  Institution[]        @relation("InstitutionOwner")
-  assignedToCustomers   CustomerProfile[]    @relation("CustomerToExecutives")
-  communications        CommunicationLog[]   @relation("UserCommunications")
-  auditLogs             AuditLog[]
-  tasks                 Task[]
-  assignedTickets       SupportTicket[]      @relation("AssignedTickets")
-  notifications         Notification[]
-  pushSubscriptions     PushSubscription[]
+  id                    String                 @id @default(uuid())
+  email                 String                 @unique
+  password              String
+  role                  UserRole
+  isActive              Boolean                @default(true)
+  emailVerified         Boolean                @default(false)
+  lastLogin             DateTime?
+  theme                 String                 @default("light")
+  notificationsEnabled  Boolean                @default(true)
+  companyId             String?
+  departmentId          String?
+  managerId             String?
+  createdAt             DateTime               @default(now())
+  updatedAt             DateTime               @updatedAt
+  name                  String?
   announcements         Announcement[]
-  knowledgeArticles     KnowledgeArticle[]
+  auditLogs             AuditLog[]
+  sentMessages          ChatMessage[]
+  chatParticipants      ChatParticipant[]
+  communications        CommunicationLog[]     @relation("UserCommunications")
   courseEnrollments     CourseEnrollment[]
-  lessonProgress        UserLessonProgress[]
-  reviews               Review[]
-  workPlanComments      WorkPlanComment[]
-
-  // IT Management
-  assignedAssets        ITAsset[]
-  itRequests            ITSupportTicket[] @relation("ITRequestor")
-  itResolutions         ITSupportTicket[] @relation("ITResolver")
-
-  // Customer Assignments
-  customerAssignments   CustomerAssignment[] @relation("EmployeeAssignments")
+  customerAssignments   CustomerAssignment[]   @relation("EmployeeAssignments")
+  assignedCustomers     CustomerProfile[]      @relation("AssignedCustomers")
+  customerProfile       CustomerProfile?
+  headOfDepartments     Department[]           @relation("DepartmentHead")
   authoredComments      EmployeeComment[]
-  workReportComments    WorkReportComment[]  @relation("WorkReportCommentAuthor")
+  employeeProfile       EmployeeProfile?
+  createdFinanceRecords FinancialRecord[]      @relation("FinanceCreator")
+  assignedAssets        ITAsset[]
+  itResolutions         ITSupportTicket[]      @relation("ITResolver")
+  itRequests            ITSupportTicket[]      @relation("ITRequestor")
+  assignedInstitutions  Institution[]          @relation("InstitutionOwner")
+  managedJournals       Journal[]              @relation("JournalEditor")
+  knowledgeArticles     KnowledgeArticle[]
+  approvedLeaves        LeaveRequest[]         @relation("LeaveApprover")
+  notifications         Notification[]
+  performanceReviews    PerformanceReview[]    @relation("Reviewer")
+  pushSubscriptions     PushSubscription[]
+  interviewsConducted   RecruitmentInterview[] @relation("RecruitmentInterviewer")
+  reviews               Review[]
+  assignedSubscriptions Subscription[]         @relation("AssignedSalesExecutive")
+  assignedTickets       SupportTicket[]        @relation("AssignedTickets")
+  tasks                 Task[]
+  company               Company?               @relation("PrimaryCompany", fields: [companyId], references: [id])
+  department            Department?            @relation("DepartmentMembers", fields: [departmentId], references: [id])
+  manager               User?                  @relation("ManagementChain", fields: [managerId], references: [id])
+  subordinates          User[]                 @relation("ManagementChain")
+  lessonProgress        UserLessonProgress[]
+  workPlanComments      WorkPlanComment[]
+  workReportComments    WorkReportComment[]    @relation("WorkReportCommentAuthor")
+  assignedToCustomers   CustomerProfile[]      @relation("CustomerToExecutives")
+  companies             Company[]              @relation("UserCompanies")
 
   @@index([email])
   @@index([role])
@@ -202,20 +154,17 @@ model User {
 }
 
 model Announcement {
-  id       String @id @default(uuid())
-  title    String
-  content  String
-  authorId String
-  author   User   @relation(fields: [authorId], references: [id])
-
-  targetRole String @default("ALL") // ALL, STAFF, CUSTOMER
-  priority   String @default("NORMAL") // NORMAL, IMPORTANT, URGENT
-
-  isActive  Boolean   @default(true)
-  expiresAt DateTime?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id         String    @id @default(uuid())
+  title      String
+  content    String
+  authorId   String
+  targetRole String    @default("ALL")
+  priority   String    @default("NORMAL")
+  isActive   Boolean   @default(true)
+  expiresAt  DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  author     User      @relation(fields: [authorId], references: [id])
 }
 
 model KnowledgeArticle {
@@ -225,11 +174,1613 @@ model KnowledgeArticle {
   category   String
   targetRole String   @default("ALL")
   authorId   String
-  author     User     @relation(fields: [authorId], references: [id])
   views      Int      @default(0)
   isActive   Boolean  @default(true)
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
+  author     User     @relation(fields: [authorId], references: [id])
+}
+
+model CustomerProfile {
+  id                 String               @id @default(uuid())
+  userId             String               @unique
+  customerType       CustomerType
+  assignedToUserId   String?
+  name               String
+  organizationName   String?
+  primaryEmail       String
+  secondaryEmail     String?
+  primaryPhone       String
+  secondaryPhone     String?
+  gstVatTaxId        String?
+  billingAddress     String?
+  shippingAddress    String?
+  country            String?
+  state              String?
+  city               String?
+  pincode            String?
+  preferredChannel   String?
+  notes              String?
+  tags               String?
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime             @updatedAt
+  companyId          String?
+  designation        CustomerDesignation?
+  institutionId      String?
+  agencyDetails      AgencyDetails?
+  communications     CommunicationLog[]
+  assignments        CustomerAssignment[]
+  assignedTo         User?                @relation("AssignedCustomers", fields: [assignedToUserId], references: [id])
+  company            Company?             @relation(fields: [companyId], references: [id])
+  institution        Institution?         @relation(fields: [institutionId], references: [id])
+  user               User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  institutionDetails InstitutionDetails?
+  invoices           Invoice[]
+  subscriptions      Subscription[]
+  supportTickets     SupportTicket[]
+  assignedExecutives User[]               @relation("CustomerToExecutives")
+
+  @@index([customerType])
+  @@index([primaryEmail])
+  @@index([companyId])
+  @@index([institutionId])
+  @@index([designation])
+}
+
+model InstitutionDetails {
+  id                String          @id @default(uuid())
+  customerProfileId String          @unique
+  category          String
+  department        String?
+  libraryContact    String?
+  ipRange           String?
+  numberOfUsers     Int?
+  numberOfSeats     Int?
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  customerProfile   CustomerProfile @relation(fields: [customerProfileId], references: [id], onDelete: Cascade)
+}
+
+model AgencyDetails {
+  id                String          @id @default(uuid())
+  customerProfileId String          @unique
+  companyInfo       String?
+  territory         String?
+  region            String?
+  primaryContact    String?
+  commissionTerms   String?
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  customerProfile   CustomerProfile @relation(fields: [customerProfileId], references: [id], onDelete: Cascade)
+  subscriptions     Subscription[]
+}
+
+model Institution {
+  id               String             @id @default(uuid())
+  name             String
+  code             String             @unique
+  type             InstitutionType
+  category         String?
+  establishedYear  Int?
+  accreditation    String?
+  primaryEmail     String?
+  secondaryEmail   String?
+  primaryPhone     String?
+  secondaryPhone   String?
+  website          String?
+  address          String?
+  city             String?
+  state            String?
+  country          String             @default("India")
+  pincode          String?
+  totalStudents    Int?
+  totalFaculty     Int?
+  totalStaff       Int?
+  libraryBudget    Float?
+  ipRange          String?
+  notes            String?
+  logo             String?
+  isActive         Boolean            @default(true)
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+  companyId        String?
+  assignedToUserId String?
+  domain           String?
+  communications   CommunicationLog[]
+  customers        CustomerProfile[]
+  assignedTo       User?              @relation("InstitutionOwner", fields: [assignedToUserId], references: [id])
+  company          Company?           @relation(fields: [companyId], references: [id])
+  subscriptions    Subscription[]
+
+  @@index([code])
+  @@index([type])
+  @@index([companyId])
+}
+
+model CustomerAssignment {
+  id         String          @id @default(uuid())
+  customerId String
+  employeeId String
+  assignedAt DateTime        @default(now())
+  assignedBy String?
+  role       String?
+  isActive   Boolean         @default(true)
+  notes      String?
+  customer   CustomerProfile @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  employee   User            @relation("EmployeeAssignments", fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@unique([customerId, employeeId])
+  @@index([customerId])
+  @@index([employeeId])
+  @@index([isActive])
+}
+
+model Journal {
+  id                String             @id @default(uuid())
+  name              String
+  issnPrint         String?
+  issnOnline        String?
+  frequency         String
+  formatAvailable   String?
+  subjectCategory   String?
+  isActive          Boolean            @default(true)
+  priceINR          Float              @default(0)
+  priceUSD          Float              @default(0)
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  apcOpenAccessINR  Float              @default(0)
+  apcOpenAccessUSD  Float              @default(0)
+  apcOtherINR       Float              @default(0)
+  apcOtherUSD       Float              @default(0)
+  apcRapidINR       Float              @default(0)
+  apcRapidUSD       Float              @default(0)
+  apcWoSINR         Float              @default(0)
+  apcWoSUSD         Float              @default(0)
+  editorId          String?
+  articles          Article[]
+  editor            User?              @relation("JournalEditor", fields: [editorId], references: [id])
+  volumes           JournalVolume[]
+  plans             Plan[]
+  subscriptionItems SubscriptionItem[]
+
+  @@index([isActive])
+  @@index([name])
+}
+
+model Plan {
+  id                String             @id @default(uuid())
+  journalId         String
+  planType          String
+  format            String
+  institutionTier   String?
+  duration          Int
+  priceINR          Float              @default(0)
+  priceUSD          Float              @default(0)
+  startDateRule     String?
+  gracePeriod       Int                @default(30)
+  isActive          Boolean            @default(true)
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  journal           Journal            @relation(fields: [journalId], references: [id], onDelete: Cascade)
+  subscriptionItems SubscriptionItem[]
+
+  @@index([journalId])
+  @@index([isActive])
+}
+
+model Subscription {
+  id                   String             @id @default(uuid())
+  customerProfileId    String
+  salesChannel         SalesChannel
+  agencyId             String?
+  salesExecutiveId     String?
+  startDate            DateTime
+  endDate              DateTime
+  autoRenew            Boolean            @default(false)
+  status               SubscriptionStatus @default(PENDING_PAYMENT)
+  currency             String             @default("INR")
+  subtotal             Float
+  discount             Float              @default(0)
+  tax                  Float              @default(0)
+  total                Float
+  invoiceReference     String?
+  parentSubscriptionId String?
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
+  companyId            String?
+  institutionId        String?
+  subtotalInINR        Float              @default(0)
+  subtotalInUSD        Float              @default(0)
+  totalInINR           Float              @default(0)
+  totalInUSD           Float              @default(0)
+  invoices             Invoice[]
+  agency               AgencyDetails?     @relation(fields: [agencyId], references: [id])
+  company              Company?           @relation(fields: [companyId], references: [id])
+  customerProfile      CustomerProfile    @relation(fields: [customerProfileId], references: [id])
+  institution          Institution?       @relation(fields: [institutionId], references: [id])
+  parentSubscription   Subscription?      @relation("SubscriptionRenewal", fields: [parentSubscriptionId], references: [id])
+  renewals             Subscription[]     @relation("SubscriptionRenewal")
+  salesExecutive       User?              @relation("AssignedSalesExecutive", fields: [salesExecutiveId], references: [id])
+  items                SubscriptionItem[]
+
+  @@index([customerProfileId])
+  @@index([status])
+  @@index([salesChannel])
+  @@index([startDate, endDate])
+  @@index([companyId])
+  @@index([institutionId])
+}
+
+model SubscriptionItem {
+  id             String       @id @default(uuid())
+  subscriptionId String
+  journalId      String
+  planId         String
+  quantity       Int          @default(1)
+  seats          Int?
+  price          Float
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  journal        Journal      @relation(fields: [journalId], references: [id])
+  plan           Plan         @relation(fields: [planId], references: [id])
+  subscription   Subscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+
+  @@index([subscriptionId])
+}
+
+model Invoice {
+  id                String           @id @default(uuid())
+  subscriptionId    String?
+  invoiceNumber     String           @unique
+  currency          String           @default("INR")
+  amount            Float
+  tax               Float
+  total             Float
+  status            InvoiceStatus    @default(UNPAID)
+  dueDate           DateTime
+  paidDate          DateTime?
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+  companyId         String?
+  customerProfileId String?
+  description       String?
+  lineItems         Json?
+  company           Company?         @relation(fields: [companyId], references: [id])
+  customerProfile   CustomerProfile? @relation(fields: [customerProfileId], references: [id])
+  subscription      Subscription?    @relation(fields: [subscriptionId], references: [id])
+  payments          Payment[]
+
+  @@index([subscriptionId])
+  @@index([customerProfileId])
+  @@index([status])
+  @@index([invoiceNumber])
+  @@index([companyId])
+}
+
+model Payment {
+  id                String   @id @default(uuid())
+  invoiceId         String?
+  amount            Float
+  paymentMethod     String?
+  paymentDate       DateTime
+  transactionId     String?
+  notes             String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  companyId         String?
+  razorpayOrderId   String?
+  razorpayPaymentId String?  @unique
+  razorpaySignature String?
+  status            String?
+  conversionRate    Float?   @default(1.0)
+  currency          String   @default("INR")
+  metadata          String?
+  company           Company? @relation(fields: [companyId], references: [id])
+  invoice           Invoice? @relation(fields: [invoiceId], references: [id])
+
+  @@index([invoiceId])
+  @@index([companyId])
+}
+
+model RazorpaySync {
+  id          String   @id @default(uuid())
+  lastSyncAt  DateTime
+  status      String
+  error       String?
+  syncedCount Int      @default(0)
+  createdAt   DateTime @default(now())
+}
+
+model CommunicationLog {
+  id                  String            @id @default(uuid())
+  customerProfileId   String
+  userId              String?
+  type                CommunicationType @default(COMMENT)
+  date                DateTime          @default(now())
+  channel             String
+  subject             String
+  notes               String
+  outcome             String?
+  duration            Int?
+  recordingUrl        String?
+  referenceId         String?
+  nextFollowUpDate    DateTime?
+  isFollowUpCompleted Boolean           @default(false)
+  attachments         String?
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @updatedAt
+  companyId           String?
+  institutionId       String?
+  company             Company?          @relation(fields: [companyId], references: [id])
+  customerProfile     CustomerProfile   @relation(fields: [customerProfileId], references: [id])
+  institution         Institution?      @relation(fields: [institutionId], references: [id])
+  user                User?             @relation("UserCommunications", fields: [userId], references: [id])
+
+  @@index([customerProfileId])
+  @@index([type])
+  @@index([date])
+  @@index([nextFollowUpDate])
+  @@index([companyId])
+  @@index([institutionId])
+}
+
+model Task {
+  id                    String     @id @default(uuid())
+  userId                String
+  title                 String
+  description           String?
+  dueDate               DateTime
+  priority              Priority   @default(MEDIUM)
+  status                TaskStatus @default(PENDING)
+  relatedCustomerId     String?
+  relatedSubscriptionId String?
+  createdAt             DateTime   @default(now())
+  updatedAt             DateTime   @updatedAt
+  companyId             String?
+  company               Company?   @relation(fields: [companyId], references: [id])
+  user                  User       @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([status])
+  @@index([dueDate])
+  @@index([companyId])
+}
+
+model AuditLog {
+  id        String   @id @default(uuid())
+  userId    String?
+  action    String
+  entity    String
+  entityId  String
+  changes   Json?
+  ipAddress String?
+  createdAt DateTime @default(now())
+  user      User?    @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([entity, entityId])
+  @@index([createdAt])
+}
+
+model ChatRoom {
+  id            String            @id @default(uuid())
+  name          String?
+  isGroup       Boolean           @default(false)
+  companyId     String?
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+  messages      ChatMessage[]
+  participants  ChatParticipant[]
+  company       Company?          @relation(fields: [companyId], references: [id])
+  supportTicket SupportTicket?
+
+  @@index([companyId])
+}
+
+model ChatParticipant {
+  id       String   @id @default(uuid())
+  roomId   String
+  userId   String
+  joinedAt DateTime @default(now())
+  room     ChatRoom @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([roomId, userId])
+  @@index([roomId])
+  @@index([userId])
+}
+
+model ChatMessage {
+  id        String   @id @default(uuid())
+  roomId    String
+  senderId  String
+  content   String
+  createdAt DateTime @default(now())
+  room      ChatRoom @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  sender    User     @relation(fields: [senderId], references: [id], onDelete: Cascade)
+
+  @@index([roomId])
+  @@index([senderId])
+}
+
+model SupportTicket {
+  id                String          @id @default(uuid())
+  companyId         String?
+  customerProfileId String
+  subject           String
+  description       String
+  status            TicketStatus    @default(OPEN)
+  priority          Priority        @default(MEDIUM)
+  assignedToId      String?
+  chatRoomId        String?         @unique
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  assignedTo        User?           @relation("AssignedTickets", fields: [assignedToId], references: [id])
+  chatRoom          ChatRoom?       @relation(fields: [chatRoomId], references: [id])
+  company           Company?        @relation(fields: [companyId], references: [id])
+  customerProfile   CustomerProfile @relation(fields: [customerProfileId], references: [id])
+
+  @@index([companyId])
+  @@index([customerProfileId])
+  @@index([status])
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String
+  title     String
+  message   String
+  type      String   @default("INFO")
+  link      String?
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([isRead])
+}
+
+model PushSubscription {
+  id        String   @id @default(uuid())
+  userId    String
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model SystemSettings {
+  id              String   @id @default("singleton")
+  maintenanceMode Boolean  @default(false)
+  supportEmail    String   @default("support@stm.com")
+  defaultCurrency String   @default("INR")
+  companyName     String   @default("STM Journal Solutions")
+  updatedAt       DateTime @updatedAt
+}
+
+model Designation {
+  id                  String            @id @default(uuid())
+  name                String
+  code                String?
+  jobDescription      String?
+  kra                 String?
+  expectedExperience  Float             @default(0)
+  promotionWaitPeriod Int               @default(12)
+  incrementGuidelines String?
+  level               Int               @default(1)
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @updatedAt
+  employees           EmployeeProfile[]
+  companies           Company[]         @relation("CompanyToDesignation")
+  departments         Department[]      @relation("DepartmentToDesignation")
+}
+
+model EmployeeProfile {
+  id                       String                  @id @default(uuid())
+  userId                   String                  @unique
+  employeeId               String?                 @unique
+  designation              String?
+  dateOfJoining            DateTime?
+  dateOfBirth              DateTime?
+  baseSalary               Float?
+  bankName                 String?
+  accountNumber            String?
+  ifscCode                 String?
+  panNumber                String?
+  personalEmail            String?
+  phoneNumber              String?
+  emergencyContact         String?
+  address                  String?
+  createdAt                DateTime                @default(now())
+  updatedAt                DateTime                @updatedAt
+  contractUrl              String?
+  offerLetterUrl           String?
+  jobDescription           String?
+  kra                      String?
+  bloodGroup               String?
+  profilePicture           String?
+  designationId            String?
+  grade                    String?
+  lastIncrementDate        DateTime?
+  lastIncrementPercentage  Float?
+  lastPromotionDate        DateTime?
+  nextReviewDate           DateTime?
+  qualification            String?
+  relevantExperienceMonths Int                     @default(0)
+  relevantExperienceYears  Int                     @default(0)
+  totalExperienceMonths    Int                     @default(0)
+  totalExperienceYears     Int                     @default(0)
+  aadharNumber             String?
+  educationDetails         Json?
+  esicNumber               String?
+  experienceDetails        Json?
+  officePhone              String?
+  officialEmail            String?
+  permanentAddress         String?
+  pfNumber                 String?
+  uanNumber                String?
+  manualLeaveAdjustment    Float                   @default(0)
+  leaveBalance             Float                   @default(0)
+  metrics                  Json?
+  employeeType             EmployeeType            @default(FULL_TIME)
+  attendance               Attendance[]
+  digitalDocuments         DigitalDocument[]
+  hrComments               EmployeeComment[]
+  documents                EmployeeDocument[]
+  goals                    EmployeeGoal[]
+  incentives               EmployeeIncentive[]
+  kpis                     EmployeeKPI[]
+  designatRef              Designation?            @relation(fields: [designationId], references: [id])
+  user                     User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  leaveLedgers             LeaveLedger[]
+  leaveRequests            LeaveRequest[]
+  onboardingProgress       OnboardingProgress[]
+  performanceInsights      PerformanceInsight[]
+  performance              PerformanceReview[]
+  salaryAdvances           SalaryAdvance[]
+  incrementHistory         SalaryIncrementRecord[]
+  salarySlips              SalarySlip[]
+  salaryStructure          SalaryStructure?
+  shiftRosters             ShiftRoster[]
+  taxDeclarations          TaxDeclaration[]
+  workPlans                WorkPlan[]
+  workReports              WorkReport[]
+}
+
+model SalaryAdvance {
+  id         String          @id @default(uuid())
+  employeeId String
+  amount     Float
+  reason     String?
+  status     String          @default("PENDING")
+  totalEmis  Int             @default(1)
+  paidEmis   Int             @default(0)
+  emiAmount  Float
+  startDate  DateTime        @default(now())
+  companyId  String?
+  createdAt  DateTime        @default(now())
+  updatedAt  DateTime        @default(now())
+  emis       AdvanceEMI[]
+  company    Company?        @relation(fields: [companyId], references: [id])
+  employee   EmployeeProfile @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@index([employeeId])
+  @@index([companyId])
+}
+
+model AdvanceEMI {
+  id           String        @id @default(uuid())
+  advanceId    String
+  salarySlipId String?       @unique
+  amount       Float
+  month        Int
+  year         Int
+  status       String        @default("PENDING")
+  paidAt       DateTime?
+  createdAt    DateTime      @default(now())
+  advance      SalaryAdvance @relation(fields: [advanceId], references: [id], onDelete: Cascade)
+  salarySlip   SalarySlip?   @relation(fields: [salarySlipId], references: [id])
+}
+
+model SalaryIncrementRecord {
+  id                  String          @id @default(uuid())
+  employeeProfileId   String
+  date                DateTime        @default(now())
+  effectiveDate       DateTime        @default(now())
+  oldSalary           Float
+  newSalary           Float
+  incrementAmount     Float
+  percentage          Float
+  type                String          @default("INCREMENT")
+  previousDesignation String?
+  newDesignation      String?
+  reason              String?
+  approvedByUserId    String?
+  createdAt           DateTime        @default(now())
+  updatedAt           DateTime        @updatedAt
+  employeeProfile     EmployeeProfile @relation(fields: [employeeProfileId], references: [id], onDelete: Cascade)
+}
+
+model EmployeeComment {
+  id                  String          @id @default(uuid())
+  employeeProfileId   String
+  authorId            String
+  content             String
+  type                String          @default("GENERAL")
+  isVisibleToEmployee Boolean         @default(false)
+  createdAt           DateTime        @default(now())
+  updatedAt           DateTime        @updatedAt
+  author              User            @relation(fields: [authorId], references: [id])
+  employeeProfile     EmployeeProfile @relation(fields: [employeeProfileId], references: [id], onDelete: Cascade)
+}
+
+model EmployeeDocument {
+  id         String          @id @default(uuid())
+  employeeId String
+  name       String
+  fileUrl    String
+  fileType   String?
+  uploadedAt DateTime        @default(now())
+  employee   EmployeeProfile @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+}
+
+model Attendance {
+  id           String          @id @default(uuid())
+  employeeId   String
+  date         DateTime        @default(now())
+  checkIn      DateTime?
+  checkOut     DateTime?
+  status       String          @default("PRESENT")
+  workFrom     String          @default("OFFICE")
+  deviceInfo   String?
+  isGeofenced  Boolean         @default(false)
+  latitude     Float?
+  locationName String?
+  longitude    Float?
+  companyId    String?
+  lateMinutes  Int             @default(0)
+  otMinutes    Int             @default(0)
+  shiftId      String?
+  company      Company?        @relation(fields: [companyId], references: [id])
+  employee     EmployeeProfile @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  shift        Shift?          @relation(fields: [shiftId], references: [id])
+
+  @@unique([employeeId, date])
+  @@index([companyId])
+}
+
+model WorkReport {
+  id                 String              @id @default(uuid())
+  employeeId         String
+  date               DateTime            @default(now())
+  title              String
+  content            String?
+  hoursSpent         Float?
+  status             String              @default("SUBMITTED")
+  managerComment     String?
+  createdAt          DateTime            @default(now())
+  category           String              @default("GENERAL")
+  keyOutcome         String?
+  managerRating      Int?
+  selfRating         Int?                @default(5)
+  revenueGenerated   Float               @default(0)
+  tasksCompleted     Int                 @default(0)
+  chatsHandled       Int                 @default(0)
+  followUpsCompleted Int                 @default(0)
+  ticketsResolved    Int                 @default(0)
+  companyId          String?
+  kraMatchRatio      Float?
+  metrics            Json?
+  company            Company?            @relation(fields: [companyId], references: [id])
+  employee           EmployeeProfile     @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  comments           WorkReportComment[]
+
+  @@index([companyId])
+  @@index([employeeId])
+}
+
+model WorkReportComment {
+  id           String     @id @default(uuid())
+  workReportId String
+  authorId     String
+  content      String
+  createdAt    DateTime   @default(now())
+  author       User       @relation("WorkReportCommentAuthor", fields: [authorId], references: [id])
+  workReport   WorkReport @relation(fields: [workReportId], references: [id], onDelete: Cascade)
+
+  @@index([workReportId])
+}
+
+model Holiday {
+  id          String   @id @default(uuid())
+  name        String
+  date        DateTime
+  type        String   @default("PUBLIC")
+  description String?
+  companyId   String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  company     Company? @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+  @@index([date])
+}
+
+model InventoryItem {
+  id           String   @id @default(uuid())
+  name         String
+  sku          String   @unique
+  currentStock Int
+  minThreshold Int      @default(10)
+  category     String
+  price        Float    @default(0)
+  updatedAt    DateTime @updatedAt
+}
+
+model ProductionOrder {
+  id         String   @id @default(uuid())
+  itemSku    String
+  quantity   Int
+  status     String   @default("PLANNED")
+  priority   String   @default("MEDIUM")
+  reason     String?
+  targetDate DateTime
+  createdAt  DateTime @default(now())
+}
+
+model SalarySlip {
+  id                String          @id @default(uuid())
+  employeeId        String
+  month             Int
+  year              Int
+  amountPaid        Float
+  status            String          @default("GENERATED")
+  fileUrl           String?
+  generatedAt       DateTime        @default(now())
+  companyId         String?
+  advanceDeduction  Float           @default(0)
+  lwpDeduction      Float           @default(0)
+  basicSalary       Float           @default(0)
+  conveyance        Float           @default(0)
+  ctc               Float           @default(0)
+  esicEmployee      Float           @default(0)
+  esicEmployer      Float           @default(0)
+  grossSalary       Float           @default(0)
+  hra               Float           @default(0)
+  medical           Float           @default(0)
+  otherAllowances   Float           @default(0)
+  pfEmployee        Float           @default(0)
+  pfEmployer        Float           @default(0)
+  professionalTax   Float           @default(0)
+  specialAllowance  Float           @default(0)
+  tds               Float           @default(0)
+  totalDeductions   Float           @default(0)
+  arrears           Float           @default(0)
+  isFinalSettlement Boolean         @default(false)
+  notes             String?
+  advanceEmi        AdvanceEMI?
+  arrearRecords     ArrearRecord[]
+  company           Company?        @relation(fields: [companyId], references: [id])
+  employee          EmployeeProfile @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+}
+
+model ArrearRecord {
+  id           String     @id @default(uuid())
+  salarySlipId String
+  type         String
+  amount       Float
+  description  String?
+  createdAt    DateTime   @default(now())
+  salarySlip   SalarySlip @relation(fields: [salarySlipId], references: [id], onDelete: Cascade)
+
+  @@index([salarySlipId])
+}
+
+model DepartmentBudget {
+  id           String     @id @default(uuid())
+  departmentId String
+  companyId    String
+  fiscalYear   Int
+  month        Int?
+  allocated    Float
+  spent        Float      @default(0)
+  category     String     @default("SALARY")
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  company      Company    @relation(fields: [companyId], references: [id])
+  department   Department @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+
+  @@index([departmentId])
+  @@index([companyId])
+}
+
+model StatutoryConfig {
+  id               String   @id @default(uuid())
+  companyId        String   @unique
+  pfEmployeeRate   Float    @default(12.0)
+  pfEmployerRate   Float    @default(12.0)
+  pfCeilingAmount  Float    @default(15000.0)
+  pfAdminCharges   Float    @default(0.5)
+  esicEmployeeRate Float    @default(0.75)
+  esicEmployerRate Float    @default(3.25)
+  esicLimitAmount  Float    @default(21000.0)
+  ptEnabled        Boolean  @default(true)
+  state            String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  company          Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+}
+
+model TaxDeclaration {
+  id               String             @id @default(uuid())
+  employeeId       String
+  fiscalYear       String
+  regime           String             @default("NEW")
+  section80C       Float              @default(0)
+  section80D       Float              @default(0)
+  nps              Float              @default(0)
+  hraRentPaid      Float              @default(0)
+  homeLoanInterest Float              @default(0)
+  otherIncome      Float              @default(0)
+  status           String             @default("DRAFT")
+  adminComment     String?
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+  proofs           DeclarationProof[]
+  employee         EmployeeProfile    @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@index([employeeId])
+}
+
+model DeclarationProof {
+  id               String         @id @default(uuid())
+  taxDeclarationId String
+  category         String
+  fileUrl          String
+  fileName         String
+  amount           Float
+  status           String         @default("PENDING")
+  createdAt        DateTime       @default(now())
+  taxDeclaration   TaxDeclaration @relation(fields: [taxDeclarationId], references: [id], onDelete: Cascade)
+}
+
+model Shift {
+  id           String        @id @default(uuid())
+  name         String
+  startTime    String
+  endTime      String
+  gracePeriod  Int           @default(15)
+  isNightShift Boolean       @default(false)
+  companyId    String
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  attendances  Attendance[]
+  company      Company       @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  rosters      ShiftRoster[]
+
+  @@index([companyId])
+}
+
+model ShiftRoster {
+  id         String          @id @default(uuid())
+  employeeId String
+  shiftId    String
+  date       DateTime
+  companyId  String
+  createdAt  DateTime        @default(now())
+  company    Company         @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  employee   EmployeeProfile @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  shift      Shift           @relation(fields: [shiftId], references: [id], onDelete: Cascade)
+
+  @@unique([employeeId, date])
+  @@index([companyId])
+}
+
+model SalaryStructure {
+  id               String          @id @default(uuid())
+  employeeId       String          @unique
+  basicSalary      Float           @default(0)
+  hra              Float           @default(0)
+  conveyance       Float           @default(0)
+  medical          Float           @default(0)
+  specialAllowance Float           @default(0)
+  otherAllowances  Float           @default(0)
+  grossSalary      Float           @default(0)
+  pfEmployee       Float           @default(0)
+  esicEmployee     Float           @default(0)
+  professionalTax  Float           @default(0)
+  tds              Float           @default(0)
+  totalDeductions  Float           @default(0)
+  pfEmployer       Float           @default(0)
+  esicEmployer     Float           @default(0)
+  gratuity         Float           @default(0)
+  insurance        Float           @default(0)
+  netSalary        Float           @default(0)
+  ctc              Float           @default(0)
+  effectiveFrom    DateTime        @default(now())
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+  employee         EmployeeProfile @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+}
+
+model PerformanceReview {
+  id         String          @id @default(uuid())
+  employeeId String
+  reviewerId String
+  date       DateTime        @default(now())
+  rating     Int
+  feedback   String?
+  period     String?
+  companyId  String?
+  createdAt  DateTime        @default(now())
+  company    Company?        @relation(fields: [companyId], references: [id])
+  employee   EmployeeProfile @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  reviewer   User            @relation("Reviewer", fields: [reviewerId], references: [id])
+
+  @@index([companyId])
+}
+
+model EmployeeKPI {
+  id         String          @id @default(uuid())
+  employeeId String
+  title      String
+  target     Float
+  current    Float           @default(0)
+  unit       String
+  period     String
+  category   String          @default("GENERAL")
+  companyId  String
+  createdAt  DateTime        @default(now())
+  updatedAt  DateTime        @default(now())
+  goals      EmployeeGoal[]
+  company    Company         @relation(fields: [companyId], references: [id])
+  employee   EmployeeProfile @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@index([employeeId])
+  @@index([companyId])
+}
+
+model PerformanceInsight {
+  id         String          @id @default(uuid())
+  employeeId String
+  content    String
+  type       String
+  date       DateTime        @default(now())
+  companyId  String
+  company    Company         @relation(fields: [companyId], references: [id])
+  employee   EmployeeProfile @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@index([employeeId])
+  @@index([companyId])
+}
+
+model LeaveRequest {
+  id           String          @id @default(uuid())
+  employeeId   String
+  startDate    DateTime
+  endDate      DateTime
+  reason       String
+  type         String
+  status       String          @default("PENDING")
+  approvedById String?
+  createdAt    DateTime        @default(now())
+  companyId    String?
+  approvedBy   User?           @relation("LeaveApprover", fields: [approvedById], references: [id])
+  company      Company?        @relation(fields: [companyId], references: [id])
+  employee     EmployeeProfile @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+}
+
+model WorkPlan {
+  id         String            @id @default(uuid())
+  employeeId String
+  date       DateTime
+  agenda     String
+  strategy   String?
+  status     String            @default("SHARED")
+  createdAt  DateTime          @default(now())
+  updatedAt  DateTime          @updatedAt
+  companyId  String?
+  company    Company?          @relation(fields: [companyId], references: [id])
+  employee   EmployeeProfile   @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  comments   WorkPlanComment[]
+
+  @@unique([employeeId, date])
+  @@index([companyId])
+}
+
+model OnboardingModule {
+  id                     String               @id @default(uuid())
+  title                  String
+  type                   String
+  description            String?
+  content                String
+  departmentId           String?
+  companyId              String
+  requiredForDesignation String?
+  order                  Int                  @default(0)
+  isActive               Boolean              @default(true)
+  createdAt              DateTime             @default(now())
+  updatedAt              DateTime             @updatedAt
+  company                Company              @relation(fields: [companyId], references: [id])
+  department             Department?          @relation(fields: [departmentId], references: [id])
+  progress               OnboardingProgress[]
+  questions              QuizQuestion[]
+
+  @@index([companyId])
+}
+
+model QuizQuestion {
+  id            String           @id @default(uuid())
+  moduleId      String
+  question      String
+  options       String[]
+  correctAnswer Int
+  createdAt     DateTime         @default(now())
+  module        OnboardingModule @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+}
+
+model OnboardingProgress {
+  id          String           @id @default(uuid())
+  employeeId  String
+  moduleId    String
+  status      String           @default("LOCKED")
+  score       Float?
+  completedAt DateTime?
+  updatedAt   DateTime         @updatedAt
+  employee    EmployeeProfile  @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  module      OnboardingModule @relation(fields: [moduleId], references: [id])
+
+  @@unique([employeeId, moduleId])
+}
+
+model WorkPlanComment {
+  id         String   @id @default(uuid())
+  workPlanId String
+  userId     String
+  content    String
+  createdAt  DateTime @default(now())
+  user       User     @relation(fields: [userId], references: [id])
+  workPlan   WorkPlan @relation(fields: [workPlanId], references: [id], onDelete: Cascade)
+}
+
+model DocumentTemplate {
+  id               String            @id @default(uuid())
+  title            String
+  type             String
+  content          String
+  companyId        String
+  isActive         Boolean           @default(true)
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  digitalDocuments DigitalDocument[]
+  company          Company           @relation(fields: [companyId], references: [id])
+
+  @@index([companyId])
+}
+
+model DigitalDocument {
+  id          String           @id @default(uuid())
+  templateId  String
+  employeeId  String
+  title       String
+  content     String
+  status      String           @default("PENDING")
+  signedAt    DateTime?
+  signatureIp String?
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  employee    EmployeeProfile  @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  template    DocumentTemplate @relation(fields: [templateId], references: [id])
+
+  @@index([employeeId])
+}
+
+model JobPosting {
+  id           String           @id @default(uuid())
+  companyId    String
+  title        String
+  description  String
+  requirements String?
+  location     String?
+  salaryRange  String?
+  type         String           @default("FULL_TIME")
+  status       String           @default("OPEN")
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+  departmentId String?
+  applications JobApplication[]
+  company      Company          @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  department   Department?      @relation(fields: [departmentId], references: [id])
+  exam         RecruitmentExam?
+}
+
+model JobApplication {
+  id             String                 @id @default(uuid())
+  jobPostingId   String
+  applicantName  String
+  applicantEmail String
+  applicantPhone String?
+  resumeUrl      String?
+  status         String                 @default("APPLIED")
+  offerLetterUrl String?
+  contractUrl    String?
+  createdAt      DateTime               @default(now())
+  updatedAt      DateTime               @updatedAt
+  departmentId   String?
+  examAttempt    ExamAttempt?
+  department     Department?            @relation(fields: [departmentId], references: [id])
+  jobPosting     JobPosting             @relation(fields: [jobPostingId], references: [id], onDelete: Cascade)
+  interviews     RecruitmentInterview[]
+}
+
+model RecruitmentExam {
+  id             String        @id @default(uuid())
+  jobPostingId   String        @unique
+  questions      Json
+  timeLimit      Int           @default(30)
+  passPercentage Float         @default(75.0)
+  attempts       ExamAttempt[]
+  jobPosting     JobPosting    @relation(fields: [jobPostingId], references: [id], onDelete: Cascade)
+}
+
+model ExamAttempt {
+  id            String          @id @default(uuid())
+  applicationId String          @unique
+  examId        String
+  score         Float
+  isPassed      Boolean
+  answers       Json
+  startedAt     DateTime        @default(now())
+  completedAt   DateTime?
+  application   JobApplication  @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  exam          RecruitmentExam @relation(fields: [examId], references: [id])
+}
+
+model RecruitmentInterview {
+  id            String         @id @default(uuid())
+  applicationId String
+  level         Int
+  interviewerId String
+  scheduledAt   DateTime
+  status        String         @default("SCHEDULED")
+  result        String         @default("PENDING")
+  feedback      String?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  duration      Int            @default(30)
+  location      String?
+  meetingLink   String?
+  rating        Int?
+  type          String         @default("VIRTUAL")
+  application   JobApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  interviewer   User           @relation("RecruitmentInterviewer", fields: [interviewerId], references: [id])
+
+  @@unique([applicationId, level])
+}
+
+model Courier {
+  id          String          @id @default(uuid())
+  name        String
+  website     String?
+  apiEndpoint String?
+  apiKey      String?
+  isActive    Boolean         @default(true)
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+  dispatches  DispatchOrder[]
+}
+
+model DispatchOrder {
+  id                String         @id @default(uuid())
+  subscriptionId    String?
+  invoiceId         String?
+  recipientName     String
+  address           String
+  city              String
+  state             String
+  pincode           String
+  country           String
+  phone             String
+  items             Json
+  weight            Float?
+  courierId         String?
+  trackingNumber    String?
+  status            DispatchStatus @default(PENDING)
+  shippedDate       DateTime?
+  deliveredDate     DateTime?
+  generatedLabelUrl String?
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+  companyId         String?
+  company           Company?       @relation(fields: [companyId], references: [id])
+  courier           Courier?       @relation(fields: [courierId], references: [id])
+
+  @@index([companyId])
+  @@index([status])
+  @@index([trackingNumber])
+}
+
+model JournalVolume {
+  id           String         @id @default(uuid())
+  journalId    String
+  volumeNumber Int
+  year         Int
+  isActive     Boolean        @default(true)
+  issues       JournalIssue[]
+  journal      Journal        @relation(fields: [journalId], references: [id])
+}
+
+model JournalIssue {
+  id                  String        @id @default(uuid())
+  volumeId            String
+  issueNumber         Int
+  month               String?
+  title               String?
+  status              IssueStatus   @default(PLANNED)
+  publishedAt         DateTime?
+  expectedManuscripts Int           @default(0)
+  isComplete          Boolean       @default(false)
+  validationStatus    String?
+  articles            Article[]
+  volume              JournalVolume @relation(fields: [volumeId], references: [id])
+}
+
+model Article {
+  id               String          @id @default(uuid())
+  title            String
+  abstract         String?
+  keywords         String?
+  journalId        String
+  issueId          String?
+  submissionDate   DateTime        @default(now())
+  acceptanceDate   DateTime?
+  publicationDate  DateTime?
+  status           ArticleStatus   @default(SUBMITTED)
+  fileUrl          String?
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+  apcAmountINR     Float?          @default(0)
+  apcAmountUSD     Float?          @default(0)
+  apcInvoiceId     String?
+  apcPaymentStatus String          @default("UNPAID")
+  apcType          APCType?
+  issue            JournalIssue?   @relation(fields: [issueId], references: [id])
+  journal          Journal         @relation(fields: [journalId], references: [id])
+  authors          ArticleAuthor[]
+  reviews          Review[]
+}
+
+model Review {
+  id               String    @id @default(uuid())
+  articleId        String
+  reviewerId       String
+  rating           Int?
+  commentsToEditor String?
+  commentsToAuthor String?
+  recommendation   String?
+  status           String    @default("PENDING")
+  dueDate          DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  article          Article   @relation(fields: [articleId], references: [id])
+  reviewer         User      @relation(fields: [reviewerId], references: [id])
+
+  @@index([articleId])
+  @@index([reviewerId])
+}
+
+model ArticleAuthor {
+  id              String  @id @default(uuid())
+  articleId       String
+  userId          String?
+  name            String
+  email           String
+  affiliation     String?
+  isCorresponding Boolean @default(false)
+  displayOrder    Int     @default(0)
+  article         Article @relation(fields: [articleId], references: [id])
+}
+
+model Conference {
+  id            String                   @id @default(uuid())
+  title         String
+  description   String
+  startDate     DateTime
+  endDate       DateTime
+  venue         String?
+  organizer     String?
+  website       String?
+  isActive      Boolean                  @default(true)
+  createdAt     DateTime                 @default(now())
+  updatedAt     DateTime                 @updatedAt
+  companyId     String?
+  company       Company?                 @relation(fields: [companyId], references: [id])
+  papers        ConferencePaper[]
+  registrations ConferenceRegistration[]
+  ticketTypes   ConferenceTicketType[]
+}
+
+model ConferenceTicketType {
+  id            String                   @id @default(uuid())
+  conferenceId  String
+  name          String
+  price         Float
+  currency      String                   @default("INR")
+  limit         Int?
+  soldCount     Int                      @default(0)
+  registrations ConferenceRegistration[]
+  conference    Conference               @relation(fields: [conferenceId], references: [id])
+}
+
+model ConferenceRegistration {
+  id           String               @id @default(uuid())
+  conferenceId String
+  userId       String?
+  name         String
+  email        String
+  organization String?
+  ticketTypeId String
+  amountPaid   Float
+  status       String               @default("REGISTERED")
+  paymentId    String?
+  createdAt    DateTime             @default(now())
+  conference   Conference           @relation(fields: [conferenceId], references: [id])
+  ticketType   ConferenceTicketType @relation(fields: [ticketTypeId], references: [id])
+}
+
+model ConferencePaper {
+  id            String     @id @default(uuid())
+  conferenceId  String
+  title         String
+  abstract      String
+  authors       String
+  status        String     @default("SUBMITTED")
+  presenterName String?
+  presentedAt   DateTime?
+  fileUrl       String?
+  createdAt     DateTime   @default(now())
+  conference    Conference @relation(fields: [conferenceId], references: [id])
+}
+
+model Course {
+  id           String             @id @default(uuid())
+  title        String
+  description  String
+  thumbnailUrl String?
+  price        Float              @default(0)
+  currency     String             @default("INR")
+  instructorId String?
+  isPublished  Boolean            @default(false)
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+  companyId    String?
+  company      Company?           @relation(fields: [companyId], references: [id])
+  enrollments  CourseEnrollment[]
+  modules      CourseModule[]
+}
+
+model CourseModule {
+  id       String         @id @default(uuid())
+  courseId String
+  title    String
+  order    Int
+  lessons  CourseLesson[]
+  course   Course         @relation(fields: [courseId], references: [id], onDelete: Cascade)
+}
+
+model CourseLesson {
+  id          String               @id @default(uuid())
+  moduleId    String
+  title       String
+  order       Int
+  type        String               @default("VIDEO")
+  contentUrl  String?
+  textContent String?
+  duration    Int?
+  module      CourseModule         @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  progress    UserLessonProgress[]
+}
+
+model CourseEnrollment {
+  id             String    @id @default(uuid())
+  courseId       String
+  userId         String
+  enrolledAt     DateTime  @default(now())
+  completedAt    DateTime?
+  progress       Float     @default(0)
+  certificateUrl String?
+  course         Course    @relation(fields: [courseId], references: [id])
+  user           User      @relation(fields: [userId], references: [id])
+}
+
+model UserLessonProgress {
+  id           String       @id @default(uuid())
+  lessonId     String
+  userId       String
+  isCompleted  Boolean      @default(false)
+  lastPosition Int?
+  updatedAt    DateTime     @updatedAt
+  lesson       CourseLesson @relation(fields: [lessonId], references: [id])
+  user         User         @relation(fields: [userId], references: [id])
+
+  @@unique([userId, lessonId])
+}
+
+model ITAsset {
+  id             String            @id @default(uuid())
+  companyId      String
+  name           String
+  type           String
+  serialNumber   String?
+  purchaseDate   DateTime?
+  warrantyExpiry DateTime?
+  status         String            @default("AVAILABLE")
+  assignedToId   String?
+  details        String?
+  value          Float?
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+  assignedTo     User?             @relation(fields: [assignedToId], references: [id])
+  company        Company           @relation(fields: [companyId], references: [id])
+  tickets        ITSupportTicket[]
+
+  @@index([companyId])
+  @@index([assignedToId])
+}
+
+model ITSupportTicket {
+  id           String   @id @default(uuid())
+  companyId    String
+  requesterId  String
+  assignedToId String?
+  assetId      String?
+  title        String
+  description  String
+  priority     String   @default("MEDIUM")
+  status       String   @default("OPEN")
+  category     String?
+  resolution   String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  asset        ITAsset? @relation(fields: [assetId], references: [id])
+  assignedTo   User?    @relation("ITResolver", fields: [assignedToId], references: [id])
+  company      Company  @relation(fields: [companyId], references: [id])
+  requester    User     @relation("ITRequestor", fields: [requesterId], references: [id])
+
+  @@index([companyId])
+  @@index([requesterId])
+  @@index([status])
+}
+
+model FinancialRecord {
+  id              String        @id @default(uuid())
+  companyId       String?
+  type            FinancialType @default(EXPENSE)
+  category        String
+  amount          Float
+  currency        String        @default("INR")
+  date            DateTime      @default(now())
+  description     String?
+  status          String        @default("COMPLETED")
+  paymentMethod   String?
+  referenceId     String?
+  createdByUserId String?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  company         Company?      @relation(fields: [companyId], references: [id])
+  createdByUser   User?         @relation("FinanceCreator", fields: [createdByUserId], references: [id])
+
+  @@index([companyId])
+  @@index([type])
+  @@index([category])
+  @@index([date])
+}
+
+model LeaveLedger {
+  id             String          @id @default(uuid())
+  employeeId     String
+  month          Int
+  year           Int
+  openingBalance Float           @default(0)
+  takenLeaves    Float           @default(0)
+  closingBalance Float           @default(0)
+  remarks        String?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  companyId      String?
+  company        Company?        @relation(fields: [companyId], references: [id])
+  employee       EmployeeProfile @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@unique([employeeId, month, year])
+  @@index([companyId])
+}
+
+model EmployeeGoal {
+  id           String          @id @default(uuid())
+  employeeId   String
+  title        String
+  description  String?
+  targetValue  Float
+  currentValue Float           @default(0)
+  unit         String
+  type         GoalType        @default(MONTHLY)
+  startDate    DateTime
+  endDate      DateTime
+  status       String          @default("IN_PROGRESS")
+  companyId    String
+  kpiId        String?
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+  company      Company         @relation(fields: [companyId], references: [id])
+  employee     EmployeeProfile @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  kpi          EmployeeKPI?    @relation(fields: [kpiId], references: [id])
+
+  @@index([employeeId])
+  @@index([companyId])
+}
+
+model IncentiveSchema {
+  id          String     @id @default(uuid())
+  companyId   String
+  name        String
+  description String?
+  type        RewardType @default(PERCENTAGE)
+  value       Float
+  criteria    String?
+  isActive    Boolean    @default(true)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  company     Company    @relation(fields: [companyId], references: [id])
+}
+
+model BonusSchema {
+  id          String   @id @default(uuid())
+  companyId   String
+  name        String
+  description String?
+  amount      Float
+  frequency   String   @default("YEARLY")
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  company     Company  @relation(fields: [companyId], references: [id])
+}
+
+model EmployeeIncentive {
+  id                String          @id @default(uuid())
+  employeeProfileId String
+  amount            Float
+  reason            String
+  date              DateTime        @default(now())
+  status            String          @default("PENDING")
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  employeeProfile   EmployeeProfile @relation(fields: [employeeProfileId], references: [id], onDelete: Cascade)
+}
+
+model CompanyPotential {
+  id                  String   @id @default(uuid())
+  companyId           String   @unique
+  monthlyPotential    Float?
+  quarterlyPotential  Float?
+  halfYearlyPotential Float?
+  yearlyPotential     Float?
+  twoYearPotential    Float?
+  threeYearPotential  Float?
+  fiveYearPotential   Float?
+  growthFactors       Json?
+  marketData          Json?
+  lastCalculated      DateTime @default(now())
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+  company             Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
 }
 
 enum UserRole {
@@ -244,174 +1795,10 @@ enum UserRole {
   EDITOR
 }
 
-// ============================================
-// CUSTOMER PROFILES
-// ============================================
-
-model CustomerProfile {
-  id           String       @id @default(uuid())
-  userId       String       @unique
-  customerType CustomerType
-
-  // Assignment
-  assignedToUserId String?
-  assignedTo       User?   @relation("AssignedCustomers", fields: [assignedToUserId], references: [id])
-
-  assignedExecutives User[] @relation("CustomerToExecutives")
-
-  // Common fields
-  name             String
-  organizationName String?
-  primaryEmail     String
-  secondaryEmail   String?
-  primaryPhone     String
-  secondaryPhone   String?
-  gstVatTaxId      String?
-
-  // Address
-  billingAddress  String?
-  shippingAddress String?
-  country         String?
-  state           String?
-  city            String?
-  pincode         String?
-
-  // Preferences
-  preferredChannel String? // email/phone/whatsapp
-  notes            String?
-  tags             String? // Comma-separated tags for SQLite compatibility
-
-  // Institution relationship
-  institutionId String?
-  institution   Institution? @relation(fields: [institutionId], references: [id])
-  designation   CustomerDesignation?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  companyId String?
-  company   Company? @relation(fields: [companyId], references: [id])
-
-  // Relations
-  user               User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  institutionDetails InstitutionDetails?
-  agencyDetails      AgencyDetails?
-  subscriptions      Subscription[]
-  communications     CommunicationLog[]
-  supportTickets     SupportTicket[]
-  assignments        CustomerAssignment[]
-  invoices           Invoice[]
-
-  @@index([customerType])
-  @@index([primaryEmail])
-  @@index([companyId])
-  @@index([institutionId])
-  @@index([designation])
-}
-
 enum CustomerType {
   INDIVIDUAL
   INSTITUTION
   AGENCY
-}
-
-model InstitutionDetails {
-  id                String @id @default(uuid())
-  customerProfileId String @unique
-
-  category       String // University/College/Company/Library/Govt
-  department     String?
-  libraryContact String?
-  ipRange        String?
-  numberOfUsers  Int?
-  numberOfSeats  Int?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  // Relations
-  customerProfile CustomerProfile @relation(fields: [customerProfileId], references: [id], onDelete: Cascade)
-}
-
-model AgencyDetails {
-  id                String @id @default(uuid())
-  customerProfileId String @unique
-
-  companyInfo     String?
-  territory       String?
-  region          String?
-  primaryContact  String?
-  commissionTerms String?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  // Relations
-  customerProfile CustomerProfile @relation(fields: [customerProfileId], references: [id], onDelete: Cascade)
-  subscriptions   Subscription[]
-}
-
-// ============================================
-// INSTITUTION MANAGEMENT
-// ============================================
-
-model Institution {
-  id   String @id @default(uuid())
-  name String
-  code String @unique // Short code for institution (e.g., "MIT", "HARVARD")
-
-  // Institution Details
-  type            InstitutionType
-  category        String? // University/College/Research Institute/Corporate/Library/Government
-  establishedYear Int?
-  accreditation   String? // NAAC/NBA/UGC etc.
-  
-  // Contact Information
-  primaryEmail    String?
-  secondaryEmail  String?
-  primaryPhone    String?
-  secondaryPhone  String?
-  website         String?
-  
-  // Address
-  address  String?
-  city     String?
-  state    String?
-  country  String  @default("India")
-  pincode  String?
-  
-  // Additional Info
-  totalStudents   Int?
-  totalFaculty    Int?
-  totalStaff      Int?
-  libraryBudget   Float?
-  ipRange         String?
-  notes           String?
-  logo            String? // URL to logo
-  
-  // Status
-  isActive Boolean @default(true)
-  
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  
-  companyId String?
-  company   Company? @relation(fields: [companyId], references: [id])
-  
-  // Ownership / Assignment
-  assignedToUserId String?
-  assignedTo       User?   @relation("InstitutionOwner", fields: [assignedToUserId], references: [id])
-
-  domain String? // Subject domain (e.g. Engineering, Medical)
-  
-  // Relations
-  customers      CustomerProfile[]
-  subscriptions  Subscription[]
-  communications CommunicationLog[]
-  
-  @@index([code])
-  @@index([type])
-  @@index([companyId])
 }
 
 enum InstitutionType {
@@ -445,145 +1832,6 @@ enum CustomerDesignation {
   OTHER
 }
 
-// Many-to-Many relationship for customer-employee assignments
-model CustomerAssignment {
-  id         String   @id @default(uuid())
-  customerId String
-  employeeId String
-  
-  // Assignment details
-  assignedAt DateTime @default(now())
-  assignedBy String? // User ID who made the assignment
-  role       String? // Primary/Secondary/Support
-  isActive   Boolean  @default(true)
-  notes      String?
-  
-  // Relations
-  customer CustomerProfile @relation(fields: [customerId], references: [id], onDelete: Cascade)
-  employee User            @relation("EmployeeAssignments", fields: [employeeId], references: [id], onDelete: Cascade)
-  
-  @@unique([customerId, employeeId])
-  @@index([customerId])
-  @@index([employeeId])
-  @@index([isActive])
-}
-
-// ============================================
-// JOURNAL CATALOG
-// ============================================
-
-model Journal {
-  id              String  @id @default(uuid())
-  name            String
-  issnPrint       String?
-  issnOnline      String?
-  frequency       String // monthly/quarterly/annual
-  formatAvailable String? // Comma-separated formats for SQLite compatibility
-  subjectCategory String? // Comma-separated categories for SQLite compatibility
-  isActive        Boolean @default(true)
-
-  // Pricing
-  priceINR Float @default(0)
-  priceUSD Float @default(0)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  // Relations
-  plans             Plan[]
-  subscriptionItems SubscriptionItem[]
-  volumes           JournalVolume[]
-  articles          Article[]
-
-  @@index([isActive])
-  @@index([name])
-}
-
-model Plan {
-  id        String @id @default(uuid())
-  journalId String
-
-  planType        String // Annual/Multi-year/Trial
-  format          String // Print/Online/Hybrid
-  institutionTier String? // small/medium/large
-  duration        Int // in months
-  priceINR        Float   @default(0)
-  priceUSD        Float   @default(0)
-
-  // Rules
-  startDateRule String? // immediate/calendar-year
-  gracePeriod   Int     @default(30) // days
-
-  isActive  Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  // Relations
-  journal           Journal            @relation(fields: [journalId], references: [id], onDelete: Cascade)
-  subscriptionItems SubscriptionItem[]
-
-  @@index([journalId])
-  @@index([isActive])
-}
-
-// ============================================
-// SUBSCRIPTIONS
-// ============================================
-
-model Subscription {
-  id                String @id @default(uuid())
-  customerProfileId String
-
-  // Sales channel
-  salesChannel     SalesChannel
-  agencyId         String?
-  salesExecutiveId String?
-
-  // Subscription details
-  startDate DateTime
-  endDate   DateTime
-  autoRenew Boolean            @default(false)
-  status    SubscriptionStatus @default(PENDING_PAYMENT)
-  currency  String             @default("INR")
-
-  // Pricing
-  subtotal Float
-  discount Float @default(0)
-  tax      Float @default(0)
-  total    Float
-
-  // Invoice reference
-  invoiceReference String?
-
-  // Renewal chain
-  parentSubscriptionId String?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  companyId String?
-  company   Company? @relation(fields: [companyId], references: [id])
-
-  institutionId String?
-  institution   Institution? @relation(fields: [institutionId], references: [id])
-
-  // Relations
-  customerProfile    CustomerProfile    @relation(fields: [customerProfileId], references: [id])
-  agency             AgencyDetails?     @relation(fields: [agencyId], references: [id])
-  salesExecutive     User?              @relation("AssignedSalesExecutive", fields: [salesExecutiveId], references: [id])
-  items              SubscriptionItem[]
-  parentSubscription Subscription?      @relation("SubscriptionRenewal", fields: [parentSubscriptionId], references: [id])
-  renewals           Subscription[]     @relation("SubscriptionRenewal")
-  invoices           Invoice[]
-
-  @@index([customerProfileId])
-  @@index([status])
-  @@index([salesChannel])
-  @@index([startDate, endDate])
-  @@index([companyId])
-  @@index([institutionId])
-}
-
 enum SalesChannel {
   DIRECT
   AGENCY
@@ -598,68 +1846,6 @@ enum SubscriptionStatus {
   SUSPENDED
 }
 
-model SubscriptionItem {
-  id             String @id @default(uuid())
-  subscriptionId String
-  journalId      String
-  planId         String
-
-  quantity Int   @default(1) // for print copies
-  seats    Int? // for online
-  price    Float
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  // Relations
-  subscription Subscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
-  journal      Journal      @relation(fields: [journalId], references: [id])
-  plan         Plan         @relation(fields: [planId], references: [id])
-
-  @@index([subscriptionId])
-}
-
-// ============================================
-// INVOICING & PAYMENTS
-// ============================================
-
-model Invoice {
-  id             String @id @default(uuid())
-  subscriptionId String? // Made optional for one-off invoices
-  customerProfileId String? // Direct link to customer for one-off
-  invoiceNumber  String @unique
-
-  currency String @default("INR")
-  amount   Float
-  tax      Float
-  total    Float
-
-  status   InvoiceStatus @default(UNPAID)
-  dueDate  DateTime
-  paidDate DateTime?
-  
-  // Ad-hoc fields
-  description String? @db.Text
-  lineItems   Json?   // Array of { description, quantity, price }
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  companyId String?
-  company   Company? @relation(fields: [companyId], references: [id])
-
-  // Relations
-  subscription    Subscription?    @relation(fields: [subscriptionId], references: [id])
-  customerProfile CustomerProfile? @relation(fields: [customerProfileId], references: [id])
-  payments        Payment[]
-
-  @@index([subscriptionId])
-  @@index([customerProfileId])
-  @@index([status])
-  @@index([invoiceNumber])
-  @@index([companyId])
-}
-
 enum InvoiceStatus {
   PAID
   UNPAID
@@ -667,93 +1853,6 @@ enum InvoiceStatus {
   OVERDUE
   CANCELLED
   VOID
-}
-
-model Payment {
-  id        String  @id @default(uuid())
-  invoiceId String?
-
-  amount         Float
-  currency       String   @default("INR")
-  conversionRate Float?   @default(1.0)
-  paymentMethod  String? // card/bank-transfer/check/other
-  paymentDate    DateTime
-  transactionId  String?
-  notes          String?
-
-  // Razorpay Specific
-  razorpayPaymentId String? @unique
-  razorpayOrderId   String?
-  razorpaySignature String?
-  status            String? // captured, refunded, failed, etc.
-  metadata          String? // JSON string for storing rich Razorpay data
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  companyId String?
-  company   Company? @relation(fields: [companyId], references: [id])
-
-  // Relations
-  invoice Invoice? @relation(fields: [invoiceId], references: [id])
-
-  @@index([invoiceId])
-  @@index([companyId])
-}
-
-model RazorpaySync {
-  id          String   @id @default(uuid())
-  lastSyncAt  DateTime
-  status      String // SUCCESS, FAILED
-  error       String?
-  syncedCount Int      @default(0)
-  createdAt   DateTime @default(now())
-}
-
-// ============================================
-// COMMUNICATION & TASKS
-// ============================================
-
-model CommunicationLog {
-  id                String  @id @default(uuid())
-  customerProfileId String
-  userId            String? // Who logger this communication
-
-  type    CommunicationType @default(COMMENT)
-  date    DateTime          @default(now())
-  channel String // Email/Phone/WhatsApp/Meeting/Other
-  subject String
-  notes   String
-  outcome String? // interested/follow-up/renewal-confirmed/complaint
-
-  // Specific fields
-  duration     Int? // in seconds, for calls
-  recordingUrl String? // for call records
-  referenceId  String? // for related Invoices or Catalogs
-
-  nextFollowUpDate    DateTime?
-  isFollowUpCompleted Boolean   @default(false)
-  attachments         String? // Comma-separated file paths/URLs for SQLite compatibility
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  companyId String?
-  company   Company? @relation(fields: [companyId], references: [id])
-
-  institutionId String?
-  institution   Institution? @relation(fields: [institutionId], references: [id])
-
-  // Relations
-  customerProfile CustomerProfile @relation(fields: [customerProfileId], references: [id])
-  user            User?           @relation("UserCommunications", fields: [userId], references: [id])
-
-  @@index([customerProfileId])
-  @@index([type])
-  @@index([date])
-  @@index([nextFollowUpDate])
-  @@index([companyId])
-  @@index([institutionId])
 }
 
 enum CommunicationType {
@@ -764,35 +1863,6 @@ enum CommunicationType {
   INVOICE_SENT
   CATALOGUE_SENT
   MEETING
-}
-
-model Task {
-  id     String @id @default(uuid())
-  userId String
-
-  title       String
-  description String?
-  dueDate     DateTime
-  priority    Priority   @default(MEDIUM)
-  status      TaskStatus @default(PENDING)
-
-  // Optional relation to customer/subscription
-  relatedCustomerId     String?
-  relatedSubscriptionId String?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  companyId String?
-  company   Company? @relation(fields: [companyId], references: [id])
-
-  // Relations
-  user User @relation(fields: [userId], references: [id])
-
-  @@index([userId])
-  @@index([status])
-  @@index([dueDate])
-  @@index([companyId])
 }
 
 enum Priority {
@@ -809,1114 +1879,11 @@ enum TaskStatus {
   CANCELLED
 }
 
-// ============================================
-// AUDIT & TRACKING
-// ============================================
-
-model AuditLog {
-  id     String  @id @default(uuid())
-  userId String?
-
-  action    String // create/update/delete
-  entity    String // customer/subscription/invoice etc
-  entityId  String
-  changes   Json? // Store the change details
-  ipAddress String?
-
-  createdAt DateTime @default(now())
-
-  // Relations
-  user User? @relation(fields: [userId], references: [id])
-
-  @@index([userId])
-  @@index([entity, entityId])
-  @@index([createdAt])
-}
-
-// ============================================
-// CHAT & SUPPORT SYSTEM
-// ============================================
-
-model ChatRoom {
-  id        String   @id @default(uuid())
-  name      String? // Optional for group chats
-  isGroup   Boolean  @default(false)
-  companyId String?
-  company   Company? @relation(fields: [companyId], references: [id])
-
-  messages     ChatMessage[]
-  participants ChatParticipant[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  supportTicket SupportTicket?
-
-  @@index([companyId])
-}
-
-model ChatParticipant {
-  id     String @id @default(uuid())
-  roomId String
-  userId String
-
-  room ChatRoom @relation(fields: [roomId], references: [id], onDelete: Cascade)
-  user User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  joinedAt DateTime @default(now())
-
-  @@unique([roomId, userId])
-  @@index([roomId])
-  @@index([userId])
-}
-
-model ChatMessage {
-  id       String @id @default(uuid())
-  roomId   String
-  senderId String
-  content  String
-
-  room   ChatRoom @relation(fields: [roomId], references: [id], onDelete: Cascade)
-  sender User     @relation(fields: [senderId], references: [id], onDelete: Cascade)
-
-  createdAt DateTime @default(now())
-
-  @@index([roomId])
-  @@index([senderId])
-}
-
-model SupportTicket {
-  id                String          @id @default(uuid())
-  companyId         String?
-  company           Company?        @relation(fields: [companyId], references: [id])
-  customerProfileId String
-  customerProfile   CustomerProfile @relation(fields: [customerProfileId], references: [id])
-
-  subject     String
-  description String
-  status      TicketStatus @default(OPEN)
-  priority    Priority     @default(MEDIUM)
-
-  assignedToId String?
-  assignedTo   User?   @relation("AssignedTickets", fields: [assignedToId], references: [id])
-
-  chatRoomId String?   @unique
-  chatRoom   ChatRoom? @relation(fields: [chatRoomId], references: [id])
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([companyId])
-  @@index([customerProfileId])
-  @@index([status])
-}
-
 enum TicketStatus {
   OPEN
   IN_PROGRESS
   RESOLVED
   CLOSED
-}
-
-model Notification {
-  id     String @id @default(uuid())
-  userId String
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  title   String
-  message String
-  type    String  @default("INFO") // INFO, SUCCESS, WARNING, DANGER, CHAT, TICKET
-  link    String?
-  isRead  Boolean @default(false)
-
-  createdAt DateTime @default(now())
-
-  @@index([userId])
-  @@index([isRead])
-}
-
-model PushSubscription {
-  id     String @id @default(uuid())
-  userId String
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  endpoint String @unique
-  p256dh   String
-  auth     String
-
-  createdAt DateTime @default(now())
-
-  @@index([userId])
-}
-
-model SystemSettings {
-  id              String  @id @default("singleton")
-  maintenanceMode Boolean @default(false)
-  supportEmail    String  @default("support@stm.com")
-  defaultCurrency String  @default("INR")
-  companyName     String  @default("STM Journal Solutions")
-
-  updatedAt DateTime @updatedAt
-}
-
-// ============================================
-// HR & WORK MANAGEMENT
-// ============================================
-
-model Designation {
-  id             String  @id @default(uuid())
-  
-  name           String
-  code           String? // e.g., "SE-1"
-  jobDescription String? @db.Text
-  kra            String? @db.Text
-  
-  // Decision Metrics
-  expectedExperience Float @default(0) // Minimum years of experience for this role
-  promotionWaitPeriod Int   @default(12) // Minimum months before next promotion review
-  incrementGuidelines String? @db.Text // Policy for increments in this role
-  
-  // Hierarchy
-  level Int @default(1) // To help decide senior/junior roles
-  
-  companies        Company[]
-  departments      Department[]
-  
-  employees      EmployeeProfile[]
-  
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-}
-
-model EmployeeProfile {
-  id     String @id @default(uuid())
-  userId String @unique
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  employeeId    String?   @unique
-  designation   String?
-  dateOfJoining DateTime?
-  dateOfBirth   DateTime?
-
-  // Salary Info
-  baseSalary    Float?
-  bankName      String?
-  accountNumber String?
-  ifscCode      String?
-  // Statutory Info
-  panNumber         String?
-  aadharNumber      String?
-  uanNumber         String?
-  pfNumber          String?
-  esicNumber        String?
-
-  // Contact Info
-  personalEmail    String?
-  officialEmail    String? // Alternate official email
-  phoneNumber      String? // Personal Mobile
-  officePhone      String? // Office Mobile/Extension
-  
-  emergencyContact String?
-  
-  // Addresses
-  address          String? // Current Address
-  permanentAddress String?
-  
-  bloodGroup       String?
-  profilePicture   String?
-
-  employeeType       EmployeeType @default(FULL_TIME)
-
-  attendance    Attendance[]
-  workReports   WorkReport[]
-  salarySlips   SalarySlip[]
-  salaryStructure SalaryStructure?
-  performance   PerformanceReview[]
-  goals         EmployeeGoal[]
-  incentives    EmployeeIncentive[]
-  leaveRequests LeaveRequest[]
-  documents     EmployeeDocument[]
-
-  // Document URLs (Primary)
-  offerLetterUrl String?
-  contractUrl    String?
-
-  jobDescription String?
-  kra            String? // Key Responsibility Areas (comma separated or multiline)
-
-  // Designation Upgrade
-  designationId String?
-  designatRef   Designation? @relation(fields: [designationId], references: [id])
-
-  // Experience Tracking
-  totalExperienceYears      Int @default(0)
-  totalExperienceMonths     Int @default(0)
-  relevantExperienceYears   Int @default(0)
-  relevantExperienceMonths  Int @default(0)
-  qualification             String?
-  
-  // JSON Details for rich history
-  educationDetails  Json? // Array of { degree, institute, year, score }
-  experienceDetails Json? // Array of { company, designation, from, to, description }
-  
-  // Growth Tracking
-  grade              String?
-  lastPromotionDate  DateTime?
-  lastIncrementDate  DateTime?
-  nextReviewDate     DateTime?
-  lastIncrementPercentage Float?
-  
-  workPlans WorkPlan[]
-  onboardingProgress OnboardingProgress[]
-  digitalDocuments   DigitalDocument[]
-  
-  // Phase 1 HRMS Upgrade
-  taxDeclarations    TaxDeclaration[]
-  
-  // Phase 2 HRMS Upgrade
-  shiftRosters       ShiftRoster[]
-  kpis               EmployeeKPI[]
-  performanceInsights PerformanceInsight[]
-  
-  // HR History
-  incrementHistory  SalaryIncrementRecord[]
-  hrComments        EmployeeComment[]
-
-  // Leave Management
-  leaveBalance          Float @default(0) // Available paid leaves
-  manualLeaveAdjustment Float @default(0) // Correction factor for leave balance
-
-  metrics               Json?   // Custom role-specific targets/metrics
-
-  salaryAdvances SalaryAdvance[]
-  leaveLedgers   LeaveLedger[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
-
-model SalaryAdvance {
-  id          String   @id @default(uuid())
-  employeeId  String
-  employee    EmployeeProfile @relation(fields: [employeeId], references: [id], onDelete: Cascade)
-  
-  amount      Float
-  reason      String?
-  status      String   @default("PENDING") // PENDING, APPROVED, REJECTED, COMPLETED
-  
-  totalEmis   Int      @default(1)
-  paidEmis    Int      @default(0)
-  emiAmount   Float
-  
-  startDate   DateTime @default(now())
-  
-  companyId   String?
-  company     Company? @relation(fields: [companyId], references: [id])
-
-  emis        AdvanceEMI[]
-
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @default(now())
-
-
-  @@index([employeeId])
-  @@index([companyId])
-}
-
-model AdvanceEMI {
-  id              String   @id @default(uuid())
-  advanceId       String
-  advance         SalaryAdvance @relation(fields: [advanceId], references: [id], onDelete: Cascade)
-  
-  salarySlipId    String?  @unique
-  salarySlip      SalarySlip? @relation(fields: [salarySlipId], references: [id])
-  
-  amount          Float
-  month           Int
-  year            Int
-  status          String   @default("PENDING") // PENDING, PAID
-  
-  paidAt          DateTime?
-
-  createdAt       DateTime @default(now())
-}
-
-model SalaryIncrementRecord {
-  id                String   @id @default(uuid())
-  employeeProfileId String
-  employeeProfile   EmployeeProfile @relation(fields: [employeeProfileId], references: [id], onDelete: Cascade)
-  
-  date              DateTime @default(now())
-  effectiveDate     DateTime @default(now())
-  
-  oldSalary         Float
-  newSalary         Float
-  incrementAmount   Float
-  percentage        Float
-  
-  type              String   @default("INCREMENT") // INCREMENT, PROMOTION, APPRAISAL, CORRECTION, DECREMENT
-  
-  previousDesignation String?
-  newDesignation      String?
-  
-  reason            String? 
-  approvedByUserId  String? // ID of the manager/admin who approved
-  
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt // Added updatedAt
-}
-
-model EmployeeComment {
-  id                String   @id @default(uuid())
-  employeeProfileId String
-  employeeProfile   EmployeeProfile @relation(fields: [employeeProfileId], references: [id], onDelete: Cascade)
-  
-  authorId          String
-  author            User     @relation(fields: [authorId], references: [id])
-  
-  content           String
-  type              String   @default("GENERAL") // GENERAL, PERFORMANCE, DISCIPLINARY, APPRECIATION, NOTE
-  isVisibleToEmployee Boolean @default(false)
-  
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt // Added updatedAt
-}
-
-model EmployeeDocument {
-  id         String          @id @default(uuid())
-  employeeId String
-  employee   EmployeeProfile @relation(fields: [employeeId], references: [id], onDelete: Cascade)
-
-  name       String // ID Proof, Degree, etc.
-  fileUrl    String
-  fileType   String? // PDF, Image
-  uploadedAt DateTime @default(now())
-}
-
-model Attendance {
-  id         String          @id @default(uuid())
-  employeeId String
-  employee   EmployeeProfile @relation(fields: [employeeId], references: [id], onDelete: Cascade)
-
-  date     DateTime  @default(now())
-  checkIn  DateTime?
-  checkOut DateTime?
-  status   String    @default("PRESENT") // PRESENT, ABSENT, LEAVE, HALF_DAY
-  workFrom String    @default("OFFICE") // OFFICE, HOME, FIELD
-
-  // Smart Ops
-  latitude     Float?
-  longitude    Float?
-  isGeofenced  Boolean @default(false)
-  locationName String?
-  deviceInfo   String?
-
-  companyId String?
-  company   Company? @relation(fields: [companyId], references: [id])
-
-  // Phase 2 HRMS Upgrade
-  shiftId      String?
-  shift        Shift?    @relation(fields: [shiftId], references: [id])
-  lateMinutes  Int       @default(0)
-  otMinutes    Int       @default(0)
-
-  @@unique([employeeId, date])
-  @@index([companyId])
-}
-
-model WorkReport {
-  id         String          @id @default(uuid())
-  employeeId String
-  employee   EmployeeProfile @relation(fields: [employeeId], references: [id], onDelete: Cascade)
-
-  date    DateTime @default(now())
-  title   String
-  content String?
-
-  // Advanced Metrics
-  category           String  @default("GENERAL") // SALES, DEVELOPMENT, SUPPORT, ADMIN, LEARNING
-  keyOutcome         String? // e.g. "Closed $500 deal"
-  hoursSpent         Float?
-  revenueGenerated   Float   @default(0)
-  tasksCompleted     Int     @default(0)
-  ticketsResolved    Int     @default(0)
-  chatsHandled       Int     @default(0)
-  followUpsCompleted Int     @default(0)
-  
-  metrics            Json?   // Custom role-specific metrics (Sales, Creation, etc.)
-
-  // Scoring
-  selfRating     Int?    @default(5) // 1-10
-  managerRating  Int? // 1-5 (Stars)
-  managerComment String?
-  kraMatchRatio  Float? // Alignment with JD/KRA
-
-  status    String   @default("SUBMITTED") // SUBMITTED, REVIEWED, APPROVED
-  createdAt DateTime @default(now())
-
-  companyId String?
-  company   Company? @relation(fields: [companyId], references: [id])
-
-  comments  WorkReportComment[]
-
-  @@index([companyId])
-  @@index([employeeId])
-}
-
-model WorkReportComment {
-  id           String     @id @default(uuid())
-  workReportId String
-  workReport   WorkReport @relation(fields: [workReportId], references: [id], onDelete: Cascade)
-
-  authorId     String
-  author       User       @relation("WorkReportCommentAuthor", fields: [authorId], references: [id])
-
-  content      String
-  createdAt    DateTime   @default(now())
-
-  @@index([workReportId])
-}
-
-model Holiday {
-  id          String   @id @default(uuid())
-  name        String
-  date        DateTime
-  type        String   @default("PUBLIC") // PUBLIC, OPTIONAL, COMPANY_SPECIFIC
-  description String?
-
-  companyId String?
-  company   Company? @relation(fields: [companyId], references: [id], onDelete: Cascade)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([companyId])
-  @@index([date])
-}
-
-// SUPPLY CHAIN & OPS
-model InventoryItem {
-  id           String   @id @default(uuid())
-  name         String
-  sku          String   @unique
-  currentStock Int
-  minThreshold Int      @default(10)
-  category     String // RAW_MATERIAL, FINISHED_GOOD, PACKAGING
-  price        Float    @default(0)
-  updatedAt    DateTime @updatedAt
-}
-
-model ProductionOrder {
-  id         String   @id @default(uuid())
-  itemSku    String
-  quantity   Int
-  status     String   @default("PLANNED") // PLANNED, IN_PROGRESS, COMPLETED
-  priority   String   @default("MEDIUM") // HIGH, MEDIUM, LOW
-  reason     String? // AI Generated Reason
-  targetDate DateTime
-  createdAt  DateTime @default(now())
-}
-
-model SalarySlip {
-  id         String          @id @default(uuid())
-  employeeId String
-  employee   EmployeeProfile @relation(fields: [employeeId], references: [id], onDelete: Cascade)
-
-  month       Int
-  year        Int
-  amountPaid  Float
-  status      String   @default("GENERATED") // GENERATED, PAID
-  fileUrl     String?
-  generatedAt DateTime @default(now())
-
-  companyId String?
-  company   Company? @relation(fields: [companyId], references: [id])
-
-  advanceDeduction Float @default(0)
-  lwpDeduction     Float @default(0) // Leave Without Pay deduction
-  
-  advanceEmi       AdvanceEMI?
-
-  // Extended Breakdown for Compliance
-  basicSalary       Float   @default(0)
-  hra               Float   @default(0)
-  conveyance        Float   @default(0)
-  medical           Float   @default(0)
-  specialAllowance  Float   @default(0)
-  otherAllowances   Float   @default(0)
-  
-  grossSalary       Float   @default(0)
-
-  pfEmployee        Float   @default(0)
-  esicEmployee      Float   @default(0)
-  professionalTax   Float   @default(0)
-  tds               Float   @default(0)
-  totalDeductions   Float   @default(0)
-
-  pfEmployer        Float   @default(0)
-  esicEmployer      Float   @default(0)
-  ctc               Float   @default(0) // Month's total CTC contribution
-  
-  arrears           Float   @default(0)
-  isFinalSettlement Boolean @default(false)
-  notes             String?
-
-  arrearRecords     ArrearRecord[]
-
-  @@index([companyId])
-}
-
-model ArrearRecord {
-  id           String   @id @default(uuid())
-  salarySlipId String
-  salarySlip   SalarySlip @relation(fields: [salarySlipId], references: [id], onDelete: Cascade)
-  
-  type         String   // INCREMENT_ARREARS, LATE_JOINING, REVISION
-  amount       Float
-  description  String?
-  
-  createdAt    DateTime @default(now())
-
-  @@index([salarySlipId])
-}
-
-model DepartmentBudget {
-  id           String   @id @default(uuid())
-  departmentId String
-  department   Department @relation(fields: [departmentId], references: [id], onDelete: Cascade)
-  
-  companyId    String
-  company      Company    @relation(fields: [companyId], references: [id])
-
-  fiscalYear   Int
-  month        Int?       // Optional for annual vs monthly budgeting
-  
-  allocated    Float
-  spent        Float      @default(0)
-  
-  category     String     @default("SALARY") // SALARY, TRAINING, OPERATIONS
-  
-  createdAt    DateTime   @default(now())
-  updatedAt    DateTime   @updatedAt
-
-  @@index([departmentId])
-  @@index([companyId])
-}
-
-model StatutoryConfig {
-  id                String   @id @default(uuid())
-  companyId         String   @unique
-  company           Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
-
-  // PF Settings
-  pfEmployeeRate    Float    @default(12.0)
-  pfEmployerRate    Float    @default(12.0)
-  pfCeilingAmount   Float    @default(15000.0)
-  pfAdminCharges    Float    @default(0.5)
-
-  // ESIC Settings
-  esicEmployeeRate  Float    @default(0.75)
-  esicEmployerRate  Float    @default(3.25)
-  esicLimitAmount   Float    @default(21000.0)
-
-  // Professional Tax Settings
-  ptEnabled         Boolean  @default(true)
-  state             String?
-
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
-}
-
-model TaxDeclaration {
-  id                String          @id @default(uuid())
-  employeeId        String
-  employee          EmployeeProfile @relation(fields: [employeeId], references: [id], onDelete: Cascade)
-  fiscalYear        String          // e.g., "2023-24"
-  regime            String          @default("NEW") // OLD, NEW
-
-  // Standard Sections
-  section80C        Float           @default(0)
-  section80D        Float           @default(0)
-  nps               Float           @default(0)
-  hraRentPaid       Float           @default(0)
-  homeLoanInterest  Float           @default(0)
-  otherIncome       Float           @default(0)
-
-  status            String          @default("DRAFT") // DRAFT, SUBMITTED, APPROVED, REJECTED
-  adminComment      String?
-  
-  proofs            DeclarationProof[]
-  
-  createdAt         DateTime        @default(now())
-  updatedAt         DateTime        @updatedAt
-
-  @@index([employeeId])
-}
-
-model DeclarationProof {
-  id                  String         @id @default(uuid())
-  taxDeclarationId    String
-  taxDeclaration      TaxDeclaration @relation(fields: [taxDeclarationId], references: [id], onDelete: Cascade)
-  
-  category            String         // 80C, 80D, HRA, etc.
-  fileUrl             String
-  fileName            String
-  amount              Float
-  status              String         @default("PENDING") // PENDING, APPROVED, REJECTED
-  
-  createdAt           DateTime       @default(now())
-}
-
-model Shift {
-  id              String   @id @default(uuid())
-  name            String
-  startTime       String   // e.g., "09:00"
-  endTime         String   // e.g., "18:00"
-  gracePeriod     Int      @default(15) // Minutes
-  isNightShift    Boolean  @default(false)
-  
-  companyId       String
-  company         Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  
-  attendances     Attendance[]
-  rosters         ShiftRoster[]
-  
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-
-  @@index([companyId])
-}
-
-model ShiftRoster {
-  id          String   @id @default(uuid())
-  employeeId  String
-  employee    EmployeeProfile @relation(fields: [employeeId], references: [id], onDelete: Cascade)
-  shiftId     String
-  shift       Shift    @relation(fields: [shiftId], references: [id], onDelete: Cascade)
-  date        DateTime // For fixed date shift assignment
-  
-  companyId   String
-  company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  
-  createdAt   DateTime @default(now())
-
-  @@unique([employeeId, date])
-  @@index([companyId])
-}
-
-model SalaryStructure {
-  id                String          @id @default(uuid())
-  employeeId        String          @unique
-  employee          EmployeeProfile @relation(fields: [employeeId], references: [id], onDelete: Cascade)
-
-  // Earnings
-  basicSalary       Float   @default(0)
-  hra               Float   @default(0)
-  conveyance        Float   @default(0)
-  medical           Float   @default(0)
-  specialAllowance  Float   @default(0)
-  otherAllowances   Float   @default(0)
-
-  // Computed
-  grossSalary       Float   @default(0)
-
-  // Deductions
-  pfEmployee        Float   @default(0) // 12% typically
-  esicEmployee      Float   @default(0) // 0.75% typically
-  professionalTax   Float   @default(0)
-  tds               Float   @default(0)
-  totalDeductions   Float   @default(0)
-
-  // Employer Contributions (Cost to Company)
-  pfEmployer        Float   @default(0)
-  esicEmployer      Float   @default(0)
-  gratuity          Float   @default(0)
-  insurance         Float   @default(0)
-
-  netSalary         Float   @default(0) // In Hand
-  ctc               Float   @default(0) // annual or monthly total
-
-  effectiveFrom     DateTime @default(now())
-  
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
-}
-
-model PerformanceReview {
-  id         String          @id @default(uuid())
-  employeeId String
-  employee   EmployeeProfile @relation(fields: [employeeId], references: [id], onDelete: Cascade)
-
-  reviewerId String
-  reviewer   User   @relation("Reviewer", fields: [reviewerId], references: [id])
-
-  date     DateTime @default(now())
-  rating   Int // 1-5
-  feedback String?
-  period   String? // Q1, 2024, Annual, etc.
-
-  companyId String?
-  company   Company? @relation(fields: [companyId], references: [id])
-
-  createdAt DateTime @default(now())
-
-  @@index([companyId])
-}
-
-model EmployeeKPI {
-  id          String   @id @default(uuid())
-  employeeId  String
-  employee    EmployeeProfile @relation(fields: [employeeId], references: [id], onDelete: Cascade)
-  
-  title       String
-  target      Float
-  current     Float    @default(0)
-  unit        String   // e.g. "INR", "Units", "%"
-  period      String   // "JAN-2024", "Q1-2024" etc.
-  
-  category    String   @default("GENERAL") // SALES, SUPPORT, TECHNICAL, etc.
-  
-  companyId   String
-  company     Company  @relation(fields: [companyId], references: [id])
-  
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @default(now())
-
-  goals       EmployeeGoal[]
-
-  @@index([employeeId])
-  @@index([companyId])
-}
-
-model PerformanceInsight {
-  id          String   @id @default(uuid())
-  employeeId  String
-  employee    EmployeeProfile @relation(fields: [employeeId], references: [id], onDelete: Cascade)
-  
-  content     String   // AI generated analysis
-  type        String   // STRENGTH, WEAKNESS, SUGGESTION
-  
-  date        DateTime @default(now())
-  companyId   String
-  company     Company  @relation(fields: [companyId], references: [id])
-
-  @@index([employeeId])
-  @@index([companyId])
-}
-
-model LeaveRequest {
-  id         String          @id @default(uuid())
-  employeeId String
-  employee   EmployeeProfile @relation(fields: [employeeId], references: [id], onDelete: Cascade)
-
-  startDate    DateTime
-  endDate      DateTime
-  reason       String
-  type         String // SICK, CASUAL, ANNUAL
-  status       String   @default("PENDING") // PENDING, APPROVED, REJECTED
-  approvedById String?
-  approvedBy   User?    @relation("LeaveApprover", fields: [approvedById], references: [id])
-
-  createdAt DateTime @default(now())
-
-  companyId String?
-  company   Company? @relation(fields: [companyId], references: [id])
-
-  @@index([companyId])
-}
-
-model WorkPlan {
-  id         String          @id @default(uuid())
-  employeeId String
-  employee   EmployeeProfile @relation(fields: [employeeId], references: [id], onDelete: Cascade)
-
-  date     DateTime // The day this plan is for
-  agenda   String // Next day work agenda
-  strategy String? // Plan/Strategy
-  status   String @default("SHARED") // DRAFT, SHARED, REVIEWED
-
-  comments WorkPlanComment[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  companyId String?
-  company   Company? @relation(fields: [companyId], references: [id])
-
-  @@unique([employeeId, date])
-  @@index([companyId])
-}
-
-model OnboardingModule {
-  id          String @id @default(uuid())
-  title       String
-  type        String // COMPANY, ROLE, DEPARTMENT
-  description String?
-  content     String // Markdown content for study material
-
-  departmentId String?
-  department   Department? @relation(fields: [departmentId], references: [id])
-  
-  // Filtering 
-  companyId String
-  company   Company @relation(fields: [companyId], references: [id])
-
-  requiredForDesignation String? // Optional: Only for specific designations
-
-  questions    QuizQuestion[]
-  progress     OnboardingProgress[]
-
-  order       Int @default(0)
-  isActive    Boolean @default(true)
-  
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  @@index([companyId])
-}
-
-model QuizQuestion {
-  id          String @id @default(uuid())
-  moduleId    String
-  module      OnboardingModule @relation(fields: [moduleId], references: [id], onDelete: Cascade)
-  
-  question    String
-  options     String[] // Stored as array
-  correctAnswer Int // Index (0-3)
-
-  createdAt   DateTime @default(now())
-}
-
-model OnboardingProgress {
-  id          String @id @default(uuid())
-  employeeId  String
-  employee    EmployeeProfile @relation(fields: [employeeId], references: [id], onDelete: Cascade)
-  
-  moduleId    String
-  module      OnboardingModule @relation(fields: [moduleId], references: [id])
-  
-  status      String @default("LOCKED") // LOCKED, UNLOCKED, COMPLETED, FAILED
-  score       Float?
-  
-  completedAt DateTime?
-  updatedAt   DateTime @updatedAt
-
-  @@unique([employeeId, moduleId])
-}
-
-
-model WorkPlanComment {
-  id         String   @id @default(uuid())
-  workPlanId String
-  workPlan   WorkPlan @relation(fields: [workPlanId], references: [id], onDelete: Cascade)
-
-  userId String
-  user   User   @relation(fields: [userId], references: [id])
-
-  content   String
-  createdAt DateTime @default(now())
-}
-
-model DocumentTemplate {
-  id        String   @id @default(uuid())
-  title     String
-  type      String   // OFFER, CONTRACT, NDA, POLICY
-  content   String   // HTML with placeholders
-  
-  companyId String
-  company   Company  @relation(fields: [companyId], references: [id])
-  
-  isActive  Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  digitalDocuments DigitalDocument[]
-
-  @@index([companyId])
-}
-
-model DigitalDocument {
-  id          String   @id @default(uuid())
-  templateId  String
-  template    DocumentTemplate @relation(fields: [templateId], references: [id])
-  
-  employeeId  String
-  employee    EmployeeProfile @relation(fields: [employeeId], references: [id], onDelete: Cascade)
-
-  title       String
-  content     String   // The resolved content (snapshot)
-  status      String   @default("PENDING") // PENDING, SIGNED, REVOKED
-  
-  signedAt    DateTime?
-  signatureIp String?
-  
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  @@index([employeeId])
-}
-
-// ============================================
-// RECRUITMENT & HIRING SYSTEM
-// ============================================
-
-model JobPosting {
-  id        String  @id @default(uuid())
-  companyId String
-  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
-
-  title        String
-  description  String
-  requirements String?
-  location     String?
-  salaryRange  String?
-  type         String  @default("FULL_TIME") // FULL_TIME, PART_TIME, CONTRACT
-  status       String  @default("OPEN") // OPEN, CLOSED, DRAFT
-
-  applications JobApplication[]
-  exam         RecruitmentExam?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  
-  departmentId String?
-  department   Department? @relation(fields: [departmentId], references: [id])
-}
-
-model JobApplication {
-  id           String     @id @default(uuid())
-  jobPostingId String
-  jobPosting   JobPosting @relation(fields: [jobPostingId], references: [id], onDelete: Cascade)
-
-  applicantName  String
-  applicantEmail String
-  applicantPhone String?
-  resumeUrl      String?
-  status         String  @default("APPLIED") // APPLIED, EXAM_PENDING, EXAM_PASSED, EXAM_FAILED, INTERVIEW_L1, INTERVIEW_L2, INTERVIEW_L3, SELECTED, REJECTED, ONBOARDED
-
-  examAttempt ExamAttempt?
-  interviews  RecruitmentInterview[]
-
-  // Final Docs
-  offerLetterUrl String?
-  contractUrl    String?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  
-  departmentId String?
-  department   Department? @relation(fields: [departmentId], references: [id])
-}
-
-model RecruitmentExam {
-  id           String     @id @default(uuid())
-  jobPostingId String     @unique
-  jobPosting   JobPosting @relation(fields: [jobPostingId], references: [id], onDelete: Cascade)
-
-  questions      Json // Array of { question: string, options: string[], correctOption: number }
-  timeLimit      Int   @default(30) // in minutes
-  passPercentage Float @default(75.0)
-
-  attempts ExamAttempt[]
-}
-
-model ExamAttempt {
-  id            String         @id @default(uuid())
-  applicationId String         @unique
-  application   JobApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
-
-  examId String
-  exam   RecruitmentExam @relation(fields: [examId], references: [id])
-
-  score    Float
-  isPassed Boolean
-  answers  Json // Array of selected option indices
-
-  startedAt   DateTime  @default(now())
-  completedAt DateTime?
-}
-
-model RecruitmentInterview {
-  id            String         @id @default(uuid())
-  applicationId String
-  application   JobApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
-
-  level         Int // 1, 2, or 3
-  interviewerId String
-  interviewer   User     @relation("RecruitmentInterviewer", fields: [interviewerId], references: [id])
-  
-  scheduledAt   DateTime
-  duration      Int      @default(30) // Minutes
-  type          String   @default("VIRTUAL") // VIRTUAL, IN_PERSON, PHONE
-  
-  meetingLink   String?
-  location      String?
-  
-  status        String   @default("SCHEDULED") // SCHEDULED, COMPLETED, CANCELLED, NO_SHOW
-  
-  feedback      String?  @db.Text
-  rating        Int?     // 1-10
-  result        String   @default("PENDING") // PENDING, PASSED, FAILED
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@unique([applicationId, level])
-}
-
-// ============================================
-// LOGISTICS & DISPATCH
-// ============================================
-
-model Courier {
-  id          String  @id @default(uuid())
-  name        String
-  website     String?
-  apiEndpoint String?
-  apiKey      String?
-  isActive    Boolean @default(true)
-
-  dispatches DispatchOrder[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
-
-model DispatchOrder {
-  id             String  @id @default(uuid())
-  subscriptionId String?
-  invoiceId      String?
-
-  recipientName String
-  address       String
-  city          String
-  state         String
-  pincode       String
-  country       String
-  phone         String
-
-  items  Json // Details of what is inside
-  weight Float? // in kg
-
-  courierId String?
-  courier   Courier? @relation(fields: [courierId], references: [id])
-
-  trackingNumber String?
-  status         DispatchStatus @default(PENDING)
-  shippedDate    DateTime?
-  deliveredDate  DateTime?
-
-  generatedLabelUrl String?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  companyId String?
-  company   Company? @relation(fields: [companyId], references: [id])
-
-  @@index([companyId])
-  @@index([status])
-  @@index([trackingNumber])
 }
 
 enum DispatchStatus {
@@ -1930,38 +1897,6 @@ enum DispatchStatus {
   LOST
 }
 
-// ============================================
-// PUBLICATION MANAGEMENT (JMS)
-// ============================================
-
-model JournalVolume {
-  id        String  @id @default(uuid())
-  journalId String
-  journal   Journal @relation(fields: [journalId], references: [id])
-
-  volumeNumber Int
-  year         Int
-
-  issues JournalIssue[]
-
-  isActive Boolean @default(true)
-}
-
-model JournalIssue {
-  id       String        @id @default(uuid())
-  volumeId String
-  volume   JournalVolume @relation(fields: [volumeId], references: [id])
-
-  issueNumber Int
-  month       String?
-  title       String? // Special issue title
-
-  status      IssueStatus @default(PLANNED)
-  publishedAt DateTime?
-
-  articles Article[]
-}
-
 enum IssueStatus {
   PLANNED
   IN_PROGRESS
@@ -1969,31 +1904,11 @@ enum IssueStatus {
   ARCHIVED
 }
 
-model Article {
-  id       String  @id @default(uuid())
-  title    String
-  abstract String?
-  keywords String?
-
-  journalId String
-  journal   Journal @relation(fields: [journalId], references: [id])
-
-  issueId String?
-  issue   JournalIssue? @relation(fields: [issueId], references: [id])
-
-  authors ArticleAuthor[]
-
-  submissionDate  DateTime  @default(now())
-  acceptanceDate  DateTime?
-  publicationDate DateTime?
-
-  status  ArticleStatus @default(SUBMITTED)
-  fileUrl String? // Manuscript
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  reviews Review[]
+enum APCType {
+  OPEN_ACCESS
+  RAPID
+  WOS
+  OTHER
 }
 
 enum ArticleStatus {
@@ -2003,317 +1918,6 @@ enum ArticleStatus {
   ACCEPTED
   REJECTED
   PUBLISHED
-}
-
-model Review {
-  id               String    @id @default(uuid())
-  articleId        String
-  article          Article   @relation(fields: [articleId], references: [id])
-  reviewerId       String
-  reviewer         User      @relation(fields: [reviewerId], references: [id])
-  rating           Int?
-  commentsToEditor String?
-  commentsToAuthor String?
-  recommendation   String? // ACCEPT, MINOR_REVISION, MAJOR_REVISION, REJECT
-  status           String    @default("PENDING") // PENDING, COMPLETED, CANCELLED
-  dueDate          DateTime?
-  createdAt        DateTime  @default(now())
-  updatedAt        DateTime  @updatedAt
-
-  @@index([articleId])
-  @@index([reviewerId])
-}
-
-model ArticleAuthor {
-  id        String  @id @default(uuid())
-  articleId String
-  article   Article @relation(fields: [articleId], references: [id])
-
-  userId String? // If they are a registered user
-
-  name            String
-  email           String
-  affiliation     String?
-  isCorresponding Boolean @default(false)
-  displayOrder    Int     @default(0)
-}
-
-// ============================================
-// CONFERENCE MANAGEMENT
-// ============================================
-
-model Conference {
-  id          String   @id @default(uuid())
-  title       String
-  description String
-  startDate   DateTime
-  endDate     DateTime
-  venue       String? // Or "Virtual"
-
-  organizer String?
-  website   String?
-
-  ticketTypes   ConferenceTicketType[]
-  registrations ConferenceRegistration[]
-  papers        ConferencePaper[]
-
-  isActive  Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  companyId String?
-  company   Company? @relation(fields: [companyId], references: [id])
-}
-
-model ConferenceTicketType {
-  id           String     @id @default(uuid())
-  conferenceId String
-  conference   Conference @relation(fields: [conferenceId], references: [id])
-
-  name     String // Early Bird, Regular, Student
-  price    Float
-  currency String @default("INR")
-  limit    Int?
-
-  soldCount Int @default(0)
-
-  registrations ConferenceRegistration[]
-}
-
-model ConferenceRegistration {
-  id           String     @id @default(uuid())
-  conferenceId String
-  conference   Conference @relation(fields: [conferenceId], references: [id])
-
-  userId       String?
-  name         String
-  email        String
-  organization String?
-
-  ticketTypeId String
-  ticketType   ConferenceTicketType @relation(fields: [ticketTypeId], references: [id])
-
-  amountPaid Float
-  status     String @default("REGISTERED") // REGISTERED, CANCELLED, ATTENDED
-
-  paymentId String? // check reference
-
-  createdAt DateTime @default(now())
-}
-
-model ConferencePaper {
-  id           String     @id @default(uuid())
-  conferenceId String
-  conference   Conference @relation(fields: [conferenceId], references: [id])
-
-  title    String
-  abstract String
-  authors  String // Text or Relation
-
-  status String @default("SUBMITTED") // SUBMITTED, ACCEPTED, REJECTED
-
-  presenterName String?
-  presentedAt   DateTime?
-
-  fileUrl String?
-
-  createdAt DateTime @default(now())
-}
-
-// ============================================
-// COURSES & LMS
-// ============================================
-
-model Course {
-  id           String  @id @default(uuid())
-  title        String
-  description  String
-  thumbnailUrl String?
-
-  price    Float  @default(0)
-  currency String @default("INR")
-
-  instructorId String?
-
-  modules     CourseModule[]
-  enrollments CourseEnrollment[]
-
-  isPublished Boolean  @default(false)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  companyId String?
-  company   Company? @relation(fields: [companyId], references: [id])
-}
-
-model CourseModule {
-  id       String @id @default(uuid())
-  courseId String
-  course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
-
-  title String
-  order Int
-
-  lessons CourseLesson[]
-}
-
-model CourseLesson {
-  id       String       @id @default(uuid())
-  moduleId String
-  module   CourseModule @relation(fields: [moduleId], references: [id], onDelete: Cascade)
-
-  title       String
-  order       Int
-  type        String  @default("VIDEO") // VIDEO, TEXT, QUIZ
-  contentUrl  String?
-  textContent String?
-  duration    Int? // in seconds
-
-  progress UserLessonProgress[]
-}
-
-model CourseEnrollment {
-  id       String @id @default(uuid())
-  courseId String
-  course   Course @relation(fields: [courseId], references: [id])
-
-  userId String
-  user   User   @relation(fields: [userId], references: [id])
-
-  enrolledAt  DateTime  @default(now())
-  completedAt DateTime?
-  progress    Float     @default(0) // 0-100
-
-  certificateUrl String?
-}
-
-model UserLessonProgress {
-  id       String       @id @default(uuid())
-  lessonId String
-  lesson   CourseLesson @relation(fields: [lessonId], references: [id])
-
-  userId String
-  user   User   @relation(fields: [userId], references: [id])
-
-  isCompleted  Boolean @default(false)
-  lastPosition Int? // Video timestamp
-
-  updatedAt DateTime @updatedAt
-
-  @@unique([userId, lessonId])
-}
-
-// ============================================
-// IT DEPARTMENT MANAGEMENT
-// ============================================
-
-model ITAsset {
-  id          String   @id @default(uuid())
-  companyId   String
-  company     Company  @relation(fields: [companyId], references: [id])
-
-  name        String
-  type        String   // LAPTOP, DESKTOP, LICENSE, PERIPHERAL, MOBILE, SERVER
-  serialNumber String?
-  purchaseDate DateTime?
-  warrantyExpiry DateTime?
-  status      String   @default("AVAILABLE") // AVAILABLE, ASSIGNED, MAINTENANCE, RETIRED, LOST
-
-  assignedToId String?
-  assignedTo   User?    @relation(fields: [assignedToId], references: [id])
-  
-  details     String?  // JSON or text description
-  value       Float?   // Monetary value
-
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  tickets     ITSupportTicket[]
-
-  @@index([companyId])
-  @@index([assignedToId])
-}
-
-model ITSupportTicket {
-  id          String   @id @default(uuid())
-  companyId   String
-  company     Company  @relation(fields: [companyId], references: [id])
-
-  requesterId String
-  requester   User     @relation("ITRequestor", fields: [requesterId], references: [id])
-
-  assignedToId String?
-  assignedTo   User?    @relation("ITResolver", fields: [assignedToId], references: [id])
-
-  assetId     String?
-  asset       ITAsset? @relation(fields: [assetId], references: [id])
-
-  title       String
-  description String
-  priority    String   @default("MEDIUM") // LOW, MEDIUM, HIGH, CRITICAL
-  status      String   @default("OPEN")   // OPEN, IN_PROGRESS, RESOLVED, CLOSED
-  category    String?  // HARDWARE, SOFTWARE, NETWORK, ACCESS
-
-  resolution  String?
-
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  @@index([companyId])
-  @@index([requesterId])
-  @@index([status])
-}
-
-model FinancialRecord {
-  id          String   @id @default(uuid())
-  companyId   String?
-  company     Company? @relation(fields: [companyId], references: [id])
-  
-  type        FinancialType @default(EXPENSE)
-  category    String        // SALARY, RENT, BILLS, SUBSCRIPTION, SALE, OTHER
-  amount      Float
-  currency    String        @default("INR")
-  date        DateTime      @default(now())
-  description String?
-  status      String        @default("COMPLETED") // PENDING, COMPLETED, CANCELLED
-  paymentMethod String?     // CASH, BANK_TRANSFER, CARD, UPI
-  referenceId   String?     // Link to invoiceId, etc.
-  
-  createdByUserId String?
-  createdByUser   User?    @relation("FinanceCreator", fields: [createdByUserId], references: [id])
-
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  @@index([companyId])
-  @@index([type])
-  @@index([category])
-  @@index([date])
-}
-
-
-model LeaveLedger {
-  id         String          @id @default(uuid())
-  employeeId String
-  employee   EmployeeProfile @relation(fields: [employeeId], references: [id], onDelete: Cascade)
-
-  month Int
-  year  Int
-
-  openingBalance Float @default(0) // "old leave"
-  takenLeaves    Float @default(0) // "taken leave"
-  closingBalance Float @default(0) // "balance leave"
-
-  remarks String?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  companyId String?
-  company   Company? @relation(fields: [companyId], references: [id])
-
-  @@unique([employeeId, month, year])
-  @@index([companyId])
 }
 
 enum FinancialType {
@@ -2330,36 +1934,6 @@ enum EmployeeType {
   INTERN
 }
 
-model EmployeeGoal {
-  id          String   @id @default(uuid())
-  employeeId  String
-  employee    EmployeeProfile @relation(fields: [employeeId], references: [id], onDelete: Cascade)
-  
-  title       String
-  description String?
-  targetValue Float
-  currentValue Float    @default(0)
-  unit        String   // e.g. "INR", "Units", "%"
-  
-  type        GoalType @default(MONTHLY)
-  startDate   DateTime
-  endDate     DateTime
-  
-  status      String   @default("IN_PROGRESS") // IN_PROGRESS, ACHIEVED, MISSED
-  
-  companyId   String
-  company     Company  @relation(fields: [companyId], references: [id])
-  
-  kpiId       String?
-  kpi         EmployeeKPI? @relation(fields: [kpiId], references: [id], onDelete: SetNull)
-
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  @@index([employeeId])
-  @@index([companyId])
-}
-
 enum GoalType {
   MONTHLY
   QUARTERLY
@@ -2367,78 +1941,7 @@ enum GoalType {
   YEARLY
 }
 
-model IncentiveSchema {
-  id          String   @id @default(uuid())
-  companyId   String
-  company     Company  @relation(fields: [companyId], references: [id])
-  
-  name        String
-  description String?
-  type        RewardType @default(PERCENTAGE)
-  value       Float      // Percentage or Fixed amount
-  
-  criteria    String?    // JSON string describing criteria
-  isActive    Boolean    @default(true)
-  
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-}
-
-model BonusSchema {
-  id          String   @id @default(uuid())
-  companyId   String
-  company     Company  @relation(fields: [companyId], references: [id])
-  
-  name        String
-  description String?
-  amount      Float
-  frequency   String     @default("YEARLY") // MONTHLY, QUARTERLY, YEARLY, ONE_TIME
-  
-  isActive    Boolean    @default(true)
-  
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-}
-
-model EmployeeIncentive {
-  id                String          @id @default(uuid())
-  employeeProfileId String
-  employeeProfile   EmployeeProfile @relation(fields: [employeeProfileId], references: [id], onDelete: Cascade)
-  
-  amount            Float
-  reason            String
-  date              DateTime        @default(now())
-  status            String          @default("PENDING") // PENDING, APPROVED, PAID
-  
-  createdAt         DateTime        @default(now())
-  updatedAt         DateTime        @updatedAt
-}
-
 enum RewardType {
   PERCENTAGE
   FIXED_AMOUNT
 }
-
-model CompanyPotential {
-  id          String   @id @default(uuid())
-  companyId   String   @unique
-  company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  
-  // Potential Data
-  monthlyPotential  Float?
-  quarterlyPotential Float?
-  halfYearlyPotential Float?
-  yearlyPotential    Float?
-  twoYearPotential   Float?
-  threeYearPotential Float?
-  fiveYearPotential  Float?
-  
-  growthFactors      Json?   // Array of { factor, impact, importance }
-  marketData         Json?   // Real-time market trends info
-  
-  lastCalculated     DateTime @default(now())
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
-}
-
-

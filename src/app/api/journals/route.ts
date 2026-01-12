@@ -17,20 +17,26 @@ export async function GET(req: NextRequest) {
         const limit = parseInt(searchParams.get('limit') || '50');
 
         // 3. Query Journals
+        const where: any = {
+            isActive: true,
+            AND: [
+                search ? {
+                    OR: [
+                        { name: { contains: search, mode: 'insensitive' } },
+                        { issnPrint: { contains: search, mode: 'insensitive' } },
+                        { issnOnline: { contains: search, mode: 'insensitive' } }
+                    ]
+                } : {},
+                category ? { subjectCategory: { contains: category } } : {}
+            ]
+        };
+
+        if (decoded.role === 'EDITOR') {
+            where.editorId = decoded.id;
+        }
+
         const journals = await prisma.journal.findMany({
-            where: {
-                isActive: true,
-                AND: [
-                    search ? {
-                        OR: [
-                            { name: { contains: search, mode: 'insensitive' } },
-                            { issnPrint: { contains: search, mode: 'insensitive' } },
-                            { issnOnline: { contains: search, mode: 'insensitive' } }
-                        ]
-                    } : {},
-                    category ? { subjectCategory: { contains: category } } : {}
-                ]
-            },
+            where,
             include: {
                 plans: {
                     where: { isActive: true }
@@ -58,7 +64,14 @@ export async function POST(req: NextRequest) {
 
         // 2. Parse Body
         const body = await req.json();
-        const { name, issnPrint, issnOnline, frequency, formatAvailable, subjectCategory, priceINR, priceUSD, plans } = body;
+        const {
+            name, issnPrint, issnOnline, frequency, formatAvailable, subjectCategory,
+            priceINR, priceUSD, plans, editorId,
+            apcOpenAccessINR, apcOpenAccessUSD,
+            apcRapidINR, apcRapidUSD,
+            apcWoSINR, apcWoSUSD,
+            apcOtherINR, apcOtherUSD
+        } = body;
 
         // 3. Create Journal and Plans
         const journal = await prisma.journal.create({
@@ -71,8 +84,17 @@ export async function POST(req: NextRequest) {
                 subjectCategory,
                 priceINR: parseFloat(priceINR || '0'),
                 priceUSD: parseFloat(priceUSD || '0'),
+                editorId,
+                apcOpenAccessINR: parseFloat(apcOpenAccessINR || '0'),
+                apcOpenAccessUSD: parseFloat(apcOpenAccessUSD || '0'),
+                apcRapidINR: parseFloat(apcRapidINR || '0'),
+                apcRapidUSD: parseFloat(apcRapidUSD || '0'),
+                apcWoSINR: parseFloat(apcWoSINR || '0'),
+                apcWoSUSD: parseFloat(apcWoSUSD || '0'),
+                apcOtherINR: parseFloat(apcOtherINR || '0'),
+                apcOtherUSD: parseFloat(apcOtherUSD || '0'),
                 plans: {
-                    create: plans.map((plan: any) => ({
+                    create: (plans || []).map((plan: any) => ({
                         planType: plan.planType,
                         format: plan.format,
                         duration: parseInt(plan.duration),
