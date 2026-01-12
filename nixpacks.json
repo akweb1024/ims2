@@ -1,0 +1,39 @@
+{
+    "providers": [
+        "node"
+    ],
+    "variables": {
+        "NPM_CONFIG_PRODUCTION": "false",
+        "NODE_ENV": "production",
+        "NIXPACKS_NODE_VERSION": "22",
+        "NODE_OPTIONS": "--max-old-space-size=4096"
+    },
+    "phases": {
+        "setup": {
+            "nixPkgs": [
+                "nodejs_22",
+                "npm-9_x",
+                "openssl",
+                "curl",
+                "wget",
+                "gcc-unwrapped",
+                "libuuid",
+                "libGL"
+            ]
+        },
+        "install": {
+            "cmds": [
+                "npm ci --include=dev"
+            ]
+        },
+        "build": {
+            "cmds": [
+                "npx prisma generate",
+                "npm run build"
+            ]
+        },
+        "start": {
+            "cmd": "npm run start"
+        }
+    }
+}
