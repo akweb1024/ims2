@@ -8,6 +8,7 @@ import BulletinBoard from '@/components/dashboard/BulletinBoard';
 import MarketMonitor from '@/components/dashboard/MarketMonitor';
 import AIInsightsWidget from '@/components/dashboard/AIInsightsWidget';
 import { useSession } from 'next-auth/react';
+import RevenueMismatchAlert from '@/components/dashboard/RevenueMismatchAlert';
 
 export default function DashboardPage() {
     const router = useRouter();
@@ -99,6 +100,9 @@ export default function DashboardPage() {
     return (
         <DashboardLayout userRole={userRole}>
             <div className="space-y-6">
+                {['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'FINANCE_ADMIN'].includes(userRole) && (
+                    <RevenueMismatchAlert />
+                )}
                 {/* Header */}
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
                     <div>

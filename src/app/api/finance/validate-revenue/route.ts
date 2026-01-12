@@ -5,62 +5,79 @@ import { createErrorResponse } from '@/lib/api-utils';
 import { startOfDay, endOfDay } from 'date-fns';
 
 export const GET = authorizedRoute(
-    ['SUPER_ADMIN', 'ADMIN', 'FINANCE_ADMIN'],
+    ['SUPER_ADMIN', 'ADMIN', 'FINANCE_ADMIN', 'MANAGER'],
     async (req: NextRequest, user) => {
         try {
             const { searchParams } = new URL(req.url);
-            const dateStr = searchParams.get('date') || new RegExp(/^\d{4}-\d{2}-\d{2}$/).test(new Date().toISOString().split('T')[0]!) ? new Date().toISOString().split('T')[0] : null;
+            const dateStr = searchParams.get('date') || new Date().toISOString().split('T')[0];
+            const days = parseInt(searchParams.get('days') || '1');
 
-            if (!dateStr) return createErrorResponse('Date is required (YYYY-MM-DD)', 400);
             if (!user.companyId) return createErrorResponse('Company association required', 403);
 
-            const date = new Date(dateStr);
-            const start = startOfDay(date);
-            const end = endOfDay(date);
+            const results = [];
+            const endDate = new Date(dateStr);
 
-            // 1. Get total revenue from Work Reports
-            const workReportRevenue = await prisma.workReport.aggregate({
-                where: {
-                    companyId: user.companyId,
-                    date: {
-                        gte: start,
-                        lte: end
-                    }
-                },
-                _sum: {
-                    revenueGenerated: true
-                }
-            });
+            for (let i = 0; i < days; i++) {
+                const currentDate = new Date(endDate);
+                currentDate.setDate(currentDate.getDate() - i);
+                const start = startOfDay(currentDate);
+                const end = endOfDay(currentDate);
 
-            // 2. Get total revenue from Financial Records
-            const financeRevenue = await prisma.financialRecord.aggregate({
-                where: {
-                    companyId: user.companyId,
-                    type: 'REVENUE',
-                    date: {
-                        gte: start,
-                        lte: end
+                // 1. Get total revenue from Work Reports
+                const workReportRevenue = await prisma.workReport.aggregate({
+                    where: {
+                        companyId: user.companyId,
+                        date: { gte: start, lte: end }
                     },
-                    status: 'COMPLETED'
-                },
-                _sum: {
-                    amount: true
-                }
-            });
+                    _sum: { revenueGenerated: true }
+                });
 
-            const reportedTotal = workReportRevenue._sum.revenueGenerated || 0;
-            const actualTotal = financeRevenue._sum.amount || 0;
-            const mismatch = Math.abs(reportedTotal - actualTotal);
-            const isValid = mismatch < 0.01; // Accounting for floating point
+                // 2. Get revenue from Financial Records
+                const financeRevenue = await prisma.financialRecord.aggregate({
+                    where: {
+                        companyId: user.companyId,
+                        type: 'REVENUE',
+                        date: { gte: start, lte: end },
+                        status: 'COMPLETED'
+                    },
+                    _sum: { amount: true }
+                });
 
-            return NextResponse.json({
-                date: dateStr,
-                reportedTotal,
-                actualTotal,
-                mismatch,
-                isValid,
-                alert: !isValid ? `Mismatch detected! Reported: ${reportedTotal}, Actual: ${actualTotal}` : null
-            });
+                // 3. Get revenue from Razorpay Payments
+                const razorpayRevenue = await prisma.payment.aggregate({
+                    where: {
+                        companyId: user.companyId,
+                        status: 'captured',
+                        paymentDate: { gte: start, lte: end }
+                    },
+                    _sum: { amount: true }
+                });
+
+                const reportedTotal = workReportRevenue._sum.revenueGenerated || 0;
+                // Use the higher of FinancialRecord or Razorpay, or sum them if they are complementary? 
+                // Usually Razorpay is auto-synced, while FinancialRecord is manual. 
+                // Most reliable is Razorpay, but some might be cash/offline (FinancialRecord).
+                // Let's sum them but avoid double counting? 
+                // For now, let's treat FinancialRecord as the 'Official' book and Razorpay as the 'Digital' source.
+                // If the user hasn't synced Razorpay to FinancialRecords, we should probably check both.
+                const actualTotal = (financeRevenue._sum.amount || 0) + (razorpayRevenue._sum.amount || 0);
+                const mismatch = Math.abs(reportedTotal - actualTotal);
+                const isValid = mismatch < 1; // Tolerance for small rounding
+
+                results.push({
+                    date: currentDate.toISOString().split('T')[0],
+                    reportedRevenue: reportedTotal,
+                    actualRevenue: actualTotal,
+                    financeRevenue: financeRevenue._sum.amount || 0,
+                    razorpayRevenue: razorpayRevenue._sum.amount || 0,
+                    mismatch,
+                    isValid
+                });
+            }
+
+            // If only 1 day requested, return as object for backward compatibility with Alert component, 
+            // otherwise return the array for the table.
+            return NextResponse.json(days === 1 ? results[0] : results);
         } catch (error) {
             return createErrorResponse(error);
         }

@@ -23,6 +23,7 @@ import DocumentTemplateManager from '@/components/dashboard/hr/DocumentTemplateM
 import PerformanceAnalytics from '@/components/dashboard/hr/PerformanceAnalytics';
 import BudgetManager from '@/components/dashboard/hr/BudgetManager';
 import FinalSettlementManager from '@/components/dashboard/hr/FinalSettlementManager';
+import RevenueMismatchAlert from '@/components/dashboard/RevenueMismatchAlert';
 import RecruitmentDashboard from '@/components/dashboard/hr/RecruitmentDashboard';
 import HRNavigation from '@/components/dashboard/hr/HRNavigation';
 import HelpSidebar from '@/components/dashboard/hr/HelpSidebar';
@@ -118,46 +119,71 @@ const LeaveLedgerRow = ({ row, onSave }: { row: any, onSave: (data: any) => Prom
         </tr>
     );
 };
-const RevenueMismatchAlert = () => {
-    const [validation, setValidation] = useState<any>(null);
+// Shared Component handles the specific alerts now
+
+const DailyReconciliationTable = ({ days = 7 }: { days?: number }) => {
+    const [data, setData] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        const checkValidation = async () => {
+        const fetchData = async () => {
             try {
-                const res = await fetch(`/api/finance/validate-revenue?date=${new Date().toISOString().split('T')[0]}`);
-                if (res.ok) {
-                    const data = await res.json();
-                    if (data.mismatch !== 0) {
-                        setValidation(data);
-                    }
-                }
+                const res = await fetch(`/api/finance/validate-revenue?days=${days}`);
+                if (res.ok) setData(await res.json());
             } catch (err) {
                 console.error(err);
             } finally {
                 setLoading(false);
             }
         };
-        checkValidation();
-    }, []);
+        fetchData();
+    }, [days]);
 
-    if (loading || !validation) return null;
+    if (loading) return <div className="p-10 text-center animate-pulse font-bold text-secondary-400">Auditing historical data...</div>;
 
     return (
-        <div className="card-premium bg-rose-50 border-rose-200 border-l-8 border-rose-500 p-6 flex justify-between items-center animate-pulse">
-            <div className="flex items-center gap-4">
-                <div className="text-3xl">⚠️</div>
-                <div>
-                    <h4 className="text-lg font-black text-rose-900 uppercase tracking-tighter">Revenue Mismatch Detected</h4>
-                    <p className="text-rose-700 text-sm font-medium">
-                        Reported: <span className="font-black">₹{validation.reportedRevenue.toLocaleString()}</span> |
-                        Finance: <span className="font-black">₹{validation.financeRevenue.toLocaleString()}</span>
-                    </p>
-                </div>
+        <div className="card-premium p-0 overflow-hidden shadow-xl border-secondary-200">
+            <div className="p-6 border-b border-secondary-100 bg-secondary-900 text-white">
+                <h3 className="text-lg font-black uppercase tracking-tighter">Daily Revenue Reconciliation</h3>
+                <p className="text-xs text-white/60 font-medium">Comparison of reported earnings (Work Reports) vs Actual Gateway Receipts</p>
             </div>
-            <div className="text-right">
-                <p className="text-2xl font-black text-rose-600">Mismatch: ₹{validation.mismatch.toLocaleString()}</p>
-                <p className="text-[10px] font-bold text-rose-400 uppercase tracking-widest">Immediate Audit Recommended</p>
+            <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                    <thead className="bg-secondary-50 text-[10px] font-black text-secondary-400 uppercase tracking-widest">
+                        <tr>
+                            <th className="px-6 py-4 text-left">Audit Date</th>
+                            <th className="px-6 py-4 text-right">Reported (Earnings)</th>
+                            <th className="px-6 py-4 text-right">Actual (Revenue)</th>
+                            <th className="px-6 py-4 text-right">Discrepancy</th>
+                            <th className="px-6 py-4 text-center">Protocol Integrity</th>
+                        </tr>
+                    </thead>
+                    <tbody className="divide-y divide-secondary-100">
+                        {data.map((day) => (
+                            <tr key={day.date} className={`hover:bg-secondary-50 transition-colors ${!day.isValid ? 'bg-rose-50/50' : ''}`}>
+                                <td className="px-6 py-4 font-bold text-secondary-900">
+                                    {new Date(day.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
+                                </td>
+                                <td className="px-6 py-4 text-right font-mono font-bold text-secondary-600">
+                                    ₹{day.reportedRevenue.toLocaleString()}
+                                </td>
+                                <td className="px-6 py-4 text-right font-mono font-bold text-secondary-900">
+                                    ₹{day.actualRevenue.toLocaleString()}
+                                </td>
+                                <td className={`px-6 py-4 text-right font-mono font-black ${day.mismatch > 0 ? 'text-rose-600' : 'text-green-600'}`}>
+                                    {day.mismatch > 0 ? `+₹${day.mismatch.toLocaleString()}` : '₹0'}
+                                </td>
+                                <td className="px-6 py-4 text-center">
+                                    {day.isValid ? (
+                                        <span className="px-3 py-1 bg-green-100 text-green-700 text-[10px] font-black rounded-full uppercase tracking-widest">Verified</span>
+                                    ) : (
+                                        <span className="px-3 py-1 bg-rose-100 text-rose-700 text-[10px] font-black rounded-full uppercase tracking-widest animate-pulse border border-rose-200">🚩 Danger</span>
+                                    )}
+                                </td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
             </div>
         </div>
     );
@@ -797,6 +823,9 @@ const HRManagementContent = () => {
                                 <p className="text-xl font-black text-secondary-900">{workReports.reduce((acc, r) => acc + (r.followUpsCompleted || 0), 0)}</p>
                             </div>
                         </div>
+
+                        {/* Daily Reconciliation Table */}
+                        <DailyReconciliationTable days={14} />
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             {workReports.length === 0 ? (
