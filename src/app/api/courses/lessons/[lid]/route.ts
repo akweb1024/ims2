@@ -23,6 +23,7 @@ export const GET = authorizedRoute(
                     },
                     quizzes: {
                         include: {
+                            questions: true,
                             _count: {
                                 select: { questions: true }
                             }

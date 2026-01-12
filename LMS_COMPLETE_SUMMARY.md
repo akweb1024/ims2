@@ -69,6 +69,13 @@
    - Progress bars for active courses
    - Certificate gallery
    - Quick access to continue learning
+   
+4. **Course Player** (`/dashboard/learn/[courseId]`)
+   - Dedicated learning interface
+   - Video player with progress tracking
+   - Quiz taking with instant feedback
+   - Document viewer
+   - Sidebar navigation
 
 4. **Navigation**
    - Added "My Learning" to sidebar (accessible to all users)
@@ -144,22 +151,18 @@ The system automatically:
 
 These are ready for Phase 2:
 
-1. **Quiz System**
-   - Quiz builder UI
-   - Quiz taking interface
-   - Auto-grading
-   - Results display
-
+1. **Advanced Quiz Features**
+   - Auto-grading (Started)
+   - Results display (Implemented)
+   
 2. **Certificate Generation**
    - PDF generation
    - Auto-issue on completion
    - Verification system
 
-3. **Course Player**
-   - Dedicated lesson player page
-   - Video player integration
+3. **Course Player Enhancements**
    - Notes sidebar
-   - Next/Previous navigation
+   - Next/Previous navigation (Implemented)
 
 4. **Analytics**
    - Instructor analytics dashboard
