@@ -26,6 +26,9 @@ import FinalSettlementManager from '@/components/dashboard/hr/FinalSettlementMan
 import RecruitmentDashboard from '@/components/dashboard/hr/RecruitmentDashboard';
 import HRNavigation from '@/components/dashboard/hr/HRNavigation';
 import HelpSidebar from '@/components/dashboard/hr/HelpSidebar';
+import GoalManager from '@/components/dashboard/hr/GoalManager';
+import RewardManager from '@/components/dashboard/hr/RewardManager';
+import PotentialCalculator from '@/components/dashboard/hr/PotentialCalculator';
 import { Briefcase, Info, Target, TrendingUp, Award, GraduationCap, Edit, Trash2 } from 'lucide-react';
 import {
     useEmployees, useHolidays, useDesignations, useJobs, useApplications,
@@ -113,6 +116,50 @@ const LeaveLedgerRow = ({ row, onSave }: { row: any, onSave: (data: any) => Prom
                 </button>
             </td>
         </tr>
+    );
+};
+const RevenueMismatchAlert = () => {
+    const [validation, setValidation] = useState<any>(null);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const checkValidation = async () => {
+            try {
+                const res = await fetch(`/api/finance/validate-revenue?date=${new Date().toISOString().split('T')[0]}`);
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.mismatch !== 0) {
+                        setValidation(data);
+                    }
+                }
+            } catch (err) {
+                console.error(err);
+            } finally {
+                setLoading(false);
+            }
+        };
+        checkValidation();
+    }, []);
+
+    if (loading || !validation) return null;
+
+    return (
+        <div className="card-premium bg-rose-50 border-rose-200 border-l-8 border-rose-500 p-6 flex justify-between items-center animate-pulse">
+            <div className="flex items-center gap-4">
+                <div className="text-3xl">⚠️</div>
+                <div>
+                    <h4 className="text-lg font-black text-rose-900 uppercase tracking-tighter">Revenue Mismatch Detected</h4>
+                    <p className="text-rose-700 text-sm font-medium">
+                        Reported: <span className="font-black">₹{validation.reportedRevenue.toLocaleString()}</span> |
+                        Finance: <span className="font-black">₹{validation.financeRevenue.toLocaleString()}</span>
+                    </p>
+                </div>
+            </div>
+            <div className="text-right">
+                <p className="text-2xl font-black text-rose-600">Mismatch: ₹{validation.mismatch.toLocaleString()}</p>
+                <p className="text-[10px] font-bold text-rose-400 uppercase tracking-widest">Immediate Audit Recommended</p>
+            </div>
+        </div>
     );
 };
 
@@ -478,6 +525,8 @@ const HRManagementContent = () => {
                         <p className="text-3xl font-black text-secondary-900">₹{allSlips.reduce((acc, curr) => acc + curr.amountPaid, 0).toLocaleString()}</p>
                     </div>
                 </div>
+
+                <RevenueMismatchAlert />
 
             </div>
 
@@ -1121,6 +1170,19 @@ const HRManagementContent = () => {
                         </div>
                     </div>
                 )}
+
+                {activeTab === 'goals' && (
+                    <GoalManager employees={employees} />
+                )}
+
+                {activeTab === 'rewards' && (
+                    <RewardManager />
+                )}
+
+                {activeTab === 'potential' && (
+                    <PotentialCalculator />
+                )}
+
                 {activeTab === 'advances' && (
                     <div className="card-premium overflow-hidden">
                         <div className="p-6 border-b border-secondary-100">

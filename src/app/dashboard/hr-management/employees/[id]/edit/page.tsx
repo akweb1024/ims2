@@ -11,6 +11,7 @@ const initialFormState = {
     name: '',
     password: '',
     role: 'SALES_EXECUTIVE',
+    employeeType: 'FULL_TIME',
     designation: '',
     baseSalary: '',
     bankName: '',
@@ -105,6 +106,7 @@ export default function EditEmployeePage() {
                         name: data.user.name || '',
                         password: '',
                         role: data.user.role,
+                        employeeType: data.employeeType || 'FULL_TIME',
                         designation: data.designatRef?.name || data.designation || '',
                         baseSalary: data.baseSalary || '',
                         bankName: data.bankName || '',
@@ -333,6 +335,21 @@ export default function EditEmployeePage() {
                                     <option value="MANAGER">Manager</option>
                                     <option value="ADMIN">Admin</option>
                                     <option value="FINANCE_ADMIN">Finance Admin</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label className="label-premium">Employee Type</label>
+                                <select
+                                    className="input-premium"
+                                    value={empForm.employeeType}
+                                    onChange={e => setEmpForm({ ...empForm, employeeType: e.target.value })}
+                                >
+                                    <option value="FULL_TIME">Full Time</option>
+                                    <option value="PART_TIME">Part Time</option>
+                                    <option value="CONTRACT">Contract</option>
+                                    <option value="GIG_WORKIE">GIG Worker</option>
+                                    <option value="FREELANCE">Freelance</option>
+                                    <option value="INTERN">Intern</option>
                                 </select>
                             </div>
                             <div>

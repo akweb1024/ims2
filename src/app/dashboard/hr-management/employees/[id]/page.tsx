@@ -93,7 +93,8 @@ export default function EmployeeProfilePage() {
         employeeId: '',
         isActive: true,
         dateOfJoining: '',
-        manualLeaveAdjustment: 0
+        manualLeaveAdjustment: 0,
+        employeeType: 'FULL_TIME'
     });
 
     useEffect(() => {
@@ -198,7 +199,7 @@ export default function EmployeeProfilePage() {
                         <h1 className="text-2xl font-bold text-secondary-900">{employee.user.email}</h1>
                         <p className="text-secondary-500">
                             {employee.employeeId && <span className="font-mono bg-secondary-100 px-1 rounded text-secondary-700 mr-2">{employee.employeeId}</span>}
-                            {employee.designation || 'No Designation'} • {employee.user.role}
+                            {employee.designation || 'No Designation'} • {employee.user.role} • <span className="text-secondary-900 font-bold">{employee.employeeType?.replace('_', ' ')}</span>
                         </p>
                     </div>
                     <div className="ml-auto flex gap-2">
@@ -274,6 +275,10 @@ export default function EmployeeProfilePage() {
                                         <div className="grid grid-cols-2">
                                             <dt className="text-xs font-bold text-secondary-400 uppercase">Designation</dt>
                                             <dd className="font-medium text-secondary-900">{employee.designatRef?.name || employee.designation || '-'}</dd>
+                                        </div>
+                                        <div className="grid grid-cols-2">
+                                            <dt className="text-xs font-bold text-secondary-400 uppercase">Employment Type</dt>
+                                            <dd className="font-bold text-primary-600">{employee.employeeType?.replace('_', ' ')}</dd>
                                         </div>
                                         <div className="grid grid-cols-2">
                                             <dt className="text-xs font-bold text-secondary-400 uppercase">Department</dt>
@@ -619,6 +624,17 @@ export default function EmployeeProfilePage() {
                                                 <option value="FINANCE_ADMIN">Finance Admin</option>
                                                 <option value="HR_MANAGER">HR Manager</option>
                                                 <option value="ADMIN">Admin</option>
+                                            </select>
+                                        </div>
+                                        <div className="col-span-1">
+                                            <label className="label-premium">Employee Type</label>
+                                            <select className="input-premium" value={empForm.employeeType} onChange={e => setEmpForm({ ...empForm, employeeType: e.target.value })}>
+                                                <option value="FULL_TIME">Full Time</option>
+                                                <option value="PART_TIME">Part Time</option>
+                                                <option value="CONTRACT">Contract</option>
+                                                <option value="GIG_WORKIE">GIG Worker</option>
+                                                <option value="FREELANCE">Freelance</option>
+                                                <option value="INTERN">Intern</option>
                                             </select>
                                         </div>
                                         <div className="col-span-1">

@@ -51,6 +51,7 @@ const CATEGORIES = [
             { id: 'advances', label: 'Advance/Loans' },
             { id: 'statutory', label: 'Statutory Compliance' },
             { id: 'budgets', label: 'Allocated Budgets' },
+            { id: 'rewards', label: 'Incentives & Bonuses' },
             { id: 'final-settlement', label: 'F&F Settlement' },
         ]
     },
@@ -68,8 +69,10 @@ const CATEGORIES = [
         icon: <BarChart2 size={18} />,
         tabs: [
             { id: 'analytics', label: 'Performance Reviews' },
+            { id: 'goals', label: 'Goal Tracking (KRA/KPI)' },
             { id: 'reports', label: 'Work Reports' },
             { id: 'productivity', label: 'Productivity Insights' },
+            { id: 'potential', label: 'Company Potential' },
         ]
     }
 ];

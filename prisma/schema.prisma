@@ -79,6 +79,12 @@ model Company {
   salaryAdvances     SalaryAdvance[]
   leaveLedgers       LeaveLedger[]
 
+  // Upgrades
+  employeeGoals      EmployeeGoal[]
+  incentiveSchemas   IncentiveSchema[]
+  bonusSchemas       BonusSchema[]
+  potential          CompanyPotential?
+
   createdAt DateTime   @default(now())
   updatedAt DateTime   @updatedAt
 }
@@ -1019,11 +1025,15 @@ model EmployeeProfile {
   bloodGroup       String?
   profilePicture   String?
 
+  employeeType       EmployeeType @default(FULL_TIME)
+
   attendance    Attendance[]
   workReports   WorkReport[]
   salarySlips   SalarySlip[]
   salaryStructure SalaryStructure?
   performance   PerformanceReview[]
+  goals         EmployeeGoal[]
+  incentives    EmployeeIncentive[]
   leaveRequests LeaveRequest[]
   documents     EmployeeDocument[]
 
@@ -1106,7 +1116,8 @@ model SalaryAdvance {
   emis        AdvanceEMI[]
 
   createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  updatedAt   DateTime @default(now())
+
 
   @@index([employeeId])
   @@index([companyId])
@@ -1570,6 +1581,8 @@ model EmployeeKPI {
   
   createdAt   DateTime @default(now())
   updatedAt   DateTime @default(now())
+
+  goals       EmployeeGoal[]
 
   @@index([employeeId])
   @@index([companyId])
@@ -2306,6 +2319,126 @@ model LeaveLedger {
 enum FinancialType {
   REVENUE
   EXPENSE
+}
+
+enum EmployeeType {
+  FULL_TIME
+  PART_TIME
+  CONTRACT
+  GIG_WORKIE
+  FREELANCE
+  INTERN
+}
+
+model EmployeeGoal {
+  id          String   @id @default(uuid())
+  employeeId  String
+  employee    EmployeeProfile @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  
+  title       String
+  description String?
+  targetValue Float
+  currentValue Float    @default(0)
+  unit        String   // e.g. "INR", "Units", "%"
+  
+  type        GoalType @default(MONTHLY)
+  startDate   DateTime
+  endDate     DateTime
+  
+  status      String   @default("IN_PROGRESS") // IN_PROGRESS, ACHIEVED, MISSED
+  
+  companyId   String
+  company     Company  @relation(fields: [companyId], references: [id])
+  
+  kpiId       String?
+  kpi         EmployeeKPI? @relation(fields: [kpiId], references: [id], onDelete: SetNull)
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([employeeId])
+  @@index([companyId])
+}
+
+enum GoalType {
+  MONTHLY
+  QUARTERLY
+  HALF_YEARLY
+  YEARLY
+}
+
+model IncentiveSchema {
+  id          String   @id @default(uuid())
+  companyId   String
+  company     Company  @relation(fields: [companyId], references: [id])
+  
+  name        String
+  description String?
+  type        RewardType @default(PERCENTAGE)
+  value       Float      // Percentage or Fixed amount
+  
+  criteria    String?    // JSON string describing criteria
+  isActive    Boolean    @default(true)
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model BonusSchema {
+  id          String   @id @default(uuid())
+  companyId   String
+  company     Company  @relation(fields: [companyId], references: [id])
+  
+  name        String
+  description String?
+  amount      Float
+  frequency   String     @default("YEARLY") // MONTHLY, QUARTERLY, YEARLY, ONE_TIME
+  
+  isActive    Boolean    @default(true)
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model EmployeeIncentive {
+  id                String          @id @default(uuid())
+  employeeProfileId String
+  employeeProfile   EmployeeProfile @relation(fields: [employeeProfileId], references: [id], onDelete: Cascade)
+  
+  amount            Float
+  reason            String
+  date              DateTime        @default(now())
+  status            String          @default("PENDING") // PENDING, APPROVED, PAID
+  
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+}
+
+enum RewardType {
+  PERCENTAGE
+  FIXED_AMOUNT
+}
+
+model CompanyPotential {
+  id          String   @id @default(uuid())
+  companyId   String   @unique
+  company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  
+  // Potential Data
+  monthlyPotential  Float?
+  quarterlyPotential Float?
+  halfYearlyPotential Float?
+  yearlyPotential    Float?
+  twoYearPotential   Float?
+  threeYearPotential Float?
+  fiveYearPotential  Float?
+  
+  growthFactors      Json?   // Array of { factor, impact, importance }
+  marketData         Json?   // Real-time market trends info
+  
+  lastCalculated     DateTime @default(now())
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
 }
 
 

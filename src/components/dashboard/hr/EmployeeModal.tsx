@@ -17,6 +17,7 @@ const initialFormState = {
     name: '',
     password: '',
     role: 'SALES_EXECUTIVE',
+    employeeType: 'FULL_TIME',
     designation: '',
     baseSalary: '',
     bankName: '',
@@ -69,6 +70,7 @@ export default function EmployeeModal({ isOpen, onClose, employee, designations,
                 name: employee.user.name || '',
                 password: '', // Don't fill password for edit
                 role: employee.user.role,
+                employeeType: employee.employeeType || 'FULL_TIME',
                 designation: employee.designatRef?.name || employee.designation || '',
                 baseSalary: employee.baseSalary || '',
                 bankName: employee.bankName || '',
@@ -167,6 +169,17 @@ export default function EmployeeModal({ isOpen, onClose, employee, designations,
                             <option value="TEAM_LEADER">Team Leader</option>
                             <option value="FINANCE_ADMIN">Finance Admin</option>
                             <option value="ADMIN">Admin</option>
+                        </select>
+                    </div>
+                    <div className="col-span-1">
+                        <label className="label-premium">Employee Type</label>
+                        <select className="input-premium" value={empForm.employeeType} onChange={e => setEmpForm({ ...empForm, employeeType: e.target.value })}>
+                            <option value="FULL_TIME">Full Time</option>
+                            <option value="PART_TIME">Part Time</option>
+                            <option value="CONTRACT">Contract</option>
+                            <option value="GIG_WORKIE">GIG Worker</option>
+                            <option value="FREELANCE">Freelance</option>
+                            <option value="INTERN">Intern</option>
                         </select>
                     </div>
                     <div className="col-span-1">

@@ -151,6 +151,7 @@ export default function EmployeeList({
                                                 <div className="flex gap-2 items-center mt-0.5">
                                                     <span className={`w-2 h-2 rounded-full ${emp.user.isActive ? 'bg-emerald-500' : 'bg-red-500'}`}></span>
                                                     <span className="text-[10px] text-secondary-400 font-medium uppercase tracking-wide">{emp.user.isActive ? 'Active' : 'Inactive'}</span>
+                                                    <span className="text-[9px] px-1.5 py-0.5 bg-secondary-900/5 text-secondary-900 border border-secondary-900/10 rounded font-black tracking-tighter uppercase">{emp.employeeType?.replace('_', ' ')}</span>
                                                 </div>
                                             </div>
                                         </div>

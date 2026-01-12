@@ -19,6 +19,18 @@ export const UserRole = z.enum([
     "EDITOR"
 ]);
 
+export const EmployeeType = z.enum([
+    "FULL_TIME",
+    "PART_TIME",
+    "CONTRACT",
+    "GIG_WORKIE",
+    "FREELANCE",
+    "INTERN"
+]);
+
+export const GoalType = z.enum(["MONTHLY", "QUARTERLY", "HALF_YEARLY", "YEARLY"]);
+export const RewardType = z.enum(["PERCENTAGE", "FIXED_AMOUNT"]);
+
 // Helper to convert empty strings to null or undefined
 const emptyToNull = (val: unknown): unknown => {
     if (val === '' || val === 'null' || val === 'undefined') return null;
@@ -51,6 +63,7 @@ export const createEmployeeSchema = z.object({
     panNumber: z.string().optional(),
     isActive: z.boolean().optional(),
     employeeId: z.string().optional(), // Custom ID like EMP-001
+    employeeType: EmployeeType.default("FULL_TIME"),
 });
 
 // For updates, all fields are optional and handle empty strings
@@ -71,6 +84,7 @@ export const updateEmployeeSchema = z.object({
     isActive: z.preprocess(emptyToUndefined, z.boolean().optional()),
     employeeId: z.preprocess(emptyToUndefined, z.string().optional()),
     managerId: z.preprocess(emptyToNull, z.string().nullable().optional()), // Allow assigning a manager
+    employeeType: z.preprocess(emptyToUndefined, EmployeeType.optional()),
 
     // Additional EmployeeProfile fields
     dateOfBirth: z.preprocess(emptyToNull, z.coerce.date().nullable().optional()),
@@ -190,4 +204,35 @@ export const leaveRequestSchema = z.object({
 export const updateLeaveRequestSchema = z.object({
     leaveId: z.string().uuid(),
     status: z.enum(['APPROVED', 'REJECTED', 'PENDING']),
+});
+
+// --- New Upgrade Schemas ---
+export const employeeGoalSchema = z.object({
+    title: z.string().min(1, "Title is required"),
+    description: z.string().optional(),
+    targetValue: z.coerce.number().min(0),
+    currentValue: z.coerce.number().min(0).default(0),
+    unit: z.string().min(1, "Unit is required"),
+    type: GoalType,
+    startDate: z.coerce.date(),
+    endDate: z.coerce.date(),
+    employeeId: z.string().uuid(),
+    kpiId: z.string().uuid().optional().nullable(),
+});
+
+export const incentiveSchemaValidator = z.object({
+    name: z.string().min(1, "Name is required"),
+    description: z.string().optional(),
+    type: RewardType.default("PERCENTAGE"),
+    value: z.coerce.number().min(0),
+    criteria: z.string().optional(),
+    isActive: z.boolean().default(true),
+});
+
+export const bonusSchemaValidator = z.object({
+    name: z.string().min(1, "Name is required"),
+    description: z.string().optional(),
+    amount: z.coerce.number().min(0),
+    frequency: z.enum(["MONTHLY", "QUARTERLY", "YEARLY", "ONE_TIME"]).default("YEARLY"),
+    isActive: z.boolean().default(true),
 });
