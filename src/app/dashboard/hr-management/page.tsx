@@ -215,7 +215,8 @@ const HRManagementContent = () => {
         staffSearch: '',
         status: 'ALL',
         date: '',
-        category: 'ALL'
+        category: 'ALL',
+        employeeId: 'ALL'
     });
 
     useEffect(() => {
@@ -1124,13 +1125,23 @@ const HRManagementContent = () => {
                                         <option value="ABSENT">Absent</option>
                                         <option value="LEAVE">On Leave</option>
                                     </select>
+                                    <select
+                                        className="input h-9 text-[10px] font-black uppercase w-40"
+                                        value={filters.employeeId}
+                                        onChange={e => setFilters({ ...filters, employeeId: e.target.value })}
+                                    >
+                                        <option value="ALL">All Employees</option>
+                                        {employees.map((e: any) => (
+                                            <option key={e.id} value={e.id}>{e.user?.name || e.user?.email}</option>
+                                        ))}
+                                    </select>
                                 </div>
                             </div>
                         </div>
 
                         {viewModes.attendance === 'grid' ? (
                             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                                {allAttendance.filter(a => (filters.status === 'ALL' || a.status === filters.status) && (a.employee?.user?.name || '').toLowerCase().includes(filters.staffSearch.toLowerCase())).map(record => (
+                                {allAttendance.filter(a => (filters.status === 'ALL' || a.status === filters.status) && (filters.employeeId === 'ALL' || a.employeeId === filters.employeeId) && (a.employee?.user?.name || '').toLowerCase().includes(filters.staffSearch.toLowerCase())).map(record => (
                                     <div key={record.id} className="card-premium relative group hover:shadow-xl transition-all border border-secondary-100">
                                         <div className="flex flex-col items-center text-center">
                                             <div className="w-16 h-16 rounded-2xl bg-primary-50 flex items-center justify-center text-2xl mb-4 text-primary-600 font-black border border-primary-100 shadow-inner">
@@ -1182,7 +1193,7 @@ const HRManagementContent = () => {
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-secondary-50">
-                                        {allAttendance.filter(a => (filters.status === 'ALL' || a.status === filters.status) && (a.employee?.user?.name || '').toLowerCase().includes(filters.staffSearch.toLowerCase())).map(record => (
+                                        {allAttendance.filter(a => (filters.status === 'ALL' || a.status === filters.status) && (filters.employeeId === 'ALL' || a.employeeId === filters.employeeId) && (a.employee?.user?.name || '').toLowerCase().includes(filters.staffSearch.toLowerCase())).map(record => (
                                             <tr key={record.id} className="hover:bg-secondary-50/30 transition-all">
                                                 <td className="p-4">
                                                     <p className="font-bold text-secondary-900">{record.employee?.user?.name}</p>

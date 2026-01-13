@@ -493,7 +493,7 @@ export default function EmployeeProfilePage() {
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-secondary-100">
-                                            {employee.attendance?.map((rec: any) => (
+                                            {employee.attendance?.sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime()).map((rec: any) => (
                                                 <tr key={rec.id} className="hover:bg-secondary-50">
                                                     <td className="px-6 py-4 text-sm font-medium"><FormattedDate date={rec.date} /></td>
                                                     <td className="px-6 py-4 text-sm text-secondary-900 font-bold">
