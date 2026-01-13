@@ -244,7 +244,7 @@ export default function EmployeeProfilePage() {
                                 )}
                             </div>
                             <h2 className="font-bold text-lg">{employee.user.name || employee.user.email.split('@')[0]}</h2>
-                            <p className="text-sm text-secondary-500 mb-4">{employee.department?.name || 'General Staff'}</p>
+                            <p className="text-sm text-secondary-500 mb-4">{employee.user.department?.name || 'General Staff'}</p>
                             <div className={`inline-block px-3 py-1 rounded-full text-xs font-bold ${employee.user.isActive ? 'bg-success-50 text-success-700' : 'bg-danger-50 text-danger-700'}`}>
                                 {employee.user.isActive ? 'Active' : 'Inactive'}
                             </div>
@@ -316,7 +316,7 @@ export default function EmployeeProfilePage() {
                                         </div>
                                         <div className="grid grid-cols-2">
                                             <dt className="text-xs font-bold text-secondary-400 uppercase">Department</dt>
-                                            <dd className="font-medium text-secondary-900">{employee.department?.name || '-'}</dd>
+                                            <dd className="font-medium text-secondary-900">{employee.user.department?.name || '-'}</dd>
                                         </div>
                                         <div className="grid grid-cols-2">
                                             <dt className="text-xs font-bold text-secondary-400 uppercase">Date of Joining</dt>

@@ -29,6 +29,13 @@ export const GET = authorizedRoute(
                             managerId: true,
                             companyId: true,
                             allowedModules: true,
+                            departmentId: true,
+                            department: {
+                                select: {
+                                    id: true,
+                                    name: true
+                                }
+                            },
                             companies: {
                                 select: {
                                     id: true,

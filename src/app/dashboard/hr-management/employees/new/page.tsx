@@ -13,6 +13,7 @@ export default function NewEmployeePage() {
     const [designations, setDesignations] = useState<any[]>([]);
     const [managers, setManagers] = useState<any[]>([]);
     const [companies, setCompanies] = useState<any[]>([]);
+    const [departments, setDepartments] = useState<any[]>([]);
     const [userRole, setUserRole] = useState('MANAGER');
 
     useEffect(() => {
@@ -48,6 +49,15 @@ export default function NewEmployeePage() {
                 if (compRes.ok) {
                     const resData = await compRes.json();
                     setCompanies(resData.data || []);
+                }
+
+                // Fetch Departments
+                const deptRes = await fetch('/api/departments', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (deptRes.ok) {
+                    const resData = await deptRes.json();
+                    setDepartments(resData.data || resData || []);
                 }
             } catch (err) {
                 console.error(err);
@@ -138,6 +148,7 @@ export default function NewEmployeePage() {
                     designations={designations}
                     managers={managers}
                     companies={companies}
+                    departments={departments}
                     onSubmit={handleSubmit}
                     onCancel={() => router.back()}
                     saving={saving}

@@ -14,6 +14,7 @@ export default function EditEmployeePage() {
     const [designations, setDesignations] = useState<any[]>([]);
     const [managers, setManagers] = useState<any[]>([]);
     const [companies, setCompanies] = useState<any[]>([]);
+    const [departments, setDepartments] = useState<any[]>([]);
     const [empInitialData, setEmpInitialData] = useState<any>(null);
     const [userRole, setUserRole] = useState('MANAGER');
 
@@ -53,6 +54,15 @@ export default function EditEmployeePage() {
                     setCompanies(resData.data || []);
                 }
 
+                // Fetch Departments
+                const deptRes = await fetch('/api/departments', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (deptRes.ok) {
+                    const resData = await deptRes.json();
+                    setDepartments(resData.data || resData || []);
+                }
+
                 // Fetch Employee
                 const empRes = await fetch(`/api/hr/employees/${params.id}`, {
                     headers: { 'Authorization': `Bearer ${token}` }
@@ -69,6 +79,7 @@ export default function EditEmployeePage() {
                         managerId: data.user.managerId || '',
                         companyId: data.user.companyId || '',
                         companyIds: data.user.companies?.map((c: any) => c.id) || [],
+                        departmentId: data.user.departmentId || '',
                         allowedModules: data.user.allowedModules || ['CORE'],
                         targets: data.metrics?.targets || { revenue: '', publication: '', development: '' },
                         dateOfJoining: data.dateOfJoining?.split('T')[0] || '',
@@ -161,6 +172,7 @@ export default function EditEmployeePage() {
                     designations={designations}
                     managers={managers}
                     companies={companies}
+                    departments={departments}
                     onSubmit={handleSubmit}
                     onCancel={() => router.back()}
                     saving={saving}

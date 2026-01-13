@@ -9,6 +9,7 @@ interface EmployeeFormProps {
     designations: any[];
     managers: any[];
     companies: any[];
+    departments: any[];
     onSubmit: (data: any) => Promise<void>;
     onCancel: () => void;
     saving: boolean;
@@ -67,6 +68,7 @@ const initialFormState = {
     managerId: '',
     companyId: '',
     companyIds: [] as string[],
+    departmentId: '',
     allowedModules: ['CORE'] as string[]
 };
 
@@ -75,6 +77,7 @@ export default function EmployeeForm({
     designations,
     managers,
     companies,
+    departments,
     onSubmit,
     onCancel,
     saving,
@@ -296,6 +299,19 @@ export default function EmployeeForm({
                             <option value="GIG_WORKIE">GIG Worker</option>
                             <option value="FREELANCE">Freelance</option>
                             <option value="INTERN">Intern</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label className="label-premium">Department</label>
+                        <select
+                            className="input-premium"
+                            value={empForm.departmentId}
+                            onChange={e => setEmpForm({ ...empForm, departmentId: e.target.value })}
+                        >
+                            <option value="">No Department</option>
+                            {departments && departments.length > 0 && departments.map(d => (
+                                <option key={d.id} value={d.id}>{d.name}</option>
+                            ))}
                         </select>
                     </div>
                     <div>

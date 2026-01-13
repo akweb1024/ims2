@@ -52,6 +52,7 @@ export const createEmployeeSchema = z.object({
     role: UserRole.default("EXECUTIVE"),
     designation: z.string().min(1, "Designation is required"),
     department: z.string().optional(),
+    departmentId: z.string().optional(),
     dateOfJoining: z.coerce.date(),
     baseSalary: z.coerce.number().min(0),
     // Optional profile fields
@@ -80,6 +81,7 @@ export const updateEmployeeSchema = z.object({
     name: z.preprocess(emptyToUndefined, z.string().optional()),
     designation: z.preprocess(emptyToUndefined, z.string().optional()),
     department: z.preprocess(emptyToUndefined, z.string().optional()),
+    departmentId: z.preprocess(emptyToNull, z.string().nullable().optional()),
     dateOfJoining: z.preprocess(emptyToNull, z.coerce.date().nullable().optional()),
     baseSalary: z.preprocess(emptyToNull, z.coerce.number().min(0).nullable().optional()),
     phone: z.preprocess(emptyToUndefined, z.string().optional()),

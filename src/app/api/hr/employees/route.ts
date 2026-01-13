@@ -98,7 +98,7 @@ export const PATCH = authorizedRoute(
             const validUpdates = result.data;
 
             // 1. Handle User-level updates (Role, Active Status, Name, Manager, Company, Modules)
-            if (validUpdates.role || validUpdates.isActive !== undefined || validUpdates.name || validUpdates.managerId !== undefined || validUpdates.companyId !== undefined || validUpdates.companyIds !== undefined || validUpdates.allowedModules !== undefined) {
+            if (validUpdates.role || validUpdates.isActive !== undefined || validUpdates.name || validUpdates.managerId !== undefined || validUpdates.companyId !== undefined || validUpdates.companyIds !== undefined || validUpdates.allowedModules !== undefined || validUpdates.departmentId !== undefined) {
                 const emp = await prisma.employeeProfile.findUnique({ where: { id }, select: { userId: true } });
                 if (!emp) return createErrorResponse('Employee not found', 404);
 
@@ -119,6 +119,7 @@ export const PATCH = authorizedRoute(
                             ...(validUpdates.name && { name: validUpdates.name }),
                             ...(validUpdates.managerId !== undefined && { managerId: validUpdates.managerId as any }),
                             ...(validUpdates.companyId !== undefined && { companyId: validUpdates.companyId as any }),
+                            ...(validUpdates.departmentId !== undefined && { departmentId: validUpdates.departmentId as any }),
                             ...(validUpdates.companyIds !== undefined && {
                                 companies: {
                                     set: validUpdates.companyIds.map(id => ({ id }))
@@ -152,7 +153,7 @@ export const PATCH = authorizedRoute(
 
             // 3. Update Employee Profile - Strip relations and metadata
             const {
-                role, id: _unusedId, isActive, name, designationId, email, password, managerId, companyId, companyIds, allowedModules,
+                role, id: _unusedId, isActive, name, designationId, email, password, managerId, companyId, companyIds, allowedModules, departmentId,
                 userId, createdAt, updatedAt, user: _userRel, incrementHistory, hrComments, workReports, attendance,
                 documents, designatRef, leaveRequests, onboardingProgress, leaveLedgers, digitalDocuments,
                 goals, incentives, kpis, performance, performanceInsights, salaryAdvances, salarySlips,
@@ -217,7 +218,7 @@ export const POST = authorizedRoute(
                 return createErrorResponse(result.error);
             }
             const {
-                email, name, password, role, companyId, companyIds, allowedModules,
+                email, name, password, role, companyId, companyIds, allowedModules, departmentId,
                 ...rest
             } = result.data as any;
 
@@ -242,6 +243,7 @@ export const POST = authorizedRoute(
                         companyId: companyId || user.companyId,
                         role: (role || targetUser.role) as any,
                         name: name || targetUser.name,
+                        departmentId: departmentId || targetUser.departmentId,
                         ...(companyIds && {
                             companies: {
                                 set: companyIds.map((id: string) => ({ id }))
@@ -259,6 +261,7 @@ export const POST = authorizedRoute(
                         password: password,
                         role: role as any,
                         companyId: companyId || user.companyId,
+                        departmentId: departmentId,
                         allowedModules: allowedModules || ["CORE"],
                         companies: {
                             connect: (companyIds || []).map((id: string) => ({ id }))
