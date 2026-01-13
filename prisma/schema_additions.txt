@@ -1,0 +1,32 @@
+
+model AppConfiguration {
+  id          String   @id @default(uuid())
+  companyId   String?
+  category    String   // AWS, WHATSAPP, AI_MODELS, PAYMENT, EMAIL, SMS, STORAGE, etc.
+  key         String   // Specific key name like AWS_ACCESS_KEY_ID, OPENAI_API_KEY
+  value       String   // Encrypted value
+  isActive    Boolean  @default(true)
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  createdBy   String?
+  
+  company     Company? @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  
+  @@unique([companyId, category, key])
+  @@index([companyId])
+  @@index([category])
+}
+
+enum ConfigCategory {
+  AWS
+  WHATSAPP
+  AI_MODELS
+  PAYMENT_GATEWAY
+  EMAIL_SERVICE
+  SMS_SERVICE
+  CLOUD_STORAGE
+  ANALYTICS
+  SOCIAL_MEDIA
+  OTHER
+}
