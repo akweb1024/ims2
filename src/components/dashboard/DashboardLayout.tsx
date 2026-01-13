@@ -312,6 +312,20 @@ export default function DashboardLayout({ children, userRole: propUserRole = 'CU
                 ]
             },
             {
+                id: 'WEB_MONITOR',
+                name: 'Web Monitor',
+                icon: '🌐',
+                categories: [
+                    {
+                        title: 'Monitoring',
+                        items: [
+                            { name: 'Overview', href: '/dashboard/monitoring', icon: '📊', roles: ['*'] },
+                            { name: 'Configuration', href: '/dashboard/monitoring/manage', icon: '⚙️', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER'] },
+                        ]
+                    }
+                ]
+            },
+            {
                 id: 'QUALITY',
                 name: 'Quality Control',
                 icon: '🧪',

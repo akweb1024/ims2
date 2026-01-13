@@ -423,6 +423,7 @@ export default function EmployeeForm({
                                 { id: 'CONFERENCE', label: 'Conferences & Events', color: 'text-rose-600' },
                                 { id: 'LOGISTIC', label: 'Logistics & Supply', color: 'text-blue-600' },
                                 { id: 'IT', label: 'IT Services / Assets', color: 'text-cyan-600' },
+                                { id: 'WEB_MONITOR', label: 'Web Monitor', color: 'text-sky-600' },
                                 { id: 'QUALITY', label: 'Quality Control', color: 'text-teal-600' },
                             ].map(mod => (
                                 <label

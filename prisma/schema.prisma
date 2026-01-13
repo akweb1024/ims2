@@ -2379,3 +2379,38 @@ enum Recommendation {
   REJECT
   REJECT_RESUBMIT
 }
+
+model WebsiteMonitor {
+  id              String             @id @default(uuid())
+  name            String
+  url             String
+  frequency       Int                @default(5) // minutes
+  isPaused        Boolean            @default(false)
+  lastCheck       DateTime?
+  status          String             @default("PENDING") // UP, DOWN, PENDING
+  upsince         DateTime?
+  dailyUptime     Float?
+  totalDowntime   Int                @default(0)
+  notifyEmail     Boolean            @default(true)
+  notifyWhatsapp  Boolean            @default(true)
+  companyId       String?
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+  
+  logs            WebsiteMonitorLog[]
+}
+
+model WebsiteMonitorLog {
+  id              String             @id @default(uuid())
+  monitorId       String
+  status          String             // UP, DOWN
+  statusCode      Int?
+  responseTime    Int?               // ms
+  reason          String?
+  checkedAt       DateTime           @default(now())
+
+  monitor         WebsiteMonitor      @relation(fields: [monitorId], references: [id], onDelete: Cascade)
+
+  @@index([monitorId])
+  @@index([checkedAt])
+}
