@@ -17,7 +17,30 @@ export async function GET(req: NextRequest) {
                 participants: {
                     include: {
                         user: {
-                            select: { id: true, email: true, role: true }
+                            select: {
+                                id: true,
+                                email: true,
+                                role: true,
+                                name: true,
+                                departmentId: true,
+                                department: {
+                                    select: {
+                                        name: true
+                                    }
+                                },
+                                customerProfile: {
+                                    select: {
+                                        name: true,
+                                        organizationName: true,
+                                        customerType: true
+                                    }
+                                },
+                                employeeProfile: {
+                                    select: {
+                                        designation: true
+                                    }
+                                }
+                            }
                         }
                     }
                 },
@@ -43,6 +66,16 @@ export async function POST(req: NextRequest) {
 
         const body = await req.json();
         const { participantIds, name, isGroup, roomId } = body;
+
+        // Role-based validation for group creation
+        if (isGroup) {
+            const allowedRoles = ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'TEAM_LEADER'];
+            if (!allowedRoles.includes(decoded.role)) {
+                return NextResponse.json({
+                    error: 'Only administrators, managers, and team leaders can create group chats'
+                }, { status: 403 });
+            }
+        }
 
         if (roomId) {
             // Join existing room
