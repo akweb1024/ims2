@@ -224,6 +224,50 @@ export default function DashboardLayout({ children, userRole: propUserRole = 'CU
                 ]
             },
             {
+                id: 'CRM',
+                name: 'CRM / Customers',
+                icon: '👥',
+                categories: [
+                    {
+                        title: 'Customer Management',
+                        items: [
+                            { name: 'All Customers', href: '/dashboard/customers', icon: '👥', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'TEAM_LEADER', 'EXECUTIVE'] },
+                            { name: 'Add Customer', href: '/dashboard/customers/new', icon: '➕', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'TEAM_LEADER', 'EXECUTIVE'] },
+                            { name: 'Institutions', href: '/dashboard/institutions', icon: '🏛️', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'EXECUTIVE'] },
+                        ]
+                    },
+                    {
+                        title: 'Engagement',
+                        items: [
+                            { name: 'Communications', href: '/dashboard/communications', icon: '📞', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'TEAM_LEADER', 'EXECUTIVE'] },
+                            { name: 'Follow-ups', href: '/dashboard/follow-ups', icon: '📅', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'TEAM_LEADER', 'EXECUTIVE'] },
+                        ]
+                    }
+                ]
+            },
+            {
+                id: 'COMPANY',
+                name: 'Company',
+                icon: '🏢',
+                categories: [
+                    {
+                        title: 'Organization',
+                        items: [
+                            { name: 'Company Overview', href: '/dashboard/company', icon: '🏢', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER'] },
+                            { name: 'Departments', href: '/dashboard/departments', icon: '🏛️', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER'] },
+                            { name: 'Designations', href: '/dashboard/designations', icon: '🎯', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER'] },
+                        ]
+                    },
+                    {
+                        title: 'Analytics',
+                        items: [
+                            { name: 'Growth Analytics', href: '/dashboard/company?tab=analytics', icon: '📊', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER'] },
+                            { name: 'Workforce Insights', href: '/dashboard/company?tab=workforce', icon: '👨‍💼', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER'] },
+                        ]
+                    }
+                ]
+            },
+            {
                 id: 'PUBLICATION',
                 name: 'Publication',
                 icon: '📰',
