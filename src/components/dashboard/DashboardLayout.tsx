@@ -18,7 +18,6 @@ export default function DashboardLayout({ children, userRole: propUserRole = 'CU
     const [isImpersonating, setIsImpersonating] = useState(false);
     const [mounted, setMounted] = useState(false);
     const [availableCompanies, setAvailableCompanies] = useState<any[]>([]);
-    const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>({});
     const pathname = usePathname();
     const router = useRouter();
 
@@ -320,6 +319,7 @@ export default function DashboardLayout({ children, userRole: propUserRole = 'CU
                         title: 'Monitoring',
                         items: [
                             { name: 'Overview', href: '/dashboard/monitoring', icon: '📊', roles: ['*'] },
+                            { name: 'Analytics', href: '/dashboard/monitoring/analytics', icon: '📈', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER'] },
                             { name: 'Configuration', href: '/dashboard/monitoring/manage', icon: '⚙️', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER'] },
                         ]
                     }
@@ -651,57 +651,38 @@ export default function DashboardLayout({ children, userRole: propUserRole = 'CU
                         </select>
                     </div>
 
-                    <div className="flex-1 space-y-4">
-                        {sideNavigation.map((category: any) => {
-                            const isExpanded = !collapsedSections[category.title];
-
-                            return (
-                                <div key={category.title} className="space-y-1">
-                                    {sidebarOpen && (
-                                        <button
-                                            onClick={() => setCollapsedSections(prev => ({
-                                                ...prev,
-                                                [category.title]: !prev[category.title]
-                                            }))}
-                                            className="w-full flex items-center justify-between px-3 py-2 text-[10px] font-black text-secondary-400 uppercase tracking-[0.15em] hover:text-secondary-600 transition-colors rounded-lg hover:bg-secondary-50"
-                                        >
-                                            <span>{category.title}</span>
-                                            <svg
-                                                className={`w-3 h-3 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
-                                                fill="none"
-                                                stroke="currentColor"
-                                                viewBox="0 0 24 24"
+                    <div className="flex-1 space-y-1">
+                        {sideNavigation.map((category: any, idx: number) => (
+                            <div key={category.title || idx}>
+                                {/* Show separator if not first category */}
+                                {idx > 0 && sidebarOpen && (
+                                    <div className="my-2 mx-3 border-t border-secondary-100" />
+                                )}
+                                <div className="space-y-0.5">
+                                    {category.items.map((item: any) => {
+                                        const isActive = pathname === item.href || pathname?.startsWith(`${item.href}/`);
+                                        return (
+                                            <Link
+                                                key={item.href}
+                                                href={item.href}
+                                                className={`flex items-center space-x-3 px-3 py-2 rounded-lg transition-all duration-200 group ${isActive
+                                                    ? 'bg-primary-50 text-primary-700 shadow-sm border border-primary-100/50'
+                                                    : 'text-secondary-600 hover:bg-secondary-50 hover:text-secondary-900'
+                                                    }`}
+                                                title={!sidebarOpen ? item.name : ''}
                                             >
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                                            </svg>
-                                        </button>
-                                    )}
-                                    <div className={`space-y-0.5 ${sidebarOpen && !isExpanded ? 'hidden' : ''}`}>
-                                        {category.items.map((item: any) => {
-                                            const isActive = pathname === item.href;
-                                            return (
-                                                <Link
-                                                    key={item.href}
-                                                    href={item.href}
-                                                    className={`flex items-center space-x-3 px-3 py-2 rounded-lg transition-all duration-200 group ${isActive
-                                                        ? 'bg-primary-50 text-primary-700 shadow-sm border border-primary-100/50'
-                                                        : 'text-secondary-600 hover:bg-secondary-50 hover:text-secondary-900'
-                                                        }`}
-                                                    title={!sidebarOpen ? item.name : ''}
-                                                >
-                                                    <span className={`text-lg transition-transform duration-200 ${isActive ? 'scale-110' : 'group-hover:scale-110'}`}>
-                                                        {item.icon}
-                                                    </span>
-                                                    <span className={`text-xs font-medium ${sidebarOpen ? 'block' : 'hidden md:hidden lg:hidden'}`}>
-                                                        {item.name}
-                                                    </span>
-                                                </Link>
-                                            );
-                                        })}
-                                    </div>
+                                                <span className={`text-lg transition-transform duration-200 ${isActive ? 'scale-110' : 'group-hover:scale-110'}`}>
+                                                    {item.icon}
+                                                </span>
+                                                <span className={`text-xs font-medium ${sidebarOpen ? 'block' : 'hidden md:hidden lg:hidden'}`}>
+                                                    {item.name}
+                                                </span>
+                                            </Link>
+                                        );
+                                    })}
                                 </div>
-                            );
-                        })}
+                            </div>
+                        ))}
                     </div>
 
                     {/* Logout Button in Sidebar */}

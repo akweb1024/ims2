@@ -90,12 +90,16 @@ function LogsContent() {
     );
 }
 
+import DashboardLayout from '@/components/dashboard/DashboardLayout';
+
 export default function LogsPage() {
     return (
-        <div className="p-6 pb-20">
-            <Suspense fallback={<div>Loading...</div>}>
-                <LogsContent />
-            </Suspense>
-        </div>
+        <DashboardLayout>
+            <div className="p-6 pb-20">
+                <Suspense fallback={<div>Loading...</div>}>
+                    <LogsContent />
+                </Suspense>
+            </div>
+        </DashboardLayout>
     );
 }
