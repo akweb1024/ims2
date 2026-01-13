@@ -304,6 +304,7 @@ export default function DashboardLayout({ children, userRole: propUserRole = 'CU
                         title: 'System',
                         items: [
                             { name: 'Data Hub', href: '/dashboard/data-hub', icon: '📂', roles: ['SUPER_ADMIN'] },
+                            { name: 'Configurations', href: '/dashboard/settings/configurations', icon: '🔐', roles: ['SUPER_ADMIN', 'ADMIN'] },
                             { name: 'System Settings', href: '/dashboard/settings', icon: '⚙️', roles: ['SUPER_ADMIN'] },
                             { name: 'System Logs', href: '/dashboard/admin/logs', icon: '📜', roles: ['SUPER_ADMIN'] },
                         ]
