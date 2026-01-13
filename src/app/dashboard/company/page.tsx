@@ -23,6 +23,7 @@ export default function CompanyPage() {
 
     const searchParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
     const companyIdParam = searchParams?.get('id');
+    const tabParam = searchParams?.get('tab');
 
     useEffect(() => {
         const userData = localStorage.getItem('user');
@@ -30,8 +31,18 @@ export default function CompanyPage() {
             const user = JSON.parse(userData);
             setUserRole(user.role);
         }
+
+        // Set active tab from URL parameter
+        if (tabParam === 'analytics') {
+            setActiveTab('OVERVIEW');
+        } else if (tabParam === 'workforce') {
+            setActiveTab('WORKFORCE');
+        } else if (tabParam === 'details') {
+            setActiveTab('DETAILS');
+        }
+
         fetchData();
-    }, [companyIdParam]);
+    }, [companyIdParam, tabParam]);
 
     const fetchData = async () => {
         setLoading(true);

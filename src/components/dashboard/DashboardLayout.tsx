@@ -254,8 +254,8 @@ export default function DashboardLayout({ children, userRole: propUserRole = 'CU
                         title: 'Organization',
                         items: [
                             { name: 'Company Overview', href: '/dashboard/company', icon: '🏢', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER'] },
-                            { name: 'Departments', href: '/dashboard/departments', icon: '🏛️', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER'] },
-                            { name: 'Designations', href: '/dashboard/designations', icon: '🎯', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER'] },
+                            { name: 'Departments', href: '/dashboard/company?tab=details', icon: '🏛️', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER'] },
+                            { name: 'Designations', href: '/dashboard/hr-management/designations', icon: '🎯', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER'] },
                         ]
                     },
                     {
