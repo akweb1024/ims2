@@ -33,7 +33,7 @@ export default function CustomerDetailPage({ params }: { params: Promise<{ id: s
             if (['SUPER_ADMIN', 'MANAGER'].includes(userRole)) {
                 fetch('/api/users', { headers: { 'Authorization': `Bearer ${token}` } })
                     .then(res => res.json())
-                    .then(data => setStaffList(data.filter((u: any) => ['SALES_EXECUTIVE', 'MANAGER'].includes(u.role))));
+                    .then(data => setStaffList(data.filter((u: any) => ['EXECUTIVE', 'MANAGER'].includes(u.role))));
             }
 
             fetch('/api/institutions', { headers: { 'Authorization': `Bearer ${token}` } })
@@ -294,7 +294,7 @@ export default function CustomerDetailPage({ params }: { params: Promise<{ id: s
                                     {['SUPER_ADMIN', 'MANAGER'].includes(userRole) && (
                                         <div className="md:col-span-2 pt-4 border-t border-secondary-100">
                                             <h4 className="font-bold text-secondary-900 mb-2">Customer Assignment</h4>
-                                            <label className="label">Assign to Sales Executives (Ctrl+Click to multi-select)</label>
+                                            <label className="label">Assign to Executives (Ctrl+Click to multi-select)</label>
                                             <select
                                                 name="assignedToUserIds"
                                                 multiple

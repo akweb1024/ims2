@@ -8,7 +8,7 @@ import Link from 'next/link';
 export default function FollowUpsPage() {
     const [data, setData] = useState<{ missed: any[], today: any[], upcoming: any[] } | null>(null);
     const [loading, setLoading] = useState(true);
-    const [userRole, setUserRole] = useState('SALES_EXECUTIVE');
+    const [userRole, setUserRole] = useState('EXECUTIVE');
 
     const [editingItem, setEditingItem] = useState<any>(null);
     const [actionLoading, setActionLoading] = useState(false);

@@ -16,7 +16,7 @@ export default function NewCustomerPage() {
         if (userData) {
             const user = JSON.parse(userData);
             setUserRole(user.role);
-            if (!['SUPER_ADMIN', 'MANAGER', 'SALES_EXECUTIVE'].includes(user.role)) {
+            if (!['SUPER_ADMIN', 'MANAGER', 'EXECUTIVE'].includes(user.role)) {
                 router.push('/dashboard/customers');
             }
         } else {

@@ -91,7 +91,7 @@ export default function EmployeeProfilePage() {
     const [showEmpModal, setShowEmpModal] = useState(false);
     const [designations, setDesignations] = useState<any[]>([]);
     const [empForm, setEmpForm] = useState({
-        email: '', password: '', role: 'SALES_EXECUTIVE', designation: '',
+        email: '', password: '', role: 'EXECUTIVE', designation: '',
         baseSalary: '', bankName: '', accountNumber: '', panNumber: '',
         offerLetterUrl: '', contractUrl: '', jobDescription: '', kra: '',
         totalExperienceYears: 0, totalExperienceMonths: 0,
@@ -218,7 +218,7 @@ export default function EmployeeProfilePage() {
                         <ArrowLeft size={20} />
                     </button>
                     <div>
-                        <h1 className="text-2xl font-bold text-secondary-900">{employee.user.email}</h1>
+                        <h1 className="text-2xl font-bold text-secondary-900">{employee.user.name || employee.user.email}</h1>
                         <p className="text-secondary-500">
                             {employee.employeeId && <span className="font-mono bg-secondary-100 px-1 rounded text-secondary-700 mr-2">{employee.employeeId}</span>}
                             {employee.designation || 'No Designation'} • {employee.user.role} • <span className="text-secondary-900 font-bold">{employee.employeeType?.replace('_', ' ')}</span>
@@ -240,10 +240,10 @@ export default function EmployeeProfilePage() {
                                 {employee.profilePicture ? (
                                     <img src={employee.profilePicture} alt="Profile" className="w-full h-full object-cover" />
                                 ) : (
-                                    employee.user.email[0].toUpperCase()
+                                    (employee.user.name?.[0] || employee.user.email[0]).toUpperCase()
                                 )}
                             </div>
-                            <h2 className="font-bold text-lg">{employee.user.email.split('@')[0]}</h2>
+                            <h2 className="font-bold text-lg">{employee.user.name || employee.user.email.split('@')[0]}</h2>
                             <p className="text-sm text-secondary-500 mb-4">{employee.department?.name || 'General Staff'}</p>
                             <div className={`inline-block px-3 py-1 rounded-full text-xs font-bold ${employee.user.isActive ? 'bg-success-50 text-success-700' : 'bg-danger-50 text-danger-700'}`}>
                                 {employee.user.isActive ? 'Active' : 'Inactive'}
@@ -253,13 +253,25 @@ export default function EmployeeProfilePage() {
                         <div className="card-premium p-4 space-y-3">
                             <h3 className="font-bold text-xs uppercase text-secondary-400 tracking-wider">Contact Details</h3>
                             <div className="flex items-center gap-3 text-sm">
-                                <Mail size={16} className="text-secondary-400" />
-                                <span className="truncate" title={employee.personalEmail}>{employee.personalEmail || '--'}</span>
+                                <Mail size={16} className="text-primary-500" />
+                                <span className="truncate" title={employee.officialEmail}>{employee.officialEmail || employee.user.email}</span>
                             </div>
+                            {employee.personalEmail && (
+                                <div className="flex items-center gap-3 text-sm">
+                                    <Mail size={16} className="text-secondary-400" />
+                                    <span className="truncate" title={employee.personalEmail}>{employee.personalEmail}</span>
+                                </div>
+                            )}
                             <div className="flex items-center gap-3 text-sm">
-                                <Phone size={16} className="text-secondary-400" />
-                                <span>{employee.phoneNumber || '--'}</span>
+                                <Phone size={16} className="text-primary-500" />
+                                <span>{employee.officePhone || employee.phoneNumber || '--'}</span>
                             </div>
+                            {employee.phoneNumber && employee.officePhone && (
+                                <div className="flex items-center gap-3 text-sm">
+                                    <Phone size={16} className="text-secondary-400" />
+                                    <span>{employee.phoneNumber}</span>
+                                </div>
+                            )}
                             <div className="flex items-center gap-3 text-sm">
                                 <MapPin size={16} className="text-secondary-400" />
                                 <span className="truncate" title={employee.address}>{employee.address || '--'}</span>
@@ -699,8 +711,8 @@ export default function EmployeeProfilePage() {
                                                                 <div className="flex justify-between items-center">
                                                                     <span className="text-[10px] text-secondary-400">{paper.track}</span>
                                                                     <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase border ${paper.reviewStatus === 'ACCEPTED' ? 'bg-success-50 text-success-700 border-success-100' :
-                                                                            paper.reviewStatus === 'REJECTED' ? 'bg-danger-50 text-danger-700 border-danger-100' :
-                                                                                'bg-warning-50 text-warning-700 border-warning-100'
+                                                                        paper.reviewStatus === 'REJECTED' ? 'bg-danger-50 text-danger-700 border-danger-100' :
+                                                                            'bg-warning-50 text-warning-700 border-warning-100'
                                                                         }`}>
                                                                         {paper.reviewStatus}
                                                                     </span>
@@ -786,7 +798,7 @@ export default function EmployeeProfilePage() {
                                         <div className="col-span-1">
                                             <label className="label-premium">System Role</label>
                                             <select className="input-premium" value={empForm.role} onChange={e => setEmpForm({ ...empForm, role: e.target.value })}>
-                                                <option value="SALES_EXECUTIVE">Sales Executive</option>
+                                                <option value="EXECUTIVE">Executive</option>
                                                 <option value="MANAGER">Manager</option>
                                                 <option value="FINANCE_ADMIN">Finance Admin</option>
                                                 <option value="HR_MANAGER">HR Manager</option>

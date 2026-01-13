@@ -25,7 +25,15 @@ export const GET = authorizedRoute(
                             email: true,
                             role: true,
                             isActive: true,
-                            name: true
+                            name: true,
+                            managerId: true,
+                            companyId: true,
+                            companies: {
+                                select: {
+                                    id: true,
+                                    name: true
+                                }
+                            }
                         }
                     },
                     incrementHistory: {

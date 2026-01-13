@@ -197,7 +197,7 @@ export default function Home() {
                         </div>
 
                         <div className="bg-white rounded-lg p-6 border-l-4 border-success-500 shadow-md hover:shadow-lg transition-shadow">
-                            <h4 className="font-bold text-lg text-secondary-900 mb-2">Sales Executives</h4>
+                            <h4 className="font-bold text-lg text-secondary-900 mb-2">Executives</h4>
                             <p className="text-secondary-600 text-sm">Lead management, subscription creation, and performance dashboards</p>
                         </div>
 

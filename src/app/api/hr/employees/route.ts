@@ -97,8 +97,8 @@ export const PATCH = authorizedRoute(
             }
             const validUpdates = result.data;
 
-            // 1. Handle User-level updates (Role, Active Status, Name, Manager)
-            if (validUpdates.role || validUpdates.isActive !== undefined || validUpdates.name || validUpdates.managerId !== undefined) {
+            // 1. Handle User-level updates (Role, Active Status, Name, Manager, Company)
+            if (validUpdates.role || validUpdates.isActive !== undefined || validUpdates.name || validUpdates.managerId !== undefined || validUpdates.companyId !== undefined || validUpdates.companyIds !== undefined) {
                 const emp = await prisma.employeeProfile.findUnique({ where: { id }, select: { userId: true } });
                 if (!emp) return createErrorResponse('Employee not found', 404);
 
@@ -114,11 +114,17 @@ export const PATCH = authorizedRoute(
                     await prisma.user.update({
                         where: { id: emp.userId },
                         data: {
-                            ...(validUpdates.role && { role: validUpdates.role }),
+                            ...(validUpdates.role && { role: validUpdates.role as any }),
                             ...(validUpdates.isActive !== undefined && { isActive: validUpdates.isActive }),
                             ...(validUpdates.name && { name: validUpdates.name }),
-                            ...(validUpdates.managerId !== undefined && { managerId: validUpdates.managerId })
-                        }
+                            ...(validUpdates.managerId !== undefined && { managerId: validUpdates.managerId as any }),
+                            ...(validUpdates.companyId !== undefined && { companyId: validUpdates.companyId as any }),
+                            ...(validUpdates.companyIds !== undefined && {
+                                companies: {
+                                    set: validUpdates.companyIds.map(id => ({ id }))
+                                }
+                            })
+                        } as any
                     });
                 }
             }
@@ -143,8 +149,25 @@ export const PATCH = authorizedRoute(
                 });
             }
 
-            // 3. Update Employee Profile
-            const { role, id: _unusedId, isActive, name, designationId, email, password, managerId, ...profileData } = validUpdates;
+            // 3. Update Employee Profile - Strip relations and metadata
+            const {
+                role, id: _unusedId, isActive, name, designationId, email, password, managerId, companyId, companyIds,
+                userId, createdAt, updatedAt, user: _userRel, incrementHistory, hrComments, workReports, attendance,
+                documents, designatRef, leaveRequests, onboardingProgress, leaveLedgers, digitalDocuments,
+                goals, incentives, kpis, performance, performanceInsights, salaryAdvances, salarySlips,
+                salaryStructure, shiftRosters, taxDeclarations, workPlans,
+                ...rest
+            } = validUpdates as any;
+
+            // Profile fields filtering - double check no relations are left
+            const profileData = { ...rest };
+            const metadataFields = [
+                'user', 'manager', 'designatRef', 'incrementHistory', 'hrComments', 'workReports',
+                'attendance', 'documents', 'leaveRequests', 'onboardingProgress', 'leaveLedgers',
+                'digitalDocuments', 'goals', 'incentives', 'kpis', 'performance', 'performanceInsights',
+                'salaryAdvances', 'salarySlips', 'salaryStructure', 'shiftRosters', 'taxDeclarations', 'workPlans'
+            ];
+            metadataFields.forEach(f => delete (profileData as any)[f]);
 
             // Handle designation relation separately if provided
             const updateData: any = { ...profileData };
@@ -192,7 +215,20 @@ export const POST = authorizedRoute(
             if (!result.success) {
                 return createErrorResponse(result.error);
             }
-            const { email, name, password, role, ...profileData } = result.data;
+            const {
+                email, name, password, role, companyId, companyIds,
+                ...rest
+            } = result.data as any;
+
+            // Profile fields filtering - ensure no relation/meta fields leak into Prisma
+            const profileData = { ...rest };
+            const metadataFields = [
+                'id', 'userId', 'createdAt', 'updatedAt', 'user', 'manager',
+                'incrementHistory', 'hrComments', 'workReports', 'attendance', 'documents', 'designatRef',
+                'leaveRequests', 'onboardingProgress', 'leaveLedgers', 'digitalDocuments',
+                'goals', 'incentives', 'kpis', 'performance', 'performanceInsights'
+            ];
+            metadataFields.forEach(f => delete (profileData as any)[f]);
 
             // Check if user already exists
             let targetUser = await prisma.user.findUnique({ where: { email } });
@@ -202,10 +238,15 @@ export const POST = authorizedRoute(
                 targetUser = await prisma.user.update({
                     where: { email },
                     data: {
-                        companyId: user.companyId,
-                        role: role || targetUser.role,
-                        name: name || targetUser.name
-                    }
+                        companyId: companyId || user.companyId,
+                        role: (role || targetUser.role) as any,
+                        name: name || targetUser.name,
+                        ...(companyIds && {
+                            companies: {
+                                set: companyIds.map((id: string) => ({ id }))
+                            }
+                        })
+                    } as any
                 });
             } else {
                 // Create user first
@@ -214,8 +255,11 @@ export const POST = authorizedRoute(
                         email,
                         name,
                         password: password,
-                        role: role,
-                        companyId: user.companyId
+                        role: role as any,
+                        companyId: companyId || user.companyId,
+                        companies: {
+                            connect: (companyIds || []).map((id: string) => ({ id }))
+                        }
                     }
                 });
             }

@@ -43,7 +43,7 @@ export default function CustomersPage() {
                     .then(res => res.json())
                     .then(data => {
                         const users = Array.isArray(data) ? data : (data.data || []);
-                        setExecutives(users.filter((u: any) => ['SALES_EXECUTIVE', 'MANAGER', 'TEAM_LEADER'].includes(u.role)));
+                        setExecutives(users.filter((u: any) => ['EXECUTIVE', 'MANAGER', 'TEAM_LEADER'].includes(u.role)));
                     })
                     .catch(err => console.error('Failed to fetch staff', err));
             }

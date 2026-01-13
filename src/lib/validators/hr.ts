@@ -12,7 +12,7 @@ export const UserRole = z.enum([
     "ADMIN",
     "MANAGER",
     "TEAM_LEADER",
-    "SALES_EXECUTIVE",
+    "EXECUTIVE",
     "FINANCE_ADMIN",
     "CUSTOMER",
     "AGENCY",
@@ -49,7 +49,7 @@ export const createEmployeeSchema = z.object({
     email: z.string().email("Invalid email address"),
     name: z.string().min(1, "Name is required"),
     password: z.string().min(6, "Password must be at least 6 characters"),
-    role: UserRole.default("SALES_EXECUTIVE"),
+    role: UserRole.default("EXECUTIVE"),
     designation: z.string().min(1, "Designation is required"),
     department: z.string().optional(),
     dateOfJoining: z.coerce.date(),
@@ -64,6 +64,12 @@ export const createEmployeeSchema = z.object({
     isActive: z.boolean().optional(),
     employeeId: z.string().optional(), // Custom ID like EMP-001
     employeeType: EmployeeType.default("FULL_TIME"),
+    officialEmail: z.string().email().optional().nullable(),
+    personalEmail: z.string().email().optional().nullable(),
+    officePhone: z.string().optional().nullable(),
+    phoneNumber: z.string().optional().nullable(),
+    companyId: z.string().optional(),
+    companyIds: z.array(z.string()).optional(),
 });
 
 // For updates, all fields are optional and handle empty strings
@@ -127,6 +133,8 @@ export const updateEmployeeSchema = z.object({
 
     // ID field for updates
     id: z.preprocess(emptyToUndefined, z.string().uuid().optional()),
+    companyId: z.preprocess(emptyToNull, z.string().nullable().optional()),
+    companyIds: z.array(z.string()).optional(),
 
     metrics: z.any().optional(),
 }).passthrough(); // Allow extra fields to pass through

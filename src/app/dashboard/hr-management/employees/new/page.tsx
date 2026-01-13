@@ -1,20 +1,18 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import EmployeeForm from '@/components/dashboard/hr/EmployeeForm';
 import { ArrowLeft } from 'lucide-react';
 
-export default function EditEmployeePage() {
-    const params = useParams();
+export default function NewEmployeePage() {
     const router = useRouter();
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [designations, setDesignations] = useState<any[]>([]);
     const [managers, setManagers] = useState<any[]>([]);
     const [companies, setCompanies] = useState<any[]>([]);
-    const [empInitialData, setEmpInitialData] = useState<any>(null);
     const [userRole, setUserRole] = useState('MANAGER');
 
     useEffect(() => {
@@ -26,7 +24,6 @@ export default function EditEmployeePage() {
         const fetchData = async () => {
             try {
                 const token = localStorage.getItem('token');
-
                 // Fetch Designations
                 const desRes = await fetch('/api/hr/designations', {
                     headers: { 'Authorization': `Bearer ${token}` }
@@ -52,30 +49,6 @@ export default function EditEmployeePage() {
                     const resData = await compRes.json();
                     setCompanies(resData.data || []);
                 }
-
-                // Fetch Employee
-                const empRes = await fetch(`/api/hr/employees/${params.id}`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-                if (empRes.ok) {
-                    const data = await empRes.json();
-                    // Flatten data for the form
-                    setEmpInitialData({
-                        ...data,
-                        email: data.user.email,
-                        name: data.user.name || '',
-                        role: data.user.role,
-                        isActive: data.user.isActive,
-                        managerId: data.user.managerId || '',
-                        companyId: data.user.companyId || '',
-                        companyIds: data.user.companies?.map((c: any) => c.id) || [],
-                        targets: data.metrics?.targets || { revenue: '', publication: '', development: '' },
-                        dateOfJoining: data.dateOfJoining?.split('T')[0] || '',
-                        lastPromotionDate: data.lastPromotionDate?.split('T')[0] || '',
-                        lastIncrementDate: data.lastIncrementDate?.split('T')[0] || '',
-                        nextReviewDate: data.nextReviewDate?.split('T')[0] || '',
-                    });
-                }
             } catch (err) {
                 console.error(err);
             } finally {
@@ -84,52 +57,58 @@ export default function EditEmployeePage() {
         };
 
         fetchData();
-    }, [params.id]);
+    }, []);
 
     const handleSubmit = async (formData: any) => {
         setSaving(true);
         try {
             const token = localStorage.getItem('token');
+
+            // Clean and prepare payload
             const cleanData = { ...formData };
-
-            // Handle password (don't send if empty)
-            if (!cleanData.password) delete cleanData.password;
-
-            // System email can't be updated via this route usually, but let API handle it if allowed. 
-            // Most APIs expect 'email' for create, but ignore for update.
-            delete cleanData.email;
 
             // Convert numbers
             const numFields = ['baseSalary', 'manualLeaveAdjustment', 'totalExperienceYears', 'totalExperienceMonths', 'relevantExperienceYears', 'relevantExperienceMonths'];
             numFields.forEach(f => {
-                if (cleanData[f] !== undefined) cleanData[f] = parseFloat(cleanData[f]) || 0;
+                if (cleanData[f]) cleanData[f] = parseFloat(cleanData[f]) || 0;
             });
 
-            // Convert empty to null
+            // Convert empty to null for optional fields
             Object.keys(cleanData).forEach(key => {
-                if (cleanData[key] === '' || cleanData[key] === 'null' || cleanData[key] === 'undefined') {
+                if (cleanData[key] === '' || cleanData[key] === undefined) {
                     cleanData[key] = null;
                 }
             });
 
+            // Re-ensure required for create
+            if (!cleanData.email || !cleanData.password) {
+                alert('Email and Password are required for onboarding');
+                setSaving(false);
+                return;
+            }
+
             // Handle targets -> metrics
             if (cleanData.targets) {
-                cleanData.metrics = { ...(empInitialData.metrics || {}), targets: cleanData.targets };
+                cleanData.metrics = { targets: cleanData.targets };
                 delete cleanData.targets;
             }
 
             const res = await fetch('/api/hr/employees', {
-                method: 'PATCH',
-                headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-                body: JSON.stringify({ id: params.id, ...cleanData })
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(cleanData)
             });
 
             if (res.ok) {
-                alert('Employee updated successfully!');
-                router.push(`/dashboard/hr-management/employees/${params.id}`);
+                const result = await res.json();
+                alert('Employee onboarded successfully!');
+                router.push(`/dashboard/hr-management/employees/${result.profile.id}`);
             } else {
                 const err = await res.json();
-                alert(`Failed to update: ${err.error || 'Unknown error'}`);
+                alert(`Failed: ${err.error || 'Unknown error'}`);
             }
         } catch (err) {
             console.error(err);
@@ -139,7 +118,7 @@ export default function EditEmployeePage() {
         }
     };
 
-    if (loading) return <div className="p-8 text-center animate-pulse">Loading Employee Data...</div>;
+    if (loading) return <div className="p-8 text-center animate-pulse">Initializing Onboarding System...</div>;
 
     return (
         <DashboardLayout userRole={userRole}>
@@ -149,14 +128,13 @@ export default function EditEmployeePage() {
                         <ArrowLeft className="w-6 h-6 text-secondary-600" />
                     </button>
                     <div>
-                        <h1 className="text-3xl font-black text-secondary-900 tracking-tight">Update Employee</h1>
-                        <p className="text-secondary-500 font-medium tracking-tight">Modifying <span className="text-primary-600 font-bold">{empInitialData?.user?.email}</span></p>
+                        <h1 className="text-3xl font-black text-secondary-900 tracking-tight">New Onboarding</h1>
+                        <p className="text-secondary-500 font-medium">Create a new staff account and profile</p>
                     </div>
                 </div>
 
                 <EmployeeForm
-                    mode="edit"
-                    initialData={empInitialData}
+                    mode="create"
                     designations={designations}
                     managers={managers}
                     companies={companies}

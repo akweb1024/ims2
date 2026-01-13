@@ -49,7 +49,7 @@ export const POST = authorizedRoute(
                         email: application.applicantEmail,
                         password: hashedPassword,
                         name: application.applicantName,
-                        role: role || 'SALES_EXECUTIVE',
+                        role: role || 'EXECUTIVE',
                         companyId: targetCompanyId,
                         isActive: true,
                         // Link Profile

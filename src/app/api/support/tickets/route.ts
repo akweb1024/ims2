@@ -105,7 +105,7 @@ export async function GET(req: NextRequest) {
         // Role based filtering
         if (decoded.role === 'CUSTOMER') {
             where.customerProfile = { userId: decoded.id };
-        } else if (decoded.role === 'SALES_EXECUTIVE') {
+        } else if (decoded.role === 'EXECUTIVE') {
             where.OR = [
                 { customerProfile: { assignedToUserId: decoded.id } },
                 { assignedToId: decoded.id }

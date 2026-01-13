@@ -645,7 +645,7 @@ export default function CompanyPage() {
                             <div>
                                 <label className="label">System Role *</label>
                                 <select name="role" className="input" required>
-                                    <option value="SALES_EXECUTIVE">Sales Executive</option>
+                                    <option value="EXECUTIVE">Executive</option>
                                     <option value="MANAGER">Manager</option>
                                     <option value="ADMIN">Company Admin</option>
                                     <option value="FINANCE_ADMIN">Finance Admin</option>

@@ -171,7 +171,7 @@ export default function StaffPortalPage() {
                         </div>
                         <div>
                             <h1 className="text-4xl font-extrabold text-secondary-900 tracking-tight">Staff Portal</h1>
-                            <p className="text-secondary-500 font-medium">Welcome back, <span className="text-primary-600">@{user?.email?.split('@')[0]}</span></p>
+                            <p className="text-secondary-500 font-medium">Welcome back, <span className="text-primary-600">{user?.name || user?.email?.split('@')[0]}</span></p>
                         </div>
                     </div>
 
@@ -281,12 +281,12 @@ export default function StaffPortalPage() {
                                             {fullProfile.profilePicture ? (
                                                 <img src={fullProfile.profilePicture} alt="Profile" className="w-full h-full object-cover" />
                                             ) : (
-                                                user?.email?.charAt(0).toUpperCase()
+                                                (user?.name?.[0] || user?.email?.charAt(0)).toUpperCase()
                                             )}
                                         </div>
                                     </div>
                                     <div className="text-center md:text-left space-y-2 flex-1">
-                                        <h2 className="text-3xl font-black text-secondary-900">{user?.email?.split('@')[0]}</h2>
+                                        <h2 className="text-3xl font-black text-secondary-900">{user?.name || user?.email?.split('@')[0]}</h2>
                                         <div className="flex flex-wrap justify-center md:justify-start gap-2">
                                             <span className="badge badge-primary px-3 py-1 text-sm">{fullProfile.designatRef?.name || fullProfile.designation || 'Specialist'}</span>
                                             <span className="badge badge-secondary px-3 py-1 text-sm">{user?.role?.replace('_', ' ')}</span>

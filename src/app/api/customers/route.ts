@@ -14,7 +14,7 @@ export async function GET(req: NextRequest) {
         }
 
         // Role Check and Filtering
-        const allowedRoles = ['SUPER_ADMIN', 'MANAGER', 'SALES_EXECUTIVE'];
+        const allowedRoles = ['SUPER_ADMIN', 'MANAGER', 'EXECUTIVE'];
         if (!allowedRoles.includes(decoded.role)) {
             return NextResponse.json({ error: 'Access denied' }, { status: 403 });
         }
@@ -56,7 +56,7 @@ export async function GET(req: NextRequest) {
         }
 
         // Executive Restriction: Only see assigned customers (primary or shared)
-        if (decoded.role === 'SALES_EXECUTIVE') {
+        if (decoded.role === 'EXECUTIVE') {
             where.OR = [
                 ...(where.OR || []),
                 { assignedToUserId: decoded.id },
@@ -137,7 +137,7 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
     try {
         const decoded = await getAuthenticatedUser();
-        if (!decoded || !['SUPER_ADMIN', 'MANAGER', 'SALES_EXECUTIVE'].includes(decoded.role)) {
+        if (!decoded || !['SUPER_ADMIN', 'MANAGER', 'EXECUTIVE'].includes(decoded.role)) {
             return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
         }
 
@@ -189,7 +189,7 @@ export async function POST(req: NextRequest) {
 
             // Determine Assignment
             let initialAssignedTo = assignedToUserId;
-            if (!initialAssignedTo && decoded.role === 'SALES_EXECUTIVE') {
+            if (!initialAssignedTo && decoded.role === 'EXECUTIVE') {
                 initialAssignedTo = decoded.id; // Auto-assign to self
             }
 

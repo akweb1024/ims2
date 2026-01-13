@@ -1,0 +1,565 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import RichTextEditor from '@/components/common/RichTextEditor';
+import { User, Mail, Briefcase, DollarSign, Award, Target, Save, Shield, Phone } from 'lucide-react';
+
+interface EmployeeFormProps {
+    initialData?: any;
+    designations: any[];
+    managers: any[];
+    companies: any[];
+    onSubmit: (data: any) => Promise<void>;
+    onCancel: () => void;
+    saving: boolean;
+    mode: 'create' | 'edit';
+}
+
+const initialFormState = {
+    email: '',
+    name: '',
+    password: '',
+    role: 'EXECUTIVE',
+    employeeType: 'FULL_TIME',
+    designation: '',
+    baseSalary: '',
+    bankName: '',
+    accountNumber: '',
+    panNumber: '',
+    offerLetterUrl: '',
+    contractUrl: '',
+    jobDescription: '',
+    kra: '',
+    totalExperienceYears: 0,
+    totalExperienceMonths: 0,
+    relevantExperienceYears: 0,
+    relevantExperienceMonths: 0,
+    qualification: '',
+    grade: '',
+    lastPromotionDate: '',
+    lastIncrementDate: '',
+    nextReviewDate: '',
+    lastIncrementPercentage: 0,
+    designationId: '',
+    phoneNumber: '',
+    officePhone: '',
+    personalEmail: '',
+    officialEmail: '',
+    emergencyContact: '',
+    address: '',
+    permanentAddress: '',
+    bloodGroup: '',
+    aadharNumber: '',
+    uanNumber: '',
+    pfNumber: '',
+    esicNumber: '',
+    ifscCode: '',
+    isActive: true,
+    dateOfJoining: '',
+    profilePicture: '',
+    employeeId: '',
+    manualLeaveAdjustment: 0,
+    targets: {
+        revenue: '',
+        publication: '',
+        development: ''
+    },
+    managerId: '',
+    companyId: '',
+    companyIds: [] as string[]
+};
+
+export default function EmployeeForm({
+    initialData,
+    designations,
+    managers,
+    companies,
+    onSubmit,
+    onCancel,
+    saving,
+    mode
+}: EmployeeFormProps) {
+    const [empForm, setEmpForm] = useState(initialFormState);
+
+    useEffect(() => {
+        if (initialData) {
+            // Convert nulls to empty strings to avoid React controlled input warnings
+            const sanitized = { ...initialData };
+            Object.keys(sanitized).forEach(key => {
+                if (sanitized[key] === null) {
+                    sanitized[key] = '';
+                }
+            });
+
+            setEmpForm({
+                ...initialFormState,
+                ...sanitized,
+                targets: sanitized.targets || initialFormState.targets,
+                companyIds: sanitized.companies?.map((c: any) => c.id) || sanitized.companyIds || []
+            });
+        }
+    }, [initialData]);
+
+    const handleSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        onSubmit(empForm);
+    };
+
+    return (
+        <form onSubmit={handleSubmit} className="space-y-8">
+            {/* Personal & Identity Section */}
+            <div className="card-premium p-8">
+                <h2 className="text-lg font-black text-secondary-900 mb-6 flex items-center gap-2">
+                    <User className="w-5 h-5 text-primary-500" />
+                    Personal & Identity
+                </h2>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div className="md:col-span-1">
+                        <label className="label-premium">Full Name</label>
+                        <input
+                            type="text"
+                            required
+                            className="input-premium"
+                            value={empForm.name}
+                            onChange={e => setEmpForm({ ...empForm, name: e.target.value })}
+                        />
+                    </div>
+
+                    {mode === 'create' ? (
+                        <div>
+                            <label className="label-premium">Account Email</label>
+                            <input
+                                type="email"
+                                required
+                                className="input-premium"
+                                placeholder="staff@example.com"
+                                value={empForm.email}
+                                onChange={e => setEmpForm({ ...empForm, email: e.target.value })}
+                            />
+                            <p className="text-[10px] text-primary-600 font-bold mt-1">Used for system login.</p>
+                        </div>
+                    ) : (
+                        <div>
+                            <label className="label-premium">Account Email (System)</label>
+                            <input
+                                type="email"
+                                disabled
+                                className="input-premium bg-secondary-50 opacity-60 cursor-not-allowed"
+                                value={empForm.email}
+                            />
+                        </div>
+                    )}
+
+                    {mode === 'create' && (
+                        <div>
+                            <label className="label-premium">Set Password</label>
+                            <input
+                                type="password"
+                                required
+                                className="input-premium"
+                                placeholder="••••••••"
+                                value={empForm.password}
+                                onChange={e => setEmpForm({ ...empForm, password: e.target.value })}
+                            />
+                        </div>
+                    )}
+
+                    <div>
+                        <label className="label-premium">Official Email (Public)</label>
+                        <input
+                            type="email"
+                            className="input-premium"
+                            placeholder="official@company.com"
+                            value={empForm.officialEmail}
+                            onChange={e => setEmpForm({ ...empForm, officialEmail: e.target.value })}
+                        />
+                    </div>
+                    <div>
+                        <label className="label-premium">Office Extension / Phone</label>
+                        <input
+                            type="text"
+                            className="input-premium"
+                            placeholder="Ext 123"
+                            value={empForm.officePhone}
+                            onChange={e => setEmpForm({ ...empForm, officePhone: e.target.value })}
+                        />
+                    </div>
+                    <div>
+                        <label className="label-premium">Personal Mobile</label>
+                        <input
+                            type="text"
+                            className="input-premium"
+                            value={empForm.phoneNumber}
+                            onChange={e => setEmpForm({ ...empForm, phoneNumber: e.target.value })}
+                        />
+                    </div>
+                    <div>
+                        <label className="label-premium">Personal Email (Private)</label>
+                        <input
+                            type="email"
+                            className="input-premium"
+                            value={empForm.personalEmail}
+                            onChange={e => setEmpForm({ ...empForm, personalEmail: e.target.value })}
+                        />
+                    </div>
+                    <div>
+                        <label className="label-premium">Aadhar Number</label>
+                        <input
+                            type="text"
+                            className="input-premium"
+                            value={empForm.aadharNumber}
+                            onChange={e => setEmpForm({ ...empForm, aadharNumber: e.target.value })}
+                        />
+                    </div>
+                    <div>
+                        <label className="label-premium">PAN Number</label>
+                        <input
+                            type="text"
+                            className="input-premium"
+                            value={empForm.panNumber}
+                            onChange={e => setEmpForm({ ...empForm, panNumber: e.target.value })}
+                        />
+                    </div>
+                    <div>
+                        <label className="label-premium">Blood Group</label>
+                        <input
+                            type="text"
+                            className="input-premium"
+                            value={empForm.bloodGroup}
+                            onChange={e => setEmpForm({ ...empForm, bloodGroup: e.target.value })}
+                        />
+                    </div>
+                    <div className="md:col-span-3">
+                        <label className="label-premium">Current Address</label>
+                        <textarea
+                            className="input-premium h-20"
+                            value={empForm.address}
+                            onChange={e => setEmpForm({ ...empForm, address: e.target.value })}
+                        />
+                    </div>
+                </div>
+            </div>
+
+            {/* Employment Section */}
+            <div className="card-premium p-8">
+                <h2 className="text-lg font-black text-secondary-900 mb-6 flex items-center gap-2">
+                    <Briefcase className="w-5 h-5 text-indigo-500" />
+                    Work & Role
+                </h2>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div>
+                        <label className="label-premium">Employee ID</label>
+                        <input
+                            type="text"
+                            className="input-premium"
+                            placeholder="STM-001"
+                            value={empForm.employeeId}
+                            onChange={e => setEmpForm({ ...empForm, employeeId: e.target.value })}
+                        />
+                    </div>
+                    <div>
+                        <label className="label-premium">Date of Joining</label>
+                        <input
+                            type="date"
+                            className="input-premium"
+                            value={empForm.dateOfJoining}
+                            onChange={e => setEmpForm({ ...empForm, dateOfJoining: e.target.value })}
+                        />
+                    </div>
+                    <div>
+                        <label className="label-premium">System Role</label>
+                        <select
+                            className="input-premium"
+                            value={empForm.role}
+                            onChange={e => setEmpForm({ ...empForm, role: e.target.value })}
+                        >
+                            <option value="EXECUTIVE">Executive</option>
+                            <option value="TEAM_LEADER">Team Leader</option>
+                            <option value="MANAGER">Manager</option>
+                            <option value="ADMIN">Admin</option>
+                            <option value="HR_MANAGER">HR Manager</option>
+                            <option value="FINANCE_ADMIN">Finance Admin</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label className="label-premium">Employee Type</label>
+                        <select
+                            className="input-premium"
+                            value={empForm.employeeType}
+                            onChange={e => setEmpForm({ ...empForm, employeeType: e.target.value })}
+                        >
+                            <option value="FULL_TIME">Full Time</option>
+                            <option value="PART_TIME">Part Time</option>
+                            <option value="CONTRACT">Contract</option>
+                            <option value="GIG_WORKIE">GIG Worker</option>
+                            <option value="FREELANCE">Freelance</option>
+                            <option value="INTERN">Intern</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label className="label-premium">Reports To (Manager)</label>
+                        <select
+                            className="input-premium"
+                            value={empForm.managerId}
+                            onChange={e => setEmpForm({ ...empForm, managerId: e.target.value })}
+                        >
+                            <option value="">No Manager (Top Level)</option>
+                            {managers.map(m => (
+                                <option key={m.id} value={m.user.id}>
+                                    {m.user.name || m.user.email} ({m.designatRef?.name || m.designation || m.user.role})
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+                    <div>
+                        <label className="label-premium">Designation Profile</label>
+                        <select
+                            className="input-premium"
+                            value={empForm.designationId}
+                            onChange={e => {
+                                const d = designations.find(x => x.id === e.target.value);
+                                setEmpForm({
+                                    ...empForm,
+                                    designationId: e.target.value,
+                                    designation: d?.name || empForm.designation,
+                                    jobDescription: d?.jobDescription || empForm.jobDescription,
+                                    kra: d?.kra || empForm.kra
+                                });
+                            }}
+                        >
+                            <option value="">Manual/Custom</option>
+                            {designations.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
+                        </select>
+                    </div>
+                    <div>
+                        <label className="label-premium">Designation Name</label>
+                        <input
+                            type="text"
+                            className="input-premium"
+                            value={empForm.designation}
+                            onChange={e => setEmpForm({ ...empForm, designation: e.target.value })}
+                        />
+                    </div>
+                    <div>
+                        <label className="label-premium">Account Status</label>
+                        <select
+                            className="input-premium"
+                            value={empForm.isActive ? 'true' : 'false'}
+                            onChange={e => setEmpForm({ ...empForm, isActive: e.target.value === 'true' })}
+                        >
+                            <option value="true">Active</option>
+                            <option value="false">Inactive</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            {/* Company Access Section */}
+            <div className="card-premium p-8">
+                <h2 className="text-lg font-black text-secondary-900 mb-6 flex items-center gap-2">
+                    <Shield className="w-5 h-5 text-amber-500" />
+                    Company Access & Security
+                </h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label className="label-premium">Primary Company</label>
+                        <select
+                            className="input-premium"
+                            value={empForm.companyId}
+                            onChange={e => setEmpForm({ ...empForm, companyId: e.target.value })}
+                        >
+                            <option value="">Select Primary Company</option>
+                            {companies.map(c => (
+                                <option key={c.id} value={c.id}>{c.name}</option>
+                            ))}
+                        </select>
+                        <p className="text-[10px] text-secondary-400 mt-1 font-bold">The main company this employee is registered under.</p>
+                    </div>
+                    <div>
+                        <label className="label-premium">Additional Authorized Companies</label>
+                        <div className="grid grid-cols-2 gap-2 mt-2 max-h-40 overflow-y-auto p-2 bg-secondary-50/50 rounded-xl border border-secondary-100">
+                            {companies.map(c => (
+                                <label key={c.id} className="flex items-center gap-2 p-2 rounded-lg hover:bg-white cursor-pointer border border-transparent hover:border-secondary-100 transition-all shadow-sm">
+                                    <input
+                                        type="checkbox"
+                                        className="w-4 h-4 rounded text-primary-600 focus:ring-primary-500"
+                                        checked={empForm.companyIds.includes(c.id)}
+                                        onChange={e => {
+                                            const ids = e.target.checked
+                                                ? [...empForm.companyIds, c.id]
+                                                : empForm.companyIds.filter(id => id !== c.id);
+                                            setEmpForm({ ...empForm, companyIds: ids });
+                                        }}
+                                    />
+                                    <span className="text-[11px] font-black text-secondary-700 truncate">{c.name}</span>
+                                </label>
+                            ))}
+                        </div>
+                        <p className="text-[10px] text-secondary-400 mt-1 font-bold">Grant access to data for these selected companies.</p>
+                    </div>
+                </div>
+            </div>
+
+            {/* Financials Section */}
+            <div className="card-premium p-8">
+                <h2 className="text-lg font-black text-secondary-900 mb-6 flex items-center gap-2">
+                    <DollarSign className="w-5 h-5 text-emerald-500" />
+                    Financials & Bank
+                </h2>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div>
+                        <label className="label-premium">Base Salary (Monthly)</label>
+                        <input
+                            type="number"
+                            className="input-premium"
+                            value={empForm.baseSalary}
+                            onChange={e => setEmpForm({ ...empForm, baseSalary: e.target.value })}
+                        />
+                    </div>
+                    <div>
+                        <label className="label-premium">Bank Name</label>
+                        <input
+                            type="text"
+                            className="input-premium"
+                            value={empForm.bankName}
+                            onChange={e => setEmpForm({ ...empForm, bankName: e.target.value })}
+                        />
+                    </div>
+                    <div>
+                        <label className="label-premium">Account Number</label>
+                        <input
+                            type="text"
+                            className="input-premium"
+                            value={empForm.accountNumber}
+                            onChange={e => setEmpForm({ ...empForm, accountNumber: e.target.value })}
+                        />
+                    </div>
+                    <div>
+                        <label className="label-premium">IFSC Code</label>
+                        <input
+                            type="text"
+                            className="input-premium"
+                            value={empForm.ifscCode}
+                            onChange={e => setEmpForm({ ...empForm, ifscCode: e.target.value })}
+                        />
+                    </div>
+                    <div>
+                        <label className="label-premium">UAN Number</label>
+                        <input
+                            type="text"
+                            className="input-premium"
+                            value={empForm.uanNumber}
+                            onChange={e => setEmpForm({ ...empForm, uanNumber: e.target.value })}
+                        />
+                    </div>
+                    <div>
+                        <label className="label-premium">PF Number</label>
+                        <input
+                            type="text"
+                            className="input-premium"
+                            value={empForm.pfNumber}
+                            onChange={e => setEmpForm({ ...empForm, pfNumber: e.target.value })}
+                        />
+                    </div>
+                    <div>
+                        <label className="label-premium">ESIC Number</label>
+                        <input
+                            type="text"
+                            className="input-premium"
+                            value={empForm.esicNumber}
+                            onChange={e => setEmpForm({ ...empForm, esicNumber: e.target.value })}
+                        />
+                    </div>
+                </div>
+            </div>
+
+            {/* KRA & JD Section */}
+            <div className="card-premium p-8">
+                <h2 className="text-lg font-black text-secondary-900 mb-6 flex items-center gap-2">
+                    <Award className="w-5 h-5 text-purple-500" />
+                    KRA & Job Description
+                </h2>
+                <div className="space-y-6">
+                    <div>
+                        <label className="label-premium mb-2 block">Key Responsibility Areas (KRA)</label>
+                        <RichTextEditor
+                            value={empForm.kra}
+                            onChange={v => setEmpForm({ ...empForm, kra: v })}
+                        />
+                    </div>
+                    <div>
+                        <label className="label-premium mb-2 block">Job Description</label>
+                        <RichTextEditor
+                            value={empForm.jobDescription}
+                            onChange={v => setEmpForm({ ...empForm, jobDescription: v })}
+                        />
+                    </div>
+                </div>
+            </div>
+
+            {/* Targets Section */}
+            <div className="card-premium p-8">
+                <h2 className="text-lg font-black text-secondary-900 mb-6 flex items-center gap-2">
+                    <Target className="w-5 h-5 text-rose-500" />
+                    Performance Targets
+                </h2>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div>
+                        <label className="label-premium">Revenue Target</label>
+                        <div className="relative">
+                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-secondary-400 font-bold">₹</span>
+                            <input
+                                type="number"
+                                className="input-premium pl-8"
+                                placeholder="e.g 500000"
+                                value={empForm.targets.revenue}
+                                onChange={e => setEmpForm({ ...empForm, targets: { ...empForm.targets, revenue: e.target.value } })}
+                            />
+                        </div>
+                    </div>
+                    <div>
+                        <label className="label-premium">Publication Deadline/Issues</label>
+                        <input
+                            type="text"
+                            className="input-premium"
+                            placeholder="e.g. 2 Issues / Month"
+                            value={empForm.targets.publication}
+                            onChange={e => setEmpForm({ ...empForm, targets: { ...empForm.targets, publication: e.target.value } })}
+                        />
+                    </div>
+                    <div>
+                        <label className="label-premium">Web Dev / Correction</label>
+                        <input
+                            type="text"
+                            className="input-premium"
+                            placeholder="e.g. 5 Modules / Week"
+                            value={empForm.targets.development}
+                            onChange={e => setEmpForm({ ...empForm, targets: { ...empForm.targets, development: e.target.value } })}
+                        />
+                    </div>
+                </div>
+            </div>
+
+            {/* Action Bar */}
+            <div className="sticky bottom-8 z-10">
+                <div className="card-premium bg-white/80 backdrop-blur-xl border-primary-100 p-4 flex gap-4 shadow-2xl">
+                    <button
+                        type="submit"
+                        disabled={saving}
+                        className="btn btn-primary flex-1 py-4 flex items-center justify-center gap-2 font-black uppercase tracking-widest"
+                    >
+                        <Save className="w-5 h-5" />
+                        {saving ? 'Processing...' : mode === 'create' ? 'Onboard Employee' : 'Commit Changes'}
+                    </button>
+                    <button
+                        type="button"
+                        onClick={onCancel}
+                        className="btn btn-secondary px-10 py-4"
+                    >
+                        Discard
+                    </button>
+                </div>
+            </div>
+        </form>
+    );
+}

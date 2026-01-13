@@ -37,7 +37,7 @@ export const GET = authorizedRoute(
                 if (profile?.agencyDetails) {
                     whereClause = { ...whereClause, agencyId: profile.agencyDetails.id };
                 }
-            } else if (role === 'SALES_EXECUTIVE') {
+            } else if (role === 'EXECUTIVE') {
                 whereClause = { ...whereClause, salesExecutiveId: userId };
             } else if (role === 'MANAGER' || role === 'TEAM_LEADER') {
                 // Manager/TL sees data for all their subordinates within their company

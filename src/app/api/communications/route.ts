@@ -6,7 +6,7 @@ export async function POST(req: NextRequest) {
     try {
         // 1. Verify Authentication
         const decoded = await getAuthenticatedUser();
-        if (!decoded || !['SUPER_ADMIN', 'SALES_EXECUTIVE', 'MANAGER', 'FINANCE_ADMIN'].includes(decoded.role)) {
+        if (!decoded || !['SUPER_ADMIN', 'EXECUTIVE', 'MANAGER', 'FINANCE_ADMIN'].includes(decoded.role)) {
             return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
         }
 
@@ -78,7 +78,7 @@ export async function POST(req: NextRequest) {
 export async function GET(req: NextRequest) {
     try {
         const decoded = await getAuthenticatedUser();
-        if (!decoded || !['SUPER_ADMIN', 'MANAGER', 'SALES_EXECUTIVE'].includes(decoded.role)) {
+        if (!decoded || !['SUPER_ADMIN', 'MANAGER', 'EXECUTIVE'].includes(decoded.role)) {
             return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
         }
 
@@ -96,7 +96,7 @@ export async function GET(req: NextRequest) {
             where.companyId = userCompanyId;
         }
 
-        if (decoded.role === 'SALES_EXECUTIVE') {
+        if (decoded.role === 'EXECUTIVE') {
             // Executives see logs they created OR logs for customers assigned to them (directly or via team)
             where.OR = [
                 { userId: decoded.id },
@@ -149,9 +149,9 @@ export async function GET(req: NextRequest) {
             prisma.communicationLog.count({ where })
         ]);
 
-        // Apply restricted visibility for SALES_EXECUTIVE
+        // Apply restricted visibility for EXECUTIVE
         const processedLogs = logs.map(log => {
-            if (decoded.role === 'SALES_EXECUTIVE' && log.userId !== decoded.id) {
+            if (decoded.role === 'EXECUTIVE' && log.userId !== decoded.id) {
                 return {
                     ...log,
                     notes: '*** Restricted ***',

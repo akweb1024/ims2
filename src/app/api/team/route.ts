@@ -9,7 +9,7 @@ export const GET = authorizedRoute(
     async (req: NextRequest, user) => {
         try {
             const where: any = {
-                role: { in: ['SALES_EXECUTIVE', 'FINANCE_ADMIN', 'MANAGER', 'SUPER_ADMIN', 'ADMIN', 'TEAM_LEADER'] }
+                role: { in: ['EXECUTIVE', 'FINANCE_ADMIN', 'MANAGER', 'SUPER_ADMIN', 'ADMIN', 'TEAM_LEADER'] }
             };
 
             // ...

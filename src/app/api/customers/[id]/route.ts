@@ -67,16 +67,16 @@ export async function GET(
             return NextResponse.json({ error: 'Customer not found' }, { status: 404 });
         }
 
-        // 3. Authorization Check (for Sales Executives)
+        // 3. Authorization Check (for Executives)
         const isAssigned = customer.assignedToUserId === decoded.id ||
             ((customer as any).assignedExecutives as any[]).some((e) => e.id === decoded.id);
 
-        if (decoded.role === 'SALES_EXECUTIVE' && !isAssigned) {
+        if (decoded.role === 'EXECUTIVE' && !isAssigned) {
             return NextResponse.json({ error: 'Forbidden: You are not assigned to this customer' }, { status: 403 });
         }
 
         // Apply restricted visibility for communications
-        if (decoded.role === 'SALES_EXECUTIVE') {
+        if (decoded.role === 'EXECUTIVE') {
             (customer as any).communications = (customer as any).communications.map((log: any) => {
                 if (log.userId !== decoded.id) {
                     return {
@@ -104,7 +104,7 @@ export async function PATCH(
     try {
         const { id } = await params;
         const decoded = await getAuthenticatedUser();
-        if (!decoded || !['SUPER_ADMIN', 'MANAGER', 'SALES_EXECUTIVE'].includes(decoded.role)) {
+        if (!decoded || !['SUPER_ADMIN', 'MANAGER', 'EXECUTIVE'].includes(decoded.role)) {
             return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
         }
 

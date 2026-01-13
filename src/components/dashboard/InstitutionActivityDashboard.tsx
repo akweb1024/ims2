@@ -41,7 +41,7 @@ export default function InstitutionActivityDashboard({ institutionId }: Institut
     const fetchEmployees = async () => {
         try {
             const token = localStorage.getItem('token');
-            const res = await fetch('/api/users?role=SALES_EXECUTIVE,MANAGER,TEAM_LEADER', {
+            const res = await fetch('/api/users?role=EXECUTIVE,MANAGER,TEAM_LEADER', {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             if (res.ok) {

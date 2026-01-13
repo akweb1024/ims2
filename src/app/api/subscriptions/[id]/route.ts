@@ -74,7 +74,7 @@ export async function PATCH(
 
         // 1. Verify Authentication
         const decoded = await getAuthenticatedUser();
-        if (!decoded || !['SUPER_ADMIN', 'SALES_EXECUTIVE', 'MANAGER'].includes(decoded.role)) {
+        if (!decoded || !['SUPER_ADMIN', 'EXECUTIVE', 'MANAGER'].includes(decoded.role)) {
             return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
         }
 

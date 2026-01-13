@@ -75,7 +75,7 @@ export default function EmployeeList({
                         onChange={(e) => setRoleFilter(e.target.value)}
                     >
                         <option value="ALL">All Roles</option>
-                        <option value="SALES_EXECUTIVE">Sales Executive</option>
+                        <option value="EXECUTIVE">Executive</option>
                         <option value="MANAGER">Manager</option>
                         <option value="ADMIN">Admin</option>
                         <option value="HR_MANAGER">HR Manager</option>
@@ -221,9 +221,12 @@ export default function EmployeeList({
                     {filteredEmployees.map(emp => (
                         <div key={emp.id} className="card-premium p-6 hover:shadow-xl hover:-translate-y-1 transition-all group relative border border-secondary-100 bg-white">
                             <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
-                                <button onClick={() => onEdit(emp)} className="p-2 bg-white shadow-sm border border-secondary-100 rounded-full hover:bg-primary-50 text-secondary-500 hover:text-primary-600 transition-colors">
+                                <Link
+                                    href={`/dashboard/hr-management/employees/${emp.id}/edit`}
+                                    className="p-2 bg-white shadow-sm border border-secondary-100 rounded-full hover:bg-primary-50 text-secondary-500 hover:text-primary-600 transition-colors"
+                                >
                                     <Edit size={12} />
-                                </button>
+                                </Link>
                             </div>
 
                             <div className="flex flex-col items-center text-center mb-6">
@@ -231,10 +234,10 @@ export default function EmployeeList({
                                     {emp.profilePicture ? (
                                         <img src={emp.profilePicture} alt="Profile" className="w-full h-full object-cover rounded-2xl" />
                                     ) : (
-                                        emp.user.email[0].toUpperCase()
+                                        (emp.user.name?.[0] || emp.user.email[0]).toUpperCase()
                                     )}
                                 </div>
-                                <h3 className="font-bold text-lg text-secondary-900 truncate w-full px-4" title={emp.user.email}>{emp.user.email.split('@')[0]}</h3>
+                                <h3 className="font-bold text-lg text-secondary-900 truncate w-full px-4" title={emp.user.email}>{emp.user.name || emp.user.email.split('@')[0]}</h3>
                                 <p className="text-xs text-secondary-500 font-bold uppercase tracking-wider mb-2">{emp.designatRef?.name || emp.designation || 'No Designation'}</p>
                                 <span className={`inline-block text-[9px] font-black px-2 py-0.5 rounded-full uppercase tracking-widest ${emp.user.isActive ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' : 'bg-rose-50 text-rose-700 border border-rose-100'}`}>
                                     {emp.user.isActive ? 'Active Staff' : 'Inactive'}

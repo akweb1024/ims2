@@ -141,7 +141,7 @@ export default function CommunicationsPage() {
                                                         </svg>
                                                         Follow-up: <span className="ml-1 italic"><FormattedDate date={log.nextFollowUpDate} /></span>
                                                     </div>
-                                                    {['SUPER_ADMIN', 'MANAGER', 'SALES_EXECUTIVE'].includes(userRole) && (
+                                                    {['SUPER_ADMIN', 'MANAGER', 'EXECUTIVE'].includes(userRole) && (
                                                         <Link
                                                             href={`/dashboard/customers/${log.customerProfileId}?followUpId=${log.id}#communication-form`}
                                                             className="text-[10px] bg-primary-600 text-white px-3 py-1 rounded-full font-bold hover:bg-primary-700 transition-colors shadow-sm"

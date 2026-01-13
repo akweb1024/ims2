@@ -153,7 +153,7 @@ export async function notifySupportTeam(companyId: string | null, title: string,
         where: {
             companyId,
             role: {
-                in: ['ADMIN', 'MANAGER', 'TEAM_LEADER', 'SALES_EXECUTIVE', 'SUPER_ADMIN']
+                in: ['ADMIN', 'MANAGER', 'TEAM_LEADER', 'EXECUTIVE', 'SUPER_ADMIN']
             }
         } as any,
         select: { id: true }

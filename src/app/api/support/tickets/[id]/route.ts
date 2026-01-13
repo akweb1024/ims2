@@ -58,7 +58,7 @@ export async function PATCH(
     try {
         const { id } = await params;
         const decoded = await getAuthenticatedUser();
-        if (!decoded || !['SUPER_ADMIN', 'MANAGER', 'SALES_EXECUTIVE', 'ADMIN'].includes(decoded.role)) {
+        if (!decoded || !['SUPER_ADMIN', 'MANAGER', 'EXECUTIVE', 'ADMIN'].includes(decoded.role)) {
             return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
         }
 

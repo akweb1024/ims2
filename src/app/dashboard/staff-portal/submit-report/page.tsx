@@ -42,7 +42,7 @@ export default function SubmitReportPage() {
             setUser(u);
 
             // Auto-select template based on role
-            if (u.role === 'SALES_EXECUTIVE') setTemplate('SALES');
+            if (u.role === 'EXECUTIVE') setTemplate('SALES');
             else if (u.role === 'EDITOR') setTemplate('PUBLICATION');
             else if (u.role === 'HR_MANAGER') setTemplate('GENERAL');
             else if (u.department?.name?.toLowerCase().includes('publication')) setTemplate('PUBLICATION');
@@ -166,7 +166,7 @@ export default function SubmitReportPage() {
                         onChange={(e) => setTemplate(e.target.value)}
                     >
                         <option value="GENERAL">General Staff</option>
-                        <option value="SALES">Sales Executive</option>
+                        <option value="SALES">Executive</option>
                         <option value="PUBLICATION">Publication Exec</option>
                         <option value="PUBLICATION">Publication Exec</option>
                         <option value="PROGRAM">Program Executive</option>

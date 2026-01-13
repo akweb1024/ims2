@@ -181,21 +181,21 @@ export default function DashboardLayout({ children, userRole: propUserRole = 'CU
                 items: [
                     { name: 'Companies', href: '/dashboard/companies', icon: '🏢', roles: ['SUPER_ADMIN'] },
                     { name: 'Institutions', href: '/dashboard/institutions', icon: '🏛️', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER'] },
-                    { name: 'Customers', href: '/dashboard/customers', icon: '🙍‍♂️', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'TEAM_LEADER', 'SALES_EXECUTIVE'] },
-                    { name: 'Subscriptions', href: '/dashboard/subscriptions', icon: '📋', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'SALES_EXECUTIVE', 'FINANCE_ADMIN', 'AGENCY', 'CUSTOMER'] },
-                    { name: 'Invoices', href: '/dashboard/invoices', icon: '🧾', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'SALES_EXECUTIVE', 'FINANCE_ADMIN', 'AGENCY', 'CUSTOMER'] },
-                    { name: 'Logistics', href: '/dashboard/logistics', icon: '🚚', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'SALES_EXECUTIVE'] },
+                    { name: 'Customers', href: '/dashboard/customers', icon: '🙍‍♂️', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'TEAM_LEADER', 'EXECUTIVE'] },
+                    { name: 'Subscriptions', href: '/dashboard/subscriptions', icon: '📋', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'EXECUTIVE', 'FINANCE_ADMIN', 'AGENCY', 'CUSTOMER'] },
+                    { name: 'Invoices', href: '/dashboard/invoices', icon: '🧾', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'EXECUTIVE', 'FINANCE_ADMIN', 'AGENCY', 'CUSTOMER'] },
+                    { name: 'Logistics', href: '/dashboard/logistics', icon: '🚚', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'EXECUTIVE'] },
                     { name: 'Payments', href: '/dashboard/payments', icon: '💰', roles: ['SUPER_ADMIN', 'ADMIN', 'FINANCE_ADMIN'] },
                     { name: 'Financials', href: '/dashboard/finance', icon: '📈', roles: ['SUPER_ADMIN', 'ADMIN', 'FINANCE_ADMIN'] },
-                    { name: 'Follow Ups', href: '/dashboard/follow-ups', icon: '🗓️', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'TEAM_LEADER', 'SALES_EXECUTIVE'] },
-                    { name: 'Support Tickets', href: '/dashboard/tickets', icon: '🎫', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'SALES_EXECUTIVE', 'CUSTOMER'] },
+                    { name: 'Follow Ups', href: '/dashboard/follow-ups', icon: '🗓️', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'TEAM_LEADER', 'EXECUTIVE'] },
+                    { name: 'Support Tickets', href: '/dashboard/tickets', icon: '🎫', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'EXECUTIVE', 'CUSTOMER'] },
                 ]
             },
             {
                 title: 'Publishing & Editorial',
                 items: [
                     { name: 'Production Hub', href: '/dashboard/production', icon: '🏭', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'EDITOR'] },
-                    { name: 'Journals', href: '/dashboard/journals', icon: '📰', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'EDITOR', 'CUSTOMER', 'AGENCY', 'SALES_EXECUTIVE'] },
+                    { name: 'Journals', href: '/dashboard/journals', icon: '📰', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'EDITOR', 'CUSTOMER', 'AGENCY', 'EXECUTIVE'] },
                     { name: 'Editorial Workflow', href: '/dashboard/editorial', icon: '✍️', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'EDITOR'] },
                     { name: 'Validate Reports', href: '/dashboard/reviews/validate', icon: '📋', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'EDITOR'] },
                     { name: 'Reviewer Dashboard', href: '/dashboard/reviewer', icon: '🛡️', roles: ['*'] },
@@ -230,7 +230,7 @@ export default function DashboardLayout({ children, userRole: propUserRole = 'CU
                 items: [
                     { name: 'Analytics', href: '/dashboard/analytics', icon: '📈', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER'] },
                     { name: 'Razorpay Revenue', href: '/dashboard/analytics/razorpay', icon: '💳', roles: ['SUPER_ADMIN', 'ADMIN', 'FINANCE_ADMIN'] },
-                    { name: 'AI Predictions', href: '/dashboard/ai-insights', icon: '🤖', roles: ['SUPER_ADMIN', 'MANAGER', 'SALES_EXECUTIVE', 'FINANCE_ADMIN', 'AGENCY'] },
+                    { name: 'AI Predictions', href: '/dashboard/ai-insights', icon: '🤖', roles: ['SUPER_ADMIN', 'MANAGER', 'EXECUTIVE', 'FINANCE_ADMIN', 'AGENCY'] },
                     { name: 'Data Hub', href: '/dashboard/data-hub', icon: '📂', roles: ['SUPER_ADMIN'] },
                     { name: 'System Logs', href: '/dashboard/admin/logs', icon: '📜', roles: ['SUPER_ADMIN'] },
                 ]

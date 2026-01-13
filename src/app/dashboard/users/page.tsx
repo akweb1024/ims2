@@ -499,7 +499,7 @@ function UsersContent() {
                             <div>
                                 <label className="label">System Role</label>
                                 <select name="role" className="input" required>
-                                    <option value="SALES_EXECUTIVE">Sales Executive</option>
+                                    <option value="EXECUTIVE">Executive</option>
                                     <option value="TEAM_LEADER">Team Leader</option>
                                     <option value="MANAGER">Manager</option>
                                     <option value="ADMIN">Admin</option>
@@ -574,7 +574,7 @@ function UsersContent() {
                             <div>
                                 <label className="label">System Role</label>
                                 <select name="role" className="input" defaultValue={editingUser.role} required>
-                                    <option value="SALES_EXECUTIVE">Sales Executive</option>
+                                    <option value="EXECUTIVE">Executive</option>
                                     <option value="TEAM_LEADER">Team Leader</option>
                                     <option value="MANAGER">Manager</option>
                                     <option value="ADMIN">Admin</option>
@@ -608,14 +608,14 @@ function UsersContent() {
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-secondary-900/50 backdrop-blur-sm p-4">
                     <div className="bg-white rounded-3xl p-8 max-w-lg w-full shadow-2xl">
                         <h2 className="text-2xl font-bold text-secondary-900 mb-2 font-primary">Bulk Customer Assignment</h2>
-                        <p className="text-secondary-500 mb-6">Assign multiple customers to a Sales Executive based on filters.</p>
+                        <p className="text-secondary-500 mb-6">Assign multiple customers to a Executive based on filters.</p>
 
                         <form onSubmit={handleBulkAssign} className="space-y-4">
                             <div>
-                                <label className="label">Target Sales Executive</label>
+                                <label className="label">Target Executive</label>
                                 <select name="assignedToUserId" className="input" required>
                                     <option value="">Select Staff...</option>
-                                    {users.filter(u => ['SALES_EXECUTIVE', 'MANAGER'].includes(u.role)).map(u => (
+                                    {users.filter(u => ['EXECUTIVE', 'MANAGER'].includes(u.role)).map(u => (
                                         <option key={u.id} value={u.id}>{u.email} ({u.role})</option>
                                     ))}
                                 </select>

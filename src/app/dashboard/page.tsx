@@ -311,7 +311,7 @@ export default function DashboardPage() {
                             </Link>
                         )}
 
-                        {['SUPER_ADMIN', 'MANAGER', 'SALES_EXECUTIVE', 'TEAM_LEADER'].includes(userRole) && (
+                        {['SUPER_ADMIN', 'MANAGER', 'EXECUTIVE', 'TEAM_LEADER'].includes(userRole) && (
                             <Link href="/dashboard/customers" className="flex flex-col items-center justify-center p-6 bg-white border border-secondary-100 rounded-2xl hover:bg-secondary-50 transition-all text-center group shadow-sm">
                                 <span className="text-3xl mb-3 group-hover:scale-110 transition-transform">💬</span>
                                 <span className="text-[10px] font-black uppercase tracking-widest text-secondary-500">Log Activity</span>

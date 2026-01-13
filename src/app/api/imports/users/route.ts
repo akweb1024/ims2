@@ -54,7 +54,7 @@ export async function POST(req: NextRequest) {
                 data: {
                     email: email,
                     password: hashedPassword,
-                    role: item.role || 'SALES_EXECUTIVE',
+                    role: item.role || 'EXECUTIVE',
                     companyId: targetCompanyId,
                     isActive: true,
                     emailVerified: true

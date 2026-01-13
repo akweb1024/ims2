@@ -18,7 +18,7 @@ export const GET = authorizedRoute(
 
             if (employeeId) {
                 where.employeeId = employeeId;
-            } else if (user.role === 'SALES_EXECUTIVE' || user.role === 'MANAGER' || user.role === 'USER') {
+            } else if (user.role === 'EXECUTIVE' || user.role === 'MANAGER' || user.role === 'USER') {
                 // Default to current user's plans if no employeeId provided
                 const profile = await prisma.employeeProfile.findUnique({ where: { userId: user.id } });
                 if (profile) where.employeeId = profile.id;

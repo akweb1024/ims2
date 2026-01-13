@@ -40,7 +40,7 @@ export default function AIPredictionPage() {
     };
 
     const tabs = [
-        { id: 'sales', name: 'Sales Pipeline', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'SALES_EXECUTIVE'] },
+        { id: 'sales', name: 'Sales Pipeline', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'EXECUTIVE'] },
         { id: 'hr', name: 'Workforce Pulse', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'HR_ADMIN'] },
         { id: 'executive', name: 'Executive Summary', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'FINANCE_ADMIN'] },
     ];

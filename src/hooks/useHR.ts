@@ -4,7 +4,9 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 interface Employee {
     id: string;
     user?: {
+        id: string;
         email: string;
+        name: string;
         role: string;
         isActive: boolean;
     };

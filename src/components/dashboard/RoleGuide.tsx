@@ -69,8 +69,8 @@ const guides: Record<string, { title: string; subtitle: string; sections: { titl
             }
         ]
     },
-    SALES_EXECUTIVE: {
-        title: "💼 Sales Executive Handbook",
+    EXECUTIVE: {
+        title: "💼 Executive Handbook",
         subtitle: "Manage customers and drive subscriptions.",
         sections: [
             {

@@ -1,13 +1,14 @@
 'use client';
 
 import { useState, useEffect, Suspense } from 'react';
-import { useSearchParams } from 'next/navigation';
+import Link from 'next/link';
+import { useSearchParams, useRouter } from 'next/navigation';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import FormattedDate from '@/components/common/FormattedDate';
 
 import DocumentManager from '@/components/dashboard/DocumentManager';
 import EmployeeList from '@/components/dashboard/hr/EmployeeList';
-import EmployeeModal from '@/components/dashboard/hr/EmployeeModal';
+
 import HolidayManager from '@/components/dashboard/hr/HolidayManager';
 import RecruitmentBoard from '@/components/dashboard/hr/RecruitmentBoard';
 import JobPostingModal from '@/components/dashboard/hr/JobPostingModal';
@@ -191,6 +192,7 @@ const DailyReconciliationTable = ({ days = 7 }: { days?: number }) => {
 
 const HRManagementContent = () => {
     const searchParams = useSearchParams();
+    const router = useRouter();
 
     // React Query Hooks - Basic
     const { data: employees = [], isLoading: loadingEmployees } = useEmployees();
@@ -247,8 +249,7 @@ const HRManagementContent = () => {
     const { data: advances = [] } = useAdvances();
 
     // Mutations
-    const createEmployeeMutation = useCreateEmployee();
-    const updateEmployeeMutation = useUpdateEmployee();
+
     const createJobMutation = useCreateJob();
     const updateJobMutation = useUpdateJob();
     const { updateStatus: updateStatusMutation, updateReport, addComment: addReportComment } = useWorkReportMutations();
@@ -268,19 +269,7 @@ const HRManagementContent = () => {
 
     // ... (keep handleLeaveStatus, etc) ...
 
-    const handleEmpSubmit = async (data: any) => {
-        try {
-            if (selectedEmp) {
-                await updateEmployeeMutation.mutateAsync({ ...data, id: selectedEmp.id });
-            } else {
-                await createEmployeeMutation.mutateAsync(data);
-            }
-            setShowEmpModal(false);
-        } catch (err: any) {
-            console.error(err);
-            alert(err.message || 'Failed to save employee');
-        }
-    };
+
 
     // ...
 
@@ -303,7 +292,7 @@ const HRManagementContent = () => {
 
 
     // Modal state
-    const [showEmpModal, setShowEmpModal] = useState(false);
+
     const [showHelpSidebar, setShowHelpSidebar] = useState(false);
     const [showReviewModal, setShowReviewModal] = useState(false);
     const [reviewForm, setReviewForm] = useState({ rating: 5, feedback: '' });
@@ -534,10 +523,7 @@ const HRManagementContent = () => {
                             <span>💰</span> New Advance
                         </button>
                         <button
-                            onClick={() => {
-                                setSelectedEmp(null);
-                                setShowEmpModal(true);
-                            }}
+                            onClick={() => router.push('/dashboard/hr-management/employees/new')}
                             className="btn btn-primary shadow-xl"
                         >
                             + Onboard Employee
@@ -588,8 +574,7 @@ const HRManagementContent = () => {
                         employees={employees}
                         loading={loadingEmployees}
                         onEdit={(emp) => {
-                            setSelectedEmp(emp);
-                            setShowEmpModal(true);
+                            router.push(`/dashboard/hr-management/employees/${emp.id}/edit`);
                         }}
                         managers={employees.filter(e => ['MANAGER', 'TEAM_LEADER'].includes(e.user?.role || ''))}
                         onDelete={handleDeactivateEmp}
@@ -628,10 +613,10 @@ const HRManagementContent = () => {
                                             className={`w-full text-left p-3 rounded-xl flex items-center gap-3 transition-all ${selectedDocEmp?.id === emp.id ? 'bg-primary-50 border border-primary-200 shadow-sm' : 'hover:bg-secondary-50 border border-transparent'}`}
                                         >
                                             <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs ${selectedDocEmp?.id === emp.id ? 'bg-primary-600 text-white' : 'bg-secondary-100 text-secondary-500'}`}>
-                                                {emp.user?.email?.[0].toUpperCase() || 'U'}
+                                                {(emp.user?.name?.[0] || emp.user?.email?.[0] || 'U').toUpperCase()}
                                             </div>
                                             <div className="overflow-hidden">
-                                                <p className={`text-sm font-bold truncate ${selectedDocEmp?.id === emp.id ? 'text-primary-900' : 'text-secondary-900'}`}>{emp.user?.email?.split('@')[0] || 'Unknown'}</p>
+                                                <p className={`text-sm font-bold truncate ${selectedDocEmp?.id === emp.id ? 'text-primary-900' : 'text-secondary-900'}`}>{emp.user?.name || emp.user?.email?.split('@')[0] || 'Unknown'}</p>
                                                 <p className="text-[10px] text-secondary-400 truncate">{emp.designation}</p>
                                             </div>
                                         </button>
@@ -645,7 +630,7 @@ const HRManagementContent = () => {
                                     <>
                                         <div className="card-premium bg-primary-900 text-white flex justify-between items-center bg-[url('https://grainy-gradients.vercel.app/noise.svg')]">
                                             <div>
-                                                <h3 className="text-xl font-black">{selectedDocEmp.user?.email || 'Unknown'}</h3>
+                                                <h3 className="text-xl font-black">{selectedDocEmp.user?.name || selectedDocEmp.user?.email || 'Unknown'}</h3>
                                                 <p className="text-primary-200 text-sm">Employee Digital File</p>
                                             </div>
                                             <div className="text-right">
@@ -1747,17 +1732,7 @@ const HRManagementContent = () => {
                         </div>
                     </div>
                 )}
-                <EmployeeModal
-                    isOpen={showEmpModal}
-                    onClose={() => {
-                        setShowEmpModal(false);
-                        setSelectedEmp(null);
-                    }}
-                    employee={selectedEmp}
-                    designations={designations}
-                    managers={employees.filter((e: any) => ['MANAGER', 'TEAM_LEADER', 'ADMIN', 'SUPER_ADMIN'].includes(e.user?.role || ''))}
-                    onSave={handleEmpSubmit}
-                />
+
 
                 <PerformanceReviewModal
                     isOpen={showReviewModal}

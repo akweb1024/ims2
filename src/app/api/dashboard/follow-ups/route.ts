@@ -29,7 +29,7 @@ export async function GET(req: NextRequest) {
             }
         };
 
-        if (decoded.role === 'SALES_EXECUTIVE') {
+        if (decoded.role === 'EXECUTIVE') {
             whereClause.OR = [
                 { userId: decoded.id },
                 {
@@ -77,7 +77,7 @@ export async function GET(req: NextRequest) {
 
             // Masking for Executives
             let processedLog = log;
-            if (decoded.role === 'SALES_EXECUTIVE' && log.userId !== decoded.id) {
+            if (decoded.role === 'EXECUTIVE' && log.userId !== decoded.id) {
                 processedLog = {
                     ...log,
                     notes: '*** Restricted ***',

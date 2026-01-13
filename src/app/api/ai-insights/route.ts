@@ -25,7 +25,7 @@ type PerformanceMetrics = {
 export async function GET(req: NextRequest) {
     try {
         const user = await getAuthenticatedUser();
-        if (!user || !['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'SALES_EXECUTIVE', 'HR_ADMIN'].includes(user.role)) {
+        if (!user || !['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'EXECUTIVE', 'HR_ADMIN'].includes(user.role)) {
             return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
         }
 

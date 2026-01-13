@@ -9,7 +9,7 @@ export async function POST(request: NextRequest) {
         const token = authHeader?.split(' ')[1];
         if (!token) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         const decoded = verifyToken(token);
-        if (!decoded || !['SUPER_ADMIN', 'SALES_EXECUTIVE', 'MANAGER'].includes(decoded.role)) {
+        if (!decoded || !['SUPER_ADMIN', 'EXECUTIVE', 'MANAGER'].includes(decoded.role)) {
             return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
         }
 
