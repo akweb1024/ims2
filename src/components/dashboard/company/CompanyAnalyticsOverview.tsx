@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
     AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
     BarChart, Bar, Legend
@@ -21,11 +21,7 @@ export default function CompanyAnalyticsOverview({ companyId }: { companyId?: st
     const [data, setData] = useState<AnalyticsData | null>(null);
     const [loading, setLoading] = useState(true);
 
-    useEffect(() => {
-        fetchData();
-    }, [companyId]);
-
-    const fetchData = async () => {
+    const fetchData = useCallback(async () => {
         try {
             const token = localStorage.getItem('token');
             const url = companyId
@@ -44,7 +40,11 @@ export default function CompanyAnalyticsOverview({ companyId }: { companyId?: st
         } finally {
             setLoading(false);
         }
-    };
+    }, [companyId]);
+
+    useEffect(() => {
+        fetchData();
+    }, [fetchData]);
 
     if (loading) return <div className="h-64 flex items-center justify-center">Loading Analytics...</div>;
     if (!data) return <div className="h-64 flex items-center justify-center text-gray-500">No Data Available</div>;

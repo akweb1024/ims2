@@ -135,13 +135,13 @@ export const GET = authorizedRoute(
             const monthlySubmissions = await prisma.reviewReport.findMany({
                 where: {
                     assignment: { reviewerId: { in: reviewerIds } },
-                    submittedAt: { gte: sixMonthsAgo }
+                    submittedDate: { gte: sixMonthsAgo }
                 },
-                select: { submittedAt: true }
+                select: { submittedDate: true }
             });
 
             const activityTrend = monthlySubmissions.reduce((acc: any, curr) => {
-                const month = curr.submittedAt.toLocaleString('default', { month: 'short' });
+                const month = curr.submittedDate.toLocaleString('default', { month: 'short' });
                 acc[month] = (acc[month] || 0) + 1;
                 return acc;
             }, {});

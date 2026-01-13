@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
     ScatterChart, Scatter, XAxis, YAxis, ZAxis, Tooltip, ResponsiveContainer, Cell, CartesianGrid,
     BarChart, Bar, Legend
@@ -9,11 +9,7 @@ export default function WorkforceAnalytics({ companyId }: { companyId?: string }
     const [deptPerformance, setDeptPerformance] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
 
-    useEffect(() => {
-        fetchData();
-    }, [companyId]);
-
-    const fetchData = async () => {
+    const fetchData = useCallback(async () => {
         try {
             const token = localStorage.getItem('token');
             const url = companyId
@@ -33,7 +29,11 @@ export default function WorkforceAnalytics({ companyId }: { companyId?: string }
         } finally {
             setLoading(false);
         }
-    };
+    }, [companyId]);
+
+    useEffect(() => {
+        fetchData();
+    }, [fetchData]);
 
     if (loading) return <div className="h-64 flex items-center justify-center">Analyzing Workforce...</div>;
 
