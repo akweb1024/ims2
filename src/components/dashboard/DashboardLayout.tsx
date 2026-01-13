@@ -433,7 +433,12 @@ export default function DashboardLayout({ children, userRole: propUserRole = 'CU
                                 {navigationModules.map((mod) => (
                                     <button
                                         key={mod.id}
-                                        onClick={() => setActiveModule(mod.id)}
+                                        onClick={() => {
+                                            setActiveModule(mod.id);
+                                            // Auto-navigate to first link
+                                            const firstLink = mod.categories[0]?.items[0]?.href;
+                                            if (firstLink) router.push(firstLink);
+                                        }}
                                         className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeModule === mod.id
                                             ? 'bg-white text-primary-600 shadow-md ring-1 ring-primary-100'
                                             : 'text-secondary-500 hover:text-secondary-700 hover:bg-white/50'
@@ -618,7 +623,13 @@ export default function DashboardLayout({ children, userRole: propUserRole = 'CU
                         <select
                             className="input-premium py-2 text-xs"
                             value={activeModule}
-                            onChange={(e) => setActiveModule(e.target.value)}
+                            onChange={(e) => {
+                                const newModId = e.target.value;
+                                setActiveModule(newModId);
+                                const mod = navigationModules.find(m => m.id === newModId);
+                                const firstLink = mod?.categories[0]?.items[0]?.href;
+                                if (firstLink) router.push(firstLink);
+                            }}
                         >
                             {navigationModules.map(mod => (
                                 <option key={mod.id} value={mod.id}>{mod.icon} {mod.name}</option>
