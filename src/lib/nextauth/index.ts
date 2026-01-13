@@ -25,7 +25,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
                             include: { companies: true }
                         });
 
-                        if (!user || !user.isActive) return null;
+                        if (!user || user.isActive === false) return null;
 
                         let companyId = payload.companyId || user.companyId;
                         if (!companyId && user.companies.length === 1) {
@@ -37,7 +37,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
                             email: user.email,
                             name: user.name,
                             role: user.role,
-                            companyId: companyId || undefined
+                            companyId: companyId || undefined,
+                            allowedModules: (user as any).allowedModules || ['CORE']
                         };
                     }
                     return null;
@@ -51,7 +52,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
                     include: { companies: true }
                 });
 
-                if (!user || !user.isActive) return null;
+                if (!user || user.isActive === false) return null;
 
                 const isValid = await verifyPassword(credentials.password as string, user.password);
                 if (!isValid) return null;
@@ -66,7 +67,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
                     email: user.email,
                     name: user.name,
                     role: user.role,
-                    companyId: companyId || undefined
+                    companyId: companyId || undefined,
+                    allowedModules: (user as any).allowedModules || ['CORE']
                 };
             }
         })

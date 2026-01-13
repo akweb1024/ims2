@@ -69,6 +69,7 @@ export default function EditEmployeePage() {
                         managerId: data.user.managerId || '',
                         companyId: data.user.companyId || '',
                         companyIds: data.user.companies?.map((c: any) => c.id) || [],
+                        allowedModules: data.user.allowedModules || ['CORE'],
                         targets: data.metrics?.targets || { revenue: '', publication: '', development: '' },
                         dateOfJoining: data.dateOfJoining?.split('T')[0] || '',
                         lastPromotionDate: data.lastPromotionDate?.split('T')[0] || '',

@@ -97,8 +97,8 @@ export const PATCH = authorizedRoute(
             }
             const validUpdates = result.data;
 
-            // 1. Handle User-level updates (Role, Active Status, Name, Manager, Company)
-            if (validUpdates.role || validUpdates.isActive !== undefined || validUpdates.name || validUpdates.managerId !== undefined || validUpdates.companyId !== undefined || validUpdates.companyIds !== undefined) {
+            // 1. Handle User-level updates (Role, Active Status, Name, Manager, Company, Modules)
+            if (validUpdates.role || validUpdates.isActive !== undefined || validUpdates.name || validUpdates.managerId !== undefined || validUpdates.companyId !== undefined || validUpdates.companyIds !== undefined || validUpdates.allowedModules !== undefined) {
                 const emp = await prisma.employeeProfile.findUnique({ where: { id }, select: { userId: true } });
                 if (!emp) return createErrorResponse('Employee not found', 404);
 
@@ -123,7 +123,8 @@ export const PATCH = authorizedRoute(
                                 companies: {
                                     set: validUpdates.companyIds.map(id => ({ id }))
                                 }
-                            })
+                            }),
+                            ...(validUpdates.allowedModules !== undefined && { allowedModules: validUpdates.allowedModules })
                         } as any
                     });
                 }
@@ -151,7 +152,7 @@ export const PATCH = authorizedRoute(
 
             // 3. Update Employee Profile - Strip relations and metadata
             const {
-                role, id: _unusedId, isActive, name, designationId, email, password, managerId, companyId, companyIds,
+                role, id: _unusedId, isActive, name, designationId, email, password, managerId, companyId, companyIds, allowedModules,
                 userId, createdAt, updatedAt, user: _userRel, incrementHistory, hrComments, workReports, attendance,
                 documents, designatRef, leaveRequests, onboardingProgress, leaveLedgers, digitalDocuments,
                 goals, incentives, kpis, performance, performanceInsights, salaryAdvances, salarySlips,
@@ -216,7 +217,7 @@ export const POST = authorizedRoute(
                 return createErrorResponse(result.error);
             }
             const {
-                email, name, password, role, companyId, companyIds,
+                email, name, password, role, companyId, companyIds, allowedModules,
                 ...rest
             } = result.data as any;
 
@@ -245,7 +246,8 @@ export const POST = authorizedRoute(
                             companies: {
                                 set: companyIds.map((id: string) => ({ id }))
                             }
-                        })
+                        }),
+                        ...(allowedModules && { allowedModules })
                     } as any
                 });
             } else {
@@ -257,10 +259,11 @@ export const POST = authorizedRoute(
                         password: password,
                         role: role as any,
                         companyId: companyId || user.companyId,
+                        allowedModules: allowedModules || ["CORE"],
                         companies: {
                             connect: (companyIds || []).map((id: string) => ({ id }))
                         }
-                    }
+                    } as any
                 });
             }
 

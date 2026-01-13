@@ -109,6 +109,7 @@ model User {
   createdAt             DateTime               @default(now())
   updatedAt             DateTime               @updatedAt
   name                  String?
+  allowedModules        String[]               @default(["CORE"])
   announcements         Announcement[]
   auditLogs             AuditLog[]
   sentMessages          ChatMessage[]

@@ -26,6 +26,7 @@ export const authConfig = {
                 token.id = user.id as string;
                 token.role = user.role;
                 token.companyId = user.companyId;
+                token.allowedModules = (user as any).allowedModules || ['CORE'];
             }
 
             if (trigger === "update" && session) {
@@ -37,9 +38,10 @@ export const authConfig = {
         },
         async session({ session, token }) {
             if (token && session.user) {
-                session.user.id = token.id;
-                session.user.role = token.role;
-                session.user.companyId = token.companyId;
+                session.user.id = token.id as string;
+                session.user.role = token.role as any;
+                session.user.companyId = token.companyId as string;
+                (session.user as any).allowedModules = (token as any).allowedModules || ['CORE'];
             }
             return session;
         }

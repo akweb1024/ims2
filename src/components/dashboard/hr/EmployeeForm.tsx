@@ -66,7 +66,8 @@ const initialFormState = {
     },
     managerId: '',
     companyId: '',
-    companyIds: [] as string[]
+    companyIds: [] as string[],
+    allowedModules: ['CORE'] as string[]
 };
 
 export default function EmployeeForm({
@@ -95,7 +96,8 @@ export default function EmployeeForm({
                 ...initialFormState,
                 ...sanitized,
                 targets: sanitized.targets || initialFormState.targets,
-                companyIds: sanitized.companies?.map((c: any) => c.id) || sanitized.companyIds || []
+                companyIds: sanitized.companies?.map((c: any) => c.id) || sanitized.companyIds || [],
+                allowedModules: sanitized.allowedModules && sanitized.allowedModules.length > 0 ? sanitized.allowedModules : ['CORE']
             });
         }
     }, [initialData]);
@@ -354,48 +356,103 @@ export default function EmployeeForm({
                 </div>
             </div>
 
-            {/* Company Access Section */}
+            {/* Company & Module Access Section */}
             <div className="card-premium p-8">
                 <h2 className="text-lg font-black text-secondary-900 mb-6 flex items-center gap-2">
                     <Shield className="w-5 h-5 text-amber-500" />
-                    Company Access & Security
+                    Company & Module Access
                 </h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                        <label className="label-premium">Primary Company</label>
-                        <select
-                            className="input-premium"
-                            value={empForm.companyId}
-                            onChange={e => setEmpForm({ ...empForm, companyId: e.target.value })}
-                        >
-                            <option value="">Select Primary Company</option>
-                            {companies.map(c => (
-                                <option key={c.id} value={c.id}>{c.name}</option>
-                            ))}
-                        </select>
-                        <p className="text-[10px] text-secondary-400 mt-1 font-bold">The main company this employee is registered under.</p>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    {/* Primary Company Selection */}
+                    <div className="space-y-4">
+                        <div>
+                            <label className="label-premium">Primary Company</label>
+                            <select
+                                className="input-premium"
+                                value={empForm.companyId}
+                                onChange={e => setEmpForm({ ...empForm, companyId: e.target.value })}
+                            >
+                                <option value="">Select Primary Company</option>
+                                {companies.map(c => (
+                                    <option key={c.id} value={c.id}>{c.name}</option>
+                                ))}
+                            </select>
+                            <p className="text-[10px] text-secondary-400 mt-1 font-bold italic">The main company this employee is registered under.</p>
+                        </div>
+
+                        <div>
+                            <label className="label-premium">Additional Authorized Companies</label>
+                            <div className="grid grid-cols-2 gap-2 mt-2 max-h-40 overflow-y-auto p-3 bg-secondary-50/50 rounded-2xl border border-secondary-100">
+                                {companies.map(c => (
+                                    <label key={c.id} className="flex items-center gap-2 p-2 rounded-lg hover:bg-white cursor-pointer border border-transparent hover:border-secondary-100 transition-all shadow-sm">
+                                        <input
+                                            type="checkbox"
+                                            className="w-4 h-4 rounded text-primary-600 focus:ring-primary-500"
+                                            checked={empForm.companyIds.includes(c.id)}
+                                            onChange={e => {
+                                                const ids = e.target.checked
+                                                    ? [...empForm.companyIds, c.id]
+                                                    : empForm.companyIds.filter(id => id !== c.id);
+                                                setEmpForm({ ...empForm, companyIds: ids });
+                                            }}
+                                        />
+                                        <span className="text-[11px] font-black text-secondary-700 truncate">{c.name}</span>
+                                    </label>
+                                ))}
+                            </div>
+                        </div>
                     </div>
-                    <div>
-                        <label className="label-premium">Additional Authorized Companies</label>
-                        <div className="grid grid-cols-2 gap-2 mt-2 max-h-40 overflow-y-auto p-2 bg-secondary-50/50 rounded-xl border border-secondary-100">
-                            {companies.map(c => (
-                                <label key={c.id} className="flex items-center gap-2 p-2 rounded-lg hover:bg-white cursor-pointer border border-transparent hover:border-secondary-100 transition-all shadow-sm">
+
+                    {/* Module Access Selection */}
+                    <div className="space-y-4">
+                        <div className="flex items-center justify-between">
+                            <label className="label-premium">System Module Visibility</label>
+                            {empForm.role === 'SUPER_ADMIN' && (
+                                <span className="px-3 py-1 bg-primary-100 text-primary-700 text-[10px] font-black uppercase rounded-full border border-primary-200 animate-pulse">
+                                    Full Access Granted
+                                </span>
+                            )}
+                        </div>
+                        <div className="grid grid-cols-2 gap-2 p-3 bg-secondary-50/50 rounded-2xl border border-secondary-100">
+                            {[
+                                { id: 'CORE', label: 'Core Workspace', color: 'text-primary-600', locked: true },
+                                { id: 'HR', label: 'HR Management', color: 'text-indigo-600' },
+                                { id: 'FINANCE', label: 'Finance & Accounts', color: 'text-emerald-600' },
+                                { id: 'PUBLICATION', label: 'Publishing & Editorial', color: 'text-purple-600' },
+                                { id: 'LMS', label: 'LMS / Learning', color: 'text-orange-600' },
+                                { id: 'CONFERENCE', label: 'Conferences & Events', color: 'text-rose-600' },
+                                { id: 'LOGISTIC', label: 'Logistics & Supply', color: 'text-blue-600' },
+                                { id: 'IT', label: 'IT Services / Assets', color: 'text-cyan-600' },
+                                { id: 'QUALITY', label: 'Quality Control', color: 'text-teal-600' },
+                            ].map(mod => (
+                                <label
+                                    key={mod.id}
+                                    className={`flex items-center gap-2 p-3 rounded-xl border transition-all shadow-sm ${empForm.role === 'SUPER_ADMIN' ? 'cursor-default opacity-100 bg-white border-secondary-200' : 'cursor-pointer ' + (empForm.allowedModules.includes(mod.id) ? 'bg-white border-primary-200 shadow-md ring-1 ring-primary-100' : 'bg-white/40 border-transparent hover:border-secondary-200 opacity-60 hover:opacity-100')}`}
+                                >
                                     <input
                                         type="checkbox"
-                                        className="w-4 h-4 rounded text-primary-600 focus:ring-primary-500"
-                                        checked={empForm.companyIds.includes(c.id)}
+                                        disabled={mod.locked || empForm.role === 'SUPER_ADMIN'}
+                                        className="w-5 h-5 rounded-lg text-primary-600 focus:ring-primary-500 disabled:opacity-50"
+                                        checked={empForm.role === 'SUPER_ADMIN' || empForm.allowedModules.includes(mod.id)}
                                         onChange={e => {
-                                            const ids = e.target.checked
-                                                ? [...empForm.companyIds, c.id]
-                                                : empForm.companyIds.filter(id => id !== c.id);
-                                            setEmpForm({ ...empForm, companyIds: ids });
+                                            const mods = e.target.checked
+                                                ? [...empForm.allowedModules, mod.id]
+                                                : empForm.allowedModules.filter(id => id !== mod.id);
+                                            setEmpForm({ ...empForm, allowedModules: mods });
                                         }}
                                     />
-                                    <span className="text-[11px] font-black text-secondary-700 truncate">{c.name}</span>
+                                    <div className="flex flex-col">
+                                        <span className={`text-[11px] font-black uppercase tracking-tighter ${mod.color}`}>{mod.label}</span>
+                                        {(mod.locked || empForm.role === 'SUPER_ADMIN') && <span className="text-[8px] font-bold text-secondary-400 uppercase italic">Mandatory</span>}
+                                    </div>
                                 </label>
                             ))}
                         </div>
-                        <p className="text-[10px] text-secondary-400 mt-1 font-bold">Grant access to data for these selected companies.</p>
+                        <p className="text-[10px] text-secondary-400 mt-1 font-bold italic">
+                            {empForm.role === 'SUPER_ADMIN'
+                                ? 'Super Admins automatically have access to all system modules.'
+                                : 'Select which main modules are visible in the employee\'s navigation bar.'}
+                        </p>
                     </div>
                 </div>
             </div>

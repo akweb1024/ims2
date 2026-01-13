@@ -148,108 +148,242 @@ export default function DashboardLayout({ children, userRole: propUserRole = 'CU
     const displayEmail = mounted && user?.email ? user.email.split('@')[0] : 'User';
     const displayFullEmail = mounted && user?.email ? user.email : 'user@example.com';
 
-    // Navigation items based on role
-    const navigationCategories = useMemo(() => {
-        const categories = [
+    // Module state
+    const [activeModule, setActiveModule] = useState<string>('CORE');
+
+    // Navigation items based on role and module
+    const navigationModules = useMemo(() => {
+        const modules = [
             {
-                title: 'Core Workspace',
-                items: [
-                    { name: 'Dashboard', href: '/dashboard', icon: '📊', roles: ['*'] },
-                    { name: 'Staff Portal', href: '/dashboard/staff-portal', icon: '🏢', roles: ['*'] },
-                    { name: 'Direct Chat', href: '/dashboard/chat', icon: '💬', roles: ['*'] },
+                id: 'CORE',
+                name: 'Core Workspace',
+                icon: '🏠',
+                categories: [
+                    {
+                        title: 'Workspace',
+                        items: [
+                            { name: 'Dashboard', href: '/dashboard', icon: '📊', roles: ['*'] },
+                            { name: 'Staff Portal', href: '/dashboard/staff-portal', icon: '🏢', roles: ['*'] },
+                            { name: 'Direct Chat', href: '/dashboard/chat', icon: '💬', roles: ['*'] },
+                        ]
+                    },
+                    {
+                        title: 'Personal',
+                        items: [
+                            { name: 'My Profile', href: '/dashboard/profile', icon: '👤', roles: ['*'] },
+                            { name: 'App Theme', href: '/dashboard/settings/theme', icon: '🎨', roles: ['*'] },
+                        ]
+                    }
                 ]
             },
             {
-                title: 'Talent & HR',
-                items: [
-                    { name: 'HR Management', href: '/dashboard/hr-management', icon: '👨‍💼', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER'] },
-                    { name: 'Recruitment', href: '/dashboard/recruitment', icon: '🎯', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER'] },
-                    { name: 'Payroll', href: '/dashboard/hr-management/payroll', icon: '💰', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'FINANCE_ADMIN'] },
+                id: 'HR',
+                name: 'HR Management',
+                icon: '👨‍💼',
+                categories: [
+                    {
+                        title: 'Operations',
+                        items: [
+                            { name: 'HR Dashboard', href: '/dashboard/hr-management', icon: '👨‍💼', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER'] },
+                            { name: 'Recruitment', href: '/dashboard/recruitment', icon: '🎯', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER'] },
+                            { name: 'User Directory', href: '/dashboard/users', icon: '👥', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'TEAM_LEADER'] },
+                        ]
+                    },
+                    {
+                        title: 'Team Management',
+                        items: [
+                            { name: 'Work Reports', href: '/dashboard/hr-management?tab=reports', icon: '📝', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'TEAM_LEADER'] },
+                            { name: 'Leave Requests', href: '/dashboard/hr-management?tab=leaves', icon: '🏖️', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'TEAM_LEADER'] },
+                            { name: 'Attendance', icon: '🕒', href: '/dashboard/hr-management?tab=attendance', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'TEAM_LEADER'] },
+                            { name: 'Productivity', icon: '⚡', href: '/dashboard/hr-management?tab=productivity', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'TEAM_LEADER'] },
+                            { name: 'Manage Team', icon: '👥', href: '/dashboard/team', roles: ['MANAGER', 'TEAM_LEADER'] },
+                        ]
+                    }
                 ]
             },
             {
-                title: 'Manager',
-                items: [
-                    { name: 'Work Reports', href: '/dashboard/hr-management?tab=reports', icon: '📝', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'TEAM_LEADER'] },
-                    { name: 'Leave Requests', href: '/dashboard/hr-management?tab=leaves', icon: '🏖️', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'TEAM_LEADER'] },
-                    { name: 'Attendance', href: '/dashboard/hr-management?tab=attendance', icon: '🕒', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'TEAM_LEADER'] },
-                    { name: 'Productivity', href: '/dashboard/hr-management?tab=productivity', icon: '⚡', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'TEAM_LEADER'] },
+                id: 'FINANCE',
+                name: 'Finance & Accounts',
+                icon: '💰',
+                categories: [
+                    {
+                        title: 'Treasury',
+                        items: [
+                            { name: 'Financials', href: '/dashboard/finance', icon: '📈', roles: ['SUPER_ADMIN', 'ADMIN', 'FINANCE_ADMIN'] },
+                            { name: 'Payments', href: '/dashboard/payments', icon: '💰', roles: ['SUPER_ADMIN', 'ADMIN', 'FINANCE_ADMIN'] },
+                            { name: 'Razorpay Rev', href: '/dashboard/analytics/razorpay', icon: '💳', roles: ['SUPER_ADMIN', 'ADMIN', 'FINANCE_ADMIN'] },
+                        ]
+                    },
+                    {
+                        title: 'Billing',
+                        items: [
+                            { name: 'Payroll', href: '/dashboard/hr-management/payroll', icon: '💵', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'FINANCE_ADMIN'] },
+                            { name: 'Invoices', href: '/dashboard/invoices', icon: '🧾', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'EXECUTIVE', 'FINANCE_ADMIN', 'AGENCY', 'CUSTOMER'] },
+                            { name: 'Subscriptions', href: '/dashboard/subscriptions', icon: '📋', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'EXECUTIVE', 'FINANCE_ADMIN', 'AGENCY', 'CUSTOMER'] },
+                        ]
+                    }
                 ]
             },
             {
-                title: 'Operations',
-                items: [
-                    { name: 'Companies', href: '/dashboard/companies', icon: '🏢', roles: ['SUPER_ADMIN'] },
-                    { name: 'Institutions', href: '/dashboard/institutions', icon: '🏛️', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER'] },
-                    { name: 'Customers', href: '/dashboard/customers', icon: '🙍‍♂️', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'TEAM_LEADER', 'EXECUTIVE'] },
-                    { name: 'Subscriptions', href: '/dashboard/subscriptions', icon: '📋', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'EXECUTIVE', 'FINANCE_ADMIN', 'AGENCY', 'CUSTOMER'] },
-                    { name: 'Invoices', href: '/dashboard/invoices', icon: '🧾', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'EXECUTIVE', 'FINANCE_ADMIN', 'AGENCY', 'CUSTOMER'] },
-                    { name: 'Logistics', href: '/dashboard/logistics', icon: '🚚', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'EXECUTIVE'] },
-                    { name: 'Payments', href: '/dashboard/payments', icon: '💰', roles: ['SUPER_ADMIN', 'ADMIN', 'FINANCE_ADMIN'] },
-                    { name: 'Financials', href: '/dashboard/finance', icon: '📈', roles: ['SUPER_ADMIN', 'ADMIN', 'FINANCE_ADMIN'] },
-                    { name: 'Follow Ups', href: '/dashboard/follow-ups', icon: '🗓️', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'TEAM_LEADER', 'EXECUTIVE'] },
-                    { name: 'Support Tickets', href: '/dashboard/tickets', icon: '🎫', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'EXECUTIVE', 'CUSTOMER'] },
+                id: 'PUBLICATION',
+                name: 'Publication',
+                icon: '📰',
+                categories: [
+                    {
+                        title: 'Editorial',
+                        items: [
+                            { name: 'Production Hub', href: '/dashboard/production', icon: '🏭', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'EDITOR'] },
+                            { name: 'Journals', href: '/dashboard/journals', icon: '📰', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'EDITOR', 'CUSTOMER', 'AGENCY', 'EXECUTIVE'] },
+                            { name: 'Editorial Workflow', href: '/dashboard/editorial', icon: '✍️', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'EDITOR'] },
+                        ]
+                    },
+                    {
+                        title: 'Reviewing',
+                        items: [
+                            { name: 'Validate Reports', href: '/dashboard/reviews/validate', icon: '📋', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'EDITOR'] },
+                            { name: 'Reviewer Hub', href: '/dashboard/reviewer', icon: '🛡️', roles: ['*'] },
+                            { name: 'Certificates', href: '/dashboard/reviewer/certificates', icon: '🏅', roles: ['*'] },
+                        ]
+                    }
                 ]
             },
             {
-                title: 'Publishing & Editorial',
-                items: [
-                    { name: 'Production Hub', href: '/dashboard/production', icon: '🏭', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'EDITOR'] },
-                    { name: 'Journals', href: '/dashboard/journals', icon: '📰', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'EDITOR', 'CUSTOMER', 'AGENCY', 'EXECUTIVE'] },
-                    { name: 'Editorial Workflow', href: '/dashboard/editorial', icon: '✍️', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'EDITOR'] },
-                    { name: 'Validate Reports', href: '/dashboard/reviews/validate', icon: '📋', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'EDITOR'] },
-                    { name: 'Reviewer Dashboard', href: '/dashboard/reviewer', icon: '🛡️', roles: ['*'] },
-                    { name: 'My Certificates', href: '/dashboard/reviewer/certificates', icon: '🏅', roles: ['*'] },
+                id: 'LMS',
+                name: 'LMS / Learning',
+                icon: '🎓',
+                categories: [
+                    {
+                        title: 'Academy',
+                        items: [
+                            { name: 'My Learning', href: '/dashboard/my-learning', icon: '📖', roles: ['*'] },
+                            { name: 'Courses', href: '/dashboard/courses', icon: '🎓', roles: ['*'] },
+                            { name: 'Knowledge Article', href: '/dashboard/knowledge-base', icon: '📚', roles: ['*'] },
+                        ]
+                    }
                 ]
             },
             {
-                title: 'Academy & Events',
-                items: [
-                    { name: 'My Learning', href: '/dashboard/my-learning', icon: '📖', roles: ['*'] },
-                    { name: 'LMS / Courses', href: '/dashboard/courses', icon: '🎓', roles: ['*'] },
-                    { name: 'Conferences', href: '/dashboard/conferences', icon: '🎤', roles: ['*'] },
+                id: 'CONFERENCE',
+                name: 'Conference',
+                icon: '🎤',
+                categories: [
+                    {
+                        title: 'Events',
+                        items: [
+                            { name: 'Total Conferences', href: '/dashboard/conferences', icon: '🎤', roles: ['*'] },
+                        ]
+                    }
                 ]
             },
             {
-                title: 'Resources & Team',
-                items: [
-                    { name: 'Knowledge Base', href: '/dashboard/knowledge-base', icon: '📚', roles: ['*'] },
-                    { name: 'User Directory', href: '/dashboard/users', icon: '👥', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'TEAM_LEADER'] },
-                    { name: 'Manage Team', href: '/dashboard/team', icon: '👥', roles: ['MANAGER', 'TEAM_LEADER'] },
+                id: 'LOGISTIC',
+                name: 'Logistics',
+                icon: '🚚',
+                categories: [
+                    {
+                        title: 'Supply Chain',
+                        items: [
+                            { name: 'Logistics Hub', href: '/dashboard/logistics', icon: '🚚', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'EXECUTIVE'] },
+                            { name: 'Track Orders', href: '/dashboard/follow-ups', icon: '🗓️', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'TEAM_LEADER', 'EXECUTIVE'] },
+                        ]
+                    }
                 ]
             },
             {
-                title: 'IT Services',
-                items: [
-                    { name: 'Asset Inventory', href: '/dashboard/it/assets', icon: '💻', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER'] },
-                    { name: 'Service Desk', href: '/dashboard/it/tickets', icon: '🛠️', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER'] },
+                id: 'IT',
+                name: 'IT Services',
+                icon: '🛠️',
+                categories: [
+                    {
+                        title: 'Assets',
+                        items: [
+                            { name: 'Asset Inventory', href: '/dashboard/it/assets', icon: '💻', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER'] },
+                            { name: 'Service Desk', href: '/dashboard/it/tickets', icon: '🛠️', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER'] },
+                        ]
+                    },
+                    {
+                        title: 'System',
+                        items: [
+                            { name: 'Data Hub', href: '/dashboard/data-hub', icon: '📂', roles: ['SUPER_ADMIN'] },
+                            { name: 'System Settings', href: '/dashboard/settings', icon: '⚙️', roles: ['SUPER_ADMIN'] },
+                            { name: 'System Logs', href: '/dashboard/admin/logs', icon: '📜', roles: ['SUPER_ADMIN'] },
+                        ]
+                    }
                 ]
             },
             {
-                title: 'Insights & Tools',
-                items: [
-                    { name: 'Analytics', href: '/dashboard/analytics', icon: '📈', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER'] },
-                    { name: 'Razorpay Revenue', href: '/dashboard/analytics/razorpay', icon: '💳', roles: ['SUPER_ADMIN', 'ADMIN', 'FINANCE_ADMIN'] },
-                    { name: 'AI Predictions', href: '/dashboard/ai-insights', icon: '🤖', roles: ['SUPER_ADMIN', 'MANAGER', 'EXECUTIVE', 'FINANCE_ADMIN', 'AGENCY'] },
-                    { name: 'Data Hub', href: '/dashboard/data-hub', icon: '📂', roles: ['SUPER_ADMIN'] },
-                    { name: 'System Logs', href: '/dashboard/admin/logs', icon: '📜', roles: ['SUPER_ADMIN'] },
-                ]
-            },
-            {
-                title: 'Preferences',
-                items: [
-                    { name: 'My Profile', href: '/dashboard/profile', icon: '👤', roles: ['*'] },
-                    { name: 'App Theme', href: '/dashboard/settings/theme', icon: '🎨', roles: ['*'] },
-                    { name: 'System Settings', href: '/dashboard/settings', icon: '⚙️', roles: ['SUPER_ADMIN'] },
+                id: 'QUALITY',
+                name: 'Quality Control',
+                icon: '🧪',
+                categories: [
+                    {
+                        title: 'Insights',
+                        items: [
+                            { name: 'Analytics', href: '/dashboard/analytics', icon: '📈', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER'] },
+                            { name: 'AI Predictions', href: '/dashboard/ai-insights', icon: '🤖', roles: ['SUPER_ADMIN', 'MANAGER', 'EXECUTIVE', 'FINANCE_ADMIN', 'AGENCY'] },
+                            { name: 'Support Tickets', href: '/dashboard/tickets', icon: '🎫', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'EXECUTIVE', 'CUSTOMER'] },
+                            { name: 'Institutions', href: '/dashboard/institutions', icon: '🏛️', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER'] },
+                            { name: 'Customers', href: '/dashboard/customers', icon: '🙍‍♂️', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'TEAM_LEADER', 'EXECUTIVE'] },
+                        ]
+                    }
                 ]
             }
         ];
 
-        return categories.map(cat => ({
-            ...cat,
-            items: cat.items.filter(item => item.roles.includes('*') || item.roles.includes(finalRole))
-        })).filter(cat => cat.items.length > 0);
-    }, [finalRole]);
+        // Filter modules based on user's allowedModules
+        const isSuperAdmin = finalRole === 'SUPER_ADMIN';
+        const userAllowedModules = user?.allowedModules || ['CORE'];
+
+        return modules
+            .filter(mod => isSuperAdmin || userAllowedModules.includes(mod.id))
+            .map(mod => ({
+                ...mod,
+                categories: mod.categories
+                    .map(cat => ({
+                        ...cat,
+                        items: cat.items.filter(item => item.roles.includes('*') || item.roles.includes(finalRole))
+                    }))
+                    .filter(cat => cat.items.length > 0)
+            }))
+            .filter(mod => mod.categories.length > 0);
+    }, [finalRole, user]);
+
+    // Sync active module with current path
+    useEffect(() => {
+        if (!pathname || !navigationModules.length) return;
+
+        let bestMatchModule = '';
+        let longestMatchLen = 0;
+
+        navigationModules.forEach(mod => {
+            mod.categories.forEach(cat => {
+                cat.items.forEach(item => {
+                    // Ensure robust matching: exact match OR directory child match
+                    if (pathname === item.href || pathname.startsWith(`${item.href}/`)) {
+                        if (item.href.length > longestMatchLen) {
+                            longestMatchLen = item.href.length;
+                            bestMatchModule = mod.id;
+                        }
+                    }
+                });
+            });
+        });
+
+        // Special case: root dashboard is CORE
+        if (pathname === '/dashboard' && !bestMatchModule) {
+            bestMatchModule = 'CORE';
+        }
+
+        if (bestMatchModule && bestMatchModule !== activeModule) {
+            setActiveModule(bestMatchModule);
+        }
+    }, [pathname, navigationModules, activeModule]);
+
+    // Active Category filtered for the sidebar
+    const sideNavigation = useMemo(() => {
+        const activeMod = navigationModules.find(m => m.id === activeModule) || navigationModules[0];
+        return activeMod?.categories || [];
+    }, [activeModule, navigationModules]);
 
     return (
         <div className="min-h-screen bg-secondary-50">
@@ -290,8 +424,25 @@ export default function DashboardLayout({ children, userRole: propUserRole = 'CU
                             </Link>
 
                             {/* Global Search */}
-                            <div className="ml-8">
+                            <div className="ml-8 hidden xl:block">
                                 <GlobalSearch />
+                            </div>
+
+                            {/* Module Switcher - Horizontal */}
+                            <div className="hidden lg:flex items-center ml-8 space-x-1 bg-secondary-100/50 p-1 rounded-2xl border border-secondary-200">
+                                {navigationModules.map((mod) => (
+                                    <button
+                                        key={mod.id}
+                                        onClick={() => setActiveModule(mod.id)}
+                                        className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeModule === mod.id
+                                            ? 'bg-white text-primary-600 shadow-md ring-1 ring-primary-100'
+                                            : 'text-secondary-500 hover:text-secondary-700 hover:bg-white/50'
+                                            }`}
+                                    >
+                                        <span className="mr-2">{mod.icon}</span>
+                                        {mod.name.split(' ')[0]}
+                                    </button>
+                                ))}
                             </div>
                         </div>
 
@@ -461,8 +612,22 @@ export default function DashboardLayout({ children, userRole: propUserRole = 'CU
                     }`}
             >
                 <nav className="p-4 space-y-2 h-full flex flex-col overflow-y-auto custom-scrollbar">
-                    <div className="flex-1 space-y-2">
-                        {navigationCategories.map((category) => {
+                    {/* Mobile Module Selector */}
+                    <div className="lg:hidden mb-6 space-y-2">
+                        <label className="text-[10px] font-black text-secondary-400 uppercase ml-2">Switch Module</label>
+                        <select
+                            className="input-premium py-2 text-xs"
+                            value={activeModule}
+                            onChange={(e) => setActiveModule(e.target.value)}
+                        >
+                            {navigationModules.map(mod => (
+                                <option key={mod.id} value={mod.id}>{mod.icon} {mod.name}</option>
+                            ))}
+                        </select>
+                    </div>
+
+                    <div className="flex-1 space-y-4">
+                        {sideNavigation.map((category: any) => {
                             const isExpanded = !collapsedSections[category.title];
 
                             return (

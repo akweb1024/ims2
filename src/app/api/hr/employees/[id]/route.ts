@@ -28,13 +28,14 @@ export const GET = authorizedRoute(
                             name: true,
                             managerId: true,
                             companyId: true,
+                            allowedModules: true,
                             companies: {
                                 select: {
                                     id: true,
                                     name: true
                                 }
                             }
-                        }
+                        } as any
                     },
                     incrementHistory: {
                         orderBy: { date: 'desc' }
@@ -68,9 +69,10 @@ export const GET = authorizedRoute(
             }
 
             // Access Control: Manager/TL can only view their own team
+            const empAny = employee as any;
             if (['MANAGER', 'TEAM_LEADER'].includes(user.role)) {
                 const subIds = await getDownlineUserIds(user.id, user.companyId || undefined);
-                if (!subIds.includes(employee.user.id)) {
+                if (!subIds.includes(empAny.user.id)) {
                     return createErrorResponse('Forbidden: Not in your team', 403);
                 }
             }
