@@ -171,6 +171,13 @@ model User {
   plagiarismReports        PlagiarismReport[]    @relation("PlagiarismChecker")
   qualityReports           QualityReport[]       @relation("QualityChecker")
   manuscriptStatusChanges  ManuscriptStatusHistory[]
+  
+  // Phase 4 Relations
+  manuscriptDrafts         ManuscriptDraft[]
+  manuscriptRevisions      ManuscriptRevision[]
+  sentCommunications       ManuscriptCommunication[] @relation("SentCommunications")
+  receivedCommunications   ManuscriptCommunication[] @relation("ReceivedCommunications")
+  coAuthorInvitations      CoAuthorInvitation[]
 
   @@index([email])
   @@index([role])
@@ -390,6 +397,9 @@ model Journal {
   indexings         JournalIndexing[]  @relation("JournalToIndexing")
   plagiarismReports PlagiarismReport[]
   qualityReports    QualityReport[]
+  
+  // Phase 4 Relations
+  manuscriptDrafts  ManuscriptDraft[]
 
   @@index([isActive])
   @@index([name])
@@ -1525,6 +1535,11 @@ model Article {
   qualityReport     QualityReport?
   statusHistory     ManuscriptStatusHistory[]
   
+  // Phase 4 Relations
+  revisions         ManuscriptRevision[]
+  communications    ManuscriptCommunication[]
+  coAuthorInvitations CoAuthorInvitation[]
+  
   @@index([manuscriptId])
   @@index([manuscriptStatus])
   @@index([volumeId])
@@ -2631,6 +2646,105 @@ model ManuscriptStatusHistory {
   
   @@index([articleId])
   @@index([createdAt])
+}
+
+// Phase 4: Author Portal & Communication Models
+model ManuscriptDraft {
+  id              String    @id @default(uuid())
+  authorId        String
+  journalId       String
+  title           String?
+  abstract        String?
+  keywords        String?
+  fileUrl         String?
+  metadata        Json?     // Store additional form data
+  step            Int       @default(1) // Current wizard step
+  isSubmitted     Boolean   @default(false)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  
+  author          User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  journal         Journal   @relation(fields: [journalId], references: [id])
+  
+  @@index([authorId])
+  @@index([journalId])
+  @@index([isSubmitted])
+}
+
+model ManuscriptRevision {
+  id              String    @id @default(uuid())
+  articleId       String
+  revisionNumber  Int
+  fileUrl         String
+  coverLetter     String?
+  responseToReviewers String?
+  changesDescription String?
+  submittedBy     String
+  submittedAt     DateTime  @default(now())
+  status          String    @default("PENDING") // PENDING, UNDER_REVIEW, ACCEPTED, REJECTED
+  
+  article         Article   @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  submitter       User      @relation(fields: [submittedBy], references: [id])
+  
+  @@index([articleId])
+  @@index([status])
+}
+
+model ManuscriptCommunication {
+  id              String    @id @default(uuid())
+  articleId       String
+  fromUserId      String?
+  toUserId        String?
+  subject         String
+  message         String
+  type            String    // EMAIL, COMMENT, SYSTEM_NOTIFICATION
+  isRead          Boolean   @default(false)
+  sentAt          DateTime  @default(now())
+  
+  article         Article   @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  fromUser        User?     @relation("SentCommunications", fields: [fromUserId], references: [id])
+  toUser          User?     @relation("ReceivedCommunications", fields: [toUserId], references: [id])
+  
+  @@index([articleId])
+  @@index([toUserId])
+  @@index([isRead])
+}
+
+model EmailTemplate {
+  id              String    @id @default(uuid())
+  name            String    @unique
+  subject         String
+  body            String    // HTML template with placeholders
+  variables       String[]  // List of available variables
+  category        String    // SUBMISSION, REVIEW, DECISION, PUBLICATION
+  isActive        Boolean   @default(true)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  
+  @@index([category])
+  @@index([isActive])
+}
+
+model CoAuthorInvitation {
+  id              String    @id @default(uuid())
+  articleId       String
+  email           String
+  name            String?
+  affiliation     String?
+  invitedBy       String
+  token           String    @unique
+  status          String    @default("PENDING") // PENDING, ACCEPTED, DECLINED
+  expiresAt       DateTime
+  respondedAt     DateTime?
+  createdAt       DateTime  @default(now())
+  
+  article         Article   @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  inviter         User      @relation(fields: [invitedBy], references: [id])
+  
+  @@index([articleId])
+  @@index([email])
+  @@index([token])
+  @@index([status])
 }
 
 // Enums for Publication Module
