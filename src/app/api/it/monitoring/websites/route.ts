@@ -4,9 +4,14 @@ import { authorizedRoute } from '@/lib/middleware-auth';
 import { createErrorResponse } from '@/lib/api-utils';
 
 export const GET = authorizedRoute(
-    ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'IT_ADMIN'],
+    [], // Allow all authenticated first, filter by module inside or here
     async (req: NextRequest, user) => {
         try {
+            // Check if user has access to WEB_MONITOR module
+            if (user.role !== 'SUPER_ADMIN' && !user.allowedModules?.includes('WEB_MONITOR')) {
+                return NextResponse.json({ error: 'Access Denied: Web Monitor module not granted' }, { status: 403 });
+            }
+
             const monitors = await prisma.websiteMonitor.findMany({
                 where: user.companyId ? { companyId: user.companyId } : {},
                 orderBy: { createdAt: 'desc' },
@@ -25,11 +30,16 @@ export const GET = authorizedRoute(
 );
 
 export const POST = authorizedRoute(
-    ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'IT_ADMIN'],
+    [],
     async (req: NextRequest, user) => {
         try {
+            // Check if user has access to WEB_MONITOR module
+            if (user.role !== 'SUPER_ADMIN' && !user.allowedModules?.includes('WEB_MONITOR')) {
+                return NextResponse.json({ error: 'Access Denied: Web Monitor module not granted' }, { status: 403 });
+            }
+
             const body = await req.json();
-            const { name, url, frequency, notifyEmail, notifyWhatsapp } = body;
+            const { name, url, category, frequency, notifyEmail, notifyWhatsapp } = body;
 
             if (!name || !url) {
                 return createErrorResponse('Name and URL are required', 400);
@@ -46,6 +56,7 @@ export const POST = authorizedRoute(
                 data: {
                     name,
                     url,
+                    category,
                     frequency: parseInt(frequency) || 5,
                     notifyEmail: notifyEmail ?? true,
                     notifyWhatsapp: notifyWhatsapp ?? true,

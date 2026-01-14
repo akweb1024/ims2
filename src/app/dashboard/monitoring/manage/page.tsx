@@ -13,6 +13,7 @@ export default function ManageMonitorsPage() {
     const [formData, setFormData] = useState({
         name: '',
         url: '',
+        category: '',
         frequency: '5',
         notifyEmail: true,
         notifyWhatsapp: true
@@ -47,7 +48,7 @@ export default function ManageMonitorsPage() {
             });
 
             if (res.ok) {
-                setFormData({ name: '', url: '', frequency: '5', notifyEmail: true, notifyWhatsapp: true });
+                setFormData({ name: '', url: '', category: '', frequency: '5', notifyEmail: true, notifyWhatsapp: true });
                 fetchMonitors();
                 // Optionally show success toast
             } else {
@@ -167,6 +168,16 @@ export default function ManageMonitorsPage() {
                                     />
                                 </div>
                                 <div>
+                                    <label className="label-premium">Category</label>
+                                    <input
+                                        type="text"
+                                        className="input-premium"
+                                        placeholder="e.g. Production, Internal, Client"
+                                        value={formData.category}
+                                        onChange={e => setFormData({ ...formData, category: e.target.value })}
+                                    />
+                                </div>
+                                <div>
                                     <label className="label-premium">Check Frequency (Minutes)</label>
                                     <select
                                         className="input-premium"
@@ -229,7 +240,14 @@ export default function ManageMonitorsPage() {
                             {monitors.map(m => (
                                 <div key={m.id} className="card-premium p-4 flex justify-between items-center group">
                                     <div>
-                                        <h3 className="font-bold text-secondary-900">{m.name}</h3>
+                                        <div className="flex items-center gap-2">
+                                            <h3 className="font-bold text-secondary-900">{m.name}</h3>
+                                            {m.category && (
+                                                <span className="text-[10px] px-2 py-0.5 bg-secondary-100 text-secondary-600 rounded-md font-bold uppercase tracking-wider">
+                                                    {m.category}
+                                                </span>
+                                            )}
+                                        </div>
                                         <div className="flex items-center gap-2 text-xs text-secondary-500">
                                             <a href={m.url} target="_blank" className="hover:underline">{m.url}</a>
                                             <span>•</span>

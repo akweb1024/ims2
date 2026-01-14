@@ -4,13 +4,18 @@ import { authorizedRoute } from '@/lib/middleware-auth';
 import { createErrorResponse } from '@/lib/api-utils';
 
 export const PATCH = authorizedRoute(
-    ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'IT_ADMIN'],
+    [],
     async (req: NextRequest, user) => {
         try {
+            // Check if user has access to WEB_MONITOR module
+            if (user.role !== 'SUPER_ADMIN' && !user.allowedModules?.includes('WEB_MONITOR')) {
+                return NextResponse.json({ error: 'Access Denied' }, { status: 403 });
+            }
+
             const urlPath = req.nextUrl.pathname.split('/');
-            const id = urlPath[urlPath.length - 1]; // Robust ID extraction
+            const id = urlPath[urlPath.length - 1];
             const body = await req.json();
-            const { name, url, frequency, notifyEmail, notifyWhatsapp, isPaused } = body;
+            const { name, url, category, frequency, notifyEmail, notifyWhatsapp, isPaused } = body;
 
             if (url) {
                 try {
@@ -25,6 +30,7 @@ export const PATCH = authorizedRoute(
                 data: {
                     name,
                     url,
+                    category,
                     frequency: frequency ? parseInt(frequency) : undefined,
                     notifyEmail,
                     notifyWhatsapp,
@@ -40,9 +46,14 @@ export const PATCH = authorizedRoute(
 );
 
 export const DELETE = authorizedRoute(
-    ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'IT_ADMIN'],
+    [],
     async (req: NextRequest, user) => {
         try {
+            // Check if user has access to WEB_MONITOR module
+            if (user.role !== 'SUPER_ADMIN' && !user.allowedModules?.includes('WEB_MONITOR')) {
+                return NextResponse.json({ error: 'Access Denied' }, { status: 403 });
+            }
+
             const urlPath = req.nextUrl.pathname.split('/');
             const id = urlPath[urlPath.length - 1];
             await prisma.websiteMonitor.delete({

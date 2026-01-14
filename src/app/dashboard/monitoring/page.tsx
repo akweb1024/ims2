@@ -9,6 +9,7 @@ export default function MonitoringDashboard() {
     const [monitors, setMonitors] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [checkLoad, setCheckLoad] = useState(false);
+    const [selectedCategory, setSelectedCategory] = useState<string>('All');
 
     const fetchMonitors = async () => {
         setLoading(true);
@@ -42,6 +43,11 @@ export default function MonitoringDashboard() {
 
     const upCount = monitors.filter(m => m.status === 'UP').length;
     const downCount = monitors.filter(m => m.status === 'DOWN').length;
+
+    const categories = ['All', ...Array.from(new Set(monitors.map(m => m.category).filter(Boolean)))];
+    const filteredMonitors = selectedCategory === 'All'
+        ? monitors
+        : monitors.filter(m => m.category === selectedCategory);
 
     return (
         <DashboardLayout>
@@ -82,13 +88,28 @@ export default function MonitoringDashboard() {
                 </div>
 
                 <div className="card-premium overflow-hidden">
-                    <div className="p-4 border-b border-secondary-100">
+                    <div className="p-4 border-b border-secondary-100 flex justify-between items-center">
                         <h3 className="text-sm font-bold text-secondary-800">Live Status</h3>
+                        <div className="flex gap-2">
+                            {categories.map(cat => (
+                                <button
+                                    key={cat}
+                                    onClick={() => setSelectedCategory(cat)}
+                                    className={`px-3 py-1 text-xs font-bold rounded-lg transition-colors ${selectedCategory === cat
+                                        ? 'bg-primary-600 text-white'
+                                        : 'bg-secondary-100 text-secondary-600 hover:bg-secondary-200'
+                                        }`}
+                                >
+                                    {cat}
+                                </button>
+                            ))}
+                        </div>
                     </div>
                     <table className="w-full text-left">
                         <thead className="bg-secondary-50 border-b border-secondary-200">
                             <tr>
                                 <th className="px-6 py-4 text-xs font-black text-secondary-400 uppercase tracking-widest">Website</th>
+                                <th className="px-6 py-4 text-xs font-black text-secondary-400 uppercase tracking-widest">Category</th>
                                 <th className="px-6 py-4 text-xs font-black text-secondary-400 uppercase tracking-widest">Status</th>
                                 <th className="px-6 py-4 text-xs font-black text-secondary-400 uppercase tracking-widest">Last Check</th>
                                 <th className="px-6 py-4 text-xs font-black text-secondary-400 uppercase tracking-widest">Response</th>
@@ -101,13 +122,22 @@ export default function MonitoringDashboard() {
                             ) : monitors.length === 0 ? (
                                 <tr><td colSpan={5} className="p-8 text-center text-sm text-secondary-500">No websites tracked. Add one to start monitoring.</td></tr>
                             ) : (
-                                monitors.map(m => (
+                                filteredMonitors.map(m => (
                                     <tr key={m.id} className="hover:bg-secondary-50/50 transition-colors">
                                         <td className="px-6 py-4">
                                             <div className="flex flex-col">
                                                 <span className="font-bold text-secondary-900">{m.name}</span>
                                                 <a href={m.url} target="_blank" className="text-xs text-primary-600 hover:underline">{m.url}</a>
                                             </div>
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            {m.category ? (
+                                                <span className="text-[10px] px-2 py-0.5 bg-secondary-100 text-secondary-600 rounded-md font-bold uppercase">
+                                                    {m.category}
+                                                </span>
+                                            ) : (
+                                                <span className="text-[10px] text-secondary-400 italic">Uncategorized</span>
+                                            )}
                                         </td>
                                         <td className="px-6 py-4">
                                             <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-black uppercase tracking-wide border ${m.status === 'UP' ? 'bg-emerald-100 text-emerald-700 border-emerald-200' :

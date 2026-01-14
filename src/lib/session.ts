@@ -12,6 +12,7 @@ export const getSessionUser = async (): Promise<TokenPayload | null> => {
                 email: session.user.email as string,
                 role: session.user.role,
                 companyId: session.user.companyId,
+                allowedModules: (session.user as any).allowedModules,
             };
         }
 

@@ -2446,6 +2446,7 @@ model WebsiteMonitor {
   id              String             @id @default(uuid())
   name            String
   url             String
+  category        String?
   frequency       Int                @default(5) // minutes
   isPaused        Boolean            @default(false)
   lastCheck       DateTime?

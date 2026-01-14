@@ -10,6 +10,7 @@ export interface TokenPayload {
     companyId?: string;
     isImpersonated?: boolean;
     impersonatorId?: string;
+    allowedModules?: string[];
 }
 
 export const generateToken = (payload: TokenPayload): string => {
@@ -48,6 +49,7 @@ export const getAuthenticatedUser = async (): Promise<TokenPayload | null> => {
                 email: session.user.email!,
                 role: session.user.role,
                 companyId: session.user.companyId || undefined,
+                allowedModules: (session.user as any).allowedModules,
                 // Add any other mapped fields if necessary
             };
         }
