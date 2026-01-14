@@ -7,14 +7,20 @@ export async function GET(req: NextRequest) {
         const user = await getAuthenticatedUser();
         if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-        const companyId = (user as any).companyId;
-
-        // Filters
-        const { searchParams } = new URL(req.url);
+        const searchParams = new URL(req.url).searchParams;
         const type = searchParams.get('type');
         const status = searchParams.get('status');
+        const queryCompanyId = searchParams.get('companyId');
 
-        const where: any = { companyId };
+        const targetCompanyId = queryCompanyId || (user as any).companyId;
+
+        const where: any = {};
+        if (targetCompanyId) {
+            where.companyId = targetCompanyId;
+        } else if (user.role !== 'SUPER_ADMIN') {
+            return NextResponse.json({ error: 'Company association required' }, { status: 400 });
+        }
+
         if (type) where.type = type;
         if (status) where.status = status;
 
@@ -43,11 +49,17 @@ export async function POST(req: NextRequest) {
         }
 
         const body = await req.json();
-        const { name, type, serialNumber, status, value, assignedToId, details, purchaseDate } = body;
+        const { name, type, serialNumber, status, value, assignedToId, details, purchaseDate, companyId } = body;
+
+        const targetCompanyId = (user.role === 'SUPER_ADMIN' && companyId) ? companyId : (user as any).companyId;
+
+        if (!targetCompanyId) {
+            return NextResponse.json({ error: 'Company association required' }, { status: 400 });
+        }
 
         const asset = await prisma.iTAsset.create({
             data: {
-                companyId: (user as any).companyId,
+                companyId: targetCompanyId,
                 name,
                 type,
                 serialNumber,

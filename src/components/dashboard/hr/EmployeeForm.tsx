@@ -316,9 +316,11 @@ export default function EmployeeForm({
                             onChange={e => setEmpForm({ ...empForm, departmentId: e.target.value })}
                         >
                             <option value="">No Department</option>
-                            {departments && departments.length > 0 && departments.map(d => (
-                                <option key={d.id} value={d.id}>{d.name}</option>
-                            ))}
+                            {departments && departments.length > 0 && departments
+                                .filter(d => !empForm.companyId || d.companyId === empForm.companyId)
+                                .map(d => (
+                                    <option key={d.id} value={d.id}>{d.name}</option>
+                                ))}
                         </select>
                     </div>
                     <div>
@@ -329,11 +331,13 @@ export default function EmployeeForm({
                             onChange={e => setEmpForm({ ...empForm, managerId: e.target.value })}
                         >
                             <option value="">No Manager (Top Level)</option>
-                            {managers.map(m => (
-                                <option key={m.id} value={m.user.id}>
-                                    {m.user.name || m.user.email} ({m.designatRef?.name || m.designation || m.user.role})
-                                </option>
-                            ))}
+                            {managers
+                                .filter(m => !empForm.companyId || m.user.companyId === empForm.companyId)
+                                .map(m => (
+                                    <option key={m.id} value={m.user.id}>
+                                        {m.user.name || m.user.email} ({m.designatRef?.name || m.designation || m.user.role})
+                                    </option>
+                                ))}
                         </select>
                     </div>
                     <div>
@@ -353,7 +357,9 @@ export default function EmployeeForm({
                             }}
                         >
                             <option value="">Manual/Custom</option>
-                            {designations.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
+                            {designations
+                                .filter(d => !empForm.companyId || d.companies?.some((c: any) => c.id === empForm.companyId))
+                                .map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
                         </select>
                     </div>
                     <div>

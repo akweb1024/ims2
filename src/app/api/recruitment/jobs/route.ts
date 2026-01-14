@@ -10,14 +10,21 @@ export async function GET(req: NextRequest) {
         const user = await getAuthenticatedUser().catch(() => null);
         const { searchParams } = new URL(req.url);
         const showAll = searchParams.get('all') === 'true';
+        const queryCompanyId = searchParams.get('companyId');
 
         let where: any = { status: 'OPEN' };
 
         if (showAll && user && ['SUPER_ADMIN', 'ADMIN', 'MANAGER'].includes(user.role)) {
             where = {}; // Managers can see all status
-            if (user.companyId) {
-                where.companyId = user.companyId;
-            }
+        }
+
+        const targetCompanyId = queryCompanyId || user?.companyId;
+
+        if (targetCompanyId) {
+            where.companyId = targetCompanyId;
+        } else if (user?.role !== 'SUPER_ADMIN') {
+            // If not super admin and no companyId, we should probably still only show public jobs if any
+            // but for management views, they need a companyId.
         }
 
         const jobs = await prisma.jobPosting.findMany({
@@ -46,9 +53,9 @@ export const POST = authorizedRoute(
                 return createErrorResponse(validation.error);
             }
 
-            const { examQuestions, ...jobData } = validation.data;
+            const { examQuestions, companyId, ...jobData } = validation.data;
 
-            const finalCompanyId = user.companyId;
+            const finalCompanyId = (user.role === 'SUPER_ADMIN' && companyId) ? companyId : user.companyId;
 
             if (!finalCompanyId) {
                 return createErrorResponse('Company association required.', 400);

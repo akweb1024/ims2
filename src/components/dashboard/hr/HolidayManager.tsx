@@ -73,7 +73,14 @@ export default function HolidayManager({ userRole }: { userRole?: string }) {
                         </div>
                         <p className="text-xs font-black text-secondary-400 uppercase mb-2">{new Date(h.date).toLocaleDateString(undefined, { month: 'short', day: '2-digit', year: 'numeric' })}</p>
                         <h4 className="font-black text-secondary-900">{h.name}</h4>
-                        <p className="text-[10px] font-bold text-secondary-400 uppercase mt-2">{h.type}</p>
+                        <div className="flex justify-between items-center mt-2">
+                            <p className="text-[10px] font-bold text-secondary-400 uppercase">{h.type}</p>
+                            {h.company?.name && (
+                                <span className="text-[9px] font-black text-primary-600 bg-primary-50 px-2 py-0.5 rounded-full uppercase">
+                                    {h.company.name}
+                                </span>
+                            )}
+                        </div>
                     </div>
                 ))}
             </div>

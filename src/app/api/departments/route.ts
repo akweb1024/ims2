@@ -15,6 +15,8 @@ export async function GET(req: NextRequest) {
         const where: any = {};
         if (companyId) {
             where.companyId = companyId;
+        } else if (decoded.role !== 'SUPER_ADMIN' && decoded.companyId) {
+            where.companyId = decoded.companyId;
         }
 
         const departments = await prisma.department.findMany({

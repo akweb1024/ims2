@@ -10,15 +10,19 @@ export const GET = authorizedRoute(
     async (req: NextRequest, user) => {
         try {
             const { searchParams } = new URL(req.url);
-            const companyId = searchParams.get('companyId') || user.companyId;
+            const queryCompanyId = searchParams.get('companyId');
+            const targetCompanyId = queryCompanyId || user.companyId;
+
+            const where: any = {
+                OR: [
+                    { companyId: targetCompanyId },
+                    { companyId: null } // Global holidays
+                ]
+            };
 
             const holidays = await prisma.holiday.findMany({
-                where: {
-                    OR: [
-                        { companyId },
-                        { companyId: null } // Global holidays
-                    ]
-                },
+                where,
+                include: { company: true },
                 orderBy: { date: 'asc' }
             });
 

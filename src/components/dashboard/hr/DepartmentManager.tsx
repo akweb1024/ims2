@@ -87,8 +87,8 @@ export default function DepartmentManager({ userRole }: { userRole?: string }) {
                         {dept.description && <p className="text-xs text-secondary-500 mt-2 line-clamp-2 italic leading-relaxed">&quot;{dept.description}&quot;</p>}
 
                         <div className="mt-4 pt-4 border-t border-secondary-50 flex justify-between items-center">
-                            <span className="text-[9px] font-bold text-secondary-400 uppercase">Division</span>
-                            <span className="badge badge-secondary text-[9px]">Internal</span>
+                            <span className="text-[9px] font-bold text-secondary-400 uppercase">{dept.company?.name || 'Division'}</span>
+                            <span className="badge badge-secondary text-[9px]">{dept.company ? 'Corporate' : 'Internal'}</span>
                         </div>
                     </div>
                 ))}

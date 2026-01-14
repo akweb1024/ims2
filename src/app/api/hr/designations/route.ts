@@ -7,15 +7,21 @@ export const GET = authorizedRoute(
     ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'EXECUTIVE', 'TEAM_LEADER'],
     async (req: NextRequest, user) => {
         try {
-            const companyId = user.companyId;
-            if (!companyId) return createErrorResponse('No company context', 400);
+            const { searchParams } = new URL(req.url);
+            const queryCompanyId = searchParams.get('companyId');
+
+            const where: any = {};
+
+            const targetCompanyId = queryCompanyId || user.companyId;
+
+            if (targetCompanyId) {
+                where.companies = {
+                    some: { id: targetCompanyId }
+                };
+            }
 
             const designations = await prisma.designation.findMany({
-                where: {
-                    companies: {
-                        some: { id: companyId }
-                    }
-                },
+                where,
                 include: {
                     companies: { select: { id: true, name: true } },
                     departments: { select: { id: true, name: true } }
