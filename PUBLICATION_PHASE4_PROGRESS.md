@@ -3,10 +3,10 @@
 ## 📊 **Implementation Progress**
 
 ### ✅ **COMPLETED: Database Schema** (Step 1 of 5)
+**Duration:** 30 minutes | **Status:** ✅ **COMPLETE** | **Commit:** `330200b`
 
-**Duration:** 30 minutes  
-**Status:** ✅ **COMPLETE**  
-**Commit:** `330200b`
+### ✅ **COMPLETED: Backend APIs** (Step 2 of 5)
+**Duration:** 1.5 hours | **Status:** ✅ **COMPLETE** | **Commit:** `e1e6598`
 
 ---
 
@@ -46,7 +46,63 @@
 
 ---
 
-### **2. Email Notification Service** ✅
+### **2. Backend APIs** ✅
+
+Created 8 comprehensive API endpoints:
+
+#### **Draft Management**
+1. **GET /api/manuscripts/drafts** - List author's drafts
+2. **POST /api/manuscripts/drafts** - Create new draft (auto-save)
+3. **GET /api/manuscripts/drafts/[id]** - Get specific draft
+4. **PATCH /api/manuscripts/drafts/[id]** - Update draft (auto-save)
+5. **DELETE /api/manuscripts/drafts/[id]** - Delete draft
+
+#### **Manuscript Submission**
+6. **POST /api/manuscripts/submit** - Submit new manuscript
+   - Creates article with manuscript ID
+   - Adds all authors
+   - Creates status history
+   - Sends acknowledgment email
+   - Marks draft as submitted (if from draft)
+
+#### **Author Dashboard**
+7. **GET /api/manuscripts/author** - List author's manuscripts
+   - Includes status history
+   - Shows plagiarism/quality reports
+   - Lists revisions
+   - Displays review summaries
+
+#### **Revision Management**
+8. **POST /api/manuscripts/[id]/revisions** - Submit revision
+   - Validates author access
+   - Creates revision record
+   - Updates manuscript status
+   - Notifies journal manager
+9. **GET /api/manuscripts/[id]/revisions** - List revisions
+
+#### **Co-Author Invitations**
+10. **POST /api/manuscripts/[id]/coauthors** - Invite co-author
+    - Generates secure token
+    - Sets 7-day expiration
+    - Sends invitation email
+11. **GET /api/manuscripts/[id]/coauthors** - List invitations
+12. **POST /api/author/coauthor/accept** - Accept/decline invitation (public)
+13. **GET /api/author/coauthor/accept** - Verify invitation token
+
+#### **Timeline & Tracking**
+14. **GET /api/manuscripts/[id]/timeline** - Complete manuscript timeline
+    - Status changes
+    - Revisions
+    - Communications
+    - Plagiarism checks
+    - Quality checks
+
+**Total API Endpoints:** 14  
+**Total Code:** ~1,100 lines
+
+---
+
+### **3. Email Notification Service** ✅
 
 Created comprehensive notification system with 7 pre-built functions:
 
