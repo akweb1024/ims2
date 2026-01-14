@@ -277,7 +277,23 @@ export default function DashboardLayout({ children, userRole: propUserRole = 'CU
                         items: [
                             { name: 'Production Hub', href: '/dashboard/production', icon: '🏭', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'EDITOR'] },
                             { name: 'Journals', href: '/dashboard/journals', icon: '📰', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'EDITOR', 'CUSTOMER', 'AGENCY', 'EXECUTIVE'] },
+                            { name: 'Manage Journals', href: '/dashboard/journals/manage', icon: '⚙️', roles: ['SUPER_ADMIN', 'ADMIN'] },
                             { name: 'Editorial Workflow', href: '/dashboard/editorial', icon: '✍️', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'EDITOR'] },
+                        ]
+                    },
+                    {
+                        title: 'Manuscript Workflow',
+                        items: [
+                            { name: 'Journal Manager', href: '/dashboard/journal-manager', icon: '📊', roles: ['SUPER_ADMIN', 'ADMIN', 'JOURNAL_MANAGER', 'EDITOR_IN_CHIEF'] },
+                            { name: 'Plagiarism Check', href: '/dashboard/plagiarism', icon: '🔍', roles: ['SUPER_ADMIN', 'ADMIN', 'JOURNAL_MANAGER', 'PLAGIARISM_CHECKER'] },
+                            { name: 'Quality Check', href: '/dashboard/quality', icon: '✅', roles: ['SUPER_ADMIN', 'ADMIN', 'JOURNAL_MANAGER', 'QUALITY_CHECKER'] },
+                        ]
+                    },
+                    {
+                        title: 'Content',
+                        items: [
+                            { name: 'Articles', href: '/dashboard/articles', icon: '📄', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'EDITOR', 'CUSTOMER', 'AGENCY', 'EXECUTIVE'] },
+                            { name: 'Volumes & Issues', href: '/dashboard/volumes', icon: '📚', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'EDITOR'] },
                         ]
                     },
                     {

@@ -69,10 +69,14 @@ export default function JournalManagementPage() {
             });
             if (res.ok) {
                 const data = await res.json();
-                setUsers(data);
+                // Ensure data is an array
+                setUsers(Array.isArray(data) ? data : []);
+            } else {
+                setUsers([]);
             }
         } catch (error) {
             console.error('Error fetching users:', error);
+            setUsers([]);
         }
     };
 
