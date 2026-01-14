@@ -178,6 +178,9 @@ export default function ManageMonitorsPage() {
                                         <option value="15">Every 15 Minutes</option>
                                         <option value="30">Every 30 Minutes</option>
                                         <option value="60">Every Hour</option>
+                                        <option value="1440">1 Day</option>
+                                        <option value="10080">7 Days</option>
+                                        <option value="43200">1 Month</option>
                                     </select>
                                 </div>
                                 <div className="space-y-2">
@@ -230,7 +233,14 @@ export default function ManageMonitorsPage() {
                                         <div className="flex items-center gap-2 text-xs text-secondary-500">
                                             <a href={m.url} target="_blank" className="hover:underline">{m.url}</a>
                                             <span>•</span>
-                                            <span>Every {m.frequency} mins</span>
+                                            <span>
+                                                {m.frequency === 1 ? 'Every minute' :
+                                                    m.frequency === 60 ? 'Every hour' :
+                                                        m.frequency === 1440 ? '1 Day' :
+                                                            m.frequency === 10080 ? '7 Days' :
+                                                                m.frequency === 43200 ? '1 Month' :
+                                                                    `Every ${m.frequency} mins`}
+                                            </span>
                                         </div>
                                         <div className="flex gap-2 mt-2">
                                             {m.notifyEmail && <span className="text-[10px] px-2 py-0.5 bg-blue-50 text-blue-600 rounded-full font-bold">Email</span>}

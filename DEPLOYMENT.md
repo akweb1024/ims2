@@ -67,3 +67,28 @@ Ensure the following variables are set in your production environment (e.g., Coo
 
 ### Authentication Redirect Loops
 - Clear browser cookies. Changing `AUTH_SECRET` will invalidate existing cookies and might cause decryption errors (`JWTSessionError: no matching decryption secret`). Logout and back in.
+
+---
+
+## 🕒 Automated Web Monitoring
+The Web Monitor feature requires periodic pings to trigger status checks based on your set frequency. 
+
+### 1. Hybrid Trigger (Default)
+The application automatically pings the check API every 60 seconds whenever any user has a dashboard page open. This is sufficient for most use cases where staff are actively monitoring.
+
+### 2. Full Automation (Recommended for Production)
+To ensure monitoring runs 24/7 even when no one is logged in, set up a cron job on your server:
+
+1. **Test the script**:
+   ```bash
+   node scripts/ping-monitors.js https://your-domain.com
+   ```
+2. **Add to Crontab** (runs every minute):
+   ```bash
+   crontab -e
+   ```
+   Add this line:
+   ```cron
+   * * * * * cd /path/to/app && node scripts/ping-monitors.js https://your-domain.com >> /var/log/stm-monitor.log 2>&1
+   ```
+

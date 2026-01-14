@@ -68,6 +68,8 @@ export default function DashboardLayout({ children, userRole: propUserRole = 'CU
         const interval = setInterval(() => {
             if (document.visibilityState === 'visible' && status === 'authenticated') {
                 fetchNotifications();
+                // Auto-trigger web monitoring checks
+                fetch('/api/it/monitoring/check', { method: 'POST' }).catch(() => { });
             }
         }, 60000);
 
