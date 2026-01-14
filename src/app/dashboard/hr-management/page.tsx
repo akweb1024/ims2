@@ -577,7 +577,7 @@ const HRManagementContent = () => {
                         onEdit={(emp) => {
                             router.push(`/dashboard/hr-management/employees/${emp.id}/edit`);
                         }}
-                        managers={employees.filter(e => ['MANAGER', 'TEAM_LEADER'].includes(e.user?.role || ''))}
+                        managers={employees.filter(e => ['MANAGER', 'TEAM_LEADER', 'ADMIN', 'SUPER_ADMIN', 'JOURNAL_MANAGER', 'EDITOR_IN_CHIEF'].includes(e.user?.role || ''))}
                         onDelete={handleDeactivateEmp}
                         onPay={(emp) => {
                             const amount = prompt("Salary Amount:");

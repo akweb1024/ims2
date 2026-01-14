@@ -38,7 +38,7 @@ export default function NewEmployeePage() {
                 if (managersRes.ok) {
                     const allEmps = await managersRes.json();
                     setManagers(allEmps.filter((e: any) =>
-                        ['MANAGER', 'TEAM_LEADER', 'ADMIN', 'SUPER_ADMIN'].includes(e.user.role)
+                        ['MANAGER', 'TEAM_LEADER', 'ADMIN', 'SUPER_ADMIN', 'JOURNAL_MANAGER', 'EDITOR_IN_CHIEF'].includes(e.user.role)
                     ));
                 }
 

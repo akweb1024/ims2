@@ -79,6 +79,11 @@ export default function EmployeeList({
                         <option value="MANAGER">Manager</option>
                         <option value="ADMIN">Admin</option>
                         <option value="HR_MANAGER">HR Manager</option>
+                        <option value="EDITOR">Editor</option>
+                        <option value="JOURNAL_MANAGER">Journal Manager</option>
+                        <option value="EDITOR_IN_CHIEF">Editor-in-Chief</option>
+                        <option value="PLAGIARISM_CHECKER">Plagiarism Checker</option>
+                        <option value="QUALITY_CHECKER">Quality Checker</option>
                     </select>
 
                     <select

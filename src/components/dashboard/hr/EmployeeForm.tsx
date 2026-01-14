@@ -284,6 +284,13 @@ export default function EmployeeForm({
                             <option value="ADMIN">Admin</option>
                             <option value="HR_MANAGER">HR Manager</option>
                             <option value="FINANCE_ADMIN">Finance Admin</option>
+                            <option value="EDITOR">Editor</option>
+                            <option value="JOURNAL_MANAGER">Journal Manager</option>
+                            <option value="EDITOR_IN_CHIEF">Editor-in-Chief</option>
+                            <option value="PLAGIARISM_CHECKER">Plagiarism Checker</option>
+                            <option value="QUALITY_CHECKER">Quality Checker</option>
+                            <option value="SECTION_EDITOR">Section Editor</option>
+                            <option value="REVIEWER">Reviewer</option>
                         </select>
                     </div>
                     <div>
