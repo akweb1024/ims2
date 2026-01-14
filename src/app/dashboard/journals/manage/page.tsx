@@ -64,13 +64,23 @@ export default function JournalManagementPage() {
     const fetchUsers = async () => {
         try {
             const token = localStorage.getItem('token');
-            const res = await fetch('/api/users?roles=JOURNAL_MANAGER,EDITOR_IN_CHIEF,ADMIN,SUPER_ADMIN', {
+            // Fetch all users - the existing API returns { data: [...], pagination: {...} }
+            const res = await fetch('/api/users?limit=1000', {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             if (res.ok) {
-                const data = await res.json();
-                // Ensure data is an array
-                setUsers(Array.isArray(data) ? data : []);
+                const response = await res.json();
+                // Extract data array from response
+                const allUsers = Array.isArray(response.data) ? response.data :
+                    Array.isArray(response) ? response : [];
+
+                // Filter for eligible manager roles
+                const eligibleRoles = ['SUPER_ADMIN', 'ADMIN', 'JOURNAL_MANAGER', 'EDITOR_IN_CHIEF'];
+                const eligibleUsers = allUsers.filter((u: User) =>
+                    eligibleRoles.includes(u.role)
+                );
+
+                setUsers(eligibleUsers);
             } else {
                 setUsers([]);
             }
