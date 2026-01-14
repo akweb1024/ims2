@@ -2,8 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { authorizedRoute } from '@/lib/middleware-auth';
 import { createErrorResponse } from '@/lib/api-utils';
-import { writeFile, mkdir } from 'fs/promises';
-import { join } from 'path';
+import { StorageService } from '@/lib/storage';
 
 export const POST = authorizedRoute(
     [],
@@ -20,17 +19,12 @@ export const POST = authorizedRoute(
             }
 
             const bytes = await file.arrayBuffer();
-            const buffer = Buffer.from(bytes);
 
-            const uploadDir = join(process.cwd(), 'public', 'uploads', 'proofs');
-            await mkdir(uploadDir, { recursive: true });
-
-            const ext = file.name.split('.').pop();
-            const filename = `proof-${Date.now()}-${Math.round(Math.random() * 1e9)}.${ext}`;
-            const path = join(uploadDir, filename);
-
-            await writeFile(path, buffer);
-            const url = `/uploads/proofs/${filename}`;
+            const { url } = await StorageService.saveFile(
+                bytes,
+                file.name,
+                'proofs'
+            );
 
             const proof = await prisma.declarationProof.create({
                 data: {
@@ -70,3 +64,4 @@ export const PATCH = authorizedRoute(
         }
     }
 );
+

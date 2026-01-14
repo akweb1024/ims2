@@ -49,6 +49,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     }
 }
 
+import { StorageService } from '@/lib/storage';
+
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     try {
         const user = await getAuthenticatedUser();
@@ -62,17 +64,59 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
         if (!issueId) return NextResponse.json({ error: 'Issue ID required' }, { status: 400 });
 
-        const article = await prisma.article.update({
+        // Fetch issue details for movement
+        const issue = await prisma.journalIssue.findUnique({
+            where: { id: issueId },
+            include: { volume: true }
+        });
+
+        if (!issue) return NextResponse.json({ error: 'Issue not found' }, { status: 404 });
+
+        // Update article issue assignment
+        const article = await prisma.article.findUnique({
+            where: { id },
+            include: { versions: true }
+        });
+
+        if (!article) return NextResponse.json({ error: 'Article not found' }, { status: 404 });
+
+        // Move current article file if it exists
+        let updatedFileUrl = article.fileUrl;
+        const meta = {
+            journalId: article.journalId,
+            volumeNumber: issue.volume.volumeNumber,
+            issueNumber: issue.issueNumber
+        };
+
+        if (article.fileUrl) {
+            updatedFileUrl = await StorageService.moveFile(article.fileUrl, 'publications', meta);
+        }
+
+        // Update all versions to move their files too
+        for (const version of article.versions) {
+            if (version.fileUrl) {
+                const newVersionUrl = await StorageService.moveFile(version.fileUrl, 'publications', meta);
+                await prisma.articleVersion.update({
+                    where: { id: version.id },
+                    data: { fileUrl: newVersionUrl }
+                });
+            }
+        }
+
+        const updatedArticle = await prisma.article.update({
             where: { id },
             data: {
                 issueId,
-                status: 'ACCEPTED' 
+                status: 'ACCEPTED',
+                fileUrl: updatedFileUrl
             }
         });
 
-        return NextResponse.json(article);
+        return NextResponse.json(updatedArticle);
 
     } catch (error: any) {
+        console.error('Issue Assignment Error:', error);
         return NextResponse.json({ error: error.message }, { status: 500 });
     }
 }
+

@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAuthenticatedUser } from '@/lib/auth-legacy';
-import { writeFile, mkdir } from 'fs/promises';
-import { join } from 'path';
+import { StorageService, FileCategory } from '@/lib/storage';
 
 export async function POST(req: NextRequest) {
     try {
@@ -11,22 +10,24 @@ export async function POST(req: NextRequest) {
         const formData = await req.formData();
         const file = formData.get('file') as File;
 
+        // Optional category and metadata
+        const category = (formData.get('category') as FileCategory) || 'other';
+        const journalId = formData.get('journalId') as string;
+        const volumeNumber = formData.get('volumeNumber') ? parseInt(formData.get('volumeNumber') as string) : undefined;
+        const issueNumber = formData.get('issueNumber') ? parseInt(formData.get('issueNumber') as string) : undefined;
+        const articleId = formData.get('articleId') as string;
+
         if (!file) return NextResponse.json({ error: 'No file uploaded' }, { status: 400 });
 
         const bytes = await file.arrayBuffer();
-        const buffer = Buffer.from(bytes);
 
-        // Create uploads directory if not exists
-        const uploadDir = join(process.cwd(), 'public', 'uploads');
-        await mkdir(uploadDir, { recursive: true });
+        const { url } = await StorageService.saveFile(
+            bytes,
+            file.name,
+            category,
+            { journalId, volumeNumber, issueNumber, articleId }
+        );
 
-        const ext = file.name.split('.').pop();
-        const filename = `file-${Date.now()}-${Math.round(Math.random() * 1e9)}.${ext}`;
-        const path = join(uploadDir, filename);
-
-        await writeFile(path, buffer);
-
-        const url = `/uploads/${filename}`;
         return NextResponse.json({ url });
 
     } catch (error) {
@@ -34,3 +35,4 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
     }
 }
+

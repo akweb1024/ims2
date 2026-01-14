@@ -62,9 +62,11 @@ export default function CompanyPage() {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 if (res.ok) {
-                    const data = await res.json();
-                    if (Array.isArray(data) && data.length > 0) {
-                        companyData = data[0];
+                    const response = await res.json();
+                    // Handle both direct array and paginated format { data: [], pagination: {} }
+                    const companiesList = Array.isArray(response) ? response : (response.data || []);
+                    if (companiesList.length > 0) {
+                        companyData = companiesList[0];
                     }
                 }
             }
@@ -237,9 +239,27 @@ export default function CompanyPage() {
     if (!company) {
         return (
             <DashboardLayout userRole={userRole}>
-                <div className="bg-white p-8 rounded-xl text-center shadow">
-                    <h3 className="text-xl font-bold text-secondary-900">No Company Found</h3>
-                    <p className="text-secondary-500">Please contact support or initialize the company details.</p>
+                <div className="max-w-md mx-auto mt-20 p-10 bg-white rounded-3xl shadow-2xl text-center border border-secondary-100">
+                    <div className="w-20 h-20 bg-secondary-100 rounded-2xl flex items-center justify-center mx-auto mb-6">
+                        <span className="text-4xl text-secondary-400">🏢</span>
+                    </div>
+                    <h3 className="text-2xl font-black text-secondary-900 mb-2">No Company Active</h3>
+                    <p className="text-secondary-500 mb-8 font-medium">We couldn't find a company profile associated with your account or the current selection.</p>
+
+                    <div className="space-y-3">
+                        {userRole === 'SUPER_ADMIN' ? (
+                            <Link href="/dashboard/companies" className="btn btn-primary w-full py-4 uppercase tracking-widest text-xs font-black">
+                                Go to System Companies
+                            </Link>
+                        ) : (
+                            <div className="p-4 bg-primary-50 rounded-xl text-primary-700 text-xs font-bold">
+                                Please contact your System Administrator to assign you to a company.
+                            </div>
+                        )}
+                        <button onClick={fetchData} className="btn btn-secondary w-full py-4 text-xs font-black uppercase">
+                            Retry Sync
+                        </button>
+                    </div>
                 </div>
             </DashboardLayout>
         );
