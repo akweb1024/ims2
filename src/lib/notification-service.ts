@@ -43,7 +43,8 @@ export async function sendTemplatedEmail({ to, templateName, variables }: EmailN
         await sendEmail({
             to,
             subject,
-            html: body
+            html: body,
+            text: body.replace(/<[^>]*>?/gm, '') // Strip HTML tags for plain text version
         });
 
         return true;

@@ -171,11 +171,36 @@ export default function SubmitRevision({ params }: { params: { id: string } }) {
                                     accept=".pdf,.doc,.docx"
                                     className="hidden"
                                     id="file-upload"
-                                    onChange={e => {
+                                    onChange={async (e) => {
                                         const file = e.target.files?.[0];
                                         if (file) {
-                                            // TODO: Implement file upload to storage
-                                            setFormData({ ...formData, fileUrl: `/uploads/revisions/${file.name}` });
+                                            setSubmitting(true);
+                                            const formDataToUpload = new FormData();
+                                            formDataToUpload.append('file', file);
+                                            formDataToUpload.append('category', 'publications');
+                                            formDataToUpload.append('articleId', params.id);
+                                            if (manuscript?.journalId) {
+                                                formDataToUpload.append('journalId', manuscript.journalId);
+                                            }
+
+                                            try {
+                                                const res = await fetch('/api/manuscripts/upload', {
+                                                    method: 'POST',
+                                                    body: formDataToUpload
+                                                });
+
+                                                if (res.ok) {
+                                                    const data = await res.json();
+                                                    setFormData({ ...formData, fileUrl: data.url });
+                                                } else {
+                                                    alert('Failed to upload file');
+                                                }
+                                            } catch (error) {
+                                                console.error('Upload error:', error);
+                                                alert('Error uploading file');
+                                            } finally {
+                                                setSubmitting(false);
+                                            }
                                         }
                                     }}
                                 />

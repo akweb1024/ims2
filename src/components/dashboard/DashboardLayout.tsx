@@ -276,6 +276,13 @@ export default function DashboardLayout({ children, userRole: propUserRole = 'CU
                 icon: '📰',
                 categories: [
                     {
+                        title: 'Author Services',
+                        items: [
+                            { name: 'Author Dashboard', href: '/dashboard/author', icon: '👤', roles: ['*'] },
+                            { name: 'Submit Manuscript', href: '/dashboard/author/submit', icon: '✍️', roles: ['*'] },
+                        ]
+                    },
+                    {
                         title: 'Editorial',
                         items: [
                             { name: 'Production Hub', href: '/dashboard/production', icon: '🏭', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'EDITOR'] },

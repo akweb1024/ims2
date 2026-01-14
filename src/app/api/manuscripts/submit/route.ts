@@ -64,6 +64,7 @@ export const POST = authorizedRoute(
                     await tx.articleAuthor.createMany({
                         data: authors.map((author: any, index: number) => ({
                             articleId: article.id,
+                            userId: author.email === user.email ? user.id : null,
                             name: author.name,
                             email: author.email,
                             affiliation: author.affiliation,

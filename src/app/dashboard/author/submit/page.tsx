@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { ArrowLeft, ArrowRight, Check, Upload, Plus, Trash2, Save } from 'lucide-react';
@@ -12,7 +12,7 @@ const STEPS = [
     { id: 4, name: 'Review & Submit', icon: '✅' }
 ];
 
-export default function SubmitManuscript() {
+function SubmitManuscriptContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const draftId = searchParams?.get('draftId');
@@ -371,11 +371,36 @@ export default function SubmitManuscript() {
                                 accept=".pdf,.doc,.docx"
                                 className="hidden"
                                 id="file-upload"
-                                onChange={e => {
+                                onChange={async (e) => {
                                     const file = e.target.files?.[0];
                                     if (file) {
-                                        // TODO: Implement file upload to storage
-                                        setFormData({ ...formData, fileUrl: `/uploads/${file.name}` });
+                                        setSaving(true);
+                                        const formDataToUpload = new FormData();
+                                        formDataToUpload.append('file', file);
+                                        formDataToUpload.append('category', 'publications');
+                                        if (formData.journalId) {
+                                            formDataToUpload.append('journalId', formData.journalId);
+                                        }
+
+                                        try {
+                                            const res = await fetch('/api/manuscripts/upload', {
+                                                method: 'POST',
+                                                body: formDataToUpload
+                                            });
+
+                                            if (res.ok) {
+                                                const data = await res.json();
+                                                setFormData({ ...formData, fileUrl: data.url });
+                                                setLastSaved(new Date());
+                                            } else {
+                                                alert('Failed to upload file');
+                                            }
+                                        } catch (error) {
+                                            console.error('Upload error:', error);
+                                            alert('Error uploading file');
+                                        } finally {
+                                            setSaving(false);
+                                        }
                                     }
                                 }}
                             />
@@ -513,10 +538,10 @@ export default function SubmitManuscript() {
                         <div key={step.id} className="flex items-center flex-1">
                             <div className="flex flex-col items-center flex-1">
                                 <div className={`w-12 h-12 rounded-full flex items-center justify-center text-2xl border-2 transition-all ${currentStep > step.id
-                                        ? 'bg-green-500 border-green-500 text-white'
-                                        : currentStep === step.id
-                                            ? 'bg-primary-600 border-primary-600 text-white'
-                                            : 'bg-white border-secondary-300 text-secondary-400'
+                                    ? 'bg-green-500 border-green-500 text-white'
+                                    : currentStep === step.id
+                                        ? 'bg-primary-600 border-primary-600 text-white'
+                                        : 'bg-white border-secondary-300 text-secondary-400'
                                     }`}>
                                     {currentStep > step.id ? <Check className="w-6 h-6" /> : step.icon}
                                 </div>
@@ -576,5 +601,13 @@ export default function SubmitManuscript() {
                 </div>
             </div>
         </DashboardLayout>
+    );
+}
+
+export default function SubmitManuscript() {
+    return (
+        <Suspense fallback={<div>Loading...</div>}>
+            <SubmitManuscriptContent />
+        </Suspense>
     );
 }
