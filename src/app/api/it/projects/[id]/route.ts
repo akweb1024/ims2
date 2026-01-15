@@ -174,108 +174,134 @@ export async function PATCH(
         }
 
         // Prepare update data
-        const updateData: any = {};
+        let updateData: any = {};
 
-        // Only allow certain fields to be updated
-        const allowedFields = [
-            'name', 'description', 'category', 'type', 'status', 'priority',
-            'clientId', 'clientType', 'projectManagerId', 'teamLeadId',
-            'startDate', 'endDate', 'estimatedHours', 'actualHours',
-            'isRevenueBased', 'estimatedRevenue', 'actualRevenue', 'currency',
-            'itDepartmentCut', 'itRevenueEarned', 'billingType', 'hourlyRate',
-            'isBilled', 'invoiceId', 'tags', 'attachments'
-        ];
+        try {
 
-        for (const field of allowedFields) {
-            if (body[field] !== undefined) {
-                if (field.includes('Date') && body[field]) {
-                    updateData[field] = new Date(body[field]);
-                } else if (field.includes('Hours') || field.includes('Revenue') || field.includes('Cut') || field.includes('Rate')) {
-                    // Logic fix: Allow 0 value explicitly, handle NaN
-                    const val = parseFloat(body[field]?.toString());
-                    updateData[field] = isNaN(val) ? null : val;
-                } else {
-                    updateData[field] = body[field];
+            // Only allow certain fields to be updated
+            const allowedFields = [
+                'name', 'description', 'category', 'type', 'status', 'priority',
+                'clientId', 'clientType', 'projectManagerId', 'teamLeadId',
+                'startDate', 'endDate', 'estimatedHours', 'actualHours',
+                'isRevenueBased', 'estimatedRevenue', 'actualRevenue', 'currency',
+                'itDepartmentCut', 'itRevenueEarned', 'billingType', 'hourlyRate',
+                'isBilled', 'invoiceId', 'tags', 'attachments'
+            ];
+
+            for (const field of allowedFields) {
+                if (body[field] !== undefined) {
+                    if (field.includes('Date') && body[field]) {
+                        updateData[field] = new Date(body[field]);
+                    } else if (field.includes('Hours') || field.includes('Revenue') || field.includes('Cut') || field.includes('Rate')) {
+                        // Logic fix: Allow 0 value explicitly, handle NaN
+                        const val = parseFloat(body[field]?.toString());
+                        updateData[field] = isNaN(val) ? null : val;
+                    } else if (field === 'projectManagerId') {
+                        // For UPDATE with ITProjectUpdateInput, use relation fields
+                        if (body[field]) {
+                            updateData.projectManager = { connect: { id: body[field] } };
+                        } else if (body[field] === null || body[field] === '') {
+                            updateData.projectManager = { disconnect: true };
+                        }
+                        // Don't add projectManagerId to updateData - skip to next field
+                        continue;
+                    } else if (field === 'teamLeadId') {
+                        // For UPDATE with ITProjectUpdateInput, use relation fields
+                        if (body[field]) {
+                            updateData.teamLead = { connect: { id: body[field] } };
+                        } else if (body[field] === null || body[field] === '') {
+                            updateData.teamLead = { disconnect: true };
+                        }
+                        // Don't add teamLeadId to updateData - skip to next field
+                        continue;
+                    } else {
+                        updateData[field] = body[field];
+                    }
                 }
             }
-        }
 
-        // Calculate IT revenue if actualRevenue or itDepartmentCut is updated
-        const revenue = updateData.actualRevenue !== undefined ? updateData.actualRevenue : existingProject.actualRevenue;
-        const cut = updateData.itDepartmentCut !== undefined ? updateData.itDepartmentCut : existingProject.itDepartmentCut;
+            // Calculate IT revenue if actualRevenue or itDepartmentCut is updated
+            const revenue = updateData.actualRevenue !== undefined ? updateData.actualRevenue : existingProject.actualRevenue;
+            const cut = updateData.itDepartmentCut !== undefined ? updateData.itDepartmentCut : existingProject.itDepartmentCut;
 
-        if (updateData.actualRevenue !== undefined || updateData.itDepartmentCut !== undefined) {
-            updateData.itRevenueEarned = (revenue * cut) / 100;
-        }
+            if (updateData.actualRevenue !== undefined || updateData.itDepartmentCut !== undefined) {
+                updateData.itRevenueEarned = (revenue * cut) / 100;
+            }
 
-        // Set completedAt if status changed to COMPLETED
-        if (updateData.status === 'COMPLETED' && existingProject.status !== 'COMPLETED') {
-            updateData.completedAt = new Date();
-        } else if (updateData.status && updateData.status !== 'COMPLETED' && existingProject.status === 'COMPLETED') {
-            updateData.completedAt = null;
-        }
+            // Set completedAt if status changed to COMPLETED
+            if (updateData.status === 'COMPLETED' && existingProject.status !== 'COMPLETED') {
+                updateData.completedAt = new Date();
+            } else if (updateData.status && updateData.status !== 'COMPLETED' && existingProject.status === 'COMPLETED') {
+                updateData.completedAt = null;
+            }
 
-        // Handle milestones if provided
-        const milestoneOperations: any = {};
-        if (body.milestones && Array.isArray(body.milestones)) {
-            const incomingIds = body.milestones.filter((m: any) => m.id).map((m: any) => m.id);
-            const toDelete = existingProject.milestones.filter(m => !incomingIds.includes(m.id)).map(m => m.id);
+            // Handle milestones if provided
+            const milestoneOperations: any = {};
+            if (body.milestones && Array.isArray(body.milestones)) {
+                const incomingIds = body.milestones.filter((m: any) => m.id).map((m: any) => m.id);
+                const toDelete = existingProject.milestones.filter(m => !incomingIds.includes(m.id)).map(m => m.id);
 
-            const toCreate = body.milestones.filter((m: any) => !m.id).map((m: any) => ({
-                name: m.title || m.name, // Handle both title from UI and name from schema
-                description: m.description,
-                dueDate: m.dueDate ? new Date(m.dueDate) : new Date(),
-                status: m.status || 'PENDING'
-            }));
-
-            const toUpdate = body.milestones.filter((m: any) => m.id).map((m: any) => ({
-                where: { id: m.id },
-                data: {
-                    name: m.title || m.name,
+                const toCreate = body.milestones.filter((m: any) => !m.id).map((m: any) => ({
+                    name: m.title || m.name, // Handle both title from UI and name from schema
                     description: m.description,
-                    dueDate: m.dueDate ? new Date(m.dueDate) : undefined,
-                    status: m.status
-                }
-            }));
+                    dueDate: m.dueDate ? new Date(m.dueDate) : new Date(),
+                    status: m.status || 'PENDING'
+                }));
 
-            updateData.milestones = {
-                deleteMany: toDelete.length > 0 ? { id: { in: toDelete } } : undefined,
-                create: toCreate.length > 0 ? toCreate : undefined,
-                update: toUpdate.length > 0 ? toUpdate : undefined
-            };
-
-            // Cleanup undefined keys
-            if (!updateData.milestones.deleteMany) delete updateData.milestones.deleteMany;
-            if (!updateData.milestones.create) delete updateData.milestones.create;
-            if (!updateData.milestones.update) delete updateData.milestones.update;
-            if (Object.keys(updateData.milestones).length === 0) delete updateData.milestones;
-        }
-
-        const project = await prisma.iTProject.update({
-            where: { id: params.id },
-            data: updateData,
-            include: {
-                projectManager: {
-                    select: {
-                        id: true,
-                        name: true,
-                        email: true,
+                const toUpdate = body.milestones.filter((m: any) => m.id).map((m: any) => ({
+                    where: { id: m.id },
+                    data: {
+                        name: m.title || m.name,
+                        description: m.description,
+                        dueDate: m.dueDate ? new Date(m.dueDate) : undefined,
+                        status: m.status
                     }
-                },
-                teamLead: {
-                    select: {
-                        id: true,
-                        name: true,
-                        email: true,
-                    }
-                },
-                milestones: true
+                }));
+
+                updateData.milestones = {
+                    deleteMany: toDelete.length > 0 ? { id: { in: toDelete } } : undefined,
+                    create: toCreate.length > 0 ? toCreate : undefined,
+                    update: toUpdate.length > 0 ? toUpdate : undefined
+                };
+
+                // Cleanup undefined keys
+                if (!updateData.milestones.deleteMany) delete updateData.milestones.deleteMany;
+                if (!updateData.milestones.create) delete updateData.milestones.create;
+                if (!updateData.milestones.update) delete updateData.milestones.update;
+                if (Object.keys(updateData.milestones).length === 0) delete updateData.milestones;
             }
-        });
 
-        return NextResponse.json(project);
+            const project = await prisma.iTProject.update({
+                where: { id: params.id },
+                data: updateData,
+                include: {
+                    projectManager: {
+                        select: {
+                            id: true,
+                            name: true,
+                            email: true,
+                        }
+                    },
+                    teamLead: {
+                        select: {
+                            id: true,
+                            name: true,
+                            email: true,
+                        }
+                    },
+                    milestones: true
+                }
+            });
+
+            return NextResponse.json(project);
+        } catch (error) {
+            console.error('Update IT Project Error:', error);
+            // Log the update data for debugging
+            console.error('Update data that caused error:', JSON.stringify(updateData, null, 2));
+            return createErrorResponse(error);
+        }
     } catch (error) {
-        console.error('Update IT Project Error:', error);
+        console.error('PATCH IT Project Error:', error);
         return createErrorResponse(error);
     }
 }

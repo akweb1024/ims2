@@ -176,6 +176,38 @@ export async function PATCH(
                     // Logic fix: Allow 0 value explicitly, handle NaN
                     const val = parseFloat(body[field]?.toString());
                     updateData[field] = isNaN(val) ? (field === 'progressPercent' ? 0 : null) : val;
+                } else if (field === 'projectId') {
+                    // For UPDATE with ITTaskUpdateInput, use relation fields
+                    if (body[field]) {
+                        updateData.project = { connect: { id: body[field] } };
+                    } else if (body[field] === null || body[field] === '') {
+                        updateData.project = { disconnect: true };
+                    }
+                    continue;
+                } else if (field === 'assignedToId') {
+                    // For UPDATE with ITTaskUpdateInput, use relation fields
+                    if (body[field]) {
+                        updateData.assignedTo = { connect: { id: body[field] } };
+                    } else if (body[field] === null || body[field] === '') {
+                        updateData.assignedTo = { disconnect: true };
+                    }
+                    continue;
+                } else if (field === 'reporterId') {
+                    // For UPDATE with ITTaskUpdateInput, use relation fields
+                    if (body[field]) {
+                        updateData.reporter = { connect: { id: body[field] } };
+                    } else if (body[field] === null || body[field] === '') {
+                        updateData.reporter = { disconnect: true };
+                    }
+                    continue;
+                } else if (field === 'serviceId') {
+                    // For UPDATE with ITTaskUpdateInput, use relation fields
+                    if (body[field]) {
+                        updateData.service = { connect: { id: body[field] } };
+                    } else if (body[field] === null || body[field] === '') {
+                        updateData.service = { disconnect: true };
+                    }
+                    continue;
                 } else {
                     updateData[field] = body[field];
                 }
@@ -218,6 +250,37 @@ export async function PATCH(
                     comment: body.statusComment || null,
                 }
             });
+
+            // --- NOTIFICATION LOGIC ---
+            try {
+                // If marked for review, notify the requester
+                if (updateData.status === 'UNDER_REVIEW') {
+                    await prisma.notification.create({
+                        data: {
+                            userId: existingTask.createdById,
+                            title: 'IT Service Ready for Review',
+                            message: `Your request "${existingTask.title}" is ready. Please review and accept to complete.`,
+                            type: 'INFO',
+                            link: `/dashboard/it-services`,
+                        }
+                    });
+                }
+                // If completed, notify the assignee if requester accepted it
+                else if (updateData.status === 'COMPLETED' && existingTask.assignedToId) {
+                    await prisma.notification.create({
+                        data: {
+                            userId: existingTask.assignedToId,
+                            title: 'IT Task Accepted',
+                            message: `Task "${existingTask.title}" has been accepted and closed by the requester.`,
+                            type: 'SUCCESS',
+                            link: `/dashboard/it-management/tasks/${params.id}`,
+                        }
+                    });
+                }
+            } catch (notifyError) {
+                console.error('Failed to create notification:', notifyError);
+                // Don't fail the task update if notification fails
+            }
         }
 
         const task = await prisma.iTTask.update({

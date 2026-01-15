@@ -48,6 +48,7 @@ const STATUSES = [
     { value: 'PENDING', label: 'To Do', color: 'bg-gray-100 dark:bg-gray-800' },
     { value: 'IN_PROGRESS', label: 'In Progress', color: 'bg-blue-50 dark:bg-blue-900/20' },
     { value: 'TESTING', label: 'Testing', color: 'bg-purple-50 dark:bg-purple-900/20' },
+    { value: 'UNDER_REVIEW', label: 'Review', color: 'bg-amber-50 dark:bg-amber-900/20' },
     { value: 'COMPLETED', label: 'Done', color: 'bg-green-50 dark:bg-green-900/20' },
 ];
 
@@ -188,6 +189,8 @@ export default function TasksPage() {
                 return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400';
             case 'URGENT':
                 return 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400';
+            case 'SERVICE_REQUEST':
+                return 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-400';
             default:
                 return 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400';
         }
@@ -385,6 +388,7 @@ export default function TasksPage() {
                                     <option value="SUPPORT">Support</option>
                                     <option value="MAINTENANCE">Maintenance</option>
                                     <option value="URGENT">Urgent</option>
+                                    <option value="SERVICE_REQUEST">Service Request</option>
                                 </select>
                             </div>
 
@@ -445,7 +449,7 @@ export default function TasksPage() {
                         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
                     </div>
                 ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-6">
                         {STATUSES.map((status) => {
                             const statusTasks = getTasksByStatus(status.value);
                             return (
@@ -487,7 +491,7 @@ export default function TasksPage() {
                         <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
                             Summary
                         </h3>
-                        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                        <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
                             <div className="text-center">
                                 <p className="text-2xl font-bold text-gray-900 dark:text-white">
                                     {filteredTasks.length}

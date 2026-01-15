@@ -23,6 +23,7 @@ interface ServiceDefinition {
     category: string;
     price: number;
     unit: string;
+    estimatedDays: number | null;
 }
 
 export default function ITServiceManagementPage() {
@@ -38,7 +39,8 @@ export default function ITServiceManagementPage() {
         description: '',
         category: 'GENERAL',
         price: '',
-        unit: 'each'
+        unit: 'each',
+        estimatedDays: ''
     });
     const [saving, setSaving] = useState(false);
 
@@ -69,7 +71,8 @@ export default function ITServiceManagementPage() {
                 description: service.description || '',
                 category: service.category,
                 price: service.price.toString(),
-                unit: service.unit
+                unit: service.unit,
+                estimatedDays: service.estimatedDays?.toString() || ''
             });
         } else {
             setEditingService(null);
@@ -78,7 +81,8 @@ export default function ITServiceManagementPage() {
                 description: '',
                 category: 'GENERAL',
                 price: '',
-                unit: 'each'
+                unit: 'each',
+                estimatedDays: ''
             });
         }
         setIsModalOpen(true);
@@ -98,7 +102,8 @@ export default function ITServiceManagementPage() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     ...modalData,
-                    price: parseFloat(modalData.price)
+                    price: parseFloat(modalData.price),
+                    estimatedDays: modalData.estimatedDays ? parseInt(modalData.estimatedDays) : null
                 }),
             });
 
@@ -307,6 +312,17 @@ export default function ITServiceManagementPage() {
                                         <option value="INFRASTRUCTURE">Infrastructure</option>
                                         <option value="REVENUE">Revenue</option>
                                     </select>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">Estimated Fulfillment (Days)</label>
+                                    <input
+                                        type="number"
+                                        value={modalData.estimatedDays}
+                                        onChange={(e) => setModalData({ ...modalData, estimatedDays: e.target.value })}
+                                        className="w-full px-4 py-2 border border-gray-200 dark:border-gray-700 rounded-lg dark:bg-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-blue-500"
+                                        placeholder="e.g., 2"
+                                    />
+                                    <p className="text-[10px] text-gray-500 mt-1">Leave empty if not applicable.</p>
                                 </div>
                                 <div className="flex gap-3 pt-4">
                                     <button

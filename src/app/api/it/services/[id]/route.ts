@@ -37,11 +37,13 @@ export async function PATCH(
         const body = await req.json();
         const updateData: any = {};
 
-        const fields = ['name', 'description', 'category', 'price', 'unit', 'isActive'];
+        const fields = ['name', 'description', 'category', 'price', 'unit', 'isActive', 'estimatedDays'];
         for (const field of fields) {
             if (body[field] !== undefined) {
                 if (field === 'price') {
                     updateData[field] = parseFloat(body[field]);
+                } else if (field === 'estimatedDays') {
+                    updateData[field] = body[field] ? parseInt(body[field]) : null;
                 } else {
                     updateData[field] = body[field];
                 }

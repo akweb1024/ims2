@@ -2930,6 +2930,8 @@ model ITTask {
   assignedTo        User?                   @relation("ITTaskAssignee", fields: [assignedToId], references: [id])
   createdBy         User                    @relation("ITTaskCreator", fields: [createdById], references: [id])
   reporter          User?                   @relation("ITTaskReporter", fields: [reporterId], references: [id])
+  serviceId         String?
+  service           ITServiceDefinition?    @relation("ServiceTasks", fields: [serviceId], references: [id])
   timeEntries       ITTimeEntry[]
   comments          ITTaskComment[]
   statusHistory     ITTaskStatusHistory[]
@@ -3184,9 +3186,12 @@ model ITServiceDefinition {
   category    String   @default("GENERAL")
   price       Float    @default(0)
   unit        String   @default("each")
+  estimatedDays Int?
   isActive    Boolean  @default(true)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+
+  tasks       ITTask[] @relation("ServiceTasks")
 
   company     Company  @relation("CompanyITServices", fields: [companyId], references: [id], onDelete: Cascade)
 

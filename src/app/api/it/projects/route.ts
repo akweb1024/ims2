@@ -162,7 +162,7 @@ export async function POST(req: NextRequest) {
         // Create project
         const project = await prisma.iTProject.create({
             data: {
-                companyId,
+                company: { connect: { id: companyId } },
                 projectCode,
                 name,
                 description,
@@ -172,8 +172,8 @@ export async function POST(req: NextRequest) {
                 priority: priority || 'MEDIUM',
                 clientId,
                 clientType,
-                projectManagerId,
-                teamLeadId,
+                projectManager: projectManagerId ? { connect: { id: projectManagerId } } : undefined,
+                teamLead: teamLeadId ? { connect: { id: teamLeadId } } : undefined,
                 startDate: startDate ? new Date(startDate) : null,
                 endDate: endDate ? new Date(endDate) : null,
                 estimatedHours: estimatedHours ? parseFloat(estimatedHours) : null,

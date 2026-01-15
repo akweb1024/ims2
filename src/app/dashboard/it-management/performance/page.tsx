@@ -14,6 +14,7 @@ import {
     Calendar,
     ChevronRight,
     Search,
+    Zap,
 } from 'lucide-react';
 import {
     BarChart,
@@ -49,6 +50,11 @@ interface PerformanceData {
         completedTasks: number;
         revenue: number;
         hours: number;
+    }>;
+    servicePopularity: Array<{
+        name: string;
+        count: number;
+        revenue: number;
     }>;
 }
 
@@ -220,6 +226,48 @@ export default function PerformancePage() {
                         </div>
                     </div>
                 </div>
+
+                {/* Service Popularity */}
+                {data?.servicePopularity && data.servicePopularity.length > 0 && (
+                    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
+                        <h3 className="text-lg font-semibold dark:text-white mb-6 flex items-center gap-2">
+                            <Zap className="h-5 w-5 text-amber-500" />
+                            Most Popular IT Services
+                        </h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                            <div className="h-80">
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <BarChart data={data.servicePopularity} layout="vertical">
+                                        <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} />
+                                        <XAxis type="number" />
+                                        <YAxis dataKey="name" type="category" width={150} tick={{ fontSize: 10 }} />
+                                        <Tooltip
+                                            contentStyle={{ backgroundColor: '#1f2937', color: '#fff', border: 'none' }}
+                                        />
+                                        <Bar dataKey="count" fill="#3b82f6" name="Requests" radius={[0, 4, 4, 0]} />
+                                    </BarChart>
+                                </ResponsiveContainer>
+                            </div>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                {data.servicePopularity.slice(0, 4).map((service, idx) => (
+                                    <div key={idx} className="p-4 bg-gray-50 dark:bg-gray-900 border border-gray-100 dark:border-gray-700 rounded-xl">
+                                        <p className="text-xs font-bold text-gray-400 uppercase mb-1">{service.name}</p>
+                                        <div className="flex items-end justify-between">
+                                            <div>
+                                                <p className="text-2xl font-black text-gray-900 dark:text-white">{service.count}</p>
+                                                <p className="text-[10px] text-gray-500">Total Requests</p>
+                                            </div>
+                                            <div className="text-right">
+                                                <p className="text-lg font-bold text-green-600">₹{service.revenue.toLocaleString()}</p>
+                                                <p className="text-[10px] text-gray-500">Revenue Contribution</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                )}
 
                 {/* Team Ranking */}
                 <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden border border-gray-200 dark:border-gray-700">

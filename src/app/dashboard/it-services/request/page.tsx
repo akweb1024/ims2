@@ -15,6 +15,7 @@ import {
     LayoutGrid,
     Search,
     Loader2,
+    Paperclip,
 } from 'lucide-react';
 
 interface Service {
@@ -24,6 +25,7 @@ interface Service {
     category: string;
     price: number;
     unit: string;
+    estimatedDays: number | null;
 }
 
 export default function RequestITServicePage() {
@@ -40,6 +42,7 @@ export default function RequestITServicePage() {
         description: '',
         priority: 'MEDIUM',
         quantity: 1,
+        attachments: [] as string[]
     });
 
     const [errors, setErrors] = useState<Record<string, string>>({});
@@ -96,6 +99,8 @@ export default function RequestITServicePage() {
                     estimatedValue: totalEstimatedValue,
                     isRevenueBased: true,
                     status: 'PENDING',
+                    serviceId: selectedServiceId,
+                    attachments: formData.attachments
                 }),
             });
 
@@ -215,9 +220,15 @@ export default function RequestITServicePage() {
                                                     {service.name}
                                                 </h3>
                                                 <span className="text-[10px] font-black uppercase text-blue-600 bg-blue-50 dark:bg-blue-900/30 px-2 py-0.5 rounded">
-                                                    ₹{service.price}
+                                                    ₹{service.price} {service.unit !== 'each' ? `/ ${service.unit}` : ''}
                                                 </span>
                                             </div>
+                                            {service.estimatedDays && (
+                                                <span className="text-[10px] text-amber-600 dark:text-amber-500 font-bold flex items-center gap-1 mb-1">
+                                                    <Clock className="h-3 w-3" />
+                                                    Ready in ~{service.estimatedDays} days
+                                                </span>
+                                            )}
                                             <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-2">
                                                 {service.description || `IT Support for ${service.name}`}
                                             </p>
@@ -285,6 +296,53 @@ export default function RequestITServicePage() {
                                                 placeholder="Please provide specific details for this service request..."
                                             />
                                             {errors.description && <p className="mt-1 text-xs text-red-500">{errors.description}</p>}
+                                        </div>
+
+                                        <div className="pt-2">
+                                            <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Attachments (Reference Documents/Screenshots)</label>
+                                            <div className="flex flex-wrap gap-2 mb-3">
+                                                {formData.attachments.map((url, i) => (
+                                                    <div key={i} className="flex items-center gap-2 px-3 py-1.5 bg-gray-100 dark:bg-gray-700 rounded-lg text-xs dark:text-gray-300">
+                                                        <Paperclip className="h-3 w-3" />
+                                                        <span className="max-w-[150px] truncate">{url.split('/').pop()}</span>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => setFormData({ ...formData, attachments: formData.attachments.filter((_, idx) => idx !== i) })}
+                                                            className="text-red-500 hover:text-red-700 ml-1"
+                                                        >
+                                                            &times;
+                                                        </button>
+                                                    </div>
+                                                ))}
+                                                {formData.attachments.length === 0 && (
+                                                    <p className="text-xs text-gray-400 italic">No files attached.</p>
+                                                )}
+                                            </div>
+                                            <label className="flex items-center gap-2 px-4 py-2 border border-dashed border-gray-300 dark:border-gray-600 rounded-xl cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-900/40 transition-colors w-fit">
+                                                <Paperclip className="h-4 w-4 text-gray-500" />
+                                                <span className="text-sm font-medium text-gray-600 dark:text-gray-400">Upload Reference</span>
+                                                <input
+                                                    type="file"
+                                                    className="hidden"
+                                                    onChange={async (e) => {
+                                                        const file = e.target.files?.[0];
+                                                        if (file) {
+                                                            const uploadData = new FormData();
+                                                            uploadData.append('file', file);
+                                                            uploadData.append('category', 'documents');
+                                                            try {
+                                                                const res = await fetch('/api/upload', { method: 'POST', body: uploadData });
+                                                                if (res.ok) {
+                                                                    const { url } = await res.json();
+                                                                    setFormData({ ...formData, attachments: [...formData.attachments, url] });
+                                                                }
+                                                            } catch (err) {
+                                                                console.error('Upload failed', err);
+                                                            }
+                                                        }
+                                                    }}
+                                                />
+                                            </label>
                                         </div>
 
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">

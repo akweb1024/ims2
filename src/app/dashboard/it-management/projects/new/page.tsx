@@ -256,8 +256,10 @@ export default function NewProjectPage() {
                                     <option value="INFRASTRUCTURE">Infrastructure</option>
                                     <option value="SECURITY">Security</option>
                                     <option value="SUPPORT">Support</option>
+                                    <option value="MAINTENANCE">Maintenance</option>
+                                    <option value="UPGRADE">Upgrade</option>
+                                    <option value="MIGRATION">Migration</option>
                                     <option value="RESEARCH">Research</option>
-                                    <option value="OTHER">Other</option>
                                 </select>
                             </div>
 

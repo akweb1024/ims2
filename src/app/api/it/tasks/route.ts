@@ -169,10 +169,23 @@ export async function POST(req: NextRequest) {
             itDepartmentCut,
             tags,
             dependencies,
+            serviceId,
         } = body;
 
         // Auto-set 100% IT cut for service requests
         const effectiveItCut = type === 'SERVICE_REQUEST' ? 100 : (!isNaN(parseFloat(itDepartmentCut)) ? parseFloat(itDepartmentCut) : 0);
+
+        // Auto-calculate Due Date based on Service SLA if not provided
+        let calculatedDueDate = dueDate ? new Date(dueDate) : null;
+        if (serviceId && !calculatedDueDate) {
+            const serviceDef = await prisma.iTServiceDefinition.findUnique({
+                where: { id: serviceId }
+            });
+            if (serviceDef?.estimatedDays) {
+                calculatedDueDate = new Date();
+                calculatedDueDate.setDate(calculatedDueDate.getDate() + serviceDef.estimatedDays);
+            }
+        }
 
         // Validate required fields
         if (!title) {
@@ -186,8 +199,8 @@ export async function POST(req: NextRequest) {
         // Create task
         const task = await prisma.iTTask.create({
             data: {
-                companyId,
-                projectId: projectId || null,
+                company: { connect: { id: companyId } },
+                project: projectId ? { connect: { id: projectId } } : undefined,
                 taskCode,
                 title,
                 description,
@@ -196,11 +209,11 @@ export async function POST(req: NextRequest) {
                 priority: priority || 'MEDIUM',
                 status: status || 'PENDING',
                 progressPercent: !isNaN(parseInt(body.progressPercent)) ? parseInt(body.progressPercent) : 0,
-                assignedToId: assignedToId || null,
-                createdById: user.id,
-                reporterId: reporterId || null,
+                assignedTo: assignedToId ? { connect: { id: assignedToId } } : undefined,
+                createdBy: { connect: { id: user.id } },
+                reporter: reporterId ? { connect: { id: reporterId } } : undefined,
                 startDate: startDate ? new Date(startDate) : null,
-                dueDate: dueDate ? new Date(dueDate) : null,
+                dueDate: calculatedDueDate,
                 estimatedHours: !isNaN(parseFloat(estimatedHours)) ? parseFloat(estimatedHours) : null,
                 isRevenueBased: isRevenueBased || false,
                 estimatedValue: !isNaN(parseFloat(estimatedValue)) ? parseFloat(estimatedValue) : 0,
@@ -210,6 +223,7 @@ export async function POST(req: NextRequest) {
                 itDepartmentCut: effectiveItCut,
                 tags: tags || [],
                 dependencies: dependencies || [],
+                service: serviceId ? { connect: { id: serviceId } } : undefined,
             },
             include: {
                 project: {

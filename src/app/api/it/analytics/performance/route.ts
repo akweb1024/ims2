@@ -128,10 +128,39 @@ export async function GET(req: NextRequest) {
             });
         }
 
+        // 5. Service Popularity Data
+        const serviceStats = await (prisma as any).iTTask.groupBy({
+            by: ['serviceId'],
+            where: {
+                companyId,
+                type: 'SERVICE_REQUEST',
+                serviceId: { not: null },
+                createdAt: { gte: startDate, lte: endDate }
+            },
+            _count: { id: true },
+            _sum: { itRevenueEarned: true }
+        });
+
+        const sIds = serviceStats.map((s: any) => s.serviceId).filter(Boolean);
+        const serviceDefs = await (prisma as any).iTServiceDefinition.findMany({
+            where: { id: { in: sIds } },
+            select: { id: true, name: true }
+        });
+
+        const popularity = serviceStats.map((stat: any) => {
+            const def = serviceDefs.find((d: any) => d.id === stat.serviceId);
+            return {
+                name: def?.name || 'Deleted Service',
+                count: stat._count.id,
+                revenue: stat._sum.itRevenueEarned || 0
+            };
+        }).sort((a: any, b: any) => b.count - a.count);
+
         console.log('[Performance API] Done.');
         return NextResponse.json({
             members: activeMembers.sort((a, b) => b.stats.completedTasks - a.stats.completedTasks),
-            trends: monthlyTrends.reverse()
+            trends: monthlyTrends.reverse(),
+            servicePopularity: popularity
         });
     } catch (error: any) {
         console.error('Performance Analytics Error:', error);

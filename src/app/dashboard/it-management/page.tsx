@@ -365,6 +365,15 @@ export default function ITManagementDashboard() {
                                     {stats.tasksByType.urgent}
                                 </span>
                             </div>
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                    <div className="h-3 w-3 rounded-full bg-blue-400"></div>
+                                    <span className="text-gray-700 dark:text-gray-300">Service Requests</span>
+                                </div>
+                                <span className="font-semibold text-gray-900 dark:text-white">
+                                    {stats.tasksByType.serviceRequest}
+                                </span>
+                            </div>
                         </div>
                     </div>
 
