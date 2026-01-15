@@ -119,6 +119,48 @@ export async function GET(req: NextRequest) {
             const paidTaskRevenue = tasks.filter(t => t.isPaid).reduce((sum, t) => sum + t.itRevenueEarned, 0);
             const unpaidTaskRevenue = tasks.filter(t => !t.isPaid).reduce((sum, t) => sum + t.itRevenueEarned, 0);
 
+            // NEW: Get revenue by category
+            const categories = await prisma.iTProject.groupBy({
+                by: ['category'],
+                where: { ...projectWhere, isRevenueBased: true },
+                _sum: { itRevenueEarned: true }
+            });
+
+            const byCategory = categories.map(c => ({
+                name: c.category.charAt(0) + c.category.slice(1).toLowerCase(),
+                value: Math.round((c._sum.itRevenueEarned || 0) * 100) / 100
+            }));
+
+            // NEW: Get monthly revenue for last 6 months
+            const last6Months = [];
+            const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+            for (let i = 5; i >= 0; i--) {
+                const date = new Date();
+                date.setMonth(date.getMonth() - i);
+                last6Months.push({
+                    month: monthNames[date.getMonth()],
+                    monthNum: date.getMonth() + 1,
+                    year: date.getFullYear(),
+                    amount: 0
+                });
+            }
+
+            const historicalRevenue = await prisma.iTDepartmentRevenue.findMany({
+                where: {
+                    companyId,
+                    OR: last6Months.map(m => ({ month: m.monthNum, year: m.year }))
+                }
+            });
+
+            const monthly = last6Months.map(m => {
+                const found = historicalRevenue.find(hr => hr.month === m.monthNum && hr.year === m.year);
+                return {
+                    month: m.month,
+                    amount: found ? found.totalRevenue : (m.monthNum === new Date().getMonth() + 1 ? Math.round((totalProjectITRevenue + totalTaskITRevenue) * 100) / 100 : 0)
+                };
+            });
+
             revenueStats = {
                 totalRevenue: Math.round((totalProjectRevenue + totalTaskRevenue) * 100) / 100,
                 itRevenue: Math.round((totalProjectITRevenue + totalTaskITRevenue) * 100) / 100,
@@ -126,6 +168,8 @@ export async function GET(req: NextRequest) {
                 unpaidRevenue: Math.round(unpaidTaskRevenue * 100) / 100,
                 projectRevenue: Math.round(totalProjectITRevenue * 100) / 100,
                 taskRevenue: Math.round(totalTaskITRevenue * 100) / 100,
+                byCategory,
+                monthly
             };
         }
 

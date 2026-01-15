@@ -86,7 +86,10 @@ export default function ITManagementDashboard() {
     const fetchDashboardStats = async () => {
         try {
             setLoading(true);
-            const response = await fetch(`/api/it/analytics/dashboard?view=${view}`);
+            const token = localStorage.getItem('token');
+            const response = await fetch(`/api/it/analytics/dashboard?view=${view}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
             if (response.ok) {
                 const data = await response.json();
                 setStats(data);
@@ -541,7 +544,29 @@ export default function ITManagementDashboard() {
                         <DollarSign className="h-8 w-8 text-green-500 mb-3 group-hover:scale-110 transition-transform" />
                         <h4 className="font-semibold text-gray-900 dark:text-white mb-2">Revenue Tracking</h4>
                         <p className="text-sm text-gray-600 dark:text-gray-400">
-                            Track financial department performance
+                            Track financial performance
+                        </p>
+                    </button>
+
+                    <button
+                        onClick={() => router.push('/dashboard/it/assets')}
+                        className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow text-left group"
+                    >
+                        <Briefcase className="h-8 w-8 text-amber-500 mb-3 group-hover:scale-110 transition-transform" />
+                        <h4 className="font-semibold text-gray-900 dark:text-white mb-2">Asset Inventory</h4>
+                        <p className="text-sm text-gray-600 dark:text-gray-400">
+                            Track hardware and software
+                        </p>
+                    </button>
+
+                    <button
+                        onClick={() => router.push('/dashboard/it/tickets')}
+                        className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow text-left group"
+                    >
+                        <AlertCircle className="h-8 w-8 text-red-500 mb-3 group-hover:scale-110 transition-transform" />
+                        <h4 className="font-semibold text-gray-900 dark:text-white mb-2">Service Desk</h4>
+                        <p className="text-sm text-gray-600 dark:text-gray-400">
+                            Handle support requests
                         </p>
                     </button>
                 </div>

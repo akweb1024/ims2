@@ -13,12 +13,15 @@ export default function ITTicketsPage() {
     const [activeTab, setActiveTab] = useState('OPEN');
 
     // Form State
-    const [newTicket, setNewTicket] = useState({
+    const [editingTicket, setEditingTicket] = useState<any>(null);
+    const [formData, setFormData] = useState({
         title: '',
         description: '',
         priority: 'MEDIUM',
         category: 'HARDWARE',
-        assetId: ''
+        assetId: '',
+        status: 'OPEN',
+        resolution: ''
     });
 
     useEffect(() => {
@@ -56,22 +59,66 @@ export default function ITTicketsPage() {
         }
     };
 
-    const handleCreate = async () => {
+    const handleSubmit = async () => {
         try {
             const token = localStorage.getItem('token');
-            const res = await fetch('/api/it/tickets', {
-                method: 'POST',
+            const url = editingTicket ? `/api/it/tickets/${editingTicket.id}` : '/api/it/tickets';
+            const method = editingTicket ? 'PATCH' : 'POST';
+
+            const res = await fetch(url, {
+                method,
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                body: JSON.stringify(newTicket)
+                body: JSON.stringify(formData)
             });
             if (res.ok) {
                 setShowModal(false);
                 fetchTickets();
-                setNewTicket({ title: '', description: '', priority: 'MEDIUM', category: 'HARDWARE', assetId: '' });
+                resetForm();
             }
         } catch (error) {
             console.error(error);
         }
+    };
+
+    const handleDelete = async (id: string) => {
+        if (!confirm('Are you sure you want to delete this ticket?')) return;
+        try {
+            const token = localStorage.getItem('token');
+            const res = await fetch(`/api/it/tickets/${id}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (res.ok) fetchTickets();
+        } catch (error) {
+            console.error(error);
+        }
+    };
+
+    const resetForm = () => {
+        setEditingTicket(null);
+        setFormData({
+            title: '',
+            description: '',
+            priority: 'MEDIUM',
+            category: 'HARDWARE',
+            assetId: '',
+            status: 'OPEN',
+            resolution: ''
+        });
+    };
+
+    const openEditModal = (ticket: any) => {
+        setEditingTicket(ticket);
+        setFormData({
+            title: ticket.title,
+            description: ticket.description,
+            priority: ticket.priority,
+            category: ticket.category || 'HARDWARE',
+            assetId: ticket.assetId || '',
+            status: ticket.status,
+            resolution: ticket.resolution || ''
+        });
+        setShowModal(true);
     };
 
     const handleStatusUpdate = async (id: string, status: string) => {
@@ -116,7 +163,7 @@ export default function ITTicketsPage() {
                         <p className="text-secondary-500 font-medium">Raise requests and track support tickets.</p>
                     </div>
                     <button
-                        onClick={() => setShowModal(true)}
+                        onClick={() => { resetForm(); setShowModal(true); }}
                         className="btn btn-primary px-6 rounded-xl font-black text-xs uppercase tracking-widest shadow-lg shadow-primary-200 flex items-center gap-2"
                     >
                         <Plus size={16} /> New Request
@@ -165,13 +212,19 @@ export default function ITTicketsPage() {
                                         <Clock size={12} />
                                         <span>{new Date(ticket.createdAt).toLocaleDateString()}</span>
                                     </div>
+                                    <div className="flex gap-2 ml-auto">
+                                        <button onClick={() => openEditModal(ticket)} className="text-[10px] font-black uppercase text-primary-600 hover:text-primary-700">View/Edit</button>
+                                        {isAdmin && (
+                                            <button onClick={() => handleDelete(ticket.id)} className="text-[10px] font-black uppercase text-red-600 hover:text-red-700">Delete</button>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
 
                             <div className="flex flex-col items-end gap-2 min-w-[150px]">
                                 <span className={`px-3 py-1 rounded-full text-xs font-black uppercase tracking-widest ${ticket.status === 'OPEN' ? 'bg-blue-100 text-blue-700' :
-                                        ticket.status === 'IN_PROGRESS' ? 'bg-yellow-100 text-yellow-700' :
-                                            ticket.status === 'RESOLVED' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'
+                                    ticket.status === 'IN_PROGRESS' ? 'bg-yellow-100 text-yellow-700' :
+                                        ticket.status === 'RESOLVED' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'
                                     }`}>
                                     {ticket.status.replace('_', ' ')}
                                 </span>
@@ -205,8 +258,8 @@ export default function ITTicketsPage() {
                     <div className="fixed inset-0 bg-secondary-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
                         <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden animate-scale-in">
                             <div className="p-6 bg-secondary-900 text-white">
-                                <h2 className="text-xl font-black uppercase tracking-widest">Submit Support Request</h2>
-                                <p className="text-white/60 text-xs font-medium">Describe your issue for the IT team</p>
+                                <h2 className="text-xl font-black uppercase tracking-widest">{editingTicket ? 'Update Ticket' : 'Submit Support Request'}</h2>
+                                <p className="text-white/60 text-xs font-medium">{editingTicket ? `Ticket #${editingTicket.id.slice(0, 8)}` : 'Describe your issue for the IT team'}</p>
                             </div>
 
                             <div className="p-6 space-y-4">
@@ -215,8 +268,8 @@ export default function ITTicketsPage() {
                                     <input
                                         className="input w-full font-bold"
                                         placeholder="e.g. Email not syncing"
-                                        value={newTicket.title}
-                                        onChange={e => setNewTicket({ ...newTicket, title: e.target.value })}
+                                        value={formData.title}
+                                        onChange={e => setFormData({ ...formData, title: e.target.value })}
                                     />
                                 </div>
 
@@ -225,8 +278,8 @@ export default function ITTicketsPage() {
                                         <label className="text-[10px] font-black text-secondary-400 uppercase tracking-widest">Priority</label>
                                         <select
                                             className="input w-full font-bold"
-                                            value={newTicket.priority}
-                                            onChange={e => setNewTicket({ ...newTicket, priority: e.target.value })}
+                                            value={formData.priority}
+                                            onChange={e => setFormData({ ...formData, priority: e.target.value })}
                                         >
                                             <option value="LOW">Low</option>
                                             <option value="MEDIUM">Medium</option>
@@ -238,8 +291,8 @@ export default function ITTicketsPage() {
                                         <label className="text-[10px] font-black text-secondary-400 uppercase tracking-widest">Category</label>
                                         <select
                                             className="input w-full font-bold"
-                                            value={newTicket.category}
-                                            onChange={e => setNewTicket({ ...newTicket, category: e.target.value })}
+                                            value={formData.category}
+                                            onChange={e => setFormData({ ...formData, category: e.target.value })}
                                         >
                                             <option value="HARDWARE">Hardware</option>
                                             <option value="SOFTWARE">Software / App</option>
@@ -253,8 +306,8 @@ export default function ITTicketsPage() {
                                     <label className="text-[10px] font-black text-secondary-400 uppercase tracking-widest">Related Asset (Optional)</label>
                                     <select
                                         className="input w-full font-bold"
-                                        value={newTicket.assetId}
-                                        onChange={e => setNewTicket({ ...newTicket, assetId: e.target.value })}
+                                        value={formData.assetId}
+                                        onChange={e => setFormData({ ...formData, assetId: e.target.value })}
                                     >
                                         <option value="">None / Not Applicable</option>
                                         {assets.map(a => (
@@ -268,14 +321,45 @@ export default function ITTicketsPage() {
                                     <textarea
                                         className="input w-full h-24 text-sm"
                                         placeholder="Please describe the problem..."
-                                        value={newTicket.description}
-                                        onChange={e => setNewTicket({ ...newTicket, description: e.target.value })}
+                                        value={formData.description}
+                                        onChange={e => setFormData({ ...formData, description: e.target.value })}
                                     />
                                 </div>
 
+                                {editingTicket && (
+                                    <div className="grid grid-cols-1 gap-4 pt-4 border-t border-secondary-100">
+                                        <div>
+                                            <label className="text-[10px] font-black text-secondary-400 uppercase tracking-widest">Status</label>
+                                            <select
+                                                className="input w-full font-bold"
+                                                value={formData.status}
+                                                onChange={e => setFormData({ ...formData, status: e.target.value })}
+                                            >
+                                                <option value="OPEN">Open</option>
+                                                <option value="IN_PROGRESS">In Progress</option>
+                                                <option value="RESOLVED">Resolved</option>
+                                                <option value="CLOSED">Closed</option>
+                                            </select>
+                                        </div>
+                                        {formData.status === 'RESOLVED' && (
+                                            <div>
+                                                <label className="text-[10px] font-black text-secondary-400 uppercase tracking-widest">Resolution Notes</label>
+                                                <textarea
+                                                    className="input w-full h-20 text-sm"
+                                                    placeholder="How was this issue resolved?"
+                                                    value={formData.resolution}
+                                                    onChange={e => setFormData({ ...formData, resolution: e.target.value })}
+                                                />
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+
                                 <div className="flex gap-4 pt-4">
-                                    <button onClick={() => setShowModal(false)} className="btn btn-secondary flex-1 py-3 font-bold rounded-xl">Cancel</button>
-                                    <button onClick={handleCreate} className="btn btn-primary flex-1 py-3 font-bold rounded-xl shadow-lg shadow-primary-200">Submit Request</button>
+                                    <button onClick={() => { setShowModal(false); resetForm(); }} className="btn btn-secondary flex-1 py-3 font-bold rounded-xl">Cancel</button>
+                                    <button onClick={handleSubmit} className="btn btn-primary flex-1 py-3 font-bold rounded-xl shadow-lg shadow-primary-200">
+                                        {editingTicket ? 'Update Ticket' : 'Submit Request'}
+                                    </button>
                                 </div>
                             </div>
                         </div>

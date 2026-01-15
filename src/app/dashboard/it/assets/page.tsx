@@ -12,7 +12,8 @@ export default function ITAssetsPage() {
     const [userRole, setUserRole] = useState('');
 
     // Form State
-    const [newAsset, setNewAsset] = useState({
+    const [editingAsset, setEditingAsset] = useState<any>(null);
+    const [formData, setFormData] = useState({
         name: '',
         type: 'LAPTOP',
         serialNumber: '',
@@ -42,22 +43,58 @@ export default function ITAssetsPage() {
         }
     };
 
-    const handleCreate = async () => {
+    const handleSubmit = async () => {
         try {
             const token = localStorage.getItem('token');
-            const res = await fetch('/api/it/assets', {
-                method: 'POST',
+            const url = editingAsset ? `/api/it/assets/${editingAsset.id}` : '/api/it/assets';
+            const method = editingAsset ? 'PATCH' : 'POST';
+
+            const res = await fetch(url, {
+                method,
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                body: JSON.stringify(newAsset)
+                body: JSON.stringify(formData)
             });
             if (res.ok) {
                 setShowModal(false);
                 fetchAssets();
-                setNewAsset({ name: '', type: 'LAPTOP', serialNumber: '', status: 'AVAILABLE', details: '', value: '', purchaseDate: '' });
+                resetForm();
             }
         } catch (error) {
             console.error(error);
         }
+    };
+
+    const handleDelete = async (id: string) => {
+        if (!confirm('Are you sure you want to delete this asset?')) return;
+        try {
+            const token = localStorage.getItem('token');
+            const res = await fetch(`/api/it/assets/${id}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (res.ok) fetchAssets();
+        } catch (error) {
+            console.error(error);
+        }
+    };
+
+    const resetForm = () => {
+        setEditingAsset(null);
+        setFormData({ name: '', type: 'LAPTOP', serialNumber: '', status: 'AVAILABLE', details: '', value: '', purchaseDate: '' });
+    };
+
+    const openEditModal = (asset: any) => {
+        setEditingAsset(asset);
+        setFormData({
+            name: asset.name,
+            type: asset.type,
+            serialNumber: asset.serialNumber || '',
+            status: asset.status,
+            details: asset.details || '',
+            value: asset.value?.toString() || '',
+            purchaseDate: asset.purchaseDate ? new Date(asset.purchaseDate).toISOString().split('T')[0] : ''
+        });
+        setShowModal(true);
     };
 
     const getIcon = (type: string) => {
@@ -80,6 +117,8 @@ export default function ITAssetsPage() {
             default: return 'bg-gray-100 text-gray-700';
         }
     };
+
+    const isAdmin = ['SUPER_ADMIN', 'ADMIN', 'IT_MANAGER', 'IT_ADMIN'].includes(userRole);
 
     return (
         <DashboardLayout userRole={userRole}>
@@ -104,7 +143,7 @@ export default function ITAssetsPage() {
                             <List size={20} />
                         </button>
                         <button
-                            onClick={() => setShowModal(true)}
+                            onClick={() => { resetForm(); setShowModal(true); }}
                             className="btn btn-primary px-6 rounded-xl font-black text-xs uppercase tracking-widest shadow-lg shadow-primary-200 flex items-center gap-2"
                         >
                             <Plus size={16} /> Add Asset
@@ -152,6 +191,12 @@ export default function ITAssetsPage() {
                                         <span className="text-secondary-400 font-medium">Value</span>
                                         <span className="font-bold text-secondary-900">{asset.value ? `$${asset.value}` : '-'}</span>
                                     </div>
+                                    {isAdmin && (
+                                        <div className="flex gap-2 pt-2">
+                                            <button onClick={() => openEditModal(asset)} className="text-[10px] font-black uppercase text-primary-600 hover:text-primary-700">Edit</button>
+                                            <button onClick={() => handleDelete(asset.id)} className="text-[10px] font-black uppercase text-red-600 hover:text-red-700">Delete</button>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         ))}
@@ -167,6 +212,7 @@ export default function ITAssetsPage() {
                                     <th className="p-4">Status</th>
                                     <th className="p-4">Assigned To</th>
                                     <th className="p-4">Purchase Date</th>
+                                    {isAdmin && <th className="p-4 text-right">Actions</th>}
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-secondary-100">
@@ -182,6 +228,18 @@ export default function ITAssetsPage() {
                                         </td>
                                         <td className="p-4 text-secondary-700">{asset.assignedTo?.name || '-'}</td>
                                         <td className="p-4 text-secondary-400 text-xs">{asset.purchaseDate ? new Date(asset.purchaseDate).toLocaleDateString() : '-'}</td>
+                                        {isAdmin && (
+                                            <td className="p-4 text-right">
+                                                <div className="flex justify-end gap-2">
+                                                    <button onClick={() => openEditModal(asset)} className="p-1 hover:bg-primary-50 rounded text-primary-600 transition-colors">
+                                                        <span className="text-[10px] font-black uppercase">Edit</span>
+                                                    </button>
+                                                    <button onClick={() => handleDelete(asset.id)} className="p-1 hover:bg-red-50 rounded text-red-600 transition-colors">
+                                                        <span className="text-[10px] font-black uppercase">Del</span>
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        )}
                                     </tr>
                                 ))}
                             </tbody>
@@ -195,8 +253,8 @@ export default function ITAssetsPage() {
                         <div className="bg-white rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden animate-scale-in">
                             <div className="p-6 bg-secondary-900 text-white flex justify-between items-center">
                                 <div>
-                                    <h2 className="text-xl font-black uppercase tracking-widest">Register New Asset</h2>
-                                    <p className="text-white/60 text-xs font-medium">Add hardware to inventory</p>
+                                    <h2 className="text-xl font-black uppercase tracking-widest">{editingAsset ? 'Update Asset' : 'Register New Asset'}</h2>
+                                    <p className="text-white/60 text-xs font-medium">{editingAsset ? 'Modify asset details' : 'Add hardware to inventory'}</p>
                                 </div>
                                 <div className="p-2 bg-white/10 rounded-xl">
                                     <Computer size={24} />
@@ -210,16 +268,16 @@ export default function ITAssetsPage() {
                                         <input
                                             className="input w-full font-bold"
                                             placeholder="e.g. MacBook Pro M3"
-                                            value={newAsset.name}
-                                            onChange={e => setNewAsset({ ...newAsset, name: e.target.value })}
+                                            value={formData.name}
+                                            onChange={e => setFormData({ ...formData, name: e.target.value })}
                                         />
                                     </div>
                                     <div>
                                         <label className="text-[10px] font-black text-secondary-400 uppercase tracking-widest">Type</label>
                                         <select
                                             className="input w-full font-bold"
-                                            value={newAsset.type}
-                                            onChange={e => setNewAsset({ ...newAsset, type: e.target.value })}
+                                            value={formData.type}
+                                            onChange={e => setFormData({ ...formData, type: e.target.value })}
                                         >
                                             <option value="LAPTOP">Laptop</option>
                                             <option value="DESKTOP">Desktop</option>
@@ -238,16 +296,16 @@ export default function ITAssetsPage() {
                                         <input
                                             className="input w-full font-mono text-xs"
                                             placeholder="S/N"
-                                            value={newAsset.serialNumber}
-                                            onChange={e => setNewAsset({ ...newAsset, serialNumber: e.target.value })}
+                                            value={formData.serialNumber}
+                                            onChange={e => setFormData({ ...formData, serialNumber: e.target.value })}
                                         />
                                     </div>
                                     <div>
                                         <label className="text-[10px] font-black text-secondary-400 uppercase tracking-widest">Status</label>
                                         <select
                                             className="input w-full font-bold"
-                                            value={newAsset.status}
-                                            onChange={e => setNewAsset({ ...newAsset, status: e.target.value })}
+                                            value={formData.status}
+                                            onChange={e => setFormData({ ...formData, status: e.target.value })}
                                         >
                                             <option value="AVAILABLE">Available</option>
                                             <option value="ASSIGNED">Assigned</option>
@@ -265,8 +323,8 @@ export default function ITAssetsPage() {
                                             type="number"
                                             className="input w-full"
                                             placeholder="0.00"
-                                            value={newAsset.value}
-                                            onChange={e => setNewAsset({ ...newAsset, value: e.target.value })}
+                                            value={formData.value}
+                                            onChange={e => setFormData({ ...formData, value: e.target.value })}
                                         />
                                     </div>
                                     <div>
@@ -274,8 +332,8 @@ export default function ITAssetsPage() {
                                         <input
                                             type="date"
                                             className="input w-full"
-                                            value={newAsset.purchaseDate}
-                                            onChange={e => setNewAsset({ ...newAsset, purchaseDate: e.target.value })}
+                                            value={formData.purchaseDate}
+                                            onChange={e => setFormData({ ...formData, purchaseDate: e.target.value })}
                                         />
                                     </div>
                                 </div>
@@ -285,14 +343,16 @@ export default function ITAssetsPage() {
                                     <textarea
                                         className="input w-full h-20 text-sm"
                                         placeholder="Processor, RAM, Storage details..."
-                                        value={newAsset.details}
-                                        onChange={e => setNewAsset({ ...newAsset, details: e.target.value })}
+                                        value={formData.details}
+                                        onChange={e => setFormData({ ...formData, details: e.target.value })}
                                     />
                                 </div>
 
                                 <div className="flex gap-4 pt-4">
-                                    <button onClick={() => setShowModal(false)} className="btn btn-secondary flex-1 py-3 font-bold rounded-xl">Cancel</button>
-                                    <button onClick={handleCreate} className="btn btn-primary flex-1 py-3 font-bold rounded-xl shadow-lg shadow-primary-200">Save Asset</button>
+                                    <button onClick={() => { setShowModal(false); resetForm(); }} className="btn btn-secondary flex-1 py-3 font-bold rounded-xl">Cancel</button>
+                                    <button onClick={handleSubmit} className="btn btn-primary flex-1 py-3 font-bold rounded-xl shadow-lg shadow-primary-200">
+                                        {editingAsset ? 'Update' : 'Save'} Asset
+                                    </button>
                                 </div>
                             </div>
                         </div>

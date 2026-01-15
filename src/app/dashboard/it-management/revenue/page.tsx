@@ -47,7 +47,10 @@ export default function RevenuePage() {
     const fetchRevenueStats = async () => {
         try {
             setLoading(true);
-            const response = await fetch('/api/it/analytics/dashboard?view=all');
+            const token = localStorage.getItem('token');
+            const response = await fetch('/api/it/analytics/dashboard?view=all', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
             if (response.ok) {
                 const data = await response.json();
                 // Map the dashboard stats to our revenue stats structure
@@ -59,17 +62,8 @@ export default function RevenuePage() {
                     unpaidRevenue: data.revenue?.unpaidRevenue || 0,
                     projectRevenue: data.revenue?.projectRevenue || 0,
                     taskRevenue: data.revenue?.taskRevenue || 0,
-                    byCategory: [
-                        { name: 'Development', value: 450000 },
-                        { name: 'Support', value: 150000 },
-                        { name: 'Consulting', value: 200000 },
-                    ],
-                    monthly: [
-                        { month: 'Oct', amount: 120000 },
-                        { month: 'Nov', amount: 150000 },
-                        { month: 'Dec', amount: 180000 },
-                        { month: 'Jan', amount: 210000 },
-                    ]
+                    byCategory: data.revenue?.byCategory || [],
+                    monthly: data.revenue?.monthly || []
                 });
             }
         } catch (error) {
