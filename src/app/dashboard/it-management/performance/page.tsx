@@ -319,8 +319,8 @@ export default function PerformancePage() {
                     <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8 border-l-8 border-yellow-500">
                         <h3 className="text-xl font-bold dark:text-white mb-2">Insight of the Month</h3>
                         <p className="text-gray-600 dark:text-gray-400 italic">
-                            "The department has seen a 15% increase in task completion efficiency
-                            since implementing the new project management workflow. Keep it up!"
+                            &quot;The department has seen a 15% increase in task completion efficiency
+                            since implementing the new project management workflow. Keep it up!&quot;
                         </p>
                     </div>
                 </div>

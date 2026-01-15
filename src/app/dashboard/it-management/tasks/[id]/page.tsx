@@ -185,6 +185,52 @@ export default function TaskDetailPage() {
         }
     };
 
+    const handleMarkForReview = async () => {
+        try {
+            const response = await fetch(`/api/it/tasks/${taskId}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    status: 'UNDER_REVIEW',
+                    statusComment: 'Task completed by IT, awaiting requester acceptance.'
+                }),
+            });
+
+            if (response.ok) {
+                fetchTask();
+            } else {
+                alert('Failed to update status');
+            }
+        } catch (error) {
+            console.error('Error updating status:', error);
+        }
+    };
+
+    const handleAccept = async () => {
+        if (!confirm('Are you sure you want to accept this service as completed? This will credit revenue points to the IT department.')) {
+            return;
+        }
+
+        try {
+            const response = await fetch(`/api/it/tasks/${taskId}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    status: 'COMPLETED',
+                    statusComment: 'Service accepted by requester'
+                }),
+            });
+
+            if (response.ok) {
+                fetchTask();
+            } else {
+                alert('Failed to accept service');
+            }
+        } catch (error) {
+            console.error('Error accepting service:', error);
+        }
+    };
+
     const handleSubmitComment = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!newComment.trim()) return;
@@ -291,6 +337,29 @@ export default function TaskDetailPage() {
                     </div>
 
                     <div className="flex items-center gap-3">
+                        {/* Service Workflow Buttons */}
+                        {task.type === 'SERVICE_REQUEST' && task.status !== 'COMPLETED' && (
+                            <>
+                                {task.status !== 'UNDER_REVIEW' ? (
+                                    <button
+                                        onClick={handleMarkForReview}
+                                        className="flex items-center gap-2 px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg transition-colors shadow-md"
+                                    >
+                                        <Clock className="h-4 w-4" />
+                                        Mark Finished (Ready for Acceptance)
+                                    </button>
+                                ) : (
+                                    <button
+                                        onClick={handleAccept}
+                                        className="flex items-center gap-2 px-6 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-all shadow-lg scale-105 font-bold animate-pulse"
+                                    >
+                                        <CheckCircle2 className="h-5 w-5" />
+                                        Accept & Complete Service
+                                    </button>
+                                )}
+                            </>
+                        )}
+
                         <button
                             onClick={() => router.push(`/dashboard/it-management/tasks/${taskId}/edit`)}
                             className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors"

@@ -151,7 +151,8 @@ export async function PATCH(
 
         // Check if project exists and user has access
         const existingProject = await prisma.iTProject.findUnique({
-            where: { id: params.id }
+            where: { id: params.id },
+            include: { milestones: true }
         });
 
         if (!existingProject) {
@@ -181,8 +182,8 @@ export async function PATCH(
             'clientId', 'clientType', 'projectManagerId', 'teamLeadId',
             'startDate', 'endDate', 'estimatedHours', 'actualHours',
             'isRevenueBased', 'estimatedRevenue', 'actualRevenue', 'currency',
-            'itDepartmentCut', 'billingType', 'hourlyRate', 'isBilled',
-            'invoiceId', 'tags', 'attachments'
+            'itDepartmentCut', 'itRevenueEarned', 'billingType', 'hourlyRate',
+            'isBilled', 'invoiceId', 'tags', 'attachments'
         ];
 
         for (const field of allowedFields) {
@@ -190,21 +191,64 @@ export async function PATCH(
                 if (field.includes('Date') && body[field]) {
                     updateData[field] = new Date(body[field]);
                 } else if (field.includes('Hours') || field.includes('Revenue') || field.includes('Cut') || field.includes('Rate')) {
-                    updateData[field] = body[field] ? parseFloat(body[field]) : null;
+                    // Logic fix: Allow 0 value explicitly, handle NaN
+                    const val = parseFloat(body[field]?.toString());
+                    updateData[field] = isNaN(val) ? null : val;
                 } else {
                     updateData[field] = body[field];
                 }
             }
         }
 
-        // Calculate IT revenue if actualRevenue is updated
-        if (updateData.actualRevenue !== undefined && existingProject.itDepartmentCut > 0) {
-            updateData.itRevenueEarned = (updateData.actualRevenue * existingProject.itDepartmentCut) / 100;
+        // Calculate IT revenue if actualRevenue or itDepartmentCut is updated
+        const revenue = updateData.actualRevenue !== undefined ? updateData.actualRevenue : existingProject.actualRevenue;
+        const cut = updateData.itDepartmentCut !== undefined ? updateData.itDepartmentCut : existingProject.itDepartmentCut;
+
+        if (updateData.actualRevenue !== undefined || updateData.itDepartmentCut !== undefined) {
+            updateData.itRevenueEarned = (revenue * cut) / 100;
         }
 
         // Set completedAt if status changed to COMPLETED
         if (updateData.status === 'COMPLETED' && existingProject.status !== 'COMPLETED') {
             updateData.completedAt = new Date();
+        } else if (updateData.status && updateData.status !== 'COMPLETED' && existingProject.status === 'COMPLETED') {
+            updateData.completedAt = null;
+        }
+
+        // Handle milestones if provided
+        const milestoneOperations: any = {};
+        if (body.milestones && Array.isArray(body.milestones)) {
+            const incomingIds = body.milestones.filter((m: any) => m.id).map((m: any) => m.id);
+            const toDelete = existingProject.milestones.filter(m => !incomingIds.includes(m.id)).map(m => m.id);
+
+            const toCreate = body.milestones.filter((m: any) => !m.id).map((m: any) => ({
+                name: m.title || m.name, // Handle both title from UI and name from schema
+                description: m.description,
+                dueDate: m.dueDate ? new Date(m.dueDate) : new Date(),
+                status: m.status || 'PENDING'
+            }));
+
+            const toUpdate = body.milestones.filter((m: any) => m.id).map((m: any) => ({
+                where: { id: m.id },
+                data: {
+                    name: m.title || m.name,
+                    description: m.description,
+                    dueDate: m.dueDate ? new Date(m.dueDate) : undefined,
+                    status: m.status
+                }
+            }));
+
+            updateData.milestones = {
+                deleteMany: toDelete.length > 0 ? { id: { in: toDelete } } : undefined,
+                create: toCreate.length > 0 ? toCreate : undefined,
+                update: toUpdate.length > 0 ? toUpdate : undefined
+            };
+
+            // Cleanup undefined keys
+            if (!updateData.milestones.deleteMany) delete updateData.milestones.deleteMany;
+            if (!updateData.milestones.create) delete updateData.milestones.create;
+            if (!updateData.milestones.update) delete updateData.milestones.update;
+            if (Object.keys(updateData.milestones).length === 0) delete updateData.milestones;
         }
 
         const project = await prisma.iTProject.update({
@@ -225,6 +269,7 @@ export async function PATCH(
                         email: true,
                     }
                 },
+                milestones: true
             }
         });
 

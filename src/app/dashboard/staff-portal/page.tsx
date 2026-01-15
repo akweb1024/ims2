@@ -157,6 +157,7 @@ export default function StaffPortalPage() {
         { id: 'salary', name: 'Salary', icon: '💵' },
         { id: 'documents', name: 'Documents', icon: '📁' },
         { id: 'onboarding', name: 'Onboarding', icon: '🎓' },
+        { id: 'it-services', name: 'IT Services', icon: '🛠️' },
         { id: 'id-card', name: 'ID Card', icon: '🪪' },
     ];
 
@@ -452,6 +453,9 @@ export default function StaffPortalPage() {
                                 <div className="space-y-3">
                                     <a href="/dashboard/staff-portal/submit-report" className="btn btn-primary w-full py-2 text-xs font-black shadow-lg">
                                         Submit Daily Report 📝
+                                    </a>
+                                    <a href="/dashboard/it-services/request" className="btn bg-amber-500 hover:bg-amber-600 text-white w-full py-2 text-xs font-black shadow-lg">
+                                        Request IT Service 🛠️
                                     </a>
                                     <button onClick={() => setActiveTab('work-reports')} className="text-[10px] w-full text-center font-bold text-primary-600 uppercase hover:underline">
                                         View Past Reports
@@ -1071,6 +1075,49 @@ export default function StaffPortalPage() {
                     {activeTab === 'documents' && <DigitalWallet />}
 
                     {activeTab === 'id-card' && fullProfile && <EmployeeIDCard employee={fullProfile} />}
+
+                    {activeTab === 'it-services' && (
+                        <div className="p-8 max-w-4xl mx-auto space-y-8">
+                            <div className="card-premium p-10 bg-gradient-to-br from-secondary-900 to-black text-white relative overflow-hidden">
+                                <div className="absolute top-0 right-0 w-64 h-64 bg-primary-500/10 rounded-full -mr-32 -mt-32"></div>
+                                <div className="relative z-10">
+                                    <div className="flex items-center gap-4 mb-6">
+                                        <div className="w-16 h-16 bg-primary-600 rounded-2xl flex items-center justify-center text-3xl shadow-xl">🛠️</div>
+                                        <div>
+                                            <h2 className="text-3xl font-black">IT Support & Services</h2>
+                                            <p className="text-primary-400 font-bold uppercase tracking-widest text-xs">Employee Self-Service Portal</p>
+                                        </div>
+                                    </div>
+                                    <p className="text-secondary-300 leading-relaxed max-w-2xl mb-8">
+                                        Need technical assistance? Request software installations, hardware upgrades, access permissions, or any other IT-related equipment directly from here.
+                                    </p>
+                                    <div className="flex flex-wrap gap-4">
+                                        <a href="/dashboard/it-services/request" className="btn btn-primary px-8 py-3 rounded-xl font-bold shadow-lg flex items-center gap-2">
+                                            <span>➕</span> Request New Service
+                                        </a>
+                                        <a href="/dashboard/it-services" className="bg-white/10 hover:bg-white/20 text-white px-8 py-3 rounded-xl font-bold transition-all flex items-center gap-2 border border-white/10">
+                                            <span>📋</span> View My Requests
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                <div className="card-premium p-6 border-t-4 border-primary-500">
+                                    <h4 className="font-bold text-secondary-900 mb-2">Fast Turnaround</h4>
+                                    <p className="text-xs text-secondary-500">Most software requests are fulfilled within 24 hours.</p>
+                                </div>
+                                <div className="card-premium p-6 border-t-4 border-success-500">
+                                    <h4 className="font-bold text-secondary-900 mb-2">Trackable</h4>
+                                    <p className="text-xs text-secondary-500">Real-time status updates and direct communication with IT team.</p>
+                                </div>
+                                <div className="card-premium p-6 border-t-4 border-amber-500">
+                                    <h4 className="font-bold text-secondary-900 mb-2">Acceptance Model</h4>
+                                    <p className="text-xs text-secondary-500">You review and approve the solution before it&apos;s finalized.</p>
+                                </div>
+                            </div>
+                        </div>
+                    )}
                 </div >
             </div >
         </DashboardLayout >

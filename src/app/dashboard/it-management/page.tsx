@@ -15,6 +15,7 @@ import {
     ArrowUpRight,
     Briefcase,
     Target,
+    Zap,
 } from 'lucide-react';
 
 interface DashboardStats {
@@ -58,6 +59,7 @@ interface DashboardStats {
         support: number;
         maintenance: number;
         urgent: number;
+        serviceRequest: number;
     };
     recentTasks: Array<{
         id: string;
@@ -175,35 +177,46 @@ export default function ITManagementDashboard() {
                         </p>
                     </div>
 
-                    {/* View Selector */}
-                    <div className="flex gap-2 bg-gray-100 dark:bg-gray-800 p-1 rounded-lg">
+                    <div className="flex items-center gap-4">
+                        {/* Manage Services Link */}
                         <button
-                            onClick={() => setView('my')}
-                            className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${view === 'my'
-                                ? 'bg-white dark:bg-gray-700 text-blue-600 dark:text-blue-400 shadow-sm'
-                                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
-                                }`}
+                            onClick={() => router.push('/dashboard/it-management/services')}
+                            className="flex items-center gap-2 px-4 py-2 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-lg text-sm font-bold border border-blue-100 dark:border-blue-800 hover:bg-blue-100 transition-all"
                         >
-                            My View
+                            <Zap className="h-4 w-4" />
+                            Manage IT Services
                         </button>
-                        <button
-                            onClick={() => setView('team')}
-                            className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${view === 'team'
-                                ? 'bg-white dark:bg-gray-700 text-blue-600 dark:text-blue-400 shadow-sm'
-                                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
-                                }`}
-                        >
-                            Team View
-                        </button>
-                        <button
-                            onClick={() => setView('all')}
-                            className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${view === 'all'
-                                ? 'bg-white dark:bg-gray-700 text-blue-600 dark:text-blue-400 shadow-sm'
-                                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
-                                }`}
-                        >
-                            All Tasks
-                        </button>
+
+                        {/* View Selector */}
+                        <div className="flex gap-2 bg-gray-100 dark:bg-gray-800 p-1 rounded-lg">
+                            <button
+                                onClick={() => setView('my')}
+                                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${view === 'my'
+                                    ? 'bg-white dark:bg-gray-700 text-blue-600 dark:text-blue-400 shadow-sm'
+                                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
+                                    }`}
+                            >
+                                My View
+                            </button>
+                            <button
+                                onClick={() => setView('team')}
+                                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${view === 'team'
+                                    ? 'bg-white dark:bg-gray-700 text-blue-600 dark:text-blue-400 shadow-sm'
+                                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
+                                    }`}
+                            >
+                                Team View
+                            </button>
+                            <button
+                                onClick={() => setView('all')}
+                                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${view === 'all'
+                                    ? 'bg-white dark:bg-gray-700 text-blue-600 dark:text-blue-400 shadow-sm'
+                                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
+                                    }`}
+                            >
+                                All Tasks
+                            </button>
+                        </div>
                     </div>
                 </div>
 

@@ -164,7 +164,8 @@ export async function PATCH(
             'projectId', 'title', 'description', 'category', 'type', 'priority', 'status',
             'assignedToId', 'reporterId', 'startDate', 'dueDate', 'estimatedHours', 'actualHours',
             'isRevenueBased', 'estimatedValue', 'actualValue', 'currency', 'itDepartmentCut',
-            'isPaid', 'paymentDate', 'progressPercent', 'blockers', 'dependencies', 'tags', 'attachments'
+            'itRevenueEarned', 'isPaid', 'paymentDate', 'progressPercent', 'blockers',
+            'dependencies', 'tags', 'attachments'
         ];
 
         for (const field of allowedFields) {
@@ -172,7 +173,9 @@ export async function PATCH(
                 if (field.includes('Date') && body[field]) {
                     updateData[field] = new Date(body[field]);
                 } else if (field.includes('Hours') || field.includes('Value') || field.includes('Cut') || field === 'progressPercent') {
-                    updateData[field] = body[field] ? parseFloat(body[field]) : (field === 'progressPercent' ? 0 : null);
+                    // Logic fix: Allow 0 value explicitly, handle NaN
+                    const val = parseFloat(body[field]?.toString());
+                    updateData[field] = isNaN(val) ? (field === 'progressPercent' ? 0 : null) : val;
                 } else {
                     updateData[field] = body[field];
                 }
@@ -184,10 +187,24 @@ export async function PATCH(
             updateData.itRevenueEarned = (updateData.actualValue * existingTask.itDepartmentCut) / 100;
         }
 
+        // --- IT SERVICE REQUEST LOGIC ---
+        // If it's a service request being completed/accepted
+        if (updateData.status === 'COMPLETED' && (existingTask.type as string) === 'SERVICE_REQUEST') {
+            // If it's coming from UNDER_REVIEW, it means the requester is accepting it
+            if ((existingTask.status as string) === 'UNDER_REVIEW') {
+                // Set revenue earned to the full actual value (or estimated if actual is 0)
+                updateData.itRevenueEarned = updateData.actualValue || existingTask.actualValue || updateData.estimatedValue || existingTask.estimatedValue;
+                updateData.isPaid = true; // Mark as paid/credited
+            }
+        }
+
         // Set completedAt if status changed to COMPLETED
         if (updateData.status === 'COMPLETED' && existingTask.status !== 'COMPLETED') {
             updateData.completedAt = new Date();
             updateData.progressPercent = 100;
+        } else if (updateData.status && updateData.status !== 'COMPLETED' && existingTask.status === 'COMPLETED') {
+            // Clear completion date if moved back from COMPLETED
+            updateData.completedAt = null;
         }
 
         // Create status history if status changed

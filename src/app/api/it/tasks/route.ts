@@ -171,6 +171,9 @@ export async function POST(req: NextRequest) {
             dependencies,
         } = body;
 
+        // Auto-set 100% IT cut for service requests
+        const effectiveItCut = type === 'SERVICE_REQUEST' ? 100 : (!isNaN(parseFloat(itDepartmentCut)) ? parseFloat(itDepartmentCut) : 0);
+
         // Validate required fields
         if (!title) {
             return NextResponse.json({ error: 'Task title is required' }, { status: 400 });
@@ -192,16 +195,19 @@ export async function POST(req: NextRequest) {
                 type: type || 'SUPPORT',
                 priority: priority || 'MEDIUM',
                 status: status || 'PENDING',
+                progressPercent: !isNaN(parseInt(body.progressPercent)) ? parseInt(body.progressPercent) : 0,
                 assignedToId: assignedToId || null,
                 createdById: user.id,
                 reporterId: reporterId || null,
                 startDate: startDate ? new Date(startDate) : null,
                 dueDate: dueDate ? new Date(dueDate) : null,
-                estimatedHours: estimatedHours ? parseFloat(estimatedHours) : null,
+                estimatedHours: !isNaN(parseFloat(estimatedHours)) ? parseFloat(estimatedHours) : null,
                 isRevenueBased: isRevenueBased || false,
-                estimatedValue: estimatedValue ? parseFloat(estimatedValue) : 0,
+                estimatedValue: !isNaN(parseFloat(estimatedValue)) ? parseFloat(estimatedValue) : 0,
+                itRevenueEarned: !isNaN(parseFloat(body.itRevenueEarned)) ? parseFloat(body.itRevenueEarned) : 0,
+                isPaid: body.isPaid || false,
                 currency: currency || 'INR',
-                itDepartmentCut: itDepartmentCut ? parseFloat(itDepartmentCut) : 0,
+                itDepartmentCut: effectiveItCut,
                 tags: tags || [],
                 dependencies: dependencies || [],
             },

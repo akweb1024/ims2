@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { getAuthenticatedUser } from '@/lib/auth-legacy';
+import { getAuthenticatedUser, TokenPayload } from '@/lib/auth-legacy';
 import { createErrorResponse } from '@/lib/api-utils';
 
 export const dynamic = 'force-dynamic';
@@ -13,7 +13,7 @@ export async function GET(req: NextRequest) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        const companyId = (user as any).companyId;
+        const companyId = user.companyId;
         if (!companyId) {
             return NextResponse.json({ error: 'Company ID required' }, { status: 400 });
         }
@@ -119,17 +119,36 @@ export async function GET(req: NextRequest) {
             const paidTaskRevenue = tasks.filter(t => t.isPaid).reduce((sum, t) => sum + t.itRevenueEarned, 0);
             const unpaidTaskRevenue = tasks.filter(t => !t.isPaid).reduce((sum, t) => sum + t.itRevenueEarned, 0);
 
-            // NEW: Get revenue by category
-            const categories = await prisma.iTProject.groupBy({
+            // NEW: Get revenue by category (both projects and tasks)
+            const projectCategories = await prisma.iTProject.groupBy({
                 by: ['category'],
                 where: { ...projectWhere, isRevenueBased: true },
                 _sum: { itRevenueEarned: true }
             });
 
-            const byCategory = categories.map(c => ({
-                name: c.category.charAt(0) + c.category.slice(1).toLowerCase(),
-                value: Math.round((c._sum.itRevenueEarned || 0) * 100) / 100
-            }));
+            const taskCategories = await prisma.iTTask.groupBy({
+                by: ['category'],
+                where: { ...taskWhere, isRevenueBased: true },
+                _sum: { itRevenueEarned: true }
+            });
+
+            // Merge categories
+            const categoryMap: Record<string, number> = {};
+
+            projectCategories.forEach(c => {
+                const name = c.category.charAt(0) + c.category.slice(1).toLowerCase().replace('_', ' ');
+                categoryMap[name] = (categoryMap[name] || 0) + (c._sum.itRevenueEarned || 0);
+            });
+
+            taskCategories.forEach(c => {
+                const name = c.category.charAt(0) + c.category.slice(1).toLowerCase().replace('_', ' ');
+                categoryMap[name] = (categoryMap[name] || 0) + (c._sum.itRevenueEarned || 0);
+            });
+
+            const byCategory = Object.entries(categoryMap).map(([name, value]) => ({
+                name,
+                value: Math.round(value * 100) / 100
+            })).sort((a, b) => b.value - a.value);
 
             // NEW: Get monthly revenue for last 6 months
             const last6Months = [];
@@ -203,11 +222,12 @@ export async function GET(req: NextRequest) {
         ]);
 
         // Fetch tasks by type
-        const [revenueTasksCount, supportTasksCount, maintenanceTasksCount, urgentTasksCount] = await Promise.all([
+        const [revenueTasksCount, supportTasksCount, maintenanceTasksCount, urgentTasksCount, serviceRequestsCount] = await Promise.all([
             prisma.iTTask.count({ where: { ...taskWhere, type: 'REVENUE' } }),
             prisma.iTTask.count({ where: { ...taskWhere, type: 'SUPPORT' } }),
             prisma.iTTask.count({ where: { ...taskWhere, type: 'MAINTENANCE' } }),
             prisma.iTTask.count({ where: { ...taskWhere, type: 'URGENT' } }),
+            prisma.iTTask.count({ where: { ...taskWhere, type: 'SERVICE_REQUEST' as any } }),
         ]);
 
         // Calculate completion rate
@@ -265,6 +285,7 @@ export async function GET(req: NextRequest) {
                 support: supportTasksCount,
                 maintenance: maintenanceTasksCount,
                 urgent: urgentTasksCount,
+                serviceRequest: serviceRequestsCount,
             },
             recentTasks: recentTasks.map(task => ({
                 id: task.id,

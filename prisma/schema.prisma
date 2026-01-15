@@ -73,6 +73,7 @@ model Company {
   itTimeEntries       ITTimeEntry[]        @relation("CompanyITTimeEntries")
   itDepartmentRevenue ITDepartmentRevenue[] @relation("CompanyITRevenue")
   itPerformanceMetrics ITPerformanceMetric[] @relation("CompanyITPerformance")
+  itServices          ITServiceDefinition[] @relation("CompanyITServices")
 }
 
 model Department {
@@ -2209,6 +2210,7 @@ enum Priority {
 enum TaskStatus {
   PENDING
   IN_PROGRESS
+  UNDER_REVIEW
   COMPLETED
   CANCELLED
 }
@@ -3163,6 +3165,7 @@ enum TaskCategory {
   DEPLOYMENT
   RESEARCH
   GENERAL
+  SERVICE_REQUEST
 }
 
 enum TaskType {
@@ -3170,4 +3173,22 @@ enum TaskType {
   SUPPORT
   MAINTENANCE
   URGENT
+  SERVICE_REQUEST
+}
+
+model ITServiceDefinition {
+  id          String   @id @default(uuid())
+  companyId   String
+  name        String
+  description String?
+  category    String   @default("GENERAL")
+  price       Float    @default(0)
+  unit        String   @default("each")
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  company     Company  @relation("CompanyITServices", fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
 }

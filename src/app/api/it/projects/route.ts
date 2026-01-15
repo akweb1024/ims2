@@ -178,12 +178,20 @@ export async function POST(req: NextRequest) {
                 endDate: endDate ? new Date(endDate) : null,
                 estimatedHours: estimatedHours ? parseFloat(estimatedHours) : null,
                 isRevenueBased: isRevenueBased || false,
-                estimatedRevenue: estimatedRevenue ? parseFloat(estimatedRevenue) : 0,
+                estimatedRevenue: !isNaN(parseFloat(estimatedRevenue)) ? parseFloat(estimatedRevenue) : 0,
                 currency: currency || 'INR',
-                itDepartmentCut: itDepartmentCut ? parseFloat(itDepartmentCut) : 0,
+                itDepartmentCut: !isNaN(parseFloat(itDepartmentCut)) ? parseFloat(itDepartmentCut) : 0,
                 billingType,
                 hourlyRate: hourlyRate ? parseFloat(hourlyRate) : null,
                 tags: tags || [],
+                milestones: body.milestones && Array.isArray(body.milestones) ? {
+                    create: body.milestones.map((m: any) => ({
+                        name: m.title || m.name,
+                        description: m.description,
+                        dueDate: m.dueDate ? new Date(m.dueDate) : new Date(),
+                        status: m.status || 'PENDING'
+                    }))
+                } : undefined
             },
             include: {
                 projectManager: {
