@@ -14,6 +14,8 @@ import {
     AlertCircle,
     ArrowLeft,
     FolderKanban,
+    Plus,
+    X,
     MessageSquare,
     Send,
     TrendingUp,
@@ -89,6 +91,16 @@ export default function TaskDetailPage() {
     const [newComment, setNewComment] = useState('');
     const [submittingComment, setSubmittingComment] = useState(false);
 
+    // Time Entry state
+    const [logTimeOpen, setLogTimeOpen] = useState(false);
+    const [timeFormData, setTimeFormData] = useState({
+        hours: '',
+        description: '',
+        date: new Date().toISOString().split('T')[0],
+        isBillable: true,
+    });
+    const [submittingTime, setSubmittingTime] = useState(false);
+
     useEffect(() => {
         if (taskId) {
             fetchTask();
@@ -111,6 +123,39 @@ export default function TaskDetailPage() {
             alert('Failed to load task');
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleLogTime = async (e: React.FormEvent) => {
+        e.preventDefault();
+        const hours = parseFloat(timeFormData.hours);
+        if (isNaN(hours) || hours <= 0) return;
+
+        setSubmittingTime(true);
+        try {
+            const response = await fetch(`/api/it/tasks/${taskId}/time-entries`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(timeFormData),
+            });
+
+            if (response.ok) {
+                setLogTimeOpen(false);
+                setTimeFormData({
+                    hours: '',
+                    description: '',
+                    date: new Date().toISOString().split('T')[0],
+                    isBillable: true,
+                });
+                fetchTask();
+            } else {
+                alert('Failed to log time');
+            }
+        } catch (error) {
+            console.error('Failed to log time:', error);
+            alert('Failed to log time');
+        } finally {
+            setSubmittingTime(false);
         }
     };
 
@@ -328,10 +373,102 @@ export default function TaskDetailPage() {
                                     <Clock className="h-5 w-5" />
                                     Time Entries ({task.timeEntries.length})
                                 </h2>
-                                <div className="text-sm text-gray-600 dark:text-gray-400">
-                                    Total: {totalHours}h ({billableHours}h billable)
+                                <div className="flex items-center gap-4">
+                                    <div className="text-sm text-gray-600 dark:text-gray-400">
+                                        Total: {totalHours}h ({billableHours}h billable)
+                                    </div>
+                                    <button
+                                        onClick={() => setLogTimeOpen(true)}
+                                        className="flex items-center gap-2 px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm transition-colors"
+                                    >
+                                        <Plus className="h-4 w-4" />
+                                        Log Time
+                                    </button>
                                 </div>
                             </div>
+
+                            {/* Log Time Form Modal-like Area */}
+                            {logTimeOpen && (
+                                <div className="mb-6 p-4 border border-blue-200 dark:border-blue-900 bg-blue-50 dark:bg-blue-900/10 rounded-lg">
+                                    <div className="flex items-center justify-between mb-4">
+                                        <h3 className="font-semibold text-blue-900 dark:text-blue-400">Log Hours</h3>
+                                        <button onClick={() => setLogTimeOpen(false)}>
+                                            <X className="h-4 w-4 text-gray-500 hover:text-gray-700" />
+                                        </button>
+                                    </div>
+                                    <form onSubmit={handleLogTime} className="space-y-4">
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <div>
+                                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                                    Hours *
+                                                </label>
+                                                <input
+                                                    type="number"
+                                                    step="0.5"
+                                                    value={timeFormData.hours}
+                                                    onChange={(e) => setTimeFormData({ ...timeFormData, hours: e.target.value })}
+                                                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                                                    placeholder="0.0"
+                                                    required
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                                    Date
+                                                </label>
+                                                <input
+                                                    type="date"
+                                                    value={timeFormData.date}
+                                                    onChange={(e) => setTimeFormData({ ...timeFormData, date: e.target.value })}
+                                                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                                                />
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                                Description
+                                            </label>
+                                            <textarea
+                                                value={timeFormData.description}
+                                                onChange={(e) => setTimeFormData({ ...timeFormData, description: e.target.value })}
+                                                rows={2}
+                                                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                                                placeholder="What did you work on?"
+                                            />
+                                        </div>
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex items-center gap-2">
+                                                <input
+                                                    type="checkbox"
+                                                    id="isBillable"
+                                                    checked={timeFormData.isBillable}
+                                                    onChange={(e) => setTimeFormData({ ...timeFormData, isBillable: e.target.checked })}
+                                                    className="w-4 h-4 text-blue-600 rounded"
+                                                />
+                                                <label htmlFor="isBillable" className="text-sm text-gray-700 dark:text-gray-300">
+                                                    Billable hours
+                                                </label>
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setLogTimeOpen(false)}
+                                                    className="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg"
+                                                >
+                                                    Cancel
+                                                </button>
+                                                <button
+                                                    type="submit"
+                                                    disabled={submittingTime}
+                                                    className="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+                                                >
+                                                    {submittingTime ? 'Logging...' : 'Log Hours'}
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </form>
+                                </div>
+                            )}
 
                             {task.timeEntries.length === 0 ? (
                                 <p className="text-gray-500 dark:text-gray-400 text-center py-8">

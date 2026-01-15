@@ -59,11 +59,33 @@ export default function TasksPage() {
     const [view, setView] = useState<'my' | 'team' | 'all'>('my');
     const [typeFilter, setTypeFilter] = useState<string>('');
     const [priorityFilter, setPriorityFilter] = useState<string>('');
+    const [projectFilter, setProjectFilter] = useState<string>('');
+    const [assignedToFilter, setAssignedToFilter] = useState<string>('');
     const [showFilters, setShowFilters] = useState(false);
+
+    const [allProjects, setAllProjects] = useState<any[]>([]);
+    const [allUsers, setAllUsers] = useState<any[]>([]);
 
     useEffect(() => {
         fetchTasks();
-    }, [view, typeFilter, priorityFilter]);
+    }, [view, typeFilter, priorityFilter, projectFilter, assignedToFilter]);
+
+    useEffect(() => {
+        fetchMetadata();
+    }, []);
+
+    const fetchMetadata = async () => {
+        try {
+            const [projectsRes, usersRes] = await Promise.all([
+                fetch('/api/it/projects'),
+                fetch('/api/users')
+            ]);
+            if (projectsRes.ok) setAllProjects(await projectsRes.json());
+            if (usersRes.ok) setAllUsers(await usersRes.json());
+        } catch (error) {
+            console.error('Failed to fetch filter metadata:', error);
+        }
+    };
 
     const fetchTasks = async () => {
         try {
@@ -72,6 +94,8 @@ export default function TasksPage() {
             params.append('view', view);
             if (typeFilter) params.append('type', typeFilter);
             if (priorityFilter) params.append('priority', priorityFilter);
+            if (projectFilter) params.append('projectId', projectFilter);
+            if (assignedToFilter) params.append('assignedToId', assignedToFilter);
 
             const response = await fetch(`/api/it/tasks?${params.toString()}`);
             if (response.ok) {
@@ -93,6 +117,46 @@ export default function TasksPage() {
 
     const getTasksByStatus = (status: string) => {
         return filteredTasks.filter((task) => task.status === status);
+    };
+
+    const handleDragStart = (e: React.DragEvent, taskId: string) => {
+        e.dataTransfer.setData('taskId', taskId);
+        e.dataTransfer.effectAllowed = 'move';
+    };
+
+    const handleDragOver = (e: React.DragEvent) => {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+    };
+
+    const handleDrop = async (e: React.DragEvent, newStatus: string) => {
+        e.preventDefault();
+        const taskId = e.dataTransfer.getData('taskId');
+        if (!taskId) return;
+
+        // Optimistic update
+        const taskToUpdate = tasks.find(t => t.id === taskId);
+        if (!taskToUpdate || taskToUpdate.status === newStatus) return;
+
+        const originalTasks = [...tasks];
+        setTasks(tasks.map(t => t.id === taskId ? { ...t, status: newStatus } : t));
+
+        try {
+            const response = await fetch(`/api/it/tasks/${taskId}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ status: newStatus }),
+            });
+
+            if (!response.ok) {
+                setTasks(originalTasks);
+                alert('Failed to update status');
+            }
+        } catch (error) {
+            console.error('Failed to update status:', error);
+            setTasks(originalTasks);
+            alert('Failed to update status');
+        }
     };
 
     const getPriorityColor = (priority: string) => {
@@ -125,8 +189,10 @@ export default function TasksPage() {
 
     const TaskCard = ({ task }: { task: Task }) => (
         <div
+            draggable
+            onDragStart={(e) => handleDragStart(e, task.id)}
             onClick={() => router.push(`/dashboard/it-management/tasks/${task.id}`)}
-            className={`bg-white dark:bg-gray-800 rounded-lg shadow-md hover:shadow-lg transition-all cursor-pointer p-4 mb-3 ${getPriorityColor(
+            className={`bg-white dark:bg-gray-800 rounded-lg shadow-md hover:shadow-lg transition-all cursor-move p-4 mb-3 active:scale-95 active:rotate-1 ${getPriorityColor(
                 task.priority
             )}`}
         >
@@ -298,7 +364,7 @@ export default function TasksPage() {
 
                     {/* Filter Options */}
                     {showFilters && (
-                        <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700 grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                     Type
@@ -331,6 +397,38 @@ export default function TasksPage() {
                                     <option value="LOW">Low</option>
                                 </select>
                             </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                    Project
+                                </label>
+                                <select
+                                    value={projectFilter}
+                                    onChange={(e) => setProjectFilter(e.target.value)}
+                                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 dark:bg-gray-700 dark:text-white"
+                                >
+                                    <option value="">All Projects</option>
+                                    {Array.isArray(allProjects) && allProjects.map(p => (
+                                        <option key={p.id} value={p.id}>{p.name}</option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                    Assigned To
+                                </label>
+                                <select
+                                    value={assignedToFilter}
+                                    onChange={(e) => setAssignedToFilter(e.target.value)}
+                                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 dark:bg-gray-700 dark:text-white"
+                                >
+                                    <option value="">All People</option>
+                                    {Array.isArray(allUsers) && allUsers.map(u => (
+                                        <option key={u.id} value={u.id}>{u.name}</option>
+                                    ))}
+                                </select>
+                            </div>
                         </div>
                     )}
                 </div>
@@ -345,7 +443,12 @@ export default function TasksPage() {
                         {STATUSES.map((status) => {
                             const statusTasks = getTasksByStatus(status.value);
                             return (
-                                <div key={status.value} className={`rounded-xl ${status.color} p-4`}>
+                                <div
+                                    key={status.value}
+                                    className={`rounded-xl ${status.color} p-4 transition-colors min-w-[280px]`}
+                                    onDragOver={handleDragOver}
+                                    onDrop={(e) => handleDrop(e, status.value)}
+                                >
                                     {/* Column Header */}
                                     <div className="flex items-center justify-between mb-4">
                                         <h3 className="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
@@ -357,10 +460,10 @@ export default function TasksPage() {
                                     </div>
 
                                     {/* Tasks */}
-                                    <div className="space-y-3 min-h-[200px]">
+                                    <div className="space-y-3 min-h-[400px]">
                                         {statusTasks.length === 0 ? (
-                                            <div className="text-center py-8 text-gray-400 dark:text-gray-500 text-sm">
-                                                No tasks
+                                            <div className="text-center py-12 border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-lg text-gray-400 dark:text-gray-500 text-sm">
+                                                Drop tasks here
                                             </div>
                                         ) : (
                                             statusTasks.map((task) => <TaskCard key={task.id} task={task} />)

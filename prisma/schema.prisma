@@ -2125,6 +2125,8 @@ enum UserRole {
   EDITOR_IN_CHIEF
   SECTION_EDITOR
   REVIEWER
+  IT_MANAGER
+  IT_ADMIN
 }
 
 enum CustomerType {
@@ -2862,6 +2864,7 @@ model ITProject {
   teamLead          User?                 @relation("TeamLead", fields: [teamLeadId], references: [id])
   tasks             ITTask[]
   milestones        ITProjectMilestone[]
+  documents         ITProjectDocument[]
   timeEntries       ITTimeEntry[]
   comments          ITProjectComment[]
   
@@ -2936,6 +2939,24 @@ model ITTask {
   @@index([status])
   @@index([type])
   @@index([isRevenueBased])
+}
+
+model ITProjectDocument {
+  id              String          @id @default(uuid())
+  projectId       String
+  name            String
+  description     String?
+  url             String
+  fileType        String
+  fileSize        Int
+  category        String          @default("GENERAL") // SPEC, DESIGN, CONTRACT, MANUAL, etc.
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  
+  project         ITProject       @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  
+  @@index([projectId])
+  @@index([category])
 }
 
 model ITProjectMilestone {

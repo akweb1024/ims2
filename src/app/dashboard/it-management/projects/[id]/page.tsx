@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import {
@@ -17,7 +17,11 @@ import {
     ArrowLeft,
     Plus,
     ListTodo,
+    Settings,
 } from 'lucide-react';
+import MilestoneModal from '@/components/dashboard/it/MilestoneModal';
+import ITDocumentManager from '@/components/dashboard/it/ITDocumentManager';
+import { LayoutDashboard, FileText as FileIcon } from 'lucide-react';
 
 interface Project {
     id: string;
@@ -49,11 +53,13 @@ interface Project {
     } | null;
     milestones: Array<{
         id: string;
-        title: string;
-        description: string;
+        name: string;
+        description: string | null;
         dueDate: string;
         status: string;
         completedAt: string | null;
+        paymentAmount: number | null;
+        isPaid: boolean;
     }>;
     tasks: Array<{
         id: string;
@@ -76,22 +82,62 @@ interface Project {
     };
 }
 
+const getStatusColor = (status: string) => {
+    switch (status) {
+        case 'COMPLETED':
+            return 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400';
+        case 'IN_PROGRESS':
+            return 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400';
+        case 'ON_HOLD':
+            return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400';
+        case 'PLANNING':
+            return 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400';
+        case 'TESTING':
+            return 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400';
+        default:
+            return 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400';
+    }
+};
+
+const getPriorityColor = (priority: string) => {
+    switch (priority) {
+        case 'CRITICAL':
+            return 'text-red-600 dark:text-red-400';
+        case 'HIGH':
+            return 'text-orange-600 dark:text-orange-400';
+        case 'MEDIUM':
+            return 'text-yellow-600 dark:text-yellow-400';
+        case 'LOW':
+            return 'text-green-600 dark:text-green-400';
+        default:
+            return 'text-gray-600 dark:text-gray-400';
+    }
+};
+
 export default function ProjectDetailPage() {
     const router = useRouter();
     const params = useParams();
     const projectId = params.id as string;
 
+    interface Milestone {
+        id: string;
+        name: string;
+        description: string | null;
+        dueDate: string;
+        status: string;
+        completedAt: string | null;
+        paymentAmount: number | null;
+        isPaid: boolean;
+    }
+
     const [project, setProject] = useState<Project | null>(null);
     const [loading, setLoading] = useState(true);
     const [deleting, setDeleting] = useState(false);
+    const [showMilestoneModal, setShowMilestoneModal] = useState(false);
+    const [selectedMilestone, setSelectedMilestone] = useState<Milestone | null>(null);
+    const [activeTab, setActiveTab] = useState<'overview' | 'documents'>('overview');
 
-    useEffect(() => {
-        if (projectId) {
-            fetchProject();
-        }
-    }, [projectId]);
-
-    const fetchProject = async () => {
+    const fetchProject = useCallback(async () => {
         try {
             setLoading(true);
             const response = await fetch(`/api/it/projects/${projectId}`);
@@ -108,7 +154,13 @@ export default function ProjectDetailPage() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [projectId, router]);
+
+    useEffect(() => {
+        if (projectId) {
+            fetchProject();
+        }
+    }, [projectId, fetchProject]);
 
     const handleDelete = async () => {
         if (!confirm('Are you sure you want to delete this project? This action cannot be undone.')) {
@@ -136,37 +188,6 @@ export default function ProjectDetailPage() {
         }
     };
 
-    const getStatusColor = (status: string) => {
-        switch (status) {
-            case 'COMPLETED':
-                return 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400';
-            case 'IN_PROGRESS':
-                return 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400';
-            case 'ON_HOLD':
-                return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400';
-            case 'PLANNING':
-                return 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400';
-            case 'TESTING':
-                return 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400';
-            default:
-                return 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400';
-        }
-    };
-
-    const getPriorityColor = (priority: string) => {
-        switch (priority) {
-            case 'CRITICAL':
-                return 'text-red-600 dark:text-red-400';
-            case 'HIGH':
-                return 'text-orange-600 dark:text-orange-400';
-            case 'MEDIUM':
-                return 'text-yellow-600 dark:text-yellow-400';
-            case 'LOW':
-                return 'text-green-600 dark:text-green-400';
-            default:
-                return 'text-gray-600 dark:text-gray-400';
-        }
-    };
 
     if (loading) {
         return (
@@ -274,144 +295,233 @@ export default function ProjectDetailPage() {
                     )}
                 </div>
 
+                {/* Tabs */}
+                <div className="flex border-b border-gray-200 dark:border-gray-700">
+                    <button
+                        onClick={() => setActiveTab('overview')}
+                        className={`flex items-center gap-2 px-6 py-3 text-sm font-bold transition-all border-b-2 ${activeTab === 'overview'
+                            ? 'border-blue-600 text-blue-600'
+                            : 'border-transparent text-gray-500 hover:text-gray-700'
+                            }`}
+                    >
+                        <LayoutDashboard className="h-4 w-4" />
+                        Project Overview
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('documents')}
+                        className={`flex items-center gap-2 px-6 py-3 text-sm font-bold transition-all border-b-2 ${activeTab === 'documents'
+                            ? 'border-blue-600 text-blue-600'
+                            : 'border-transparent text-gray-500 hover:text-gray-700'
+                            }`}
+                    >
+                        <FileIcon className="h-4 w-4" />
+                        Documents & Assets
+                    </button>
+                </div>
+
                 {/* Main Content */}
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     {/* Left Column */}
                     <div className="lg:col-span-2 space-y-6">
-                        {/* Description */}
-                        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
-                            <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
-                                Description
-                            </h2>
-                            <p className="text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
-                                {project.description || 'No description provided'}
-                            </p>
-                        </div>
-
-                        {/* Milestones */}
-                        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
-                            <div className="flex items-center justify-between mb-4">
-                                <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
-                                    Milestones ({project.milestones.length})
-                                </h2>
-                            </div>
-
-                            {project.milestones.length === 0 ? (
-                                <p className="text-gray-500 dark:text-gray-400 text-center py-8">
-                                    No milestones defined
-                                </p>
-                            ) : (
-                                <div className="space-y-4">
-                                    {project.milestones.map((milestone) => (
-                                        <div
-                                            key={milestone.id}
-                                            className="border border-gray-200 dark:border-gray-700 rounded-lg p-4"
-                                        >
-                                            <div className="flex items-start justify-between mb-2">
-                                                <div className="flex-1">
-                                                    <h3 className="font-semibold text-gray-900 dark:text-white">
-                                                        {milestone.title}
-                                                    </h3>
-                                                    {milestone.description && (
-                                                        <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                                                            {milestone.description}
-                                                        </p>
-                                                    )}
-                                                </div>
-                                                <span className={`inline-flex px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(milestone.status)}`}>
-                                                    {milestone.status}
-                                                </span>
-                                            </div>
-                                            <div className="flex items-center gap-4 text-sm text-gray-500 dark:text-gray-400">
-                                                <div className="flex items-center gap-1">
-                                                    <Calendar className="h-4 w-4" />
-                                                    Due: {new Date(milestone.dueDate).toLocaleDateString()}
-                                                </div>
-                                                {milestone.completedAt && (
-                                                    <div className="flex items-center gap-1 text-green-600 dark:text-green-400">
-                                                        <CheckCircle2 className="h-4 w-4" />
-                                                        Completed: {new Date(milestone.completedAt).toLocaleDateString()}
-                                                    </div>
-                                                )}
-                                            </div>
-                                        </div>
-                                    ))}
+                        {activeTab === 'overview' ? (
+                            <>
+                                {/* Description */}
+                                <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
+                                    <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
+                                        Description
+                                    </h2>
+                                    <p className="text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
+                                        {project.description || 'No description provided'}
+                                    </p>
                                 </div>
-                            )}
-                        </div>
 
-                        {/* Tasks */}
-                        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
-                            <div className="flex items-center justify-between mb-4">
-                                <h2 className="text-xl font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-                                    <ListTodo className="h-5 w-5" />
-                                    Tasks ({project.tasks.length})
-                                </h2>
-                                <button
-                                    onClick={() => router.push(`/dashboard/it-management/tasks/new?projectId=${projectId}`)}
-                                    className="flex items-center gap-2 px-3 py-1 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-sm transition-colors"
-                                >
-                                    <Plus className="h-4 w-4" />
-                                    Add Task
-                                </button>
-                            </div>
-
-                            {project.tasks.length === 0 ? (
-                                <p className="text-gray-500 dark:text-gray-400 text-center py-8">
-                                    No tasks yet. Click "Add Task" to create one.
-                                </p>
-                            ) : (
-                                <div className="space-y-3">
-                                    {project.tasks.map((task) => (
-                                        <div
-                                            key={task.id}
-                                            onClick={() => router.push(`/dashboard/it-management/tasks/${task.id}`)}
-                                            className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer transition-colors"
+                                {/* Milestones */}
+                                <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
+                                    <div className="flex items-center justify-between mb-6">
+                                        <h2 className="text-xl font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                                            <TrendingUp className="h-5 w-5 text-blue-500" />
+                                            Project Milestones
+                                        </h2>
+                                        <button
+                                            onClick={() => {
+                                                setSelectedMilestone(null);
+                                                setShowMilestoneModal(true);
+                                            }}
+                                            className="flex items-center gap-2 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-all shadow-md shadow-blue-500/20"
                                         >
-                                            <div className="flex items-start justify-between mb-2">
-                                                <div className="flex-1">
-                                                    <div className="flex items-center gap-2 mb-1">
-                                                        <span className="text-xs font-medium text-gray-500 dark:text-gray-400">
-                                                            {task.taskCode}
-                                                        </span>
-                                                        <span className={`inline-flex px-2 py-0.5 rounded text-xs font-medium ${getStatusColor(task.status)}`}>
-                                                            {task.status.replace('_', ' ')}
-                                                        </span>
-                                                    </div>
-                                                    <h3 className="font-medium text-gray-900 dark:text-white">
-                                                        {task.title}
-                                                    </h3>
-                                                </div>
-                                                <span className={`text-sm font-medium ${getPriorityColor(task.priority)}`}>
-                                                    {task.priority}
-                                                </span>
-                                            </div>
-                                            <div className="flex items-center justify-between">
-                                                <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-                                                    {task.assignedTo && (
-                                                        <span className="flex items-center gap-1">
-                                                            <Users className="h-4 w-4" />
-                                                            {task.assignedTo.name}
-                                                        </span>
-                                                    )}
-                                                </div>
-                                                <div className="flex items-center gap-2">
-                                                    <div className="w-32 bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-                                                        <div
-                                                            className="bg-blue-600 h-2 rounded-full"
-                                                            style={{ width: `${task.progressPercent}%` }}
-                                                        ></div>
-                                                    </div>
-                                                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                                                        {task.progressPercent}%
-                                                    </span>
-                                                </div>
-                                            </div>
+                                            <Plus className="h-4 w-4" />
+                                            Add Milestone
+                                        </button>
+                                    </div>
+
+                                    {project.milestones.length === 0 ? (
+                                        <div className="text-center py-10 border-2 border-dashed border-gray-100 dark:border-gray-700 rounded-2xl">
+                                            <Calendar className="h-10 w-10 text-gray-300 mx-auto mb-3" />
+                                            <p className="text-gray-500 dark:text-gray-400">
+                                                No milestones defined yet.
+                                                <br />
+                                                Break your project into key deliverables.
+                                            </p>
                                         </div>
-                                    ))}
+                                    ) : (
+                                        <div className="relative space-y-6 pl-4 border-l-2 border-gray-100 dark:border-gray-700 ml-2">
+                                            {project.milestones.map((milestone, index) => (
+                                                <div
+                                                    key={milestone.id}
+                                                    className="relative group"
+                                                >
+                                                    {/* dot */}
+                                                    <div className={`absolute -left-[25px] top-1.5 w-4 h-4 rounded-full border-4 border-white dark:border-gray-800 shadow-sm ${milestone.status === 'COMPLETED' ? 'bg-green-500' : 'bg-gray-300 dark:bg-gray-600'
+                                                        }`} />
+
+                                                    <div className="bg-gray-50 dark:bg-gray-700/30 rounded-2xl p-5 group-hover:bg-white dark:group-hover:bg-gray-700 shadow-sm group-hover:shadow-md transition-all border border-transparent group-hover:border-gray-100 dark:group-hover:border-gray-600">
+                                                        <div className="flex items-start justify-between mb-3">
+                                                            <div>
+                                                                <h3 className="font-bold text-gray-900 dark:text-white group-hover:text-blue-600 transition-colors">
+                                                                    {milestone.name}
+                                                                </h3>
+                                                                {milestone.description && (
+                                                                    <p className="text-sm text-gray-600 dark:text-gray-400 mt-1 line-clamp-2">
+                                                                        {milestone.description}
+                                                                    </p>
+                                                                )}
+                                                            </div>
+                                                            <div className="flex items-center gap-2">
+                                                                <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold tracking-wider uppercase ${getStatusColor(milestone.status)}`}>
+                                                                    {milestone.status}
+                                                                </span>
+                                                                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                                    <button
+                                                                        onClick={() => {
+                                                                            setSelectedMilestone(milestone);
+                                                                            setShowMilestoneModal(true);
+                                                                        }}
+                                                                        className="p-1.5 hover:bg-white dark:hover:bg-gray-600 rounded-lg text-gray-400 hover:text-blue-500 transition-colors"
+                                                                    >
+                                                                        <Edit className="h-4 w-4" />
+                                                                    </button>
+                                                                    <button
+                                                                        onClick={async () => {
+                                                                            if (confirm('Delete this milestone?')) {
+                                                                                await fetch(`/api/it/milestones/${milestone.id}`, { method: 'DELETE' });
+                                                                                fetchProject();
+                                                                            }
+                                                                        }}
+                                                                        className="p-1.5 hover:bg-white dark:hover:bg-gray-600 rounded-lg text-gray-400 hover:text-red-500 transition-colors"
+                                                                    >
+                                                                        <Trash2 className="h-4 w-4" />
+                                                                    </button>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+
+                                                        <div className="flex flex-wrap items-center gap-4 text-xs font-medium border-t border-gray-100 dark:border-gray-700 pt-3 mt-3">
+                                                            <div className="flex items-center gap-1.5 text-gray-500">
+                                                                <Calendar className="h-3.5 w-3.5" />
+                                                                Deadline: {new Date(milestone.dueDate).toLocaleDateString()}
+                                                            </div>
+
+                                                            {milestone.paymentAmount && milestone.paymentAmount > 0 && (
+                                                                <div className={`flex items-center gap-1.5 px-2 py-1 rounded-lg ${milestone.isPaid ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400' : 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400'
+                                                                    }`}>
+                                                                    <DollarSign className="h-3.5 w-3.5" />
+                                                                    ₹{milestone.paymentAmount.toLocaleString()}
+                                                                    {milestone.isPaid ? ' - PAID' : ' - DUE'}
+                                                                </div>
+                                                            )}
+
+                                                            {milestone.completedAt && (
+                                                                <div className="flex items-center gap-1.5 text-green-600">
+                                                                    <CheckCircle2 className="h-3.5 w-3.5" />
+                                                                    Released: {new Date(milestone.completedAt).toLocaleDateString()}
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
                                 </div>
-                            )}
-                        </div>
+
+                                {/* Tasks */}
+                                <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
+                                    <div className="flex items-center justify-between mb-4">
+                                        <h2 className="text-xl font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                                            <ListTodo className="h-5 w-5" />
+                                            Tasks ({project.tasks.length})
+                                        </h2>
+                                        <button
+                                            onClick={() => router.push(`/dashboard/it-management/tasks/new?projectId=${projectId}`)}
+                                            className="flex items-center gap-2 px-3 py-1 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-sm transition-colors"
+                                        >
+                                            <Plus className="h-4 w-4" />
+                                            Add Task
+                                        </button>
+                                    </div>
+
+                                    {project.tasks.length === 0 ? (
+                                        <p className="text-gray-500 dark:text-gray-400 text-center py-8">
+                                            No tasks yet. Click "Add Task" to create one.
+                                        </p>
+                                    ) : (
+                                        <div className="space-y-3">
+                                            {project.tasks.map((task) => (
+                                                <div
+                                                    key={task.id}
+                                                    onClick={() => router.push(`/dashboard/it-management/tasks/${task.id}`)}
+                                                    className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer transition-colors"
+                                                >
+                                                    <div className="flex items-start justify-between mb-2">
+                                                        <div className="flex-1">
+                                                            <div className="flex items-center gap-2 mb-1">
+                                                                <span className="text-xs font-medium text-gray-500 dark:text-gray-400">
+                                                                    {task.taskCode}
+                                                                </span>
+                                                                <span className={`inline-flex px-2 py-0.5 rounded text-xs font-medium ${getStatusColor(task.status)}`}>
+                                                                    {task.status.replace('_', ' ')}
+                                                                </span>
+                                                            </div>
+                                                            <h3 className="font-medium text-gray-900 dark:text-white">
+                                                                {task.title}
+                                                            </h3>
+                                                        </div>
+                                                        <span className={`text-sm font-medium ${getPriorityColor(task.priority)}`}>
+                                                            {task.priority}
+                                                        </span>
+                                                    </div>
+                                                    <div className="flex items-center justify-between">
+                                                        <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                                                            {task.assignedTo && (
+                                                                <span className="flex items-center gap-1">
+                                                                    <Users className="h-4 w-4" />
+                                                                    {task.assignedTo.name}
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                        <div className="flex items-center gap-2">
+                                                            <div className="w-32 bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                                                                <div
+                                                                    className="bg-blue-600 h-2 rounded-full"
+                                                                    style={{ width: `${task.progressPercent}%` }}
+                                                                ></div>
+                                                            </div>
+                                                            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                                                                {task.progressPercent}%
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            </>
+                        ) : (
+                            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
+                                <ITDocumentManager projectId={projectId} />
+                            </div>
+                        )}
                     </div>
 
                     {/* Right Column */}
@@ -543,6 +653,15 @@ export default function ProjectDetailPage() {
                         )}
                     </div>
                 </div>
+
+                {/* Modals */}
+                <MilestoneModal
+                    isOpen={showMilestoneModal}
+                    onClose={() => setShowMilestoneModal(false)}
+                    projectId={projectId}
+                    milestone={selectedMilestone || undefined}
+                    onSuccess={fetchProject}
+                />
             </div>
         </DashboardLayout>
     );

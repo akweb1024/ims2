@@ -500,7 +500,7 @@ export default function ITManagementDashboard() {
                 </div>
 
                 {/* Quick Actions */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                     <button
                         onClick={() => router.push('/dashboard/it-management/projects')}
                         className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow text-left group"
@@ -524,13 +524,24 @@ export default function ITManagementDashboard() {
                     </button>
 
                     <button
+                        onClick={() => router.push('/dashboard/it-management/performance')}
+                        className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow text-left group"
+                    >
+                        <TrendingUp className="h-8 w-8 text-indigo-500 mb-3 group-hover:scale-110 transition-transform" />
+                        <h4 className="font-semibold text-gray-900 dark:text-white mb-2">Performance</h4>
+                        <p className="text-sm text-gray-600 dark:text-gray-400">
+                            Team productivity analytics
+                        </p>
+                    </button>
+
+                    <button
                         onClick={() => router.push('/dashboard/it-management/revenue')}
                         className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow text-left group"
                     >
-                        <TrendingUp className="h-8 w-8 text-green-500 mb-3 group-hover:scale-110 transition-transform" />
-                        <h4 className="font-semibold text-gray-900 dark:text-white mb-2">Revenue Analytics</h4>
+                        <DollarSign className="h-8 w-8 text-green-500 mb-3 group-hover:scale-110 transition-transform" />
+                        <h4 className="font-semibold text-gray-900 dark:text-white mb-2">Revenue Tracking</h4>
                         <p className="text-sm text-gray-600 dark:text-gray-400">
-                            Track IT department revenue
+                            Track financial department performance
                         </p>
                     </button>
                 </div>
