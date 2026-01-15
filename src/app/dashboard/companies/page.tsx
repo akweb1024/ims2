@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import Link from 'next/link';
 import FormattedDate from '@/components/common/FormattedDate';
@@ -19,20 +19,11 @@ export default function CompaniesPage() {
         totalPages: 1
     });
 
-    useEffect(() => {
-        const userData = localStorage.getItem('user');
-        if (userData) {
-            const user = JSON.parse(userData);
-            setUserRole(user.role);
-        }
-        fetchCompanies();
-    }, []);
-
-    const fetchCompanies = async (page = 1) => {
+    const fetchCompanies = useCallback(async () => {
         setLoading(true);
         try {
             const token = localStorage.getItem('token');
-            const res = await fetch(`/api/companies?page=${page}&limit=${pagination.limit}`, {
+            const res = await fetch(`/api/companies?page=${pagination.page}&limit=${pagination.limit}`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             if (res.ok) {
@@ -49,7 +40,16 @@ export default function CompaniesPage() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [pagination.page, pagination.limit]);
+
+    useEffect(() => {
+        const userData = localStorage.getItem('user');
+        if (userData) {
+            const user = JSON.parse(userData);
+            setUserRole(user.role);
+        }
+        fetchCompanies();
+    }, [fetchCompanies]);
 
     const handleCreateCompany = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
@@ -164,14 +164,14 @@ export default function CompaniesPage() {
                             <button
                                 className="px-4 py-2 bg-white border border-secondary-200 rounded-lg text-sm font-medium hover:bg-secondary-50 disabled:opacity-50 transition-colors"
                                 disabled={pagination.page === 1}
-                                onClick={() => fetchCompanies(pagination.page - 1)}
+                                onClick={() => setPagination({ ...pagination, page: pagination.page - 1 })}
                             >
                                 Previous
                             </button>
                             <button
                                 className="px-4 py-2 bg-white border border-secondary-200 rounded-lg text-sm font-medium hover:bg-secondary-50 disabled:opacity-50 transition-colors"
                                 disabled={pagination.page === pagination.totalPages}
-                                onClick={() => fetchCompanies(pagination.page + 1)}
+                                onClick={() => setPagination({ ...pagination, page: pagination.page + 1 })}
                             >
                                 Next
                             </button>

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { CheckCircle, XCircle, Clock, Award, AlertCircle, ChevronRight } from 'lucide-react';
@@ -19,34 +19,7 @@ export default function QuizPage() {
     const [loading, setLoading] = useState(true);
     const [userRole, setUserRole] = useState('');
 
-    useEffect(() => {
-        const user = localStorage.getItem('user');
-        if (user) setUserRole(JSON.parse(user).role);
-        fetchQuiz();
-    }, [quizId]);
-
-    useEffect(() => {
-        if (quiz?.timeLimit && timeLeft === null) {
-            setTimeLeft(quiz.timeLimit * 60); // Convert minutes to seconds
-        }
-    }, [quiz]);
-
-    useEffect(() => {
-        if (timeLeft !== null && timeLeft > 0 && !submitted) {
-            const timer = setInterval(() => {
-                setTimeLeft(prev => {
-                    if (prev === null || prev <= 1) {
-                        handleSubmit();
-                        return 0;
-                    }
-                    return prev - 1;
-                });
-            }, 1000);
-            return () => clearInterval(timer);
-        }
-    }, [timeLeft, submitted]);
-
-    const fetchQuiz = async () => {
+    const fetchQuiz = useCallback(async () => {
         try {
             const token = localStorage.getItem('token');
             const res = await fetch(`/api/quizzes/${quizId}`, {
@@ -65,9 +38,9 @@ export default function QuizPage() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [quizId]);
 
-    const handleSubmit = async () => {
+    const handleSubmit = useCallback(async () => {
         if (submitted) return;
 
         try {
@@ -81,7 +54,7 @@ export default function QuizPage() {
                 },
                 body: JSON.stringify({
                     answers,
-                    timeSpent: quiz.timeLimit ? (quiz.timeLimit * 60 - (timeLeft || 0)) : null
+                    timeSpent: quiz?.timeLimit ? (quiz.timeLimit * 60 - (timeLeft || 0)) : null
                 })
             });
 
@@ -93,7 +66,34 @@ export default function QuizPage() {
             console.error(error);
             setSubmitted(false);
         }
-    };
+    }, [submitted, quizId, answers, quiz, timeLeft]);
+
+    useEffect(() => {
+        const user = localStorage.getItem('user');
+        if (user) setUserRole(JSON.parse(user).role);
+        fetchQuiz();
+    }, [quizId, fetchQuiz]);
+
+    useEffect(() => {
+        if (quiz?.timeLimit && timeLeft === null) {
+            setTimeLeft(quiz.timeLimit * 60); // Convert minutes to seconds
+        }
+    }, [quiz, timeLeft]);
+
+    useEffect(() => {
+        if (timeLeft !== null && timeLeft > 0 && !submitted) {
+            const timer = setInterval(() => {
+                setTimeLeft(prev => {
+                    if (prev === null || prev <= 1) {
+                        handleSubmit();
+                        return 0;
+                    }
+                    return prev - 1;
+                });
+            }, 1000);
+            return () => clearInterval(timer);
+        }
+    }, [timeLeft, submitted, handleSubmit]);
 
     const formatTime = (seconds: number) => {
         const mins = Math.floor(seconds / 60);
@@ -298,14 +298,14 @@ export default function QuizPage() {
                                         key={idx}
                                         onClick={() => setAnswers({ ...answers, [question.id]: option })}
                                         className={`w-full text-left p-4 rounded-xl border-2 transition-all ${answers[question.id] === option
-                                                ? 'border-primary-500 bg-primary-50'
-                                                : 'border-secondary-200 bg-white hover:border-primary-200'
+                                            ? 'border-primary-500 bg-primary-50'
+                                            : 'border-secondary-200 bg-white hover:border-primary-200'
                                             }`}
                                     >
                                         <div className="flex items-center gap-3">
                                             <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${answers[question.id] === option
-                                                    ? 'border-primary-500 bg-primary-500'
-                                                    : 'border-secondary-300'
+                                                ? 'border-primary-500 bg-primary-500'
+                                                : 'border-secondary-300'
                                                 }`}>
                                                 {answers[question.id] === option && (
                                                     <CheckCircle size={16} className="text-white" />
@@ -325,14 +325,14 @@ export default function QuizPage() {
                                         key={option}
                                         onClick={() => setAnswers({ ...answers, [question.id]: option })}
                                         className={`w-full text-left p-4 rounded-xl border-2 transition-all ${answers[question.id] === option
-                                                ? 'border-primary-500 bg-primary-50'
-                                                : 'border-secondary-200 bg-white hover:border-primary-200'
+                                            ? 'border-primary-500 bg-primary-50'
+                                            : 'border-secondary-200 bg-white hover:border-primary-200'
                                             }`}
                                     >
                                         <div className="flex items-center gap-3">
                                             <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${answers[question.id] === option
-                                                    ? 'border-primary-500 bg-primary-500'
-                                                    : 'border-secondary-300'
+                                                ? 'border-primary-500 bg-primary-500'
+                                                : 'border-secondary-300'
                                                 }`}>
                                                 {answers[question.id] === option && (
                                                     <CheckCircle size={16} className="text-white" />

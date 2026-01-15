@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, use } from 'react';
+import { useState, useEffect, use, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
@@ -14,15 +14,7 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
     const [user, setUser] = useState<any>(null);
     const [actionLoading, setActionLoading] = useState(false);
 
-    useEffect(() => {
-        const userData = localStorage.getItem('user');
-        if (userData) {
-            setUser(JSON.parse(userData));
-        }
-        fetchTicket();
-    }, [id]);
-
-    const fetchTicket = async () => {
+    const fetchTicket = useCallback(async () => {
         try {
             const token = localStorage.getItem('token');
             const res = await fetch(`/api/support/tickets/${id}`, {
@@ -38,7 +30,15 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
         } finally {
             setLoading(false);
         }
-    };
+    }, [id, router]);
+
+    useEffect(() => {
+        const userData = localStorage.getItem('user');
+        if (userData) {
+            setUser(JSON.parse(userData));
+        }
+        fetchTicket();
+    }, [fetchTicket]);
 
     const handleUpdateStatus = async (newStatus: string) => {
         setActionLoading(true);

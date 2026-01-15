@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import FormattedDate from '@/components/common/FormattedDate';
 import { SubscriptionStatus } from '@/types';
@@ -28,7 +28,7 @@ export default function SubscriptionsPage() {
         }
     }, []);
 
-    const fetchSubscriptions = async () => {
+    const fetchSubscriptions = useCallback(async () => {
         setLoading(true);
         setError(null);
         try {
@@ -58,14 +58,14 @@ export default function SubscriptionsPage() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [pagination.page, pagination.limit, search, statusFilter]);
 
     useEffect(() => {
         const timer = setTimeout(() => {
             fetchSubscriptions();
         }, 300);
         return () => clearTimeout(timer);
-    }, [search, statusFilter, pagination.page]);
+    }, [fetchSubscriptions]);
 
     const getStatusBadgeClass = (status: SubscriptionStatus) => {
         switch (status) {

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, use } from 'react';
+import { useState, useEffect, use, useCallback } from 'react';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import {
     ChevronLeft,
@@ -38,13 +38,7 @@ export default function ReviewSubmissionPage({ params }: { params: Promise<{ id:
         confidentialComments: ''
     });
 
-    useEffect(() => {
-        const user = localStorage.getItem('user');
-        if (user) setUserRole(JSON.parse(user).role);
-        fetchAssignment();
-    }, [assignmentId]);
-
-    const fetchAssignment = async () => {
+    const fetchAssignment = useCallback(async () => {
         setLoading(true);
         try {
             const token = localStorage.getItem('token');
@@ -70,7 +64,13 @@ export default function ReviewSubmissionPage({ params }: { params: Promise<{ id:
             }
         } catch (error) { console.error(error); }
         finally { setLoading(false); }
-    };
+    }, [assignmentId]);
+
+    useEffect(() => {
+        const user = localStorage.getItem('user');
+        if (user) setUserRole(JSON.parse(user).role);
+        fetchAssignment();
+    }, [fetchAssignment]);
 
     const handleRatingChange = (field: string, value: number) => {
         setFormData(prev => ({ ...prev, [field]: value }));

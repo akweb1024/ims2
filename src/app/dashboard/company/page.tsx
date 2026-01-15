@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import Link from 'next/link';
 import CompanyAnalyticsOverview from '@/components/dashboard/company/CompanyAnalyticsOverview';
@@ -25,26 +25,7 @@ export default function CompanyPage() {
     const companyIdParam = searchParams?.get('id');
     const tabParam = searchParams?.get('tab');
 
-    useEffect(() => {
-        const userData = localStorage.getItem('user');
-        if (userData) {
-            const user = JSON.parse(userData);
-            setUserRole(user.role);
-        }
-
-        // Set active tab from URL parameter
-        if (tabParam === 'analytics') {
-            setActiveTab('OVERVIEW');
-        } else if (tabParam === 'workforce') {
-            setActiveTab('WORKFORCE');
-        } else if (tabParam === 'details') {
-            setActiveTab('DETAILS');
-        }
-
-        fetchData();
-    }, [companyIdParam, tabParam]);
-
-    const fetchData = async () => {
+    const fetchData = useCallback(async () => {
         setLoading(true);
         try {
             const token = localStorage.getItem('token');
@@ -108,7 +89,26 @@ export default function CompanyPage() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [companyIdParam]);
+
+    useEffect(() => {
+        const userData = localStorage.getItem('user');
+        if (userData) {
+            const user = JSON.parse(userData);
+            setUserRole(user.role);
+        }
+
+        // Set active tab from URL parameter
+        if (tabParam === 'analytics') {
+            setActiveTab('OVERVIEW');
+        } else if (tabParam === 'workforce') {
+            setActiveTab('WORKFORCE');
+        } else if (tabParam === 'details') {
+            setActiveTab('DETAILS');
+        }
+
+        fetchData();
+    }, [companyIdParam, tabParam, fetchData]);
 
     const handleUpdateCompany = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
@@ -244,7 +244,7 @@ export default function CompanyPage() {
                         <span className="text-4xl text-secondary-400">🏢</span>
                     </div>
                     <h3 className="text-2xl font-black text-secondary-900 mb-2">No Company Active</h3>
-                    <p className="text-secondary-500 mb-8 font-medium">We couldn't find a company profile associated with your account or the current selection.</p>
+                    <p className="text-secondary-500 mb-8 font-medium">We couldn&apos;t find a company profile associated with your account or the current selection.</p>
 
                     <div className="space-y-3">
                         {userRole === 'SUPER_ADMIN' ? (

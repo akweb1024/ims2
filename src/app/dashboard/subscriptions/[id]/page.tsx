@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import FormattedDate from '@/components/common/FormattedDate';
@@ -17,16 +17,7 @@ export default function SubscriptionDetailsPage() {
     const [userRole, setUserRole] = useState<string>('CUSTOMER');
     const [actionLoading, setActionLoading] = useState(false);
 
-    useEffect(() => {
-        const userData = localStorage.getItem('user');
-        if (userData) {
-            const user = JSON.parse(userData);
-            setUserRole(user.role);
-        }
-        fetchSubscription();
-    }, [id]);
-
-    const fetchSubscription = async () => {
+    const fetchSubscription = useCallback(async () => {
         setLoading(true);
         try {
             const token = localStorage.getItem('token');
@@ -47,7 +38,16 @@ export default function SubscriptionDetailsPage() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [id]);
+
+    useEffect(() => {
+        const userData = localStorage.getItem('user');
+        if (userData) {
+            const user = JSON.parse(userData);
+            setUserRole(user.role);
+        }
+        fetchSubscription();
+    }, [fetchSubscription]);
 
     const handleStatusChange = async (newStatus: string) => {
         if (!confirm(`Are you sure you want to change the status to ${newStatus}?`)) return;

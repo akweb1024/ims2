@@ -2,3 +2,136 @@
 > stm-customer@0.1.0 lint
 > next lint
 
+`next lint` is deprecated and will be removed in Next.js 16.
+For new projects, use create-next-app to choose your preferred linter.
+For existing projects, migrate to the ESLint CLI:
+npx @next/codemod@canary next-lint-to-eslint-cli .
+
+
+./src/app/api/chat/customers/route.ts
+11:13  Error: 'where' is never reassigned. Use 'const' instead.  prefer-const
+
+./src/app/author/coauthor/accept/page.tsx
+48:8  Warning: React Hook useEffect has a missing dependency: 'status'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+123:94  Error: `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`.  react/no-unescaped-entities
+
+./src/app/careers/[id]/page.tsx
+20:8  Warning: React Hook useEffect has a missing dependency: 'fetchJob'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/app/careers/exam/page.tsx
+23:8  Warning: React Hook useEffect has a missing dependency: 'fetchExam'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/app/dashboard/ai-insights/page.tsx
+23:8  Warning: React Hook useEffect has a missing dependency: 'fetchInsights'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/app/dashboard/analytics/razorpay/page.tsx
+28:8  Warning: React Hook useEffect has a missing dependency: 'fetchData'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/app/dashboard/articles/[id]/assign/page.tsx
+41:8  Warning: React Hook useEffect has a missing dependency: 'fetchData'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/app/dashboard/author/manuscripts/[id]/page.tsx
+19:8  Warning: React Hook useEffect has missing dependencies: 'fetchManuscript' and 'fetchTimeline'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/app/dashboard/author/manuscripts/[id]/revise/page.tsx
+23:8  Warning: React Hook useEffect has a missing dependency: 'fetchManuscript'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/app/dashboard/author/submit/page.tsx
+54:8  Warning: React Hook useEffect has a missing dependency: 'saveDraft'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/app/dashboard/chat/page.tsx
+51:8  Warning: React Hook useEffect has a missing dependency: 'fetchMessages'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/app/dashboard/communications/bulk/page.tsx
+29:8  Warning: React Hook useEffect has a missing dependency: 'router'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/app/dashboard/communications/page.tsx
+26:8  Warning: React Hook useEffect has a missing dependency: 'fetchLogs'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/app/dashboard/company/page.tsx
+45:8  Warning: React Hook useEffect has a missing dependency: 'fetchData'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+247:81  Error: `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`.  react/no-unescaped-entities
+
+./src/app/dashboard/conferences/[id]/page.tsx
+37:8  Warning: React Hook useEffect has a missing dependency: 'fetchConference'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+44:8  Warning: React Hook useEffect has a missing dependency: 'fetchCommittee'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+786:57  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+./src/app/dashboard/conferences/[id]/papers/[paperId]/page.tsx
+45:8  Warning: React Hook useEffect has missing dependencies: 'fetchCommittee' and 'fetchPaper'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/app/dashboard/conferences/[id]/papers/page.tsx
+29:8  Warning: React Hook useEffect has a missing dependency: 'fetchData'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/app/dashboard/conferences/[id]/register/page.tsx
+34:8  Warning: React Hook useEffect has a missing dependency: 'fetchConference'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/app/dashboard/conferences/[id]/registrations/page.tsx
+31:8  Warning: React Hook useEffect has a missing dependency: 'fetchData'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/app/dashboard/conferences/[id]/submit/page.tsx
+24:8  Warning: React Hook useEffect has a missing dependency: 'fetchConference'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/app/dashboard/conferences/page.tsx
+26:8  Warning: React Hook useEffect has a missing dependency: 'fetchConferences'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/app/dashboard/courses/[id]/lessons/[lid]/page.tsx
+19:8  Warning: React Hook useEffect has a missing dependency: 'fetchLesson'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/app/dashboard/courses/[id]/page.tsx
+33:8  Warning: React Hook useEffect has a missing dependency: 'fetchCourse'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/app/dashboard/courses/page.tsx
+134:37  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+./src/app/dashboard/customers/page.tsx
+97:8  Warning: React Hook useEffect has a missing dependency: 'fetchCustomers'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/app/dashboard/hr-management/employees/[id]/page.tsx
+37:8  Warning: React Hook useEffect has a missing dependency: 'fetchEmployeeDetails'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+76:8  Warning: React Hook useEffect has a missing dependency: 'fetchGrowthData'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+241:37  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+638:61  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+774:53  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+./src/app/dashboard/hr-management/payroll/page.tsx
+26:8  Warning: React Hook useEffect has a missing dependency: 'fetchSlips'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/app/dashboard/hr-management/productivity/page.tsx
+24:8  Warning: React Hook useEffect has a missing dependency: 'fetchAnalysis'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/app/dashboard/institutions/[id]/page.tsx
+25:8  Warning: React Hook useEffect has a missing dependency: 'fetchInstitution'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+79:33  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+./src/app/dashboard/institutions/page.tsx
+85:8  Warning: React Hook useEffect has a missing dependency: 'fetchInstitutions'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+490:45  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+./src/app/dashboard/invoices/[id]/page.tsx
+30:8  Warning: React Hook useEffect has a missing dependency: 'fetchInvoice'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/app/dashboard/invoices/page.tsx
+27:8  Warning: React Hook useEffect has a missing dependency: 'fetchInvoices'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+39:8  Warning: React Hook useEffect has missing dependencies: 'fetchInvoices' and 'pagination'. Either include them or remove the dependency array. You can also do a functional update 'setPagination(p => ...)' if you only need 'pagination' in the 'setPagination' call.  react-hooks/exhaustive-deps
+
+./src/app/dashboard/journal-manager/page.tsx
+35:8  Warning: React Hook useEffect has a missing dependency: 'fetchDashboardMetrics'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/app/dashboard/journals/[id]/edit/page.tsx
+47:8  Warning: React Hook useEffect has missing dependencies: 'fetchBoard', 'fetchJournal', and 'fetchVolumes'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/app/dashboard/journals/new/page.tsx
+41:8  Warning: React Hook useEffect has a missing dependency: 'router'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/app/dashboard/journals/page.tsx
+52:8  Warning: React Hook useEffect has a missing dependency: 'fetchJournals'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/app/dashboard/learn/[courseId]/page.tsx
+30:8  Warning: React Hook useEffect has a missing dependency: 'fetchCourseData'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/app/dashboard/my-learning/page.tsx
+152:45  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+214:45  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+info  - Need to disable some ESLint rules? Learn more here: https://nextjs.org/docs/app/api-reference/config/eslint#disabling-rules

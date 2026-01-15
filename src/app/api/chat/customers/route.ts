@@ -8,7 +8,7 @@ export async function GET(req: NextRequest) {
         if (!decoded) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
         // Build where clause based on role
-        let where: any = {};
+        const where: any = {};
 
         if (decoded.role === 'CUSTOMER') {
             // Customers can only see themselves

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 
 export default function ExamPortal() {
@@ -11,11 +11,7 @@ export default function ExamPortal() {
     const [loading, setLoading] = useState(true);
     const [result, setResult] = useState<any>(null);
 
-    useEffect(() => {
-        fetchExam();
-    }, []);
-
-    const fetchExam = async () => {
+    const fetchExam = useCallback(async () => {
         const res = await fetch(`/api/recruitment/exam?applicationId=${applicationId}`);
         if (res.ok) {
             const data = await res.json();
@@ -23,7 +19,11 @@ export default function ExamPortal() {
             setAnswers(new Array(data.questions.length).fill(-1));
         }
         setLoading(false);
-    };
+    }, [applicationId]);
+
+    useEffect(() => {
+        fetchExam();
+    }, [fetchExam]);
 
     const handleSubmit = async () => {
         if (answers.includes(-1)) {

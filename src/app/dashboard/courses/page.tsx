@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 
@@ -131,7 +132,7 @@ export default function CoursesPage() {
                         <Link href={`/dashboard/courses/${course.id}`} key={course.id} className="card-premium group hover:border-primary-200 transition-all">
                             <div className="h-40 bg-secondary-100 rounded-t-2xl relative overflow-hidden">
                                 {course.thumbnailUrl ? (
-                                    <img src={course.thumbnailUrl} alt={course.title} className="w-full h-full object-cover" />
+                                    <Image src={course.thumbnailUrl} alt={course.title} fill className="object-cover" />
                                 ) : (
                                     <div className="w-full h-full flex items-center justify-center text-6xl opacity-20">🎓</div>
                                 )}

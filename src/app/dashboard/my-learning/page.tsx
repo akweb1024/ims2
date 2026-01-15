@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { BookOpen, Award, Clock, TrendingUp, Play, CheckCircle } from 'lucide-react';
+import Image from 'next/image';
 
 export default function MyLearningPage() {
     const router = useRouter();
@@ -102,8 +103,8 @@ export default function MyLearningPage() {
                     <button
                         onClick={() => setActiveTab('active')}
                         className={`px-6 py-3 font-bold transition-colors ${activeTab === 'active'
-                                ? 'text-primary-600 border-b-2 border-primary-600'
-                                : 'text-secondary-500 hover:text-secondary-900'
+                            ? 'text-primary-600 border-b-2 border-primary-600'
+                            : 'text-secondary-500 hover:text-secondary-900'
                             }`}
                     >
                         Active Courses ({data?.enrollments.active.length || 0})
@@ -111,8 +112,8 @@ export default function MyLearningPage() {
                     <button
                         onClick={() => setActiveTab('completed')}
                         className={`px-6 py-3 font-bold transition-colors ${activeTab === 'completed'
-                                ? 'text-primary-600 border-b-2 border-primary-600'
-                                : 'text-secondary-500 hover:text-secondary-900'
+                            ? 'text-primary-600 border-b-2 border-primary-600'
+                            : 'text-secondary-500 hover:text-secondary-900'
                             }`}
                     >
                         Completed ({data?.enrollments.completed.length || 0})
@@ -120,8 +121,8 @@ export default function MyLearningPage() {
                     <button
                         onClick={() => setActiveTab('certificates')}
                         className={`px-6 py-3 font-bold transition-colors ${activeTab === 'certificates'
-                                ? 'text-primary-600 border-b-2 border-primary-600'
-                                : 'text-secondary-500 hover:text-secondary-900'
+                            ? 'text-primary-600 border-b-2 border-primary-600'
+                            : 'text-secondary-500 hover:text-secondary-900'
                             }`}
                     >
                         Certificates ({data?.certificates.length || 0})
@@ -149,10 +150,11 @@ export default function MyLearningPage() {
                                 >
                                     <div className="h-40 bg-secondary-100 rounded-t-2xl relative overflow-hidden">
                                         {enrollment.course.thumbnailUrl ? (
-                                            <img
+                                            <Image
                                                 src={enrollment.course.thumbnailUrl}
                                                 alt={enrollment.course.title}
-                                                className="w-full h-full object-cover"
+                                                fill
+                                                className="object-cover"
                                             />
                                         ) : (
                                             <div className="w-full h-full flex items-center justify-center text-6xl opacity-20">
@@ -211,10 +213,11 @@ export default function MyLearningPage() {
                                 <div key={enrollment.id} className="card-premium">
                                     <div className="h-40 bg-secondary-100 rounded-t-2xl relative overflow-hidden">
                                         {enrollment.course.thumbnailUrl ? (
-                                            <img
+                                            <Image
                                                 src={enrollment.course.thumbnailUrl}
                                                 alt={enrollment.course.title}
-                                                className="w-full h-full object-cover"
+                                                fill
+                                                className="object-cover"
                                             />
                                         ) : (
                                             <div className="w-full h-full flex items-center justify-center text-6xl opacity-20">

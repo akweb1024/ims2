@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect, Suspense, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { signIn } from 'next-auth/react';
@@ -36,14 +36,7 @@ function UsersContent() {
         }
     }, []);
 
-    useEffect(() => {
-        const timer = setTimeout(() => {
-            fetchUsers(pagination.page);
-        }, 500);
-        return () => clearTimeout(timer);
-    }, [searchTerm, pagination.page]);
-
-    const fetchUsers = async (page = 1) => {
+    const fetchUsers = useCallback(async (page = 1) => {
         setLoading(true);
         try {
             const token = localStorage.getItem('token');
@@ -64,7 +57,14 @@ function UsersContent() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [pagination.limit, searchTerm]);
+
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            fetchUsers(pagination.page);
+        }, 500);
+        return () => clearTimeout(timer);
+    }, [fetchUsers, pagination.page]);
 
     const fetchCompanies = async () => {
         try {

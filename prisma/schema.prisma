@@ -66,6 +66,13 @@ model Company {
   designations        Designation[]        @relation("CompanyToDesignation")
   users               User[]               @relation("UserCompanies")
   appConfigurations   AppConfiguration[]
+  
+  // IT Management Relations
+  itProjects          ITProject[]          @relation("CompanyITProjects")
+  itTasks             ITTask[]             @relation("CompanyITTasks")
+  itTimeEntries       ITTimeEntry[]        @relation("CompanyITTimeEntries")
+  itDepartmentRevenue ITDepartmentRevenue[] @relation("CompanyITRevenue")
+  itPerformanceMetrics ITPerformanceMetric[] @relation("CompanyITPerformance")
 }
 
 model Department {
@@ -178,6 +185,18 @@ model User {
   sentCommunications       ManuscriptCommunication[] @relation("SentCommunications")
   receivedCommunications   ManuscriptCommunication[] @relation("ReceivedCommunications")
   coAuthorInvitations      CoAuthorInvitation[]
+  
+  // IT Management Relations
+  managedProjects          ITProject[]          @relation("ProjectManager")
+  ledProjects              ITProject[]          @relation("TeamLead")
+  assignedITTasks          ITTask[]             @relation("ITTaskAssignee")
+  createdITTasks           ITTask[]             @relation("ITTaskCreator")
+  reportedITTasks          ITTask[]             @relation("ITTaskReporter")
+  itTimeEntries            ITTimeEntry[]        @relation("ITTimeEntries")
+  itTaskStatusChanges      ITTaskStatusHistory[] @relation("ITStatusChanger")
+  itProjectComments        ITProjectComment[]   @relation("ITProjectComments")
+  itTaskComments           ITTaskComment[]      @relation("ITTaskComments")
+  itPerformanceMetrics     ITPerformanceMetric[] @relation("ITPerformance")
 
   @@index([email])
   @@index([role])
@@ -2787,4 +2806,347 @@ enum EditorialRole {
   REVIEWER
   EDITORIAL_ASSISTANT
   ADVISORY_BOARD
+}
+
+// ============================================
+// IT MANAGEMENT MODULE - Project & Task Management with Revenue Tracking
+// ============================================
+
+model ITProject {
+  id                String                @id @default(uuid())
+  companyId         String
+  projectCode       String                @unique
+  name              String
+  description       String?
+  category          ProjectCategory       @default(DEVELOPMENT)
+  type              ProjectType           @default(SUPPORT)
+  status            ProjectStatus         @default(PLANNING)
+  priority          Priority              @default(MEDIUM)
+  
+  // Client & Assignment
+  clientId          String?
+  clientType        ClientType?
+  projectManagerId  String?
+  teamLeadId        String?
+  
+  // Timeline
+  startDate         DateTime?
+  endDate           DateTime?
+  estimatedHours    Float?
+  actualHours       Float                 @default(0)
+  
+  // Financial
+  isRevenueBased    Boolean               @default(false)
+  estimatedRevenue  Float                 @default(0)
+  actualRevenue     Float                 @default(0)
+  currency          String                @default("INR")
+  itDepartmentCut   Float                 @default(0)
+  itRevenueEarned   Float                 @default(0)
+  
+  // Billing
+  billingType       BillingType?
+  hourlyRate        Float?
+  isBilled          Boolean               @default(false)
+  invoiceId         String?
+  
+  // Metadata
+  tags              String[]
+  attachments       String[]
+  createdAt         DateTime              @default(now())
+  updatedAt         DateTime              @updatedAt
+  completedAt       DateTime?
+  
+  // Relations
+  company           Company               @relation("CompanyITProjects", fields: [companyId], references: [id], onDelete: Cascade)
+  projectManager    User?                 @relation("ProjectManager", fields: [projectManagerId], references: [id])
+  teamLead          User?                 @relation("TeamLead", fields: [teamLeadId], references: [id])
+  tasks             ITTask[]
+  milestones        ITProjectMilestone[]
+  timeEntries       ITTimeEntry[]
+  comments          ITProjectComment[]
+  
+  @@index([companyId])
+  @@index([status])
+  @@index([type])
+  @@index([projectManagerId])
+  @@index([isRevenueBased])
+}
+
+model ITTask {
+  id                String                  @id @default(uuid())
+  companyId         String
+  projectId         String?
+  taskCode          String                  @unique
+  
+  // Basic Info
+  title             String
+  description       String?
+  category          TaskCategory            @default(GENERAL)
+  type              TaskType                @default(SUPPORT)
+  priority          Priority                @default(MEDIUM)
+  status            TaskStatus              @default(PENDING)
+  
+  // Assignment
+  assignedToId      String?
+  createdById       String
+  reporterId        String?
+  
+  // Timeline
+  startDate         DateTime?
+  dueDate           DateTime?
+  completedAt       DateTime?
+  estimatedHours    Float?
+  actualHours       Float                   @default(0)
+  
+  // Financial
+  isRevenueBased    Boolean                 @default(false)
+  estimatedValue    Float                   @default(0)
+  actualValue       Float                   @default(0)
+  currency          String                  @default("INR")
+  itDepartmentCut   Float                   @default(0)
+  itRevenueEarned   Float                   @default(0)
+  isPaid            Boolean                 @default(false)
+  paymentDate       DateTime?
+  
+  // Progress Tracking
+  progressPercent   Int                     @default(0)
+  blockers          String?
+  dependencies      String[]
+  
+  // Metadata
+  tags              String[]
+  attachments       String[]
+  createdAt         DateTime                @default(now())
+  updatedAt         DateTime                @updatedAt
+  
+  // Relations
+  company           Company                 @relation("CompanyITTasks", fields: [companyId], references: [id], onDelete: Cascade)
+  project           ITProject?              @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  assignedTo        User?                   @relation("ITTaskAssignee", fields: [assignedToId], references: [id])
+  createdBy         User                    @relation("ITTaskCreator", fields: [createdById], references: [id])
+  reporter          User?                   @relation("ITTaskReporter", fields: [reporterId], references: [id])
+  timeEntries       ITTimeEntry[]
+  comments          ITTaskComment[]
+  statusHistory     ITTaskStatusHistory[]
+  
+  @@index([companyId])
+  @@index([projectId])
+  @@index([assignedToId])
+  @@index([createdById])
+  @@index([status])
+  @@index([type])
+  @@index([isRevenueBased])
+}
+
+model ITProjectMilestone {
+  id              String          @id @default(uuid())
+  projectId       String
+  name            String
+  description     String?
+  dueDate         DateTime
+  completedAt     DateTime?
+  status          String          @default("PENDING")
+  paymentAmount   Float?
+  isPaid          Boolean         @default(false)
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  
+  project         ITProject       @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  
+  @@index([projectId])
+  @@index([status])
+}
+
+model ITTimeEntry {
+  id              String          @id @default(uuid())
+  companyId       String
+  projectId       String?
+  taskId          String?
+  userId          String
+  
+  date            DateTime        @default(now())
+  hours           Float
+  description     String?
+  isBillable      Boolean         @default(false)
+  hourlyRate      Float?
+  amount          Float?
+  
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  
+  company         Company         @relation("CompanyITTimeEntries", fields: [companyId], references: [id], onDelete: Cascade)
+  project         ITProject?      @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  task            ITTask?         @relation(fields: [taskId], references: [id], onDelete: SetNull)
+  user            User            @relation("ITTimeEntries", fields: [userId], references: [id])
+  
+  @@index([companyId])
+  @@index([projectId])
+  @@index([taskId])
+  @@index([userId])
+  @@index([date])
+}
+
+model ITTaskStatusHistory {
+  id              String          @id @default(uuid())
+  taskId          String
+  changedById     String
+  
+  previousStatus  TaskStatus
+  newStatus       TaskStatus
+  comment         String?
+  changedAt       DateTime        @default(now())
+  
+  task            ITTask          @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  changedBy       User            @relation("ITStatusChanger", fields: [changedById], references: [id])
+  
+  @@index([taskId])
+  @@index([changedById])
+}
+
+model ITProjectComment {
+  id              String          @id @default(uuid())
+  projectId       String
+  userId          String
+  content         String
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  
+  project         ITProject       @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user            User            @relation("ITProjectComments", fields: [userId], references: [id])
+  
+  @@index([projectId])
+  @@index([userId])
+}
+
+model ITTaskComment {
+  id              String          @id @default(uuid())
+  taskId          String
+  userId          String
+  content         String
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  
+  task            ITTask          @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  user            User            @relation("ITTaskComments", fields: [userId], references: [id])
+  
+  @@index([taskId])
+  @@index([userId])
+}
+
+model ITDepartmentRevenue {
+  id              String          @id @default(uuid())
+  companyId       String
+  
+  month           Int
+  year            Int
+  
+  totalRevenue    Float           @default(0)
+  projectRevenue  Float           @default(0)
+  taskRevenue     Float           @default(0)
+  
+  totalProjects   Int             @default(0)
+  totalTasks      Int             @default(0)
+  completedTasks  Int             @default(0)
+  
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  
+  company         Company         @relation("CompanyITRevenue", fields: [companyId], references: [id], onDelete: Cascade)
+  
+  @@unique([companyId, month, year])
+  @@index([companyId])
+  @@index([year, month])
+}
+
+model ITPerformanceMetric {
+  id                    String          @id @default(uuid())
+  companyId             String
+  userId                String
+  
+  month                 Int
+  year                  Int
+  
+  tasksCompleted        Int             @default(0)
+  tasksInProgress       Int             @default(0)
+  tasksCreated          Int             @default(0)
+  averageCompletionTime Float           @default(0)
+  revenueGenerated      Float           @default(0)
+  billableHours         Float           @default(0)
+  nonBillableHours      Float           @default(0)
+  productivityScore     Float           @default(0)
+  
+  createdAt             DateTime        @default(now())
+  updatedAt             DateTime        @updatedAt
+  
+  company               Company         @relation("CompanyITPerformance", fields: [companyId], references: [id], onDelete: Cascade)
+  user                  User            @relation("ITPerformance", fields: [userId], references: [id])
+  
+  @@unique([companyId, userId, month, year])
+  @@index([companyId])
+  @@index([userId])
+  @@index([year, month])
+}
+
+// Enums for IT Management
+
+enum ProjectCategory {
+  DEVELOPMENT
+  INFRASTRUCTURE
+  SECURITY
+  SUPPORT
+  MAINTENANCE
+  UPGRADE
+  MIGRATION
+  TRAINING
+  CONSULTING
+  RESEARCH
+}
+
+enum ProjectType {
+  REVENUE
+  SUPPORT
+  MAINTENANCE
+  ENHANCEMENT
+}
+
+enum ProjectStatus {
+  PLANNING
+  IN_PROGRESS
+  ON_HOLD
+  TESTING
+  COMPLETED
+  CANCELLED
+  ARCHIVED
+}
+
+enum ClientType {
+  INTERNAL
+  EXTERNAL
+  CUSTOMER
+}
+
+enum BillingType {
+  FIXED
+  HOURLY
+  MILESTONE
+  RETAINER
+}
+
+enum TaskCategory {
+  BUG_FIX
+  FEATURE
+  ENHANCEMENT
+  SUPPORT
+  DOCUMENTATION
+  TESTING
+  DEPLOYMENT
+  RESEARCH
+  GENERAL
+}
+
+enum TaskType {
+  REVENUE
+  SUPPORT
+  MAINTENANCE
+  URGENT
 }

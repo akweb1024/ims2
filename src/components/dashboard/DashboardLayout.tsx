@@ -364,6 +364,15 @@ export default function DashboardLayout({ children, userRole: propUserRole = 'CU
                 icon: '🛠️',
                 categories: [
                     {
+                        title: 'IT Management',
+                        items: [
+                            { name: 'IT Dashboard', href: '/dashboard/it-management', icon: '📊', roles: ['*'] },
+                            { name: 'Projects', href: '/dashboard/it-management/projects', icon: '📁', roles: ['*'] },
+                            { name: 'Task Board', href: '/dashboard/it-management/tasks', icon: '✅', roles: ['*'] },
+                            { name: 'Revenue Analytics', href: '/dashboard/it-management/revenue', icon: '💰', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'IT_MANAGER', 'IT_ADMIN'] },
+                        ]
+                    },
+                    {
                         title: 'Assets',
                         items: [
                             { name: 'Asset Inventory', href: '/dashboard/it/assets', icon: '💻', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER'] },

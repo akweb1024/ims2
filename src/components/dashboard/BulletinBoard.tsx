@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import FormattedDate from '@/components/common/FormattedDate';
 
 export default function BulletinBoard({ limit = 5 }: { limit?: number }) {
@@ -10,14 +10,7 @@ export default function BulletinBoard({ limit = 5 }: { limit?: number }) {
     const [showModal, setShowModal] = useState(false);
     const [creating, setCreating] = useState(false);
 
-    useEffect(() => {
-        const userData = localStorage.getItem('user');
-        if (userData) setUserRole(JSON.parse(userData).role);
-
-        fetchAnnouncements();
-    }, [limit]);
-
-    const fetchAnnouncements = async () => {
+    const fetchAnnouncements = useCallback(async () => {
         setLoading(true);
         try {
             const token = localStorage.getItem('token');
@@ -32,7 +25,14 @@ export default function BulletinBoard({ limit = 5 }: { limit?: number }) {
         } finally {
             setLoading(false);
         }
-    };
+    }, [limit]);
+
+    useEffect(() => {
+        const userData = localStorage.getItem('user');
+        if (userData) setUserRole(JSON.parse(userData).role);
+
+        fetchAnnouncements();
+    }, [fetchAnnouncements]);
 
     const handleCreate = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();

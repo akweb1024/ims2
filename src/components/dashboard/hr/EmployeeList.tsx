@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { Edit, Filter, Search, X } from 'lucide-react';
 
 interface EmployeeListProps {
@@ -237,7 +238,7 @@ export default function EmployeeList({
                             <div className="flex flex-col items-center text-center mb-6">
                                 <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-primary-50 to-primary-100 flex items-center justify-center font-black text-3xl text-primary-600 mb-4 shadow-inner ring-4 ring-white">
                                     {emp.profilePicture ? (
-                                        <img src={emp.profilePicture} alt="Profile" className="w-full h-full object-cover rounded-2xl" />
+                                        <Image src={emp.profilePicture} alt="Profile" width={80} height={80} className="w-full h-full object-cover rounded-2xl" />
                                     ) : (
                                         (emp.user.name?.[0] || emp.user.email[0]).toUpperCase()
                                     )}

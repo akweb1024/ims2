@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import Image from 'next/image';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
@@ -30,13 +31,7 @@ export default function EmployeeProfilePage() {
         reason: ''
     });
 
-    useEffect(() => {
-        if (params.id) {
-            fetchEmployeeDetails();
-        }
-    }, [params.id]);
-
-    const fetchEmployeeDetails = async () => {
+    const fetchEmployeeDetails = useCallback(async () => {
         try {
             const token = localStorage.getItem('token');
             const res = await fetch(`/api/hr/employees/${params.id}`, {
@@ -52,9 +47,9 @@ export default function EmployeeProfilePage() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [params.id]);
 
-    const fetchGrowthData = async () => {
+    const fetchGrowthData = useCallback(async () => {
         if (growthData) return;
         try {
             const token = localStorage.getItem('token');
@@ -67,13 +62,19 @@ export default function EmployeeProfilePage() {
         } catch (err) {
             console.error(err);
         }
-    };
+    }, [growthData, params.id]);
+
+    useEffect(() => {
+        if (params.id) {
+            fetchEmployeeDetails();
+        }
+    }, [params.id, fetchEmployeeDetails]);
 
     useEffect(() => {
         if (activeTab === 'growth') {
             fetchGrowthData();
         }
-    }, [activeTab]);
+    }, [activeTab, fetchGrowthData]);
 
     const handleAddIncrement = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -238,7 +239,7 @@ export default function EmployeeProfilePage() {
                         <div className="card-premium p-6 text-center">
                             <div className="w-24 h-24 rounded-full bg-primary-100 mx-auto mb-4 flex items-center justify-center text-3xl font-bold text-primary-600 overflow-hidden border-4 border-white shadow-sm">
                                 {employee.profilePicture ? (
-                                    <img src={employee.profilePicture} alt="Profile" className="w-full h-full object-cover" />
+                                    <Image src={employee.profilePicture} alt="Profile" fill className="object-cover" />
                                 ) : (
                                     (employee.user.name?.[0] || employee.user.email[0]).toUpperCase()
                                 )}
@@ -635,7 +636,7 @@ export default function EmployeeProfilePage() {
                                                 <div key={course.id} className="card-premium p-4 flex gap-4">
                                                     <div className="w-16 h-16 rounded-lg bg-secondary-200 flex-shrink-0 overflow-hidden">
                                                         {course.thumbnailUrl ? (
-                                                            <img src={course.thumbnailUrl} alt="" className="w-full h-full object-cover" />
+                                                            <Image src={course.thumbnailUrl} alt="" fill className="object-cover" />
                                                         ) : (
                                                             <div className="w-full h-full flex items-center justify-center text-xs font-bold text-secondary-400">IMG</div>
                                                         )}
@@ -771,7 +772,7 @@ export default function EmployeeProfilePage() {
                                         <div className="col-span-2 grid grid-cols-[100px_1fr] gap-6 items-center bg-secondary-50 p-4 rounded-xl">
                                             <div className="relative w-24 h-24 rounded-full overflow-hidden bg-white border-2 border-secondary-200">
                                                 {empForm.profilePicture ? (
-                                                    <img src={empForm.profilePicture} alt="Profile" className="w-full h-full object-cover" />
+                                                    <Image src={empForm.profilePicture} alt="Profile" fill className="object-cover" />
                                                 ) : (
                                                     <div className="w-full h-full flex items-center justify-center text-3xl font-bold text-secondary-300">
                                                         {(empForm.email || 'U')[0].toUpperCase()}

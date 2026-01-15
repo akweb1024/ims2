@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import {
     AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -18,14 +18,7 @@ export default function PaymentsPage() {
     const [userRole, setUserRole] = useState('');
     const [lastSync, setLastSync] = useState<any>(null);
 
-    useEffect(() => {
-        const user = localStorage.getItem('user');
-        if (user) setUserRole(JSON.parse(user).role);
-        fetchPayments();
-        fetchLastSync();
-    }, [period, dateRange]);
-
-    const fetchPayments = async () => {
+    const fetchPayments = useCallback(async () => {
         try {
             const token = localStorage.getItem('token');
             const queryParams = new URLSearchParams({
@@ -43,9 +36,9 @@ export default function PaymentsPage() {
             }
         } catch (error) { console.error(error); }
         finally { setLoading(false); }
-    };
+    }, [period, dateRange]);
 
-    const fetchLastSync = async () => {
+    const fetchLastSync = useCallback(async () => {
         try {
             const token = localStorage.getItem('token');
             const res = await fetch('/api/payments/razorpay/sync', {
@@ -56,7 +49,16 @@ export default function PaymentsPage() {
                 setLastSync(data.lastSync);
             }
         } catch (error) { console.error(error); }
-    };
+    }, []);
+
+    useEffect(() => {
+        const user = localStorage.getItem('user');
+        if (user) setUserRole(JSON.parse(user).role);
+        fetchPayments();
+        fetchLastSync();
+    }, [fetchPayments, fetchLastSync]);
+
+
 
     const handleSync = async () => {
         setSyncing(true);

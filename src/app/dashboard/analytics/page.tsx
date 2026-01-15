@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import {
     AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -13,6 +13,23 @@ export default function AnalyticsPage() {
     const [loading, setLoading] = useState(true);
     const [userRole, setUserRole] = useState('CUSTOMER');
 
+    const fetchAnalytics = useCallback(async () => {
+        try {
+            const token = localStorage.getItem('token');
+            const [res, leakRes] = await Promise.all([
+                fetch('/api/analytics', { headers: { 'Authorization': `Bearer ${token}` } }),
+                fetch('/api/analytics/leakage', { headers: { 'Authorization': `Bearer ${token}` } })
+            ]);
+
+            if (res.ok) setData(await res.json());
+            if (leakRes.ok) setLeakageData(await leakRes.json());
+        } catch (err) {
+            console.error(err);
+        } finally {
+            setLoading(false);
+        }
+    }, []);
+
     useEffect(() => {
         const userData = localStorage.getItem('user');
         if (userData) {
@@ -20,25 +37,8 @@ export default function AnalyticsPage() {
             setUserRole(user.role);
         }
 
-        const fetchAnalytics = async () => {
-            try {
-                const token = localStorage.getItem('token');
-                const [res, leakRes] = await Promise.all([
-                    fetch('/api/analytics', { headers: { 'Authorization': `Bearer ${token}` } }),
-                    fetch('/api/analytics/leakage', { headers: { 'Authorization': `Bearer ${token}` } })
-                ]);
-
-                if (res.ok) setData(await res.json());
-                if (leakRes.ok) setLeakageData(await leakRes.json());
-            } catch (err) {
-                console.error(err);
-            } finally {
-                setLoading(false);
-            }
-        };
-
         fetchAnalytics();
-    }, []);
+    }, [fetchAnalytics]);
 
     if (loading) {
         return (

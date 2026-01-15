@@ -39,11 +39,6 @@ function CoAuthorAcceptContent() {
             .catch(() => {
                 setStatus('error');
                 setMessage('An error occurred. Please try again later.');
-            })
-            .finally(() => {
-                if (status === 'loading') {
-                    // Stay in loading until we check logic
-                }
             });
     }, [token]);
 
@@ -120,7 +115,7 @@ function CoAuthorAcceptContent() {
                         <div className="w-20 h-20 bg-rose-100 rounded-full flex items-center justify-center mx-auto mb-6">
                             <AlertCircle className="w-10 h-10 text-rose-600" />
                         </div>
-                        <h1 className="text-3xl font-black text-secondary-900 mb-4">Something's Wrong</h1>
+                        <h1 className="text-3xl font-black text-secondary-900 mb-4">Something&apos;s Wrong</h1>
                         <p className="text-secondary-600 mb-8">{message}</p>
                         <button
                             onClick={() => router.push('/')}

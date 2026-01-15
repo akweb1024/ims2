@@ -54,10 +54,10 @@ export default function OnboardingManager() {
     };
 
     const removeQuestion = (index: number) => {
-        setFormData({
-            ...formData,
-            questions: formData.questions.filter((_: any, i: number) => i !== index)
-        });
+        setFormData((prev: any) => ({
+            ...prev,
+            questions: prev.questions.filter((_: any, i: number) => i !== index)
+        }));
     };
 
     if (isLoading) return <div className="p-10 text-center font-bold text-secondary-400">Loading modules...</div>;

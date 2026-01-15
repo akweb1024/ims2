@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import FormattedDate from '@/components/common/FormattedDate';
+import Image from 'next/image';
 import AchievementSection from '@/components/dashboard/AchievementSection';
 import WorkPlanSection from '@/components/dashboard/WorkPlanSection';
 import DigitalWallet from '@/components/dashboard/DigitalWallet';
@@ -279,7 +280,7 @@ export default function StaffPortalPage() {
                                     <div className="w-32 h-32 rounded-3xl bg-white p-2 shadow-lg ring-4 ring-primary-50">
                                         <div className="w-full h-full rounded-2xl bg-gradient-to-br from-secondary-800 to-secondary-900 flex items-center justify-center text-4xl font-black text-white overflow-hidden">
                                             {fullProfile.profilePicture ? (
-                                                <img src={fullProfile.profilePicture} alt="Profile" className="w-full h-full object-cover" />
+                                                <Image src={fullProfile.profilePicture} alt="Profile" width={128} height={128} className="w-full h-full object-cover" />
                                             ) : (
                                                 (user?.name?.[0] || user?.email?.charAt(0)).toUpperCase()
                                             )}

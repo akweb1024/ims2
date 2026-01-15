@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { Settings, Key, Cloud, MessageSquare, CreditCard, Mail, Database, Lock, Eye, EyeOff, Plus, Trash2, Save, X } from 'lucide-react';
 
@@ -55,15 +55,7 @@ export default function ConfigurationsPage() {
         description: ''
     });
 
-    useEffect(() => {
-        const userData = localStorage.getItem('user');
-        if (userData) {
-            setUser(JSON.parse(userData));
-        }
-        fetchConfigurations();
-    }, [selectedCategory, showValues]);
-
-    const fetchConfigurations = async () => {
+    const fetchConfigurations = useCallback(async () => {
         try {
             const token = localStorage.getItem('token');
             const url = `/api/settings/configurations?category=${selectedCategory}&showValues=${showValues}`;
@@ -81,7 +73,15 @@ export default function ConfigurationsPage() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [selectedCategory, showValues]);
+
+    useEffect(() => {
+        const userData = localStorage.getItem('user');
+        if (userData) {
+            setUser(JSON.parse(userData));
+        }
+        fetchConfigurations();
+    }, [fetchConfigurations]);
 
     const handleSaveConfig = async () => {
         try {
@@ -171,8 +171,8 @@ export default function ConfigurationsPage() {
                                     key={cat.value}
                                     onClick={() => setSelectedCategory(cat.value)}
                                     className={`p-4 rounded-xl border-2 transition-all ${isActive
-                                            ? 'border-primary-500 bg-primary-50 shadow-lg'
-                                            : 'border-secondary-200 bg-white hover:border-primary-300'
+                                        ? 'border-primary-500 bg-primary-50 shadow-lg'
+                                        : 'border-secondary-200 bg-white hover:border-primary-300'
                                         }`}
                                 >
                                     <Icon className={`w-6 h-6 mx-auto mb-2 ${isActive ? 'text-primary-600' : 'text-secondary-400'}`} />

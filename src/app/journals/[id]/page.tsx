@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, use } from 'react';
+import { useState, useEffect, use, useCallback } from 'react';
 import PublicLayout from '@/components/PublicLayout';
 import Link from 'next/link';
 import { Book, Users, Layers, FileText, Calendar, ArrowUpRight } from 'lucide-react';
@@ -10,16 +10,16 @@ export default function JournalHomepage({ params }: { params: Promise<{ id: stri
     const [journal, setJournal] = useState<any>(null);
     const [loading, setLoading] = useState(true);
 
-    useEffect(() => {
-        fetchJournal();
-    }, [id]);
-
-    const fetchJournal = async () => {
+    const fetchJournal = useCallback(async () => {
         try {
             const res = await fetch(`/api/public/journals/${id}`);
             if (res.ok) setJournal(await res.json());
         } catch (error) { console.error(error); } finally { setLoading(false); }
-    };
+    }, [id]);
+
+    useEffect(() => {
+        fetchJournal();
+    }, [fetchJournal]);
 
     if (loading) return <PublicLayout><div className="p-20 text-center">Loading Journal...</div></PublicLayout>;
     if (!journal) return <PublicLayout><div className="p-20 text-center">Journal not found.</div></PublicLayout>;

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -20,17 +20,7 @@ export default function TicketsPage() {
     });
     const router = useRouter();
 
-    useEffect(() => {
-        const userData = localStorage.getItem('user');
-        if (userData) {
-            const u = JSON.parse(userData);
-            setUser(u);
-            setUserRole(u.role);
-            fetchTickets();
-        }
-    }, [statusFilter, pagination.page]);
-
-    const fetchTickets = async () => {
+    const fetchTickets = useCallback(async () => {
         setLoading(true);
         try {
             const token = localStorage.getItem('token');
@@ -49,7 +39,17 @@ export default function TicketsPage() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [pagination.page, pagination.limit, statusFilter]);
+
+    useEffect(() => {
+        const userData = localStorage.getItem('user');
+        if (userData) {
+            const u = JSON.parse(userData);
+            setUser(u);
+            setUserRole(u.role);
+            fetchTickets();
+        }
+    }, [fetchTickets]);
 
     const handleAssignToMe = async (ticketId: string) => {
         try {

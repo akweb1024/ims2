@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import Link from 'next/link';
@@ -22,7 +22,7 @@ export default function DashboardPage() {
 
     const [error, setError] = useState<string | null>(null);
 
-    const fetchDashboardData = async () => {
+    const fetchDashboardData = useCallback(async () => {
         setLoadingData(true);
         setError(null);
         try {
@@ -54,7 +54,7 @@ export default function DashboardPage() {
         } finally {
             setLoadingData(false);
         }
-    };
+    }, [router]);
 
     useEffect(() => {
         if (status === 'unauthenticated') {
@@ -62,7 +62,7 @@ export default function DashboardPage() {
         } else if (status === 'authenticated') {
             fetchDashboardData();
         }
-    }, [status, router]);
+    }, [status, router, fetchDashboardData]);
 
     if (status === 'loading' || loadingData) {
         return (

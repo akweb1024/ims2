@@ -1,0 +1,211 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { prisma } from '@/lib/prisma';
+import { getAuthenticatedUser } from '@/lib/auth-legacy';
+import { createErrorResponse } from '@/lib/api-utils';
+
+export const dynamic = 'force-dynamic';
+
+// Helper function to check if user has IT management access
+function hasITAccess(role: string): boolean {
+    return ['SUPER_ADMIN', 'ADMIN', 'IT_MANAGER', 'IT_ADMIN', 'IT_SUPPORT', 'MANAGER'].includes(role);
+}
+
+// Helper function to check if user can view all projects
+function canViewAllProjects(role: string): boolean {
+    return ['SUPER_ADMIN', 'ADMIN', 'IT_MANAGER', 'IT_ADMIN'].includes(role);
+}
+
+// GET /api/it/projects - List all projects (filtered by role)
+export async function GET(req: NextRequest) {
+    try {
+        const user = await getAuthenticatedUser();
+        if (!user) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
+
+        const companyId = (user as any).companyId;
+        if (!companyId) {
+            return NextResponse.json({ error: 'Company ID required' }, { status: 400 });
+        }
+
+        const { searchParams } = new URL(req.url);
+        const status = searchParams.get('status');
+        const type = searchParams.get('type');
+        const isRevenueBased = searchParams.get('isRevenueBased');
+
+        // Build where clause based on user role
+        const where: any = { companyId };
+
+        // If not admin/IT manager, only show projects where user is involved
+        if (!canViewAllProjects(user.role)) {
+            where.OR = [
+                { projectManagerId: user.id },
+                { teamLeadId: user.id },
+                { tasks: { some: { assignedToId: user.id } } }
+            ];
+        }
+
+        // Apply filters
+        if (status) where.status = status;
+        if (type) where.type = type;
+        if (isRevenueBased !== null) where.isRevenueBased = isRevenueBased === 'true';
+
+        const projects = await prisma.iTProject.findMany({
+            where,
+            include: {
+                projectManager: {
+                    select: {
+                        id: true,
+                        name: true,
+                        email: true,
+                    }
+                },
+                teamLead: {
+                    select: {
+                        id: true,
+                        name: true,
+                        email: true,
+                    }
+                },
+                tasks: {
+                    select: {
+                        id: true,
+                        status: true,
+                    }
+                },
+                _count: {
+                    select: {
+                        tasks: true,
+                        milestones: true,
+                        timeEntries: true,
+                    }
+                }
+            },
+            orderBy: { createdAt: 'desc' }
+        });
+
+        // Calculate task statistics for each project
+        const projectsWithStats = projects.map(project => {
+            const totalTasks = project.tasks.length;
+            const completedTasks = project.tasks.filter(t => t.status === 'COMPLETED').length;
+            const inProgressTasks = project.tasks.filter(t => t.status === 'IN_PROGRESS').length;
+            const completionRate = totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0;
+
+            return {
+                ...project,
+                stats: {
+                    totalTasks,
+                    completedTasks,
+                    inProgressTasks,
+                    completionRate: Math.round(completionRate),
+                }
+            };
+        });
+
+        return NextResponse.json(projectsWithStats);
+    } catch (error) {
+        console.error('Fetch IT Projects Error:', error);
+        return createErrorResponse(error);
+    }
+}
+
+// POST /api/it/projects - Create new project
+export async function POST(req: NextRequest) {
+    try {
+        const user = await getAuthenticatedUser();
+        if (!user) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
+
+        if (!hasITAccess(user.role)) {
+            return NextResponse.json({ error: 'Forbidden - IT access required' }, { status: 403 });
+        }
+
+        const companyId = (user as any).companyId;
+        if (!companyId) {
+            return NextResponse.json({ error: 'Company ID required' }, { status: 400 });
+        }
+
+        const body = await req.json();
+        const {
+            name,
+            description,
+            category,
+            type,
+            status,
+            priority,
+            clientId,
+            clientType,
+            projectManagerId,
+            teamLeadId,
+            startDate,
+            endDate,
+            estimatedHours,
+            isRevenueBased,
+            estimatedRevenue,
+            currency,
+            itDepartmentCut,
+            billingType,
+            hourlyRate,
+            tags,
+        } = body;
+
+        // Validate required fields
+        if (!name) {
+            return NextResponse.json({ error: 'Project name is required' }, { status: 400 });
+        }
+
+        // Generate unique project code
+        const projectCount = await prisma.iTProject.count({ where: { companyId } });
+        const projectCode = `PRJ-${new Date().getFullYear()}-${String(projectCount + 1).padStart(4, '0')}`;
+
+        // Create project
+        const project = await prisma.iTProject.create({
+            data: {
+                companyId,
+                projectCode,
+                name,
+                description,
+                category: category || 'DEVELOPMENT',
+                type: type || 'SUPPORT',
+                status: status || 'PLANNING',
+                priority: priority || 'MEDIUM',
+                clientId,
+                clientType,
+                projectManagerId,
+                teamLeadId,
+                startDate: startDate ? new Date(startDate) : null,
+                endDate: endDate ? new Date(endDate) : null,
+                estimatedHours: estimatedHours ? parseFloat(estimatedHours) : null,
+                isRevenueBased: isRevenueBased || false,
+                estimatedRevenue: estimatedRevenue ? parseFloat(estimatedRevenue) : 0,
+                currency: currency || 'INR',
+                itDepartmentCut: itDepartmentCut ? parseFloat(itDepartmentCut) : 0,
+                billingType,
+                hourlyRate: hourlyRate ? parseFloat(hourlyRate) : null,
+                tags: tags || [],
+            },
+            include: {
+                projectManager: {
+                    select: {
+                        id: true,
+                        name: true,
+                        email: true,
+                    }
+                },
+                teamLead: {
+                    select: {
+                        id: true,
+                        name: true,
+                        email: true,
+                    }
+                },
+            }
+        });
+
+        return NextResponse.json(project, { status: 201 });
+    } catch (error) {
+        console.error('Create IT Project Error:', error);
+        return createErrorResponse(error);
+    }
+}

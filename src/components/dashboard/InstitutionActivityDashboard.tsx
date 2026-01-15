@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Users, BookOpen, MessageSquare, TrendingUp, UserPlus, X, Mail, Phone } from 'lucide-react';
 
 interface InstitutionActivityDashboardProps {
@@ -17,11 +17,7 @@ export default function InstitutionActivityDashboard({ institutionId }: Institut
     const [assignmentRole, setAssignmentRole] = useState('Institution Manager');
     const [notes, setNotes] = useState('');
 
-    useEffect(() => {
-        fetchInstitutionActivity();
-    }, [institutionId]);
-
-    const fetchInstitutionActivity = async () => {
+    const fetchInstitutionActivity = useCallback(async () => {
         try {
             const token = localStorage.getItem('token');
             const res = await fetch(`/api/institutions/activity?institutionId=${institutionId}`, {
@@ -36,7 +32,11 @@ export default function InstitutionActivityDashboard({ institutionId }: Institut
         } finally {
             setLoading(false);
         }
-    };
+    }, [institutionId]);
+
+    useEffect(() => {
+        fetchInstitutionActivity();
+    }, [fetchInstitutionActivity]);
 
     const fetchEmployees = async () => {
         try {
@@ -332,8 +332,8 @@ export default function InstitutionActivityDashboard({ institutionId }: Institut
                                     </p>
                                 </div>
                                 <span className={`px-2 py-1 text-xs font-black rounded ${comm.type === 'EMAIL' ? 'bg-primary-100 text-primary-700' :
-                                        comm.type === 'CALL' ? 'bg-success-100 text-success-700' :
-                                            'bg-secondary-100 text-secondary-700'
+                                    comm.type === 'CALL' ? 'bg-success-100 text-success-700' :
+                                        'bg-secondary-100 text-secondary-700'
                                     }`}>
                                     {comm.type}
                                 </span>
