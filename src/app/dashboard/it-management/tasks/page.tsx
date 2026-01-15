@@ -78,10 +78,16 @@ export default function TasksPage() {
         try {
             const [projectsRes, usersRes] = await Promise.all([
                 fetch('/api/it/projects'),
-                fetch('/api/users')
+                fetch('/api/users?limit=100')
             ]);
-            if (projectsRes.ok) setAllProjects(await projectsRes.json());
-            if (usersRes.ok) setAllUsers(await usersRes.json());
+            if (projectsRes.ok) {
+                const projectsData = await projectsRes.json();
+                setAllProjects(Array.isArray(projectsData) ? projectsData : (projectsData.data || []));
+            }
+            if (usersRes.ok) {
+                const usersData = await usersRes.json();
+                setAllUsers(Array.isArray(usersData) ? usersData : (usersData.data || []));
+            }
         } catch (error) {
             console.error('Failed to fetch filter metadata:', error);
         }
@@ -425,7 +431,7 @@ export default function TasksPage() {
                                 >
                                     <option value="">All People</option>
                                     {Array.isArray(allUsers) && allUsers.map(u => (
-                                        <option key={u.id} value={u.id}>{u.name}</option>
+                                        <option key={u.id} value={u.id}>{u.name} ({u.email})</option>
                                     ))}
                                 </select>
                             </div>

@@ -71,13 +71,16 @@ export default function NewTaskPage() {
 
     const fetchUsers = async () => {
         try {
-            const response = await fetch('/api/users');
+            // Fetch more users for dropdowns, or paginated if necessary
+            const response = await fetch('/api/users?limit=100');
             if (response.ok) {
                 const data = await response.json();
-                setUsers(data);
+                // Handle both direct array and paginated response
+                setUsers(Array.isArray(data) ? data : data.data || []);
             }
         } catch (error) {
             console.error('Failed to fetch users:', error);
+            setUsers([]);
         }
     };
 
@@ -230,7 +233,7 @@ export default function NewTaskPage() {
                                     className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 dark:bg-gray-700 dark:text-white"
                                 >
                                     <option value="">No Project (Standalone Task)</option>
-                                    {projects.map((project) => (
+                                    {projects?.map((project) => (
                                         <option key={project.id} value={project.id}>
                                             {project.projectCode} - {project.name}
                                         </option>
@@ -339,8 +342,8 @@ export default function NewTaskPage() {
                                             })
                                         }
                                         className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 dark:bg-gray-700 dark:text-white ${errors.progressPercent
-                                                ? 'border-red-500'
-                                                : 'border-gray-300 dark:border-gray-600'
+                                            ? 'border-red-500'
+                                            : 'border-gray-300 dark:border-gray-600'
                                             }`}
                                         placeholder="0"
                                         min="0"
@@ -404,8 +407,8 @@ export default function NewTaskPage() {
                                                 })
                                             }
                                             className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 dark:bg-gray-700 dark:text-white ${errors.estimatedValue
-                                                    ? 'border-red-500'
-                                                    : 'border-gray-300 dark:border-gray-600'
+                                                ? 'border-red-500'
+                                                : 'border-gray-300 dark:border-gray-600'
                                                 }`}
                                             placeholder="10000"
                                             min="0"
@@ -494,7 +497,7 @@ export default function NewTaskPage() {
                                     className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 dark:bg-gray-700 dark:text-white"
                                 >
                                     <option value="">Unassigned</option>
-                                    {users.map((user) => (
+                                    {users?.map((user) => (
                                         <option key={user.id} value={user.id}>
                                             {user.name} ({user.email})
                                         </option>

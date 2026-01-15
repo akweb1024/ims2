@@ -60,13 +60,16 @@ export default function NewProjectPage() {
 
     const fetchUsers = async () => {
         try {
-            const response = await fetch('/api/users');
+            // Fetch more users for dropdowns, or paginated if necessary
+            const response = await fetch('/api/users?limit=100');
             if (response.ok) {
                 const data = await response.json();
-                setUsers(data);
+                // Handle both direct array and paginated response
+                setUsers(Array.isArray(data) ? data : data.data || []);
             }
         } catch (error) {
             console.error('Failed to fetch users:', error);
+            setUsers([]);
         }
     };
 
@@ -365,8 +368,8 @@ export default function NewProjectPage() {
                                                 })
                                             }
                                             className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white ${errors.estimatedRevenue
-                                                    ? 'border-red-500'
-                                                    : 'border-gray-300 dark:border-gray-600'
+                                                ? 'border-red-500'
+                                                : 'border-gray-300 dark:border-gray-600'
                                                 }`}
                                             placeholder="100000"
                                             min="0"
@@ -395,8 +398,8 @@ export default function NewProjectPage() {
                                                 })
                                             }
                                             className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white ${errors.itDepartmentCut
-                                                    ? 'border-red-500'
-                                                    : 'border-gray-300 dark:border-gray-600'
+                                                ? 'border-red-500'
+                                                : 'border-gray-300 dark:border-gray-600'
                                                 }`}
                                             placeholder="30"
                                             min="0"
@@ -491,7 +494,7 @@ export default function NewProjectPage() {
                                     className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
                                 >
                                     <option value="">Select Project Manager</option>
-                                    {users.map((user) => (
+                                    {users?.map((user) => (
                                         <option key={user.id} value={user.id}>
                                             {user.name} ({user.email})
                                         </option>
@@ -512,7 +515,7 @@ export default function NewProjectPage() {
                                     className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
                                 >
                                     <option value="">Select Team Lead</option>
-                                    {users.map((user) => (
+                                    {users?.map((user) => (
                                         <option key={user.id} value={user.id}>
                                             {user.name} ({user.email})
                                         </option>

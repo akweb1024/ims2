@@ -69,7 +69,7 @@ export default function EditTaskPage() {
             const [taskRes, projectsRes, usersRes] = await Promise.all([
                 fetch(`/api/it/tasks/${taskId}`),
                 fetch('/api/it/projects'),
-                fetch('/api/users')
+                fetch('/api/users?limit=100')
             ]);
 
             if (taskRes.ok && projectsRes.ok && usersRes.ok) {
@@ -77,8 +77,8 @@ export default function EditTaskPage() {
                 const projectsData = await projectsRes.json();
                 const usersData = await usersRes.json();
 
-                setProjects(projectsData);
-                setUsers(usersData);
+                setProjects(Array.isArray(projectsData) ? projectsData : (projectsData.data || []));
+                setUsers(Array.isArray(usersData) ? usersData : (usersData.data || []));
 
                 // Pre-fill form
                 setFormData({
@@ -260,7 +260,7 @@ export default function EditTaskPage() {
                                     className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 dark:bg-gray-700 dark:text-white"
                                 >
                                     <option value="">No Project (Standalone Task)</option>
-                                    {projects.map((project) => (
+                                    {projects?.map((project) => (
                                         <option key={project.id} value={project.id}>
                                             {project.projectCode} - {project.name}
                                         </option>
@@ -484,9 +484,9 @@ export default function EditTaskPage() {
                                     className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 dark:bg-gray-700 dark:text-white"
                                 >
                                     <option value="">Unassigned</option>
-                                    {users.map((user) => (
+                                    {users?.map((user) => (
                                         <option key={user.id} value={user.id}>
-                                            {user.name}
+                                            {user.name} ({user.email})
                                         </option>
                                     ))}
                                 </select>

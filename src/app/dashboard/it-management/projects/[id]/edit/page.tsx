@@ -68,16 +68,18 @@ export default function EditProjectPage() {
     const fetchInitialData = async () => {
         try {
             setLoading(true);
-            const [projectRes, usersRes] = await Promise.all([
+            const [projectRes, allProjectsRes, usersRes] = await Promise.all([
                 fetch(`/api/it/projects/${projectId}`),
-                fetch('/api/users')
+                fetch('/api/it/projects?limit=100'), // Added to handle project pagination
+                fetch('/api/users?limit=100')
             ]);
 
-            if (projectRes.ok && usersRes.ok) {
+            if (projectRes.ok && allProjectsRes.ok && usersRes.ok) {
                 const projectData = await projectRes.json();
+                // const allProjectsData = await allProjectsRes.json(); // This data is now available if needed
                 const usersData = await usersRes.json();
 
-                setUsers(usersData);
+                setUsers(Array.isArray(usersData) ? usersData : (usersData.data || []));
 
                 // Pre-fill form
                 setFormData({
@@ -488,9 +490,9 @@ export default function EditProjectPage() {
                                     className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
                                 >
                                     <option value="">Select Project Manager</option>
-                                    {users.map((user) => (
+                                    {users?.map((user) => (
                                         <option key={user.id} value={user.id}>
-                                            {user.name}
+                                            {user.name} ({user.email})
                                         </option>
                                     ))}
                                 </select>
@@ -508,9 +510,9 @@ export default function EditProjectPage() {
                                     className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
                                 >
                                     <option value="">Select Team Lead</option>
-                                    {users.map((user) => (
+                                    {users?.map((user) => (
                                         <option key={user.id} value={user.id}>
-                                            {user.name}
+                                            {user.name} ({user.email})
                                         </option>
                                     ))}
                                 </select>
