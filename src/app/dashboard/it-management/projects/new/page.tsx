@@ -545,7 +545,7 @@ export default function NewProjectPage() {
 
                         {milestones.length === 0 ? (
                             <p className="text-gray-500 dark:text-gray-400 text-center py-8">
-                                No milestones added yet. Click "Add Milestone" to create one.
+                                No milestones added yet. Click &quot;Add Milestone&quot; to create one.
                             </p>
                         ) : (
                             <div className="space-y-4">

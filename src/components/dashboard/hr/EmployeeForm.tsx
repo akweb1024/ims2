@@ -454,6 +454,8 @@ export default function EmployeeForm({
                                 { id: 'IT', label: 'IT Services / Assets', color: 'text-cyan-600' },
                                 { id: 'WEB_MONITOR', label: 'Web Monitor', color: 'text-sky-600' },
                                 { id: 'QUALITY', label: 'Quality Control', color: 'text-teal-600' },
+                                { id: 'COMPANY', label: 'Company Management', color: 'text-slate-600' },
+                                { id: 'CRM', label: 'CRM / Sales', color: 'text-pink-600' },
                             ].map(mod => (
                                 <label
                                     key={mod.id}

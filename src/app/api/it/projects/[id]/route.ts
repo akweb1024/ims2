@@ -190,8 +190,12 @@ export async function PATCH(
 
             for (const field of allowedFields) {
                 if (body[field] !== undefined) {
-                    if (field.includes('Date') && body[field]) {
-                        updateData[field] = new Date(body[field]);
+                    if (field.includes('Date')) {
+                        if (body[field]) {
+                            updateData[field] = new Date(body[field]);
+                        } else {
+                            updateData[field] = null;
+                        }
                     } else if (field.includes('Hours') || field.includes('Revenue') || field.includes('Cut') || field.includes('Rate')) {
                         // Logic fix: Allow 0 value explicitly, handle NaN
                         const val = parseFloat(body[field]?.toString());
@@ -200,7 +204,7 @@ export async function PATCH(
                         // For UPDATE with ITProjectUpdateInput, use relation fields
                         if (body[field]) {
                             updateData.projectManager = { connect: { id: body[field] } };
-                        } else if (body[field] === null || body[field] === '') {
+                        } else {
                             updateData.projectManager = { disconnect: true };
                         }
                         // Don't add projectManagerId to updateData - skip to next field
@@ -209,7 +213,7 @@ export async function PATCH(
                         // For UPDATE with ITProjectUpdateInput, use relation fields
                         if (body[field]) {
                             updateData.teamLead = { connect: { id: body[field] } };
-                        } else if (body[field] === null || body[field] === '') {
+                        } else {
                             updateData.teamLead = { disconnect: true };
                         }
                         // Don't add teamLeadId to updateData - skip to next field

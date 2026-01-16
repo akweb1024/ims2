@@ -36,8 +36,8 @@ export default function ApplicantPipeline() {
         return rawApplications.map(app => ({
             ...app,
             // Simulate AI Score if not present (deterministic based on name length for stability)
-            aiMatchScore: app.aiMatchScore || Math.floor(60 + (app.candidateName.length * 2) % 35),
-            aiTags: app.aiTags || (app.candidateName.length % 2 === 0 ? ['Strong Tech', 'Culture Fit'] : ['Senior Level', 'Remote'])
+            aiMatchScore: app.aiMatchScore || Math.floor(60 + (app.applicantName.length * 2) % 35),
+            aiTags: app.aiTags || (app.applicantName.length % 2 === 0 ? ['Strong Tech', 'Culture Fit'] : ['Senior Level', 'Remote'])
         })).sort((a, b) => b.aiMatchScore - a.aiMatchScore); // AI Rank Sorting
     }, [rawApplications]);
 
@@ -72,9 +72,9 @@ export default function ApplicantPipeline() {
         if (!applications) return { total: 0, interview: 0, offer: 0, hired: 0 };
         return {
             total: applications.length,
-            interview: applications.filter(a => a.status === 'INTERVIEW').length,
-            offer: applications.filter(a => a.status === 'OFFER').length,
-            hired: applications.filter(a => a.status === 'HIRED').length,
+            interview: applications.filter(a => (a.status || '').toUpperCase() === 'INTERVIEW').length,
+            offer: applications.filter(a => (a.status || '').toUpperCase() === 'OFFER').length,
+            hired: applications.filter(a => (a.status || '').toUpperCase() === 'HIRED').length,
         };
     }, [applications]);
 
@@ -129,7 +129,7 @@ export default function ApplicantPipeline() {
             <div className="flex-1 overflow-x-auto pb-4 scrollbar-thin scrollbar-thumb-gray-200 scrollbar-track-transparent">
                 <div className="flex gap-6 min-w-max h-full px-1">
                     {stages.map((stage) => {
-                        const stageApps = applications?.filter(a => a.status === stage) || [];
+                        const stageApps = applications?.filter(a => (a.status || 'APPLIED').toUpperCase() === stage) || [];
 
                         return (
                             <div
@@ -177,7 +177,7 @@ export default function ApplicantPipeline() {
                                             )}
 
                                             <div className="flex justify-between items-start mb-1">
-                                                <h5 className="font-bold text-gray-900 line-clamp-1">{app.candidateName}</h5>
+                                                <h5 className="font-bold text-gray-900 line-clamp-1">{app.applicantName}</h5>
                                             </div>
                                             <p className="text-xs text-secondary-500 mb-3 line-clamp-1 font-medium">{app.jobPosting?.title || 'Unknown Role'}</p>
 
@@ -198,7 +198,7 @@ export default function ApplicantPipeline() {
                                                             <FileText size={14} />
                                                         </a>
                                                     )}
-                                                    <a href={`mailto:${app.candidateEmail}`} className="p-1.5 rounded-lg text-gray-400 hover:bg-purple-50 hover:text-purple-600 transition-colors" title="Email">
+                                                    <a href={`mailto:${app.applicantEmail}`} className="p-1.5 rounded-lg text-gray-400 hover:bg-purple-50 hover:text-purple-600 transition-colors" title="Email">
                                                         <Mail size={14} />
                                                     </a>
                                                 </div>
@@ -236,7 +236,7 @@ export default function ApplicantPipeline() {
                         <div className="p-6 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center">
                             <div>
                                 <h3 className="text-lg font-black text-gray-900">Schedule Interview</h3>
-                                <p className="text-xs text-gray-500 mt-0.5">Candidate: <span className="font-bold text-gray-700">{selectedAppForInterview.candidateName}</span></p>
+                                <p className="text-xs text-gray-500 mt-0.5">Candidate: <span className="font-bold text-gray-700">{selectedAppForInterview.applicantName}</span></p>
                             </div>
                             <button onClick={() => setShowInterviewModal(false)} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
                                 <XCircle className="h-5 w-5 text-gray-400" />

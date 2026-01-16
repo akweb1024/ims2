@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, use } from 'react';
+import { useState, useEffect, use, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import Link from 'next/link';
@@ -35,18 +35,7 @@ export default function EditJournalPage({ params }: { params: Promise<{ id: stri
     const [volumeForm, setVolumeForm] = useState({ volumeNumber: '', year: new Date().getFullYear().toString() });
     const [issueForm, setIssueForm] = useState({ issueNumber: '', month: '', title: '' });
 
-    useEffect(() => {
-        const userData = localStorage.getItem('user');
-        if (userData) {
-            const user = JSON.parse(userData);
-            setUserRole(user.role);
-        }
-        fetchJournal();
-        fetchBoard();
-        fetchVolumes();
-    }, [id]);
-
-    const fetchJournal = async () => {
+    const fetchJournal = useCallback(async () => {
         try {
             const token = localStorage.getItem('token');
             const res = await fetch(`/api/journals/${id}`, { headers: { 'Authorization': `Bearer ${token}` } });
@@ -59,23 +48,34 @@ export default function EditJournalPage({ params }: { params: Promise<{ id: stri
                 });
             }
         } catch (err) { console.error(err); } finally { setLoading(false); }
-    };
+    }, [id]);
 
-    const fetchBoard = async () => {
+    const fetchBoard = useCallback(async () => {
         try {
             const token = localStorage.getItem('token');
             const res = await fetch(`/api/journals/${id}/editorial-board`, { headers: { 'Authorization': `Bearer ${token}` } });
             if (res.ok) setBoardMembers(await res.json());
         } catch (err) { console.error(err); }
-    };
+    }, [id]);
 
-    const fetchVolumes = async () => {
+    const fetchVolumes = useCallback(async () => {
         try {
             const token = localStorage.getItem('token');
             const res = await fetch(`/api/journals/${id}/volumes`, { headers: { 'Authorization': `Bearer ${token}` } });
             if (res.ok) setVolumes(await res.json());
         } catch (err) { console.error(err); }
-    };
+    }, [id]);
+
+    useEffect(() => {
+        const userData = localStorage.getItem('user');
+        if (userData) {
+            const user = JSON.parse(userData);
+            setUserRole(user.role);
+        }
+        fetchJournal();
+        fetchBoard();
+        fetchVolumes();
+    }, [id, fetchJournal, fetchBoard, fetchVolumes]);
 
     // --- OVERVIEW HANDLERS ---
     const handleOverviewSubmit = async (e: React.FormEvent) => {

@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import {
     ArrowLeft, Calendar, MapPin, Users, FileText, DollarSign,
@@ -30,20 +31,9 @@ export default function ConferenceDetailPage() {
     const [committeeMembers, setCommitteeMembers] = useState<any[]>([]);
     const [users, setUsers] = useState<any[]>([]);
 
-    useEffect(() => {
-        const user = localStorage.getItem('user');
-        if (user) setUserRole(JSON.parse(user).role);
-        fetchConference();
-    }, [conferenceId]);
 
-    useEffect(() => {
-        if (activeTab === 'committee') {
-            fetchCommittee();
-            fetchUsers();
-        }
-    }, [activeTab]);
 
-    const fetchCommittee = async () => {
+    const fetchCommittee = useCallback(async () => {
         try {
             const token = localStorage.getItem('token');
             const res = await fetch(`/api/conferences/${conferenceId}/committee`, {
@@ -51,9 +41,9 @@ export default function ConferenceDetailPage() {
             });
             if (res.ok) setCommitteeMembers(await res.json());
         } catch (error) { console.error(error); }
-    };
+    }, [conferenceId]);
 
-    const fetchUsers = async () => {
+    const fetchUsers = useCallback(async () => {
         try {
             const token = localStorage.getItem('token');
             const res = await fetch(`/api/users?limit=100`, {
@@ -64,7 +54,7 @@ export default function ConferenceDetailPage() {
                 setUsers(result.data || []);
             }
         } catch (error) { console.error(error); }
-    };
+    }, []);
 
     const handleAddCommitteeMember = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -103,7 +93,7 @@ export default function ConferenceDetailPage() {
         } catch (error) { console.error(error); }
     };
 
-    const fetchConference = async () => {
+    const fetchConference = useCallback(async () => {
         try {
             const token = localStorage.getItem('token');
             const res = await fetch(`/api/conferences/${conferenceId}`, {
@@ -120,7 +110,21 @@ export default function ConferenceDetailPage() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [conferenceId]);
+
+
+    useEffect(() => {
+        const user = localStorage.getItem('user');
+        if (user) setUserRole(JSON.parse(user).role);
+        fetchConference();
+    }, [conferenceId, fetchConference]);
+
+    useEffect(() => {
+        if (activeTab === 'committee') {
+            fetchCommittee();
+            fetchUsers();
+        }
+    }, [activeTab, fetchCommittee, fetchUsers]);
 
     const handleUpdate = async () => {
         try {
@@ -783,7 +787,7 @@ export default function ConferenceDetailPage() {
                                             <div className="flex items-center gap-4 mb-4">
                                                 <div className="w-12 h-12 rounded-full bg-primary-100 flex items-center justify-center text-primary-600 font-bold">
                                                     {member.photoUrl ? (
-                                                        <img src={member.photoUrl} alt={member.name} className="w-full h-full rounded-full object-cover" />
+                                                        <Image src={member.photoUrl} alt={member.name} width={48} height={48} className="rounded-full object-cover" />
                                                     ) : member.name[0]}
                                                 </div>
                                                 <div>

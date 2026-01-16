@@ -27,7 +27,8 @@ import {
     ScatterChart,
     Scatter,
     ZAxis,
-    Legend
+    Legend,
+    Cell
 } from 'recharts';
 
 interface RevenueStats {
@@ -91,13 +92,13 @@ export default function RevenuePage() {
                     projectRevenue: data.revenue?.projectRevenue || 0,
                     taskRevenue: data.revenue?.taskRevenue || 0,
                     byCategory: data.revenue?.byCategory || [],
-                    monthly: mockMonthly, // Using mock for the advanced chart
+                    monthly: (data.revenue?.monthly && data.revenue.monthly.length > 0) ? data.revenue.monthly : mockMonthly,
                     efficiency: {
                         revPerCommit: 3500,
                         revPerStoryPoint: 12000,
                         deploymentSuccessRate: 98.5
                     },
-                    commitImpact: mockImpact
+                    commitImpact: (data.revenue?.commitImpact && data.revenue.commitImpact.length > 0) ? data.revenue.commitImpact : mockImpact
                 });
             }
         } catch (error) {
@@ -252,7 +253,7 @@ export default function RevenuePage() {
                                 <ScatterChart margin={{ top: 20, right: 20, bottom: 20, left: 0 }}>
                                     <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={true} stroke="#E5E7EB" />
                                     <XAxis type="number" dataKey="size" name="Code Size (LOC)" unit=" loc" axisLine={false} tickLine={false} tick={{ fill: '#9CA3AF', fontSize: 10 }} />
-                                    <YAxis type="number" dataKey="revenueImpact" name="Revenue" unit="₹" axisLine={false} tickLine={false} tick={{ fill: '#9CA3AF', fontSize: 10 }} TickFormatter={(val: number) => `₹${val / 1000}k`} />
+                                    <YAxis type="number" dataKey="revenueImpact" name="Revenue" unit="₹" axisLine={false} tickLine={false} tick={{ fill: '#9CA3AF', fontSize: 10 }} tickFormatter={(val: number) => `₹${val / 1000}k`} />
                                     <ZAxis type="number" dataKey="revenueImpact" range={[60, 400]} />
                                     <Tooltip cursor={{ strokeDasharray: '3 3' }} content={({ active, payload }) => {
                                         if (active && payload && payload.length) {

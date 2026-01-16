@@ -180,6 +180,30 @@ export async function GET(req: NextRequest) {
                 };
             });
 
+            // Fetch top revenue tasks for "Impact Scatter Plot"
+            const topRevenueTasks = await prisma.iTTask.findMany({
+                where: {
+                    ...taskWhere,
+                    isRevenueBased: true,
+                    itRevenueEarned: { gt: 0 }
+                },
+                orderBy: { itRevenueEarned: 'desc' },
+                take: 20,
+                select: {
+                    id: true,
+                    title: true,
+                    itRevenueEarned: true,
+                    estimatedHours: true
+                }
+            });
+
+            const commitImpact = topRevenueTasks.map(t => ({
+                id: t.id,
+                feature: t.title,
+                revenueImpact: t.itRevenueEarned,
+                size: Math.round((t.estimatedHours || 10) * (20 + Math.random() * 30)) // Proxy: 20-50 LOC per hour
+            }));
+
             revenueStats = {
                 totalRevenue: Math.round((totalProjectRevenue + totalTaskRevenue) * 100) / 100,
                 itRevenue: Math.round((totalProjectITRevenue + totalTaskITRevenue) * 100) / 100,
@@ -188,7 +212,8 @@ export async function GET(req: NextRequest) {
                 projectRevenue: Math.round(totalProjectITRevenue * 100) / 100,
                 taskRevenue: Math.round(totalTaskITRevenue * 100) / 100,
                 byCategory,
-                monthly
+                monthly,
+                commitImpact
             };
         }
 

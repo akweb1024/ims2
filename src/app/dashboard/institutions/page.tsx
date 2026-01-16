@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import Link from 'next/link';
+import Image from 'next/image';
 import { Building2, Users, BookOpen, TrendingUp, Plus, Search, Edit, Trash2, Eye } from 'lucide-react';
 
 export default function InstitutionsPage() {
@@ -487,7 +488,7 @@ export default function InstitutionsPage() {
                                             />
                                         )}
                                         {institution.logo ? (
-                                            <img src={institution.logo} alt={institution.name} className="w-12 h-12 rounded-lg object-cover" />
+                                            <Image src={institution.logo} alt={institution.name} width={48} height={48} className="rounded-lg object-cover" />
                                         ) : (
                                             <div className="w-12 h-12 bg-gradient-to-br from-primary-100 to-primary-200 rounded-lg flex items-center justify-center">
                                                 <Building2 className="text-primary-600" size={24} />

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import {
@@ -23,13 +23,7 @@ export default function CoursePlayerPage() {
     const [quizAnswers, setQuizAnswers] = useState<Record<string, string>>({});
     const [quizResult, setQuizResult] = useState<any>(null);
 
-    useEffect(() => {
-        const user = localStorage.getItem('user');
-        if (user) setUserRole(JSON.parse(user).role);
-        fetchCourseData();
-    }, [courseId]);
-
-    const fetchCourseData = async () => {
+    const fetchCourseData = useCallback(async () => {
         try {
             const token = localStorage.getItem('token');
 
@@ -57,7 +51,13 @@ export default function CoursePlayerPage() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [courseId, router]);
+
+    useEffect(() => {
+        const user = localStorage.getItem('user');
+        if (user) setUserRole(JSON.parse(user).role);
+        fetchCourseData();
+    }, [courseId, fetchCourseData]);
 
     const findFirstIncompleteLesson = (progressData: any) => {
         for (const courseModule of progressData.course?.modules || []) {

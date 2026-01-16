@@ -100,6 +100,17 @@ This document outlines the current state, pending tasks, and a strategic develop
 ---
 
 ## 4. Immediate Next Steps (Actionable)
-1.  **Verify & Fix IT Kanban:** Check if `src/app/dashboard/it-management/tasks` has a board view. If not, build it.
-2.  **Build Client 360:** Create a new detailed page at `src/app/dashboard/companies/[id]` that aggregates all data.
-3.  **Revenue Visuals:** Ensure the "IT Department Revenue" (found in schema) is actually visualized in `src/app/dashboard/it-management/revenue`.
+1.  **[COMPLETED] Verify & Fix IT Kanban:** Check if `src/app/dashboard/it-management/tasks` has a board view. If not, build it.
+2.  **[COMPLETED] Build Client 360:** Create a new detailed page at `src/app/dashboard/companies/[id]` that aggregates all data.
+3.  **[COMPLETED] Revenue Visuals:** Ensure the "IT Department Revenue" (found in schema) is actually visualized in `src/app/dashboard/it-management/revenue`.
+4.  **[COMPLETED] Cash Flow Forecaster:** Developed visual graph projecting cash balance for the next 6 months.
+5.  **[COMPLETED] Chat System Enhancement:**
+    *   **Real-time Communication:** Polling-based architecture with Optimistic UI.
+    *   **Modern UI:** Slack-like interface with Glassmorphism.
+    *   **Features:** Group chats, Attachments (UI), Reactions (Schema), Read Status.
+    *   **Code:** `/src/app/dashboard/chat/*`, `/src/components/dashboard/chat/*`.
+
+## 5. Next Focus Areas
+1.  **Global Search:** Implement a global search bar to search across all modules (Employees, Clients, Invoices, Tasks).
+2.  **Performance Optimization:** Audit `useEffect` dependencies and API calls for cleaner "Network" tab.
+3.  **End-to-End Testing:** Write Playwright tests for critical flows (Login -> Chat -> Logout, Create Customer -> Create Invoice).

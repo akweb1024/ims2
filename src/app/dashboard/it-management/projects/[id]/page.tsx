@@ -462,7 +462,7 @@ export default function ProjectDetailPage() {
 
                                     {project.tasks.length === 0 ? (
                                         <p className="text-gray-500 dark:text-gray-400 text-center py-8">
-                                            No tasks yet. Click "Add Task" to create one.
+                                            No tasks yet. Click &quot;Add Task&quot; to create one.
                                         </p>
                                     ) : (
                                         <div className="space-y-3">

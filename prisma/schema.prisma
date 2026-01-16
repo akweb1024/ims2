@@ -659,12 +659,13 @@ model ChatRoom {
 }
 
 model ChatParticipant {
-  id       String   @id @default(uuid())
-  roomId   String
-  userId   String
-  joinedAt DateTime @default(now())
-  room     ChatRoom @relation(fields: [roomId], references: [id], onDelete: Cascade)
-  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id          String   @id @default(uuid())
+  roomId      String
+  userId      String
+  joinedAt    DateTime @default(now())
+  lastViewedAt DateTime?
+  room        ChatRoom @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([roomId, userId])
   @@index([roomId])
@@ -672,13 +673,16 @@ model ChatParticipant {
 }
 
 model ChatMessage {
-  id        String   @id @default(uuid())
-  roomId    String
-  senderId  String
-  content   String
-  createdAt DateTime @default(now())
-  room      ChatRoom @relation(fields: [roomId], references: [id], onDelete: Cascade)
-  sender    User     @relation(fields: [senderId], references: [id], onDelete: Cascade)
+  id          String   @id @default(uuid())
+  roomId      String
+  senderId    String
+  content     String
+  attachments Json?    // Array of { type, url, name, size }
+  reactions   Json?    // Array of { userId, emoji }
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @default(now()) @updatedAt
+  room        ChatRoom @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  sender      User     @relation(fields: [senderId], references: [id], onDelete: Cascade)
 
   @@index([roomId])
   @@index([senderId])

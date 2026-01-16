@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
@@ -24,17 +24,7 @@ export default function JournalManagerDashboard() {
     const [selectedJournal, setSelectedJournal] = useState<string>('');
     const [journals, setJournals] = useState<any[]>([]);
 
-    useEffect(() => {
-        fetchJournals();
-    }, []);
-
-    useEffect(() => {
-        if (selectedJournal) {
-            fetchDashboardMetrics();
-        }
-    }, [selectedJournal]);
-
-    const fetchJournals = async () => {
+    const fetchJournals = useCallback(async () => {
         try {
             const token = localStorage.getItem('token');
             const res = await fetch('/api/journals', {
@@ -50,9 +40,9 @@ export default function JournalManagerDashboard() {
         } catch (error) {
             console.error('Error fetching journals:', error);
         }
-    };
+    }, []);
 
-    const fetchDashboardMetrics = async () => {
+    const fetchDashboardMetrics = useCallback(async () => {
         setLoading(true);
         try {
             const token = localStorage.getItem('token');
@@ -73,7 +63,17 @@ export default function JournalManagerDashboard() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [selectedJournal]);
+
+    useEffect(() => {
+        fetchJournals();
+    }, [fetchJournals]);
+
+    useEffect(() => {
+        if (selectedJournal) {
+            fetchDashboardMetrics();
+        }
+    }, [selectedJournal, fetchDashboardMetrics]);
 
     const getStatusColor = (status: string) => {
         const colors: Record<string, string> = {

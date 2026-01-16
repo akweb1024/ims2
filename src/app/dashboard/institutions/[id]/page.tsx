@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import Link from 'next/link';
+import Image from 'next/image';
 import { ArrowLeft, Mail, Phone, Globe, MapPin } from 'lucide-react';
 import InstitutionActivityDashboard from '@/components/dashboard/InstitutionActivityDashboard';
 
@@ -76,7 +77,7 @@ export default function InstitutionDetailPage() {
                     <div className="flex-1">
                         <div className="flex items-center gap-4">
                             {institution.logo && (
-                                <img src={institution.logo} alt={institution.name} className="w-16 h-16 rounded-xl object-cover" />
+                                <Image src={institution.logo} alt={institution.name} width={64} height={64} className="rounded-xl object-cover" />
                             )}
                             <div>
                                 <h1 className="text-3xl font-black text-secondary-900">{institution.name}</h1>

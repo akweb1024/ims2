@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import {
@@ -59,13 +59,7 @@ export default function EditProjectPage() {
 
     const [milestones, setMilestones] = useState<Milestone[]>([]);
 
-    useEffect(() => {
-        if (projectId) {
-            fetchInitialData();
-        }
-    }, [projectId]);
-
-    const fetchInitialData = async () => {
+    const fetchInitialData = useCallback(async () => {
         try {
             setLoading(true);
             const [projectRes, allProjectsRes, usersRes] = await Promise.all([
@@ -117,7 +111,13 @@ export default function EditProjectPage() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [projectId, router]);
+
+    useEffect(() => {
+        if (projectId) {
+            fetchInitialData();
+        }
+    }, [projectId, fetchInitialData]);
 
     const validateForm = () => {
         const newErrors: Record<string, string> = {};
@@ -152,10 +152,12 @@ export default function EditProjectPage() {
         setSaving(true);
 
         try {
+            const token = localStorage.getItem('token');
             const response = await fetch(`/api/it/projects/${projectId}`, {
                 method: 'PATCH',
                 headers: {
                     'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`,
                 },
                 body: JSON.stringify({
                     ...formData,
