@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import Link from 'next/link';
 import DataTransferActions from '@/components/dashboard/DataTransferActions';
@@ -20,7 +20,7 @@ export default function JournalsPage() {
         }
     }, []);
 
-    const fetchJournals = async () => {
+    const fetchJournals = useCallback(async () => {
         setLoading(true);
         try {
             const token = localStorage.getItem('token');
@@ -42,14 +42,14 @@ export default function JournalsPage() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [search, categoryFilter]);
 
     useEffect(() => {
         const timer = setTimeout(() => {
             fetchJournals();
         }, 300);
         return () => clearTimeout(timer);
-    }, [search, categoryFilter]);
+    }, [fetchJournals]);
 
     const [selectedJournal, setSelectedJournal] = useState<any>(null);
 

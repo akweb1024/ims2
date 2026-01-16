@@ -166,6 +166,7 @@ export default function DashboardLayout({ children, userRole: propUserRole = 'CU
                             { name: 'Dashboard', href: '/dashboard', icon: '📊', roles: ['*'] },
                             { name: 'Staff Portal', href: '/dashboard/staff-portal', icon: '🏢', roles: ['*'] },
                             { name: 'Direct Chat', href: '/dashboard/chat', icon: '💬', roles: ['*'] },
+                            { name: 'Automation', href: '/dashboard/automation', icon: '⚡', roles: ['SUPER_ADMIN'] },
                         ]
                     },
                     {
@@ -211,8 +212,10 @@ export default function DashboardLayout({ children, userRole: propUserRole = 'CU
                         title: 'Treasury',
                         items: [
                             { name: 'Financials', href: '/dashboard/finance', icon: '📈', roles: ['SUPER_ADMIN', 'ADMIN', 'FINANCE_ADMIN'] },
+                            { name: 'Reconciliation', href: '/dashboard/finance/reconciliation', icon: '⚡', roles: ['SUPER_ADMIN', 'ADMIN', 'FINANCE_ADMIN'] },
                             { name: 'Payments', href: '/dashboard/payments', icon: '💰', roles: ['SUPER_ADMIN', 'ADMIN', 'FINANCE_ADMIN'] },
                             { name: 'Razorpay Rev', href: '/dashboard/analytics/razorpay', icon: '💳', roles: ['SUPER_ADMIN', 'ADMIN', 'FINANCE_ADMIN'] },
+                            { name: 'Cashflow AI', href: '/dashboard/finance/forecasting', icon: '🔮', roles: ['SUPER_ADMIN', 'ADMIN', 'FINANCE_ADMIN'] },
                         ]
                     },
                     {
@@ -731,32 +734,51 @@ export default function DashboardLayout({ children, userRole: propUserRole = 'CU
                         </select>
                     </div>
 
-                    <div className="flex-1 space-y-1">
+                    <div className="flex-1 space-y-4">
                         {sideNavigation.map((category: any, idx: number) => (
-                            <div key={category.title || idx}>
-                                {/* Show separator if not first category */}
-                                {idx > 0 && sidebarOpen && (
+                            <div key={category.title || idx} className="group/category">
+                                {/* Category Header - Only show when open */}
+                                {sidebarOpen && category.title && (
+                                    <div className="px-3 mb-2 flex items-center justify-between text-[10px] font-black uppercase tracking-widest text-secondary-400">
+                                        <span>{category.title}</span>
+                                    </div>
+                                )}
+
+                                {idx > 0 && !category.title && sidebarOpen && (
                                     <div className="my-2 mx-3 border-t border-secondary-100" />
                                 )}
-                                <div className="space-y-0.5">
+
+                                <div className="space-y-1">
                                     {category.items.map((item: any) => {
                                         const isActive = pathname === item.href || pathname?.startsWith(`${item.href}/`);
                                         return (
                                             <Link
                                                 key={item.href}
                                                 href={item.href}
-                                                className={`flex items-center space-x-3 px-3 py-2 rounded-lg transition-all duration-200 group ${isActive
-                                                    ? 'bg-primary-50 text-primary-700 shadow-sm border border-primary-100/50'
+                                                className={`relative flex items-center space-x-3 px-3 py-2.5 rounded-xl transition-all duration-300 group overflow-hidden ${isActive
+                                                    ? 'bg-secondary-900 text-white shadow-lg shadow-secondary-200'
                                                     : 'text-secondary-600 hover:bg-secondary-50 hover:text-secondary-900'
                                                     }`}
                                                 title={!sidebarOpen ? item.name : ''}
                                             >
-                                                <span className={`text-lg transition-transform duration-200 ${isActive ? 'scale-110' : 'group-hover:scale-110'}`}>
+                                                {/* Active Indicator Line */}
+                                                {isActive && (
+                                                    <div className="absolute left-0 top-1/2 -translate-y-1/2 h-1/2 w-1 bg-primary-500 rounded-r-full"></div>
+                                                )}
+
+                                                <span className={`text-lg transition-transform duration-300 ${isActive ? 'scale-110' : 'group-hover:scale-110 group-hover:rotate-3'}`}>
                                                     {item.icon}
                                                 </span>
-                                                <span className={`text-xs font-medium ${sidebarOpen ? 'block' : 'hidden md:hidden lg:hidden'}`}>
+                                                <span className={`text-xs font-bold tracking-wide ${sidebarOpen ? 'block opacity-100 translate-x-0' : 'hidden opacity-0 -translate-x-4'} transition-all duration-300`}>
                                                     {item.name}
                                                 </span>
+
+                                                {/* Hover Chevron */}
+                                                {sidebarOpen && !isActive && (
+                                                    <svg className="ml-auto w-4 h-4 opacity-0 group-hover:opacity-100 -translate-x-2 group-hover:translate-x-0 transition-all text-secondary-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                                    </svg>
+                                                )}
                                             </Link>
                                         );
                                     })}
@@ -769,9 +791,9 @@ export default function DashboardLayout({ children, userRole: propUserRole = 'CU
                     <div className={`border-t border-secondary-200 pt-4 ${sidebarOpen ? 'block' : 'hidden lg:hidden'}`}>
                         <button
                             onClick={handleLogout}
-                            className="w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-danger-600 hover:bg-danger-50 transition-colors font-medium"
+                            className="w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-danger-600 hover:bg-danger-50 transition-colors font-bold text-xs uppercase tracking-wider group"
                         >
-                            <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <svg className="h-5 w-5 group-hover:-translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
                             </svg>
                             <span>Logout</span>

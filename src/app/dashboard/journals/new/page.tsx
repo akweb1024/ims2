@@ -38,7 +38,7 @@ export default function NewJournalPage() {
         } else {
             router.push('/login');
         }
-    }, []);
+    }, [router]);
 
     const handleJournalChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });

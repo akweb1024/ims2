@@ -6,6 +6,7 @@ import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import Link from 'next/link';
 import BulletinBoard from '@/components/dashboard/BulletinBoard';
 import MarketMonitor from '@/components/dashboard/MarketMonitor';
+import CashflowWidget from '@/components/dashboard/finance/CashflowWidget';
 import AIInsightsWidget from '@/components/dashboard/AIInsightsWidget';
 import { useSession } from 'next-auth/react';
 import RevenueMismatchAlert from '@/components/dashboard/RevenueMismatchAlert';
@@ -222,6 +223,7 @@ export default function DashboardPage() {
                         {/* Executive AI & Market Widgets */}
                         {['SUPER_ADMIN', 'MANAGER', 'FINANCE_ADMIN'].includes(userRole) && (
                             <>
+                                <CashflowWidget />
                                 <AIInsightsWidget role={userRole} />
                                 <MarketMonitor />
                             </>
