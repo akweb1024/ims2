@@ -1551,8 +1551,15 @@ model EmployeeTaskTemplate {
   title         String
   description   String?
   points        Int          @default(0)
+  
+  // Legacy single selection (kept for backward compatibility)
   departmentId  String?
   designationId String?
+  
+  // New multi-selection support
+  departmentIds  Json?       // Array of department IDs
+  designationIds Json?       // Array of designation IDs
+  
   companyId     String
   isActive      Boolean             @default(true)
   calculationType TaskCalculationType @default(FLAT)

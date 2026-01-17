@@ -78,7 +78,12 @@ export const POST = authorizedRoute(['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'HR'], a
     if (!user.companyId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     const body = await req.json();
-    const { title, description, points, departmentId, designationId, calculationType, minThreshold, maxThreshold, pointsPerUnit } = body;
+    const {
+        title, description, points,
+        departmentId, designationId,
+        departmentIds, designationIds,
+        calculationType, minThreshold, maxThreshold, pointsPerUnit
+    } = body;
 
     const task = await prisma.employeeTaskTemplate.create({
         data: {
@@ -87,6 +92,8 @@ export const POST = authorizedRoute(['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'HR'], a
             points: Number(points),
             departmentId: departmentId === 'ALL' ? null : departmentId,
             designationId: designationId === 'ALL' ? null : designationId,
+            departmentIds: departmentIds && Array.isArray(departmentIds) && departmentIds.length > 0 ? departmentIds : null,
+            designationIds: designationIds && Array.isArray(designationIds) && designationIds.length > 0 ? designationIds : null,
             companyId: user.companyId,
             calculationType: calculationType as any,
             minThreshold: minThreshold ? Number(minThreshold) : null,
@@ -100,7 +107,12 @@ export const POST = authorizedRoute(['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'HR'], a
 
 export const PUT = authorizedRoute(['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'HR'], async (req: NextRequest, user) => {
     const body = await req.json();
-    const { id, title, description, points, isActive, departmentId, designationId, calculationType, minThreshold, maxThreshold, pointsPerUnit } = body;
+    const {
+        id, title, description, points, isActive,
+        departmentId, designationId,
+        departmentIds, designationIds,
+        calculationType, minThreshold, maxThreshold, pointsPerUnit
+    } = body;
 
     const task = await prisma.employeeTaskTemplate.update({
         where: { id },
@@ -111,6 +123,8 @@ export const PUT = authorizedRoute(['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'HR'], as
             isActive,
             departmentId: departmentId === 'ALL' ? null : departmentId,
             designationId: designationId === 'ALL' ? null : designationId,
+            departmentIds: departmentIds && Array.isArray(departmentIds) && departmentIds.length > 0 ? departmentIds : null,
+            designationIds: designationIds && Array.isArray(designationIds) && designationIds.length > 0 ? designationIds : null,
             calculationType: calculationType as any,
             minThreshold: minThreshold ? Number(minThreshold) : null,
             maxThreshold: maxThreshold ? Number(maxThreshold) : null,

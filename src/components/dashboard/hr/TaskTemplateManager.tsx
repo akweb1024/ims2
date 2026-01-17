@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Award, Plus, Edit2, Trash2, CheckCircle, XCircle } from 'lucide-react';
+import { Award, Plus, Edit2, Trash2, CheckCircle, XCircle, Users, Building2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 export default function TaskTemplateManager() {
@@ -15,13 +15,16 @@ export default function TaskTemplateManager() {
     // Filter State
     const [filterDept, setFilterDept] = useState('ALL');
 
-    // Form State
+    // Form State with multi-selection support
     const [formData, setFormData] = useState({
         title: '',
         description: '',
         points: 10,
         departmentId: 'ALL',
         designationId: 'ALL',
+        departmentIds: [] as string[],  // NEW: Multi-select
+        designationIds: [] as string[], // NEW: Multi-select
+        selectionMode: 'ALL' as 'ALL' | 'SPECIFIC', // NEW: Selection mode
         isActive: true,
         calculationType: 'FLAT',
         minThreshold: 1,
@@ -61,20 +64,33 @@ export default function TaskTemplateManager() {
             const url = '/api/hr/tasks';
             const method = editingTask ? 'PUT' : 'POST';
 
-            // Ensure pointsPerUnit is accurate from base/per helpers
             const finalPointsPerUnit = (formData.basePoints || 1) / (formData.perUnitCount || 1);
 
-            const body = {
+            const body: any = {
                 ...(editingTask ? { id: editingTask.id } : {}),
-                ...formData,
+                title: formData.title,
+                description: formData.description,
+                points: formData.points,
+                isActive: formData.isActive,
+                calculationType: formData.calculationType,
+                minThreshold: formData.minThreshold,
+                maxThreshold: formData.maxThreshold,
                 pointsPerUnit: finalPointsPerUnit
             };
 
-            // Cleanup helpers not needed by backend (though backend ignores extras)
-            // @ts-ignore
-            delete body.basePoints;
-            // @ts-ignore
-            delete body.perUnitCount;
+            // Handle department/designation selection
+            if (formData.selectionMode === 'ALL') {
+                body.departmentId = 'ALL';
+                body.designationId = 'ALL';
+                body.departmentIds = null;
+                body.designationIds = null;
+            } else {
+                // Multi-select mode
+                body.departmentId = null;
+                body.designationId = null;
+                body.departmentIds = formData.departmentIds.length > 0 ? formData.departmentIds : null;
+                body.designationIds = formData.designationIds.length > 0 ? formData.designationIds : null;
+            }
 
             const res = await fetch(url, {
                 method,
@@ -86,30 +102,39 @@ export default function TaskTemplateManager() {
                 setIsModalOpen(false);
                 setEditingTask(null);
                 fetchData();
-                setFormData({
-                    title: '',
-                    description: '',
-                    points: 10,
-                    departmentId: 'ALL',
-                    designationId: 'ALL',
-                    isActive: true,
-                    calculationType: 'FLAT',
-                    minThreshold: 1,
-                    maxThreshold: '',
-                    pointsPerUnit: 1,
-                    basePoints: 1,
-                    perUnitCount: 1
-                });
+                resetForm();
             } else {
-                alert('Failed to save task');
+                const error = await res.json();
+                alert(`Error: ${error.error || 'Failed to save task'}`);
             }
         } catch (error) {
             console.error('Error saving task:', error);
+            alert('Network error');
         }
     };
 
+    const resetForm = () => {
+        setFormData({
+            title: '',
+            description: '',
+            points: 10,
+            departmentId: 'ALL',
+            designationId: 'ALL',
+            departmentIds: [],
+            designationIds: [],
+            selectionMode: 'ALL',
+            isActive: true,
+            calculationType: 'FLAT',
+            minThreshold: 1,
+            maxThreshold: '',
+            pointsPerUnit: 1,
+            basePoints: 1,
+            perUnitCount: 1
+        });
+    };
+
     const handleDelete = async (id: string) => {
-        if (!confirm('Are you sure you want to delete this task template?')) return;
+        if (!confirm('Delete this task template?')) return;
         try {
             const token = localStorage.getItem('token');
             const res = await fetch(`/api/hr/tasks?id=${id}`, {
@@ -122,105 +147,130 @@ export default function TaskTemplateManager() {
         }
     };
 
-    const filteredTasks = tasks.filter(t => filterDept === 'ALL' || t.departmentId === filterDept || (!t.departmentId));
+    const handleEdit = (task: any) => {
+        setEditingTask(task);
+
+        // Determine selection mode
+        const hasMultipleDepts = task.departmentIds && Array.isArray(task.departmentIds) && task.departmentIds.length > 0;
+        const hasMultipleDesigs = task.designationIds && Array.isArray(task.designationIds) && task.designationIds.length > 0;
+        const selectionMode = (hasMultipleDepts || hasMultipleDesigs) ? 'SPECIFIC' : 'ALL';
+
+        const ppu = task.pointsPerUnit || 1;
+        const bp = ppu >= 1 ? ppu : 1;
+        const puc = ppu >= 1 ? 1 : Math.round(1 / ppu);
+
+        setFormData({
+            title: task.title,
+            description: task.description || '',
+            points: task.points,
+            departmentId: task.departmentId || 'ALL',
+            designationId: task.designationId || 'ALL',
+            departmentIds: task.departmentIds || [],
+            designationIds: task.designationIds || [],
+            selectionMode,
+            isActive: task.isActive,
+            calculationType: task.calculationType || 'FLAT',
+            minThreshold: task.minThreshold || 1,
+            maxThreshold: task.maxThreshold || '',
+            pointsPerUnit: ppu,
+            basePoints: bp,
+            perUnitCount: puc
+        });
+        setIsModalOpen(true);
+    };
+
+    const toggleDepartment = (deptId: string) => {
+        setFormData(prev => ({
+            ...prev,
+            departmentIds: prev.departmentIds.includes(deptId)
+                ? prev.departmentIds.filter(id => id !== deptId)
+                : [...prev.departmentIds, deptId]
+        }));
+    };
+
+    const toggleDesignation = (desigId: string) => {
+        setFormData(prev => ({
+            ...prev,
+            designationIds: prev.designationIds.includes(desigId)
+                ? prev.designationIds.filter(id => id !== desigId)
+                : [...prev.designationIds, desigId]
+        }));
+    };
+
+    const filteredTasks = filterDept === 'ALL'
+        ? tasks
+        : tasks.filter(t => {
+            if (t.departmentIds && Array.isArray(t.departmentIds)) {
+                return t.departmentIds.includes(filterDept);
+            }
+            return t.departmentId === filterDept || !t.departmentId;
+        });
+
+    const getTaskDepartmentDisplay = (task: any) => {
+        if (task.departmentIds && Array.isArray(task.departmentIds) && task.departmentIds.length > 0) {
+            const deptNames = task.departmentIds
+                .map((id: string) => departments.find(d => d.id === id)?.name)
+                .filter(Boolean);
+            return deptNames.length > 0 ? deptNames.join(', ') : 'Selected Depts';
+        }
+        return task.department?.name || 'All Depts';
+    };
+
+    const getTaskDesignationDisplay = (task: any) => {
+        if (task.designationIds && Array.isArray(task.designationIds) && task.designationIds.length > 0) {
+            const desigNames = task.designationIds
+                .map((id: string) => designations.find(d => d.id === id)?.name)
+                .filter(Boolean);
+            return desigNames.length > 0 ? desigNames.join(', ') : 'Selected Roles';
+        }
+        return task.designation?.name || 'All Roles';
+    };
+
+    if (isLoading) {
+        return <div className="flex justify-center py-20"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div></div>;
+    }
 
     return (
         <div className="space-y-6">
+            {/* Header */}
             <div className="flex justify-between items-center">
                 <div>
-                    <h2 className="text-2xl font-black text-secondary-900">Task Master</h2>
-                    <p className="text-secondary-500">Define gamified tasks and point values for employees</p>
+                    <h2 className="text-2xl font-black text-secondary-900">Task Templates</h2>
+                    <p className="text-secondary-500">Manage gamified task templates for employees</p>
                 </div>
-                <button
-                    onClick={() => {
-                        setEditingTask(null);
-                        setFormData({
-                            title: '',
-                            description: '',
-                            points: 10,
-                            departmentId: 'ALL',
-                            designationId: 'ALL',
-                            isActive: true,
-                            calculationType: 'FLAT',
-                            minThreshold: 1,
-                            maxThreshold: '',
-                            pointsPerUnit: 1,
-                            basePoints: 1,
-                            perUnitCount: 1
-                        });
-                        setIsModalOpen(true);
-                    }}
-                    className="btn btn-primary flex items-center gap-2"
-                >
-                    <Plus size={18} /> Add New Task
+                <button onClick={() => { resetForm(); setIsModalOpen(true); }} className="btn btn-primary flex items-center gap-2">
+                    <Plus size={18} /> Create Task
                 </button>
             </div>
 
             {/* Filter */}
-            <div className="flex gap-4 items-center bg-white p-4 rounded-xl border border-secondary-100 shadow-sm">
-                <span className="text-sm font-bold text-secondary-500">Filter by Department:</span>
-                <select
-                    className="input w-64"
-                    value={filterDept}
-                    onChange={(e) => setFilterDept(e.target.value)}
-                >
-                    <option value="ALL">All Departments</option>
-                    {departments.filter((d, index, self) => index === self.findIndex(t => t.name === d.name)).map(d => (
-                        <option key={d.id} value={d.id}>{d.name}</option>
-                    ))}
-                </select>
+            <div className="card-premium p-4">
+                <div className="flex gap-4 items-center">
+                    <label className="label mb-0">Filter by Department:</label>
+                    <select className="input w-64" value={filterDept} onChange={e => setFilterDept(e.target.value)}>
+                        <option value="ALL">All Departments</option>
+                        {departments.filter((d, index, self) => index === self.findIndex(t => t.name === d.name)).map(d => (
+                            <option key={d.id} value={d.id}>{d.name}</option>
+                        ))}
+                    </select>
+                </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {/* Task Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {filteredTasks.map(task => (
-                    <div key={task.id} className="card-premium p-6 group relative border-t-4 border-indigo-500 hover:shadow-lg transition-all">
-                        <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <button
-                                onClick={() => {
-                                    setEditingTask(task);
-                                    const ppu = task.pointsPerUnit || 1;
-                                    let bp = ppu;
-                                    let puc = 1;
-                                    if (ppu < 1 && ppu > 0) {
-                                        bp = 1;
-                                        puc = Math.round(1 / ppu);
-                                    } else if (ppu > 1 && !Number.isInteger(ppu)) {
-                                        // Handle cases like 1.5 points per unit -> 3 points per 2 units?
-                                        // For now, simplify.
-                                    }
-
-                                    setFormData({
-                                        title: task.title,
-                                        description: task.description || '',
-                                        points: task.points,
-                                        departmentId: task.departmentId || 'ALL',
-                                        designationId: task.designationId || 'ALL',
-                                        isActive: task.isActive,
-                                        calculationType: task.calculationType || 'FLAT',
-                                        minThreshold: task.minThreshold || 1,
-                                        maxThreshold: task.maxThreshold || '',
-                                        pointsPerUnit: ppu,
-                                        basePoints: bp,
-                                        perUnitCount: puc
-                                    });
-                                    setIsModalOpen(true);
-                                }}
-                                className="p-2 bg-secondary-100 text-secondary-600 rounded-lg hover:bg-secondary-200"
-                            >
+                    <div key={task.id} className="card-premium p-6 hover:shadow-lg transition-shadow">
+                        <div className="flex justify-end gap-2 mb-3">
+                            <button onClick={() => handleEdit(task)} className="p-2 bg-secondary-100 text-secondary-600 rounded-lg hover:bg-secondary-200">
                                 <Edit2 size={14} />
                             </button>
-                            <button
-                                onClick={() => handleDelete(task.id)}
-                                className="p-2 bg-danger-50 text-danger-600 rounded-lg hover:bg-danger-100"
-                            >
+                            <button onClick={() => handleDelete(task.id)} className="p-2 bg-danger-50 text-danger-600 rounded-lg hover:bg-danger-100">
                                 <Trash2 size={14} />
                             </button>
                         </div>
 
                         <div className="mb-4">
-                            <div className="flex justify-between items-start">
-                                <h3 className="font-bold text-lg text-secondary-900 pr-8 line-clamp-2">{task.title}</h3>
-                            </div>
+                            <h3 className="font-bold text-lg text-secondary-900 pr-8 line-clamp-2">{task.title}</h3>
                             <div className="mt-2 flex gap-2 flex-wrap">
                                 {task.calculationType === 'SCALED' ? (
                                     <span className="badge bg-purple-100 text-purple-700 font-black">
@@ -235,18 +285,19 @@ export default function TaskTemplateManager() {
                                 {task.minThreshold > 1 && (
                                     <span className="badge badge-secondary">Min: {task.minThreshold}</span>
                                 )}
-
-                                {task.department ? (
-                                    <span className="badge badge-secondary">{task.department.name}</span>
-                                ) : (
-                                    <span className="badge badge-outline">All Depts</span>
-                                )}
-                                {task.designation && (
-                                    <span className="badge badge-outline">{task.designation.name}</span>
-                                )}
                                 {!task.isActive && (
                                     <span className="badge badge-danger">Inactive</span>
                                 )}
+                            </div>
+                            <div className="mt-2 space-y-1">
+                                <div className="flex items-center gap-2 text-xs">
+                                    <Building2 size={12} className="text-secondary-400" />
+                                    <span className="text-secondary-600 font-medium">{getTaskDepartmentDisplay(task)}</span>
+                                </div>
+                                <div className="flex items-center gap-2 text-xs">
+                                    <Users size={12} className="text-secondary-400" />
+                                    <span className="text-secondary-600 font-medium">{getTaskDesignationDisplay(task)}</span>
+                                </div>
                             </div>
                         </div>
                         <p className="text-sm text-secondary-600 line-clamp-3">{task.description || 'No description provided.'}</p>
@@ -256,15 +307,15 @@ export default function TaskTemplateManager() {
 
             {/* Modal */}
             {isModalOpen && (
-                <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden animate-in fade-in zoom-in duration-200">
+                <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 overflow-y-auto">
+                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl my-8 overflow-hidden animate-in fade-in zoom-in duration-200">
                         <div className="p-6 border-b border-secondary-100 flex justify-between items-center">
                             <h3 className="font-black text-xl text-secondary-900">{editingTask ? 'Edit Task' : 'Create New Task'}</h3>
                             <button onClick={() => setIsModalOpen(false)} className="text-secondary-400 hover:text-secondary-600">
                                 <XCircle size={24} />
                             </button>
                         </div>
-                        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+                        <form onSubmit={handleSubmit} className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
                             <div>
                                 <label className="label">Task Title</label>
                                 <input
@@ -273,6 +324,17 @@ export default function TaskTemplateManager() {
                                     placeholder="e.g. Daily Code Review"
                                     value={formData.title}
                                     onChange={e => setFormData({ ...formData, title: e.target.value })}
+                                />
+                            </div>
+
+                            <div>
+                                <label className="label">Description</label>
+                                <textarea
+                                    className="input"
+                                    rows={3}
+                                    placeholder="Describe the task..."
+                                    value={formData.description}
+                                    onChange={e => setFormData({ ...formData, description: e.target.value })}
                                 />
                             </div>
 
@@ -303,53 +365,33 @@ export default function TaskTemplateManager() {
                                     </div>
                                 ) : (
                                     <div>
-                                        <div className="flex gap-2">
-                                            <div className="flex-1">
-                                                <label className="label">Points</label>
-                                                <input
-                                                    type="number"
-                                                    required
-                                                    className="input"
-                                                    value={formData.basePoints}
-                                                    onChange={e => {
-                                                        const bp = parseFloat(e.target.value);
-                                                        setFormData({
-                                                            ...formData,
-                                                            basePoints: bp,
-                                                            pointsPerUnit: bp / (formData.perUnitCount || 1)
-                                                        });
-                                                    }}
-                                                />
-                                            </div>
-                                            <div className="flex items-center pt-6 font-bold text-secondary-400">/</div>
-                                            <div className="flex-1">
-                                                <label className="label">Per Units</label>
-                                                <input
-                                                    type="number"
-                                                    required
-                                                    className="input"
-                                                    min="1"
-                                                    value={formData.perUnitCount}
-                                                    onChange={e => {
-                                                        const puc = parseFloat(e.target.value);
-                                                        setFormData({
-                                                            ...formData,
-                                                            perUnitCount: puc,
-                                                            pointsPerUnit: (formData.basePoints || 1) / puc
-                                                        });
-                                                    }}
-                                                />
-                                            </div>
-                                        </div>
-                                        <div className="text-xs text-secondary-500 mt-1">
-                                            Outcome: {formData.pointsPerUnit.toFixed(5)} pts/unit
+                                        <label className="label text-xs">Points Calculation</label>
+                                        <div className="flex items-center gap-2">
+                                            <input
+                                                type="number"
+                                                className="input h-10 text-sm"
+                                                placeholder="Points"
+                                                min="1"
+                                                value={formData.basePoints}
+                                                onChange={e => setFormData({ ...formData, basePoints: parseFloat(e.target.value) || 1 })}
+                                            />
+                                            <span className="text-sm font-bold">pts per</span>
+                                            <input
+                                                type="number"
+                                                className="input h-10 text-sm"
+                                                placeholder="Units"
+                                                min="1"
+                                                value={formData.perUnitCount}
+                                                onChange={e => setFormData({ ...formData, perUnitCount: parseFloat(e.target.value) || 1 })}
+                                            />
+                                            <span className="text-sm font-bold">units</span>
                                         </div>
                                     </div>
                                 )}
                             </div>
 
                             {formData.calculationType === 'SCALED' && (
-                                <div className="grid grid-cols-2 gap-4 p-4 bg-secondary-50 rounded-xl mb-4">
+                                <div className="grid grid-cols-2 gap-4 p-4 bg-secondary-50 rounded-xl">
                                     <div>
                                         <label className="label text-xs">Min Units (to qualify)</label>
                                         <input
@@ -372,6 +414,99 @@ export default function TaskTemplateManager() {
                                 </div>
                             )}
 
+                            {/* NEW: Selection Mode */}
+                            <div className="border-t pt-4">
+                                <label className="label">Assignment Mode</label>
+                                <div className="grid grid-cols-2 gap-3">
+                                    <button
+                                        type="button"
+                                        onClick={() => setFormData({ ...formData, selectionMode: 'ALL', departmentIds: [], designationIds: [] })}
+                                        className={`p-4 rounded-xl border-2 transition-all ${formData.selectionMode === 'ALL'
+                                                ? 'border-primary-500 bg-primary-50 text-primary-700'
+                                                : 'border-secondary-200 hover:border-secondary-300'
+                                            }`}
+                                    >
+                                        <div className="font-bold">All Employees</div>
+                                        <div className="text-xs text-secondary-500 mt-1">Visible to everyone</div>
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setFormData({ ...formData, selectionMode: 'SPECIFIC' })}
+                                        className={`p-4 rounded-xl border-2 transition-all ${formData.selectionMode === 'SPECIFIC'
+                                                ? 'border-primary-500 bg-primary-50 text-primary-700'
+                                                : 'border-secondary-200 hover:border-secondary-300'
+                                            }`}
+                                    >
+                                        <div className="font-bold">Specific Groups</div>
+                                        <div className="text-xs text-secondary-500 mt-1">Select departments/roles</div>
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* NEW: Multi-Select for Departments */}
+                            {formData.selectionMode === 'SPECIFIC' && (
+                                <>
+                                    <div>
+                                        <label className="label flex items-center gap-2">
+                                            <Building2 size={16} />
+                                            Departments (select multiple)
+                                        </label>
+                                        <div className="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto p-3 bg-secondary-50 rounded-xl border border-secondary-200">
+                                            {departments.filter((d, index, self) => index === self.findIndex(t => t.name === d.name)).map(dept => (
+                                                <label
+                                                    key={dept.id}
+                                                    className={`flex items-center gap-2 p-3 rounded-lg cursor-pointer border-2 transition-all ${formData.departmentIds.includes(dept.id)
+                                                            ? 'bg-primary-50 border-primary-500'
+                                                            : 'bg-white border-transparent hover:border-secondary-300'
+                                                        }`}
+                                                >
+                                                    <input
+                                                        type="checkbox"
+                                                        className="w-4 h-4 rounded text-primary-600"
+                                                        checked={formData.departmentIds.includes(dept.id)}
+                                                        onChange={() => toggleDepartment(dept.id)}
+                                                    />
+                                                    <span className="text-sm font-bold text-secondary-700">{dept.name}</span>
+                                                </label>
+                                            ))}
+                                        </div>
+                                        <p className="text-xs text-secondary-500 mt-2">
+                                            {formData.departmentIds.length} department(s) selected
+                                        </p>
+                                    </div>
+
+                                    {/* NEW: Multi-Select for Designations */}
+                                    <div>
+                                        <label className="label flex items-center gap-2">
+                                            <Users size={16} />
+                                            Designations (select multiple)
+                                        </label>
+                                        <div className="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto p-3 bg-secondary-50 rounded-xl border border-secondary-200">
+                                            {designations.map(desig => (
+                                                <label
+                                                    key={desig.id}
+                                                    className={`flex items-center gap-2 p-3 rounded-lg cursor-pointer border-2 transition-all ${formData.designationIds.includes(desig.id)
+                                                            ? 'bg-indigo-50 border-indigo-500'
+                                                            : 'bg-white border-transparent hover:border-secondary-300'
+                                                        }`}
+                                                >
+                                                    <input
+                                                        type="checkbox"
+                                                        className="w-4 h-4 rounded text-indigo-600"
+                                                        checked={formData.designationIds.includes(desig.id)}
+                                                        onChange={() => toggleDesignation(desig.id)}
+                                                    />
+                                                    <span className="text-sm font-bold text-secondary-700">{desig.name}</span>
+                                                </label>
+                                            ))}
+                                        </div>
+                                        <p className="text-xs text-secondary-500 mt-2">
+                                            {formData.designationIds.length} designation(s) selected
+                                        </p>
+                                    </div>
+                                </>
+                            )}
+
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
                                     <label className="label">Status</label>
@@ -385,47 +520,15 @@ export default function TaskTemplateManager() {
                                     </select>
                                 </div>
                             </div>
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label className="label">Department</label>
-                                    <select
-                                        className="input"
-                                        value={formData.departmentId}
-                                        onChange={e => setFormData({ ...formData, departmentId: e.target.value })}
-                                    >
-                                        <option value="ALL">All Departments</option>
-                                        {departments.filter((d, index, self) => index === self.findIndex(t => t.name === d.name)).map(d => (
-                                            <option key={d.id} value={d.id}>{d.name}</option>
-                                        ))}
-                                    </select>
-                                </div>
-                                <div>
-                                    <label className="label">Designation</label>
-                                    <select
-                                        className="input"
-                                        value={formData.designationId}
-                                        onChange={e => setFormData({ ...formData, designationId: e.target.value })}
-                                    >
-                                        <option value="ALL">All Designations</option>
-                                        {designations.map(d => (
-                                            <option key={d.id} value={d.id}>{d.name}</option>
-                                        ))}
-                                    </select>
-                                </div>
-                            </div>
-                            <div>
-                                <label className="label">Description</label>
-                                <textarea
-                                    className="input"
-                                    rows={3}
-                                    placeholder="Describe criteria for this task..."
-                                    value={formData.description}
-                                    onChange={e => setFormData({ ...formData, description: e.target.value })}
-                                />
-                            </div>
-                            <div className="pt-4 flex gap-3">
-                                <button type="button" onClick={() => setIsModalOpen(false)} className="btn btn-secondary flex-1">Cancel</button>
-                                <button type="submit" className="btn btn-primary flex-1 font-bold">Save Task Template</button>
+
+                            <div className="flex gap-3 pt-4">
+                                <button type="submit" className="btn btn-primary flex-1">
+                                    <CheckCircle size={18} className="inline mr-2" />
+                                    {editingTask ? 'Update Task' : 'Create Task'}
+                                </button>
+                                <button type="button" onClick={() => setIsModalOpen(false)} className="btn btn-secondary px-8">
+                                    Cancel
+                                </button>
                             </div>
                         </form>
                     </div>
