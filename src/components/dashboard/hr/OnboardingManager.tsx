@@ -3,6 +3,10 @@
 import { useState } from 'react';
 import { useOnboardingModules, useOnboardingMutations, useDepartments } from '@/hooks/useHR';
 import { Plus, Trash2, Edit2, BookOpen, HelpCircle, Save, X, MoveUp, MoveDown } from 'lucide-react';
+import dynamic from 'next/dynamic';
+import 'react-quill-new/dist/quill.snow.css';
+
+const ReactQuill = dynamic(() => import('react-quill-new'), { ssr: false });
 
 export default function OnboardingManager() {
     const { data: modules, isLoading } = useOnboardingModules();
@@ -144,12 +148,24 @@ export default function OnboardingManager() {
 
                         <div className="space-y-4">
                             <label className="label-text text-[10px] font-black text-secondary-400 uppercase tracking-widest">Study Material (Markdown Support)</label>
-                            <textarea
-                                value={formData.content}
-                                onChange={e => setFormData({ ...formData, content: e.target.value })}
-                                className="input w-full h-80 py-4 bg-white border-secondary-200 focus:ring-primary-500 font-mono text-sm leading-relaxed"
-                                placeholder="# Header 1\n\nWrite your onboarding content here..."
-                            />
+                            <div className="h-96 pb-12">
+                                <ReactQuill
+                                    theme="snow"
+                                    value={formData.content}
+                                    onChange={(value: string) => setFormData({ ...formData, content: value })}
+                                    className="h-full bg-white font-mono text-sm leading-relaxed"
+                                    placeholder="Write your onboarding content here..."
+                                    modules={{
+                                        toolbar: [
+                                            [{ 'header': [1, 2, 3, false] }],
+                                            ['bold', 'italic', 'underline', 'strike', 'blockquote'],
+                                            [{ 'list': 'ordered' }, { 'list': 'bullet' }],
+                                            ['link', 'image'],
+                                            ['clean']
+                                        ],
+                                    }}
+                                />
+                            </div>
                         </div>
 
                         <div className="space-y-6 pt-8 border-t border-secondary-100">

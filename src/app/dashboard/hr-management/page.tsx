@@ -52,11 +52,22 @@ const LeaveLedgerRow = ({ row, onSave }: { row: any, onSave: (data: any) => Prom
     const [editData, setEditData] = useState({ ...row });
     const [saving, setSaving] = useState(false);
 
+    // Auto-calculate closing balance (Opening - Taken) whenever those change
+    useEffect(() => {
+        const opening = parseFloat(editData.openingBalance) || 0;
+        const taken = parseFloat(editData.takenLeaves) || 0;
+        const calculatedClosing = opening - taken;
+
+        // Only update if the calculated value is different to avoid loops/stale overwrites
+        // We check against the current closingBalance in editData
+        if (calculatedClosing !== parseFloat(editData.closingBalance)) {
+            setEditData((prev: any) => ({ ...prev, closingBalance: calculatedClosing }));
+        }
+    }, [editData.openingBalance, editData.takenLeaves]);
+
     const handleSave = async () => {
         setSaving(true);
         try {
-            // Auto calculate closing balance if opening/taken changed? 
-            // User requested balance leave as an option too, so we let them edit everything.
             await onSave(editData);
             alert('Saved!');
         } catch (err) {
@@ -218,6 +229,7 @@ const HRManagementContent = () => {
         category: 'ALL',
         employeeId: 'ALL'
     });
+    const [ledgerSearch, setLedgerSearch] = useState('');
 
     useEffect(() => {
         const tab = searchParams.get('tab');
@@ -1040,6 +1052,15 @@ const HRManagementContent = () => {
                                 <p className="text-[10px] text-secondary-500 font-black uppercase tracking-[0.2em] mt-1 pl-10">Adjust opening/closing balances for precise payroll sync</p>
                             </div>
                             <div className="flex bg-white p-1 rounded-2xl shadow-inner border border-secondary-100">
+                                <div className="relative border-r border-secondary-100 pr-2 mr-2">
+                                    <input
+                                        type="text"
+                                        placeholder="Search employee..."
+                                        className="input h-full py-2 px-3 text-xs w-48 border-none focus:ring-0"
+                                        value={ledgerSearch}
+                                        onChange={(e) => setLedgerSearch(e.target.value)}
+                                    />
+                                </div>
                                 <select
                                     className="input py-2 px-4 text-xs font-bold border-none bg-transparent focus:ring-0"
                                     value={ledgerFilter.month}
@@ -1074,13 +1095,18 @@ const HRManagementContent = () => {
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-secondary-50">
-                                    {manualLedger.map(row => (
-                                        <LeaveLedgerRow
-                                            key={row.employeeId}
-                                            row={row}
-                                            onSave={(data) => updateLedgerMutation.mutateAsync(data)}
-                                        />
-                                    ))}
+                                    {manualLedger
+                                        .filter(row =>
+                                            (row.name || '').toLowerCase().includes(ledgerSearch.toLowerCase()) ||
+                                            (row.email || '').toLowerCase().includes(ledgerSearch.toLowerCase())
+                                        )
+                                        .map(row => (
+                                            <LeaveLedgerRow
+                                                key={row.employeeId}
+                                                row={row}
+                                                onSave={(data) => updateLedgerMutation.mutateAsync(data)}
+                                            />
+                                        ))}
                                     {manualLedger.length === 0 && (
                                         <tr>
                                             <td colSpan={6} className="px-8 py-20 text-center text-secondary-400 font-bold italic bg-secondary-50/20">

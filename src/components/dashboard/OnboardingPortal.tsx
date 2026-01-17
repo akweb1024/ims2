@@ -81,9 +81,10 @@ export default function OnboardingPortal() {
                 <div className="flex-1 p-8 overflow-y-auto">
                     {!takingQuiz ? (
                         <div className="prose max-w-none">
-                            <div className="whitespace-pre-wrap text-secondary-700 leading-relaxed">
-                                {activeModule.content}
-                            </div>
+                            <div
+                                className="text-secondary-700 leading-relaxed"
+                                dangerouslySetInnerHTML={{ __html: activeModule.content }}
+                            />
 
                             <div className="mt-12 flex justify-center">
                                 <button

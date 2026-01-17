@@ -3,7 +3,6 @@
 import { useState } from 'react';
 import { useOnboardingProgress, useOnboardingMutations } from '@/hooks/useHR';
 import { CheckCircle2, Lock, Play, HelpCircle, Award, ChevronRight, BookOpen } from 'lucide-react';
-import ReactMarkdown from 'react-markdown';
 
 export default function EmployeeOnboarding() {
     const { data: modules, isLoading } = useOnboardingProgress();
@@ -52,8 +51,8 @@ export default function EmployeeOnboarding() {
                             </div>
                         </div>
 
-                        <div className="prose prose-secondary max-w-none">
-                            <ReactMarkdown>{activeModule.content}</ReactMarkdown>
+                        <div className="prose prose-secondary max-w-none prose-headings:font-black prose-headings:text-secondary-900 prose-p:text-secondary-600 prose-li:text-secondary-600">
+                            <div dangerouslySetInnerHTML={{ __html: activeModule.content }} />
                         </div>
 
                         <div className="mt-16 flex justify-center border-t border-secondary-50 pt-10">
