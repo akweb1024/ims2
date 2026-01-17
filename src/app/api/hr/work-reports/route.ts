@@ -198,6 +198,25 @@ export const POST = authorizedRoute(
                 }
             }
 
+            // Gamified Task Points Calculation
+            let pointsEarned = 0;
+            let tasksSnapshot = null;
+            let tasksCompletedCount = parseInt(body.tasksCompleted) || 0;
+
+            if (body.completedTaskIds && Array.isArray(body.completedTaskIds) && body.completedTaskIds.length > 0) {
+                const templates = await prisma.employeeTaskTemplate.findMany({
+                    where: { id: { in: body.completedTaskIds } }
+                });
+
+                tasksSnapshot = templates.map((t: any) => ({ id: t.id, title: t.title, points: t.points }));
+                pointsEarned = templates.reduce((sum: number, t: any) => sum + t.points, 0);
+
+                // If the user didn't manually type tasks count, use the length of checked items
+                if (tasksCompletedCount === 0) {
+                    tasksCompletedCount = templates.length;
+                }
+            }
+
             const report = await prisma.workReport.create({
                 data: {
                     employeeId: profile.id,
@@ -211,14 +230,30 @@ export const POST = authorizedRoute(
                     keyOutcome: body.keyOutcome || null,
                     selfRating: body.selfRating ? parseInt(body.selfRating) || 5 : 5,
                     revenueGenerated: parseSafely(body.revenueGenerated),
-                    tasksCompleted: parseInt(body.tasksCompleted) || 0,
+                    tasksCompleted: tasksCompletedCount,
                     ticketsResolved: parseInt(body.ticketsResolved) || 0,
                     chatsHandled: parseInt(body.chatsHandled) || 0,
                     followUpsCompleted: parseInt(body.followUpsCompleted) || 0,
                     kraMatchRatio: kraMatchRatio,
-                    metrics: body.metrics || null
+                    metrics: body.metrics || null,
+                    pointsEarned,
+                    tasksSnapshot: tasksSnapshot || undefined
                 }
             });
+
+            // Log Points History
+            if (pointsEarned > 0) {
+                await prisma.employeePointLog.create({
+                    data: {
+                        employeeId: profile.id,
+                        companyId: user.companyId,
+                        type: 'WORK_REPORT',
+                        points: pointsEarned,
+                        date: report.date,
+                        reason: `Daily Report: ${report.title}`
+                    }
+                });
+            }
 
             return NextResponse.json(report);
         } catch (error) {

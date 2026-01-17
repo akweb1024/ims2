@@ -70,6 +70,8 @@ const CATEGORIES = [
         tabs: [
             { id: 'analytics', label: 'Performance Reviews' },
             { id: 'goals', label: 'Goal Tracking (KRA/KPI)' },
+            { id: 'tasks', label: 'Task Master' },
+            { id: 'points', label: 'Points & Rewards' },
             { id: 'reports', label: 'Work Reports' },
             { id: 'productivity', label: 'Productivity Insights' },
             { id: 'potential', label: 'Company Potential' },

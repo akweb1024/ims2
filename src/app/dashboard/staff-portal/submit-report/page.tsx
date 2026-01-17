@@ -34,6 +34,10 @@ export default function SubmitReportPage() {
 
     const [prodActivity, setProdActivity] = useState<any>(null);
 
+    const [availableTasks, setAvailableTasks] = useState<any[]>([]);
+    const [completedTaskIds, setCompletedTaskIds] = useState<string[]>([]);
+    const [currentPoints, setCurrentPoints] = useState(0);
+
     useEffect(() => {
         const userData = localStorage.getItem('user');
         const token = localStorage.getItem('token');
@@ -47,6 +51,36 @@ export default function SubmitReportPage() {
             else if (u.role === 'HR_MANAGER') setTemplate('GENERAL');
             else if (u.department?.name?.toLowerCase().includes('publication')) setTemplate('PUBLICATION');
             else setTemplate('GENERAL');
+
+            // Fetch Profile & Tasks
+            fetch('/api/hr/profile/me', { headers: { 'Authorization': `Bearer ${token}` } })
+                .then(res => res.json())
+                .then(profile => {
+                    if (profile) {
+                        const query = new URLSearchParams({
+                            departmentId: profile.department?.id || 'ALL',
+                            designationId: profile.designation?.id || 'ALL'
+                        });
+                        // Fallback to fetch all active tasks if specific filters miss? Or just try specific first.
+                        // Let's rely on api to handle 'ALL' or specific IDs.
+                        // Actually the API expects IDs. 
+                        // If department is nested in profile check structure.
+                        // profile.department is likely an object {id, name}. 
+                        const depId = profile.department?.id || (u.departmentId);
+                        const desId = profile.designationId; // Profile usually has designationId directly too
+
+                        const q = new URLSearchParams();
+                        if (depId) q.append('departmentId', depId);
+                        if (desId) q.append('designationId', desId);
+
+                        fetch(`/api/hr/tasks?${q.toString()}`, { headers: { 'Authorization': `Bearer ${token}` } })
+                            .then(res => res.json())
+                            .then(tasks => {
+                                if (Array.isArray(tasks)) setAvailableTasks(tasks);
+                            })
+                            .catch(err => console.error("Error fetching tasks", err));
+                    }
+                });
 
             // Fetch today's attendance to calculate hours
             fetch('/api/hr/attendance', { headers: { 'Authorization': `Bearer ${token}` } })
@@ -73,6 +107,13 @@ export default function SubmitReportPage() {
                 .catch(err => console.error("Error fetching activity", err));
         }
     }, []);
+
+    useEffect(() => {
+        const points = availableTasks
+            .filter(t => completedTaskIds.includes(t.id))
+            .reduce((acc, t) => acc + t.points, 0);
+        setCurrentPoints(points);
+    }, [completedTaskIds, availableTasks]);
 
     const handleMetricChange = (category: string, field: string, value: any) => {
         setMetrics((prev: any) => ({
@@ -106,7 +147,8 @@ export default function SubmitReportPage() {
                 category: template,
                 userRole: user?.role, // Auto reflect from profile
                 revenueGenerated: totalRevenue,
-                tasksCompleted,
+                tasksCompleted: tasksCompleted > 0 ? tasksCompleted : completedTaskIds.length, // Prioritize manual metrics if entered, else checkbox count
+                completedTaskIds,
                 chatsHandled: metrics.communication.whatsapp,
                 followUpsCompleted: metrics.communication.calls,
                 metrics: {
@@ -147,6 +189,12 @@ export default function SubmitReportPage() {
                     </div>
                     <h1 className="text-3xl font-black text-secondary-900 mb-2">Report Submitted!</h1>
                     <p className="text-secondary-500">Your work report has been logged successfully.</p>
+                    {currentPoints > 0 && (
+                        <div className="mt-4 p-4 bg-primary-50 rounded-xl border border-primary-100">
+                            <p className="text-sm font-bold text-primary-800">🎉 Performance Points Earned</p>
+                            <p className="text-4xl font-black text-primary-600">+{currentPoints}</p>
+                        </div>
+                    )}
                 </div>
             </DashboardLayout>
         )
@@ -168,15 +216,73 @@ export default function SubmitReportPage() {
                         <option value="GENERAL">General Staff</option>
                         <option value="SALES">Executive</option>
                         <option value="PUBLICATION">Publication Exec</option>
-                        <option value="PUBLICATION">Publication Exec</option>
                         <option value="PROGRAM">Program Executive</option>
                         <option value="FORMATTING">Formatting Team</option>
                     </select>
                 </div>
 
+                {/* Gamified Task Checklist */}
+                {availableTasks.length > 0 && (
+                    <div className="card-premium p-6 border-t-4 border-indigo-500">
+                        <div className="flex justify-between items-center mb-6">
+                            <h3 className="font-bold text-lg flex items-center gap-2 text-secondary-900">
+                                <Award size={24} className="text-indigo-600" />
+                                Daily Task Checklist
+                            </h3>
+                            <div className="bg-indigo-50 px-4 py-2 rounded-xl border border-indigo-100">
+                                <span className="text-xs font-bold text-indigo-400 uppercase tracking-wider">Today&apos;s Score</span>
+                                <div className="text-2xl font-black text-indigo-700">{currentPoints} <span className="text-sm">pts</span></div>
+                            </div>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {availableTasks.map(task => (
+                                <div
+                                    key={task.id}
+                                    onClick={() => {
+                                        if (completedTaskIds.includes(task.id)) {
+                                            setCompletedTaskIds(prev => prev.filter(id => id !== task.id));
+                                        } else {
+                                            setCompletedTaskIds(prev => [...prev, task.id]);
+                                        }
+                                    }}
+                                    className={`
+                                        group relative p-4 rounded-xl border-2 cursor-pointer transition-all duration-200
+                                        ${completedTaskIds.includes(task.id)
+                                            ? 'bg-indigo-50/50 border-indigo-500 shadow-md'
+                                            : 'bg-white border-secondary-100 hover:border-indigo-200 hover:shadow-sm'
+                                        }
+                                    `}
+                                >
+                                    <div className="flex justify-between items-start gap-3">
+                                        <div className={`
+                                            w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors
+                                            ${completedTaskIds.includes(task.id)
+                                                ? 'bg-indigo-500 border-indigo-500 text-white'
+                                                : 'border-secondary-300 group-hover:border-indigo-400'
+                                            }
+                                        `}>
+                                            {completedTaskIds.includes(task.id) && <CheckCircle size={14} />}
+                                        </div>
+                                        <div className="flex-1">
+                                            <div className="flex justify-between items-start">
+                                                <h4 className={`font-bold text-sm leading-tight mb-1 ${completedTaskIds.includes(task.id) ? 'text-indigo-900' : 'text-secondary-700'}`}>
+                                                    {task.title}
+                                                </h4>
+                                                <span className="badge bg-indigo-100 text-indigo-700 text-[10px] font-black">{task.points} pts</span>
+                                            </div>
+                                            {task.description && <p className="text-xs text-secondary-500 leading-relaxed">{task.description}</p>}
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
                 <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     {/* Main Content - Left Col */}
                     <div className="md:col-span-2 space-y-6">
+
                         <div className="card-premium p-6">
                             <h3 className="font-bold text-lg mb-4 flex items-center gap-2 text-secondary-900">
                                 <Briefcase size={20} className="text-primary-600" />

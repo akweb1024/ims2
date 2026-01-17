@@ -66,6 +66,8 @@ model Company {
   designations        Designation[]        @relation("CompanyToDesignation")
   users               User[]               @relation("UserCompanies")
   appConfigurations   AppConfiguration[]
+  taskTemplates       EmployeeTaskTemplate[]
+  pointLogs           EmployeePointLog[]
   
   // IT Management Relations
   itProjects          ITProject[]          @relation("CompanyITProjects")
@@ -97,6 +99,7 @@ model Department {
   onboardingModules  OnboardingModule[]
   users              User[]             @relation("DepartmentMembers")
   designations       Designation[]      @relation("DepartmentToDesignation")
+  taskTemplates      EmployeeTaskTemplate[]
 
   @@unique([companyId, code])
   @@index([companyId])
@@ -761,6 +764,7 @@ model Designation {
   employees           EmployeeProfile[]
   companies           Company[]         @relation("CompanyToDesignation")
   departments         Department[]      @relation("DepartmentToDesignation")
+  taskTemplates       EmployeeTaskTemplate[]
 }
 
 model EmployeeProfile {
@@ -833,6 +837,7 @@ model EmployeeProfile {
   taxDeclarations          TaxDeclaration[]
   workPlans                WorkPlan[]
   workReports              WorkReport[]
+  pointLogs                EmployeePointLog[]
 }
 
 model SalaryAdvance {
@@ -959,6 +964,8 @@ model WorkReport {
   companyId          String?
   kraMatchRatio      Float?
   metrics            Json?
+  pointsEarned       Int                 @default(0)
+  tasksSnapshot      Json?               // Store details of tasks completed at submission time
   company            Company?            @relation(fields: [companyId], references: [id])
   employee           EmployeeProfile     @relation(fields: [employeeId], references: [id], onDelete: Cascade)
   comments           WorkReportComment[]
@@ -1500,6 +1507,45 @@ model JournalVolume {
   isActive     Boolean        @default(true)
   issues       JournalIssue[]
   journal      Journal        @relation(fields: [journalId], references: [id])
+}
+
+model EmployeeTaskTemplate {
+  id            String       @id @default(uuid())
+  title         String
+  description   String?
+  points        Int          @default(0)
+  departmentId  String?
+  designationId String?
+  companyId     String
+  isActive      Boolean      @default(true)
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  company       Company      @relation(fields: [companyId], references: [id])
+  department    Department?  @relation(fields: [departmentId], references: [id])
+  designation   Designation? @relation(fields: [designationId], references: [id])
+
+  @@index([companyId])
+  @@index([departmentId])
+  @@index([designationId])
+}
+
+model EmployeePointLog {
+  id          String   @id @default(uuid())
+  employeeId  String
+  type        String   // WORK_REPORT, ATTENDANCE, DISCIPLINE, ACHIEVEMENT, BONUS
+  points      Int
+  reason      String?
+  date        DateTime @default(now())
+  createdAt   DateTime @default(now())
+  companyId   String
+
+  employee    EmployeeProfile @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  company     Company         @relation(fields: [companyId], references: [id])
+
+  @@index([employeeId])
+  @@index([companyId])
+  @@index([type])
 }
 
 model JournalIssue {

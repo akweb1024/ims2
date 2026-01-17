@@ -28,6 +28,8 @@ import RevenueMismatchAlert from '@/components/dashboard/RevenueMismatchAlert';
 import RecruitmentDashboard from '@/components/dashboard/hr/RecruitmentDashboard';
 import HRNavigation from '@/components/dashboard/hr/HRNavigation';
 import HelpSidebar from '@/components/dashboard/hr/HelpSidebar';
+import TaskTemplateManager from '@/components/dashboard/hr/TaskTemplateManager';
+import PointsRewardsManager from '@/components/dashboard/hr/PointsRewardsManager';
 import GoalManager from '@/components/dashboard/hr/GoalManager';
 import RewardManager from '@/components/dashboard/hr/RewardManager';
 import PotentialCalculator from '@/components/dashboard/hr/PotentialCalculator';
@@ -1299,6 +1301,9 @@ const HRManagementContent = () => {
                         </div>
                     </div>
                 )}
+
+                {activeTab === 'tasks' && <TaskTemplateManager />}
+                {activeTab === 'points' && <PointsRewardsManager />}
 
                 {activeTab === 'goals' && (
                     <GoalManager employees={employees} />
