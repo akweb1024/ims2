@@ -76,6 +76,11 @@ model Company {
   itDepartmentRevenue ITDepartmentRevenue[] @relation("CompanyITRevenue")
   itPerformanceMetrics ITPerformanceMetric[] @relation("CompanyITPerformance")
   itServices          ITServiceDefinition[] @relation("CompanyITServices")
+  
+  // Performance Analytics Relations
+  performanceSnapshots MonthlyPerformanceSnapshot[]
+  departmentPerformance DepartmentPerformance[]
+  companyPerformance   CompanyPerformance[]
 }
 
 model Department {
@@ -100,6 +105,8 @@ model Department {
   users              User[]             @relation("DepartmentMembers")
   designations       Designation[]      @relation("DepartmentToDesignation")
   taskTemplates      EmployeeTaskTemplate[]
+  performanceSnapshots MonthlyPerformanceSnapshot[]
+  departmentPerformance DepartmentPerformance[]
 
   @@unique([companyId, code])
   @@index([companyId])
@@ -861,6 +868,7 @@ model EmployeeProfile {
   workPlans                WorkPlan[]
   workReports              WorkReport[]
   pointLogs                EmployeePointLog[]
+  performanceSnapshots     MonthlyPerformanceSnapshot[]
 }
 
 model SalaryAdvance {
@@ -1581,6 +1589,178 @@ model EmployeePointLog {
   @@index([companyId])
   @@index([type])
 }
+
+// Monthly Performance Analytics Models
+model MonthlyPerformanceSnapshot {
+  id                    String   @id @default(uuid())
+  employeeId            String
+  companyId             String
+  departmentId          String?
+  month                 Int      // 1-12
+  year                  Int
+  
+  // Attendance & Discipline Metrics
+  totalWorkingDays      Int      @default(0)
+  daysPresent           Int      @default(0)
+  daysAbsent            Int      @default(0)
+  daysLate              Int      @default(0)
+  totalLateMinutes      Int      @default(0)
+  averageWorkHours      Float    @default(0)
+  overtimeHours         Float    @default(0)
+  leavesTaken           Int      @default(0)
+  attendanceScore       Float    @default(0) // 0-100
+  
+  // Task & Points Performance
+  totalPointsEarned     Int      @default(0)
+  tasksCompleted        Int      @default(0)
+  tasksAssigned         Int      @default(0)
+  taskCompletionRate    Float    @default(0) // percentage
+  averageTaskQuality    Float    @default(0) // 0-10
+  
+  // Work Reports & Ratings
+  reportsSubmitted      Int      @default(0)
+  reportsExpected       Int      @default(0)
+  reportSubmissionRate  Float    @default(0) // percentage
+  averageSelfRating     Float    @default(0) // 0-10
+  averageManagerRating  Float    @default(0) // 0-10
+  
+  // Revenue & Impact
+  totalRevenueGenerated Float    @default(0)
+  revenueTarget         Float    @default(0)
+  revenueAchievement    Float    @default(0) // percentage
+  
+  // Commitment & Dedication Indicators
+  deadlinesMet          Int      @default(0)
+  deadlinesMissed       Int      @default(0)
+  initiativesCount      Int      @default(0) // Extra tasks/projects taken
+  improvementScore      Float    @default(0) // Month-over-month growth
+  
+  // Communication & Collaboration
+  communicationScore    Float    @default(0) // Based on calls, emails, meetings
+  teamCollaboration     Float    @default(0) // 0-10
+  
+  // Overall Performance
+  overallScore          Float    @default(0) // Weighted composite score 0-100
+  performanceGrade      String?  // A+, A, B+, B, C, D, F
+  trend                 String?  // IMPROVING, STABLE, DECLINING
+  
+  // Flags & Alerts
+  needsAttention        Boolean  @default(false)
+  isTopPerformer        Boolean  @default(false)
+  warningFlags          Json?    // Array of warning indicators
+  
+  // AI Predictions (for future use)
+  predictedNextMonth    Json?    // AI-predicted performance metrics
+  retentionRisk         Float?   // 0-1 probability of leaving
+  promotionReadiness    Float?   // 0-1 score
+  
+  // Metadata
+  calculatedAt          DateTime @default(now())
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+  
+  // Relations
+  employee              EmployeeProfile @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  company               Company         @relation(fields: [companyId], references: [id])
+  department            Department?     @relation(fields: [departmentId], references: [id])
+  
+  @@unique([employeeId, month, year])
+  @@index([companyId, month, year])
+  @@index([departmentId, month, year])
+  @@index([overallScore])
+}
+
+model DepartmentPerformance {
+  id                    String   @id @default(uuid())
+  departmentId          String
+  companyId             String
+  month                 Int
+  year                  Int
+  
+  // Aggregated Team Metrics
+  totalEmployees        Int      @default(0)
+  activeEmployees       Int      @default(0)
+  averageAttendance     Float    @default(0)
+  averagePerformance    Float    @default(0)
+  totalPointsEarned     Int      @default(0)
+  totalRevenue          Float    @default(0)
+  
+  // Department Health
+  topPerformersCount    Int      @default(0)
+  underperformersCount  Int      @default(0)
+  attritionCount        Int      @default(0)
+  newHiresCount         Int      @default(0)
+  
+  // Productivity
+  taskCompletionRate    Float    @default(0)
+  reportSubmissionRate  Float    @default(0)
+  averageWorkHours      Float    @default(0)
+  
+  // Budget & ROI
+  budgetAllocated       Float    @default(0)
+  budgetUtilized        Float    @default(0)
+  revenuePerEmployee    Float    @default(0)
+  roi                   Float    @default(0)
+  
+  // Overall
+  departmentScore       Float    @default(0)
+  rank                  Int?     // Rank among all departments
+  trend                 String?
+  
+  calculatedAt          DateTime @default(now())
+  createdAt             DateTime @default(now())
+  
+  department            Department @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+  company               Company    @relation(fields: [companyId], references: [id])
+  
+  @@unique([departmentId, month, year])
+  @@index([companyId, month, year])
+}
+
+model CompanyPerformance {
+  id                    String   @id @default(uuid())
+  companyId             String
+  month                 Int
+  year                  Int
+  
+  // Company-Wide Metrics
+  totalEmployees        Int      @default(0)
+  totalDepartments      Int      @default(0)
+  averagePerformance    Float    @default(0)
+  totalRevenue          Float    @default(0)
+  totalPointsEarned     Int      @default(0)
+  
+  // Workforce Health
+  attendanceRate        Float    @default(0)
+  attritionRate         Float    @default(0)
+  satisfactionScore     Float    @default(0)
+  
+  // Productivity
+  taskCompletionRate    Float    @default(0)
+  reportSubmissionRate  Float    @default(0)
+  averageWorkHours      Float    @default(0)
+  
+  // Financial
+  revenuePerEmployee    Float    @default(0)
+  profitMargin          Float    @default(0)
+  
+  // Growth Indicators
+  monthOverMonthGrowth  Float    @default(0)
+  yearOverYearGrowth    Float    @default(0)
+  
+  // Rankings & Benchmarks
+  topDepartment         String?
+  topPerformer          String?
+  
+  calculatedAt          DateTime @default(now())
+  createdAt             DateTime @default(now())
+  
+  company               Company @relation(fields: [companyId], references: [id])
+  
+  @@unique([companyId, month, year])
+  @@index([month, year])
+}
+
 
 model JournalIssue {
   id                  String        @id @default(uuid())
