@@ -47,12 +47,28 @@ export const GET = authorizedRoute(
                                     name: true,
                                     email: true
                                 }
+                            },
+                            company: {
+                                select: {
+                                    id: true,
+                                    name: true
+                                }
+                            },
+                            department: {
+                                select: {
+                                    id: true,
+                                    name: true
+                                }
                             }
                         }
                     },
                     workReports: {
                         orderBy: { date: 'desc' },
                         take: 10
+                    },
+                    performanceSnapshots: {
+                        orderBy: { calculatedAt: 'desc' },
+                        take: 1
                     },
                     _count: {
                         select: {

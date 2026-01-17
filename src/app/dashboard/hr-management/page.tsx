@@ -33,6 +33,7 @@ import PointsRewardsManager from '@/components/dashboard/hr/PointsRewardsManager
 import GoalManager from '@/components/dashboard/hr/GoalManager';
 import RewardManager from '@/components/dashboard/hr/RewardManager';
 import PotentialCalculator from '@/components/dashboard/hr/PotentialCalculator';
+import IncrementPlanningView from '@/components/dashboard/hr/IncrementPlanningView';
 import { Briefcase, Info, Target, TrendingUp, Award, GraduationCap, Edit, Trash2 } from 'lucide-react';
 import {
     useEmployees, useHolidays, useDesignations, useJobs, useApplications,
@@ -92,6 +93,8 @@ const LeaveLedgerRow = ({ row, onSave }: { row: any, onSave: (data: any) => Prom
                     className="input py-1 text-center w-24 text-sm font-bold bg-secondary-50 border-secondary-200"
                     value={editData.openingBalance}
                     onChange={e => setEditData({ ...editData, openingBalance: parseFloat(e.target.value) || 0 })}
+                    title="Opening Balance"
+                    placeholder="0"
                 />
             </td>
             <td className="px-6 py-4">
@@ -101,6 +104,8 @@ const LeaveLedgerRow = ({ row, onSave }: { row: any, onSave: (data: any) => Prom
                     className="input py-1 text-center w-24 text-sm font-bold bg-secondary-50 border-secondary-200"
                     value={editData.takenLeaves}
                     onChange={e => setEditData({ ...editData, takenLeaves: parseFloat(e.target.value) || 0 })}
+                    title="Taken Leaves"
+                    placeholder="0"
                 />
             </td>
             <td className="px-6 py-4">
@@ -110,6 +115,8 @@ const LeaveLedgerRow = ({ row, onSave }: { row: any, onSave: (data: any) => Prom
                     className="input py-1 text-center w-24 text-sm font-bold bg-primary-50 border-primary-200 text-primary-700"
                     value={editData.closingBalance}
                     onChange={e => setEditData({ ...editData, closingBalance: parseFloat(e.target.value) || 0 })}
+                    title="Closing Balance"
+                    placeholder="0"
                 />
             </td>
             <td className="px-6 py-4">
@@ -1144,9 +1151,10 @@ const HRManagementContent = () => {
                                         onChange={e => setFilters({ ...filters, staffSearch: e.target.value })}
                                     />
                                     <select
-                                        className="input h-9 text-[10px] font-black uppercase w-32"
+                                        className="select-premium"
                                         value={filters.status}
                                         onChange={e => setFilters({ ...filters, status: e.target.value })}
+                                        title="Filter by Status"
                                     >
                                         <option value="ALL">All Status</option>
                                         <option value="PRESENT">Present</option>
@@ -1311,6 +1319,10 @@ const HRManagementContent = () => {
 
                 {activeTab === 'rewards' && (
                     <RewardManager />
+                )}
+
+                {activeTab === 'increments' && (
+                    <IncrementPlanningView />
                 )}
 
                 {activeTab === 'potential' && (
@@ -1711,7 +1723,7 @@ const HRManagementContent = () => {
                                 <div>
                                     <label className="label">Employee</label>
                                     <select
-                                        className="input"
+                                        className="input-premium"
                                         required
                                         value={advanceForm.employeeId}
                                         onChange={e => setAdvanceForm({ ...advanceForm, employeeId: e.target.value })}
@@ -1725,11 +1737,12 @@ const HRManagementContent = () => {
                                         <label className="label">Amount (₹)</label>
                                         <input
                                             type="number"
-                                            className="input"
+                                            className="input-premium"
                                             placeholder="Total advance"
                                             required
                                             value={advanceForm.amount}
                                             onChange={e => setAdvanceForm({ ...advanceForm, amount: e.target.value })}
+                                            title="Advance Amount"
                                         />
                                     </div>
                                     <div>
@@ -1741,6 +1754,7 @@ const HRManagementContent = () => {
                                             required
                                             value={advanceForm.totalEmis}
                                             onChange={e => setAdvanceForm({ ...advanceForm, totalEmis: e.target.value })}
+                                            title="Number of EMIs"
                                         />
                                     </div>
                                 </div>
@@ -1758,15 +1772,17 @@ const HRManagementContent = () => {
                                         required
                                         value={advanceForm.startDate}
                                         onChange={e => setAdvanceForm({ ...advanceForm, startDate: e.target.value })}
+                                        title="Start Deduction Date"
                                     />
                                 </div>
                                 <div>
                                     <label className="label">Reason / Notes</label>
                                     <textarea
-                                        className="input min-h-[100px]"
-                                        placeholder="Why is this advance needed?"
+                                        className="input-premium h-20"
+                                        placeholder="Why is this advance being requested?"
                                         value={advanceForm.reason}
                                         onChange={e => setAdvanceForm({ ...advanceForm, reason: e.target.value })}
+                                        title="Reason for Advance"
                                     />
                                 </div>
                                 <button type="submit" className="btn btn-primary w-full py-4 shadow-xl">Confirm Advance Authorization</button>
