@@ -428,12 +428,12 @@ export default function SubmitReportPage() {
                                 <div className="grid grid-cols-2 gap-4">
                                     <div>
                                         <label className="label">Date</label>
-                                        <input type="date" required className="input"
+                                        <input type="date" title="Report Date" required className="input"
                                             value={commonData.date} onChange={e => setCommonData({ ...commonData, date: e.target.value })} />
                                     </div>
                                     <div>
                                         <label className="label">Hours Spent</label>
-                                        <input type="number" step="0.5" required className="input"
+                                        <input type="number" step="0.5" title="Hours Spent" required className="input"
                                             value={commonData.hoursSpent} onChange={e => setCommonData({ ...commonData, hoursSpent: parseFloat(e.target.value) })} />
                                     </div>
                                 </div>
@@ -551,6 +551,7 @@ export default function SubmitReportPage() {
                                                     type="button"
                                                     onClick={() => setSelectedRevenueClaims(prev => prev.filter((c: any) => c.transactionId !== claim.transactionId))}
                                                     className="p-2 text-danger-400 hover:text-danger-600 hover:bg-danger-50 rounded-xl"
+                                                    title="Remove Selected Claim"
                                                 >
                                                     <X size={18} />
                                                 </button>
@@ -588,6 +589,7 @@ export default function SubmitReportPage() {
                                     className="w-full"
                                     value={commonData.selfRating}
                                     onChange={e => setCommonData({ ...commonData, selfRating: parseInt(e.target.value) })}
+                                    title="Self Rating Range"
                                 />
                                 <div className="flex justify-between text-xs font-bold text-secondary-400">
                                     <span>Poor</span>

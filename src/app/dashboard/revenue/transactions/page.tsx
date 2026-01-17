@@ -212,6 +212,7 @@ export default function RevenueTransactionsPage() {
                             className="input w-40"
                             value={filterStatus}
                             onChange={(e) => setFilterStatus(e.target.value)}
+                            title="Filter by Status"
                         >
                             <option value="ALL">All Status</option>
                             <option value="PENDING">Pending</option>
@@ -222,6 +223,7 @@ export default function RevenueTransactionsPage() {
                             className="input w-48"
                             value={filterMethod}
                             onChange={(e) => setFilterMethod(e.target.value)}
+                            title="Filter by Payment Method"
                         >
                             <option value="ALL">All Methods</option>
                             {PAYMENT_METHODS.map(m => (
@@ -328,7 +330,7 @@ export default function RevenueTransactionsPage() {
                                                         <CheckCheck size={16} />
                                                     </button>
                                                 )}
-                                                <button className="p-2 bg-secondary-50 text-secondary-600 rounded-lg hover:bg-secondary-100">
+                                                <button className="p-2 bg-secondary-50 text-secondary-600 rounded-lg hover:bg-secondary-100" title="View Transaction Details">
                                                     <Info size={16} />
                                                 </button>
                                             </div>
@@ -347,7 +349,7 @@ export default function RevenueTransactionsPage() {
                             <form onSubmit={handleCreateTransaction}>
                                 <div className="p-6 border-b border-secondary-100 flex justify-between items-center bg-indigo-50">
                                     <h3 className="text-xl font-black text-indigo-900">Record New Revenue</h3>
-                                    <button type="button" onClick={() => setShowModal(false)} className="text-secondary-400 hover:text-secondary-600">
+                                    <button type="button" onClick={() => setShowModal(false)} className="text-secondary-400 hover:text-secondary-600" title="Close Modal">
                                         <X size={24} />
                                     </button>
                                 </div>
@@ -374,6 +376,7 @@ export default function RevenueTransactionsPage() {
                                             className="input"
                                             value={formData.paymentMethod}
                                             onChange={(e) => setFormData({ ...formData, paymentMethod: e.target.value })}
+                                            title="Select Payment Method"
                                         >
                                             {PAYMENT_METHODS.map(m => (
                                                 <option key={m.value} value={m.value}>{m.label}</option>
@@ -390,6 +393,7 @@ export default function RevenueTransactionsPage() {
                                             className="input"
                                             value={formData.paymentDate}
                                             onChange={(e) => setFormData({ ...formData, paymentDate: e.target.value })}
+                                            title="Payment Date"
                                         />
                                     </div>
                                     <div className="col-span-1">
@@ -415,6 +419,8 @@ export default function RevenueTransactionsPage() {
                                                 className="input h-10"
                                                 value={formData.customerName}
                                                 onChange={(e) => setFormData({ ...formData, customerName: e.target.value })}
+                                                placeholder="Customer Name"
+                                                title="Customer Name"
                                             />
                                         </div>
                                         <div className="col-span-1 text-center flex flex-col justify-center">
@@ -428,6 +434,8 @@ export default function RevenueTransactionsPage() {
                                                 className="input h-10"
                                                 value={formData.customerEmail}
                                                 onChange={(e) => setFormData({ ...formData, customerEmail: e.target.value })}
+                                                placeholder="Customer Email"
+                                                title="Customer Email"
                                             />
                                         </div>
                                         <div className="col-span-1">
@@ -437,6 +445,8 @@ export default function RevenueTransactionsPage() {
                                                 className="input h-10"
                                                 value={formData.customerPhone}
                                                 onChange={(e) => setFormData({ ...formData, customerPhone: e.target.value })}
+                                                placeholder="Customer Phone"
+                                                title="Customer Phone"
                                             />
                                         </div>
                                         <div className="col-span-1">
@@ -446,6 +456,8 @@ export default function RevenueTransactionsPage() {
                                                 className="input h-10"
                                                 value={formData.bankName}
                                                 onChange={(e) => setFormData({ ...formData, bankName: e.target.value })}
+                                                placeholder="Bank Name"
+                                                title="Bank Name"
                                             />
                                         </div>
                                     </div>
@@ -456,6 +468,7 @@ export default function RevenueTransactionsPage() {
                                             className="input"
                                             value={formData.claimedByEmployeeId}
                                             onChange={(e) => setFormData({ ...formData, claimedByEmployeeId: e.target.value })}
+                                            title="Select Employee"
                                         >
                                             <option value="">Select Employee</option>
                                             {employees.map(emp => (
@@ -471,6 +484,8 @@ export default function RevenueTransactionsPage() {
                                             rows={2}
                                             value={formData.description}
                                             onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                                            placeholder="Notes or description"
+                                            title="Description"
                                         ></textarea>
                                     </div>
                                 </div>
