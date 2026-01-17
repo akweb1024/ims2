@@ -306,7 +306,7 @@ export default function EmployeeProfilePage() {
             <div className="space-y-6">
                 {/* Header Actions */}
                 <div className="flex items-center gap-4">
-                    <button onClick={() => router.back()} className="btn btn-secondary p-2 rounded-full">
+                    <button onClick={() => router.back()} className="btn btn-secondary p-2 rounded-full" title="Go back">
                         <ArrowLeft size={20} />
                     </button>
                     <div>
@@ -486,6 +486,7 @@ export default function EmployeeProfilePage() {
                                                 <label className="label-premium">Effective Date</label>
                                                 <input
                                                     type="date"
+                                                    title="Effective Date"
                                                     className="input-premium"
                                                     value={incrementForm.date}
                                                     onChange={e => setIncrementForm({ ...incrementForm, date: e.target.value })}
@@ -495,6 +496,7 @@ export default function EmployeeProfilePage() {
                                                 <label className="label-premium">Type</label>
                                                 <select
                                                     className="input-premium"
+                                                    title="Increment Type"
                                                     value={incrementForm.type}
                                                     onChange={e => setIncrementForm({ ...incrementForm, type: e.target.value })}
                                                 >
@@ -606,27 +608,27 @@ export default function EmployeeProfilePage() {
                                         <form onSubmit={handleCreateGoal} className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                             <div className="md:col-span-2">
                                                 <label className="label">Goal Title (e.g., Q1 Revenue Target)</label>
-                                                <input required className="input" value={goalForm.title} onChange={e => setGoalForm({ ...goalForm, title: e.target.value })} />
+                                                <input required className="input" placeholder="Enter goal title" title="Goal Title" value={goalForm.title} onChange={e => setGoalForm({ ...goalForm, title: e.target.value })} />
                                             </div>
                                             <div>
                                                 <label className="label">Target Value</label>
-                                                <input type="number" required className="input" value={goalForm.targetValue} onChange={e => setGoalForm({ ...goalForm, targetValue: e.target.value })} />
+                                                <input type="number" required placeholder="0" title="Target Value" className="input" value={goalForm.targetValue} onChange={e => setGoalForm({ ...goalForm, targetValue: e.target.value })} />
                                             </div>
                                             <div>
                                                 <label className="label">Unit (e.g., INR, Leads, %)</label>
-                                                <input required className="input" value={goalForm.unit} onChange={e => setGoalForm({ ...goalForm, unit: e.target.value })} />
+                                                <input required placeholder="Units" title="Measurement Unit" className="input" value={goalForm.unit} onChange={e => setGoalForm({ ...goalForm, unit: e.target.value })} />
                                             </div>
                                             <div>
                                                 <label className="label">Start Date</label>
-                                                <input type="date" required className="input" value={goalForm.startDate} onChange={e => setGoalForm({ ...goalForm, startDate: e.target.value })} />
+                                                <input type="date" required title="Start Date" className="input" value={goalForm.startDate} onChange={e => setGoalForm({ ...goalForm, startDate: e.target.value })} />
                                             </div>
                                             <div>
                                                 <label className="label">Deadline</label>
-                                                <input type="date" required className="input" value={goalForm.endDate} onChange={e => setGoalForm({ ...goalForm, endDate: e.target.value })} />
+                                                <input type="date" required title="Deadline" className="input" value={goalForm.endDate} onChange={e => setGoalForm({ ...goalForm, endDate: e.target.value })} />
                                             </div>
                                             <div>
                                                 <label className="label">Type</label>
-                                                <select className="input" value={goalForm.type} onChange={e => setGoalForm({ ...goalForm, type: e.target.value })}>
+                                                <select className="input" title="Goal Period" value={goalForm.type} onChange={e => setGoalForm({ ...goalForm, type: e.target.value })}>
                                                     <option value="MONTHLY">Monthly</option>
                                                     <option value="QUARTERLY">Quarterly</option>
                                                     <option value="YEARLY">Yearly</option>
@@ -680,6 +682,8 @@ export default function EmployeeProfilePage() {
                                                     <label className="text-xs font-bold text-secondary-500">Update Progress:</label>
                                                     <input
                                                         type="number"
+                                                        placeholder="0"
+                                                        title="Update Current Progress"
                                                         className="input py-1 px-2 h-8 w-24 text-sm"
                                                         defaultValue={goal.currentValue}
                                                         onBlur={(e) => {
@@ -696,7 +700,7 @@ export default function EmployeeProfilePage() {
                                     })}
                                     {(!employee.goals || employee.goals.length === 0) && (
                                         <div className="p-8 text-center text-secondary-400 bg-secondary-50 rounded-xl border border-dashed border-secondary-200">
-                                            No active goals defined. Click "New Goal" to start tracking performance.
+                                            No active goals defined. Click &quot;New Goal&quot; to start tracking performance.
                                         </div>
                                     )}
                                 </div>
@@ -1047,18 +1051,18 @@ export default function EmployeeProfilePage() {
                                                 <div className="grid grid-cols-2 gap-4">
                                                     <div>
                                                         <label className="label-premium">Staff Email (Read Only)</label>
-                                                        <input type="email" disabled className="input-premium bg-white opacity-60" value={empForm.email} />
+                                                        <input type="email" disabled title="Staff Email" className="input-premium bg-white opacity-60" value={empForm.email} />
                                                     </div>
                                                     <div>
                                                         <label className="label-premium">Employee ID</label>
-                                                        <input type="text" className="input-premium bg-white" placeholder="STM-001" value={empForm.employeeId} onChange={e => setEmpForm({ ...empForm, employeeId: e.target.value })} />
+                                                        <input type="text" className="input-premium bg-white" placeholder="STM-001" title="Employee ID" value={empForm.employeeId} onChange={e => setEmpForm({ ...empForm, employeeId: e.target.value })} />
                                                     </div>
                                                 </div>
                                             </div>
                                         </div>
                                         <div className="col-span-1">
                                             <label className="label-premium">System Role</label>
-                                            <select className="input-premium" value={empForm.role} onChange={e => setEmpForm({ ...empForm, role: e.target.value })}>
+                                            <select className="input-premium" title="System Role" value={empForm.role} onChange={e => setEmpForm({ ...empForm, role: e.target.value })}>
                                                 <option value="EXECUTIVE">Executive</option>
                                                 <option value="MANAGER">Manager</option>
                                                 <option value="TEAM_LEADER">Team Leader</option>

@@ -174,7 +174,7 @@ export async function PATCH(
         }
 
         // Prepare update data
-        let updateData: any = {};
+        const updateData: any = {};
 
         try {
 

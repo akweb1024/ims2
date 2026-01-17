@@ -26,8 +26,8 @@ export async function GET(req: NextRequest) {
         const isManager = ['SUPER_ADMIN', 'ADMIN', 'IT_MANAGER', 'IT_ADMIN', 'MANAGER'].includes(user.role);
 
         // Build where clauses based on view
-        let projectWhere: any = { companyId };
-        let taskWhere: any = { companyId };
+        const projectWhere: any = { companyId };
+        const taskWhere: any = { companyId };
 
         if (view === 'all' && !isAdmin) {
             return NextResponse.json({ error: 'Forbidden - Admin access required' }, { status: 403 });

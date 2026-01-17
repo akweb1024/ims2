@@ -13,7 +13,7 @@ export async function GET(req: NextRequest) {
         const status = searchParams.get('status');
         const search = searchParams.get('search');
 
-        let whereClause: any = {};
+        const whereClause: any = {};
 
         if (status && status !== 'ALL') {
             whereClause.status = status;

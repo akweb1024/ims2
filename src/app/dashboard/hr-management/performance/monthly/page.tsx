@@ -126,6 +126,7 @@ export default function MonthlyPerformancePage() {
                             <label className="label">Month</label>
                             <select
                                 className="input"
+                                title="Select Month"
                                 value={filters.month}
                                 onChange={e => setFilters({ ...filters, month: parseInt(e.target.value) })}
                             >
@@ -140,6 +141,7 @@ export default function MonthlyPerformancePage() {
                             <label className="label">Year</label>
                             <select
                                 className="input"
+                                title="Select Year"
                                 value={filters.year}
                                 onChange={e => setFilters({ ...filters, year: parseInt(e.target.value) })}
                             >
@@ -197,7 +199,7 @@ export default function MonthlyPerformancePage() {
                         <Calendar size={48} className="mx-auto text-secondary-300 mb-4" />
                         <h3 className="text-xl font-bold text-secondary-900 mb-2">No Performance Data</h3>
                         <p className="text-secondary-500 mb-4">
-                            Click "Calculate Performance" to generate monthly analytics
+                            Click &quot;Calculate Performance&quot; to generate monthly analytics
                         </p>
                     </div>
                 ) : (
