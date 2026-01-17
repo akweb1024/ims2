@@ -16,16 +16,31 @@ export const GET = authorizedRoute([], async (req: NextRequest, user) => {
         companyId: user.companyId,
     };
 
-    // If specific filters are provided, we narrow down.
-    if ((departmentId && departmentId !== 'ALL') || (designationId && designationId !== 'ALL')) {
+    // For non-admin roles, we force the filter to their own department/designation if not provided
+    const isRestrictedRole = !['SUPER_ADMIN', 'ADMIN', 'HR', 'MANAGER', 'FINANCE_ADMIN'].includes(user.role);
+
+    // Fetch full user if needed for department filtering
+    let userDeptId = null;
+    if (isRestrictedRole) {
+        const fullUser = await prisma.user.findUnique({
+            where: { id: user.id },
+            select: { departmentId: true }
+        });
+        userDeptId = fullUser?.departmentId;
+    }
+
+    // Effective filters
+    const effDeptId = isRestrictedRole ? (userDeptId || departmentId) : departmentId;
+
+    if ((effDeptId && effDeptId !== 'ALL') || (designationId && designationId !== 'ALL')) {
         const conditions: any[] = [];
 
         // Department Filter
-        if (departmentId && departmentId !== 'ALL') {
+        if (effDeptId && effDeptId !== 'ALL') {
             conditions.push({
                 OR: [
-                    { departmentId: departmentId },
-                    { departmentIds: { path: '$', array_contains: departmentId } },
+                    { departmentId: effDeptId },
+                    { departmentIds: { array_contains: effDeptId } },
                     { AND: [{ departmentId: null }, { departmentIds: null }] }
                 ]
             });
@@ -36,7 +51,7 @@ export const GET = authorizedRoute([], async (req: NextRequest, user) => {
             conditions.push({
                 OR: [
                     { designationId: designationId },
-                    { designationIds: { path: '$', array_contains: designationId } },
+                    { designationIds: { array_contains: designationId } },
                     { AND: [{ designationId: null }, { designationIds: null }] }
                 ]
             });
@@ -45,6 +60,17 @@ export const GET = authorizedRoute([], async (req: NextRequest, user) => {
         if (conditions.length > 0) {
             whereClause.AND = conditions;
         }
+    } else if (isRestrictedRole && userDeptId) {
+        // Force filter for restricted roles even if params are missing
+        whereClause.AND = [
+            {
+                OR: [
+                    { departmentId: userDeptId },
+                    { departmentIds: { array_contains: userDeptId } },
+                    { AND: [{ departmentId: null }, { departmentIds: null }] }
+                ]
+            }
+        ];
     }
 
     const tasks = await prisma.employeeTaskTemplate.findMany({
@@ -77,8 +103,8 @@ export const POST = authorizedRoute(['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'HR'], a
             points: Number(points),
             departmentId: departmentId === 'ALL' ? null : departmentId,
             designationId: designationId === 'ALL' ? null : designationId,
-            departmentIds: departmentIds && Array.isArray(departmentIds) && departmentIds.length > 0 ? departmentIds : null,
-            designationIds: designationIds && Array.isArray(designationIds) && designationIds.length > 0 ? designationIds : null,
+            departmentIds: (departmentIds && Array.isArray(departmentIds) && departmentIds.length > 0 ? departmentIds : null) as any,
+            designationIds: (designationIds && Array.isArray(designationIds) && designationIds.length > 0 ? designationIds : null) as any,
             companyId: user.companyId,
             calculationType: calculationType as any,
             minThreshold: minThreshold ? Number(minThreshold) : null,
@@ -108,8 +134,8 @@ export const PUT = authorizedRoute(['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'HR'], as
             isActive,
             departmentId: departmentId === 'ALL' ? null : departmentId,
             designationId: designationId === 'ALL' ? null : designationId,
-            departmentIds: departmentIds && Array.isArray(departmentIds) && departmentIds.length > 0 ? departmentIds : null,
-            designationIds: designationIds && Array.isArray(designationIds) && designationIds.length > 0 ? designationIds : null,
+            departmentIds: (departmentIds && Array.isArray(departmentIds) && departmentIds.length > 0 ? departmentIds : null) as any,
+            designationIds: (designationIds && Array.isArray(designationIds) && designationIds.length > 0 ? designationIds : null) as any,
             calculationType: calculationType as any,
             minThreshold: minThreshold ? Number(minThreshold) : null,
             maxThreshold: maxThreshold ? Number(maxThreshold) : null,
