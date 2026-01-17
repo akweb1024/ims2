@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
-import { Briefcase, Send, DollarSign, Mail, Phone, FileText, CheckCircle, Video, Award, Settings } from 'lucide-react';
+import { Briefcase, Send, CheckCircle, Award, Settings, TrendingUp, Users } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 export default function SubmitReportPage() {
@@ -11,25 +11,14 @@ export default function SubmitReportPage() {
     const [loading, setLoading] = useState(false);
     const [savedReport, setSavedReport] = useState(false);
 
-    // Form State
-    const [template, setTemplate] = useState('GENERAL');
+    // Form State - Simplified to narrative only
     const [commonData, setCommonData] = useState({
         title: '',
         content: '',
         hoursSpent: 0,
         date: new Date().toISOString().split('T')[0],
-        selfRating: 5
-    });
-
-    // Dynamic Metrics State
-    const [metrics, setMetrics] = useState<any>({
-        revenue: {},
-        communication: { mails: 0, calls: 0, whatsapp: 0 },
-        finance: { invoice: 0, proforma: 0 },
-        sales: { copiesSold: 0 },
-        content: { posters: 0, videos: 0, mails: 0, courses: 0, workshops: 0 },
-        distribution: { recordingShare: 0, programShare: 0, certificateShare: 0 },
-        formatting: { paperFormatting: 0, correctionCount: 0 }
+        selfRating: 5,
+        meetingsText: ''
     });
 
     const [prodActivity, setProdActivity] = useState<any>(null);
@@ -39,6 +28,16 @@ export default function SubmitReportPage() {
     const [scaledTaskValues, setScaledTaskValues] = useState<Record<string, number>>({});
     const [currentPoints, setCurrentPoints] = useState(0);
 
+    // Auto-calculated metrics from tasks
+    const [derivedMetrics, setDerivedMetrics] = useState({
+        revenue: 0,
+        calls: 0,
+        emails: 0,
+        whatsapp: 0,
+        invoices: 0,
+        tasksCount: 0
+    });
+
     useEffect(() => {
         const userData = localStorage.getItem('user');
         const token = localStorage.getItem('token');
@@ -46,29 +45,13 @@ export default function SubmitReportPage() {
             const u = JSON.parse(userData);
             setUser(u);
 
-            // Auto-select template based on role
-            if (u.role === 'EXECUTIVE') setTemplate('SALES');
-            else if (u.role === 'EDITOR') setTemplate('PUBLICATION');
-            else if (u.role === 'HR_MANAGER') setTemplate('GENERAL');
-            else if (u.department?.name?.toLowerCase().includes('publication')) setTemplate('PUBLICATION');
-            else setTemplate('GENERAL');
-
             // Fetch Profile & Tasks
             fetch('/api/hr/profile/me', { headers: { 'Authorization': `Bearer ${token}` } })
                 .then(res => res.json())
                 .then(profile => {
                     if (profile) {
-                        const query = new URLSearchParams({
-                            departmentId: profile.department?.id || 'ALL',
-                            designationId: profile.designation?.id || 'ALL'
-                        });
-                        // Fallback to fetch all active tasks if specific filters miss? Or just try specific first.
-                        // Let's rely on api to handle 'ALL' or specific IDs.
-                        // Actually the API expects IDs. 
-                        // If department is nested in profile check structure.
-                        // profile.department is likely an object {id, name}. 
                         const depId = profile.department?.id || (u.departmentId);
-                        const desId = profile.designationId; // Profile usually has designationId directly too
+                        const desId = profile.designationId;
 
                         const q = new URLSearchParams();
                         if (depId) q.append('departmentId', depId);
@@ -93,7 +76,7 @@ export default function SubmitReportPage() {
                         const checkIn = new Date(record.checkIn);
                         const checkOut = record.checkOut ? new Date(record.checkOut) : new Date();
                         const diffMs = checkOut.getTime() - checkIn.getTime();
-                        const hours = Math.round((diffMs / (1000 * 60 * 60)) * 2) / 2; // Round to nearest 0.5
+                        const hours = Math.round((diffMs / (1000 * 60 * 60)) * 2) / 2;
                         setCommonData(prev => ({ ...prev, hoursSpent: hours }));
                     }
                 })
@@ -109,80 +92,78 @@ export default function SubmitReportPage() {
         }
     }, []);
 
+    // Calculate points and derive metrics from tasks
     useEffect(() => {
-        const points = availableTasks.reduce((acc, t) => {
+        let points = 0;
+        let revenue = 0;
+        let calls = 0;
+        let emails = 0;
+        let whatsapp = 0;
+        let invoices = 0;
+
+        availableTasks.forEach(t => {
             if (completedTaskIds.includes(t.id)) {
+                // Calculate points
                 if (t.calculationType === 'SCALED') {
                     const quantity = scaledTaskValues[t.id] || 0;
-                    if (t.minThreshold && quantity < t.minThreshold) return acc;
+                    if (t.minThreshold && quantity < t.minThreshold) return;
 
-                    let pts = quantity * (t.pointsPerUnit || 0);
-                    if (t.maxThreshold && quantity > t.maxThreshold) {
-                        // Cap points or Cap units? Usually limits quantity considered.
-                        // But requirements say "10 for 150000 like this". 
-                        // "maxThreshold" in our schema was "100 calls (optional cap)".
-                        // Let's assume max thresholds caps the 'quantity' used for calculation.
-                        // Or if it simply means max points? Let's cap effectively calculated points?
-                        // "1 point for each 10 calls" -> pointsPerUnit = 0.1
-                        // "minThreshold" -> 10?
-                        // Let's stick to unit capping.
-                        pts = t.maxThreshold * (t.pointsPerUnit || 0);
-                    }
-                    // Actually if quantity > maxThreshold, we just take maxThreshold * perUnit? 
-                    // Wait, if I do 200 calls and cap is 100, I get points for 100.
                     const effQuantity = (t.maxThreshold && quantity > t.maxThreshold) ? t.maxThreshold : quantity;
-                    pts = effQuantity * (t.pointsPerUnit || 0);
+                    points += effQuantity * (t.pointsPerUnit || 0);
 
-                    return acc + pts;
+                    // Derive metrics based on task title/description keywords
+                    const titleLower = t.title.toLowerCase();
+                    if (titleLower.includes('revenue') || titleLower.includes('sales')) {
+                        revenue += quantity;
+                    }
+                    if (titleLower.includes('call')) {
+                        calls += quantity;
+                    }
+                    if (titleLower.includes('email') || titleLower.includes('mail')) {
+                        emails += quantity;
+                    }
+                    if (titleLower.includes('whatsapp') || titleLower.includes('chat')) {
+                        whatsapp += quantity;
+                    }
+                    if (titleLower.includes('invoice')) {
+                        invoices += quantity;
+                    }
                 } else {
-                    return acc + t.points;
+                    points += t.points;
                 }
             }
-            return acc;
-        }, 0);
+        });
+
         setCurrentPoints(Math.floor(points));
+        setDerivedMetrics({
+            revenue,
+            calls,
+            emails,
+            whatsapp,
+            invoices,
+            tasksCount: completedTaskIds.length
+        });
     }, [completedTaskIds, availableTasks, scaledTaskValues]);
-
-    const handleMetricChange = (category: string, field: string, value: any) => {
-        setMetrics((prev: any) => ({
-            ...prev,
-            [category]: {
-                ...prev[category],
-                [field]: parseInt(value) || 0
-            }
-        }));
-    };
-
-    const calculateTotalRevenue = () => {
-        return Object.values(metrics.revenue).reduce((acc: number, curr: any) => acc + (parseInt(curr) || 0), 0);
-    };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
         try {
             const token = localStorage.getItem('token');
-            const totalRevenue = calculateTotalRevenue();
-
-            // Flatten generic counts for the main table to keep backward compatibility
-            const tasksCompleted =
-                (metrics.sales?.copiesSold || 0) +
-                (metrics.content?.courses || 0) +
-                (metrics.content?.workshops || 0);
 
             const payload = {
                 ...commonData,
-                category: template,
-                userRole: user?.role, // Auto reflect from profile
-                revenueGenerated: totalRevenue,
-                tasksCompleted: tasksCompleted > 0 ? tasksCompleted : completedTaskIds.length,
+                category: 'TASK_BASED',
+                userRole: user?.role,
+                revenueGenerated: derivedMetrics.revenue,
+                tasksCompleted: derivedMetrics.tasksCount,
                 completedTaskIds,
                 taskQuantities: scaledTaskValues,
-                chatsHandled: metrics.communication.whatsapp,
-                followUpsCompleted: metrics.communication.calls,
+                chatsHandled: derivedMetrics.whatsapp,
+                followUpsCompleted: derivedMetrics.calls,
                 metrics: {
-                    template,
-                    ...metrics
+                    derived: derivedMetrics,
+                    meetingsText: commonData.meetingsText
                 }
             };
 
@@ -231,24 +212,54 @@ export default function SubmitReportPage() {
 
     return (
         <DashboardLayout userRole={user?.role}>
-            <div className="max-w-4xl mx-auto space-y-6">
+            <div className="max-w-5xl mx-auto space-y-6">
                 <div className="flex items-center justify-between">
                     <div>
                         <h1 className="text-3xl font-black text-secondary-900">Submit Work Report</h1>
-                        <p className="text-secondary-500">Track your daily impact and achievements</p>
+                        <p className="text-secondary-500">Track your daily impact through task completion</p>
                     </div>
-                    <select
-                        className="input w-48 font-bold uppercase text-sm"
-                        value={template}
-                        onChange={(e) => setTemplate(e.target.value)}
-                    >
-                        <option value="GENERAL">General Staff</option>
-                        <option value="SALES">Executive</option>
-                        <option value="PUBLICATION">Publication Exec</option>
-                        <option value="PROGRAM">Program Executive</option>
-                        <option value="FORMATTING">Formatting Team</option>
-                    </select>
+                    <div className="bg-gradient-to-r from-indigo-500 to-purple-600 text-white px-6 py-3 rounded-2xl shadow-lg">
+                        <span className="text-xs font-bold uppercase tracking-wider block">Today's Score</span>
+                        <div className="text-3xl font-black">{currentPoints} <span className="text-sm">pts</span></div>
+                    </div>
                 </div>
+
+                {/* Auto-Calculated Metrics Display */}
+                {derivedMetrics.tasksCount > 0 && (
+                    <div className="card-premium p-6 bg-gradient-to-br from-primary-50 to-indigo-50 border-t-4 border-indigo-500">
+                        <div className="flex items-center gap-2 mb-4">
+                            <TrendingUp className="text-indigo-600" size={24} />
+                            <h3 className="font-bold text-lg text-secondary-900">Auto-Calculated Metrics</h3>
+                        </div>
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                            {derivedMetrics.revenue > 0 && (
+                                <div className="bg-white/80 p-4 rounded-xl text-center">
+                                    <p className="text-xs font-bold text-secondary-400 uppercase">Revenue</p>
+                                    <p className="text-2xl font-black text-success-600">₹{derivedMetrics.revenue.toLocaleString()}</p>
+                                </div>
+                            )}
+                            {derivedMetrics.calls > 0 && (
+                                <div className="bg-white/80 p-4 rounded-xl text-center">
+                                    <p className="text-xs font-bold text-secondary-400 uppercase">Calls</p>
+                                    <p className="text-2xl font-black text-primary-600">{derivedMetrics.calls}</p>
+                                </div>
+                            )}
+                            {derivedMetrics.emails > 0 && (
+                                <div className="bg-white/80 p-4 rounded-xl text-center">
+                                    <p className="text-xs font-bold text-secondary-400 uppercase">Emails</p>
+                                    <p className="text-2xl font-black text-indigo-600">{derivedMetrics.emails}</p>
+                                </div>
+                            )}
+                            {derivedMetrics.invoices > 0 && (
+                                <div className="bg-white/80 p-4 rounded-xl text-center">
+                                    <p className="text-xs font-bold text-secondary-400 uppercase">Invoices</p>
+                                    <p className="text-2xl font-black text-warning-600">{derivedMetrics.invoices}</p>
+                                </div>
+                            )}
+                        </div>
+                        <p className="text-xs text-indigo-600 mt-4 italic text-center">✨ Metrics automatically calculated from your task checklist</p>
+                    </div>
+                )}
 
                 {/* Gamified Task Checklist */}
                 {availableTasks.length > 0 && (
@@ -259,8 +270,8 @@ export default function SubmitReportPage() {
                                 Daily Task Checklist
                             </h3>
                             <div className="bg-indigo-50 px-4 py-2 rounded-xl border border-indigo-100">
-                                <span className="text-xs font-bold text-indigo-400 uppercase tracking-wider">Potential Score</span>
-                                <div className="text-2xl font-black text-indigo-700">{currentPoints} <span className="text-sm">pts</span></div>
+                                <span className="text-xs font-bold text-indigo-400 uppercase tracking-wider">Completed</span>
+                                <div className="text-2xl font-black text-indigo-700">{completedTaskIds.length}/{availableTasks.length}</div>
                             </div>
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -268,14 +279,7 @@ export default function SubmitReportPage() {
                                 <div
                                     key={task.id}
                                     onClick={(e) => {
-                                        // Prevent toggling when clicking input
                                         if ((e.target as HTMLElement).tagName === 'INPUT') return;
-
-                                        if (task.calculationType === 'SCALED') {
-                                            // Allow toggling if they want to explicitly uncheck, 
-                                            // but usually input > 0 auto-checks.
-                                            // Let's allow manual uncheck to override
-                                        }
 
                                         if (completedTaskIds.includes(task.id)) {
                                             setCompletedTaskIds(prev => prev.filter(id => id !== task.id));
@@ -328,9 +332,6 @@ export default function SubmitReportPage() {
                                                             const val = parseFloat(e.target.value) || 0;
                                                             setScaledTaskValues(prev => ({ ...prev, [task.id]: val }));
 
-                                                            // Auto select if > 0, deselect if 0?
-                                                            // Maybe better to just let them check it. 
-                                                            // But usually typing implies active.
                                                             if (val > 0 && !completedTaskIds.includes(task.id)) {
                                                                 setCompletedTaskIds(prev => [...prev, task.id]);
                                                             }
@@ -408,116 +409,41 @@ export default function SubmitReportPage() {
                             </div>
                         </div>
 
-                        {/* Meetings Section (All Roles) */}
+                        {/* Meetings Section */}
                         <div className="card-premium p-6">
                             <h3 className="font-bold text-lg mb-4 flex items-center gap-2 text-secondary-900">
-                                <CheckCircle size={20} className="text-indigo-600" />
-                                Key Meetings
+                                <Users size={20} className="text-indigo-600" />
+                                Key Meetings (Optional)
                             </h3>
-                            <textarea className="input" rows={3} placeholder='JSON style or list: Meeting with X at 10AM (Result: Deal Closed)'
-                                value={metrics.meetingsText} onChange={e => setMetrics({ ...metrics, meetingsText: e.target.value })} />
+                            <textarea className="input" rows={3} placeholder='e.g., Meeting with Client X at 10AM (Result: Deal Closed)'
+                                value={commonData.meetingsText} onChange={e => setCommonData({ ...commonData, meetingsText: e.target.value })} />
                             <p className="text-[10px] text-secondary-400 mt-1">Format: Time, With Whom, Result</p>
                         </div>
                     </div>
 
-                    {/* Right Col - Role Specific Metrics */}
+                    {/* Right Col - Self Rating & Submit */}
                     <div className="space-y-6">
-                        {/* Revenue Block */}
-                        <div className="card-premium p-6 border-t-4 border-success-500">
-                            <h3 className="font-bold text-sm uppercase tracking-widest mb-4 flex items-center gap-2 text-secondary-900">
-                                <DollarSign size={16} className="text-success-600" />
-                                Revenue
-                            </h3>
-                            <div className="space-y-3">
-                                {template === 'SALES' && (
-                                    <>
-                                        <div><label className="text-xs font-bold text-secondary-500">New Sales (₹)</label><input type="number" className="input h-10" onChange={e => handleMetricChange('revenue', 'new', e.target.value)} /></div>
-                                        <div><label className="text-xs font-bold text-secondary-500">Renewals (₹)</label><input type="number" className="input h-10" onChange={e => handleMetricChange('revenue', 'renewal', e.target.value)} /></div>
-                                    </>
-                                )}
-                                {template === 'PUBLICATION' && (
-                                    <>
-                                        <div><label className="text-xs font-bold text-secondary-500">DOI (₹)</label><input type="number" className="input h-10" onChange={e => handleMetricChange('revenue', 'doi', e.target.value)} /></div>
-                                        <div><label className="text-xs font-bold text-secondary-500">APC (₹)</label><input type="number" className="input h-10" onChange={e => handleMetricChange('revenue', 'apc', e.target.value)} /></div>
-                                        <div><label className="text-xs font-bold text-secondary-500">Hardcopy (₹)</label><input type="number" className="input h-10" onChange={e => handleMetricChange('revenue', 'hardcopy', e.target.value)} /></div>
-                                    </>
-                                )}
-                                {template === 'PROGRAM' && (
-                                    <>
-                                        <div><label className="text-xs font-bold text-secondary-500">Workshops (₹)</label><input type="number" className="input h-10" onChange={e => handleMetricChange('revenue', 'workshop', e.target.value)} /></div>
-                                        <div><label className="text-xs font-bold text-secondary-500">Programs (₹)</label><input type="number" className="input h-10" onChange={e => handleMetricChange('revenue', 'program', e.target.value)} /></div>
-                                    </>
-                                )}
-                                {template === 'GENERAL' && (
-                                    <div><label className="text-xs font-bold text-secondary-500">Total Revenue (₹)</label><input type="number" className="input h-10" onChange={e => handleMetricChange('revenue', 'total', e.target.value)} /></div>
-                                )}
-                            </div>
-                        </div>
-
-                        {/* Communication Block */}
-                        <div className="card-premium p-6 border-t-4 border-primary-500">
-                            <h3 className="font-bold text-sm uppercase tracking-widest mb-4 flex items-center gap-2 text-secondary-900">
-                                <Phone size={16} className="text-primary-600" />
-                                Communication
-                            </h3>
-                            <div className="grid grid-cols-3 gap-2">
-                                <div><label className="text-[10px] font-bold text-secondary-500 text-center block">Calls</label><input type="number" className="input h-8 text-center p-0" onChange={e => handleMetricChange('communication', 'calls', e.target.value)} /></div>
-                                <div><label className="text-[10px] font-bold text-secondary-500 text-center block">Mails</label><input type="number" className="input h-8 text-center p-0" onChange={e => handleMetricChange('communication', 'mails', e.target.value)} /></div>
-                                <div><label className="text-[10px] font-bold text-secondary-500 text-center block">WApp</label><input type="number" className="input h-8 text-center p-0" onChange={e => handleMetricChange('communication', 'whatsapp', e.target.value)} /></div>
-                            </div>
-                        </div>
-
-                        {/* Finance Block */}
                         <div className="card-premium p-6 border-t-4 border-warning-500">
                             <h3 className="font-bold text-sm uppercase tracking-widest mb-4 flex items-center gap-2 text-secondary-900">
-                                <FileText size={16} className="text-warning-600" />
-                                Invoices Raised
+                                <Award size={16} className="text-warning-600" />
+                                Self Rating
                             </h3>
-                            <div className="grid grid-cols-2 gap-2">
-                                <div><label className="text-[10px] font-bold text-secondary-500 block">Proforma</label><input type="number" className="input h-8" onChange={e => handleMetricChange('finance', 'proforma', e.target.value)} /></div>
-                                <div><label className="text-[10px] font-bold text-secondary-500 block">Final Inv</label><input type="number" className="input h-8" onChange={e => handleMetricChange('finance', 'invoice', e.target.value)} /></div>
+                            <div className="space-y-3">
+                                <input
+                                    type="range"
+                                    min="1"
+                                    max="10"
+                                    className="w-full"
+                                    value={commonData.selfRating}
+                                    onChange={e => setCommonData({ ...commonData, selfRating: parseInt(e.target.value) })}
+                                />
+                                <div className="flex justify-between text-xs font-bold text-secondary-400">
+                                    <span>Poor</span>
+                                    <span className="text-2xl text-warning-600">{commonData.selfRating}/10</span>
+                                    <span>Excellent</span>
+                                </div>
                             </div>
                         </div>
-
-                        {/* Role Specific Extras */}
-                        {template === 'SALES' && (
-                            <div className="card-premium p-6 border-t-4 border-rose-500">
-                                <h3 className="font-bold text-sm uppercase tracking-widest mb-4 flex items-center gap-2 text-secondary-900">Sales Stats</h3>
-                                <div><label className="text-xs font-bold text-secondary-500">Copies Sold</label><input type="number" className="input h-10" onChange={e => handleMetricChange('sales', 'copiesSold', e.target.value)} /></div>
-                            </div>
-                        )}
-
-                        {template === 'PROGRAM' && (
-                            <div className="card-premium p-6 border-t-4 border-purple-500">
-                                <h3 className="font-bold text-sm uppercase tracking-widest mb-4 flex items-center gap-2 text-secondary-900">Creation & Dist</h3>
-                                <div className="space-y-2">
-                                    <div className="grid grid-cols-2 gap-2">
-                                        <input placeholder="Posters" type="number" className="input h-8 text-xs" onChange={e => handleMetricChange('content', 'posters', e.target.value)} />
-                                        <input placeholder="Videos" type="number" className="input h-8 text-xs" onChange={e => handleMetricChange('content', 'videos', e.target.value)} />
-                                    </div>
-                                    <div className="grid grid-cols-2 gap-2">
-                                        <input placeholder="Courses" type="number" className="input h-8 text-xs" onChange={e => handleMetricChange('content', 'courses', e.target.value)} />
-                                        <input placeholder="Certificates" type="number" className="input h-8 text-xs" onChange={e => handleMetricChange('distribution', 'certificateShare', e.target.value)} />
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-
-                        {template === 'FORMATTING' && (
-                            <div className="card-premium p-6 border-t-4 border-cyan-500">
-                                <h3 className="font-bold text-sm uppercase tracking-widest mb-4 flex items-center gap-2 text-secondary-900">Formatting Stats</h3>
-                                <div className="space-y-3">
-                                    <div>
-                                        <label className="text-xs font-bold text-secondary-500">Paper Formatting Count</label>
-                                        <input type="number" className="input h-10" onChange={e => handleMetricChange('formatting', 'paperFormatting', e.target.value)} />
-                                    </div>
-                                    <div>
-                                        <label className="text-xs font-bold text-secondary-500">Correction Count</label>
-                                        <input type="number" className="input h-10" onChange={e => handleMetricChange('formatting', 'correctionCount', e.target.value)} />
-                                    </div>
-                                </div>
-                            </div>
-                        )}
 
                         <button type="submit" disabled={loading} className="btn btn-primary w-full py-4 text-lg font-black shadow-xl hover:shadow-primary-200 transition-all">
                             {loading ? 'Submitting...' : 'Submit Report'} <Send size={18} className="inline ml-2" />
