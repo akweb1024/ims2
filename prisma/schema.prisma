@@ -767,6 +767,29 @@ model Designation {
   taskTemplates       EmployeeTaskTemplate[]
 }
 
+model GlobalDepartment {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  code        String?
+  description String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model GlobalDesignation {
+  id                  String   @id @default(uuid())
+  name                String   @unique
+  code                String?
+  jobDescription      String?
+  kra                 String?
+  expectedExperience  Float    @default(0)
+  level               Int      @default(1)
+  isActive            Boolean  @default(true)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+}
+
 model EmployeeProfile {
   id                       String                  @id @default(uuid())
   userId                   String                  @unique
@@ -1549,6 +1572,7 @@ model EmployeePointLog {
   date        DateTime @default(now())
   createdAt   DateTime @default(now())
   companyId   String
+  awardedBy   String?
 
   employee    EmployeeProfile @relation(fields: [employeeId], references: [id], onDelete: Cascade)
   company     Company         @relation(fields: [companyId], references: [id])

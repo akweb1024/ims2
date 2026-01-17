@@ -165,7 +165,7 @@ export default function TaskTemplateManager() {
                     onChange={(e) => setFilterDept(e.target.value)}
                 >
                     <option value="ALL">All Departments</option>
-                    {departments.map(d => (
+                    {departments.filter((d, index, self) => index === self.findIndex(t => t.name === d.name)).map(d => (
                         <option key={d.id} value={d.id}>{d.name}</option>
                     ))}
                 </select>
@@ -394,7 +394,7 @@ export default function TaskTemplateManager() {
                                         onChange={e => setFormData({ ...formData, departmentId: e.target.value })}
                                     >
                                         <option value="ALL">All Departments</option>
-                                        {departments.map(d => (
+                                        {departments.filter((d, index, self) => index === self.findIndex(t => t.name === d.name)).map(d => (
                                             <option key={d.id} value={d.id}>{d.name}</option>
                                         ))}
                                     </select>

@@ -11,13 +11,59 @@ export const GET = authorizedRoute([], async (req: NextRequest, user) => {
     const departmentId = searchParams.get('departmentId');
     const designationId = searchParams.get('designationId');
 
+    const whereClause: any = {
+        isActive: true, // Show only active tasks by default as per previous logic
+    };
+
+    // 1. Resolve Department Name for Global Sharing
+    let deptName = null;
+    if (departmentId && departmentId !== 'ALL') {
+        const dept = await prisma.department.findUnique({
+            where: { id: departmentId },
+            select: { name: true }
+        });
+        deptName = dept?.name;
+    }
+
+    // 2. Resolve Designation Name
+    let desigName = null;
+    if (designationId && designationId !== 'ALL') {
+        const des = await prisma.designation.findUnique({
+            where: { id: designationId },
+            select: { name: true }
+        });
+        desigName = des?.name;
+    }
+
+    // 3. Construct Query
+    if (deptName) {
+        // SHARED MODE: Fetch tasks from ANY company matching the Department Name (or Generic tasks)
+        whereClause.OR = [
+            { department: { name: { equals: deptName, mode: 'insensitive' } } },
+            { departmentId: null }
+        ];
+
+        // Apply Designation Filter if present
+        if (desigName) {
+            whereClause.AND = [
+                {
+                    OR: [
+                        { designation: { name: { equals: desigName, mode: 'insensitive' } } },
+                        { designationId: null }
+                    ]
+                }
+            ];
+        }
+    } else {
+        // LOCAL MODE: Fetch all tasks for this company (e.g. Admin View 'All Departments')
+        whereClause.companyId = user.companyId;
+
+        // Optional: Local filters if IDs passed but somehow names failed (fallback) or if we add more filters later
+        // But logic says: if departmentId is ALL, we show all company tasks.
+    }
+
     const tasks = await prisma.employeeTaskTemplate.findMany({
-        where: {
-            companyId: user.companyId,
-            isActive: true,
-            ...(departmentId && departmentId !== 'ALL' ? { departmentId } : {}),
-            ...(designationId && designationId !== 'ALL' ? { designationId } : {})
-        },
+        where: whereClause,
         include: {
             department: { select: { id: true, name: true } },
             designation: { select: { id: true, name: true } }
