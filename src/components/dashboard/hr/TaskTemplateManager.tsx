@@ -22,7 +22,13 @@ export default function TaskTemplateManager() {
         points: 10,
         departmentId: 'ALL',
         designationId: 'ALL',
-        isActive: true
+        isActive: true,
+        calculationType: 'FLAT',
+        minThreshold: 1,
+        maxThreshold: '',
+        pointsPerUnit: 1,
+        basePoints: 1,
+        perUnitCount: 1
     });
 
     useEffect(() => {
@@ -54,7 +60,21 @@ export default function TaskTemplateManager() {
             const token = localStorage.getItem('token');
             const url = '/api/hr/tasks';
             const method = editingTask ? 'PUT' : 'POST';
-            const body = editingTask ? { ...formData, id: editingTask.id } : formData;
+
+            // Ensure pointsPerUnit is accurate from base/per helpers
+            const finalPointsPerUnit = (formData.basePoints || 1) / (formData.perUnitCount || 1);
+
+            const body = {
+                ...(editingTask ? { id: editingTask.id } : {}),
+                ...formData,
+                pointsPerUnit: finalPointsPerUnit
+            };
+
+            // Cleanup helpers not needed by backend (though backend ignores extras)
+            // @ts-ignore
+            delete body.basePoints;
+            // @ts-ignore
+            delete body.perUnitCount;
 
             const res = await fetch(url, {
                 method,
@@ -66,7 +86,20 @@ export default function TaskTemplateManager() {
                 setIsModalOpen(false);
                 setEditingTask(null);
                 fetchData();
-                setFormData({ title: '', description: '', points: 10, departmentId: 'ALL', designationId: 'ALL', isActive: true });
+                setFormData({
+                    title: '',
+                    description: '',
+                    points: 10,
+                    departmentId: 'ALL',
+                    designationId: 'ALL',
+                    isActive: true,
+                    calculationType: 'FLAT',
+                    minThreshold: 1,
+                    maxThreshold: '',
+                    pointsPerUnit: 1,
+                    basePoints: 1,
+                    perUnitCount: 1
+                });
             } else {
                 alert('Failed to save task');
             }
@@ -101,7 +134,20 @@ export default function TaskTemplateManager() {
                 <button
                     onClick={() => {
                         setEditingTask(null);
-                        setFormData({ title: '', description: '', points: 10, departmentId: 'ALL', designationId: 'ALL', isActive: true });
+                        setFormData({
+                            title: '',
+                            description: '',
+                            points: 10,
+                            departmentId: 'ALL',
+                            designationId: 'ALL',
+                            isActive: true,
+                            calculationType: 'FLAT',
+                            minThreshold: 1,
+                            maxThreshold: '',
+                            pointsPerUnit: 1,
+                            basePoints: 1,
+                            perUnitCount: 1
+                        });
                         setIsModalOpen(true);
                     }}
                     className="btn btn-primary flex items-center gap-2"
@@ -132,13 +178,30 @@ export default function TaskTemplateManager() {
                             <button
                                 onClick={() => {
                                     setEditingTask(task);
+                                    const ppu = task.pointsPerUnit || 1;
+                                    let bp = ppu;
+                                    let puc = 1;
+                                    if (ppu < 1 && ppu > 0) {
+                                        bp = 1;
+                                        puc = Math.round(1 / ppu);
+                                    } else if (ppu > 1 && !Number.isInteger(ppu)) {
+                                        // Handle cases like 1.5 points per unit -> 3 points per 2 units?
+                                        // For now, simplify.
+                                    }
+
                                     setFormData({
                                         title: task.title,
                                         description: task.description || '',
                                         points: task.points,
                                         departmentId: task.departmentId || 'ALL',
                                         designationId: task.designationId || 'ALL',
-                                        isActive: task.isActive
+                                        isActive: task.isActive,
+                                        calculationType: task.calculationType || 'FLAT',
+                                        minThreshold: task.minThreshold || 1,
+                                        maxThreshold: task.maxThreshold || '',
+                                        pointsPerUnit: ppu,
+                                        basePoints: bp,
+                                        perUnitCount: puc
                                     });
                                     setIsModalOpen(true);
                                 }}
@@ -159,7 +222,20 @@ export default function TaskTemplateManager() {
                                 <h3 className="font-bold text-lg text-secondary-900 pr-8 line-clamp-2">{task.title}</h3>
                             </div>
                             <div className="mt-2 flex gap-2 flex-wrap">
-                                <span className="badge bg-indigo-100 text-indigo-700 font-black">{task.points} Points</span>
+                                {task.calculationType === 'SCALED' ? (
+                                    <span className="badge bg-purple-100 text-purple-700 font-black">
+                                        {task.pointsPerUnit < 1
+                                            ? `1 pt / ${Math.round(1 / task.pointsPerUnit)} units`
+                                            : `${task.pointsPerUnit} pts / unit`
+                                        }
+                                    </span>
+                                ) : (
+                                    <span className="badge bg-indigo-100 text-indigo-700 font-black">{task.points} Points</span>
+                                )}
+                                {task.minThreshold > 1 && (
+                                    <span className="badge badge-secondary">Min: {task.minThreshold}</span>
+                                )}
+
                                 {task.department ? (
                                     <span className="badge badge-secondary">{task.department.name}</span>
                                 ) : (
@@ -199,19 +275,104 @@ export default function TaskTemplateManager() {
                                     onChange={e => setFormData({ ...formData, title: e.target.value })}
                                 />
                             </div>
+
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <label className="label">Points Value</label>
-                                    <input
-                                        type="number"
-                                        required
+                                    <label className="label">Calculation Type</label>
+                                    <select
                                         className="input"
-                                        min="1"
-                                        max="1000"
-                                        value={formData.points}
-                                        onChange={e => setFormData({ ...formData, points: parseInt(e.target.value) })}
-                                    />
+                                        value={formData.calculationType}
+                                        onChange={e => setFormData({ ...formData, calculationType: e.target.value })}
+                                    >
+                                        <option value="FLAT">Flat Points (Checklist)</option>
+                                        <option value="SCALED">Scaled (Per Unit)</option>
+                                    </select>
                                 </div>
+                                {formData.calculationType === 'FLAT' ? (
+                                    <div>
+                                        <label className="label">Points Value</label>
+                                        <input
+                                            type="number"
+                                            required
+                                            className="input"
+                                            min="1"
+                                            max="1000"
+                                            value={formData.points}
+                                            onChange={e => setFormData({ ...formData, points: parseInt(e.target.value) })}
+                                        />
+                                    </div>
+                                ) : (
+                                    <div>
+                                        <div className="flex gap-2">
+                                            <div className="flex-1">
+                                                <label className="label">Points</label>
+                                                <input
+                                                    type="number"
+                                                    required
+                                                    className="input"
+                                                    value={formData.basePoints}
+                                                    onChange={e => {
+                                                        const bp = parseFloat(e.target.value);
+                                                        setFormData({
+                                                            ...formData,
+                                                            basePoints: bp,
+                                                            pointsPerUnit: bp / (formData.perUnitCount || 1)
+                                                        });
+                                                    }}
+                                                />
+                                            </div>
+                                            <div className="flex items-center pt-6 font-bold text-secondary-400">/</div>
+                                            <div className="flex-1">
+                                                <label className="label">Per Units</label>
+                                                <input
+                                                    type="number"
+                                                    required
+                                                    className="input"
+                                                    min="1"
+                                                    value={formData.perUnitCount}
+                                                    onChange={e => {
+                                                        const puc = parseFloat(e.target.value);
+                                                        setFormData({
+                                                            ...formData,
+                                                            perUnitCount: puc,
+                                                            pointsPerUnit: (formData.basePoints || 1) / puc
+                                                        });
+                                                    }}
+                                                />
+                                            </div>
+                                        </div>
+                                        <div className="text-xs text-secondary-500 mt-1">
+                                            Outcome: {formData.pointsPerUnit.toFixed(5)} pts/unit
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+
+                            {formData.calculationType === 'SCALED' && (
+                                <div className="grid grid-cols-2 gap-4 p-4 bg-secondary-50 rounded-xl mb-4">
+                                    <div>
+                                        <label className="label text-xs">Min Units (to qualify)</label>
+                                        <input
+                                            type="number"
+                                            className="input h-9 text-sm"
+                                            value={formData.minThreshold}
+                                            onChange={e => setFormData({ ...formData, minThreshold: parseFloat(e.target.value) })}
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="label text-xs">Max Units Cap</label>
+                                        <input
+                                            type="text"
+                                            className="input h-9 text-sm"
+                                            placeholder="No Cap"
+                                            value={formData.maxThreshold}
+                                            onChange={e => setFormData({ ...formData, maxThreshold: e.target.value })}
+                                        />
+                                    </div>
+                                </div>
+                            )}
+
+                            <div className="grid grid-cols-2 gap-4">
                                 <div>
                                     <label className="label">Status</label>
                                     <select

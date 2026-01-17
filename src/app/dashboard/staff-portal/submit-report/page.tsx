@@ -36,6 +36,7 @@ export default function SubmitReportPage() {
 
     const [availableTasks, setAvailableTasks] = useState<any[]>([]);
     const [completedTaskIds, setCompletedTaskIds] = useState<string[]>([]);
+    const [scaledTaskValues, setScaledTaskValues] = useState<Record<string, number>>({});
     const [currentPoints, setCurrentPoints] = useState(0);
 
     useEffect(() => {
@@ -109,11 +110,38 @@ export default function SubmitReportPage() {
     }, []);
 
     useEffect(() => {
-        const points = availableTasks
-            .filter(t => completedTaskIds.includes(t.id))
-            .reduce((acc, t) => acc + t.points, 0);
-        setCurrentPoints(points);
-    }, [completedTaskIds, availableTasks]);
+        const points = availableTasks.reduce((acc, t) => {
+            if (completedTaskIds.includes(t.id)) {
+                if (t.calculationType === 'SCALED') {
+                    const quantity = scaledTaskValues[t.id] || 0;
+                    if (t.minThreshold && quantity < t.minThreshold) return acc;
+
+                    let pts = quantity * (t.pointsPerUnit || 0);
+                    if (t.maxThreshold && quantity > t.maxThreshold) {
+                        // Cap points or Cap units? Usually limits quantity considered.
+                        // But requirements say "10 for 150000 like this". 
+                        // "maxThreshold" in our schema was "100 calls (optional cap)".
+                        // Let's assume max thresholds caps the 'quantity' used for calculation.
+                        // Or if it simply means max points? Let's cap effectively calculated points?
+                        // "1 point for each 10 calls" -> pointsPerUnit = 0.1
+                        // "minThreshold" -> 10?
+                        // Let's stick to unit capping.
+                        pts = t.maxThreshold * (t.pointsPerUnit || 0);
+                    }
+                    // Actually if quantity > maxThreshold, we just take maxThreshold * perUnit? 
+                    // Wait, if I do 200 calls and cap is 100, I get points for 100.
+                    const effQuantity = (t.maxThreshold && quantity > t.maxThreshold) ? t.maxThreshold : quantity;
+                    pts = effQuantity * (t.pointsPerUnit || 0);
+
+                    return acc + pts;
+                } else {
+                    return acc + t.points;
+                }
+            }
+            return acc;
+        }, 0);
+        setCurrentPoints(Math.floor(points));
+    }, [completedTaskIds, availableTasks, scaledTaskValues]);
 
     const handleMetricChange = (category: string, field: string, value: any) => {
         setMetrics((prev: any) => ({
@@ -147,8 +175,9 @@ export default function SubmitReportPage() {
                 category: template,
                 userRole: user?.role, // Auto reflect from profile
                 revenueGenerated: totalRevenue,
-                tasksCompleted: tasksCompleted > 0 ? tasksCompleted : completedTaskIds.length, // Prioritize manual metrics if entered, else checkbox count
+                tasksCompleted: tasksCompleted > 0 ? tasksCompleted : completedTaskIds.length,
                 completedTaskIds,
+                taskQuantities: scaledTaskValues,
                 chatsHandled: metrics.communication.whatsapp,
                 followUpsCompleted: metrics.communication.calls,
                 metrics: {
@@ -191,7 +220,7 @@ export default function SubmitReportPage() {
                     <p className="text-secondary-500">Your work report has been logged successfully.</p>
                     {currentPoints > 0 && (
                         <div className="mt-4 p-4 bg-primary-50 rounded-xl border border-primary-100">
-                            <p className="text-sm font-bold text-primary-800">🎉 Performance Points Earned</p>
+                            <p className="text-sm font-bold text-primary-800">🎉 Points Submitted (Pending Approval)</p>
                             <p className="text-4xl font-black text-primary-600">+{currentPoints}</p>
                         </div>
                     )}
@@ -230,7 +259,7 @@ export default function SubmitReportPage() {
                                 Daily Task Checklist
                             </h3>
                             <div className="bg-indigo-50 px-4 py-2 rounded-xl border border-indigo-100">
-                                <span className="text-xs font-bold text-indigo-400 uppercase tracking-wider">Today&apos;s Score</span>
+                                <span className="text-xs font-bold text-indigo-400 uppercase tracking-wider">Potential Score</span>
                                 <div className="text-2xl font-black text-indigo-700">{currentPoints} <span className="text-sm">pts</span></div>
                             </div>
                         </div>
@@ -238,7 +267,16 @@ export default function SubmitReportPage() {
                             {availableTasks.map(task => (
                                 <div
                                     key={task.id}
-                                    onClick={() => {
+                                    onClick={(e) => {
+                                        // Prevent toggling when clicking input
+                                        if ((e.target as HTMLElement).tagName === 'INPUT') return;
+
+                                        if (task.calculationType === 'SCALED') {
+                                            // Allow toggling if they want to explicitly uncheck, 
+                                            // but usually input > 0 auto-checks.
+                                            // Let's allow manual uncheck to override
+                                        }
+
                                         if (completedTaskIds.includes(task.id)) {
                                             setCompletedTaskIds(prev => prev.filter(id => id !== task.id));
                                         } else {
@@ -268,9 +306,41 @@ export default function SubmitReportPage() {
                                                 <h4 className={`font-bold text-sm leading-tight mb-1 ${completedTaskIds.includes(task.id) ? 'text-indigo-900' : 'text-secondary-700'}`}>
                                                     {task.title}
                                                 </h4>
-                                                <span className="badge bg-indigo-100 text-indigo-700 text-[10px] font-black">{task.points} pts</span>
+                                                {task.calculationType === 'SCALED' ? (
+                                                    <span className="badge bg-purple-100 text-purple-700 text-[10px] font-black">
+                                                        {task.pointsPerUnit} pts/unit
+                                                    </span>
+                                                ) : (
+                                                    <span className="badge bg-indigo-100 text-indigo-700 text-[10px] font-black">{task.points} pts</span>
+                                                )}
                                             </div>
-                                            {task.description && <p className="text-xs text-secondary-500 leading-relaxed">{task.description}</p>}
+                                            {task.description && <p className="text-xs text-secondary-500 leading-relaxed mb-2">{task.description}</p>}
+
+                                            {task.calculationType === 'SCALED' && (
+                                                <div className="mt-2 flex items-center gap-2" onClick={e => e.stopPropagation()}>
+                                                    <input
+                                                        type="number"
+                                                        className="input py-1 h-8 text-sm w-24"
+                                                        placeholder="Qty"
+                                                        min="0"
+                                                        value={scaledTaskValues[task.id] || ''}
+                                                        onChange={(e) => {
+                                                            const val = parseFloat(e.target.value) || 0;
+                                                            setScaledTaskValues(prev => ({ ...prev, [task.id]: val }));
+
+                                                            // Auto select if > 0, deselect if 0?
+                                                            // Maybe better to just let them check it. 
+                                                            // But usually typing implies active.
+                                                            if (val > 0 && !completedTaskIds.includes(task.id)) {
+                                                                setCompletedTaskIds(prev => [...prev, task.id]);
+                                                            }
+                                                        }}
+                                                    />
+                                                    <span className="text-xs text-secondary-400">
+                                                        {task.minThreshold > 1 ? `(Min: ${task.minThreshold})` : 'units'}
+                                                    </span>
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
                                 </div>

@@ -202,14 +202,37 @@ export const POST = authorizedRoute(
             let pointsEarned = 0;
             let tasksSnapshot = null;
             let tasksCompletedCount = parseInt(body.tasksCompleted) || 0;
+            const taskQuantities = body.taskQuantities || {};
 
             if (body.completedTaskIds && Array.isArray(body.completedTaskIds) && body.completedTaskIds.length > 0) {
                 const templates = await prisma.employeeTaskTemplate.findMany({
                     where: { id: { in: body.completedTaskIds } }
                 });
 
-                tasksSnapshot = templates.map((t: any) => ({ id: t.id, title: t.title, points: t.points }));
-                pointsEarned = templates.reduce((sum: number, t: any) => sum + t.points, 0);
+                tasksSnapshot = templates.map((t: any) => {
+                    let pts = t.points;
+                    let quantity = 1;
+
+                    if (t.calculationType === 'SCALED') {
+                        quantity = taskQuantities[t.id] || 0;
+                        if (t.minThreshold && quantity < t.minThreshold) {
+                            pts = 0;
+                        } else {
+                            const effQuantity = (t.maxThreshold && quantity > t.maxThreshold) ? t.maxThreshold : quantity;
+                            pts = effQuantity * (t.pointsPerUnit || 0);
+                        }
+                    }
+
+                    return {
+                        id: t.id,
+                        title: t.title,
+                        points: pts,
+                        quantity,
+                        calculationType: t.calculationType
+                    };
+                });
+
+                pointsEarned = tasksSnapshot.reduce((sum: number, t: any) => sum + t.points, 0);
 
                 // If the user didn't manually type tasks count, use the length of checked items
                 if (tasksCompletedCount === 0) {
@@ -332,6 +355,22 @@ export const PATCH = authorizedRoute(
                 const subIds = await getDownlineUserIds(user.id, user.companyId || undefined);
                 if (!subIds.includes(existing.employee.userId)) {
                     return createErrorResponse('Forbidden: Not in your team', 403);
+                }
+            }
+
+            if (status === 'APPROVED' && existing.status !== 'APPROVED') {
+                // Award Points
+                if (existing.pointsEarned && existing.pointsEarned > 0) {
+                    await prisma.employeePointLog.create({
+                        data: {
+                            employeeId: existing.employeeId,
+                            companyId: user.companyId!,
+                            type: 'WORK_REPORT',
+                            points: existing.pointsEarned,
+                            date: new Date(),
+                            reason: `Work Report Approved: ${existing.title}`
+                        }
+                    });
                 }
             }
 
