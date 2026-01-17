@@ -8,12 +8,20 @@ export async function POST(
 ) {
     try {
         const user = await getAuthenticatedUser();
-        if (!user || user.role !== 'HR_MANAGER' && user.role !== 'ADMIN' && user.role !== 'SUPER_ADMIN') {
+        if (!user) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
+
+        const userRole = user.role;
+        const isApprover = ['HR_MANAGER', 'ADMIN', 'SUPER_ADMIN'].includes(userRole);
+        const isManager = userRole === 'MANAGER' || userRole === 'TEAM_LEADER';
+
+        if (!isApprover && !isManager) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
         const body = await req.json();
-        const { amount, date, type, reason, designation } = body; // amount is the NEW salary
+        const { amount, date, type, reason, designation } = body;
 
         const employee = await prisma.employeeProfile.findUnique({
             where: { id: params.id },
@@ -29,7 +37,8 @@ export async function POST(
         const incrementAmount = newSalary - oldSalary;
         const percentage = oldSalary > 0 ? (incrementAmount / oldSalary) * 100 : 0;
 
-        // Transaction to update profile and create history record
+        const status = isApprover ? 'APPROVED' : 'RECOMMENDED';
+
         const result = await prisma.$transaction(async (tx) => {
             // 1. Create Record
             const record = await tx.salaryIncrementRecord.create({
@@ -42,24 +51,27 @@ export async function POST(
                     percentage: parseFloat(percentage.toFixed(2)),
                     type: type || 'INCREMENT',
                     reason: reason,
-                    approvedByUserId: user.id,
+                    status: status,
+                    recommendedByUserId: !isApprover ? user.id : null,
+                    approvedByUserId: isApprover ? user.id : null,
                     previousDesignation: employee.designation,
                     newDesignation: designation || employee.designation,
                 }
             });
 
-            // 2. Update Profile
-            await tx.employeeProfile.update({
-                where: { id: employee.id },
-                data: {
-                    baseSalary: newSalary,
-                    designation: designation || undefined, // Update designation if provided (Promotion)
-                    lastIncrementDate: type === 'INCREMENT' ? new Date(date) : undefined,
-                    lastIncrementPercentage: type === 'INCREMENT' ? parseFloat(percentage.toFixed(2)) : undefined,
-                    lastPromotionDate: type === 'PROMOTION' ? new Date(date) : undefined
-                    // Note: If designation is updated, we assume it's a promotion or related change
-                }
-            });
+            // 2. Update Profile ONLY if APPROVED
+            if (status === 'APPROVED') {
+                await tx.employeeProfile.update({
+                    where: { id: employee.id },
+                    data: {
+                        baseSalary: newSalary,
+                        designation: designation || undefined,
+                        lastIncrementDate: type === 'INCREMENT' ? new Date(date) : undefined,
+                        lastIncrementPercentage: type === 'INCREMENT' ? parseFloat(percentage.toFixed(2)) : undefined,
+                        lastPromotionDate: type === 'PROMOTION' ? new Date(date) : undefined
+                    }
+                });
+            }
 
             return record;
         });

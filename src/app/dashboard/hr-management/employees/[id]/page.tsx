@@ -21,6 +21,14 @@ export default function EmployeeProfilePage() {
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState('overview');
     const [growthData, setGrowthData] = useState<any>(null);
+    const [currentUser, setCurrentUser] = useState<any>(null);
+
+    useEffect(() => {
+        const userData = localStorage.getItem('user');
+        if (userData) {
+            setCurrentUser(JSON.parse(userData));
+        }
+    }, []);
 
     // Increment Form State
     const [showIncrementForm, setShowIncrementForm] = useState(false);
@@ -91,7 +99,11 @@ export default function EmployeeProfilePage() {
             });
 
             if (res.ok) {
-                alert('Record added successfully!');
+                const data = await res.json();
+                const msg = data.status === 'RECOMMENDED'
+                    ? 'Increment recommendation submitted for approval!'
+                    : 'Salary updated successfully!';
+                alert(msg);
                 setShowIncrementForm(false);
                 fetchEmployeeDetails(); // Refresh to see new salary
                 // Reset form
@@ -110,6 +122,42 @@ export default function EmployeeProfilePage() {
             console.error(err);
             alert('Network error');
         }
+    };
+
+    const handleApproveIncrement = async (recordId: string) => {
+        if (!confirm('Are you sure you want to approve this increment? This will update the employee profile.')) return;
+        try {
+            const token = localStorage.getItem('token');
+            const res = await fetch(`/api/hr/employees/increment-records/${recordId}/approve`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (res.ok) {
+                alert('Increment approved successfully!');
+                fetchEmployeeDetails();
+            } else {
+                const err = await res.json();
+                alert(`Failed: ${err.error}`);
+            }
+        } catch (err) { console.error(err); }
+    };
+
+    const handleRejectIncrement = async (recordId: string) => {
+        if (!confirm('Are you sure you want to reject this increment?')) return;
+        try {
+            const token = localStorage.getItem('token');
+            const res = await fetch(`/api/hr/employees/increment-records/${recordId}/reject`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (res.ok) {
+                alert('Increment rejected.');
+                fetchEmployeeDetails();
+            } else {
+                const err = await res.json();
+                alert(`Failed: ${err.error}`);
+            }
+        } catch (err) { console.error(err); }
     };
 
     const [showEmpModal, setShowEmpModal] = useState(false);
@@ -302,7 +350,7 @@ export default function EmployeeProfilePage() {
     if (!employee) return <div className="p-8 text-center">Employee not found</div>;
 
     return (
-        <DashboardLayout userRole={employee.user.role}>
+        <DashboardLayout userRole={currentUser?.role || employee.user.role}>
             <div className="space-y-6">
                 {/* Header Actions */}
                 <div className="flex items-center gap-4">
@@ -554,6 +602,7 @@ export default function EmployeeProfilePage() {
                                                 <th className="px-6 py-4 text-right text-xs font-bold text-secondary-500 uppercase">Old Salary</th>
                                                 <th className="px-6 py-4 text-right text-xs font-bold text-secondary-500 uppercase">New Salary</th>
                                                 <th className="px-6 py-4 text-right text-xs font-bold text-secondary-500 uppercase">Change</th>
+                                                <th className="px-6 py-4 text-right text-xs font-bold text-secondary-500 uppercase">Status</th>
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-secondary-100">
@@ -574,10 +623,37 @@ export default function EmployeeProfilePage() {
                                                         <td className="px-6 py-4 text-right text-sm text-secondary-500">₹{rec.oldSalary.toLocaleString()}</td>
                                                         <td className="px-6 py-4 text-right text-sm font-bold text-secondary-900">₹{rec.newSalary.toLocaleString()}</td>
                                                         <td className="px-6 py-4 text-right">
-                                                            <div className={`text-sm font-bold ${rec.percentage >= 0 ? 'text-success-600' : 'text-danger-600'}`}>
+                                                            <div className={`text-sm font-bold ${rec.status === 'REJECTED' ? 'text-secondary-400' : (rec.percentage >= 0 ? 'text-success-600' : 'text-danger-600')}`}>
                                                                 {rec.percentage > 0 ? '+' : ''}{rec.percentage}%
                                                             </div>
                                                             <div className="text-[10px] text-secondary-400">₹{rec.incrementAmount.toLocaleString()}</div>
+                                                        </td>
+                                                        <td className="px-6 py-4">
+                                                            <div className="flex flex-col gap-1 items-end">
+                                                                <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${rec.status === 'APPROVED' ? 'bg-success-100 text-success-700' :
+                                                                    rec.status === 'REJECTED' ? 'bg-danger-100 text-danger-700' :
+                                                                        'bg-warning-100 text-warning-700'
+                                                                    }`}>
+                                                                    {rec.status || 'APPROVED'}
+                                                                </span>
+                                                                {rec.status === 'RECOMMENDED' && ['HR_MANAGER', 'ADMIN', 'SUPER_ADMIN'].includes(currentUser?.role) && (
+                                                                    <div className="flex gap-1 mt-1">
+                                                                        <button
+                                                                            onClick={() => handleApproveIncrement(rec.id)}
+                                                                            className="text-[10px] font-bold text-success-600 hover:underline"
+                                                                        >
+                                                                            Approve
+                                                                        </button>
+                                                                        <span className="text-secondary-300">|</span>
+                                                                        <button
+                                                                            onClick={() => handleRejectIncrement(rec.id)}
+                                                                            className="text-[10px] font-bold text-danger-600 hover:underline"
+                                                                        >
+                                                                            Reject
+                                                                        </button>
+                                                                    </div>
+                                                                )}
+                                                            </div>
                                                         </td>
                                                     </tr>
                                                 ))
