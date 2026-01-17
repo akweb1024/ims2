@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import {
@@ -81,11 +81,7 @@ export default function ITManagementDashboard() {
     const [loading, setLoading] = useState(true);
     const [view, setView] = useState<'my' | 'team' | 'all'>('my');
 
-    useEffect(() => {
-        fetchDashboardStats();
-    }, [view]);
-
-    const fetchDashboardStats = async () => {
+    const fetchDashboardStats = useCallback(async () => {
         try {
             setLoading(true);
             const token = localStorage.getItem('token');
@@ -101,7 +97,11 @@ export default function ITManagementDashboard() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [view]);
+
+    useEffect(() => {
+        fetchDashboardStats();
+    }, [fetchDashboardStats]);
 
     const getStatusColor = (status: string) => {
         switch (status) {
@@ -195,6 +195,7 @@ export default function ITManagementDashboard() {
                                     ? 'bg-white dark:bg-gray-700 text-blue-600 dark:text-blue-400 shadow-sm'
                                     : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
                                     }`}
+                                title="Show my tasks"
                             >
                                 My View
                             </button>
@@ -204,6 +205,7 @@ export default function ITManagementDashboard() {
                                     ? 'bg-white dark:bg-gray-700 text-blue-600 dark:text-blue-400 shadow-sm'
                                     : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
                                     }`}
+                                title="Show team tasks"
                             >
                                 Team View
                             </button>
@@ -213,6 +215,7 @@ export default function ITManagementDashboard() {
                                     ? 'bg-white dark:bg-gray-700 text-blue-600 dark:text-blue-400 shadow-sm'
                                     : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
                                     }`}
+                                title="Show all tasks"
                             >
                                 All Tasks
                             </button>
@@ -393,8 +396,7 @@ export default function ITManagementDashboard() {
                                 </div>
                                 <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
                                     <div
-                                        className="bg-purple-500 h-2 rounded-full"
-                                        style={{ width: '100%' }}
+                                        className="bg-purple-500 h-2 rounded-full w-full"
                                     ></div>
                                 </div>
                             </div>
@@ -409,11 +411,12 @@ export default function ITManagementDashboard() {
                                     <div
                                         className="bg-green-500 h-2 rounded-full"
                                         style={{
-                                            width: `${(stats.overview.timeTracking.billableHours /
+                                            ['--progress' as any]: `${(stats.overview.timeTracking.billableHours /
                                                 stats.overview.timeTracking.totalHours) *
                                                 100
                                                 }%`,
-                                        }}
+                                            width: 'var(--progress)'
+                                        } as any}
                                     ></div>
                                 </div>
                             </div>
@@ -428,11 +431,12 @@ export default function ITManagementDashboard() {
                                     <div
                                         className="bg-gray-400 h-2 rounded-full"
                                         style={{
-                                            width: `${(stats.overview.timeTracking.nonBillableHours /
+                                            ['--progress' as any]: `${(stats.overview.timeTracking.nonBillableHours /
                                                 stats.overview.timeTracking.totalHours) *
                                                 100
                                                 }%`,
-                                        }}
+                                            width: 'var(--progress)'
+                                        } as any}
                                     ></div>
                                 </div>
                             </div>

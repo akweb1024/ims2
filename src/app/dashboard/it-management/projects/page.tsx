@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import {
@@ -60,11 +60,7 @@ export default function ProjectsPage() {
     const [typeFilter, setTypeFilter] = useState<string>('');
     const [showFilters, setShowFilters] = useState(false);
 
-    useEffect(() => {
-        fetchProjects();
-    }, [statusFilter, typeFilter]);
-
-    const fetchProjects = async () => {
+    const fetchProjects = useCallback(async () => {
         try {
             setLoading(true);
             const params = new URLSearchParams();
@@ -81,7 +77,11 @@ export default function ProjectsPage() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [statusFilter, typeFilter]);
+
+    useEffect(() => {
+        fetchProjects();
+    }, [fetchProjects]);
 
     const filteredProjects = projects.filter((project) =>
         project.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -192,6 +192,7 @@ export default function ProjectsPage() {
                                     value={statusFilter}
                                     onChange={(e) => setStatusFilter(e.target.value)}
                                     className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                                    title="Filter by Status"
                                 >
                                     <option value="">All Statuses</option>
                                     <option value="PLANNING">Planning</option>
@@ -211,6 +212,7 @@ export default function ProjectsPage() {
                                     value={typeFilter}
                                     onChange={(e) => setTypeFilter(e.target.value)}
                                     className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                                    title="Filter by Type"
                                 >
                                     <option value="">All Types</option>
                                     <option value="REVENUE">Revenue</option>

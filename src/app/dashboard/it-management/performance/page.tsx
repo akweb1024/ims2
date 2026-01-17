@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import {
     BarChart3,
@@ -64,11 +64,7 @@ export default function PerformancePage() {
     const [searchTerm, setSearchTerm] = useState('');
     const [timeRange, setTimeRange] = useState('6'); // 6 months
 
-    useEffect(() => {
-        fetchPerformanceData();
-    }, [timeRange]);
-
-    const fetchPerformanceData = async () => {
+    const fetchPerformanceData = useCallback(async () => {
         try {
             setLoading(true);
             const response = await fetch(`/api/it/analytics/performance?months=${timeRange}`);
@@ -81,7 +77,11 @@ export default function PerformancePage() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [timeRange]);
+
+    useEffect(() => {
+        fetchPerformanceData();
+    }, [fetchPerformanceData]);
 
     if (loading) {
         return (
@@ -122,6 +122,7 @@ export default function PerformancePage() {
                             value={timeRange}
                             onChange={(e) => setTimeRange(e.target.value)}
                             className="bg-transparent border-none text-sm font-medium focus:ring-0 cursor-pointer dark:text-white px-3"
+                            title="Select Time Range"
                         >
                             <option value="3">Last 3 Months</option>
                             <option value="6">Last 6 Months</option>

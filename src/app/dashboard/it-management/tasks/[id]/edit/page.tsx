@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import {
@@ -57,13 +57,7 @@ export default function EditTaskPage() {
         tags: '',
     });
 
-    useEffect(() => {
-        if (taskId) {
-            fetchInitialData();
-        }
-    }, [taskId]);
-
-    const fetchInitialData = async () => {
+    const fetchInitialData = useCallback(async () => {
         try {
             setLoading(true);
             const [taskRes, projectsRes, usersRes] = await Promise.all([
@@ -108,7 +102,13 @@ export default function EditTaskPage() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [taskId, router]);
+
+    useEffect(() => {
+        if (taskId) {
+            fetchInitialData();
+        }
+    }, [taskId, fetchInitialData]);
 
     const validateForm = () => {
         const newErrors: Record<string, string> = {};
@@ -188,6 +188,7 @@ export default function EditTaskPage() {
                         <button
                             onClick={() => router.back()}
                             className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                            title="Go back"
                         >
                             <ArrowLeft className="h-5 w-5 text-gray-600 dark:text-gray-400" />
                         </button>
@@ -225,6 +226,8 @@ export default function EditTaskPage() {
                                     }
                                     className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 dark:bg-gray-700 dark:text-white ${errors.title ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
                                         }`}
+                                    title="Task Title"
+                                    placeholder="Enter task title"
                                 />
                                 {errors.title && (
                                     <p className="mt-1 text-sm text-red-500 flex items-center gap-1">
@@ -245,6 +248,8 @@ export default function EditTaskPage() {
                                     }
                                     rows={4}
                                     className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 dark:bg-gray-700 dark:text-white"
+                                    title="Task Description"
+                                    placeholder="Describe the task..."
                                 />
                             </div>
 
@@ -258,6 +263,7 @@ export default function EditTaskPage() {
                                         setFormData({ ...formData, projectId: e.target.value })
                                     }
                                     className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 dark:bg-gray-700 dark:text-white"
+                                    title="Project"
                                 >
                                     <option value="">No Project (Standalone Task)</option>
                                     {projects?.map((project) => (
@@ -279,6 +285,7 @@ export default function EditTaskPage() {
                                             setFormData({ ...formData, category: e.target.value })
                                         }
                                         className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 dark:bg-gray-700 dark:text-white"
+                                        title="Category"
                                     >
                                         <option value="ENHANCEMENT">Enhancement</option>
                                         <option value="BUG_FIX">Bug Fix</option>
@@ -300,6 +307,7 @@ export default function EditTaskPage() {
                                             setFormData({ ...formData, type: e.target.value })
                                         }
                                         className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 dark:bg-gray-700 dark:text-white"
+                                        title="Type"
                                     >
                                         <option value="REVENUE">Revenue</option>
                                         <option value="SUPPORT">Support</option>
@@ -318,6 +326,7 @@ export default function EditTaskPage() {
                                             setFormData({ ...formData, priority: e.target.value })
                                         }
                                         className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 dark:bg-gray-700 dark:text-white"
+                                        title="Priority"
                                     >
                                         <option value="LOW">Low</option>
                                         <option value="MEDIUM">Medium</option>
@@ -338,6 +347,7 @@ export default function EditTaskPage() {
                                             setFormData({ ...formData, status: e.target.value })
                                         }
                                         className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 dark:bg-gray-700 dark:text-white"
+                                        title="Status"
                                     >
                                         <option value="PENDING">Pending</option>
                                         <option value="IN_PROGRESS">In Progress</option>
@@ -362,6 +372,8 @@ export default function EditTaskPage() {
                                         }
                                         className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 dark:bg-gray-700 dark:text-white ${errors.progressPercent ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
                                             }`}
+                                        title="Progress Percentage"
+                                        placeholder="0"
                                         min="0"
                                         max="100"
                                     />
@@ -420,6 +432,7 @@ export default function EditTaskPage() {
                                                 })
                                             }
                                             className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 dark:bg-gray-700 dark:text-white"
+                                            title="Estimated Value"
                                         />
                                     </div>
 
@@ -437,6 +450,7 @@ export default function EditTaskPage() {
                                                 })
                                             }
                                             className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 dark:bg-gray-700 dark:text-white"
+                                            title="IT Revenue Earned"
                                         />
                                     </div>
 
@@ -482,6 +496,7 @@ export default function EditTaskPage() {
                                         setFormData({ ...formData, assignedToId: e.target.value })
                                     }
                                     className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 dark:bg-gray-700 dark:text-white"
+                                    title="Assign to"
                                 >
                                     <option value="">Unassigned</option>
                                     {users?.map((user) => (
@@ -503,6 +518,7 @@ export default function EditTaskPage() {
                                         setFormData({ ...formData, dueDate: e.target.value })
                                     }
                                     className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 dark:bg-gray-700 dark:text-white"
+                                    title="Due Date"
                                 />
                             </div>
                         </div>

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import {
@@ -67,34 +67,7 @@ export default function TasksPage() {
     const [allProjects, setAllProjects] = useState<any[]>([]);
     const [allUsers, setAllUsers] = useState<any[]>([]);
 
-    useEffect(() => {
-        fetchTasks();
-    }, [view, typeFilter, priorityFilter, projectFilter, assignedToFilter]);
-
-    useEffect(() => {
-        fetchMetadata();
-    }, []);
-
-    const fetchMetadata = async () => {
-        try {
-            const [projectsRes, usersRes] = await Promise.all([
-                fetch('/api/it/projects'),
-                fetch('/api/users?limit=100')
-            ]);
-            if (projectsRes.ok) {
-                const projectsData = await projectsRes.json();
-                setAllProjects(Array.isArray(projectsData) ? projectsData : (projectsData.data || []));
-            }
-            if (usersRes.ok) {
-                const usersData = await usersRes.json();
-                setAllUsers(Array.isArray(usersData) ? usersData : (usersData.data || []));
-            }
-        } catch (error) {
-            console.error('Failed to fetch filter metadata:', error);
-        }
-    };
-
-    const fetchTasks = async () => {
+    const fetchTasks = useCallback(async () => {
         try {
             setLoading(true);
             const params = new URLSearchParams();
@@ -114,7 +87,34 @@ export default function TasksPage() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [view, typeFilter, priorityFilter, projectFilter, assignedToFilter]);
+
+    const fetchMetadata = useCallback(async () => {
+        try {
+            const [projectsRes, usersRes] = await Promise.all([
+                fetch('/api/it/projects'),
+                fetch('/api/users?limit=100')
+            ]);
+            if (projectsRes.ok) {
+                const projectsData = await projectsRes.json();
+                setAllProjects(Array.isArray(projectsData) ? projectsData : (projectsData.data || []));
+            }
+            if (usersRes.ok) {
+                const usersData = await usersRes.json();
+                setAllUsers(Array.isArray(usersData) ? usersData : (usersData.data || []));
+            }
+        } catch (error) {
+            console.error('Failed to fetch filter metadata:', error);
+        }
+    }, []);
+
+    useEffect(() => {
+        fetchTasks();
+    }, [fetchTasks]);
+
+    useEffect(() => {
+        fetchMetadata();
+    }, [fetchMetadata]);
 
     const filteredTasks = tasks.filter((task) =>
         task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -326,6 +326,7 @@ export default function TasksPage() {
                                     ? 'bg-white dark:bg-gray-600 text-purple-600 dark:text-purple-400 shadow-sm'
                                     : 'text-gray-600 dark:text-gray-400'
                                     }`}
+                                title="Show my tasks"
                             >
                                 My Tasks
                             </button>
@@ -335,6 +336,7 @@ export default function TasksPage() {
                                     ? 'bg-white dark:bg-gray-600 text-purple-600 dark:text-purple-400 shadow-sm'
                                     : 'text-gray-600 dark:text-gray-400'
                                     }`}
+                                title="Show team tasks"
                             >
                                 Team
                             </button>
@@ -344,6 +346,7 @@ export default function TasksPage() {
                                     ? 'bg-white dark:bg-gray-600 text-purple-600 dark:text-purple-400 shadow-sm'
                                     : 'text-gray-600 dark:text-gray-400'
                                     }`}
+                                title="Show all tasks"
                             >
                                 All
                             </button>
@@ -382,6 +385,7 @@ export default function TasksPage() {
                                     value={typeFilter}
                                     onChange={(e) => setTypeFilter(e.target.value)}
                                     className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 dark:bg-gray-700 dark:text-white"
+                                    title="Filter by Type"
                                 >
                                     <option value="">All Types</option>
                                     <option value="REVENUE">Revenue</option>
@@ -400,6 +404,7 @@ export default function TasksPage() {
                                     value={priorityFilter}
                                     onChange={(e) => setPriorityFilter(e.target.value)}
                                     className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 dark:bg-gray-700 dark:text-white"
+                                    title="Filter by Priority"
                                 >
                                     <option value="">All Priorities</option>
                                     <option value="HIGH">High</option>
@@ -416,6 +421,7 @@ export default function TasksPage() {
                                     value={projectFilter}
                                     onChange={(e) => setProjectFilter(e.target.value)}
                                     className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 dark:bg-gray-700 dark:text-white"
+                                    title="Filter by Project"
                                 >
                                     <option value="">All Projects</option>
                                     {Array.isArray(allProjects) && allProjects.map(p => (
@@ -432,6 +438,7 @@ export default function TasksPage() {
                                     value={assignedToFilter}
                                     onChange={(e) => setAssignedToFilter(e.target.value)}
                                     className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 dark:bg-gray-700 dark:text-white"
+                                    title="Filter by Assigned To"
                                 >
                                     <option value="">All People</option>
                                     {Array.isArray(allUsers) && allUsers.map(u => (

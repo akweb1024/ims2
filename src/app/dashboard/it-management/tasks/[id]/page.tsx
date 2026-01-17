@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import {
@@ -101,13 +101,7 @@ export default function TaskDetailPage() {
     });
     const [submittingTime, setSubmittingTime] = useState(false);
 
-    useEffect(() => {
-        if (taskId) {
-            fetchTask();
-        }
-    }, [taskId]);
-
-    const fetchTask = async () => {
+    const fetchTask = useCallback(async () => {
         try {
             setLoading(true);
             const response = await fetch(`/api/it/tasks/${taskId}`);
@@ -124,7 +118,13 @@ export default function TaskDetailPage() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [taskId, router]);
+
+    useEffect(() => {
+        if (taskId) {
+            fetchTask();
+        }
+    }, [taskId, fetchTask]);
 
     const handleLogTime = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -322,6 +322,7 @@ export default function TaskDetailPage() {
                         <button
                             onClick={() => router.back()}
                             className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                            title="Go back"
                         >
                             <ArrowLeft className="h-5 w-5 text-gray-600 dark:text-gray-400" />
                         </button>
@@ -449,6 +450,7 @@ export default function TaskDetailPage() {
                                     <button
                                         onClick={() => setLogTimeOpen(true)}
                                         className="flex items-center gap-2 px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm transition-colors"
+                                        title="Log Time"
                                     >
                                         <Plus className="h-4 w-4" />
                                         Log Time
@@ -461,7 +463,7 @@ export default function TaskDetailPage() {
                                 <div className="mb-6 p-4 border border-blue-200 dark:border-blue-900 bg-blue-50 dark:bg-blue-900/10 rounded-lg">
                                     <div className="flex items-center justify-between mb-4">
                                         <h3 className="font-semibold text-blue-900 dark:text-blue-400">Log Hours</h3>
-                                        <button onClick={() => setLogTimeOpen(false)}>
+                                        <button onClick={() => setLogTimeOpen(false)} title="Close">
                                             <X className="h-4 w-4 text-gray-500 hover:text-gray-700" />
                                         </button>
                                     </div>
@@ -478,6 +480,7 @@ export default function TaskDetailPage() {
                                                     onChange={(e) => setTimeFormData({ ...timeFormData, hours: e.target.value })}
                                                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
                                                     placeholder="0.0"
+                                                    title="Number of hours"
                                                     required
                                                 />
                                             </div>
@@ -490,6 +493,7 @@ export default function TaskDetailPage() {
                                                     value={timeFormData.date}
                                                     onChange={(e) => setTimeFormData({ ...timeFormData, date: e.target.value })}
                                                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                                                    title="Date of work"
                                                 />
                                             </div>
                                         </div>
@@ -503,6 +507,7 @@ export default function TaskDetailPage() {
                                                 rows={2}
                                                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
                                                 placeholder="What did you work on?"
+                                                title="Description of work"
                                             />
                                         </div>
                                         <div className="flex items-center justify-between">
@@ -587,6 +592,7 @@ export default function TaskDetailPage() {
                                     placeholder="Add a comment..."
                                     rows={3}
                                     className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 dark:bg-gray-700 dark:text-white mb-2"
+                                    title="Write a comment"
                                 />
                                 <button
                                     type="submit"

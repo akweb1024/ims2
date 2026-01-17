@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import {
@@ -52,12 +52,7 @@ export default function NewTaskPage() {
         tags: '',
     });
 
-    useEffect(() => {
-        fetchProjects();
-        fetchUsers();
-    }, []);
-
-    const fetchProjects = async () => {
+    const fetchProjects = useCallback(async () => {
         try {
             const response = await fetch('/api/it/projects');
             if (response.ok) {
@@ -67,9 +62,9 @@ export default function NewTaskPage() {
         } catch (error) {
             console.error('Failed to fetch projects:', error);
         }
-    };
+    }, []);
 
-    const fetchUsers = async () => {
+    const fetchUsers = useCallback(async () => {
         try {
             // Fetch more users for dropdowns, or paginated if necessary
             const response = await fetch('/api/users?limit=100');
@@ -82,7 +77,12 @@ export default function NewTaskPage() {
             console.error('Failed to fetch users:', error);
             setUsers([]);
         }
-    };
+    }, []);
+
+    useEffect(() => {
+        fetchProjects();
+        fetchUsers();
+    }, [fetchProjects, fetchUsers]);
 
     const validateForm = () => {
         const newErrors: Record<string, string> = {};
@@ -187,6 +187,7 @@ export default function NewTaskPage() {
                                     className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 dark:bg-gray-700 dark:text-white ${errors.title ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
                                         }`}
                                     placeholder="e.g., Implement user authentication"
+                                    title="Task Title"
                                 />
                                 {errors.title && (
                                     <p className="mt-1 text-sm text-red-500 flex items-center gap-1">
@@ -210,6 +211,7 @@ export default function NewTaskPage() {
                                     className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 dark:bg-gray-700 dark:text-white ${errors.description ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
                                         }`}
                                     placeholder="Describe the task requirements and acceptance criteria..."
+                                    title="Description"
                                 />
                                 {errors.description && (
                                     <p className="mt-1 text-sm text-red-500 flex items-center gap-1">
@@ -231,6 +233,7 @@ export default function NewTaskPage() {
                                         setFormData({ ...formData, projectId: e.target.value })
                                     }
                                     className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 dark:bg-gray-700 dark:text-white"
+                                    title="Project"
                                 >
                                     <option value="">No Project (Standalone Task)</option>
                                     {projects?.map((project) => (
@@ -256,6 +259,7 @@ export default function NewTaskPage() {
                                             setFormData({ ...formData, category: e.target.value })
                                         }
                                         className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 dark:bg-gray-700 dark:text-white"
+                                        title="Category"
                                     >
                                         <option value="ENHANCEMENT">Enhancement</option>
                                         <option value="BUG_FIX">Bug Fix</option>
@@ -278,6 +282,7 @@ export default function NewTaskPage() {
                                             setFormData({ ...formData, type: e.target.value })
                                         }
                                         className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 dark:bg-gray-700 dark:text-white"
+                                        title="Type"
                                     >
                                         <option value="REVENUE">Revenue</option>
                                         <option value="SUPPORT">Support</option>
@@ -297,6 +302,7 @@ export default function NewTaskPage() {
                                             setFormData({ ...formData, priority: e.target.value })
                                         }
                                         className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 dark:bg-gray-700 dark:text-white"
+                                        title="Priority"
                                     >
                                         <option value="LOW">Low</option>
                                         <option value="MEDIUM">Medium</option>
@@ -318,6 +324,7 @@ export default function NewTaskPage() {
                                             setFormData({ ...formData, status: e.target.value })
                                         }
                                         className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 dark:bg-gray-700 dark:text-white"
+                                        title="Status"
                                     >
                                         <option value="PENDING">Pending</option>
                                         <option value="IN_PROGRESS">In Progress</option>
@@ -346,6 +353,7 @@ export default function NewTaskPage() {
                                             : 'border-gray-300 dark:border-gray-600'
                                             }`}
                                         placeholder="0"
+                                        title="Progress Percentage"
                                         min="0"
                                         max="100"
                                         step="5"
@@ -411,6 +419,7 @@ export default function NewTaskPage() {
                                                 : 'border-gray-300 dark:border-gray-600'
                                                 }`}
                                             placeholder="10000"
+                                            title="Estimated Value"
                                             min="0"
                                             step="100"
                                         />
@@ -438,6 +447,7 @@ export default function NewTaskPage() {
                                             }
                                             className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 dark:bg-gray-700 dark:text-white"
                                             placeholder="3000"
+                                            title="IT Revenue Earned"
                                             min="0"
                                             step="100"
                                         />
@@ -495,6 +505,7 @@ export default function NewTaskPage() {
                                         setFormData({ ...formData, assignedToId: e.target.value })
                                     }
                                     className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 dark:bg-gray-700 dark:text-white"
+                                    title="Assign to"
                                 >
                                     <option value="">Unassigned</option>
                                     {users?.map((user) => (
@@ -518,6 +529,7 @@ export default function NewTaskPage() {
                                         setFormData({ ...formData, dueDate: e.target.value })
                                     }
                                     className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 dark:bg-gray-700 dark:text-white"
+                                    title="Due Date"
                                 />
                             </div>
                         </div>
