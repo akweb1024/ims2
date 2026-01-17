@@ -264,6 +264,22 @@ export const POST = authorizedRoute(
                 }
             });
 
+            // Process Revenue Claims if provided
+            if (body.revenueClaims && Array.isArray(body.revenueClaims)) {
+                for (const claim of body.revenueClaims) {
+                    await prisma.revenueClaim.create({
+                        data: {
+                            revenueTransactionId: claim.transactionId,
+                            employeeId: profile.id,
+                            workReportId: report.id,
+                            claimAmount: parseSafely(claim.amount),
+                            claimReason: claim.reason || `Claim via work report: ${report.title}`,
+                            status: 'PENDING'
+                        }
+                    });
+                }
+            }
+
             // Log Points History
             if (pointsEarned > 0) {
                 await prisma.employeePointLog.create({

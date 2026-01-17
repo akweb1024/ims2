@@ -51,6 +51,7 @@
         "razorpay": "^2.9.6",
         "react": "^19.0.0",
         "react-dom": "^19.0.0",
+        "react-hot-toast": "^2.6.0",
         "react-markdown": "^10.1.0",
         "react-quill-new": "^3.7.0",
         "recharts": "^3.6.0",

@@ -2,14 +2,22 @@
 
 import { useState, useEffect } from 'react';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
-import { Briefcase, Send, CheckCircle, Award, Settings, TrendingUp, Users } from 'lucide-react';
+import { Briefcase, Send, CheckCircle, Award, Settings, TrendingUp, Users, DollarSign, Search, X } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { toast } from 'react-hot-toast';
 
 export default function SubmitReportPage() {
     const router = useRouter();
     const [user, setUser] = useState<any>(null);
     const [loading, setLoading] = useState(false);
     const [savedReport, setSavedReport] = useState(false);
+
+    // Revenue Tracking State
+    const [showRevenueSearch, setShowRevenueSearch] = useState(false);
+    const [revenueSearch, setRevenueSearch] = useState('');
+    const [revenueResults, setRevenueResults] = useState([]);
+    const [searchingRevenue, setSearchingRevenue] = useState(false);
+    const [selectedRevenueClaims, setSelectedRevenueClaims] = useState<any[]>([]);
 
     // Form State - Simplified to narrative only
     const [commonData, setCommonData] = useState({
@@ -145,6 +153,53 @@ export default function SubmitReportPage() {
         });
     }, [completedTaskIds, availableTasks, scaledTaskValues]);
 
+    // Revenue Search Logic
+    const searchRevenueTransactions = async (query: string) => {
+        if (!query || query.length < 2) {
+            setRevenueResults([]);
+            return;
+        }
+        setSearchingRevenue(true);
+        try {
+            const token = localStorage.getItem('token');
+            const res = await fetch(`/api/revenue/transactions?status=PENDING&method=ALL`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (res.ok) {
+                const data = await res.json();
+                // Client side filtering for better UX with small dataset
+                const filtered = data.filter((t: any) =>
+                    t.customerName?.toLowerCase().includes(query.toLowerCase()) ||
+                    t.transactionNumber?.toLowerCase().includes(query.toLowerCase()) ||
+                    t.referenceNumber?.toLowerCase().includes(query.toLowerCase())
+                );
+                setRevenueResults(filtered);
+            }
+        } catch (error) {
+            console.error(error);
+        } finally {
+            setSearchingRevenue(false);
+        }
+    };
+
+    const addRevenueClaim = (rt: any) => {
+        if (selectedRevenueClaims.some(c => c.transactionId === rt.id)) {
+            toast.error('Transaction already selected');
+            return;
+        }
+        setSelectedRevenueClaims(prev => [...prev, {
+            transactionId: rt.id,
+            transactionNumber: rt.transactionNumber,
+            customerName: rt.customerName,
+            amount: rt.amount,
+            reason: ''
+        }]);
+        setRevenueSearch('');
+        setRevenueResults([]);
+        setShowRevenueSearch(false);
+        toast.success('Revenue linked to report');
+    };
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
@@ -155,12 +210,17 @@ export default function SubmitReportPage() {
                 ...commonData,
                 category: 'TASK_BASED',
                 userRole: user?.role,
-                revenueGenerated: derivedMetrics.revenue,
+                revenueGenerated: derivedMetrics.revenue + selectedRevenueClaims.reduce((sum, c) => sum + c.amount, 0),
                 tasksCompleted: derivedMetrics.tasksCount,
                 completedTaskIds,
                 taskQuantities: scaledTaskValues,
                 chatsHandled: derivedMetrics.whatsapp,
                 followUpsCompleted: derivedMetrics.calls,
+                revenueClaims: selectedRevenueClaims.map(c => ({
+                    transactionId: c.transactionId,
+                    amount: c.amount,
+                    reason: c.reason
+                })),
                 metrics: {
                     derived: derivedMetrics,
                     meetingsText: commonData.meetingsText
@@ -406,6 +466,98 @@ export default function SubmitReportPage() {
                                     <textarea required rows={5} className="input" placeholder="Describe your activities..."
                                         value={commonData.content} onChange={e => setCommonData({ ...commonData, content: e.target.value })} />
                                 </div>
+                            </div>
+                        </div>
+
+                        {/* Revenue Claims Section */}
+                        <div className="card-premium p-6 border-t-4 border-success-500">
+                            <h3 className="font-bold text-lg mb-4 flex items-center gap-2 text-secondary-900">
+                                <DollarSign size={20} className="text-success-600" />
+                                Revenue Attribution
+                            </h3>
+                            <div className="space-y-4">
+                                <div className="flex items-center justify-between mb-4">
+                                    <p className="text-sm text-secondary-500">Did you generate or collect any revenue today?</p>
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowRevenueSearch(!showRevenueSearch)}
+                                        className={`px-4 py-2 rounded-xl text-xs font-black transition-all ${showRevenueSearch ? 'bg-danger-50 text-danger-600' : 'bg-success-50 text-success-600'
+                                            }`}
+                                    >
+                                        {showRevenueSearch ? 'Hide Search' : 'Link Transaction'}
+                                    </button>
+                                </div>
+
+                                {showRevenueSearch && (
+                                    <div className="space-y-3 animate-in fade-in slide-in-from-top duration-300">
+                                        <div className="relative">
+                                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-secondary-400" size={16} />
+                                            <input
+                                                type="text"
+                                                className="input pl-10 h-10 text-sm"
+                                                placeholder="Search by Customer name, RT#, or Reference..."
+                                                value={revenueSearch}
+                                                onChange={(e) => {
+                                                    setRevenueSearch(e.target.value);
+                                                    searchRevenueTransactions(e.target.value);
+                                                }}
+                                            />
+                                        </div>
+
+                                        <div className="max-h-48 overflow-y-auto space-y-2 p-2 bg-secondary-50 rounded-xl border border-secondary-200">
+                                            {searchingRevenue ? (
+                                                <div className="text-center py-4"><span className="animate-spin inline-block w-4 h-4 border-b-2 border-primary-600 rounded-full"></span></div>
+                                            ) : revenueResults.length === 0 ? (
+                                                <p className="text-center py-4 text-xs text-secondary-400">No matching verified transactions found</p>
+                                            ) : (
+                                                revenueResults.map((rt: any) => (
+                                                    <div
+                                                        key={rt.id}
+                                                        onClick={() => addRevenueClaim(rt)}
+                                                        className="flex justify-between items-center p-3 bg-white rounded-lg border border-secondary-100 hover:border-success-400 cursor-pointer transition-all"
+                                                    >
+                                                        <div>
+                                                            <p className="text-sm font-bold text-secondary-900">{rt.customerName}</p>
+                                                            <p className="text-[10px] text-secondary-500 uppercase">{rt.transactionNumber} • {rt.paymentMethod}</p>
+                                                        </div>
+                                                        <div className="text-right">
+                                                            <p className="text-sm font-black text-success-600">₹{rt.amount.toLocaleString()}</p>
+                                                            <p className="text-[10px] text-secondary-400">{new Date(rt.paymentDate).toLocaleDateString()}</p>
+                                                        </div>
+                                                    </div>
+                                                ))
+                                            )}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Selected Claims */}
+                                {selectedRevenueClaims.length > 0 && (
+                                    <div className="space-y-3 mt-4">
+                                        <p className="text-xs font-black text-secondary-400 uppercase tracking-widest">Selected for this Report</p>
+                                        {selectedRevenueClaims.map((claim: any) => (
+                                            <div key={claim.transactionId} className="flex items-center gap-3 p-4 bg-success-50 rounded-2xl border border-success-200 shadow-sm animate-in zoom-in duration-200">
+                                                <div className="p-2 bg-white rounded-xl text-success-600 shadow-sm">
+                                                    <CheckCircle size={20} />
+                                                </div>
+                                                <div className="flex-1">
+                                                    <div className="flex justify-between">
+                                                        <span className="text-sm font-black text-secondary-900">{claim.customerName}</span>
+                                                        <span className="text-sm font-black text-success-700">₹{claim.amount.toLocaleString()}</span>
+                                                    </div>
+                                                    <p className="text-[10px] text-secondary-500 uppercase font-bold">{claim.transactionNumber} • Verified Source</p>
+                                                </div>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setSelectedRevenueClaims(prev => prev.filter((c: any) => c.transactionId !== claim.transactionId))}
+                                                    className="p-2 text-danger-400 hover:text-danger-600 hover:bg-danger-50 rounded-xl"
+                                                >
+                                                    <X size={18} />
+                                                </button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
                             </div>
                         </div>
 

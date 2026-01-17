@@ -425,6 +425,13 @@ export default function DashboardLayout({ children, userRole: propUserRole = 'CU
                             { name: 'Institutions', href: '/dashboard/institutions', icon: '🏛️', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER'] },
                             { name: 'Customers', href: '/dashboard/customers', icon: '🙍‍♂️', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'TEAM_LEADER', 'EXECUTIVE'] },
                         ]
+                    },
+                    {
+                        title: 'Revenue Management',
+                        items: [
+                            { name: 'Income Registry', href: '/dashboard/revenue/transactions', icon: '🏦', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'FINANCE_ADMIN'] },
+                            { name: 'Verify Claims', href: '/dashboard/revenue/claims', icon: '⚖️', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'TEAM_LEADER', 'FINANCE_ADMIN'] },
+                        ]
                     }
                 ]
             }

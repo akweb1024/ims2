@@ -81,6 +81,7 @@ model Company {
   performanceSnapshots MonthlyPerformanceSnapshot[]
   departmentPerformance DepartmentPerformance[]
   companyPerformance   CompanyPerformance[]
+  revenueTransactions  RevenueTransaction[]
 }
 
 model Department {
@@ -107,6 +108,7 @@ model Department {
   taskTemplates      EmployeeTaskTemplate[]
   performanceSnapshots MonthlyPerformanceSnapshot[]
   departmentPerformance DepartmentPerformance[]
+  revenueTransactions RevenueTransaction[]
 
   @@unique([companyId, code])
   @@index([companyId])
@@ -281,6 +283,7 @@ model CustomerProfile {
   subscriptions      Subscription[]
   supportTickets     SupportTicket[]
   assignedExecutives User[]               @relation("CustomerToExecutives")
+  revenueTransactions RevenueTransaction[]
 
   @@index([customerType])
   @@index([primaryEmail])
@@ -353,6 +356,7 @@ model Institution {
   assignedTo       User?              @relation("InstitutionOwner", fields: [assignedToUserId], references: [id])
   company          Company?           @relation(fields: [companyId], references: [id])
   subscriptions    Subscription[]
+  revenueTransactions RevenueTransaction[]
 
   @@index([code])
   @@index([type])
@@ -540,6 +544,7 @@ model Invoice {
   customerProfile   CustomerProfile? @relation(fields: [customerProfileId], references: [id])
   subscription      Subscription?    @relation(fields: [subscriptionId], references: [id])
   payments          Payment[]
+  revenueTransactions RevenueTransaction[]
 
   @@index([subscriptionId])
   @@index([customerProfileId])
@@ -568,6 +573,7 @@ model Payment {
   metadata          String?
   company           Company? @relation(fields: [companyId], references: [id])
   invoice           Invoice? @relation(fields: [invoiceId], references: [id])
+  revenueTransactions RevenueTransaction[]
 
   @@index([invoiceId])
   @@index([companyId])
@@ -869,6 +875,9 @@ model EmployeeProfile {
   workReports              WorkReport[]
   pointLogs                EmployeePointLog[]
   performanceSnapshots     MonthlyPerformanceSnapshot[]
+  claimedRevenue           RevenueTransaction[] @relation("ClaimedRevenue")
+  approvedRevenue          RevenueTransaction[] @relation("ApprovedRevenue")
+  revenueClaims            RevenueClaim[]
 }
 
 model SalaryAdvance {
@@ -1000,6 +1009,8 @@ model WorkReport {
   company            Company?            @relation(fields: [companyId], references: [id])
   employee           EmployeeProfile     @relation(fields: [employeeId], references: [id], onDelete: Cascade)
   comments           WorkReportComment[]
+  revenueTransactions RevenueTransaction[]
+  revenueClaims       RevenueClaim[]
 
   @@index([companyId])
   @@index([employeeId])
@@ -3467,4 +3478,125 @@ model ITServiceDefinition {
   company     Company  @relation("CompanyITServices", fields: [companyId], references: [id], onDelete: Cascade)
 
   @@index([companyId])
+}
+// ============================================
+// REVENUE TRANSACTION MANAGEMENT SYSTEM
+// Prevents duplicate revenue claims and provides single source of truth
+// ============================================
+
+model RevenueTransaction {
+  id                    String   @id @default(uuid())
+  companyId             String
+  
+  // Transaction Details
+  transactionNumber     String   @unique // Auto-generated: RT-YYYYMMDD-XXXX
+  amount                Float
+  currency              String   @default("INR")
+  paymentMethod         String   // RAZORPAY, CASH, CHEQUE, DD, BANK_TRANSFER, UPI, CARD, OTHER
+  paymentDate           DateTime
+  
+  // Customer Information
+  customerName          String?
+  customerEmail         String?
+  customerPhone         String?
+  customerProfileId     String?
+  institutionId         String?
+  
+  // Payment Proof
+  referenceNumber       String?  // Cheque number, DD number, Transaction ID, etc.
+  bankName              String?
+  proofDocument         String?  // URL to uploaded proof
+  
+  // Attribution
+  claimedByEmployeeId   String?  // Employee who claimed this revenue
+  approvedByManagerId   String?  // Manager who verified
+  departmentId          String?
+  
+  // Status & Verification
+  status                RevenueStatus @default(PENDING)
+  verificationStatus    VerificationStatus @default(UNVERIFIED)
+  verifiedAt            DateTime?
+  
+  // Linking
+  workReportId          String?  // If claimed via work report
+  invoiceId             String?  // If linked to invoice
+  paymentId             String?  // If from payment gateway
+  
+  // Metadata
+  description           String?
+  notes                 String?
+  tags                  Json?    // For categorization
+  
+  // Audit
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+  createdBy             String?
+  
+  // Relations
+  company               Company? @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  claimedBy             EmployeeProfile? @relation("ClaimedRevenue", fields: [claimedByEmployeeId], references: [id])
+  approvedBy            EmployeeProfile? @relation("ApprovedRevenue", fields: [approvedByManagerId], references: [id])
+  department            Department? @relation(fields: [departmentId], references: [id])
+  customerProfile       CustomerProfile? @relation(fields: [customerProfileId], references: [id])
+  institution           Institution? @relation(fields: [institutionId], references: [id])
+  workReport            WorkReport? @relation(fields: [workReportId], references: [id])
+  invoice               Invoice? @relation(fields: [invoiceId], references: [id])
+  payment               Payment? @relation(fields: [paymentId], references: [id])
+  
+  claims                RevenueClaim[]
+  
+  @@index([companyId])
+  @@index([transactionNumber])
+  @@index([claimedByEmployeeId])
+  @@index([status])
+  @@index([paymentDate])
+  @@index([customerProfileId])
+}
+
+model RevenueClaim {
+  id                    String   @id @default(uuid())
+  revenueTransactionId  String
+  employeeId            String
+  workReportId          String?
+  
+  claimDate             DateTime @default(now())
+  claimAmount           Float
+  claimReason           String?
+  
+  status                ClaimStatus @default(PENDING)
+  reviewedBy            String?
+  reviewedAt            DateTime?
+  reviewNotes           String?
+  
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+  
+  revenueTransaction    RevenueTransaction @relation(fields: [revenueTransactionId], references: [id], onDelete: Cascade)
+  employee              EmployeeProfile @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  workReport            WorkReport? @relation(fields: [workReportId], references: [id])
+  
+  @@index([revenueTransactionId])
+  @@index([employeeId])
+  @@index([status])
+}
+
+enum RevenueStatus {
+  PENDING
+  VERIFIED
+  DISPUTED
+  CANCELLED
+}
+
+enum VerificationStatus {
+  UNVERIFIED
+  VERIFIED
+  REJECTED
+  NEEDS_PROOF
+}
+
+enum ClaimStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  DUPLICATE
 }
