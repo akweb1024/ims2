@@ -111,6 +111,7 @@ export const GET = authorizedRoute(
 
                 return {
                     id: emp.id,
+                    profileId: profile.id,
                     name: emp.name || emp.email.split('@')[0],
                     department: emp.department?.name || 'Unassigned',
                     designation: profile.designation,

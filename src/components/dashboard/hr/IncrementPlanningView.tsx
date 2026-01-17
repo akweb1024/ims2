@@ -276,7 +276,7 @@ export default function IncrementPlanningView() {
                                     ) : (
                                         <button
                                             onClick={() => {
-                                                window.location.href = `/dashboard/hr-management/employees/${emp.id}`;
+                                                window.location.href = `/dashboard/hr-management/employees/${emp.profileId}`;
                                             }}
                                             className="btn btn-secondary py-1 px-4 text-[10px] font-black uppercase tracking-widest shadow-sm"
                                             title={`Create proposal for ${emp.name}`}
