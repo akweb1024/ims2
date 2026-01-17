@@ -40,8 +40,8 @@ export const GET = authorizedRoute([], async (req: NextRequest, user) => {
             conditions.push({
                 OR: [
                     { departmentId: effDeptId },
-                    { departmentIds: { array_contains: effDeptId } },
-                    { AND: [{ departmentId: null }, { departmentIds: null }] }
+                    { departmentIds: { path: '$', array_contains: effDeptId } },
+                    { AND: [{ departmentId: null }, { departmentIds: { equals: null } }] }
                 ]
             });
         }
@@ -51,8 +51,8 @@ export const GET = authorizedRoute([], async (req: NextRequest, user) => {
             conditions.push({
                 OR: [
                     { designationId: designationId },
-                    { designationIds: { array_contains: designationId } },
-                    { AND: [{ designationId: null }, { designationIds: null }] }
+                    { designationIds: { path: '$', array_contains: designationId } },
+                    { AND: [{ designationId: null }, { designationIds: { equals: null } }] }
                 ]
             });
         }
@@ -66,8 +66,8 @@ export const GET = authorizedRoute([], async (req: NextRequest, user) => {
             {
                 OR: [
                     { departmentId: userDeptId },
-                    { departmentIds: { array_contains: userDeptId } },
-                    { AND: [{ departmentId: null }, { departmentIds: null }] }
+                    { departmentIds: { path: '$', array_contains: userDeptId } },
+                    { AND: [{ departmentId: null }, { departmentIds: { equals: null } }] }
                 ]
             }
         ];
