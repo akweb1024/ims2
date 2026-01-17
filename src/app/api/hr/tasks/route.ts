@@ -12,54 +12,39 @@ export const GET = authorizedRoute([], async (req: NextRequest, user) => {
     const designationId = searchParams.get('designationId');
 
     const whereClause: any = {
-        isActive: true, // Show only active tasks by default as per previous logic
+        isActive: true,
+        companyId: user.companyId,
     };
 
-    // 1. Resolve Department Name for Global Sharing
-    let deptName = null;
-    if (departmentId && departmentId !== 'ALL') {
-        const dept = await prisma.department.findUnique({
-            where: { id: departmentId },
-            select: { name: true }
-        });
-        deptName = dept?.name;
-    }
+    // If specific filters are provided, we narrow down.
+    if ((departmentId && departmentId !== 'ALL') || (designationId && designationId !== 'ALL')) {
+        const conditions: any[] = [];
 
-    // 2. Resolve Designation Name
-    let desigName = null;
-    if (designationId && designationId !== 'ALL') {
-        const des = await prisma.designation.findUnique({
-            where: { id: designationId },
-            select: { name: true }
-        });
-        desigName = des?.name;
-    }
-
-    // 3. Construct Query
-    if (deptName) {
-        // SHARED MODE: Fetch tasks from ANY company matching the Department Name (or Generic tasks)
-        whereClause.OR = [
-            { department: { name: { equals: deptName, mode: 'insensitive' } } },
-            { departmentId: null }
-        ];
-
-        // Apply Designation Filter if present
-        if (desigName) {
-            whereClause.AND = [
-                {
-                    OR: [
-                        { designation: { name: { equals: desigName, mode: 'insensitive' } } },
-                        { designationId: null }
-                    ]
-                }
-            ];
+        // Department Filter
+        if (departmentId && departmentId !== 'ALL') {
+            conditions.push({
+                OR: [
+                    { departmentId: departmentId },
+                    { departmentIds: { path: '$', array_contains: departmentId } },
+                    { AND: [{ departmentId: null }, { departmentIds: null }] }
+                ]
+            });
         }
-    } else {
-        // LOCAL MODE: Fetch all tasks for this company (e.g. Admin View 'All Departments')
-        whereClause.companyId = user.companyId;
 
-        // Optional: Local filters if IDs passed but somehow names failed (fallback) or if we add more filters later
-        // But logic says: if departmentId is ALL, we show all company tasks.
+        // Designation Filter
+        if (designationId && designationId !== 'ALL') {
+            conditions.push({
+                OR: [
+                    { designationId: designationId },
+                    { designationIds: { path: '$', array_contains: designationId } },
+                    { AND: [{ designationId: null }, { designationIds: null }] }
+                ]
+            });
+        }
+
+        if (conditions.length > 0) {
+            whereClause.AND = conditions;
+        }
     }
 
     const tasks = await prisma.employeeTaskTemplate.findMany({
