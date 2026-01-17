@@ -49,7 +49,7 @@ export default function RevenueTransactionsPage() {
         setLoading(true);
         try {
             const token = localStorage.getItem('token');
-            let url = `/api/revenue/transactions`;
+            const url = `/api/revenue/transactions`;
             const params = new URLSearchParams();
             if (filterStatus !== 'ALL') params.append('status', filterStatus);
             if (filterMethod !== 'ALL') params.append('method', filterMethod);
@@ -307,8 +307,8 @@ export default function RevenueTransactionsPage() {
                                         <td className="px-6 py-4 whitespace-nowrap text-center">
                                             <div className="flex flex-col items-center gap-1">
                                                 <span className={`px-2 py-1 rounded-full text-xs font-bold ${t.status === 'VERIFIED' ? 'bg-success-100 text-success-700' :
-                                                        t.status === 'DISPUTED' ? 'bg-danger-100 text-danger-700' :
-                                                            'bg-warning-100 text-warning-700'
+                                                    t.status === 'DISPUTED' ? 'bg-danger-100 text-danger-700' :
+                                                        'bg-warning-100 text-warning-700'
                                                     }`}>
                                                     {t.status}
                                                 </span>

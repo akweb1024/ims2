@@ -89,8 +89,8 @@ export default function RevenueClaimsPage() {
                             key={status}
                             onClick={() => setFilterStatus(status)}
                             className={`px-6 py-2 rounded-xl text-sm font-black transition-all border-2 ${filterStatus === status
-                                    ? 'bg-indigo-600 text-white border-indigo-600 shadow-lg shadow-indigo-100'
-                                    : 'bg-white text-secondary-600 border-secondary-100 hover:border-indigo-200'
+                                ? 'bg-indigo-600 text-white border-indigo-600 shadow-lg shadow-indigo-100'
+                                : 'bg-white text-secondary-600 border-secondary-100 hover:border-indigo-200'
                                 }`}
                         >
                             {status}
@@ -144,7 +144,7 @@ export default function RevenueClaimsPage() {
                                         </div>
                                         {claim.claimReason && (
                                             <p className="mt-2 text-xs text-secondary-600 bg-white p-2 rounded-lg border border-secondary-100 italic">
-                                                "{claim.claimReason}"
+                                                &quot;{claim.claimReason}&quot;
                                             </p>
                                         )}
                                     </div>

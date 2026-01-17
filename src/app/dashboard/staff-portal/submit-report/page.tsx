@@ -279,7 +279,7 @@ export default function SubmitReportPage() {
                         <p className="text-secondary-500">Track your daily impact through task completion</p>
                     </div>
                     <div className="bg-gradient-to-r from-indigo-500 to-purple-600 text-white px-6 py-3 rounded-2xl shadow-lg">
-                        <span className="text-xs font-bold uppercase tracking-wider block">Today's Score</span>
+                        <span className="text-xs font-bold uppercase tracking-wider block">Today&apos;s Score</span>
                         <div className="text-3xl font-black">{currentPoints} <span className="text-sm">pts</span></div>
                     </div>
                 </div>
