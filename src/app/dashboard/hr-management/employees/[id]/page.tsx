@@ -151,6 +151,74 @@ export default function EmployeeProfilePage() {
     }, []);
 
 
+    useEffect(() => {
+        if (activeTab === 'goals') {
+            // Fetch goals if necessary, currently fetched in combined Details API
+            // if separated, fetch here.
+        }
+    }, [activeTab]);
+
+    const [showGoalForm, setShowGoalForm] = useState(false);
+    const [goalForm, setGoalForm] = useState({
+        title: '',
+        description: '',
+        targetValue: '',
+        currentValue: '0',
+        unit: 'Units',
+        type: 'MONTHLY',
+        startDate: new Date().toISOString().split('T')[0],
+        endDate: new Date(new Date().setMonth(new Date().getMonth() + 1)).toISOString().split('T')[0],
+        kpiId: ''
+    });
+
+    const handleCreateGoal = async (e: React.FormEvent) => {
+        e.preventDefault();
+        try {
+            const token = localStorage.getItem('token');
+            const res = await fetch('/api/hr/performance/goals', {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    ...goalForm,
+                    employeeId: employee.id,
+                    targetValue: parseFloat(goalForm.targetValue),
+                    currentValue: parseFloat(goalForm.currentValue),
+                    kpiId: goalForm.kpiId || null
+                })
+            });
+
+            if (res.ok) {
+                alert('Goal created successfully!');
+                setShowGoalForm(false);
+                fetchEmployeeDetails();
+                setGoalForm({
+                    title: '', description: '', targetValue: '', currentValue: '0',
+                    unit: 'Units', type: 'MONTHLY',
+                    startDate: new Date().toISOString().split('T')[0],
+                    endDate: new Date(new Date().setMonth(new Date().getMonth() + 1)).toISOString().split('T')[0],
+                    kpiId: ''
+                });
+            } else {
+                const err = await res.json();
+                alert(`Failed: ${err.error}`);
+            }
+        } catch (err) {
+            console.error(err);
+        }
+    };
+
+    const handleUpdateGoalProgress = async (id: string, current: number) => {
+        try {
+            const token = localStorage.getItem('token');
+            const res = await fetch('/api/hr/performance/goals', {
+                method: 'PATCH',
+                headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id, currentValue: current })
+            });
+            if (res.ok) fetchEmployeeDetails();
+        } catch (err) { console.error(err); }
+    };
+
     const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;
@@ -307,7 +375,7 @@ export default function EmployeeProfilePage() {
                     <div className="lg:col-span-3 space-y-6">
                         {/* Tabs */}
                         <div className="flex gap-2 border-b border-secondary-200 overflow-x-auto">
-                            {['overview', 'history', 'documents', 'performance', 'attendance', 'leaves', 'growth'].map(tab => (
+                            {['overview', 'history', 'documents', 'goals', 'performance', 'attendance', 'leaves', 'growth'].map(tab => (
                                 <button
                                     key={tab}
                                     onClick={() => setActiveTab(tab)}
@@ -316,7 +384,7 @@ export default function EmployeeProfilePage() {
                                         : 'border-transparent text-secondary-400 hover:text-secondary-600'
                                         }`}
                                 >
-                                    {tab}
+                                    {tab === 'goals' ? 'Goals & KPIs' : tab}
                                 </button>
                             ))}
                         </div>
@@ -518,6 +586,119 @@ export default function EmployeeProfilePage() {
                                             )}
                                         </tbody>
                                     </table>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Goals Tab */}
+                        {activeTab === 'goals' && (
+                            <div className="space-y-6">
+                                <div className="flex justify-between items-center">
+                                    <h3 className="font-bold text-lg text-secondary-900">Active Goals & KPI Tracking</h3>
+                                    <button onClick={() => setShowGoalForm(!showGoalForm)} className="btn btn-primary flex items-center gap-2">
+                                        <Plus size={16} /> New Goal
+                                    </button>
+                                </div>
+
+                                {showGoalForm && (
+                                    <div className="bg-white p-6 rounded-xl border border-secondary-200 shadow-lg animate-in slide-in-from-top-2">
+                                        <h4 className="font-bold text-lg mb-4">Define New Performance Goal</h4>
+                                        <form onSubmit={handleCreateGoal} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <div className="md:col-span-2">
+                                                <label className="label">Goal Title (e.g., Q1 Revenue Target)</label>
+                                                <input required className="input" value={goalForm.title} onChange={e => setGoalForm({ ...goalForm, title: e.target.value })} />
+                                            </div>
+                                            <div>
+                                                <label className="label">Target Value</label>
+                                                <input type="number" required className="input" value={goalForm.targetValue} onChange={e => setGoalForm({ ...goalForm, targetValue: e.target.value })} />
+                                            </div>
+                                            <div>
+                                                <label className="label">Unit (e.g., INR, Leads, %)</label>
+                                                <input required className="input" value={goalForm.unit} onChange={e => setGoalForm({ ...goalForm, unit: e.target.value })} />
+                                            </div>
+                                            <div>
+                                                <label className="label">Start Date</label>
+                                                <input type="date" required className="input" value={goalForm.startDate} onChange={e => setGoalForm({ ...goalForm, startDate: e.target.value })} />
+                                            </div>
+                                            <div>
+                                                <label className="label">Deadline</label>
+                                                <input type="date" required className="input" value={goalForm.endDate} onChange={e => setGoalForm({ ...goalForm, endDate: e.target.value })} />
+                                            </div>
+                                            <div>
+                                                <label className="label">Type</label>
+                                                <select className="input" value={goalForm.type} onChange={e => setGoalForm({ ...goalForm, type: e.target.value })}>
+                                                    <option value="MONTHLY">Monthly</option>
+                                                    <option value="QUARTERLY">Quarterly</option>
+                                                    <option value="YEARLY">Yearly</option>
+                                                </select>
+                                            </div>
+                                            <div className="md:col-span-2 flex justify-end gap-2 mt-2">
+                                                <button type="button" onClick={() => setShowGoalForm(false)} className="btn btn-secondary">Cancel</button>
+                                                <button type="submit" className="btn btn-primary">Create Goal</button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                )}
+
+                                <div className="grid grid-cols-1 gap-4">
+                                    {employee.goals?.map((goal: any) => {
+                                        const progress = Math.min((goal.currentValue / goal.targetValue) * 100, 100);
+                                        const isExpired = new Date(goal.endDate) < new Date();
+
+                                        return (
+                                            <div key={goal.id} className="card-premium p-6 border-l-4 border-indigo-500">
+                                                <div className="flex justify-between items-start mb-4">
+                                                    <div>
+                                                        <h4 className="font-bold text-lg text-secondary-900">{goal.title}</h4>
+                                                        <p className="text-secondary-500 text-xs">
+                                                            {goal.type} • Due <FormattedDate date={goal.endDate} />
+                                                            {isExpired && <span className="ml-2 text-danger-600 font-bold">(Expired)</span>}
+                                                        </p>
+                                                    </div>
+                                                    <div className="text-right">
+                                                        <div className="text-2xl font-black text-indigo-600">
+                                                            {Math.round(progress)}%
+                                                        </div>
+                                                        <p className="text-xs text-secondary-400">Completion</p>
+                                                    </div>
+                                                </div>
+
+                                                <div className="mb-4">
+                                                    <div className="flex justify-between text-xs font-bold text-secondary-500 mb-1">
+                                                        <span>Current: {goal.currentValue} {goal.unit}</span>
+                                                        <span>Target: {goal.targetValue} {goal.unit}</span>
+                                                    </div>
+                                                    <div className="w-full bg-secondary-100 rounded-full h-3 overflow-hidden">
+                                                        <div
+                                                            className={`h-full rounded-full transition-all duration-500 ${progress >= 100 ? 'bg-success-500' : 'bg-indigo-500'}`}
+                                                            style={{ width: `${progress}%` }}
+                                                        />
+                                                    </div>
+                                                </div>
+
+                                                <div className="flex items-center gap-2 mt-4 pt-4 border-t border-secondary-100">
+                                                    <label className="text-xs font-bold text-secondary-500">Update Progress:</label>
+                                                    <input
+                                                        type="number"
+                                                        className="input py-1 px-2 h-8 w-24 text-sm"
+                                                        defaultValue={goal.currentValue}
+                                                        onBlur={(e) => {
+                                                            const val = parseFloat(e.target.value);
+                                                            if (!isNaN(val) && val !== goal.currentValue) {
+                                                                handleUpdateGoalProgress(goal.id, val);
+                                                            }
+                                                        }}
+                                                    />
+                                                    <span className="text-xs text-secondary-400">{goal.unit}</span>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                    {(!employee.goals || employee.goals.length === 0) && (
+                                        <div className="p-8 text-center text-secondary-400 bg-secondary-50 rounded-xl border border-dashed border-secondary-200">
+                                            No active goals defined. Click "New Goal" to start tracking performance.
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         )}

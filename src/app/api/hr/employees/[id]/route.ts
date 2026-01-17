@@ -67,7 +67,12 @@ export const GET = authorizedRoute(
                         orderBy: {
                             startDate: 'desc'
                         }
-                    }
+                    },
+                    goals: {
+                        orderBy: { endDate: 'desc' },
+                        include: { kpi: true }
+                    },
+                    kpis: true
                 }
             });
 
