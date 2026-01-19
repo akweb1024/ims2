@@ -142,6 +142,11 @@ export default function SubmitReportPage() {
         let invoices = 0;
         const validationStatus: Record<string, { isValid: boolean; message?: string }> = {};
 
+        // Initialize validation status for all completed tasks
+        completedTaskIds.forEach(id => {
+            validationStatus[id] = { isValid: true }; // Default to true until proven otherwise
+        });
+
         availableTasks.forEach(t => {
             if (completedTaskIds.includes(t.id)) {
                 // Calculate points and validate
@@ -258,14 +263,19 @@ export default function SubmitReportPage() {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        console.log('🚀 Submit Report Triggered');
 
         // Validate all completed tasks
         const invalidTasks = completedTaskIds.filter(taskId => {
+            const task = availableTasks.find(t => t.id === taskId);
+            if (!task) return false; // Skip validation for tasks we don't have metadata for locally
+
             const validation = taskValidationStatus[taskId];
-            return !validation || !validation.isValid;
+            return validation && !validation.isValid;
         });
 
         if (invalidTasks.length > 0) {
+            console.warn('⚠️ Validation failed for tasks:', invalidTasks);
             const invalidTaskNames = invalidTasks.map(id => {
                 const task = availableTasks.find(t => t.id === id);
                 return task?.title || 'Unknown task';
@@ -278,6 +288,7 @@ export default function SubmitReportPage() {
         setLoading(true);
         try {
             const token = localStorage.getItem('token');
+            console.log('📦 Preparing payload...');
 
             const payload = {
                 ...commonData,
@@ -300,6 +311,8 @@ export default function SubmitReportPage() {
                 }
             };
 
+            console.log('📡 Sending request to /api/hr/work-reports...', payload);
+
             const res = await fetch('/api/hr/work-reports', {
                 method: 'POST',
                 headers: {
@@ -310,14 +323,16 @@ export default function SubmitReportPage() {
             });
 
             if (res.ok) {
+                console.log('✅ Report submitted successfully');
                 setSavedReport(true);
                 setTimeout(() => router.push('/dashboard/staff-portal'), 2000);
             } else {
                 const error = await res.json();
+                console.error('❌ Server error:', error);
                 toast.error(error.error || 'Failed to submit report');
             }
         } catch (error) {
-            console.error(error);
+            console.error('💥 Submission crash:', error);
             toast.error('Error submitting report');
         } finally {
             setLoading(false);
