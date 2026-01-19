@@ -878,6 +878,7 @@ model EmployeeProfile {
   claimedRevenue           RevenueTransaction[] @relation("ClaimedRevenue")
   approvedRevenue          RevenueTransaction[] @relation("ApprovedRevenue")
   revenueClaims            RevenueClaim[]
+  dailyTaskCompletions     DailyTaskCompletion[]
 }
 
 model SalaryAdvance {
@@ -1585,6 +1586,7 @@ model EmployeeTaskTemplate {
   company       Company      @relation(fields: [companyId], references: [id])
   department    Department?  @relation(fields: [departmentId], references: [id])
   designation   Designation? @relation(fields: [designationId], references: [id])
+  dailyCompletions DailyTaskCompletion[]
 
   @@index([companyId])
   @@index([departmentId])
@@ -1608,6 +1610,23 @@ model EmployeePointLog {
   @@index([employeeId])
   @@index([companyId])
   @@index([type])
+}
+
+model DailyTaskCompletion {
+  id          String   @id @default(uuid())
+  employeeId  String
+  taskId      String
+  quantity    Float?   // For SCALED tasks
+  completedAt DateTime @default(now())
+  createdAt   DateTime @default(now())
+
+  employee    EmployeeProfile      @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  task        EmployeeTaskTemplate @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  @@unique([employeeId, taskId, completedAt])
+  @@index([employeeId])
+  @@index([taskId])
+  @@index([completedAt])
 }
 
 // Monthly Performance Analytics Models

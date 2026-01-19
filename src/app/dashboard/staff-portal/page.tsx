@@ -14,6 +14,7 @@ import EmployeeOnboarding from '@/components/dashboard/staff/EmployeeOnboarding'
 import EmployeeDocuments from '@/components/dashboard/staff/EmployeeDocuments';
 import EmployeeKPIView from '@/components/dashboard/staff/EmployeeKPIView';
 import AttendanceCalendar from '@/components/dashboard/staff/AttendanceCalendar';
+import DailyTaskTracker from '@/components/dashboard/DailyTaskTracker';
 import { Lock, AlertOctagon, FileText, Calendar as CalendarIcon, Wallet } from 'lucide-react';
 
 export default function StaffPortalPage() {
@@ -403,65 +404,71 @@ export default function StaffPortalPage() {
 
 
 
+
                     {activeTab === 'overview' && (
-                        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                            <div className="card-premium p-6 border-t-4 border-primary-500">
-                                <h3 className="text-sm font-bold text-secondary-400 uppercase tracking-widest mb-4">Today&apos;s Status</h3>
-                                <div className="space-y-4">
-                                    <div className="flex justify-between items-center text-sm">
-                                        <span className="text-secondary-500">Check In</span>
-                                        <span className="font-bold text-secondary-900">{todayAttendance?.checkIn ? new Date(todayAttendance.checkIn).toLocaleTimeString() : '--:--'}</span>
+                        <div className="space-y-6">
+                            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                                <div className="card-premium p-6 border-t-4 border-primary-500">
+                                    <h3 className="text-sm font-bold text-secondary-400 uppercase tracking-widest mb-4">Today&apos;s Status</h3>
+                                    <div className="space-y-4">
+                                        <div className="flex justify-between items-center text-sm">
+                                            <span className="text-secondary-500">Check In</span>
+                                            <span className="font-bold text-secondary-900">{todayAttendance?.checkIn ? new Date(todayAttendance.checkIn).toLocaleTimeString() : '--:--'}</span>
+                                        </div>
+                                        <div className="flex justify-between items-center text-sm">
+                                            <span className="text-secondary-500">Check Out</span>
+                                            <span className="font-bold text-secondary-900">{todayAttendance?.checkOut ? new Date(todayAttendance.checkOut).toLocaleTimeString() : '--:--'}</span>
+                                        </div>
+                                        <div className="flex justify-between items-center text-sm">
+                                            <span className="text-secondary-500">Mode</span>
+                                            <span className="badge badge-secondary">{todayAttendance?.workFrom || 'OFFICE'}</span>
+                                        </div>
                                     </div>
-                                    <div className="flex justify-between items-center text-sm">
-                                        <span className="text-secondary-500">Check Out</span>
-                                        <span className="font-bold text-secondary-900">{todayAttendance?.checkOut ? new Date(todayAttendance.checkOut).toLocaleTimeString() : '--:--'}</span>
+                                </div>
+
+                                <div className="card-premium p-6 border-t-4 border-success-500">
+                                    <h3 className="text-sm font-bold text-secondary-400 uppercase tracking-widest mb-4">Monthly Performance</h3>
+                                    <div className="text-center py-4">
+                                        <p className="text-4xl font-black text-secondary-900">{attendance.length}</p>
+                                        <p className="text-xs font-bold text-secondary-400 mt-1 uppercase tracking-widest">Active Days</p>
                                     </div>
-                                    <div className="flex justify-between items-center text-sm">
-                                        <span className="text-secondary-500">Mode</span>
-                                        <span className="badge badge-secondary">{todayAttendance?.workFrom || 'OFFICE'}</span>
+                                </div>
+                                <div className="card-premium p-6 border-t-4 border-amber-500">
+                                    <h3 className="text-sm font-bold text-secondary-400 uppercase tracking-widest mb-4">Leave Balance</h3>
+                                    <div className="text-center py-4">
+                                        <p className="text-4xl font-black text-secondary-900">{fullProfile?.leaveBalance || 0}</p>
+                                        <p className="text-xs font-bold text-secondary-400 mt-1 uppercase tracking-widest">Available Days</p>
+                                    </div>
+                                </div>
+                                <div className="card-premium p-6 border-t-4 border-warning-500">
+                                    <h3 className="text-sm font-bold text-secondary-400 uppercase tracking-widest mb-4">Latest Rating</h3>
+                                    <div className="text-center py-2">
+                                        <div className="text-3xl font-black text-secondary-900 mb-2">
+                                            {'★'.repeat(performance[0]?.rating || 0)}{'☆'.repeat(5 - (performance[0]?.rating || 0))}
+                                        </div>
+                                        <p className="text-xs text-secondary-500 italic">
+                                            {performance[0]?.feedback ? `"${performance[0].feedback.slice(0, 60)}..."` : "No reviews yet"}
+                                        </p>
+                                    </div>
+                                </div>
+                                <div className="card-premium p-6 border-t-4 border-indigo-500 bg-indigo-50/30">
+                                    <h3 className="text-sm font-bold text-secondary-400 uppercase tracking-widest mb-4">Quick Actions</h3>
+                                    <div className="space-y-3">
+                                        <a href="/dashboard/staff-portal/submit-report" className="btn btn-primary w-full py-2 text-xs font-black shadow-lg">
+                                            Submit Daily Report 📝
+                                        </a>
+                                        <a href="/dashboard/it-services/request" className="btn bg-amber-500 hover:bg-amber-600 text-white w-full py-2 text-xs font-black shadow-lg">
+                                            Request IT Service 🛠️
+                                        </a>
+                                        <button onClick={() => setActiveTab('work-reports')} className="text-[10px] w-full text-center font-bold text-primary-600 uppercase hover:underline">
+                                            View Past Reports
+                                        </button>
                                     </div>
                                 </div>
                             </div>
 
-                            <div className="card-premium p-6 border-t-4 border-success-500">
-                                <h3 className="text-sm font-bold text-secondary-400 uppercase tracking-widest mb-4">Monthly Performance</h3>
-                                <div className="text-center py-4">
-                                    <p className="text-4xl font-black text-secondary-900">{attendance.length}</p>
-                                    <p className="text-xs font-bold text-secondary-400 mt-1 uppercase tracking-widest">Active Days</p>
-                                </div>
-                            </div>
-                            <div className="card-premium p-6 border-t-4 border-amber-500">
-                                <h3 className="text-sm font-bold text-secondary-400 uppercase tracking-widest mb-4">Leave Balance</h3>
-                                <div className="text-center py-4">
-                                    <p className="text-4xl font-black text-secondary-900">{fullProfile?.leaveBalance || 0}</p>
-                                    <p className="text-xs font-bold text-secondary-400 mt-1 uppercase tracking-widest">Available Days</p>
-                                </div>
-                            </div>
-                            <div className="card-premium p-6 border-t-4 border-warning-500">
-                                <h3 className="text-sm font-bold text-secondary-400 uppercase tracking-widest mb-4">Latest Rating</h3>
-                                <div className="text-center py-2">
-                                    <div className="text-3xl font-black text-secondary-900 mb-2">
-                                        {'★'.repeat(performance[0]?.rating || 0)}{'☆'.repeat(5 - (performance[0]?.rating || 0))}
-                                    </div>
-                                    <p className="text-xs text-secondary-500 italic">
-                                        {performance[0]?.feedback ? `"${performance[0].feedback.slice(0, 60)}..."` : "No reviews yet"}
-                                    </p>
-                                </div>
-                            </div>
-                            <div className="card-premium p-6 border-t-4 border-indigo-500 bg-indigo-50/30">
-                                <h3 className="text-sm font-bold text-secondary-400 uppercase tracking-widest mb-4">Quick Actions</h3>
-                                <div className="space-y-3">
-                                    <a href="/dashboard/staff-portal/submit-report" className="btn btn-primary w-full py-2 text-xs font-black shadow-lg">
-                                        Submit Daily Report 📝
-                                    </a>
-                                    <a href="/dashboard/it-services/request" className="btn bg-amber-500 hover:bg-amber-600 text-white w-full py-2 text-xs font-black shadow-lg">
-                                        Request IT Service 🛠️
-                                    </a>
-                                    <button onClick={() => setActiveTab('work-reports')} className="text-[10px] w-full text-center font-bold text-primary-600 uppercase hover:underline">
-                                        View Past Reports
-                                    </button>
-                                </div>
-                            </div>
+                            {/* Daily Task Tracker */}
+                            <DailyTaskTracker />
                         </div>
                     )}
 

@@ -98,6 +98,37 @@ export default function SubmitReportPage() {
                     if (data.totalActions > 0) setProdActivity(data);
                 })
                 .catch(err => console.error("Error fetching activity", err));
+
+            // Fetch today's completed tasks from Daily Task Tracker
+            fetch('/api/hr/tasks/today-progress', { headers: { 'Authorization': `Bearer ${token}` } })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.completedTasks && Array.isArray(data.completedTasks)) {
+                        // Pre-fill completed task IDs
+                        const completedIds = data.completedTasks.map((ct: any) => ct.taskId);
+                        setCompletedTaskIds(completedIds);
+
+                        // Pre-fill quantities for scaled tasks
+                        const quantities: Record<string, number> = {};
+                        data.completedTasks.forEach((ct: any) => {
+                            if (ct.quantity) {
+                                quantities[ct.taskId] = ct.quantity;
+                            }
+                        });
+                        setScaledTaskValues(quantities);
+
+                        // Set current points
+                        if (data.totalPoints) {
+                            setCurrentPoints(data.totalPoints);
+                        }
+
+                        console.log('✅ Synced with Daily Task Tracker:', {
+                            tasksCompleted: completedIds.length,
+                            pointsEarned: data.totalPoints
+                        });
+                    }
+                })
+                .catch(err => console.error("Error syncing with Daily Task Tracker", err));
         }
     }, []);
 
@@ -327,6 +358,22 @@ export default function SubmitReportPage() {
                     </div>
                 </div>
 
+                {/* Sync Indicator */}
+                {completedTaskIds.length > 0 && (
+                    <div className="bg-gradient-to-r from-green-50 to-emerald-50 border-l-4 border-green-500 p-4 rounded-xl">
+                        <div className="flex items-center gap-3">
+                            <CheckCircle className="text-green-600" size={24} />
+                            <div>
+                                <h4 className="font-bold text-green-900">✨ Auto-Synced from Daily Task Tracker</h4>
+                                <p className="text-sm text-green-700">
+                                    {completedTaskIds.length} task{completedTaskIds.length !== 1 ? 's' : ''} automatically loaded from your daily checklist.
+                                    You can modify or add more tasks below.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
                 {/* Auto-Calculated Metrics Display */}
                 {derivedMetrics.tasksCount > 0 && (
                     <div className="card-premium p-6 bg-gradient-to-br from-primary-50 to-indigo-50 border-t-4 border-indigo-500">
@@ -439,8 +486,8 @@ export default function SubmitReportPage() {
                                             <div className="flex-1">
                                                 <div className="flex justify-between items-start gap-2">
                                                     <h4 className={`font-bold text-sm leading-tight mb-1 ${hasError ? 'text-danger-900' :
-                                                            isCompleted && isValid ? 'text-success-900' :
-                                                                isCompleted ? 'text-indigo-900' : 'text-secondary-700'
+                                                        isCompleted && isValid ? 'text-success-900' :
+                                                            isCompleted ? 'text-indigo-900' : 'text-secondary-700'
                                                         }`}>
                                                         {task.title}
                                                     </h4>
