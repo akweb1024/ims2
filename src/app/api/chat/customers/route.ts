@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getAuthenticatedUser } from '@/lib/auth-legacy';
+import { Prisma } from '@prisma/client';
 
 export async function GET(req: NextRequest) {
     try {
@@ -8,7 +9,7 @@ export async function GET(req: NextRequest) {
         if (!decoded) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
         // Build where clause based on role
-        const where: any = {};
+        const where: Prisma.CustomerProfileWhereInput = {};
 
         if (decoded.role === 'CUSTOMER') {
             // Customers can only see themselves

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import {
     AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -17,13 +17,7 @@ export default function ProductivityAnalysisPage() {
     });
     const [userRole, setUserRole] = useState('');
 
-    useEffect(() => {
-        const user = localStorage.getItem('user');
-        if (user) setUserRole(JSON.parse(user).role);
-        fetchAnalysis();
-    }, [dateRange]);
-
-    const fetchAnalysis = async () => {
+    const fetchAnalysis = useCallback(async () => {
         setLoading(true);
         try {
             const token = localStorage.getItem('token');
@@ -43,7 +37,13 @@ export default function ProductivityAnalysisPage() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [dateRange.startDate, dateRange.endDate]);
+
+    useEffect(() => {
+        const user = localStorage.getItem('user');
+        if (user) setUserRole(JSON.parse(user).role);
+        fetchAnalysis();
+    }, [fetchAnalysis]);
 
     if (loading && !analysis) return <div className="p-8 text-center">Crunching productivity data...</div>;
 
@@ -63,12 +63,14 @@ export default function ProductivityAnalysisPage() {
                             className="input text-xs"
                             value={dateRange.startDate}
                             onChange={(e) => setDateRange({ ...dateRange, startDate: e.target.value })}
+                            title="Start Date"
                         />
                         <input
                             type="date"
                             className="input text-xs"
                             value={dateRange.endDate}
                             onChange={(e) => setDateRange({ ...dateRange, endDate: e.target.value })}
+                            title="End Date"
                         />
                     </div>
                 </div>

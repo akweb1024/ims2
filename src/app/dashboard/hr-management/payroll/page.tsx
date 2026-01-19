@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import FormattedDate from '@/components/common/FormattedDate';
 import { Download, Plus, RefreshCw, FileText } from 'lucide-react';
@@ -17,15 +17,7 @@ export default function PayrollPage() {
     // User role check
     const [userRole, setUserRole] = useState('');
 
-    useEffect(() => {
-        const userData = localStorage.getItem('user');
-        if (userData) {
-            setUserRole(JSON.parse(userData).role);
-        }
-        fetchSlips();
-    }, [selectedMonth, selectedYear]);
-
-    const fetchSlips = async () => {
+    const fetchSlips = useCallback(async () => {
         setLoading(true);
         try {
             const token = localStorage.getItem('token');
@@ -41,7 +33,15 @@ export default function PayrollPage() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [selectedMonth, selectedYear]);
+
+    useEffect(() => {
+        const userData = localStorage.getItem('user');
+        if (userData) {
+            setUserRole(JSON.parse(userData).role);
+        }
+        fetchSlips();
+    }, [fetchSlips]);
 
     const handleGenerate = async () => {
         if (!confirm(`Are you sure you want to generate salary slips for ${selectedMonth}/${selectedYear}? This will calculate payroll for all active employees.`)) return;
@@ -136,6 +136,7 @@ export default function PayrollPage() {
                             value={selectedMonth}
                             onChange={(e) => setSelectedMonth(Number(e.target.value))}
                             className="input-premium py-2"
+                            title="Select Month for Payroll"
                         >
                             {months.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
                         </select>
@@ -143,6 +144,7 @@ export default function PayrollPage() {
                             value={selectedYear}
                             onChange={(e) => setSelectedYear(Number(e.target.value))}
                             className="input-premium py-2 w-24"
+                            title="Select Year for Payroll"
                         >
                             {years.map(y => <option key={y} value={y}>{y}</option>)}
                         </select>

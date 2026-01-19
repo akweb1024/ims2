@@ -67,7 +67,7 @@ const LeaveLedgerRow = ({ row, onSave }: { row: any, onSave: (data: any) => Prom
         if (calculatedClosing !== parseFloat(editData.closingBalance)) {
             setEditData((prev: any) => ({ ...prev, closingBalance: calculatedClosing }));
         }
-    }, [editData.openingBalance, editData.takenLeaves]);
+    }, [editData.openingBalance, editData.takenLeaves, editData.closingBalance]);
 
     const handleSave = async () => {
         setSaving(true);

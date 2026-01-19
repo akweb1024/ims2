@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { DollarSign, TrendingUp, Users, CreditCard, Calendar, Award, Building2, ArrowUpRight, ArrowDownRight } from 'lucide-react';
 import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
@@ -13,20 +13,7 @@ export default function RevenueDashboard() {
     const [period, setPeriod] = useState('month');
     const [revenueData, setRevenueData] = useState<any>(null);
 
-    useEffect(() => {
-        const userData = localStorage.getItem('user');
-        if (userData) {
-            setUser(JSON.parse(userData));
-        }
-    }, []);
-
-    useEffect(() => {
-        if (user) {
-            fetchRevenueData();
-        }
-    }, [user, period]);
-
-    const fetchRevenueData = async () => {
+    const fetchRevenueData = useCallback(async () => {
         setLoading(true);
         try {
             const token = localStorage.getItem('token');
@@ -43,7 +30,20 @@ export default function RevenueDashboard() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [period]);
+
+    useEffect(() => {
+        const userData = localStorage.getItem('user');
+        if (userData) {
+            setUser(JSON.parse(userData));
+        }
+    }, []);
+
+    useEffect(() => {
+        if (user) {
+            fetchRevenueData();
+        }
+    }, [user, fetchRevenueData]);
 
     const formatCurrency = (amount: number) => {
         return new Intl.NumberFormat('en-IN', {
@@ -88,6 +88,7 @@ export default function RevenueDashboard() {
                             className="input w-48"
                             value={period}
                             onChange={(e) => setPeriod(e.target.value)}
+                            title="Select Time Period"
                         >
                             <option value="week">Last 7 Days</option>
                             <option value="month">This Month</option>

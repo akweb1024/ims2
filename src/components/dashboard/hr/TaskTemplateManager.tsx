@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Award, Plus, Edit2, Trash2, CheckCircle, XCircle, Users, Building2, Search, Grid3x3, List, Filter } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
@@ -41,11 +41,7 @@ export default function TaskTemplateManager() {
         perUnitCount: 1
     });
 
-    useEffect(() => {
-        fetchData();
-    }, []);
-
-    const fetchData = async () => {
+    const fetchData = useCallback(async () => {
         try {
             const token = localStorage.getItem('token');
             const [tasksRes, deptsRes, desigsRes] = await Promise.all([
@@ -62,7 +58,11 @@ export default function TaskTemplateManager() {
         } finally {
             setIsLoading(false);
         }
-    };
+    }, []);
+
+    useEffect(() => {
+        fetchData();
+    }, [fetchData]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -428,6 +428,7 @@ export default function TaskTemplateManager() {
                                     onClick={() => handleEdit(task)}
                                     className="p-2 bg-secondary-100 text-secondary-600 rounded-lg hover:bg-secondary-200"
                                     title="Edit task"
+                                    aria-label={`Edit ${task.title}`}
                                 >
                                     <Edit2 size={14} />
                                 </button>
@@ -435,6 +436,7 @@ export default function TaskTemplateManager() {
                                     onClick={() => handleDelete(task.id)}
                                     className="p-2 bg-danger-50 text-danger-600 rounded-lg hover:bg-danger-100"
                                     title="Delete task"
+                                    aria-label={`Delete ${task.title}`}
                                 >
                                     <Trash2 size={14} />
                                 </button>
@@ -534,6 +536,7 @@ export default function TaskTemplateManager() {
                                                     onClick={() => handleEdit(task)}
                                                     className="p-2 bg-secondary-100 text-secondary-600 rounded-lg hover:bg-secondary-200"
                                                     title="Edit task"
+                                                    aria-label={`Edit ${task.title}`}
                                                 >
                                                     <Edit2 size={14} />
                                                 </button>
@@ -541,6 +544,7 @@ export default function TaskTemplateManager() {
                                                     onClick={() => handleDelete(task.id)}
                                                     className="p-2 bg-danger-50 text-danger-600 rounded-lg hover:bg-danger-100"
                                                     title="Delete task"
+                                                    aria-label={`Delete ${task.title}`}
                                                 >
                                                     <Trash2 size={14} />
                                                 </button>
