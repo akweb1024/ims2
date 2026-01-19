@@ -245,6 +245,96 @@
   .glass-effect {
     @apply bg-white/80 backdrop-blur-md;
   }
+
+  /* Text Wrapping Utilities */
+  .break-words {
+    word-break: break-word;
+    overflow-wrap: break-word;
+  }
+
+  .overflow-wrap-anywhere {
+    overflow-wrap: anywhere;
+  }
+
+  /* Prose Enhancements for SafeHTML content */
+  .prose {
+    max-width: 100%;
+  }
+
+  .prose p {
+    margin-bottom: 0.75rem;
+    line-height: 1.6;
+  }
+
+  .prose ul, .prose ol {
+    margin-left: 1.5rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .prose li {
+    margin-bottom: 0.25rem;
+  }
+
+  .prose h1, .prose h2, .prose h3, .prose h4, .prose h5, .prose h6 {
+    margin-top: 1rem;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+  }
+
+  .prose strong {
+    font-weight: 600;
+  }
+
+  .prose a {
+    color: rgb(var(--primary));
+    text-decoration: underline;
+  }
+
+  .prose code {
+    background-color: rgb(var(--border) / 0.3);
+    padding: 0.125rem 0.25rem;
+    border-radius: 0.25rem;
+    font-size: 0.875em;
+  }
+
+  .prose pre {
+    background-color: rgb(var(--border) / 0.3);
+    padding: 1rem;
+    border-radius: 0.5rem;
+    overflow-x: auto;
+    margin-bottom: 1rem;
+  }
+
+  .prose blockquote {
+    border-left: 4px solid rgb(var(--primary));
+    padding-left: 1rem;
+    margin-left: 0;
+    font-style: italic;
+    color: rgb(var(--text-muted));
+  }
+
+  .prose table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 1rem;
+  }
+
+  .prose th, .prose td {
+    border: 1px solid rgb(var(--border));
+    padding: 0.5rem;
+    text-align: left;
+  }
+
+  .prose th {
+    background-color: rgb(var(--border) / 0.3);
+    font-weight: 600;
+  }
+
+  /* Ensure all text content wraps properly */
+  .prose * {
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+  }
 }
 
 @media print {

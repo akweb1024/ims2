@@ -502,14 +502,28 @@ export default function EmployeeProfilePage() {
                                         <Award className="text-warning-500" size={20} />
                                         Job Description & KRA
                                     </h3>
-                                    <div className="grid grid-cols-1 gap-8">
-                                        <div>
-                                            <h4 className="text-xs font-bold text-secondary-400 uppercase mb-2">Job Description</h4>
-                                            <SafeHTML html={employee.jobDescription || 'Not detailed.'} />
+                                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                        <div className="space-y-2">
+                                            <h4 className="text-xs font-bold text-secondary-400 uppercase mb-2 flex items-center gap-2">
+                                                <FileText size={14} />
+                                                Job Description
+                                            </h4>
+                                            <div className="bg-secondary-50/50 p-4 rounded-xl border border-secondary-100 max-h-[400px] overflow-y-auto">
+                                                <div className="prose prose-sm max-w-none break-words overflow-wrap-anywhere">
+                                                    <SafeHTML html={employee.jobDescription || '<p class="text-secondary-400 italic">Not detailed.</p>'} />
+                                                </div>
+                                            </div>
                                         </div>
-                                        <div>
-                                            <h4 className="text-xs font-bold text-secondary-400 uppercase mb-2">Key Responsibility Areas</h4>
-                                            <SafeHTML html={employee.kra || 'Not detailed.'} />
+                                        <div className="space-y-2">
+                                            <h4 className="text-xs font-bold text-secondary-400 uppercase mb-2 flex items-center gap-2">
+                                                <Award size={14} />
+                                                Key Responsibility Areas
+                                            </h4>
+                                            <div className="bg-secondary-50/50 p-4 rounded-xl border border-secondary-100 max-h-[400px] overflow-y-auto">
+                                                <div className="prose prose-sm max-w-none break-words overflow-wrap-anywhere">
+                                                    <SafeHTML html={employee.kra || '<p class="text-secondary-400 italic">Not detailed.</p>'} />
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>

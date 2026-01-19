@@ -34,6 +34,7 @@ import GoalManager from '@/components/dashboard/hr/GoalManager';
 import RewardManager from '@/components/dashboard/hr/RewardManager';
 import PotentialCalculator from '@/components/dashboard/hr/PotentialCalculator';
 import IncrementPlanningView from '@/components/dashboard/hr/IncrementPlanningView';
+import WorkReportValidator from '@/components/dashboard/hr/WorkReportValidator';
 import { Briefcase, Info, Target, TrendingUp, Award, GraduationCap, Edit, Trash2 } from 'lucide-react';
 import {
     useEmployees, useHolidays, useDesignations, useJobs, useApplications,
@@ -436,6 +437,28 @@ const HRManagementContent = () => {
         }
     };
 
+    const handleWorkReportValidation = async (
+        reportId: string,
+        approvedTaskIds: string[],
+        rejectedTaskIds: string[],
+        managerComment: string,
+        managerRating: number
+    ) => {
+        try {
+            await updateStatusMutation.mutateAsync({
+                id: reportId,
+                status: 'APPROVED',
+                managerComment,
+                managerRating,
+                approvedTaskIds,
+                rejectedTaskIds
+            });
+        } catch (err) {
+            console.error(err);
+            throw err;
+        }
+    };
+
     const handleReviewSubmit = async (data: any) => {
         if (!selectedEmp) return;
         try {
@@ -752,6 +775,7 @@ const HRManagementContent = () => {
                                     className="input bg-white"
                                     value={reportFilter.employeeId}
                                     onChange={(e) => setReportFilter({ ...reportFilter, employeeId: e.target.value })}
+                                    title="Select Employee"
                                 >
                                     <option value="all">Check All Employees</option>
                                     {employees.map(e => <option key={e.id} value={e.id}>{e.user?.email} - {e.designation}</option>)}
@@ -764,6 +788,7 @@ const HRManagementContent = () => {
                                     className="input bg-white"
                                     value={reportFilter.startDate || ''}
                                     onChange={(e) => setReportFilter({ ...reportFilter, startDate: e.target.value })}
+                                    title="Start Date"
                                 />
                             </div>
                             <div>
@@ -773,6 +798,7 @@ const HRManagementContent = () => {
                                     className="input bg-white"
                                     value={reportFilter.endDate || ''}
                                     onChange={(e) => setReportFilter({ ...reportFilter, endDate: e.target.value })}
+                                    title="End Date"
                                 />
                             </div>
                             <div>
@@ -781,6 +807,7 @@ const HRManagementContent = () => {
                                     className="input bg-white"
                                     value={reportFilter.category}
                                     onChange={(e) => setReportFilter({ ...reportFilter, category: e.target.value })}
+                                    title="Select Category"
                                 >
                                     <option value="ALL">All Categories</option>
                                     <option value="SALES">Sales</option>
@@ -834,131 +861,14 @@ const HRManagementContent = () => {
                         {/* Daily Reconciliation Table */}
                         <DailyReconciliationTable days={14} />
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            {workReports.length === 0 ? (
-                                <div className="col-span-full py-20 text-center card-premium text-secondary-400 italic">No work reports found for the selected criteria.</div>
-                            ) : workReports.map(report => (
-                                <div key={report.id} className="card-premium group relative">
-                                    <div className="flex justify-between items-start mb-4">
-                                        <div className="flex gap-2">
-                                            <span className={`px-2 py-1 text-[10px] font-black rounded ${report.status === 'APPROVED' ? 'bg-success-50 text-success-700' : report.status === 'REVIEWED' ? 'bg-indigo-50 text-indigo-700' : 'bg-warning-50 text-warning-700'}`}>{report.status}</span>
-                                            <span className="px-2 py-1 text-[10px] font-black rounded bg-secondary-50 text-secondary-600 uppercase tracking-tighter">{report.category}</span>
-                                        </div>
-                                        <span className="text-[10px] font-bold text-secondary-400 uppercase"><FormattedDate date={report.date} /></span>
-                                    </div>
-
-                                    <div className="flex items-center gap-3 mb-4">
-                                        <div className="w-10 h-10 bg-secondary-900 text-white rounded-xl flex items-center justify-center font-black text-sm">
-                                            {(report.employee?.user?.email?.[0] || 'E').toUpperCase()}
-                                        </div>
-                                        <div>
-                                            <p className="font-bold text-secondary-900 leading-tight">{report.employee?.user?.email?.split('@')[0]}</p>
-                                            <p className="text-[10px] font-bold text-secondary-400 uppercase">{report.employee?.designation}</p>
-                                        </div>
-                                    </div>
-
-                                    <h4 className="font-bold text-secondary-900 mb-2">{report.title}</h4>
-                                    <div className="bg-secondary-50/50 p-4 rounded-2xl mb-4 border border-secondary-100">
-                                        <p className="text-secondary-600 text-sm whitespace-pre-wrap leading-relaxed">{report.content}</p>
-                                        {report.keyOutcome && (
-                                            <div className="mt-3 pt-3 border-t border-secondary-100">
-                                                <p className="text-[9px] font-black text-secondary-400 uppercase mb-1">Key Outcome</p>
-                                                <p className="text-xs font-bold text-secondary-900 italic">&quot;{report.keyOutcome}&quot;</p>
-                                            </div>
-                                        )}
-                                    </div>
-
-                                    {/* Metrics pill list */}
-                                    <div className="flex flex-wrap gap-2 mb-6">
-                                        {report.revenueGenerated > 0 && <span className="bg-amber-50 text-amber-700 px-3 py-1 rounded-full text-[10px] font-black border border-amber-200">₹{report.revenueGenerated.toLocaleString()} Generated</span>}
-                                        {report.tasksCompleted > 0 && <span className="bg-emerald-50 text-emerald-700 px-3 py-1 rounded-full text-[10px] font-black border border-emerald-200">{report.tasksCompleted} Tasks</span>}
-                                        {report.hoursSpent > 0 && <span className="bg-indigo-50 text-indigo-700 px-3 py-1 rounded-full text-[10px] font-black border border-indigo-200">{report.hoursSpent} Hrs Spent</span>}
-                                        {report.kraMatchRatio !== null && (
-                                            <span className={`px-3 py-1 rounded-full text-[10px] font-black border ${report.kraMatchRatio > 0.6 ? 'bg-success-50 text-success-700 border-success-200' : 'bg-warning-50 text-warning-700 border-warning-200'}`}>
-                                                KRA Align: {Math.round(report.kraMatchRatio * 100)}%
-                                            </span>
-                                        )}
-                                    </div>
-
-                                    {/* Comments Section */}
-                                    <div className="space-y-3 mb-6">
-                                        <h5 className="text-[10px] font-black text-secondary-400 uppercase tracking-widest border-b border-secondary-100 pb-2">Internal Thread / Clarification</h5>
-                                        {report.comments?.length === 0 ? (
-                                            <p className="text-[10px] text-secondary-400 italic">No comments yet.</p>
-                                        ) : (
-                                            <div className="space-y-2 max-h-[150px] overflow-y-auto pr-2">
-                                                {report.comments?.map((comment: any) => (
-                                                    <div key={comment.id} className="bg-white p-3 rounded-xl border border-secondary-100 shadow-sm">
-                                                        <div className="flex justify-between items-center mb-1">
-                                                            <span className="text-[10px] font-black text-primary-600">{comment.author?.email?.split('@')[0]}</span>
-                                                            <span className="text-[8px] font-bold text-secondary-400">{new Date(comment.createdAt).toLocaleDateString()}</span>
-                                                        </div>
-                                                        <p className="text-[11px] text-secondary-700 leading-normal">{comment.content}</p>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        )}
-                                        <div className="flex gap-2">
-                                            <input
-                                                type="text"
-                                                id={`comment-${report.id}`}
-                                                className="input text-[11px] py-1.5 flex-1"
-                                                placeholder="Add clarification or review comment..."
-                                                onKeyDown={async (e) => {
-                                                    if (e.key === 'Enter') {
-                                                        const val = (e.target as HTMLInputElement).value;
-                                                        if (!val) return;
-                                                        try {
-                                                            await addReportComment.mutateAsync({ reportId: report.id, content: val });
-                                                            (e.target as HTMLInputElement).value = '';
-                                                        } catch (err) { alert('Failed'); }
-                                                    }
-                                                }}
-                                            />
-                                        </div>
-                                    </div>
-
-                                    <div className="flex items-center justify-between pt-4 border-t border-secondary-100">
-                                        <div className="flex items-center gap-2">
-                                            {report.selfRating && (
-                                                <div className="bg-secondary-50 px-2 py-1 rounded-lg">
-                                                    <p className="text-[8px] font-black text-secondary-400 uppercase">Self Rating</p>
-                                                    <p className="text-xs font-black text-secondary-900">{report.selfRating}/10</p>
-                                                </div>
-                                            )}
-                                        </div>
-                                        {report.status !== 'APPROVED' ? (
-                                            <div className="flex gap-2">
-                                                <button
-                                                    onClick={() => handleReportAction(report.id, 'APPROVED', 5)}
-                                                    className="btn btn-success py-1.5 px-4 text-[10px] font-black shadow-lg shadow-success-100"
-                                                >
-                                                    APPROVE 5★
-                                                </button>
-                                                <button
-                                                    onClick={() => {
-                                                        const rating = prompt("Rate impact (1-5):", "3");
-                                                        if (rating) handleReportAction(report.id, 'APPROVED', parseInt(rating));
-                                                    }}
-                                                    className="btn btn-primary py-1.5 px-4 text-[10px] font-black shadow-lg shadow-primary-100"
-                                                >
-                                                    RATE & APPROVE
-                                                </button>
-                                            </div>
-                                        ) : (
-                                            <div className="flex flex-col items-end">
-                                                <p className="text-[10px] font-black text-warning-600 uppercase mb-1">Manager Rating</p>
-                                                <div className="flex gap-0.5">
-                                                    {[1, 2, 3, 4, 5].map(star => (
-                                                        <span key={star} className={star <= (report.managerRating || 0) ? 'text-warning-400' : 'text-secondary-200'}>★</span>
-                                                    ))}
-                                                </div>
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
+                        {/* Work Report Validator Component */}
+                        <WorkReportValidator
+                            reports={workReports}
+                            onApprove={handleWorkReportValidation}
+                            onAddComment={async (reportId, content) => {
+                                await addReportComment.mutateAsync({ reportId, content });
+                            }}
+                        />
                     </div>
                 )}
 

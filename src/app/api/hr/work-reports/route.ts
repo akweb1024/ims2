@@ -198,29 +198,54 @@ export const POST = authorizedRoute(
                 }
             }
 
-            // Gamified Task Points Calculation
+            // Gamified Task Points Calculation with Enhanced Validation
             let pointsEarned = 0;
             let tasksSnapshot = null;
             let tasksCompletedCount = parseInt(body.tasksCompleted) || 0;
             const taskQuantities = body.taskQuantities || {};
+            const validationErrors: string[] = [];
 
             if (body.completedTaskIds && Array.isArray(body.completedTaskIds) && body.completedTaskIds.length > 0) {
                 const templates = await prisma.employeeTaskTemplate.findMany({
                     where: { id: { in: body.completedTaskIds } }
                 });
 
+                // Validate each task
                 tasksSnapshot = templates.map((t: any) => {
                     let pts = t.points;
                     let quantity = 1;
+                    let isValid = true;
+                    let validationMessage = '';
 
                     if (t.calculationType === 'SCALED') {
                         quantity = taskQuantities[t.id] || 0;
-                        if (t.minThreshold && quantity < t.minThreshold) {
+
+                        // Validation: Check if quantity is provided
+                        if (quantity === 0) {
+                            isValid = false;
+                            validationMessage = `Task "${t.title}": Quantity must be greater than 0`;
+                            validationErrors.push(validationMessage);
+                            pts = 0;
+                        }
+                        // Validation: Check minimum threshold
+                        else if (t.minThreshold && quantity < t.minThreshold) {
+                            isValid = false;
+                            validationMessage = `Task "${t.title}": Minimum ${t.minThreshold} units required, got ${quantity}`;
+                            validationErrors.push(validationMessage);
                             pts = 0;
                         } else {
+                            // Apply maximum cap if exists
                             const effQuantity = (t.maxThreshold && quantity > t.maxThreshold) ? t.maxThreshold : quantity;
                             pts = effQuantity * (t.pointsPerUnit || 0);
+
+                            // Log if max threshold was applied
+                            if (t.maxThreshold && quantity > t.maxThreshold) {
+                                validationMessage = `Capped at ${t.maxThreshold} units (max threshold)`;
+                            }
                         }
+                    } else {
+                        // Flat tasks are always valid when selected
+                        isValid = true;
                     }
 
                     return {
@@ -228,9 +253,20 @@ export const POST = authorizedRoute(
                         title: t.title,
                         points: pts,
                         quantity,
-                        calculationType: t.calculationType
+                        calculationType: t.calculationType,
+                        isValid,
+                        validationMessage: validationMessage || undefined
                     };
                 });
+
+                // If there are validation errors, reject the submission
+                if (validationErrors.length > 0) {
+                    return NextResponse.json({
+                        error: 'Task validation failed',
+                        details: validationErrors,
+                        message: validationErrors.join('; ')
+                    }, { status: 400 });
+                }
 
                 pointsEarned = tasksSnapshot.reduce((sum: number, t: any) => sum + t.points, 0);
 
@@ -357,7 +393,7 @@ export const PATCH = authorizedRoute(
     ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'TEAM_LEADER'],
     async (req: NextRequest, user) => {
         try {
-            const { id, status, managerComment, managerRating } = await req.json();
+            const { id, status, managerComment, managerRating, approvedTaskIds, rejectedTaskIds } = await req.json();
 
             const existing = await prisma.workReport.findUnique({
                 where: { id },
@@ -374,17 +410,35 @@ export const PATCH = authorizedRoute(
                 }
             }
 
+            // Calculate approved points based on task-level approval
+            let finalPointsEarned = existing.pointsEarned || 0;
+            let updatedTasksSnapshot = existing.tasksSnapshot;
+
+            if (approvedTaskIds && Array.isArray(approvedTaskIds) && existing.tasksSnapshot) {
+                // Update task snapshot with approval status
+                updatedTasksSnapshot = (existing.tasksSnapshot as any[]).map((task: any) => ({
+                    ...task,
+                    isApproved: approvedTaskIds.includes(task.id),
+                    isRejected: rejectedTaskIds?.includes(task.id) || false
+                }));
+
+                // Recalculate points based on approved tasks only
+                finalPointsEarned = updatedTasksSnapshot
+                    .filter((task: any) => approvedTaskIds.includes(task.id))
+                    .reduce((sum: number, task: any) => sum + (task.points || 0), 0);
+            }
+
             if (status === 'APPROVED' && existing.status !== 'APPROVED') {
-                // Award Points
-                if (existing.pointsEarned && existing.pointsEarned > 0) {
+                // Award Points for approved tasks only
+                if (finalPointsEarned && finalPointsEarned > 0) {
                     await prisma.employeePointLog.create({
                         data: {
                             employeeId: existing.employeeId,
                             companyId: user.companyId!,
                             type: 'WORK_REPORT',
-                            points: existing.pointsEarned,
+                            points: finalPointsEarned,
                             date: new Date(),
-                            reason: `Work Report Approved: ${existing.title}`
+                            reason: `Work Report Approved: ${existing.title} (${approvedTaskIds?.length || 0} tasks approved)`
                         }
                     });
                 }
@@ -395,6 +449,8 @@ export const PATCH = authorizedRoute(
                 data: {
                     status,
                     managerComment,
+                    pointsEarned: finalPointsEarned,
+                    tasksSnapshot: updatedTasksSnapshot,
                     ...(managerRating && { managerRating: parseInt(managerRating) })
                 }
             });

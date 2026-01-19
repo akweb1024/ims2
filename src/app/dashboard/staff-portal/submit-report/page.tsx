@@ -35,6 +35,7 @@ export default function SubmitReportPage() {
     const [completedTaskIds, setCompletedTaskIds] = useState<string[]>([]);
     const [scaledTaskValues, setScaledTaskValues] = useState<Record<string, number>>({});
     const [currentPoints, setCurrentPoints] = useState(0);
+    const [taskValidationStatus, setTaskValidationStatus] = useState<Record<string, { isValid: boolean; message?: string }>>({});
 
     // Auto-calculated metrics from tasks
     const [derivedMetrics, setDerivedMetrics] = useState({
@@ -100,7 +101,7 @@ export default function SubmitReportPage() {
         }
     }, []);
 
-    // Calculate points and derive metrics from tasks
+    // Calculate points and derive metrics from tasks with validation
     useEffect(() => {
         let points = 0;
         let revenue = 0;
@@ -108,16 +109,37 @@ export default function SubmitReportPage() {
         let emails = 0;
         let whatsapp = 0;
         let invoices = 0;
+        const validationStatus: Record<string, { isValid: boolean; message?: string }> = {};
 
         availableTasks.forEach(t => {
             if (completedTaskIds.includes(t.id)) {
-                // Calculate points
+                // Calculate points and validate
                 if (t.calculationType === 'SCALED') {
                     const quantity = scaledTaskValues[t.id] || 0;
-                    if (t.minThreshold && quantity < t.minThreshold) return;
+
+                    // Validation for scaled tasks
+                    if (quantity === 0) {
+                        validationStatus[t.id] = {
+                            isValid: false,
+                            message: 'Please enter quantity'
+                        };
+                        return;
+                    }
+
+                    if (t.minThreshold && quantity < t.minThreshold) {
+                        validationStatus[t.id] = {
+                            isValid: false,
+                            message: `Minimum ${t.minThreshold} units required`
+                        };
+                        return;
+                    }
+
+                    // Task is valid
+                    validationStatus[t.id] = { isValid: true };
 
                     const effQuantity = (t.maxThreshold && quantity > t.maxThreshold) ? t.maxThreshold : quantity;
-                    points += effQuantity * (t.pointsPerUnit || 0);
+                    const taskPoints = effQuantity * (t.pointsPerUnit || 0);
+                    points += taskPoints;
 
                     // Derive metrics based on task title/description keywords
                     const titleLower = t.title.toLowerCase();
@@ -137,11 +159,14 @@ export default function SubmitReportPage() {
                         invoices += quantity;
                     }
                 } else {
+                    // Flat tasks are always valid when checked
+                    validationStatus[t.id] = { isValid: true };
                     points += t.points;
                 }
             }
         });
 
+        setTaskValidationStatus(validationStatus);
         setCurrentPoints(Math.floor(points));
         setDerivedMetrics({
             revenue,
@@ -202,6 +227,23 @@ export default function SubmitReportPage() {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+
+        // Validate all completed tasks
+        const invalidTasks = completedTaskIds.filter(taskId => {
+            const validation = taskValidationStatus[taskId];
+            return !validation || !validation.isValid;
+        });
+
+        if (invalidTasks.length > 0) {
+            const invalidTaskNames = invalidTasks.map(id => {
+                const task = availableTasks.find(t => t.id === id);
+                return task?.title || 'Unknown task';
+            }).join(', ');
+
+            toast.error(`Please fix validation errors for: ${invalidTaskNames}`);
+            return;
+        }
+
         setLoading(true);
         try {
             const token = localStorage.getItem('token');
@@ -240,11 +282,12 @@ export default function SubmitReportPage() {
                 setSavedReport(true);
                 setTimeout(() => router.push('/dashboard/staff-portal'), 2000);
             } else {
-                alert('Failed to submit report');
+                const error = await res.json();
+                toast.error(error.error || 'Failed to submit report');
             }
         } catch (error) {
             console.error(error);
-            alert('Error submitting report');
+            toast.error('Error submitting report');
         } finally {
             setLoading(false);
         }
@@ -335,77 +378,145 @@ export default function SubmitReportPage() {
                             </div>
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            {availableTasks.map(task => (
-                                <div
-                                    key={task.id}
-                                    onClick={(e) => {
-                                        if ((e.target as HTMLElement).tagName === 'INPUT') return;
+                            {availableTasks.map(task => {
+                                const isCompleted = completedTaskIds.includes(task.id);
+                                const validation = taskValidationStatus[task.id];
+                                const isValid = validation?.isValid ?? true;
+                                const hasError = isCompleted && !isValid;
 
-                                        if (completedTaskIds.includes(task.id)) {
-                                            setCompletedTaskIds(prev => prev.filter(id => id !== task.id));
-                                        } else {
-                                            setCompletedTaskIds(prev => [...prev, task.id]);
+                                // Calculate current points for this task
+                                let taskPoints = 0;
+                                if (isCompleted) {
+                                    if (task.calculationType === 'SCALED') {
+                                        const qty = scaledTaskValues[task.id] || 0;
+                                        const effQty = (task.maxThreshold && qty > task.maxThreshold) ? task.maxThreshold : qty;
+                                        if (!task.minThreshold || qty >= task.minThreshold) {
+                                            taskPoints = effQty * (task.pointsPerUnit || 0);
                                         }
-                                    }}
-                                    className={`
-                                        group relative p-4 rounded-xl border-2 cursor-pointer transition-all duration-200
-                                        ${completedTaskIds.includes(task.id)
-                                            ? 'bg-indigo-50/50 border-indigo-500 shadow-md'
-                                            : 'bg-white border-secondary-100 hover:border-indigo-200 hover:shadow-sm'
-                                        }
-                                    `}
-                                >
-                                    <div className="flex justify-between items-start gap-3">
-                                        <div className={`
-                                            w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors
-                                            ${completedTaskIds.includes(task.id)
-                                                ? 'bg-indigo-500 border-indigo-500 text-white'
-                                                : 'border-secondary-300 group-hover:border-indigo-400'
+                                    } else {
+                                        taskPoints = task.points;
+                                    }
+                                }
+
+                                return (
+                                    <div
+                                        key={task.id}
+                                        onClick={(e) => {
+                                            if ((e.target as HTMLElement).tagName === 'INPUT') return;
+
+                                            if (isCompleted) {
+                                                setCompletedTaskIds(prev => prev.filter(id => id !== task.id));
+                                            } else {
+                                                setCompletedTaskIds(prev => [...prev, task.id]);
                                             }
-                                        `}>
-                                            {completedTaskIds.includes(task.id) && <CheckCircle size={14} />}
-                                        </div>
-                                        <div className="flex-1">
-                                            <div className="flex justify-between items-start">
-                                                <h4 className={`font-bold text-sm leading-tight mb-1 ${completedTaskIds.includes(task.id) ? 'text-indigo-900' : 'text-secondary-700'}`}>
-                                                    {task.title}
-                                                </h4>
-                                                {task.calculationType === 'SCALED' ? (
-                                                    <span className="badge bg-purple-100 text-purple-700 text-[10px] font-black">
-                                                        {task.pointsPerUnit} pts/unit
-                                                    </span>
-                                                ) : (
-                                                    <span className="badge bg-indigo-100 text-indigo-700 text-[10px] font-black">{task.points} pts</span>
+                                        }}
+                                        className={`
+                                            group relative p-4 rounded-xl border-2 cursor-pointer transition-all duration-200
+                                            ${hasError
+                                                ? 'bg-danger-50/30 border-danger-400 shadow-md'
+                                                : isCompleted && isValid
+                                                    ? 'bg-success-50/30 border-success-500 shadow-md'
+                                                    : isCompleted
+                                                        ? 'bg-indigo-50/50 border-indigo-500 shadow-md'
+                                                        : 'bg-white border-secondary-100 hover:border-indigo-200 hover:shadow-sm'
+                                            }
+                                        `}
+                                    >
+                                        <div className="flex justify-between items-start gap-3">
+                                            <div className={`
+                                                w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors
+                                                ${hasError
+                                                    ? 'bg-danger-500 border-danger-500 text-white'
+                                                    : isCompleted && isValid
+                                                        ? 'bg-success-500 border-success-500 text-white'
+                                                        : isCompleted
+                                                            ? 'bg-indigo-500 border-indigo-500 text-white'
+                                                            : 'border-secondary-300 group-hover:border-indigo-400'
+                                                }
+                                            `}>
+                                                {isCompleted && <CheckCircle size={14} />}
+                                            </div>
+                                            <div className="flex-1">
+                                                <div className="flex justify-between items-start gap-2">
+                                                    <h4 className={`font-bold text-sm leading-tight mb-1 ${hasError ? 'text-danger-900' :
+                                                            isCompleted && isValid ? 'text-success-900' :
+                                                                isCompleted ? 'text-indigo-900' : 'text-secondary-700'
+                                                        }`}>
+                                                        {task.title}
+                                                    </h4>
+                                                    <div className="flex flex-col items-end gap-1">
+                                                        {task.calculationType === 'SCALED' ? (
+                                                            <span className="badge bg-purple-100 text-purple-700 text-[10px] font-black whitespace-nowrap">
+                                                                {task.pointsPerUnit < 1
+                                                                    ? `1pt/${Math.round(1 / task.pointsPerUnit)}u`
+                                                                    : `${task.pointsPerUnit}pt/u`
+                                                                }
+                                                            </span>
+                                                        ) : (
+                                                            <span className="badge bg-indigo-100 text-indigo-700 text-[10px] font-black">{task.points} pts</span>
+                                                        )}
+                                                        {isCompleted && taskPoints > 0 && (
+                                                            <span className="text-[10px] font-black text-success-600">
+                                                                +{Math.floor(taskPoints)} pts
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                                {task.description && <p className="text-xs text-secondary-500 leading-relaxed mb-2">{task.description}</p>}
+
+                                                {task.calculationType === 'SCALED' && (
+                                                    <div className="mt-2 space-y-2" onClick={e => e.stopPropagation()}>
+                                                        <div className="flex items-center gap-2">
+                                                            <input
+                                                                type="number"
+                                                                className={`input py-1 h-8 text-sm w-24 ${hasError ? 'border-danger-400 focus:border-danger-500' : ''
+                                                                    }`}
+                                                                placeholder="Qty"
+                                                                min="0"
+                                                                value={scaledTaskValues[task.id] || ''}
+                                                                onChange={(e) => {
+                                                                    const val = parseFloat(e.target.value) || 0;
+                                                                    setScaledTaskValues(prev => ({ ...prev, [task.id]: val }));
+
+                                                                    if (val > 0 && !isCompleted) {
+                                                                        setCompletedTaskIds(prev => [...prev, task.id]);
+                                                                    }
+                                                                }}
+                                                            />
+                                                            <div className="flex-1">
+                                                                <span className="text-xs text-secondary-600 font-medium">
+                                                                    {task.minThreshold > 1 ? `Min: ${task.minThreshold}` : 'units'}
+                                                                    {task.maxThreshold && ` • Max: ${task.maxThreshold}`}
+                                                                </span>
+                                                            </div>
+                                                        </div>
+
+                                                        {/* Validation Message */}
+                                                        {hasError && validation?.message && (
+                                                            <div className="flex items-center gap-1 text-danger-600 bg-danger-50 px-2 py-1 rounded-lg animate-in fade-in slide-in-from-top duration-200">
+                                                                <svg className="w-3 h-3 shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                                                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                                                                </svg>
+                                                                <span className="text-[10px] font-bold">{validation.message}</span>
+                                                            </div>
+                                                        )}
+
+                                                        {/* Success indicator for valid scaled tasks */}
+                                                        {isCompleted && isValid && scaledTaskValues[task.id] > 0 && (
+                                                            <div className="flex items-center gap-1 text-success-600 bg-success-50 px-2 py-1 rounded-lg">
+                                                                <CheckCircle className="w-3 h-3 shrink-0" />
+                                                                <span className="text-[10px] font-bold">
+                                                                    Valid • {scaledTaskValues[task.id]} units = {Math.floor(taskPoints)} points
+                                                                </span>
+                                                            </div>
+                                                        )}
+                                                    </div>
                                                 )}
                                             </div>
-                                            {task.description && <p className="text-xs text-secondary-500 leading-relaxed mb-2">{task.description}</p>}
-
-                                            {task.calculationType === 'SCALED' && (
-                                                <div className="mt-2 flex items-center gap-2" onClick={e => e.stopPropagation()}>
-                                                    <input
-                                                        type="number"
-                                                        className="input py-1 h-8 text-sm w-24"
-                                                        placeholder="Qty"
-                                                        min="0"
-                                                        value={scaledTaskValues[task.id] || ''}
-                                                        onChange={(e) => {
-                                                            const val = parseFloat(e.target.value) || 0;
-                                                            setScaledTaskValues(prev => ({ ...prev, [task.id]: val }));
-
-                                                            if (val > 0 && !completedTaskIds.includes(task.id)) {
-                                                                setCompletedTaskIds(prev => [...prev, task.id]);
-                                                            }
-                                                        }}
-                                                    />
-                                                    <span className="text-xs text-secondary-400">
-                                                        {task.minThreshold > 1 ? `(Min: ${task.minThreshold})` : 'units'}
-                                                    </span>
-                                                </div>
-                                            )}
                                         </div>
                                     </div>
-                                </div>
-                            ))}
+                                );
+                            })}
                         </div>
                     </div>
                 )}

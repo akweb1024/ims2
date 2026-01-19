@@ -322,7 +322,14 @@ export const useWorkReportMutations = () => {
     const queryClient = useQueryClient();
 
     const updateStatus = useMutation({
-        mutationFn: (data: { id: string, status: string, managerComment?: string, managerRating?: number }) =>
+        mutationFn: (data: {
+            id: string,
+            status: string,
+            managerComment?: string,
+            managerRating?: number,
+            approvedTaskIds?: string[],
+            rejectedTaskIds?: string[]
+        }) =>
             fetchJson('/api/hr/work-reports', 'PATCH', data),
         onSuccess: () => queryClient.invalidateQueries({ queryKey: ['work-reports'] }),
     });
