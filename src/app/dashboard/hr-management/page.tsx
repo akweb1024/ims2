@@ -127,6 +127,7 @@ const LeaveLedgerRow = ({ row, onSave }: { row: any, onSave: (data: any) => Prom
                     placeholder="Remarks..."
                     value={editData.remarks}
                     onChange={e => setEditData({ ...editData, remarks: e.target.value })}
+                    title="Adjustment Remarks"
                 />
             </td>
             <td className="px-6 py-4 text-right">
@@ -686,10 +687,10 @@ const HRManagementContent = () => {
 
                                         <form onSubmit={handleDocumentUpload} className="bg-white p-4 rounded-2xl border border-dashed border-secondary-300 flex gap-2 items-center">
                                             <div className="flex-1">
-                                                <input name="name" className="input text-xs py-2" placeholder="Document Name (e.g. ID Proof)" required />
+                                                <input name="name" className="input text-xs py-2" placeholder="Document Name (e.g. ID Proof)" title="Document Name" required />
                                             </div>
                                             <div className="flex-1">
-                                                <input name="fileUrl" className="input text-xs py-2" placeholder="Document URL (https://...)" required />
+                                                <input name="fileUrl" className="input text-xs py-2" placeholder="Document URL (https://...)" title="Document URL" required />
                                             </div>
                                             <button className="btn btn-primary py-2 px-4 rounded-lg text-xs font-bold whitespace-nowrap">+ Upload</button>
                                         </form>
@@ -775,7 +776,7 @@ const HRManagementContent = () => {
                                     className="input bg-white"
                                     value={reportFilter.employeeId}
                                     onChange={(e) => setReportFilter({ ...reportFilter, employeeId: e.target.value })}
-                                    title="Select Employee"
+                                    title="Select Employee for report filtering"
                                 >
                                     <option value="all">Check All Employees</option>
                                     {employees.map(e => <option key={e.id} value={e.id}>{e.user?.email} - {e.designation}</option>)}
@@ -807,7 +808,7 @@ const HRManagementContent = () => {
                                     className="input bg-white"
                                     value={reportFilter.category}
                                     onChange={(e) => setReportFilter({ ...reportFilter, category: e.target.value })}
-                                    title="Select Category"
+                                    title="Select Report Category"
                                 >
                                     <option value="ALL">All Categories</option>
                                     <option value="SALES">Sales</option>
@@ -984,6 +985,7 @@ const HRManagementContent = () => {
                                     className="input py-2 px-4 text-xs font-bold border-none bg-transparent focus:ring-0"
                                     value={ledgerFilter.month}
                                     onChange={e => setLedgerFilter({ ...ledgerFilter, month: parseInt(e.target.value) })}
+                                    title="Filter Ledger by Month"
                                 >
                                     {Array.from({ length: 12 }, (_, i) => (
                                         <option key={i + 1} value={i + 1}>{new Date(2024, i).toLocaleString('default', { month: 'long' })}</option>
@@ -994,6 +996,7 @@ const HRManagementContent = () => {
                                     className="input py-2 px-4 text-xs font-bold border-none bg-transparent focus:ring-0"
                                     value={ledgerFilter.year}
                                     onChange={e => setLedgerFilter({ ...ledgerFilter, year: parseInt(e.target.value) })}
+                                    title="Filter Ledger by Year"
                                 >
                                     {[2024, 2025, 2026].map(y => (
                                         <option key={y} value={y}>{y}</option>
@@ -1064,7 +1067,7 @@ const HRManagementContent = () => {
                                         className="select-premium"
                                         value={filters.status}
                                         onChange={e => setFilters({ ...filters, status: e.target.value })}
-                                        title="Filter by Status"
+                                        title="Filter Staff Presence by Status"
                                     >
                                         <option value="ALL">All Status</option>
                                         <option value="PRESENT">Present</option>
@@ -1075,6 +1078,7 @@ const HRManagementContent = () => {
                                         className="input h-9 text-[10px] font-black uppercase w-40"
                                         value={filters.employeeId}
                                         onChange={e => setFilters({ ...filters, employeeId: e.target.value })}
+                                        title="Filter Staff Presence by Specific Employee"
                                     >
                                         <option value="ALL">All Employees</option>
                                         {employees.map((e: any) => (
@@ -1267,7 +1271,7 @@ const HRManagementContent = () => {
                                             <div className="w-full bg-secondary-100 h-1.5 rounded-full overflow-hidden mb-1">
                                                 <div
                                                     className="bg-primary-500 h-full transition-all"
-                                                    style={{ width: `${(adv.paidEmis / adv.totalEmis) * 100}%` }}
+                                                    style={{ width: `${(adv.paidEmis / adv.totalEmis) * 100}%` } as React.CSSProperties}
                                                 ></div>
                                             </div>
                                             <p className="text-[9px] font-bold text-secondary-500 uppercase">{adv.paidEmis} / {adv.totalEmis} EMIs PAID</p>
@@ -1400,7 +1404,7 @@ const HRManagementContent = () => {
                                         const height = (currentTotal / maxTotal) * 100;
                                         return (
                                             <div key={m} className="flex-1 flex flex-col items-center gap-2 group">
-                                                <div className="w-full bg-primary-100 rounded-t-lg transition-all group-hover:bg-primary-500 relative" style={{ height: `${Math.max(5, height)}%` }}>
+                                                <div className="w-full bg-primary-100 rounded-t-lg transition-all group-hover:bg-primary-500 relative" style={{ height: `${Math.max(5, height)}%` } as React.CSSProperties}>
                                                     <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-secondary-900 text-white text-[10px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-20">
                                                         ₹{currentTotal.toLocaleString()}
                                                     </div>
@@ -1472,7 +1476,7 @@ const HRManagementContent = () => {
                                         style={{
                                             top: `${50 + (a.latitude ? (a.latitude - 28.7041) * 1000 : 0)}%`,
                                             left: `${50 + (a.longitude ? (a.longitude - 77.1025) * 1000 : 0)}%`
-                                        }}
+                                        } as React.CSSProperties}
                                         title={`${a.employee.user.email} - ${a.locationName}`}
                                     >
                                         <div className={`w-8 h-8 rounded-full border-2 border-white shadow-lg flex items-center justify-center text-xs font-bold text-white relative ${a.isGeofenced ? 'bg-emerald-500' : 'bg-rose-500'}`}>
@@ -1533,8 +1537,8 @@ const HRManagementContent = () => {
                                     <p className="text-secondary-500 font-medium">Comparative output analysis across staff.</p>
                                 </div>
                                 <div className="flex gap-2">
-                                    <input type="date" className="input text-xs" value={prodDateRange.startDate} onChange={e => setProdDateRange({ ...prodDateRange, startDate: e.target.value })} />
-                                    <input type="date" className="input text-xs" value={prodDateRange.endDate} onChange={e => setProdDateRange({ ...prodDateRange, endDate: e.target.value })} />
+                                    <input type="date" className="input text-xs" value={prodDateRange.startDate} title="Analytics Start Date" onChange={e => setProdDateRange({ ...prodDateRange, startDate: e.target.value })} />
+                                    <input type="date" className="input text-xs" value={prodDateRange.endDate} title="Analytics End Date" onChange={e => setProdDateRange({ ...prodDateRange, endDate: e.target.value })} />
                                 </div>
                             </div>
 
@@ -1565,7 +1569,7 @@ const HRManagementContent = () => {
                                                             <div className="flex-1 h-1.5 bg-secondary-100 rounded-full overflow-hidden w-24">
                                                                 <div
                                                                     className={`h-full rounded-full ${item.avgKRA > 0.7 ? 'bg-success-500' : item.avgKRA > 0.4 ? 'bg-warning-500' : 'bg-danger-500'}`}
-                                                                    style={{ width: `${(item.avgKRA || 0) * 100}%` }}
+                                                                    style={{ width: `${(item.avgKRA || 0) * 100}%` } as React.CSSProperties}
                                                                 ></div>
                                                             </div>
                                                             <span className="text-[10px] font-black text-secondary-600">{(item.avgKRA * 100).toFixed(0)}%</span>
@@ -1637,6 +1641,7 @@ const HRManagementContent = () => {
                                         required
                                         value={advanceForm.employeeId}
                                         onChange={e => setAdvanceForm({ ...advanceForm, employeeId: e.target.value })}
+                                        title="Select Employee for Salary Advance"
                                     >
                                         <option value="">Select Employee</option>
                                         {employees.map(e => <option key={e.id} value={e.id}>{e.user?.email}</option>)}

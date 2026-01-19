@@ -54,8 +54,8 @@ export default function EmployeeIDCard({ employee }: { employee: any }) {
             <div className="relative group perspective-1000">
                 <div
                     ref={cardRef}
-                    className="w-[350px] h-[550px] bg-white rounded-3xl shadow-2xl relative overflow-hidden border border-secondary-200"
-                    style={{ backgroundImage: 'url("/patterns/map-grid.svg")', backgroundSize: 'cover' }}
+                    style={{ '--bg-url': 'url("/patterns/map-grid.svg")' } as React.CSSProperties}
+                    className="w-[350px] h-[550px] bg-white rounded-3xl shadow-2xl relative overflow-hidden border border-secondary-200 [background-image:var(--bg-url)] [background-size:cover]"
                 >
                     {/* Header */}
                     <div className="h-32 bg-primary-600 relative overflow-hidden flex items-center justify-center">
@@ -85,16 +85,15 @@ export default function EmployeeIDCard({ employee }: { employee: any }) {
                         )}
 
                         {/* Upload Overlay */}
-                        <label className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer text-white">
+                        <label className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer text-white" title="Change Profile Photo">
                             <Camera size={24} />
-                            <input type="file" className="hidden" accept="image/*" onChange={handlePhotoUpload} disabled={uploading} />
+                            <input type="file" className="hidden" accept="image/*" onChange={handlePhotoUpload} disabled={uploading} title="Profile Photo Upload" />
                         </label>
                     </div>
 
-                    {/* Details */}
                     <div className="text-center mt-4 px-6 space-y-1">
-                        <h3 className="text-2xl font-bold text-secondary-900">{employee.user.name}</h3>
-                        <p className="text-sm font-semibold text-primary-600 uppercase tracking-wider">{employee.designation}</p>
+                        <h3 className="text-2xl font-bold text-secondary-900">{employee.user.name || employee.user.email.split('@')[0]}</h3>
+                        <p className="text-sm font-bold text-primary-600 uppercase tracking-wider">{employee.designatRef?.name || employee.designation || 'Specialist'}</p>
                         <div className="flex justify-center gap-2 mt-2">
                             <span className="px-2 py-1 bg-secondary-100 rounded text-[10px] font-mono text-secondary-600">ID: {employee.employeeId || 'N/A'}</span>
                             {employee.bloodGroup && <span className="px-2 py-1 bg-danger-50 text-danger-600 rounded text-[10px] font-bold">🩸 {employee.bloodGroup}</span>}
@@ -124,7 +123,11 @@ export default function EmployeeIDCard({ employee }: { employee: any }) {
                     <div className="absolute bottom-6 left-0 right-0 text-center">
                         <div className="w-16 h-16 bg-white mx-auto p-1 rounded shadow-sm">
                             {/* Simple simulated QR */}
-                            <div className="w-full h-full bg-secondary-900" style={{ backgroundImage: 'url("https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=' + (employee.employeeId || 'STM') + '")', backgroundSize: 'cover' }}></div>
+                            <div
+                                className="w-full h-full bg-secondary-900 [background-size:cover] [background-image:var(--qr-url)]"
+                                style={{ '--qr-url': `url("https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${employee.employeeId || 'STM'}")` } as React.CSSProperties}
+                                title="Employee ID QR Code"
+                            />
                         </div>
                         <p className="text-[9px] text-secondary-400 mt-2 font-mono uppercase tracking-widest">{employee.user.companies?.[0]?.website || 'stmjournals.com'}</p>
                     </div>

@@ -763,7 +763,7 @@ export default function EmployeeProfilePage() {
                                                     <div className="w-full bg-secondary-100 rounded-full h-3 overflow-hidden">
                                                         <div
                                                             className={`h-full rounded-full transition-all duration-500 ${progress >= 100 ? 'bg-success-500' : 'bg-indigo-500'}`}
-                                                            style={{ width: `${progress}%` }}
+                                                            style={{ width: `${progress}%` } as React.CSSProperties}
                                                         />
                                                     </div>
                                                 </div>
@@ -1001,7 +1001,7 @@ export default function EmployeeProfilePage() {
                                                         <div className="w-full bg-secondary-100 rounded-full h-2 overflow-hidden">
                                                             <div
                                                                 className="bg-primary-500 h-full rounded-full transition-all duration-500"
-                                                                style={{ width: `${course.progress}%` }}
+                                                                style={{ width: `${course.progress}%` } as React.CSSProperties}
                                                             />
                                                         </div>
                                                         <div className="flex justify-between items-center mt-1">
@@ -1093,7 +1093,7 @@ export default function EmployeeProfilePage() {
                                         <div className="overflow-x-auto">
                                             <div className="flex gap-4 pb-2">
                                                 {growthData.recentQuizzes.map((quiz: any) => (
-                                                    <div key={quiz.id} className="flex-none w-64 card-premium p-4 border-l-4" style={{ borderColor: quiz.passed ? '#22c55e' : '#ef4444' }}>
+                                                    <div key={quiz.id} className="flex-none w-64 card-premium p-4 border-l-4" style={{ borderColor: quiz.passed ? '#22c55e' : '#ef4444' } as React.CSSProperties}>
                                                         <h5 className="font-bold text-sm text-secondary-900 truncate" title={quiz.quizTitle}>{quiz.quizTitle}</h5>
                                                         <p className="text-xs text-secondary-500 mb-2 truncate">{quiz.courseTitle}</p>
                                                         <div className="flex justify-between items-end">

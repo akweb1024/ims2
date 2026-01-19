@@ -195,7 +195,7 @@ export default function DailyTaskTracker() {
                 <div className="card-premium p-4 border-l-4 border-indigo-500">
                     <div className="flex items-center justify-between">
                         <div>
-                            <p className="text-xs font-bold text-secondary-400 uppercase">Today's Tasks</p>
+                            <p className="text-xs font-bold text-secondary-400 uppercase">Today&apos;s Tasks</p>
                             <p className="text-2xl font-black text-secondary-900">{completedCount}/{totalTasks}</p>
                         </div>
                         <Target className="text-indigo-500" size={32} />
@@ -239,10 +239,10 @@ export default function DailyTaskTracker() {
                     <h3 className="font-bold text-lg text-secondary-900">Daily Progress</h3>
                     <span className="text-sm font-bold text-secondary-500">{completedCount} of {totalTasks} completed</span>
                 </div>
-                <div className="w-full bg-secondary-100 rounded-full h-4 overflow-hidden">
+                <div className="w-full bg-secondary-100 h-2 rounded-full overflow-hidden mb-2">
                     <div
-                        className="h-full bg-gradient-to-r from-indigo-500 to-purple-500 transition-all duration-500 rounded-full"
-                        style={{ width: `${completionPercentage}%` }}
+                        className="bg-primary-500 h-full transition-all duration-500"
+                        style={{ width: `${completionPercentage}%` } as React.CSSProperties}
                     />
                 </div>
             </div>
@@ -272,8 +272,8 @@ export default function DailyTaskTracker() {
                                 <div
                                     key={task.id}
                                     className={`p-4 rounded-xl border-2 transition-all duration-200 ${isCompleted
-                                            ? 'bg-success-50/50 border-success-500 shadow-md'
-                                            : 'bg-white border-secondary-200 hover:border-indigo-300 hover:shadow-sm'
+                                        ? 'bg-success-50/50 border-success-500 shadow-md'
+                                        : 'bg-white border-secondary-200 hover:border-indigo-300 hover:shadow-sm'
                                         }`}
                                 >
                                     <div className="flex items-start gap-4">
@@ -281,8 +281,8 @@ export default function DailyTaskTracker() {
                                         <button
                                             onClick={() => handleToggleTask(task)}
                                             className={`mt-1 w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 transition-all ${isCompleted
-                                                    ? 'bg-success-500 border-success-500 text-white'
-                                                    : 'border-secondary-300 hover:border-indigo-500'
+                                                ? 'bg-success-500 border-success-500 text-white'
+                                                : 'border-secondary-300 hover:border-indigo-500'
                                                 }`}
                                             title={isCompleted ? 'Mark as incomplete' : 'Mark as complete'}
                                         >
@@ -305,9 +305,9 @@ export default function DailyTaskTracker() {
                                                 <div className="flex flex-col items-end gap-1">
                                                     {task.calculationType === 'SCALED' ? (
                                                         <span className="badge bg-purple-100 text-purple-700 text-xs font-black">
-                                                            {task.pointsPerUnit < 1
+                                                            {task.pointsPerUnit && task.pointsPerUnit < 1
                                                                 ? `1pt/${Math.round(1 / task.pointsPerUnit)}u`
-                                                                : `${task.pointsPerUnit}pt/u`
+                                                                : `${task.pointsPerUnit || 1}pt/u`
                                                             }
                                                         </span>
                                                     ) : (

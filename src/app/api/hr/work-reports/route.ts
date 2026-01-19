@@ -133,6 +133,31 @@ export const POST = authorizedRoute(
                 return isNaN(num) ? 0 : num;
             };
 
+            const reportDate = body.date ? new Date(body.date) : new Date();
+            const startOfDay = new Date(reportDate);
+            startOfDay.setHours(0, 0, 0, 0);
+            const endOfDay = new Date(reportDate);
+            endOfDay.setHours(23, 59, 59, 999);
+
+            // Check if report already exists for this day
+            const existingReport = await prisma.workReport.findFirst({
+                where: {
+                    employeeId: profile.id,
+                    date: {
+                        gte: startOfDay,
+                        lte: endOfDay
+                    }
+                }
+            });
+
+            if (existingReport) {
+                return NextResponse.json({
+                    error: 'DUPLICATE_REPORT',
+                    message: 'A work report already exists for this date. Please edit the existing report instead.',
+                    reportId: existingReport.id
+                }, { status: 400 });
+            }
+
             // Trace performance against JD/KRA and generate alerts
             let kraMatchRatio = 1.0;
             if (profile.kra && body.content) {
@@ -179,7 +204,7 @@ export const POST = authorizedRoute(
 
             // Auto-calculate Hours Spent from Attendance if not provided
             let hoursSpent = parseSafely(body.hoursSpent);
-            const reportDate = body.date ? new Date(body.date) : new Date();
+            // reportDate is already declared above
 
             if (hoursSpent === 0) {
                 const attendance = await prisma.attendance.findFirst({
@@ -356,13 +381,21 @@ export const PUT = authorizedRoute(
             const isManager = ['SUPER_ADMIN', 'ADMIN', 'MANAGER'].includes(user.role);
 
             if (!isManager && !isOwner) return createErrorResponse('Unauthorized', 403);
-            if (isOwner && existing.status !== 'SUBMITTED' && !isManager) {
-                return createErrorResponse('Cannot modify after review/approval', 400);
-            }
 
-            // If owner, check if it's the same day (REMOVED - Allow edit if SUBMITTED)
-            if (isOwner && !isManager && existing.status !== 'SUBMITTED') {
-                return createErrorResponse('Cannot modify after review/approval', 400);
+            if (isOwner && !isManager) {
+                if (existing.status !== 'SUBMITTED') {
+                    return createErrorResponse('Cannot modify after review/approval', 400);
+                }
+
+                // Check if editing on the same day as the report date
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                const reportDate = new Date(existing.date);
+                reportDate.setHours(0, 0, 0, 0);
+
+                if (today.getTime() !== reportDate.getTime()) {
+                    return createErrorResponse('Work reports can only be edited on the same day they were submitted.', 400);
+                }
             }
 
             const updated = await prisma.workReport.update({

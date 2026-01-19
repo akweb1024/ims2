@@ -76,7 +76,14 @@ export default function StaffPortalPage() {
                 }
             }
             if (docsRes.ok) setDocuments(await docsRes.json());
-            if (profileRes.ok) setFullProfile(await profileRes.json());
+            if (profileRes.ok) {
+                const profileData = await profileRes.json();
+                setFullProfile(profileData);
+                if (profileData.user) {
+                    // Sync the main user state with latest server data
+                    setUser((prev: any) => ({ ...prev, ...profileData.user }));
+                }
+            }
             if (attendanceRes.ok) setAttendance(await attendanceRes.json());
             if (reportsRes.ok) setWorkReports(await reportsRes.json());
             if (plansRes.ok) setWorkPlans(await plansRes.json());
@@ -653,6 +660,7 @@ export default function StaffPortalPage() {
                                                                 }
                                                             }
                                                         }}
+                                                        title="Add a comment"
                                                     />
                                                 </div>
                                             </div>
@@ -676,6 +684,7 @@ export default function StaffPortalPage() {
                                                             }
                                                         }}
                                                         className="text-[10px] font-black text-primary-600 hover:text-primary-700 uppercase tracking-tighter bg-primary-50 px-3 py-1.5 rounded-lg border border-primary-100 transition-all shadow-sm"
+                                                        title="Edit this report"
                                                     >
                                                         Edit Report details
                                                     </button>
@@ -725,7 +734,7 @@ export default function StaffPortalPage() {
                                         }} className="space-y-4">
                                             <div>
                                                 <label className="label">Leave Type</label>
-                                                <select name="type" className="input" required>
+                                                <select name="type" className="input" required title="Leave Category Selection">
                                                     <option value="SICK">Sick Leave</option>
                                                     <option value="CASUAL">Casual Leave</option>
                                                     <option value="VACATION">Vacation / Earned Leave</option>
@@ -734,16 +743,16 @@ export default function StaffPortalPage() {
                                             <div className="grid grid-cols-2 gap-4">
                                                 <div>
                                                     <label className="label">Start Date</label>
-                                                    <input name="startDate" type="date" className="input" required />
+                                                    <input name="startDate" type="date" className="input" required title="Leave start date" />
                                                 </div>
                                                 <div>
                                                     <label className="label">End Date</label>
-                                                    <input name="endDate" type="date" className="input" required />
+                                                    <input name="endDate" type="date" className="input" required title="Leave end date" />
                                                 </div>
                                             </div>
                                             <div>
                                                 <label className="label">Reason</label>
-                                                <textarea name="reason" className="input h-32" required placeholder="Describe the reason for leave..." />
+                                                <textarea name="reason" className="input h-32" required placeholder="Describe the reason for leave..." title="Reason for leave request" />
                                             </div>
                                             <button type="submit" className="btn btn-primary w-full py-3 rounded-xl font-bold shadow-lg">Submit Request</button>
                                         </form>
@@ -823,11 +832,11 @@ export default function StaffPortalPage() {
                                                     </div>
                                                 </div>
 
-                                                <div className="w-full bg-secondary-100 rounded-full h-2 mb-4 overflow-hidden">
+                                                <div className="w-full bg-secondary-100 h-2 rounded-full overflow-hidden">
                                                     <div
-                                                        className="bg-indigo-600 h-2 rounded-full transition-all duration-1000 ease-out"
-                                                        style={{ width: `${Math.min(100, (workReports.reduce((acc, r) => acc + (new Date(r.date).getMonth() === new Date().getMonth() ? (r.revenueGenerated || 0) : 0), 0) / parseFloat((fullProfile.metrics as any).revenueTarget || 1)) * 100)}%` }}
-                                                    ></div>
+                                                        className="bg-primary-500 h-full transition-all duration-1000"
+                                                        style={{ width: `${Math.min(100, (workReports.reduce((acc, r) => acc + (new Date(r.date).getMonth() === new Date().getMonth() ? (r.revenueGenerated || 0) : 0), 0) / parseFloat((fullProfile.metrics as any).revenueTarget || 1)) * 100)}%` } as React.CSSProperties}
+                                                    />
                                                 </div>
 
                                                 <p className="text-xs text-secondary-500 font-medium">
@@ -852,11 +861,11 @@ export default function StaffPortalPage() {
                                                     </div>
                                                 </div>
 
-                                                <div className="w-full bg-secondary-100 rounded-full h-2 mb-4 overflow-hidden">
+                                                <div className="w-full bg-secondary-100 h-2 rounded-full overflow-hidden">
                                                     <div
-                                                        className="bg-purple-600 h-2 rounded-full transition-all duration-1000 ease-out"
-                                                        style={{ width: `${Math.min(100, (workReports.reduce((acc, r) => acc + (new Date(r.date).getMonth() === new Date().getMonth() && (r.category === 'PUBLICATION' || r.keyOutcome?.includes('Accepted')) ? 1 : 0), 0) / parseFloat((fullProfile.metrics as any).publicationTarget || 1)) * 100)}%` }}
-                                                    ></div>
+                                                        className="bg-indigo-500 h-full transition-all duration-1000"
+                                                        style={{ width: `${Math.min(100, (workReports.reduce((acc, r) => acc + (new Date(r.date).getMonth() === new Date().getMonth() && (r.category === 'PUBLICATION' || r.keyOutcome?.includes('Accepted')) ? 1 : 0), 0) / parseFloat((fullProfile.metrics as any).publicationTarget || 1)) * 100)}%` } as React.CSSProperties}
+                                                    />
                                                 </div>
                                                 <p className="text-xs text-secondary-500 font-medium">
                                                     Based on &apos;Publication&apos; reports or &apos;Accepted&apos; outcomes.
@@ -880,11 +889,11 @@ export default function StaffPortalPage() {
                                                     </div>
                                                 </div>
 
-                                                <div className="w-full bg-secondary-100 rounded-full h-2 mb-4 overflow-hidden">
+                                                <div className="w-full bg-secondary-100 h-2 rounded-full overflow-hidden">
                                                     <div
-                                                        className="bg-emerald-600 h-2 rounded-full transition-all duration-1000 ease-out"
-                                                        style={{ width: `${Math.min(100, (workReports.reduce((acc, r) => acc + (new Date(r.date).getMonth() === new Date().getMonth() && (r.category === 'DEVELOPMENT') ? 1 : 0), 0) / parseFloat((fullProfile.metrics as any).developmentTarget || 1)) * 100)}%` }}
-                                                    ></div>
+                                                        className="bg-purple-500 h-full transition-all duration-1000"
+                                                        style={{ width: `${Math.min(100, (workReports.reduce((acc, r) => acc + (new Date(r.date).getMonth() === new Date().getMonth() && (r.category === 'DEVELOPMENT') ? 1 : 0), 0) / parseFloat((fullProfile.metrics as any).developmentTarget || 1)) * 100)}%` } as React.CSSProperties}
+                                                    />
                                                 </div>
                                                 <p className="text-xs text-secondary-500 font-medium">
                                                     Projects delivered this month.

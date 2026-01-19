@@ -11,6 +11,9 @@ export default function SubmitReportPage() {
     const [user, setUser] = useState<any>(null);
     const [loading, setLoading] = useState(false);
     const [savedReport, setSavedReport] = useState(false);
+    const [isEditMode, setIsEditMode] = useState(false);
+    const [existingReport, setExistingReport] = useState<any>(null);
+    const [isCheckingExisting, setIsCheckingExisting] = useState(true);
 
     // Revenue Tracking State
     const [showRevenueSearch, setShowRevenueSearch] = useState(false);
@@ -129,6 +132,40 @@ export default function SubmitReportPage() {
                     }
                 })
                 .catch(err => console.error("Error syncing with Daily Task Tracker", err));
+
+            // Check if a report already exists for today
+            const todayStr = new Date().toISOString().split('T')[0];
+            fetch(`/api/hr/work-reports?employeeId=self&startDate=${todayStr}&endDate=${todayStr}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            })
+                .then(res => res.json())
+                .then(reports => {
+                    if (Array.isArray(reports) && reports.length > 0) {
+                        const report = reports[0];
+                        console.log('📝 Found existing report for today:', report);
+                        setExistingReport(report);
+                        setIsEditMode(true);
+
+                        // Load data from existing report
+                        setCommonData({
+                            title: report.title || '',
+                            content: report.content || '',
+                            hoursSpent: report.hoursSpent || 0,
+                            date: report.date ? new Date(report.date).toISOString().split('T')[0] : todayStr,
+                            selfRating: report.selfRating || 5,
+                            meetingsText: report.metrics?.meetingsText || ''
+                        });
+
+                        // Note: Task IDs are already pre-filled from Daily Task Tracker 
+                        // but if they were different in the report, we might want to sync them.
+                        // However, the rule is to sync from Task Tracker for the daily flow.
+                        if (report.completedTaskIds && report.completedTaskIds.length > 0) {
+                            setCompletedTaskIds(report.completedTaskIds);
+                        }
+                    }
+                })
+                .catch(err => console.error("Error checking existing report", err))
+                .finally(() => setIsCheckingExisting(false));
         }
     }, []);
 
@@ -290,7 +327,7 @@ export default function SubmitReportPage() {
             const token = localStorage.getItem('token');
             console.log('📦 Preparing payload...');
 
-            const payload = {
+            const payload: any = {
                 ...commonData,
                 category: 'TASK_BASED',
                 userRole: user?.role,
@@ -311,10 +348,14 @@ export default function SubmitReportPage() {
                 }
             };
 
-            console.log('📡 Sending request to /api/hr/work-reports...', payload);
+            if (isEditMode && existingReport) {
+                payload.id = existingReport.id;
+            }
+
+            console.log(`📡 Sending request to /api/hr/work-reports (${isEditMode ? 'PUT' : 'POST'})...`, payload);
 
             const res = await fetch('/api/hr/work-reports', {
-                method: 'POST',
+                method: isEditMode ? 'PUT' : 'POST',
                 headers: {
                     'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json'
@@ -323,17 +364,27 @@ export default function SubmitReportPage() {
             });
 
             if (res.ok) {
-                console.log('✅ Report submitted successfully');
+                console.log(`✅ Report ${isEditMode ? 'updated' : 'submitted'} successfully`);
                 setSavedReport(true);
                 setTimeout(() => router.push('/dashboard/staff-portal'), 2000);
             } else {
                 const error = await res.json();
                 console.error('❌ Server error:', error);
-                toast.error(error.error || 'Failed to submit report');
+
+                if (error.error === 'DUPLICATE_REPORT') {
+                    toast.error('You have already submitted a report for today. Switching to Edit mode...');
+                    setIsEditMode(true);
+                    if (error.reportId) {
+                        // Refresh to load that report or handle locally
+                        window.location.reload();
+                    }
+                } else {
+                    toast.error(error.error || `Failed to ${isEditMode ? 'update' : 'submit'} report`);
+                }
             }
         } catch (error) {
             console.error('💥 Submission crash:', error);
-            toast.error('Error submitting report');
+            toast.error(`Error ${isEditMode ? 'updating' : 'submitting'} report`);
         } finally {
             setLoading(false);
         }
@@ -364,14 +415,42 @@ export default function SubmitReportPage() {
             <div className="max-w-5xl mx-auto space-y-6">
                 <div className="flex items-center justify-between">
                     <div>
-                        <h1 className="text-3xl font-black text-secondary-900">Submit Work Report</h1>
-                        <p className="text-secondary-500">Track your daily impact through task completion</p>
+                        <h1 className="text-3xl font-black text-secondary-900">
+                            {isEditMode ? 'Update Work Report' : 'Submit Work Report'}
+                        </h1>
+                        <p className="text-secondary-500">
+                            {isEditMode ? 'Modifying your submission for today' : 'Track your daily impact through task completion'}
+                        </p>
                     </div>
                     <div className="bg-gradient-to-r from-indigo-500 to-purple-600 text-white px-6 py-3 rounded-2xl shadow-lg">
                         <span className="text-xs font-bold uppercase tracking-wider block">Today&apos;s Score</span>
                         <div className="text-3xl font-black">{currentPoints} <span className="text-sm">pts</span></div>
                     </div>
                 </div>
+
+                {/* Edit Restriction Notice */}
+                {isEditMode && existingReport && (
+                    <div className={`p-4 rounded-xl border-l-4 ${existingReport.status !== 'SUBMITTED'
+                        ? 'bg-amber-50 border-amber-500 text-amber-900'
+                        : 'bg-blue-50 border-blue-500 text-blue-900'
+                        }`}>
+                        <div className="flex items-center gap-3">
+                            <Briefcase size={24} />
+                            <div>
+                                <h4 className="font-bold">
+                                    {existingReport.status !== 'SUBMITTED'
+                                        ? '📝 Report Under Review / Approved'
+                                        : '📝 Editing Today\'s Report'}
+                                </h4>
+                                <p className="text-sm opacity-90">
+                                    {existingReport.status !== 'SUBMITTED'
+                                        ? 'This report has already been reviewed or approved and cannot be modified.'
+                                        : 'You have already submitted a report for today. You can update your submission until it is reviewed by a manager.'}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                )}
 
                 {/* Sync Indicator */}
                 {completedTaskIds.length > 0 && (
@@ -601,8 +680,16 @@ export default function SubmitReportPage() {
                                 <div className="grid grid-cols-2 gap-4">
                                     <div>
                                         <label className="label">Date</label>
-                                        <input type="date" title="Report Date" required className="input"
-                                            value={commonData.date} onChange={e => setCommonData({ ...commonData, date: e.target.value })} />
+                                        <input
+                                            type="date"
+                                            title="Report Date"
+                                            required
+                                            className={`input ${isEditMode ? 'bg-secondary-50 cursor-not-allowed' : ''}`}
+                                            value={commonData.date}
+                                            readOnly={isEditMode}
+                                            onChange={e => !isEditMode && setCommonData({ ...commonData, date: e.target.value })}
+                                        />
+                                        {isEditMode && <p className="text-[10px] text-secondary-400 mt-1">Date cannot be changed once submitted</p>}
                                     </div>
                                     <div>
                                         <label className="label">Hours Spent</label>
@@ -772,8 +859,20 @@ export default function SubmitReportPage() {
                             </div>
                         </div>
 
-                        <button type="submit" disabled={loading} className="btn btn-primary w-full py-4 text-lg font-black shadow-xl hover:shadow-primary-200 transition-all">
-                            {loading ? 'Submitting...' : 'Submit Report'} <Send size={18} className="inline ml-2" />
+                        <button
+                            type="submit"
+                            disabled={loading || (isEditMode && existingReport?.status !== 'SUBMITTED')}
+                            className={`btn w-full py-4 text-lg font-black shadow-xl transition-all ${isEditMode && existingReport?.status !== 'SUBMITTED'
+                                ? 'bg-secondary-200 text-secondary-400 cursor-not-allowed shadow-none'
+                                : 'btn-primary hover:shadow-primary-200'
+                                }`}
+                        >
+                            {loading
+                                ? 'Processing...'
+                                : isEditMode
+                                    ? 'Update Report'
+                                    : 'Submit Report'}
+                            <Send size={18} className="inline ml-2" />
                         </button>
                     </div>
                 </form>

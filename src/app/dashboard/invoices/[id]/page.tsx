@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, use } from 'react';
+import { useState, useEffect, useCallback, use } from 'react';
 import { useRouter } from 'next/navigation';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import FormattedDate from '@/components/common/FormattedDate';
@@ -20,16 +20,7 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
         notes: ''
     });
 
-    useEffect(() => {
-        const userData = localStorage.getItem('user');
-        if (userData) {
-            const user = JSON.parse(userData);
-            setUserRole(user.role);
-        }
-        fetchInvoice();
-    }, [id]);
-
-    const fetchInvoice = async () => {
+    const fetchInvoice = useCallback(async () => {
         setLoading(true);
         try {
             const token = localStorage.getItem('token');
@@ -49,7 +40,16 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
         } finally {
             setLoading(false);
         }
-    };
+    }, [id]);
+
+    useEffect(() => {
+        const userData = localStorage.getItem('user');
+        if (userData) {
+            const user = JSON.parse(userData);
+            setUserRole(user.role);
+        }
+        fetchInvoice();
+    }, [id, fetchInvoice]);
 
     const handlePaymentSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -311,6 +311,7 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
                                     className="input"
                                     value={paymentForm.method}
                                     onChange={e => setPaymentForm({ ...paymentForm, method: e.target.value })}
+                                    title="Select Payment Method"
                                 >
                                     <option value="card">Credit/Debit Card</option>
                                     <option value="bank-transfer">Bank Transfer (NEFT/RTGS)</option>

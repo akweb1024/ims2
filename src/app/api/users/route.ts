@@ -62,6 +62,12 @@ export const GET = authorizedRoute(
                                 role: true
                             }
                         },
+                        company: {
+                            select: {
+                                id: true,
+                                name: true
+                            }
+                        },
                         department: {
                             select: {
                                 name: true
@@ -69,7 +75,13 @@ export const GET = authorizedRoute(
                         },
                         employeeProfile: {
                             select: {
-                                designation: true
+                                designation: true,
+                                designationId: true,
+                                designatRef: {
+                                    select: {
+                                        name: true
+                                    }
+                                }
                             }
                         },
                         _count: {
@@ -109,7 +121,7 @@ export const POST = authorizedRoute(
     async (req: NextRequest, user) => {
         try {
             const body = await req.json();
-            const { email, password, role, managerId, companyId, companyIds, departmentId } = body;
+            const { email, name, password, role, managerId, companyId, companyIds, departmentId } = body;
 
             if (!email || !password || !role) {
                 return createErrorResponse('Missing required fields', 400);
@@ -128,6 +140,7 @@ export const POST = authorizedRoute(
             const newUser = await prisma.user.create({
                 data: {
                     email,
+                    name,
                     password: hashedPassword,
                     role,
                     isActive: true,

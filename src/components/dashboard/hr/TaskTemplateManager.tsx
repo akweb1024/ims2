@@ -599,6 +599,7 @@ export default function TaskTemplateManager() {
                                         className="input"
                                         value={formData.calculationType}
                                         onChange={e => setFormData({ ...formData, calculationType: e.target.value })}
+                                        title="Calculation Type"
                                     >
                                         <option value="FLAT">Flat Points (Checklist)</option>
                                         <option value="SCALED">Scaled (Per Unit)</option>
@@ -615,6 +616,8 @@ export default function TaskTemplateManager() {
                                             max="1000"
                                             value={formData.points}
                                             onChange={e => setFormData({ ...formData, points: parseInt(e.target.value) })}
+                                            placeholder="Enter points value"
+                                            title="Points Value"
                                         />
                                     </div>
                                 ) : (
@@ -628,6 +631,7 @@ export default function TaskTemplateManager() {
                                                 min="1"
                                                 value={formData.basePoints}
                                                 onChange={e => setFormData({ ...formData, basePoints: parseFloat(e.target.value) || 1 })}
+                                                title="Base Points"
                                             />
                                             <span className="text-sm font-bold">pts per</span>
                                             <input
@@ -637,6 +641,7 @@ export default function TaskTemplateManager() {
                                                 min="1"
                                                 value={formData.perUnitCount}
                                                 onChange={e => setFormData({ ...formData, perUnitCount: parseFloat(e.target.value) || 1 })}
+                                                title="Units Count"
                                             />
                                             <span className="text-sm font-bold">units</span>
                                         </div>
@@ -653,6 +658,8 @@ export default function TaskTemplateManager() {
                                             className="input h-9 text-sm"
                                             value={formData.minThreshold}
                                             onChange={e => setFormData({ ...formData, minThreshold: parseFloat(e.target.value) })}
+                                            placeholder="Min units"
+                                            title="Minimum Threshold"
                                         />
                                     </div>
                                     <div>
@@ -663,6 +670,7 @@ export default function TaskTemplateManager() {
                                             placeholder="No Cap"
                                             value={formData.maxThreshold}
                                             onChange={e => setFormData({ ...formData, maxThreshold: e.target.value })}
+                                            title="Maximum Threshold Cap"
                                         />
                                     </div>
                                 </div>
@@ -768,6 +776,7 @@ export default function TaskTemplateManager() {
                                         className="input"
                                         value={formData.isActive ? 'true' : 'false'}
                                         onChange={e => setFormData({ ...formData, isActive: e.target.value === 'true' })}
+                                        title="Account Status"
                                     >
                                         <option value="true">Active</option>
                                         <option value="false">Inactive</option>

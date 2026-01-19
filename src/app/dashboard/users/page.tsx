@@ -339,6 +339,7 @@ function UsersContent() {
                             placeholder="Search users by name, email or role..."
                             className="input pl-10 w-full"
                             value={searchTerm}
+                            title="Search Users"
                             onChange={(e) => {
                                 setSearchTerm(e.target.value);
                                 setPagination(prev => ({ ...prev, page: 1 })); // Reset to page 1 on search
@@ -372,11 +373,28 @@ function UsersContent() {
                                         <td>
                                             <div className="flex items-center">
                                                 <div className="w-10 h-10 rounded-full bg-secondary-100 flex items-center justify-center font-bold text-secondary-600 mr-3">
-                                                    {user.email.charAt(0).toUpperCase()}
+                                                    {(user.name?.[0] || user.email.charAt(0)).toUpperCase()}
                                                 </div>
                                                 <div>
-                                                    <p className="text-sm font-bold text-secondary-900">{user.email}</p>
-                                                    <p className="text-xs text-secondary-500">ID: {user.id.split('-')[0]}</p>
+                                                    <p className="text-sm font-bold text-secondary-900 leading-tight">{user.name || user.email.split('@')[0]}</p>
+                                                    <p className="text-[10px] text-secondary-500 font-medium">{user.email}</p>
+                                                    <div className="flex flex-wrap gap-1 mt-0.5">
+                                                        <span className="text-[9px] font-black text-primary-600 uppercase tracking-tighter">
+                                                            {user.employeeProfile?.designatRef?.name || user.employeeProfile?.designation || 'Specialist'}
+                                                        </span>
+                                                        {user.company?.name && (
+                                                            <>
+                                                                <span className="text-[9px] text-secondary-300">•</span>
+                                                                <span className="text-[9px] font-bold text-secondary-500 uppercase tracking-tighter">{user.company.name}</span>
+                                                            </>
+                                                        )}
+                                                        {user.department?.name && (
+                                                            <>
+                                                                <span className="text-[9px] text-secondary-300">•</span>
+                                                                <span className="text-[9px] font-bold text-secondary-400 uppercase tracking-tighter">{user.department.name}</span>
+                                                            </>
+                                                        )}
+                                                    </div>
                                                 </div>
                                             </div>
                                         </td>
@@ -476,18 +494,22 @@ function UsersContent() {
                         <h2 className="text-2xl font-bold text-secondary-900 mb-6 font-primary">Invite Staff Member</h2>
                         <form onSubmit={handleCreateUser} className="space-y-4">
                             <div>
+                                <label className="label">Full Name</label>
+                                <input name="name" type="text" className="input" required placeholder="John Doe" title="Full Name" />
+                            </div>
+                            <div>
                                 <label className="label">Work Email</label>
-                                <input name="email" type="email" className="input" required placeholder="staff@stm.com" />
+                                <input name="email" type="email" className="input" required placeholder="staff@stm.com" title="Work Email" />
                             </div>
                             <div>
                                 <label className="label">Temporary Password</label>
-                                <input name="password" type="password" className="input" required placeholder="••••••••" />
+                                <input name="password" type="password" className="input" required placeholder="••••••••" title="Temporary Password" />
                             </div>
 
                             {userRole === 'SUPER_ADMIN' && (
                                 <div>
                                     <label className="label">Assign to Company</label>
-                                    <select name="companyId" className="input" required>
+                                    <select name="companyId" className="input" required title="Select Company">
                                         <option value="">Select a company...</option>
                                         {companies.map(c => (
                                             <option key={c.id} value={c.id}>{c.name}</option>
@@ -498,7 +520,7 @@ function UsersContent() {
 
                             <div>
                                 <label className="label">System Role</label>
-                                <select name="role" className="input" required>
+                                <select name="role" className="input" required title="System Role">
                                     <option value="EXECUTIVE">Executive</option>
                                     <option value="TEAM_LEADER">Team Leader</option>
                                     <option value="MANAGER">Manager</option>
@@ -542,6 +564,7 @@ function UsersContent() {
                                     className="input"
                                     defaultValue={editingUser.name}
                                     placeholder="Enter full name"
+                                    title="Full Name"
                                 />
                             </div>
                             <div>
@@ -553,16 +576,17 @@ function UsersContent() {
                                     defaultValue={editingUser.email}
                                     readOnly={userRole !== 'SUPER_ADMIN'}
                                     required={userRole === 'SUPER_ADMIN'}
+                                    title="Work Email"
                                 />
                             </div>
                             <div>
                                 <label className="label">New Password (Optional)</label>
-                                <input name="password" type="password" className="input" placeholder="Leave blank to keep current" />
+                                <input name="password" type="password" className="input" placeholder="Leave blank to keep current" title="New Password" />
                             </div>
                             {userRole === 'SUPER_ADMIN' && (
                                 <div>
                                     <label className="label">Primary Company</label>
-                                    <select name="companyId" className="input" defaultValue={editingUser.companyId} required>
+                                    <select name="companyId" className="input" defaultValue={editingUser.companyId} required title="Primary Company">
                                         <option value="">None / System Staff</option>
                                         {Array.isArray(companies) && companies.map(c => (
                                             <option key={c.id} value={c.id}>{c.name}</option>
@@ -573,7 +597,7 @@ function UsersContent() {
                             )}
                             <div>
                                 <label className="label">System Role</label>
-                                <select name="role" className="input" defaultValue={editingUser.role} required>
+                                <select name="role" className="input" defaultValue={editingUser.role} required title="System Role">
                                     <option value="EXECUTIVE">Executive</option>
                                     <option value="TEAM_LEADER">Team Leader</option>
                                     <option value="MANAGER">Manager</option>
@@ -613,7 +637,7 @@ function UsersContent() {
                         <form onSubmit={handleBulkAssign} className="space-y-4">
                             <div>
                                 <label className="label">Target Executive</label>
-                                <select name="assignedToUserId" className="input" required>
+                                <select name="assignedToUserId" className="input" required title="Target Executive">
                                     <option value="">Select Staff...</option>
                                     {users.filter(u => ['EXECUTIVE', 'MANAGER'].includes(u.role)).map(u => (
                                         <option key={u.id} value={u.id}>{u.email} ({u.role})</option>
@@ -626,15 +650,15 @@ function UsersContent() {
                                 <div className="grid grid-cols-2 gap-3">
                                     <div>
                                         <label className="label text-xs">Country</label>
-                                        <input name="country" className="input text-sm" placeholder="e.g. India" />
+                                        <input name="country" className="input text-sm" placeholder="e.g. India" title="Country" />
                                     </div>
                                     <div>
                                         <label className="label text-xs">State</label>
-                                        <input name="state" className="input text-sm" placeholder="e.g. Delhi" />
+                                        <input name="state" className="input text-sm" placeholder="e.g. Delhi" title="State" />
                                     </div>
                                     <div>
                                         <label className="label text-xs">Customer Type</label>
-                                        <select name="customerType" className="input text-sm">
+                                        <select name="customerType" className="input text-sm" title="Customer Type">
                                             <option value="">Any</option>
                                             <option value="INSTITUTION">Institution</option>
                                             <option value="AGENCY">Agency</option>
@@ -643,7 +667,7 @@ function UsersContent() {
                                     </div>
                                     <div>
                                         <label className="label text-xs">Org Name (Contains)</label>
-                                        <input name="organizationName" className="input text-sm" placeholder="e.g. Agency ABC" />
+                                        <input name="organizationName" className="input text-sm" placeholder="e.g. Agency ABC" title="Organization Name" />
                                     </div>
                                 </div>
                                 <p className="text-[10px] text-secondary-400 italic mt-2">

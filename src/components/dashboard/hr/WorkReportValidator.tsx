@@ -141,8 +141,8 @@ export default function WorkReportValidator({ reports, onApprove, onAddComment }
                             <div className="flex justify-between items-start mb-4">
                                 <div className="flex gap-2">
                                     <span className={`px-2 py-1 text-[10px] font-black rounded ${report.status === 'APPROVED' ? 'bg-success-50 text-success-700' :
-                                            report.status === 'REVIEWED' ? 'bg-indigo-50 text-indigo-700' :
-                                                'bg-warning-50 text-warning-700'
+                                        report.status === 'REVIEWED' ? 'bg-indigo-50 text-indigo-700' :
+                                            'bg-warning-50 text-warning-700'
                                         }`}>
                                         {report.status}
                                     </span>
@@ -284,8 +284,8 @@ export default function WorkReportValidator({ reports, onApprove, onAddComment }
                                         </td>
                                         <td className="px-6 py-4">
                                             <span className={`badge text-xs ${report.status === 'APPROVED' ? 'bg-success-100 text-success-700' :
-                                                    report.status === 'REVIEWED' ? 'bg-indigo-100 text-indigo-700' :
-                                                        'bg-warning-100 text-warning-700'
+                                                report.status === 'REVIEWED' ? 'bg-indigo-100 text-indigo-700' :
+                                                    'bg-warning-100 text-warning-700'
                                                 }`}>
                                                 {report.status}
                                             </span>
@@ -294,8 +294,8 @@ export default function WorkReportValidator({ reports, onApprove, onAddComment }
                                             <button
                                                 onClick={() => openValidationModal(report)}
                                                 className={`btn text-xs py-1 px-4 ${report.status === 'APPROVED'
-                                                        ? 'bg-secondary-100 text-secondary-400 cursor-not-allowed'
-                                                        : 'btn-primary'
+                                                    ? 'bg-secondary-100 text-secondary-400 cursor-not-allowed'
+                                                    : 'btn-primary'
                                                     }`}
                                                 disabled={report.status === 'APPROVED'}
                                             >
@@ -374,19 +374,19 @@ export default function WorkReportValidator({ reports, onApprove, onAddComment }
                                                     key={task.id}
                                                     onClick={() => toggleTaskApproval(task.id)}
                                                     className={`p-4 rounded-xl border-2 cursor-pointer transition-all ${isApproved
-                                                            ? 'bg-success-50/50 border-success-500'
-                                                            : isRejected
-                                                                ? 'bg-danger-50/50 border-danger-500'
-                                                                : 'bg-white border-secondary-200 hover:border-secondary-300'
+                                                        ? 'bg-success-50/50 border-success-500'
+                                                        : isRejected
+                                                            ? 'bg-danger-50/50 border-danger-500'
+                                                            : 'bg-white border-secondary-200 hover:border-secondary-300'
                                                         }`}
                                                 >
                                                     <div className="flex items-start justify-between gap-4">
                                                         <div className="flex items-start gap-3 flex-1">
                                                             <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 ${isApproved
-                                                                    ? 'bg-success-500 border-success-500 text-white'
-                                                                    : isRejected
-                                                                        ? 'bg-danger-500 border-danger-500 text-white'
-                                                                        : 'border-secondary-300'
+                                                                ? 'bg-success-500 border-success-500 text-white'
+                                                                : isRejected
+                                                                    ? 'bg-danger-500 border-danger-500 text-white'
+                                                                    : 'border-secondary-300'
                                                                 }`}>
                                                                 {isApproved && <CheckCircle size={14} />}
                                                                 {isRejected && <XCircle size={14} />}
@@ -457,6 +457,7 @@ export default function WorkReportValidator({ reports, onApprove, onAddComment }
                                         value={managerRating}
                                         onChange={e => setManagerRating(parseInt(e.target.value))}
                                         className="w-full"
+                                        title="Manager Rating Scale"
                                     />
                                     <div className="flex justify-between text-xs text-secondary-500 mt-1">
                                         <span>Poor</span>
@@ -473,6 +474,7 @@ export default function WorkReportValidator({ reports, onApprove, onAddComment }
                                         placeholder="Add your feedback..."
                                         value={managerComment}
                                         onChange={e => setManagerComment(e.target.value)}
+                                        title="Manager Feedback Comments"
                                     />
                                 </div>
                             </div>

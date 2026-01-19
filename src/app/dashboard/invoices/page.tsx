@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import FormattedDate from '@/components/common/FormattedDate';
@@ -17,28 +17,7 @@ export default function InvoicesPage() {
     const [statusFilter, setStatusFilter] = useState('');
     const [showCreateModal, setShowCreateModal] = useState(false);
 
-    useEffect(() => {
-        const userData = localStorage.getItem('user');
-        if (userData) {
-            const user = JSON.parse(userData);
-            setUserRole(user.role);
-        }
-        fetchInvoices();
-    }, [pagination.page, statusFilter]);
-
-    // Handle debounce for search
-    useEffect(() => {
-        const timer = setTimeout(() => {
-            if (pagination.page !== 1) {
-                setPagination({ ...pagination, page: 1 });
-            } else {
-                fetchInvoices();
-            }
-        }, 500);
-        return () => clearTimeout(timer);
-    }, [searchTerm]);
-
-    const fetchInvoices = async () => {
+    const fetchInvoices = useCallback(async () => {
         setLoading(true);
         setError(null);
         try {
@@ -57,7 +36,7 @@ export default function InvoicesPage() {
             if (res.ok) {
                 const data = await res.json();
                 setInvoices(data.data);
-                setPagination({ ...pagination, totalPages: data.pagination.totalPages });
+                setPagination(prev => ({ ...prev, totalPages: data.pagination.totalPages }));
             } else {
                 const err = await res.json();
                 setError(err.error || 'Failed to fetch invoices');
@@ -67,7 +46,28 @@ export default function InvoicesPage() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [pagination.page, statusFilter, searchTerm]);
+
+    useEffect(() => {
+        const userData = localStorage.getItem('user');
+        if (userData) {
+            const user = JSON.parse(userData);
+            setUserRole(user.role);
+        }
+        fetchInvoices();
+    }, [fetchInvoices]);
+
+    // Handle debounce for search
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            if (pagination.page !== 1) {
+                setPagination(prev => ({ ...prev, page: 1 }));
+            } else {
+                fetchInvoices();
+            }
+        }, 500);
+        return () => clearTimeout(timer);
+    }, [searchTerm, pagination.page, fetchInvoices]);
 
     const getStatusBadgeClass = (status: string) => {
         switch (status) {
@@ -154,6 +154,7 @@ export default function InvoicesPage() {
                             className="input w-full md:w-48"
                             value={statusFilter}
                             onChange={(e) => setStatusFilter(e.target.value)}
+                            title="Filter Invoices by Status"
                         >
                             <option value="">All Statuses</option>
                             <option value="PAID">Paid</option>
