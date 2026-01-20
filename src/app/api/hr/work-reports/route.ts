@@ -85,14 +85,14 @@ export const GET = authorizedRoute(
                     employee: {
                         include: {
                             user: {
-                                select: { email: true, role: true }
+                                select: { email: true, role: true, name: true }
                             }
                         }
                     },
                     comments: {
                         include: {
                             author: {
-                                select: { email: true }
+                                select: { email: true, name: true }
                             }
                         },
                         orderBy: { createdAt: 'asc' }

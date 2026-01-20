@@ -8,208 +8,195 @@ datasource db {
 }
 
 model Company {
-  id                  String               @id @default(uuid())
-  name                String
-  registrationNumber  String?
-  domain              String?
-  address             String?
-  phone               String?
-  email               String?
-  website             String?
-  logoUrl             String?
-  fiscalYearStart     Int?
-  currency            String               @default("INR")
-  timezone            String               @default("Asia/Kolkata")
-  createdAt           DateTime             @default(now())
-  updatedAt           DateTime             @updatedAt
-  latitude            Float?
-  longitude           Float?
-  attendance          Attendance[]
-  bonusSchemas        BonusSchema[]
-  chatRooms           ChatRoom[]
-  communications      CommunicationLog[]
-  potential           CompanyPotential?
-  conferences         Conference[]
-  courses             Course[]
-  customers           CustomerProfile[]
-  departments         Department[]
-  departmentBudgets   DepartmentBudget[]
-  dispatchOrders      DispatchOrder[]
-  documentTemplates   DocumentTemplate[]
-  employeeGoals       EmployeeGoal[]
-  employeeKpis        EmployeeKPI[]
-  financialRecords    FinancialRecord[]
-  holidays            Holiday[]
-  itAssets            ITAsset[]
-  itTickets           ITSupportTicket[]
-  incentiveSchemas    IncentiveSchema[]
-  institutions        Institution[]
-  invoices            Invoice[]
-  jobPostings         JobPosting[]
-  leaveLedgers        LeaveLedger[]
-  leaveRequests       LeaveRequest[]
-  onboardingModules   OnboardingModule[]
-  payments            Payment[]
-  performanceInsights PerformanceInsight[]
-  performanceReviews  PerformanceReview[]
-  salaryAdvances      SalaryAdvance[]
-  salarySlips         SalarySlip[]
-  shifts              Shift[]
-  shiftRosters        ShiftRoster[]
-  statutoryConfig     StatutoryConfig?
-  subscriptions       Subscription[]
-  supportTickets      SupportTicket[]
-  tasks               Task[]
-  primaryUsers        User[]               @relation("PrimaryCompany")
-  workPlans           WorkPlan[]
-  workReports         WorkReport[]
-  designations        Designation[]        @relation("CompanyToDesignation")
-  users               User[]               @relation("UserCompanies")
-  appConfigurations   AppConfiguration[]
-  taskTemplates       EmployeeTaskTemplate[]
-  pointLogs           EmployeePointLog[]
-  
-  // IT Management Relations
-  itProjects          ITProject[]          @relation("CompanyITProjects")
-  itTasks             ITTask[]             @relation("CompanyITTasks")
-  itTimeEntries       ITTimeEntry[]        @relation("CompanyITTimeEntries")
-  itDepartmentRevenue ITDepartmentRevenue[] @relation("CompanyITRevenue")
-  itPerformanceMetrics ITPerformanceMetric[] @relation("CompanyITPerformance")
-  itServices          ITServiceDefinition[] @relation("CompanyITServices")
-  
-  // Performance Analytics Relations
-  performanceSnapshots MonthlyPerformanceSnapshot[]
+  id                    String                       @id @default(uuid())
+  name                  String
+  registrationNumber    String?
+  domain                String?
+  address               String?
+  phone                 String?
+  email                 String?
+  website               String?
+  logoUrl               String?
+  fiscalYearStart       Int?
+  currency              String                       @default("INR")
+  timezone              String                       @default("Asia/Kolkata")
+  createdAt             DateTime                     @default(now())
+  updatedAt             DateTime                     @updatedAt
+  latitude              Float?
+  longitude             Float?
+  appConfigurations     AppConfiguration[]
+  attendance            Attendance[]
+  bonusSchemas          BonusSchema[]
+  chatRooms             ChatRoom[]
+  communications        CommunicationLog[]
+  companyPerformance    CompanyPerformance[]
+  potential             CompanyPotential?
+  conferences           Conference[]
+  courses               Course[]
+  customers             CustomerProfile[]
+  departments           Department[]
+  departmentBudgets     DepartmentBudget[]
   departmentPerformance DepartmentPerformance[]
-  companyPerformance   CompanyPerformance[]
-  revenueTransactions  RevenueTransaction[]
+  dispatchOrders        DispatchOrder[]
+  documentTemplates     DocumentTemplate[]
+  employeeGoals         EmployeeGoal[]
+  employeeKpis          EmployeeKPI[]
+  pointLogs             EmployeePointLog[]
+  taskTemplates         EmployeeTaskTemplate[]
+  financialRecords      FinancialRecord[]
+  holidays              Holiday[]
+  itAssets              ITAsset[]
+  itDepartmentRevenue   ITDepartmentRevenue[]        @relation("CompanyITRevenue")
+  itPerformanceMetrics  ITPerformanceMetric[]        @relation("CompanyITPerformance")
+  itProjects            ITProject[]                  @relation("CompanyITProjects")
+  itServices            ITServiceDefinition[]        @relation("CompanyITServices")
+  itTickets             ITSupportTicket[]
+  itTasks               ITTask[]                     @relation("CompanyITTasks")
+  itTimeEntries         ITTimeEntry[]                @relation("CompanyITTimeEntries")
+  incentiveSchemas      IncentiveSchema[]
+  institutions          Institution[]
+  invoices              Invoice[]
+  jobPostings           JobPosting[]
+  leaveLedgers          LeaveLedger[]
+  leaveRequests         LeaveRequest[]
+  performanceSnapshots  MonthlyPerformanceSnapshot[]
+  onboardingModules     OnboardingModule[]
+  payments              Payment[]
+  performanceInsights   PerformanceInsight[]
+  performanceReviews    PerformanceReview[]
+  revenueTransactions   RevenueTransaction[]
+  salaryAdvances        SalaryAdvance[]
+  salarySlips           SalarySlip[]
+  shifts                Shift[]
+  shiftRosters          ShiftRoster[]
+  statutoryConfig       StatutoryConfig?
+  subscriptions         Subscription[]
+  supportTickets        SupportTicket[]
+  tasks                 Task[]
+  primaryUsers          User[]                       @relation("PrimaryCompany")
+  workPlans             WorkPlan[]
+  workReports           WorkReport[]
+  designations          Designation[]                @relation("CompanyToDesignation")
+  users                 User[]                       @relation("UserCompanies")
 }
 
 model Department {
-  id                 String             @id @default(uuid())
-  companyId          String
-  name               String
-  code               String?
-  description        String?
-  parentDepartmentId String?
-  headUserId         String?
-  isActive           Boolean            @default(true)
-  createdAt          DateTime           @default(now())
-  updatedAt          DateTime           @updatedAt
-  company            Company            @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  headUser           User?              @relation("DepartmentHead", fields: [headUserId], references: [id])
-  parentDepartment   Department?        @relation("DepartmentHierarchy", fields: [parentDepartmentId], references: [id])
-  subDepartments     Department[]       @relation("DepartmentHierarchy")
-  budgets            DepartmentBudget[]
-  jobApplications    JobApplication[]
-  jobPostings        JobPosting[]
-  onboardingModules  OnboardingModule[]
-  users              User[]             @relation("DepartmentMembers")
-  designations       Designation[]      @relation("DepartmentToDesignation")
-  taskTemplates      EmployeeTaskTemplate[]
-  performanceSnapshots MonthlyPerformanceSnapshot[]
+  id                    String                       @id @default(uuid())
+  companyId             String
+  name                  String
+  code                  String?
+  description           String?
+  parentDepartmentId    String?
+  headUserId            String?
+  isActive              Boolean                      @default(true)
+  createdAt             DateTime                     @default(now())
+  updatedAt             DateTime                     @updatedAt
+  company               Company                      @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  headUser              User?                        @relation("DepartmentHead", fields: [headUserId], references: [id])
+  parentDepartment      Department?                  @relation("DepartmentHierarchy", fields: [parentDepartmentId], references: [id])
+  subDepartments        Department[]                 @relation("DepartmentHierarchy")
+  budgets               DepartmentBudget[]
   departmentPerformance DepartmentPerformance[]
-  revenueTransactions RevenueTransaction[]
+  taskTemplates         EmployeeTaskTemplate[]
+  jobApplications       JobApplication[]
+  jobPostings           JobPosting[]
+  performanceSnapshots  MonthlyPerformanceSnapshot[]
+  onboardingModules     OnboardingModule[]
+  revenueTransactions   RevenueTransaction[]
+  users                 User[]                       @relation("DepartmentMembers")
+  designations          Designation[]                @relation("DepartmentToDesignation")
 
   @@unique([companyId, code])
   @@index([companyId])
 }
 
 model User {
-  id                    String                 @id @default(uuid())
-  email                 String                 @unique
-  password              String
-  role                  UserRole
-  isActive              Boolean                @default(true)
-  emailVerified         Boolean                @default(false)
-  lastLogin             DateTime?
-  theme                 String                 @default("light")
-  notificationsEnabled  Boolean                @default(true)
-  companyId             String?
-  departmentId          String?
-  managerId             String?
-  createdAt             DateTime               @default(now())
-  updatedAt             DateTime               @updatedAt
-  name                  String?
-  allowedModules        String[]               @default(["CORE"])
-  announcements         Announcement[]
-  auditLogs             AuditLog[]
-  sentMessages          ChatMessage[]
-  chatParticipants      ChatParticipant[]
-  communications        CommunicationLog[]     @relation("UserCommunications")
-  courseEnrollments     CourseEnrollment[]
-  customerAssignments   CustomerAssignment[]   @relation("EmployeeAssignments")
-  assignedCustomers     CustomerProfile[]      @relation("AssignedCustomers")
-  customerProfile       CustomerProfile?
-  headOfDepartments     Department[]           @relation("DepartmentHead")
-  authoredComments      EmployeeComment[]
-  employeeProfile       EmployeeProfile?
-  createdFinanceRecords FinancialRecord[]      @relation("FinanceCreator")
-  assignedAssets        ITAsset[]
-  itResolutions         ITSupportTicket[]      @relation("ITResolver")
-  itRequests            ITSupportTicket[]      @relation("ITRequestor")
-  assignedInstitutions  Institution[]          @relation("InstitutionOwner")
-  managedJournals       Journal[]              @relation("JournalEditor")
-  knowledgeArticles     KnowledgeArticle[]
-  approvedLeaves        LeaveRequest[]         @relation("LeaveApprover")
-  notifications         Notification[]
-  performanceReviews    PerformanceReview[]    @relation("Reviewer")
-  pushSubscriptions     PushSubscription[]
-  interviewsConducted   RecruitmentInterview[] @relation("RecruitmentInterviewer")
-  reviews               Review[]
-  assignedSubscriptions Subscription[]         @relation("AssignedSalesExecutive")
-  assignedTickets       SupportTicket[]        @relation("AssignedTickets")
-  tasks                 Task[]
-  company               Company?               @relation("PrimaryCompany", fields: [companyId], references: [id])
-  department            Department?            @relation("DepartmentMembers", fields: [departmentId], references: [id])
-  manager               User?                  @relation("ManagementChain", fields: [managerId], references: [id])
-  subordinates          User[]                 @relation("ManagementChain")
-  lessonProgress        UserLessonProgress[]
-  workPlanComments      WorkPlanComment[]
-  workReportComments    WorkReportComment[]    @relation("WorkReportCommentAuthor")
-  assignedToCustomers   CustomerProfile[]      @relation("CustomerToExecutives")
-  companies             Company[]              @relation("UserCompanies")
-  editorialMemberships  EditorialBoardMember[]
-  
-  // LMS Relations
-  quizAttempts          QuizAttempt[]
-  courseNotes           CourseNote[]
-  courseDiscussions     CourseDiscussion[]
-  discussionReplies     DiscussionReply[]
-  certificates          Certificate[]
-  paperReviews          PaperReview[]
-  conferenceRegistrations ConferenceRegistration[]
-  committeeRoles          ConferenceCommitteeMember[]
-  
-  // Reviewer Management Relations
-  reviewerProfiles        JournalReviewer[]      @relation("ReviewerProfile")
-  assignedReviews         ReviewAssignment[]     @relation("AssignedReviews")
-  validatedReports        ReviewReport[]         @relation("ValidatedReports")
-  issuedCertificates      ReviewCertificate[]    @relation("IssuedCertificates")
-  
-  // NEW - Publication Module Relations
-  managedJournalsAsManager Journal[]             @relation("JournalManager")
-  plagiarismReports        PlagiarismReport[]    @relation("PlagiarismChecker")
-  qualityReports           QualityReport[]       @relation("QualityChecker")
-  manuscriptStatusChanges  ManuscriptStatusHistory[]
-  
-  // Phase 4 Relations
+  id                       String                      @id @default(uuid())
+  email                    String                      @unique
+  password                 String
+  role                     UserRole                    @default(EXECUTIVE)
+  isActive                 Boolean                     @default(true)
+  emailVerified            Boolean                     @default(false)
+  lastLogin                DateTime?
+  theme                    String                      @default("light")
+  notificationsEnabled     Boolean                     @default(true)
+  companyId                String?
+  departmentId             String?
+  managerId                String?
+  createdAt                DateTime                    @default(now())
+  updatedAt                DateTime                    @updatedAt
+  name                     String?
+  allowedModules           String[]                    @default(["CORE"])
+  roles                    UserRole[]                  @default([EXECUTIVE])
+  announcements            Announcement[]
+  auditLogs                AuditLog[]
+  certificates             Certificate[]
+  sentMessages             ChatMessage[]
+  chatParticipants         ChatParticipant[]
+  coAuthorInvitations      CoAuthorInvitation[]
+  communications           CommunicationLog[]          @relation("UserCommunications")
+  committeeRoles           ConferenceCommitteeMember[]
+  conferenceRegistrations  ConferenceRegistration[]
+  courseDiscussions        CourseDiscussion[]
+  courseEnrollments        CourseEnrollment[]
+  courseNotes              CourseNote[]
+  customerAssignments      CustomerAssignment[]        @relation("EmployeeAssignments")
+  assignedCustomers        CustomerProfile[]           @relation("AssignedCustomers")
+  customerProfile          CustomerProfile?
+  headOfDepartments        Department[]                @relation("DepartmentHead")
+  discussionReplies        DiscussionReply[]
+  editorialMemberships     EditorialBoardMember[]
+  authoredComments         EmployeeComment[]
+  employeeProfile          EmployeeProfile?
+  createdFinanceRecords    FinancialRecord[]           @relation("FinanceCreator")
+  assignedAssets           ITAsset[]
+  itPerformanceMetrics     ITPerformanceMetric[]       @relation("ITPerformance")
+  managedProjects          ITProject[]                 @relation("ProjectManager")
+  ledProjects              ITProject[]                 @relation("TeamLead")
+  itProjectComments        ITProjectComment[]          @relation("ITProjectComments")
+  itResolutions            ITSupportTicket[]           @relation("ITResolver")
+  itRequests               ITSupportTicket[]           @relation("ITRequestor")
+  assignedITTasks          ITTask[]                    @relation("ITTaskAssignee")
+  createdITTasks           ITTask[]                    @relation("ITTaskCreator")
+  reportedITTasks          ITTask[]                    @relation("ITTaskReporter")
+  itTaskComments           ITTaskComment[]             @relation("ITTaskComments")
+  itTaskStatusChanges      ITTaskStatusHistory[]       @relation("ITStatusChanger")
+  itTimeEntries            ITTimeEntry[]               @relation("ITTimeEntries")
+  assignedInstitutions     Institution[]               @relation("InstitutionOwner")
+  managedJournals          Journal[]                   @relation("JournalEditor")
+  managedJournalsAsManager Journal[]                   @relation("JournalManager")
+  reviewerProfiles         JournalReviewer[]           @relation("ReviewerProfile")
+  knowledgeArticles        KnowledgeArticle[]
+  approvedLeaves           LeaveRequest[]              @relation("LeaveApprover")
+  sentCommunications       ManuscriptCommunication[]   @relation("SentCommunications")
+  receivedCommunications   ManuscriptCommunication[]   @relation("ReceivedCommunications")
   manuscriptDrafts         ManuscriptDraft[]
   manuscriptRevisions      ManuscriptRevision[]
-  sentCommunications       ManuscriptCommunication[] @relation("SentCommunications")
-  receivedCommunications   ManuscriptCommunication[] @relation("ReceivedCommunications")
-  coAuthorInvitations      CoAuthorInvitation[]
-  
-  // IT Management Relations
-  managedProjects          ITProject[]          @relation("ProjectManager")
-  ledProjects              ITProject[]          @relation("TeamLead")
-  assignedITTasks          ITTask[]             @relation("ITTaskAssignee")
-  createdITTasks           ITTask[]             @relation("ITTaskCreator")
-  reportedITTasks          ITTask[]             @relation("ITTaskReporter")
-  itTimeEntries            ITTimeEntry[]        @relation("ITTimeEntries")
-  itTaskStatusChanges      ITTaskStatusHistory[] @relation("ITStatusChanger")
-  itProjectComments        ITProjectComment[]   @relation("ITProjectComments")
-  itTaskComments           ITTaskComment[]      @relation("ITTaskComments")
-  itPerformanceMetrics     ITPerformanceMetric[] @relation("ITPerformance")
+  manuscriptStatusChanges  ManuscriptStatusHistory[]
+  notifications            Notification[]
+  paperReviews             PaperReview[]
+  performanceReviews       PerformanceReview[]         @relation("Reviewer")
+  plagiarismReports        PlagiarismReport[]          @relation("PlagiarismChecker")
+  pushSubscriptions        PushSubscription[]
+  qualityReports           QualityReport[]             @relation("QualityChecker")
+  quizAttempts             QuizAttempt[]
+  interviewsConducted      RecruitmentInterview[]      @relation("RecruitmentInterviewer")
+  reviews                  Review[]
+  assignedReviews          ReviewAssignment[]          @relation("AssignedReviews")
+  issuedCertificates       ReviewCertificate[]         @relation("IssuedCertificates")
+  validatedReports         ReviewReport[]              @relation("ValidatedReports")
+  assignedSubscriptions    Subscription[]              @relation("AssignedSalesExecutive")
+  assignedTickets          SupportTicket[]             @relation("AssignedTickets")
+  tasks                    Task[]
+  company                  Company?                    @relation("PrimaryCompany", fields: [companyId], references: [id])
+  department               Department?                 @relation("DepartmentMembers", fields: [departmentId], references: [id])
+  manager                  User?                       @relation("ManagementChain", fields: [managerId], references: [id])
+  subordinates             User[]                      @relation("ManagementChain")
+  lessonProgress           UserLessonProgress[]
+  workPlanComments         WorkPlanComment[]
+  workReportComments       WorkReportComment[]         @relation("WorkReportCommentAuthor")
+  assignedToCustomers      CustomerProfile[]           @relation("CustomerToExecutives")
+  companies                Company[]                   @relation("UserCompanies")
 
   @@index([email])
   @@index([role])
@@ -246,44 +233,44 @@ model KnowledgeArticle {
 }
 
 model CustomerProfile {
-  id                 String               @id @default(uuid())
-  userId             String               @unique
-  customerType       CustomerType
-  assignedToUserId   String?
-  name               String
-  organizationName   String?
-  primaryEmail       String
-  secondaryEmail     String?
-  primaryPhone       String
-  secondaryPhone     String?
-  gstVatTaxId        String?
-  billingAddress     String?
-  shippingAddress    String?
-  country            String?
-  state              String?
-  city               String?
-  pincode            String?
-  preferredChannel   String?
-  notes              String?
-  tags               String?
-  createdAt          DateTime             @default(now())
-  updatedAt          DateTime             @updatedAt
-  companyId          String?
-  designation        CustomerDesignation?
-  institutionId      String?
-  agencyDetails      AgencyDetails?
-  communications     CommunicationLog[]
-  assignments        CustomerAssignment[]
-  assignedTo         User?                @relation("AssignedCustomers", fields: [assignedToUserId], references: [id])
-  company            Company?             @relation(fields: [companyId], references: [id])
-  institution        Institution?         @relation(fields: [institutionId], references: [id])
-  user               User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
-  institutionDetails InstitutionDetails?
-  invoices           Invoice[]
-  subscriptions      Subscription[]
-  supportTickets     SupportTicket[]
-  assignedExecutives User[]               @relation("CustomerToExecutives")
+  id                  String               @id @default(uuid())
+  userId              String               @unique
+  customerType        CustomerType
+  assignedToUserId    String?
+  name                String
+  organizationName    String?
+  primaryEmail        String
+  secondaryEmail      String?
+  primaryPhone        String
+  secondaryPhone      String?
+  gstVatTaxId         String?
+  billingAddress      String?
+  shippingAddress     String?
+  country             String?
+  state               String?
+  city                String?
+  pincode             String?
+  preferredChannel    String?
+  notes               String?
+  tags                String?
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+  companyId           String?
+  designation         CustomerDesignation?
+  institutionId       String?
+  agencyDetails       AgencyDetails?
+  communications      CommunicationLog[]
+  assignments         CustomerAssignment[]
+  assignedTo          User?                @relation("AssignedCustomers", fields: [assignedToUserId], references: [id])
+  company             Company?             @relation(fields: [companyId], references: [id])
+  institution         Institution?         @relation(fields: [institutionId], references: [id])
+  user                User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  institutionDetails  InstitutionDetails?
+  invoices            Invoice[]
   revenueTransactions RevenueTransaction[]
+  subscriptions       Subscription[]
+  supportTickets      SupportTicket[]
+  assignedExecutives  User[]               @relation("CustomerToExecutives")
 
   @@index([customerType])
   @@index([primaryEmail])
@@ -321,42 +308,42 @@ model AgencyDetails {
 }
 
 model Institution {
-  id               String             @id @default(uuid())
-  name             String
-  code             String             @unique
-  type             InstitutionType
-  category         String?
-  establishedYear  Int?
-  accreditation    String?
-  primaryEmail     String?
-  secondaryEmail   String?
-  primaryPhone     String?
-  secondaryPhone   String?
-  website          String?
-  address          String?
-  city             String?
-  state            String?
-  country          String             @default("India")
-  pincode          String?
-  totalStudents    Int?
-  totalFaculty     Int?
-  totalStaff       Int?
-  libraryBudget    Float?
-  ipRange          String?
-  notes            String?
-  logo             String?
-  isActive         Boolean            @default(true)
-  createdAt        DateTime           @default(now())
-  updatedAt        DateTime           @updatedAt
-  companyId        String?
-  assignedToUserId String?
-  domain           String?
-  communications   CommunicationLog[]
-  customers        CustomerProfile[]
-  assignedTo       User?              @relation("InstitutionOwner", fields: [assignedToUserId], references: [id])
-  company          Company?           @relation(fields: [companyId], references: [id])
-  subscriptions    Subscription[]
+  id                  String               @id @default(uuid())
+  name                String
+  code                String               @unique
+  type                InstitutionType
+  category            String?
+  establishedYear     Int?
+  accreditation       String?
+  primaryEmail        String?
+  secondaryEmail      String?
+  primaryPhone        String?
+  secondaryPhone      String?
+  website             String?
+  address             String?
+  city                String?
+  state               String?
+  country             String               @default("India")
+  pincode             String?
+  totalStudents       Int?
+  totalFaculty        Int?
+  totalStaff          Int?
+  libraryBudget       Float?
+  ipRange             String?
+  notes               String?
+  logo                String?
+  isActive            Boolean              @default(true)
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+  companyId           String?
+  assignedToUserId    String?
+  domain              String?
+  communications      CommunicationLog[]
+  customers           CustomerProfile[]
+  assignedTo          User?                @relation("InstitutionOwner", fields: [assignedToUserId], references: [id])
+  company             Company?             @relation(fields: [companyId], references: [id])
   revenueTransactions RevenueTransaction[]
+  subscriptions       Subscription[]
 
   @@index([code])
   @@index([type])
@@ -382,58 +369,48 @@ model CustomerAssignment {
 }
 
 model Journal {
-  id                String             @id @default(uuid())
+  id                String                 @id @default(uuid())
   name              String
   issnPrint         String?
   issnOnline        String?
   frequency         String
   formatAvailable   String?
   subjectCategory   String?
-  isActive          Boolean            @default(true)
-  priceINR          Float              @default(0)
-  priceUSD          Float              @default(0)
-  createdAt         DateTime           @default(now())
-  updatedAt         DateTime           @updatedAt
-  apcOpenAccessINR  Float              @default(0)
-  apcOpenAccessUSD  Float              @default(0)
-  apcOtherINR       Float              @default(0)
-  apcOtherUSD       Float              @default(0)
-  apcRapidINR       Float              @default(0)
-  apcRapidUSD       Float              @default(0)
-  apcWoSINR         Float              @default(0)
-  apcWoSUSD         Float              @default(0)
+  isActive          Boolean                @default(true)
+  priceINR          Float                  @default(0)
+  priceUSD          Float                  @default(0)
+  createdAt         DateTime               @default(now())
+  updatedAt         DateTime               @updatedAt
+  apcOpenAccessINR  Float                  @default(0)
+  apcOpenAccessUSD  Float                  @default(0)
+  apcOtherINR       Float                  @default(0)
+  apcOtherUSD       Float                  @default(0)
+  apcRapidINR       Float                  @default(0)
+  apcRapidUSD       Float                  @default(0)
+  apcWoSINR         Float                  @default(0)
+  apcWoSUSD         Float                  @default(0)
   editorId          String?
-  
-  // NEW FIELDS - Categorization
-  domainId          String?
-  publisherId       String?
-  journalManagerId  String?
-  
-  // NEW FIELDS - Metrics
-  impactFactor      Float?
-  hIndex            Int?
   citationScore     Int?
-  
-  // EXISTING RELATIONS
-  editorialBoard    EditorialBoardMember[]
+  domainId          String?
+  hIndex            Int?
+  impactFactor      Float?
+  journalManagerId  String?
+  publisherId       String?
   articles          Article[]
-  editor            User?              @relation("JournalEditor", fields: [editorId], references: [id])
-  volumes           JournalVolume[]
-  plans             Plan[]
-  subscriptionItems SubscriptionItem[]
+  editorialBoard    EditorialBoardMember[]
+  domain            JournalDomain?         @relation(fields: [domainId], references: [id])
+  editor            User?                  @relation("JournalEditor", fields: [editorId], references: [id])
+  journalManager    User?                  @relation("JournalManager", fields: [journalManagerId], references: [id])
+  publisher         Publisher?             @relation(fields: [publisherId], references: [id])
   reviewers         JournalReviewer[]
-  certificates      ReviewCertificate[]
-  
-  // NEW RELATIONS
-  domain            JournalDomain?     @relation(fields: [domainId], references: [id])
-  publisher         Publisher?         @relation(fields: [publisherId], references: [id])
-  journalManager    User?              @relation("JournalManager", fields: [journalManagerId], references: [id])
-  indexings         JournalIndexing[]  @relation("JournalToIndexing")
-  plagiarismReports PlagiarismReport[]
-  qualityReports    QualityReport[]
-  
-  // Phase 4 Relations
+  volumes           JournalVolume[]
   manuscriptDrafts  ManuscriptDraft[]
+  plagiarismReports PlagiarismReport[]
+  plans             Plan[]
+  qualityReports    QualityReport[]
+  certificates      ReviewCertificate[]
+  subscriptionItems SubscriptionItem[]
+  indexings         JournalIndexing[]      @relation("JournalToIndexing")
 
   @@index([isActive])
   @@index([name])
@@ -524,26 +501,26 @@ model SubscriptionItem {
 }
 
 model Invoice {
-  id                String           @id @default(uuid())
-  subscriptionId    String?
-  invoiceNumber     String           @unique
-  currency          String           @default("INR")
-  amount            Float
-  tax               Float
-  total             Float
-  status            InvoiceStatus    @default(UNPAID)
-  dueDate           DateTime
-  paidDate          DateTime?
-  createdAt         DateTime         @default(now())
-  updatedAt         DateTime         @updatedAt
-  companyId         String?
-  customerProfileId String?
-  description       String?
-  lineItems         Json?
-  company           Company?         @relation(fields: [companyId], references: [id])
-  customerProfile   CustomerProfile? @relation(fields: [customerProfileId], references: [id])
-  subscription      Subscription?    @relation(fields: [subscriptionId], references: [id])
-  payments          Payment[]
+  id                  String               @id @default(uuid())
+  subscriptionId      String?
+  invoiceNumber       String               @unique
+  currency            String               @default("INR")
+  amount              Float
+  tax                 Float
+  total               Float
+  status              InvoiceStatus        @default(UNPAID)
+  dueDate             DateTime
+  paidDate            DateTime?
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+  companyId           String?
+  customerProfileId   String?
+  description         String?
+  lineItems           Json?
+  company             Company?             @relation(fields: [companyId], references: [id])
+  customerProfile     CustomerProfile?     @relation(fields: [customerProfileId], references: [id])
+  subscription        Subscription?        @relation(fields: [subscriptionId], references: [id])
+  payments            Payment[]
   revenueTransactions RevenueTransaction[]
 
   @@index([subscriptionId])
@@ -554,25 +531,25 @@ model Invoice {
 }
 
 model Payment {
-  id                String   @id @default(uuid())
-  invoiceId         String?
-  amount            Float
-  paymentMethod     String?
-  paymentDate       DateTime
-  transactionId     String?
-  notes             String?
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
-  companyId         String?
-  razorpayOrderId   String?
-  razorpayPaymentId String?  @unique
-  razorpaySignature String?
-  status            String?
-  conversionRate    Float?   @default(1.0)
-  currency          String   @default("INR")
-  metadata          String?
-  company           Company? @relation(fields: [companyId], references: [id])
-  invoice           Invoice? @relation(fields: [invoiceId], references: [id])
+  id                  String               @id @default(uuid())
+  invoiceId           String?
+  amount              Float
+  paymentMethod       String?
+  paymentDate         DateTime
+  transactionId       String?
+  notes               String?
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+  companyId           String?
+  razorpayOrderId     String?
+  razorpayPaymentId   String?              @unique
+  razorpaySignature   String?
+  status              String?
+  conversionRate      Float?               @default(1.0)
+  currency            String               @default("INR")
+  metadata            String?
+  company             Company?             @relation(fields: [companyId], references: [id])
+  invoice             Invoice?             @relation(fields: [invoiceId], references: [id])
   revenueTransactions RevenueTransaction[]
 
   @@index([invoiceId])
@@ -675,13 +652,13 @@ model ChatRoom {
 }
 
 model ChatParticipant {
-  id          String   @id @default(uuid())
-  roomId      String
-  userId      String
-  joinedAt    DateTime @default(now())
+  id           String    @id @default(uuid())
+  roomId       String
+  userId       String
+  joinedAt     DateTime  @default(now())
   lastViewedAt DateTime?
-  room        ChatRoom @relation(fields: [roomId], references: [id], onDelete: Cascade)
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  room         ChatRoom  @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([roomId, userId])
   @@index([roomId])
@@ -693,9 +670,9 @@ model ChatMessage {
   roomId      String
   senderId    String
   content     String
-  attachments Json?    // Array of { type, url, name, size }
-  reactions   Json?    // Array of { userId, emoji }
   createdAt   DateTime @default(now())
+  attachments Json?
+  reactions   Json?
   updatedAt   DateTime @default(now()) @updatedAt
   room        ChatRoom @relation(fields: [roomId], references: [id], onDelete: Cascade)
   sender      User     @relation(fields: [senderId], references: [id], onDelete: Cascade)
@@ -760,24 +737,28 @@ model SystemSettings {
   defaultCurrency String   @default("INR")
   companyName     String   @default("STM Journal Solutions")
   updatedAt       DateTime @updatedAt
+  brandName       String?  @default("STM Journal Solutions")
+  faviconUrl      String?
+  logoUrl         String?
+  primaryColor    String?  @default("#3b82f6")
 }
 
 model Designation {
-  id                  String            @id @default(uuid())
+  id                  String                 @id @default(uuid())
   name                String
   code                String?
   jobDescription      String?
   kra                 String?
-  expectedExperience  Float             @default(0)
-  promotionWaitPeriod Int               @default(12)
+  expectedExperience  Float                  @default(0)
+  promotionWaitPeriod Int                    @default(12)
   incrementGuidelines String?
-  level               Int               @default(1)
-  createdAt           DateTime          @default(now())
-  updatedAt           DateTime          @updatedAt
+  level               Int                    @default(1)
+  createdAt           DateTime               @default(now())
+  updatedAt           DateTime               @updatedAt
   employees           EmployeeProfile[]
-  companies           Company[]         @relation("CompanyToDesignation")
-  departments         Department[]      @relation("DepartmentToDesignation")
   taskTemplates       EmployeeTaskTemplate[]
+  companies           Company[]              @relation("CompanyToDesignation")
+  departments         Department[]           @relation("DepartmentToDesignation")
 }
 
 model GlobalDepartment {
@@ -791,22 +772,22 @@ model GlobalDepartment {
 }
 
 model GlobalDesignation {
-  id                  String   @id @default(uuid())
-  name                String   @unique
-  code                String?
-  jobDescription      String?
-  kra                 String?
-  expectedExperience  Float    @default(0)
-  level               Int      @default(1)
-  isActive            Boolean  @default(true)
-  createdAt           DateTime @default(now())
-  updatedAt           DateTime @updatedAt
+  id                 String   @id @default(uuid())
+  name               String   @unique
+  code               String?
+  jobDescription     String?
+  kra                String?
+  expectedExperience Float    @default(0)
+  level              Int      @default(1)
+  isActive           Boolean  @default(true)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
 }
 
 model EmployeeProfile {
-  id                       String                  @id @default(uuid())
-  userId                   String                  @unique
-  employeeId               String?                 @unique
+  id                       String                       @id @default(uuid())
+  userId                   String                       @unique
+  employeeId               String?                      @unique
   designation              String?
   dateOfJoining            DateTime?
   dateOfBirth              DateTime?
@@ -819,8 +800,8 @@ model EmployeeProfile {
   phoneNumber              String?
   emergencyContact         String?
   address                  String?
-  createdAt                DateTime                @default(now())
-  updatedAt                DateTime                @updatedAt
+  createdAt                DateTime                     @default(now())
+  updatedAt                DateTime                     @updatedAt
   contractUrl              String?
   offerLetterUrl           String?
   jobDescription           String?
@@ -834,10 +815,10 @@ model EmployeeProfile {
   lastPromotionDate        DateTime?
   nextReviewDate           DateTime?
   qualification            String?
-  relevantExperienceMonths Int                     @default(0)
-  relevantExperienceYears  Int                     @default(0)
-  totalExperienceMonths    Int                     @default(0)
-  totalExperienceYears     Int                     @default(0)
+  relevantExperienceMonths Int                          @default(0)
+  relevantExperienceYears  Int                          @default(0)
+  totalExperienceMonths    Int                          @default(0)
+  totalExperienceYears     Int                          @default(0)
   aadharNumber             String?
   educationDetails         Json?
   esicNumber               String?
@@ -847,24 +828,30 @@ model EmployeeProfile {
   permanentAddress         String?
   pfNumber                 String?
   uanNumber                String?
-  manualLeaveAdjustment    Float                   @default(0)
-  leaveBalance             Float                   @default(0)
+  manualLeaveAdjustment    Float                        @default(0)
+  leaveBalance             Float                        @default(0)
   metrics                  Json?
-  employeeType             EmployeeType            @default(FULL_TIME)
+  employeeType             EmployeeType                 @default(FULL_TIME)
   attendance               Attendance[]
+  dailyTaskCompletions     DailyTaskCompletion[]
   digitalDocuments         DigitalDocument[]
   hrComments               EmployeeComment[]
   documents                EmployeeDocument[]
   goals                    EmployeeGoal[]
   incentives               EmployeeIncentive[]
   kpis                     EmployeeKPI[]
-  designatRef              Designation?            @relation(fields: [designationId], references: [id])
-  user                     User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  pointLogs                EmployeePointLog[]
+  designatRef              Designation?                 @relation(fields: [designationId], references: [id])
+  user                     User                         @relation(fields: [userId], references: [id], onDelete: Cascade)
   leaveLedgers             LeaveLedger[]
   leaveRequests            LeaveRequest[]
+  performanceSnapshots     MonthlyPerformanceSnapshot[]
   onboardingProgress       OnboardingProgress[]
   performanceInsights      PerformanceInsight[]
   performance              PerformanceReview[]
+  revenueClaims            RevenueClaim[]
+  approvedRevenue          RevenueTransaction[]         @relation("ApprovedRevenue")
+  claimedRevenue           RevenueTransaction[]         @relation("ClaimedRevenue")
   salaryAdvances           SalaryAdvance[]
   incrementHistory         SalaryIncrementRecord[]
   salarySlips              SalarySlip[]
@@ -873,12 +860,6 @@ model EmployeeProfile {
   taxDeclarations          TaxDeclaration[]
   workPlans                WorkPlan[]
   workReports              WorkReport[]
-  pointLogs                EmployeePointLog[]
-  performanceSnapshots     MonthlyPerformanceSnapshot[]
-  claimedRevenue           RevenueTransaction[] @relation("ClaimedRevenue")
-  approvedRevenue          RevenueTransaction[] @relation("ApprovedRevenue")
-  revenueClaims            RevenueClaim[]
-  dailyTaskCompletions     DailyTaskCompletion[]
 }
 
 model SalaryAdvance {
@@ -929,11 +910,11 @@ model SalaryIncrementRecord {
   previousDesignation String?
   newDesignation      String?
   reason              String?
-  status              String          @default("APPROVED") // RECOMMENDED, APPROVED, REJECTED
-  recommendedByUserId String?
   approvedByUserId    String?
   createdAt           DateTime        @default(now())
   updatedAt           DateTime        @updatedAt
+  recommendedByUserId String?
+  status              String          @default("APPROVED")
   employeeProfile     EmployeeProfile @relation(fields: [employeeProfileId], references: [id], onDelete: Cascade)
 }
 
@@ -986,34 +967,34 @@ model Attendance {
 }
 
 model WorkReport {
-  id                 String              @id @default(uuid())
-  employeeId         String
-  date               DateTime            @default(now())
-  title              String
-  content            String?
-  hoursSpent         Float?
-  status             String              @default("SUBMITTED")
-  managerComment     String?
-  createdAt          DateTime            @default(now())
-  category           String              @default("GENERAL")
-  keyOutcome         String?
-  managerRating      Int?
-  selfRating         Int?                @default(5)
-  revenueGenerated   Float               @default(0)
-  tasksCompleted     Int                 @default(0)
-  chatsHandled       Int                 @default(0)
-  followUpsCompleted Int                 @default(0)
-  ticketsResolved    Int                 @default(0)
-  companyId          String?
-  kraMatchRatio      Float?
-  metrics            Json?
-  pointsEarned       Int                 @default(0)
-  tasksSnapshot      Json?               // Store details of tasks completed at submission time
-  company            Company?            @relation(fields: [companyId], references: [id])
-  employee           EmployeeProfile     @relation(fields: [employeeId], references: [id], onDelete: Cascade)
-  comments           WorkReportComment[]
-  revenueTransactions RevenueTransaction[]
+  id                  String               @id @default(uuid())
+  employeeId          String
+  date                DateTime             @default(now())
+  title               String
+  content             String?
+  hoursSpent          Float?
+  status              String               @default("SUBMITTED")
+  managerComment      String?
+  createdAt           DateTime             @default(now())
+  category            String               @default("GENERAL")
+  keyOutcome          String?
+  managerRating       Int?
+  selfRating          Int?                 @default(5)
+  revenueGenerated    Float                @default(0)
+  tasksCompleted      Int                  @default(0)
+  chatsHandled        Int                  @default(0)
+  followUpsCompleted  Int                  @default(0)
+  ticketsResolved     Int                  @default(0)
+  companyId           String?
+  kraMatchRatio       Float?
+  metrics             Json?
+  pointsEarned        Int                  @default(0)
+  tasksSnapshot       Json?
   revenueClaims       RevenueClaim[]
+  revenueTransactions RevenueTransaction[]
+  company             Company?             @relation(fields: [companyId], references: [id])
+  employee            EmployeeProfile      @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  comments            WorkReportComment[]
 
   @@index([companyId])
   @@index([employeeId])
@@ -1554,39 +1535,27 @@ model JournalVolume {
   journal      Journal        @relation(fields: [journalId], references: [id])
 }
 
-enum TaskCalculationType {
-  FLAT
-  SCALED
-  RANGE
-}
-
 model EmployeeTaskTemplate {
-  id            String       @id @default(uuid())
-  title         String
-  description   String?
-  points        Int          @default(0)
-  
-  // Legacy single selection (kept for backward compatibility)
-  departmentId  String?
-  designationId String?
-  
-  // New multi-selection support
-  departmentIds  Json?       // Array of department IDs
-  designationIds Json?       // Array of designation IDs
-  
-  companyId     String
-  isActive      Boolean             @default(true)
-  calculationType TaskCalculationType @default(FLAT)
-  minThreshold    Float?              @default(1) // e.g. 10 calls
-  maxThreshold    Float?              // e.g. 100 calls (optional cap)
-  pointsPerUnit   Float?              @default(1) // e.g. 1 point for every 10 calls
-  createdAt     DateTime            @default(now())
-  updatedAt     DateTime            @updatedAt
-
-  company       Company      @relation(fields: [companyId], references: [id])
-  department    Department?  @relation(fields: [departmentId], references: [id])
-  designation   Designation? @relation(fields: [designationId], references: [id])
+  id               String                @id @default(uuid())
+  title            String
+  description      String?
+  points           Int                   @default(0)
+  departmentId     String?
+  designationId    String?
+  companyId        String
+  isActive         Boolean               @default(true)
+  createdAt        DateTime              @default(now())
+  updatedAt        DateTime              @updatedAt
+  calculationType  TaskCalculationType   @default(FLAT)
+  maxThreshold     Float?
+  minThreshold     Float?                @default(1)
+  pointsPerUnit    Float?                @default(1)
+  departmentIds    Json?
+  designationIds   Json?
   dailyCompletions DailyTaskCompletion[]
+  company          Company               @relation(fields: [companyId], references: [id])
+  department       Department?           @relation(fields: [departmentId], references: [id])
+  designation      Designation?          @relation(fields: [designationId], references: [id])
 
   @@index([companyId])
   @@index([departmentId])
@@ -1594,18 +1563,17 @@ model EmployeeTaskTemplate {
 }
 
 model EmployeePointLog {
-  id          String   @id @default(uuid())
-  employeeId  String
-  type        String   // WORK_REPORT, ATTENDANCE, DISCIPLINE, ACHIEVEMENT, BONUS
-  points      Int
-  reason      String?
-  date        DateTime @default(now())
-  createdAt   DateTime @default(now())
-  companyId   String
-  awardedBy   String?
-
-  employee    EmployeeProfile @relation(fields: [employeeId], references: [id], onDelete: Cascade)
-  company     Company         @relation(fields: [companyId], references: [id])
+  id         String          @id @default(uuid())
+  employeeId String
+  type       String
+  points     Int
+  reason     String?
+  date       DateTime        @default(now())
+  createdAt  DateTime        @default(now())
+  companyId  String
+  awardedBy  String?
+  company    Company         @relation(fields: [companyId], references: [id])
+  employee   EmployeeProfile @relation(fields: [employeeId], references: [id], onDelete: Cascade)
 
   @@index([employeeId])
   @@index([companyId])
@@ -1613,13 +1581,12 @@ model EmployeePointLog {
 }
 
 model DailyTaskCompletion {
-  id          String   @id @default(uuid())
+  id          String               @id @default(uuid())
   employeeId  String
   taskId      String
-  quantity    Float?   // For SCALED tasks
-  completedAt DateTime @default(now())
-  createdAt   DateTime @default(now())
-
+  quantity    Float?
+  completedAt DateTime             @default(now())
+  createdAt   DateTime             @default(now())
   employee    EmployeeProfile      @relation(fields: [employeeId], references: [id], onDelete: Cascade)
   task        EmployeeTaskTemplate @relation(fields: [taskId], references: [id], onDelete: Cascade)
 
@@ -1629,80 +1596,57 @@ model DailyTaskCompletion {
   @@index([completedAt])
 }
 
-// Monthly Performance Analytics Models
 model MonthlyPerformanceSnapshot {
-  id                    String   @id @default(uuid())
+  id                    String          @id @default(uuid())
   employeeId            String
   companyId             String
   departmentId          String?
-  month                 Int      // 1-12
+  month                 Int
   year                  Int
-  
-  // Attendance & Discipline Metrics
-  totalWorkingDays      Int      @default(0)
-  daysPresent           Int      @default(0)
-  daysAbsent            Int      @default(0)
-  daysLate              Int      @default(0)
-  totalLateMinutes      Int      @default(0)
-  averageWorkHours      Float    @default(0)
-  overtimeHours         Float    @default(0)
-  leavesTaken           Int      @default(0)
-  attendanceScore       Float    @default(0) // 0-100
-  
-  // Task & Points Performance
-  totalPointsEarned     Int      @default(0)
-  tasksCompleted        Int      @default(0)
-  tasksAssigned         Int      @default(0)
-  taskCompletionRate    Float    @default(0) // percentage
-  averageTaskQuality    Float    @default(0) // 0-10
-  
-  // Work Reports & Ratings
-  reportsSubmitted      Int      @default(0)
-  reportsExpected       Int      @default(0)
-  reportSubmissionRate  Float    @default(0) // percentage
-  averageSelfRating     Float    @default(0) // 0-10
-  averageManagerRating  Float    @default(0) // 0-10
-  
-  // Revenue & Impact
-  totalRevenueGenerated Float    @default(0)
-  revenueTarget         Float    @default(0)
-  revenueAchievement    Float    @default(0) // percentage
-  
-  // Commitment & Dedication Indicators
-  deadlinesMet          Int      @default(0)
-  deadlinesMissed       Int      @default(0)
-  initiativesCount      Int      @default(0) // Extra tasks/projects taken
-  improvementScore      Float    @default(0) // Month-over-month growth
-  
-  // Communication & Collaboration
-  communicationScore    Float    @default(0) // Based on calls, emails, meetings
-  teamCollaboration     Float    @default(0) // 0-10
-  
-  // Overall Performance
-  overallScore          Float    @default(0) // Weighted composite score 0-100
-  performanceGrade      String?  // A+, A, B+, B, C, D, F
-  trend                 String?  // IMPROVING, STABLE, DECLINING
-  
-  // Flags & Alerts
-  needsAttention        Boolean  @default(false)
-  isTopPerformer        Boolean  @default(false)
-  warningFlags          Json?    // Array of warning indicators
-  
-  // AI Predictions (for future use)
-  predictedNextMonth    Json?    // AI-predicted performance metrics
-  retentionRisk         Float?   // 0-1 probability of leaving
-  promotionReadiness    Float?   // 0-1 score
-  
-  // Metadata
-  calculatedAt          DateTime @default(now())
-  createdAt             DateTime @default(now())
-  updatedAt             DateTime @updatedAt
-  
-  // Relations
-  employee              EmployeeProfile @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  totalWorkingDays      Int             @default(0)
+  daysPresent           Int             @default(0)
+  daysAbsent            Int             @default(0)
+  daysLate              Int             @default(0)
+  totalLateMinutes      Int             @default(0)
+  averageWorkHours      Float           @default(0)
+  overtimeHours         Float           @default(0)
+  leavesTaken           Int             @default(0)
+  attendanceScore       Float           @default(0)
+  totalPointsEarned     Int             @default(0)
+  tasksCompleted        Int             @default(0)
+  tasksAssigned         Int             @default(0)
+  taskCompletionRate    Float           @default(0)
+  averageTaskQuality    Float           @default(0)
+  reportsSubmitted      Int             @default(0)
+  reportsExpected       Int             @default(0)
+  reportSubmissionRate  Float           @default(0)
+  averageSelfRating     Float           @default(0)
+  averageManagerRating  Float           @default(0)
+  totalRevenueGenerated Float           @default(0)
+  revenueTarget         Float           @default(0)
+  revenueAchievement    Float           @default(0)
+  deadlinesMet          Int             @default(0)
+  deadlinesMissed       Int             @default(0)
+  initiativesCount      Int             @default(0)
+  improvementScore      Float           @default(0)
+  communicationScore    Float           @default(0)
+  teamCollaboration     Float           @default(0)
+  overallScore          Float           @default(0)
+  performanceGrade      String?
+  trend                 String?
+  needsAttention        Boolean         @default(false)
+  isTopPerformer        Boolean         @default(false)
+  warningFlags          Json?
+  predictedNextMonth    Json?
+  retentionRisk         Float?
+  promotionReadiness    Float?
+  calculatedAt          DateTime        @default(now())
+  createdAt             DateTime        @default(now())
+  updatedAt             DateTime        @updatedAt
   company               Company         @relation(fields: [companyId], references: [id])
   department            Department?     @relation(fields: [departmentId], references: [id])
-  
+  employee              EmployeeProfile @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
   @@unique([employeeId, month, year])
   @@index([companyId, month, year])
   @@index([departmentId, month, year])
@@ -1710,96 +1654,69 @@ model MonthlyPerformanceSnapshot {
 }
 
 model DepartmentPerformance {
-  id                    String   @id @default(uuid())
-  departmentId          String
-  companyId             String
-  month                 Int
-  year                  Int
-  
-  // Aggregated Team Metrics
-  totalEmployees        Int      @default(0)
-  activeEmployees       Int      @default(0)
-  averageAttendance     Float    @default(0)
-  averagePerformance    Float    @default(0)
-  totalPointsEarned     Int      @default(0)
-  totalRevenue          Float    @default(0)
-  
-  // Department Health
-  topPerformersCount    Int      @default(0)
-  underperformersCount  Int      @default(0)
-  attritionCount        Int      @default(0)
-  newHiresCount         Int      @default(0)
-  
-  // Productivity
-  taskCompletionRate    Float    @default(0)
-  reportSubmissionRate  Float    @default(0)
-  averageWorkHours      Float    @default(0)
-  
-  // Budget & ROI
-  budgetAllocated       Float    @default(0)
-  budgetUtilized        Float    @default(0)
-  revenuePerEmployee    Float    @default(0)
-  roi                   Float    @default(0)
-  
-  // Overall
-  departmentScore       Float    @default(0)
-  rank                  Int?     // Rank among all departments
-  trend                 String?
-  
-  calculatedAt          DateTime @default(now())
-  createdAt             DateTime @default(now())
-  
-  department            Department @relation(fields: [departmentId], references: [id], onDelete: Cascade)
-  company               Company    @relation(fields: [companyId], references: [id])
-  
+  id                   String     @id @default(uuid())
+  departmentId         String
+  companyId            String
+  month                Int
+  year                 Int
+  totalEmployees       Int        @default(0)
+  activeEmployees      Int        @default(0)
+  averageAttendance    Float      @default(0)
+  averagePerformance   Float      @default(0)
+  totalPointsEarned    Int        @default(0)
+  totalRevenue         Float      @default(0)
+  topPerformersCount   Int        @default(0)
+  underperformersCount Int        @default(0)
+  attritionCount       Int        @default(0)
+  newHiresCount        Int        @default(0)
+  taskCompletionRate   Float      @default(0)
+  reportSubmissionRate Float      @default(0)
+  averageWorkHours     Float      @default(0)
+  budgetAllocated      Float      @default(0)
+  budgetUtilized       Float      @default(0)
+  revenuePerEmployee   Float      @default(0)
+  roi                  Float      @default(0)
+  departmentScore      Float      @default(0)
+  rank                 Int?
+  trend                String?
+  calculatedAt         DateTime   @default(now())
+  createdAt            DateTime   @default(now())
+  company              Company    @relation(fields: [companyId], references: [id])
+  department           Department @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+
   @@unique([departmentId, month, year])
   @@index([companyId, month, year])
 }
 
 model CompanyPerformance {
-  id                    String   @id @default(uuid())
-  companyId             String
-  month                 Int
-  year                  Int
-  
-  // Company-Wide Metrics
-  totalEmployees        Int      @default(0)
-  totalDepartments      Int      @default(0)
-  averagePerformance    Float    @default(0)
-  totalRevenue          Float    @default(0)
-  totalPointsEarned     Int      @default(0)
-  
-  // Workforce Health
-  attendanceRate        Float    @default(0)
-  attritionRate         Float    @default(0)
-  satisfactionScore     Float    @default(0)
-  
-  // Productivity
-  taskCompletionRate    Float    @default(0)
-  reportSubmissionRate  Float    @default(0)
-  averageWorkHours      Float    @default(0)
-  
-  // Financial
-  revenuePerEmployee    Float    @default(0)
-  profitMargin          Float    @default(0)
-  
-  // Growth Indicators
-  monthOverMonthGrowth  Float    @default(0)
-  yearOverYearGrowth    Float    @default(0)
-  
-  // Rankings & Benchmarks
-  topDepartment         String?
-  topPerformer          String?
-  
-  calculatedAt          DateTime @default(now())
-  createdAt             DateTime @default(now())
-  
-  company               Company @relation(fields: [companyId], references: [id])
-  
+  id                   String   @id @default(uuid())
+  companyId            String
+  month                Int
+  year                 Int
+  totalEmployees       Int      @default(0)
+  totalDepartments     Int      @default(0)
+  averagePerformance   Float    @default(0)
+  totalRevenue         Float    @default(0)
+  totalPointsEarned    Int      @default(0)
+  attendanceRate       Float    @default(0)
+  attritionRate        Float    @default(0)
+  satisfactionScore    Float    @default(0)
+  taskCompletionRate   Float    @default(0)
+  reportSubmissionRate Float    @default(0)
+  averageWorkHours     Float    @default(0)
+  revenuePerEmployee   Float    @default(0)
+  profitMargin         Float    @default(0)
+  monthOverMonthGrowth Float    @default(0)
+  yearOverYearGrowth   Float    @default(0)
+  topDepartment        String?
+  topPerformer         String?
+  calculatedAt         DateTime @default(now())
+  createdAt            DateTime @default(now())
+  company              Company  @relation(fields: [companyId], references: [id])
+
   @@unique([companyId, month, year])
   @@index([month, year])
 }
-
 
 model JournalIssue {
   id                  String        @id @default(uuid())
@@ -1817,52 +1734,44 @@ model JournalIssue {
 }
 
 model Article {
-  id               String          @id @default(uuid())
-  title            String
-  abstract         String?
-  keywords         String?
-  journalId        String
-  issueId          String?
-  submissionDate   DateTime        @default(now())
-  acceptanceDate   DateTime?
-  publicationDate  DateTime?
-  status           ArticleStatus   @default(SUBMITTED)
-  fileUrl          String?
-  createdAt        DateTime        @default(now())
-  updatedAt        DateTime        @updatedAt
-  apcAmountINR     Float?          @default(0)
-  apcAmountUSD     Float?          @default(0)
-  apcInvoiceId     String?
-  apcPaymentStatus String          @default("UNPAID")
-  apcType          APCType?
-  
-  // NEW FIELDS - Manuscript Workflow
-  manuscriptId     String?         @unique
-  manuscriptStatus ManuscriptStatus? @default(SUBMITTED)
-  volumeId         String?
-  year             Int?
-  doi              String?         @unique
-  
-  // EXISTING RELATIONS
-  issue            JournalIssue?   @relation(fields: [issueId], references: [id])
-  journal          Journal         @relation(fields: [journalId], references: [id])
-  authors          ArticleAuthor[]
-  reviews          Review[]
-  versions         ArticleVersion[]
-  currentRound     Int             @default(1)
-  reviewAssignments ReviewAssignment[]
-  certificates     ReviewCertificate[]
-  
-  // NEW RELATIONS - Quality Control
-  plagiarismReport  PlagiarismReport?
-  qualityReport     QualityReport?
-  statusHistory     ManuscriptStatusHistory[]
-  
-  // Phase 4 Relations
-  revisions         ManuscriptRevision[]
-  communications    ManuscriptCommunication[]
+  id                  String                    @id @default(uuid())
+  title               String
+  abstract            String?
+  keywords            String?
+  journalId           String
+  issueId             String?
+  submissionDate      DateTime                  @default(now())
+  acceptanceDate      DateTime?
+  publicationDate     DateTime?
+  status              ArticleStatus             @default(SUBMITTED)
+  fileUrl             String?
+  createdAt           DateTime                  @default(now())
+  updatedAt           DateTime                  @updatedAt
+  apcAmountINR        Float?                    @default(0)
+  apcAmountUSD        Float?                    @default(0)
+  apcInvoiceId        String?
+  apcPaymentStatus    String                    @default("UNPAID")
+  apcType             APCType?
+  currentRound        Int                       @default(1)
+  doi                 String?                   @unique
+  manuscriptId        String?                   @unique
+  manuscriptStatus    ManuscriptStatus?         @default(SUBMITTED)
+  volumeId            String?
+  year                Int?
+  issue               JournalIssue?             @relation(fields: [issueId], references: [id])
+  journal             Journal                   @relation(fields: [journalId], references: [id])
+  authors             ArticleAuthor[]
+  versions            ArticleVersion[]
   coAuthorInvitations CoAuthorInvitation[]
-  
+  communications      ManuscriptCommunication[]
+  revisions           ManuscriptRevision[]
+  statusHistory       ManuscriptStatusHistory[]
+  plagiarismReport    PlagiarismReport?
+  qualityReport       QualityReport?
+  reviews             Review[]
+  reviewAssignments   ReviewAssignment[]
+  certificates        ReviewCertificate[]
+
   @@index([manuscriptId])
   @@index([manuscriptStatus])
   @@index([volumeId])
@@ -1902,40 +1811,37 @@ model ArticleAuthor {
 }
 
 model Conference {
-  id              String                   @id @default(uuid())
-  title           String
-  description     String
-  startDate       DateTime
-  endDate         DateTime
-  venue           String?
-  organizer       String?
-  website         String?
-  isActive        Boolean                  @default(true)
-  createdAt       DateTime                 @default(now())
-  updatedAt       DateTime                 @updatedAt
-  companyId       String?
-  
-  // Enhanced fields for Phase 1
-  logoUrl         String?
-  bannerUrl       String?
-  primaryColor    String?                  @default("#3B82F6")
-  mode            String                   @default("IN_PERSON") // IN_PERSON, VIRTUAL, HYBRID
-  maxAttendees    Int?
-  cfpStartDate    DateTime?
-  cfpEndDate      DateTime?
-  reviewDeadline  DateTime?
-  timezone        String                   @default("UTC")
-  status          String                   @default("DRAFT") // DRAFT, PUBLISHED, ONGOING, COMPLETED, CANCELLED
-  registrationFee Float?                   @default(0)
-  currency        String                   @default("INR")
-  
-  company         Company?                 @relation(fields: [companyId], references: [id])
-  papers          ConferencePaper[]
-  registrations   ConferenceRegistration[]
-  ticketTypes     ConferenceTicketType[]
-  tracks          ConferenceTrack[]
-  sponsors        ConferenceSponsor[]
+  id               String                      @id @default(uuid())
+  title            String
+  description      String
+  startDate        DateTime
+  endDate          DateTime
+  venue            String?
+  organizer        String?
+  website          String?
+  isActive         Boolean                     @default(true)
+  createdAt        DateTime                    @default(now())
+  updatedAt        DateTime                    @updatedAt
+  companyId        String?
+  bannerUrl        String?
+  cfpEndDate       DateTime?
+  cfpStartDate     DateTime?
+  currency         String                      @default("INR")
+  logoUrl          String?
+  maxAttendees     Int?
+  mode             String                      @default("IN_PERSON")
+  primaryColor     String?                     @default("#3B82F6")
+  registrationFee  Float?                      @default(0)
+  reviewDeadline   DateTime?
+  status           String                      @default("DRAFT")
+  timezone         String                      @default("UTC")
+  company          Company?                    @relation(fields: [companyId], references: [id])
   committeeMembers ConferenceCommitteeMember[]
+  papers           ConferencePaper[]
+  registrations    ConferenceRegistration[]
+  sponsors         ConferenceSponsor[]
+  ticketTypes      ConferenceTicketType[]
+  tracks           ConferenceTrack[]
 }
 
 model ConferenceTicketType {
@@ -1951,79 +1857,72 @@ model ConferenceTicketType {
 }
 
 model ConferenceRegistration {
-  id           String               @id @default(uuid())
-  conferenceId String
-  userId       String?
-  name         String
-  email        String
-  organization String?
-  ticketTypeId String
-  amountPaid   Float
-  status       String               @default("REGISTERED")
-  paymentId    String?
-  createdAt    DateTime             @default(now())
-  conference   Conference           @relation(fields: [conferenceId], references: [id])
-  ticketType   ConferenceTicketType @relation(fields: [ticketTypeId], references: [id])
-  user         User?                @relation(fields: [userId], references: [id])
-  
-  // Phase 3 Fields
-  phone               String?
-  dietaryRequirements String?
-  tshirtSize          String?  // S, M, L, XL, XXL
+  id                  String               @id @default(uuid())
+  conferenceId        String
+  userId              String?
+  name                String
+  email               String
+  organization        String?
+  ticketTypeId        String
+  amountPaid          Float
+  status              String               @default("REGISTERED")
+  paymentId           String?
+  createdAt           DateTime             @default(now())
+  certificateIssued   Boolean              @default(false)
   checkInTime         DateTime?
-  certificateIssued   Boolean  @default(false)
+  dietaryRequirements String?
   notes               String?
+  phone               String?
+  tshirtSize          String?
+  conference          Conference           @relation(fields: [conferenceId], references: [id])
+  ticketType          ConferenceTicketType @relation(fields: [ticketTypeId], references: [id])
+  user                User?                @relation(fields: [userId], references: [id])
 }
 
 model ConferencePaper {
-  id            String     @id @default(uuid())
-  conferenceId  String
-  title         String
-  abstract      String
-  authors       String
-  status        String     @default("SUBMITTED")
-  presenterName String?
-  presentedAt   DateTime?
-  fileUrl       String?
-  createdAt     DateTime   @default(now())
-  
-  // Phase 2 Fields
-  submissionType String    @default("ABSTRACT") // ABSTRACT, FULL_PAPER
+  id             String           @id @default(uuid())
+  conferenceId   String
+  title          String
+  abstract       String
+  authors        String
+  status         String           @default("SUBMITTED")
+  presenterName  String?
+  presentedAt    DateTime?
+  fileUrl        String?
+  createdAt      DateTime         @default(now())
+  finalDecision  String?
   keywords       String?
+  reviewStatus   String           @default("PENDING")
+  submissionType String           @default("ABSTRACT")
   trackId        String?
-  reviewStatus   String    @default("PENDING") // PENDING, UNDER_REVIEW, REVIEWED
-  finalDecision  String?   // ACCEPTED, REJECTED, REVISION_REQUIRED
-  userId         String?   // Link to user account
-  
-  conference     Conference @relation(fields: [conferenceId], references: [id])
+  userId         String?
+  conference     Conference       @relation(fields: [conferenceId], references: [id])
   track          ConferenceTrack? @relation(fields: [trackId], references: [id])
   reviews        PaperReview[]
 }
 
 model PaperReview {
-  id           String          @id @default(uuid())
-  paperId      String
-  reviewerId   String
-  score        Int             // 1-5 or 1-10
-  comments     String?
-  decision     String          @default("PENDING") // ACCEPT, REJECT, REVISE
-  submittedAt  DateTime        @default(now())
-  
-  paper        ConferencePaper @relation(fields: [paperId], references: [id], onDelete: Cascade)
-  reviewer     User            @relation(fields: [reviewerId], references: [id])
+  id          String          @id @default(uuid())
+  paperId     String
+  reviewerId  String
+  score       Int
+  comments    String?
+  decision    String          @default("PENDING")
+  submittedAt DateTime        @default(now())
+  paper       ConferencePaper @relation(fields: [paperId], references: [id], onDelete: Cascade)
+  reviewer    User            @relation(fields: [reviewerId], references: [id])
 }
 
 model ConferenceTrack {
-  id           String     @id @default(uuid())
+  id           String            @id @default(uuid())
   conferenceId String
   name         String
   description  String?
-  color        String?    @default("#3B82F6")
-  order        Int        @default(0)
-  createdAt    DateTime   @default(now())
-  
-  conference   Conference @relation(fields: [conferenceId], references: [id], onDelete: Cascade)
+  color        String?           @default("#3B82F6")
+  order        Int               @default(0)
+  createdAt    DateTime          @default(now())
   papers       ConferencePaper[]
+  conference   Conference        @relation(fields: [conferenceId], references: [id], onDelete: Cascade)
 }
 
 model ConferenceSponsor {
@@ -2031,49 +1930,45 @@ model ConferenceSponsor {
   conferenceId String
   name         String
   logo         String?
-  tier         String     @default("BRONZE") // PLATINUM, GOLD, SILVER, BRONZE
+  tier         String     @default("BRONZE")
   website      String?
   description  String?
   order        Int        @default(0)
   createdAt    DateTime   @default(now())
-  
   conference   Conference @relation(fields: [conferenceId], references: [id], onDelete: Cascade)
 }
 
 model Course {
-  id              String             @id @default(uuid())
-  title           String
-  description     String
-  thumbnailUrl    String?
-  price           Float              @default(0)
-  currency        String             @default("INR")
-  instructorId    String?
-  isPublished     Boolean            @default(false)
-  createdAt       DateTime           @default(now())
-  updatedAt       DateTime           @updatedAt
-  companyId       String?
-  
-  // Enhanced fields
-  category        String?
-  level           String?            @default("BEGINNER") // BEGINNER, INTERMEDIATE, ADVANCED
-  language        String?            @default("English")
-  prerequisites   String?            // Comma-separated course IDs
-  estimatedHours  Int?
-  
-  company         Company?           @relation(fields: [companyId], references: [id])
-  enrollments     CourseEnrollment[]
-  modules         CourseModule[]
-  discussions     CourseDiscussion[]
-  announcements   CourseAnnouncement[]
+  id             String               @id @default(uuid())
+  title          String
+  description    String
+  thumbnailUrl   String?
+  price          Float                @default(0)
+  currency       String               @default("INR")
+  instructorId   String?
+  isPublished    Boolean              @default(false)
+  createdAt      DateTime             @default(now())
+  updatedAt      DateTime             @updatedAt
+  companyId      String?
+  category       String?
+  estimatedHours Int?
+  language       String?              @default("English")
+  level          String?              @default("BEGINNER")
+  prerequisites  String?
+  company        Company?             @relation(fields: [companyId], references: [id])
+  announcements  CourseAnnouncement[]
+  discussions    CourseDiscussion[]
+  enrollments    CourseEnrollment[]
+  modules        CourseModule[]
 }
 
 model CourseModule {
   id          String         @id @default(uuid())
   courseId    String
   title       String
-  description String?
   order       Int
   createdAt   DateTime       @default(now())
+  description String?
   lessons     CourseLesson[]
   course      Course         @relation(fields: [courseId], references: [id], onDelete: Cascade)
 }
@@ -2082,36 +1977,34 @@ model CourseLesson {
   id          String               @id @default(uuid())
   moduleId    String
   title       String
-  description String?
   order       Int
-  type        String               @default("VIDEO") // VIDEO, TEXT, QUIZ, DOCUMENT, ASSIGNMENT
+  type        String               @default("VIDEO")
   contentUrl  String?
   textContent String?
-  duration    Int?                 // in minutes
-  isFree      Boolean              @default(false) // Preview lesson
+  duration    Int?
   createdAt   DateTime             @default(now())
-  
+  description String?
+  isFree      Boolean              @default(false)
   module      CourseModule         @relation(fields: [moduleId], references: [id], onDelete: Cascade)
-  progress    UserLessonProgress[]
-  quizzes     Quiz[]
   notes       CourseNote[]
+  quizzes     Quiz[]
+  progress    UserLessonProgress[]
 }
 
 model CourseEnrollment {
-  id              String        @id @default(uuid())
-  courseId        String
-  userId          String
-  enrolledAt      DateTime      @default(now())
-  completedAt     DateTime?
-  progress        Float         @default(0)
-  lastAccessedAt  DateTime?
-  certificateUrl  String?
-  status          String        @default("ACTIVE") // ACTIVE, COMPLETED, DROPPED
-  
-  course          Course        @relation(fields: [courseId], references: [id])
-  user            User          @relation(fields: [userId], references: [id])
-  certificate     Certificate?
-  
+  id             String       @id @default(uuid())
+  courseId       String
+  userId         String
+  enrolledAt     DateTime     @default(now())
+  completedAt    DateTime?
+  progress       Float        @default(0)
+  certificateUrl String?
+  lastAccessedAt DateTime?
+  status         String       @default("ACTIVE")
+  certificate    Certificate?
+  course         Course       @relation(fields: [courseId], references: [id])
+  user           User         @relation(fields: [userId], references: [id])
+
   @@unique([userId, courseId])
 }
 
@@ -2120,11 +2013,10 @@ model UserLessonProgress {
   lessonId     String
   userId       String
   isCompleted  Boolean      @default(false)
-  lastPosition Int?         // For video progress in seconds
-  timeSpent    Int          @default(0) // in seconds
+  lastPosition Int?
   updatedAt    DateTime     @updatedAt
   completedAt  DateTime?
-  
+  timeSpent    Int          @default(0)
   lesson       CourseLesson @relation(fields: [lessonId], references: [id])
   user         User         @relation(fields: [userId], references: [id])
 
@@ -2132,34 +2024,32 @@ model UserLessonProgress {
 }
 
 model Quiz {
-  id           String               @id @default(uuid())
-  lessonId     String
-  title        String
-  description  String?
-  passingScore Int                  @default(70) // percentage
-  timeLimit    Int?                 // in minutes
-  maxAttempts  Int                  @default(3)
-  shuffleQuestions Boolean          @default(false)
-  showAnswers  Boolean              @default(true)
-  createdAt    DateTime             @default(now())
-  
-  lesson       CourseLesson         @relation(fields: [lessonId], references: [id], onDelete: Cascade)
-  questions    CourseQuizQuestion[]
-  attempts     QuizAttempt[]
+  id               String               @id @default(uuid())
+  lessonId         String
+  title            String
+  description      String?
+  passingScore     Int                  @default(70)
+  timeLimit        Int?
+  maxAttempts      Int                  @default(3)
+  shuffleQuestions Boolean              @default(false)
+  showAnswers      Boolean              @default(true)
+  createdAt        DateTime             @default(now())
+  questions        CourseQuizQuestion[]
+  lesson           CourseLesson         @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  attempts         QuizAttempt[]
 }
 
 model CourseQuizQuestion {
-  id            String   @id @default(uuid())
+  id            String  @id @default(uuid())
   quizId        String
   question      String
-  type          String   @default("MULTIPLE_CHOICE") // MULTIPLE_CHOICE, TRUE_FALSE, SHORT_ANSWER
-  options       Json?    // Array of options for multiple choice
+  type          String  @default("MULTIPLE_CHOICE")
+  options       Json?
   correctAnswer String
   explanation   String?
-  points        Int      @default(1)
+  points        Int     @default(1)
   order         Int
-  
-  quiz          Quiz     @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  quiz          Quiz    @relation(fields: [quizId], references: [id], onDelete: Cascade)
 }
 
 model QuizAttempt {
@@ -2168,10 +2058,9 @@ model QuizAttempt {
   userId      String
   score       Float
   passed      Boolean
-  answers     Json     // User's answers
-  timeSpent   Int?     // in seconds
+  answers     Json
+  timeSpent   Int?
   attemptedAt DateTime @default(now())
-  
   quiz        Quiz     @relation(fields: [quizId], references: [id])
   user        User     @relation(fields: [userId], references: [id])
 }
@@ -2181,26 +2070,24 @@ model CourseNote {
   lessonId  String
   userId    String
   content   String
-  timestamp Int?         // Video timestamp in seconds
+  timestamp Int?
   createdAt DateTime     @default(now())
   updatedAt DateTime     @updatedAt
-  
   lesson    CourseLesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
   user      User         @relation(fields: [userId], references: [id])
 }
 
 model CourseDiscussion {
-  id        String             @id @default(uuid())
+  id        String            @id @default(uuid())
   courseId  String
   userId    String
   title     String
   content   String
-  isPinned  Boolean            @default(false)
-  createdAt DateTime           @default(now())
-  updatedAt DateTime           @updatedAt
-  
-  course    Course             @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  user      User               @relation(fields: [userId], references: [id])
+  isPinned  Boolean           @default(false)
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
+  course    Course            @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  user      User              @relation(fields: [userId], references: [id])
   replies   DiscussionReply[]
 }
 
@@ -2211,7 +2098,6 @@ model DiscussionReply {
   content      String
   createdAt    DateTime         @default(now())
   updatedAt    DateTime         @updatedAt
-  
   discussion   CourseDiscussion @relation(fields: [discussionId], references: [id], onDelete: Cascade)
   user         User             @relation(fields: [userId], references: [id])
 }
@@ -2222,23 +2108,21 @@ model CourseAnnouncement {
   title     String
   content   String
   createdAt DateTime @default(now())
-  
   course    Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
 }
 
 model Certificate {
-  id               String           @id @default(uuid())
-  enrollmentId     String?          @unique
-  courseId         String?
+  id               String            @id @default(uuid())
+  enrollmentId     String?           @unique
   userId           String
-  recipientName    String?
-  type             CertificateType? @default(COURSE_COMPLETION)
-  title            String?
-  description      String?
-  issuedAt         DateTime         @default(now())
+  courseId         String?
+  issuedAt         DateTime          @default(now())
   certificateUrl   String?
-  verificationCode String           @unique
-  
+  verificationCode String            @unique
+  description      String?
+  recipientName    String?
+  title            String?
+  type             CertificateType?  @default(COURSE_COMPLETION)
   enrollment       CourseEnrollment? @relation(fields: [enrollmentId], references: [id])
   user             User              @relation(fields: [userId], references: [id])
 }
@@ -2413,6 +2297,761 @@ model CompanyPotential {
   company             Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
 }
 
+model EditorialBoardMember {
+  id             String        @id @default(uuid())
+  journalId      String
+  userId         String?
+  name           String
+  email          String
+  designation    String?
+  affiliation    String?
+  bio            String?
+  profilePicture String?
+  displayOrder   Int           @default(0)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  endDate        DateTime?
+  isActive       Boolean       @default(true)
+  joinedDate     DateTime      @default(now())
+  role           EditorialRole @default(REVIEWER)
+  specialization String?
+  journal        Journal       @relation(fields: [journalId], references: [id])
+  user           User?         @relation(fields: [userId], references: [id])
+
+  @@index([journalId])
+  @@index([role])
+}
+
+model ArticleVersion {
+  id            String   @id @default(uuid())
+  articleId     String
+  versionNumber Int
+  fileUrl       String
+  submittedAt   DateTime @default(now())
+  changelog     String?
+  article       Article  @relation(fields: [articleId], references: [id])
+
+  @@index([articleId])
+}
+
+model ConferenceCommitteeMember {
+  id           String     @id @default(uuid())
+  conferenceId String
+  userId       String?
+  name         String
+  role         String
+  affiliation  String?
+  bio          String?
+  photoUrl     String?
+  displayOrder Int        @default(0)
+  createdAt    DateTime   @default(now())
+  conference   Conference @relation(fields: [conferenceId], references: [id], onDelete: Cascade)
+  user         User?      @relation(fields: [userId], references: [id])
+}
+
+model JournalReviewer {
+  id               String              @id @default(uuid())
+  journalId        String
+  userId           String
+  specialization   String[]
+  bio              String?
+  isActive         Boolean             @default(true)
+  joinedDate       DateTime            @default(now())
+  totalReviews     Int                 @default(0)
+  completedReviews Int                 @default(0)
+  averageRating    Float?
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
+  journal          Journal             @relation(fields: [journalId], references: [id], onDelete: Cascade)
+  user             User                @relation("ReviewerProfile", fields: [userId], references: [id])
+  assignments      ReviewAssignment[]
+  certificates     ReviewCertificate[]
+
+  @@unique([journalId, userId])
+  @@index([journalId])
+  @@index([userId])
+  @@index([isActive])
+}
+
+model ReviewAssignment {
+  id               String          @id @default(uuid())
+  articleId        String
+  reviewerId       String
+  assignedBy       String
+  assignedDate     DateTime        @default(now())
+  dueDate          DateTime
+  status           ReviewStatus    @default(PENDING)
+  priority         ReviewPriority  @default(NORMAL)
+  round            Int             @default(1)
+  reminderSent     Boolean         @default(false)
+  lastReminderDate DateTime?
+  notes            String?
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+  article          Article         @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  assignedByUser   User            @relation("AssignedReviews", fields: [assignedBy], references: [id])
+  reviewer         JournalReviewer @relation(fields: [reviewerId], references: [id])
+  report           ReviewReport?
+
+  @@index([articleId])
+  @@index([reviewerId])
+  @@index([status])
+  @@index([dueDate])
+}
+
+model ReviewReport {
+  id                   String           @id @default(uuid())
+  assignmentId         String           @unique
+  overallRating        Int
+  originality          Int
+  methodology          Int
+  clarity              Int
+  significance         Int
+  commentsToEditor     String
+  commentsToAuthor     String?
+  recommendation       Recommendation
+  confidentialComments String?
+  submittedDate        DateTime         @default(now())
+  validatedBy          String?
+  validatedDate        DateTime?
+  isValidated          Boolean          @default(false)
+  rejectionReason      String?
+  createdAt            DateTime         @default(now())
+  updatedAt            DateTime         @updatedAt
+  assignment           ReviewAssignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  validator            User?            @relation("ValidatedReports", fields: [validatedBy], references: [id])
+
+  @@index([assignmentId])
+  @@index([isValidated])
+}
+
+model ReviewCertificate {
+  id                String          @id @default(uuid())
+  reviewerId        String
+  articleId         String
+  journalId         String
+  certificateNumber String          @unique
+  issueDate         DateTime        @default(now())
+  reviewDate        DateTime
+  articleTitle      String
+  reviewerName      String
+  journalName       String
+  pdfUrl            String?
+  issuedBy          String
+  metadata          Json?
+  createdAt         DateTime        @default(now())
+  article           Article         @relation(fields: [articleId], references: [id])
+  issuer            User            @relation("IssuedCertificates", fields: [issuedBy], references: [id])
+  journal           Journal         @relation(fields: [journalId], references: [id])
+  reviewer          JournalReviewer @relation(fields: [reviewerId], references: [id])
+
+  @@index([reviewerId])
+  @@index([certificateNumber])
+  @@index([journalId])
+}
+
+model WebsiteMonitor {
+  id             String              @id @default(uuid())
+  name           String
+  url            String
+  frequency      Int                 @default(5)
+  isPaused       Boolean             @default(false)
+  lastCheck      DateTime?
+  status         String              @default("PENDING")
+  upsince        DateTime?
+  dailyUptime    Float?
+  totalDowntime  Int                 @default(0)
+  notifyEmail    Boolean             @default(true)
+  notifyWhatsapp Boolean             @default(true)
+  companyId      String?
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+  category       String?
+  logs           WebsiteMonitorLog[]
+}
+
+model WebsiteMonitorLog {
+  id           String         @id @default(uuid())
+  monitorId    String
+  status       String
+  statusCode   Int?
+  responseTime Int?
+  reason       String?
+  checkedAt    DateTime       @default(now())
+  monitor      WebsiteMonitor @relation(fields: [monitorId], references: [id], onDelete: Cascade)
+
+  @@index([monitorId])
+  @@index([checkedAt])
+}
+
+model AppConfiguration {
+  id          String   @id @default(uuid())
+  companyId   String?
+  category    String
+  key         String
+  value       String
+  isActive    Boolean  @default(true)
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  createdBy   String?
+  company     Company? @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@unique([companyId, category, key])
+  @@index([companyId])
+  @@index([category])
+}
+
+model JournalDomain {
+  id          String    @id @default(uuid())
+  name        String    @unique
+  code        String    @unique
+  description String?
+  isActive    Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  journals    Journal[]
+
+  @@index([code])
+}
+
+model JournalIndexing {
+  id          String    @id @default(uuid())
+  name        String    @unique
+  code        String    @unique
+  description String?
+  tier        String?
+  isActive    Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  journals    Journal[] @relation("JournalToIndexing")
+
+  @@index([code])
+  @@index([tier])
+}
+
+model Publisher {
+  id        String    @id @default(uuid())
+  name      String    @unique
+  code      String    @unique
+  country   String?
+  website   String?
+  email     String?
+  isActive  Boolean   @default(true)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  journals  Journal[]
+
+  @@index([code])
+}
+
+model PlagiarismReport {
+  id              String           @id @default(uuid())
+  articleId       String           @unique
+  journalId       String
+  checkedBy       String
+  status          PlagiarismStatus @default(PENDING)
+  similarityScore Float?
+  toolUsed        String?
+  reportUrl       String?
+  comments        String?
+  checkedDate     DateTime?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  article         Article          @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  checker         User             @relation("PlagiarismChecker", fields: [checkedBy], references: [id])
+  journal         Journal          @relation(fields: [journalId], references: [id], onDelete: Cascade)
+
+  @@index([articleId])
+  @@index([journalId])
+  @@index([status])
+  @@index([checkedBy])
+}
+
+model QualityReport {
+  id              String        @id @default(uuid())
+  articleId       String        @unique
+  journalId       String
+  checkedBy       String
+  status          QualityStatus @default(PENDING)
+  formattingScore Int?
+  languageScore   Int?
+  structureScore  Int?
+  overallScore    Int?
+  comments        String?
+  issues          String[]
+  checkedDate     DateTime?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  article         Article       @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  checker         User          @relation("QualityChecker", fields: [checkedBy], references: [id])
+  journal         Journal       @relation(fields: [journalId], references: [id], onDelete: Cascade)
+
+  @@index([articleId])
+  @@index([journalId])
+  @@index([status])
+  @@index([checkedBy])
+}
+
+model ManuscriptStatusHistory {
+  id         String            @id @default(uuid())
+  articleId  String
+  fromStatus ManuscriptStatus?
+  toStatus   ManuscriptStatus
+  changedBy  String
+  reason     String?
+  comments   String?
+  createdAt  DateTime          @default(now())
+  article    Article           @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  user       User              @relation(fields: [changedBy], references: [id])
+
+  @@index([articleId])
+  @@index([createdAt])
+}
+
+model ManuscriptDraft {
+  id          String   @id @default(uuid())
+  authorId    String
+  journalId   String
+  title       String?
+  abstract    String?
+  keywords    String?
+  fileUrl     String?
+  metadata    Json?
+  step        Int      @default(1)
+  isSubmitted Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  author      User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  journal     Journal  @relation(fields: [journalId], references: [id])
+
+  @@index([authorId])
+  @@index([journalId])
+  @@index([isSubmitted])
+}
+
+model ManuscriptRevision {
+  id                  String   @id @default(uuid())
+  articleId           String
+  revisionNumber      Int
+  fileUrl             String
+  coverLetter         String?
+  responseToReviewers String?
+  changesDescription  String?
+  submittedBy         String
+  submittedAt         DateTime @default(now())
+  status              String   @default("PENDING")
+  article             Article  @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  submitter           User     @relation(fields: [submittedBy], references: [id])
+
+  @@index([articleId])
+  @@index([status])
+}
+
+model ManuscriptCommunication {
+  id         String   @id @default(uuid())
+  articleId  String
+  fromUserId String?
+  toUserId   String?
+  subject    String
+  message    String
+  type       String
+  isRead     Boolean  @default(false)
+  sentAt     DateTime @default(now())
+  article    Article  @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  fromUser   User?    @relation("SentCommunications", fields: [fromUserId], references: [id])
+  toUser     User?    @relation("ReceivedCommunications", fields: [toUserId], references: [id])
+
+  @@index([articleId])
+  @@index([toUserId])
+  @@index([isRead])
+}
+
+model EmailTemplate {
+  id        String   @id @default(uuid())
+  name      String   @unique
+  subject   String
+  body      String
+  variables String[]
+  category  String
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([category])
+  @@index([isActive])
+}
+
+model CoAuthorInvitation {
+  id          String    @id @default(uuid())
+  articleId   String
+  email       String
+  name        String?
+  affiliation String?
+  invitedBy   String
+  token       String    @unique
+  status      String    @default("PENDING")
+  expiresAt   DateTime
+  respondedAt DateTime?
+  createdAt   DateTime  @default(now())
+  article     Article   @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  inviter     User      @relation(fields: [invitedBy], references: [id])
+
+  @@index([articleId])
+  @@index([email])
+  @@index([token])
+  @@index([status])
+}
+
+model ITProject {
+  id               String               @id @default(uuid())
+  companyId        String
+  projectCode      String               @unique
+  name             String
+  description      String?
+  category         ProjectCategory      @default(DEVELOPMENT)
+  type             ProjectType          @default(SUPPORT)
+  status           ProjectStatus        @default(PLANNING)
+  priority         Priority             @default(MEDIUM)
+  clientId         String?
+  clientType       ClientType?
+  projectManagerId String?
+  teamLeadId       String?
+  startDate        DateTime?
+  endDate          DateTime?
+  estimatedHours   Float?
+  actualHours      Float                @default(0)
+  isRevenueBased   Boolean              @default(false)
+  estimatedRevenue Float                @default(0)
+  actualRevenue    Float                @default(0)
+  currency         String               @default("INR")
+  itDepartmentCut  Float                @default(0)
+  itRevenueEarned  Float                @default(0)
+  billingType      BillingType?
+  hourlyRate       Float?
+  isBilled         Boolean              @default(false)
+  invoiceId        String?
+  tags             String[]
+  attachments      String[]
+  createdAt        DateTime             @default(now())
+  updatedAt        DateTime             @updatedAt
+  completedAt      DateTime?
+  company          Company              @relation("CompanyITProjects", fields: [companyId], references: [id], onDelete: Cascade)
+  projectManager   User?                @relation("ProjectManager", fields: [projectManagerId], references: [id])
+  teamLead         User?                @relation("TeamLead", fields: [teamLeadId], references: [id])
+  comments         ITProjectComment[]
+  documents        ITProjectDocument[]
+  milestones       ITProjectMilestone[]
+  tasks            ITTask[]
+  timeEntries      ITTimeEntry[]
+
+  @@index([companyId])
+  @@index([status])
+  @@index([type])
+  @@index([projectManagerId])
+  @@index([isRevenueBased])
+}
+
+model ITTask {
+  id              String                @id @default(uuid())
+  companyId       String
+  projectId       String?
+  taskCode        String                @unique
+  title           String
+  description     String?
+  category        TaskCategory          @default(GENERAL)
+  type            TaskType              @default(SUPPORT)
+  priority        Priority              @default(MEDIUM)
+  status          TaskStatus            @default(PENDING)
+  assignedToId    String?
+  createdById     String
+  reporterId      String?
+  startDate       DateTime?
+  dueDate         DateTime?
+  completedAt     DateTime?
+  estimatedHours  Float?
+  actualHours     Float                 @default(0)
+  isRevenueBased  Boolean               @default(false)
+  estimatedValue  Float                 @default(0)
+  actualValue     Float                 @default(0)
+  currency        String                @default("INR")
+  itDepartmentCut Float                 @default(0)
+  itRevenueEarned Float                 @default(0)
+  isPaid          Boolean               @default(false)
+  paymentDate     DateTime?
+  progressPercent Int                   @default(0)
+  blockers        String?
+  dependencies    String[]
+  tags            String[]
+  attachments     String[]
+  createdAt       DateTime              @default(now())
+  updatedAt       DateTime              @updatedAt
+  serviceId       String?
+  assignedTo      User?                 @relation("ITTaskAssignee", fields: [assignedToId], references: [id])
+  company         Company               @relation("CompanyITTasks", fields: [companyId], references: [id], onDelete: Cascade)
+  createdBy       User                  @relation("ITTaskCreator", fields: [createdById], references: [id])
+  project         ITProject?            @relation(fields: [projectId], references: [id])
+  reporter        User?                 @relation("ITTaskReporter", fields: [reporterId], references: [id])
+  service         ITServiceDefinition?  @relation("ServiceTasks", fields: [serviceId], references: [id])
+  comments        ITTaskComment[]
+  statusHistory   ITTaskStatusHistory[]
+  timeEntries     ITTimeEntry[]
+
+  @@index([companyId])
+  @@index([projectId])
+  @@index([assignedToId])
+  @@index([createdById])
+  @@index([status])
+  @@index([type])
+  @@index([isRevenueBased])
+}
+
+model ITProjectDocument {
+  id          String    @id @default(uuid())
+  projectId   String
+  name        String
+  description String?
+  url         String
+  fileType    String
+  fileSize    Int
+  category    String    @default("GENERAL")
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  project     ITProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId])
+  @@index([category])
+}
+
+model ITProjectMilestone {
+  id            String    @id @default(uuid())
+  projectId     String
+  name          String
+  description   String?
+  dueDate       DateTime
+  completedAt   DateTime?
+  status        String    @default("PENDING")
+  paymentAmount Float?
+  isPaid        Boolean   @default(false)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  project       ITProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId])
+  @@index([status])
+}
+
+model ITTimeEntry {
+  id          String     @id @default(uuid())
+  companyId   String
+  projectId   String?
+  taskId      String?
+  userId      String
+  date        DateTime   @default(now())
+  hours       Float
+  description String?
+  isBillable  Boolean    @default(false)
+  hourlyRate  Float?
+  amount      Float?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  company     Company    @relation("CompanyITTimeEntries", fields: [companyId], references: [id], onDelete: Cascade)
+  project     ITProject? @relation(fields: [projectId], references: [id])
+  task        ITTask?    @relation(fields: [taskId], references: [id])
+  user        User       @relation("ITTimeEntries", fields: [userId], references: [id])
+
+  @@index([companyId])
+  @@index([projectId])
+  @@index([taskId])
+  @@index([userId])
+  @@index([date])
+}
+
+model ITTaskStatusHistory {
+  id             String     @id @default(uuid())
+  taskId         String
+  changedById    String
+  previousStatus TaskStatus
+  newStatus      TaskStatus
+  comment        String?
+  changedAt      DateTime   @default(now())
+  changedBy      User       @relation("ITStatusChanger", fields: [changedById], references: [id])
+  task           ITTask     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  @@index([taskId])
+  @@index([changedById])
+}
+
+model ITProjectComment {
+  id        String    @id @default(uuid())
+  projectId String
+  userId    String
+  content   String
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  project   ITProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user      User      @relation("ITProjectComments", fields: [userId], references: [id])
+
+  @@index([projectId])
+  @@index([userId])
+}
+
+model ITTaskComment {
+  id        String   @id @default(uuid())
+  taskId    String
+  userId    String
+  content   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  task      ITTask   @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  user      User     @relation("ITTaskComments", fields: [userId], references: [id])
+
+  @@index([taskId])
+  @@index([userId])
+}
+
+model ITDepartmentRevenue {
+  id             String   @id @default(uuid())
+  companyId      String
+  month          Int
+  year           Int
+  totalRevenue   Float    @default(0)
+  projectRevenue Float    @default(0)
+  taskRevenue    Float    @default(0)
+  totalProjects  Int      @default(0)
+  totalTasks     Int      @default(0)
+  completedTasks Int      @default(0)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  company        Company  @relation("CompanyITRevenue", fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@unique([companyId, month, year])
+  @@index([companyId])
+  @@index([year, month])
+}
+
+model ITPerformanceMetric {
+  id                    String   @id @default(uuid())
+  companyId             String
+  userId                String
+  month                 Int
+  year                  Int
+  tasksCompleted        Int      @default(0)
+  tasksInProgress       Int      @default(0)
+  tasksCreated          Int      @default(0)
+  averageCompletionTime Float    @default(0)
+  revenueGenerated      Float    @default(0)
+  billableHours         Float    @default(0)
+  nonBillableHours      Float    @default(0)
+  productivityScore     Float    @default(0)
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+  company               Company  @relation("CompanyITPerformance", fields: [companyId], references: [id], onDelete: Cascade)
+  user                  User     @relation("ITPerformance", fields: [userId], references: [id])
+
+  @@unique([companyId, userId, month, year])
+  @@index([companyId])
+  @@index([userId])
+  @@index([year, month])
+}
+
+model ITServiceDefinition {
+  id            String   @id @default(uuid())
+  companyId     String
+  name          String
+  description   String?
+  category      String   @default("GENERAL")
+  price         Float    @default(0)
+  unit          String   @default("each")
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  estimatedDays Int?
+  company       Company  @relation("CompanyITServices", fields: [companyId], references: [id], onDelete: Cascade)
+  tasks         ITTask[] @relation("ServiceTasks")
+
+  @@index([companyId])
+}
+
+model RevenueTransaction {
+  id                  String             @id @default(uuid())
+  companyId           String
+  transactionNumber   String             @unique
+  amount              Float
+  currency            String             @default("INR")
+  paymentMethod       String
+  paymentDate         DateTime
+  customerName        String?
+  customerEmail       String?
+  customerPhone       String?
+  customerProfileId   String?
+  institutionId       String?
+  referenceNumber     String?
+  bankName            String?
+  proofDocument       String?
+  claimedByEmployeeId String?
+  approvedByManagerId String?
+  departmentId        String?
+  status              RevenueStatus      @default(PENDING)
+  verificationStatus  VerificationStatus @default(UNVERIFIED)
+  verifiedAt          DateTime?
+  workReportId        String?
+  invoiceId           String?
+  paymentId           String?
+  description         String?
+  notes               String?
+  tags                Json?
+  createdAt           DateTime           @default(now())
+  updatedAt           DateTime           @updatedAt
+  createdBy           String?
+  claims              RevenueClaim[]
+  approvedBy          EmployeeProfile?   @relation("ApprovedRevenue", fields: [approvedByManagerId], references: [id])
+  claimedBy           EmployeeProfile?   @relation("ClaimedRevenue", fields: [claimedByEmployeeId], references: [id])
+  company             Company            @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  customerProfile     CustomerProfile?   @relation(fields: [customerProfileId], references: [id])
+  department          Department?        @relation(fields: [departmentId], references: [id])
+  institution         Institution?       @relation(fields: [institutionId], references: [id])
+  invoice             Invoice?           @relation(fields: [invoiceId], references: [id])
+  payment             Payment?           @relation(fields: [paymentId], references: [id])
+  workReport          WorkReport?        @relation(fields: [workReportId], references: [id])
+
+  @@index([companyId])
+  @@index([transactionNumber])
+  @@index([claimedByEmployeeId])
+  @@index([status])
+  @@index([paymentDate])
+  @@index([customerProfileId])
+}
+
+model RevenueClaim {
+  id                   String             @id @default(uuid())
+  revenueTransactionId String
+  employeeId           String
+  workReportId         String?
+  claimDate            DateTime           @default(now())
+  claimAmount          Float
+  claimReason          String?
+  status               ClaimStatus        @default(PENDING)
+  reviewedBy           String?
+  reviewedAt           DateTime?
+  reviewNotes          String?
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
+  employee             EmployeeProfile    @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  revenueTransaction   RevenueTransaction @relation(fields: [revenueTransactionId], references: [id], onDelete: Cascade)
+  workReport           WorkReport?        @relation(fields: [workReportId], references: [id])
+
+  @@index([revenueTransactionId])
+  @@index([employeeId])
+  @@index([status])
+}
+
+enum TaskCalculationType {
+  FLAT
+  SCALED
+  RANGE
+}
+
 enum UserRole {
   SUPER_ADMIN
   ADMIN
@@ -2513,9 +3152,9 @@ enum Priority {
 enum TaskStatus {
   PENDING
   IN_PROGRESS
-  UNDER_REVIEW
   COMPLETED
   CANCELLED
+  UNDER_REVIEW
 }
 
 enum TicketStatus {
@@ -2585,33 +3224,6 @@ enum RewardType {
   FIXED_AMOUNT
 }
 
-
-model EditorialBoardMember {
-  id             String         @id @default(uuid())
-  journalId      String
-  userId         String?
-  name           String
-  email          String
-  designation    String?
-  role           EditorialRole  @default(REVIEWER)
-  affiliation    String?
-  specialization String?
-  bio            String?
-  profilePicture String?
-  displayOrder   Int            @default(0)
-  isActive       Boolean        @default(true)
-  joinedDate     DateTime       @default(now())
-  endDate        DateTime?
-  createdAt      DateTime       @default(now())
-  updatedAt      DateTime       @updatedAt
-  
-  journal        Journal        @relation(fields: [journalId], references: [id])
-  user           User?          @relation(fields: [userId], references: [id])
-
-  @@index([journalId])
-  @@index([role])
-}
-
 enum CertificateType {
   COURSE_COMPLETION
   REVIEWER
@@ -2619,144 +3231,6 @@ enum CertificateType {
   AUTHOR
   BEST_PAPER
   CONFERENCE_PARTICIPATION
-}
-
-model ArticleVersion {
-  id            String   @id @default(uuid())
-  articleId     String
-  versionNumber Int
-  fileUrl       String
-  submittedAt   DateTime @default(now())
-  changelog     String?
-  article       Article  @relation(fields: [articleId], references: [id])
-
-  @@index([articleId])
-}
-
-
-model ConferenceCommitteeMember {
-  id           String     @id @default(uuid())
-  conferenceId String
-  userId       String?    // Link to registered user if available
-  name         String
-  role         String     // CHAIR, EDITOR, REVIEWER, ORGANIZER
-  affiliation  String?
-  bio          String?
-  photoUrl     String?
-  displayOrder Int        @default(0)
-  createdAt    DateTime   @default(now())
-
-  conference   Conference @relation(fields: [conferenceId], references: [id], onDelete: Cascade)
-  user         User?      @relation(fields: [userId], references: [id])
-}
-
-// ============================================
-// JOURNAL REVIEWER MANAGEMENT SYSTEM
-// ============================================
-
-model JournalReviewer {
-  id                String   @id @default(uuid())
-  journalId         String
-  userId            String
-  specialization    String[] // Areas of expertise
-  bio               String?
-  isActive          Boolean  @default(true)
-  joinedDate        DateTime @default(now())
-  totalReviews      Int      @default(0)
-  completedReviews  Int      @default(0)
-  averageRating     Float?
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
-  
-  journal           Journal  @relation(fields: [journalId], references: [id], onDelete: Cascade)
-  user              User     @relation("ReviewerProfile", fields: [userId], references: [id])
-  assignments       ReviewAssignment[]
-  certificates      ReviewCertificate[]
-  
-  @@unique([journalId, userId])
-  @@index([journalId])
-  @@index([userId])
-  @@index([isActive])
-}
-
-model ReviewAssignment {
-  id                String       @id @default(uuid())
-  articleId         String
-  reviewerId        String
-  assignedBy        String
-  assignedDate      DateTime     @default(now())
-  dueDate           DateTime
-  status            ReviewStatus @default(PENDING)
-  priority          ReviewPriority @default(NORMAL)
-  round             Int          @default(1)
-  reminderSent      Boolean      @default(false)
-  lastReminderDate  DateTime?
-  notes             String?
-  createdAt         DateTime     @default(now())
-  updatedAt         DateTime     @updatedAt
-  
-  article           Article      @relation(fields: [articleId], references: [id], onDelete: Cascade)
-  reviewer          JournalReviewer @relation(fields: [reviewerId], references: [id])
-  assignedByUser    User         @relation("AssignedReviews", fields: [assignedBy], references: [id])
-  report            ReviewReport?
-  
-  @@index([articleId])
-  @@index([reviewerId])
-  @@index([status])
-  @@index([dueDate])
-}
-
-model ReviewReport {
-  id                    String         @id @default(uuid())
-  assignmentId          String         @unique
-  overallRating         Int            // 1-5
-  originality           Int            // 1-5
-  methodology           Int            // 1-5
-  clarity               Int            // 1-5
-  significance          Int            // 1-5
-  commentsToEditor      String
-  commentsToAuthor      String?
-  recommendation        Recommendation
-  confidentialComments  String?
-  submittedDate         DateTime       @default(now())
-  validatedBy           String?
-  validatedDate         DateTime?
-  isValidated           Boolean        @default(false)
-  rejectionReason       String?
-  createdAt             DateTime       @default(now())
-  updatedAt             DateTime       @updatedAt
-  
-  assignment            ReviewAssignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
-  validator             User?          @relation("ValidatedReports", fields: [validatedBy], references: [id])
-  
-  @@index([assignmentId])
-  @@index([isValidated])
-}
-
-model ReviewCertificate {
-  id                String   @id @default(uuid())
-  reviewerId        String
-  articleId         String
-  journalId         String
-  certificateNumber String   @unique
-  issueDate         DateTime @default(now())
-  reviewDate        DateTime
-  articleTitle      String
-  reviewerName      String
-  journalName       String
-  pdfUrl            String?
-  issuedBy          String
-  metadata          Json?    // Additional certificate data
-  createdAt         DateTime @default(now())
-  
-  reviewer          JournalReviewer @relation(fields: [reviewerId], references: [id])
-  article           Article  @relation(fields: [articleId], references: [id])
-  journal           Journal  @relation(fields: [journalId], references: [id])
-  issuer            User     @relation("IssuedCertificates", fields: [issuedBy], references: [id])
-  
-  @@index([reviewerId])
-  @@index([certificateNumber])
-  @@index([journalId])
 }
 
 enum ReviewStatus {
@@ -2783,61 +3257,6 @@ enum Recommendation {
   REJECT_RESUBMIT
 }
 
-model WebsiteMonitor {
-  id              String             @id @default(uuid())
-  name            String
-  url             String
-  category        String?
-  frequency       Int                @default(5) // minutes
-  isPaused        Boolean            @default(false)
-  lastCheck       DateTime?
-  status          String             @default("PENDING") // UP, DOWN, PENDING
-  upsince         DateTime?
-  dailyUptime     Float?
-  totalDowntime   Int                @default(0)
-  notifyEmail     Boolean            @default(true)
-  notifyWhatsapp  Boolean            @default(true)
-  companyId       String?
-  createdAt       DateTime           @default(now())
-  updatedAt       DateTime           @updatedAt
-  
-  logs            WebsiteMonitorLog[]
-}
-
-model WebsiteMonitorLog {
-  id              String             @id @default(uuid())
-  monitorId       String
-  status          String             // UP, DOWN
-  statusCode      Int?
-  responseTime    Int?               // ms
-  reason          String?
-  checkedAt       DateTime           @default(now())
-
-  monitor         WebsiteMonitor      @relation(fields: [monitorId], references: [id], onDelete: Cascade)
-
-  @@index([monitorId])
-  @@index([checkedAt])
-}
-
-model AppConfiguration {
-  id          String   @id @default(uuid())
-  companyId   String?
-  category    String   // AWS, WHATSAPP, AI_MODELS, PAYMENT, EMAIL, SMS, STORAGE, etc.
-  key         String   // Specific key name like AWS_ACCESS_KEY_ID, OPENAI_API_KEY
-  value       String   // Encrypted value
-  isActive    Boolean  @default(true)
-  description String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  createdBy   String?
-  
-  company     Company? @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  
-  @@unique([companyId, category, key])
-  @@index([companyId])
-  @@index([category])
-}
-
 enum ConfigCategory {
   AWS
   WHATSAPP
@@ -2851,229 +3270,6 @@ enum ConfigCategory {
   OTHER
 }
 
-// ============================================
-// PUBLICATION MODULE ENHANCEMENTS
-// ============================================
-
-// Journal Domain Classification
-model JournalDomain {
-  id          String    @id @default(uuid())
-  name        String    @unique
-  code        String    @unique
-  description String?
-  isActive    Boolean   @default(true)
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  
-  journals    Journal[]
-  
-  @@index([code])
-}
-
-// Journal Indexing Databases
-model JournalIndexing {
-  id          String    @id @default(uuid())
-  name        String    @unique
-  code        String    @unique
-  description String?
-  tier        String?
-  isActive    Boolean   @default(true)
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  
-  journals    Journal[] @relation("JournalToIndexing")
-  
-  @@index([code])
-  @@index([tier])
-}
-
-// Publisher Information
-model Publisher {
-  id          String    @id @default(uuid())
-  name        String    @unique
-  code        String    @unique
-  country     String?
-  website     String?
-  email       String?
-  isActive    Boolean   @default(true)
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  
-  journals    Journal[]
-  
-  @@index([code])
-}
-
-// Plagiarism Check Reports
-model PlagiarismReport {
-  id                String           @id @default(uuid())
-  articleId         String           @unique
-  journalId         String
-  checkedBy         String
-  status            PlagiarismStatus @default(PENDING)
-  similarityScore   Float?
-  toolUsed          String?
-  reportUrl         String?
-  comments          String?
-  checkedDate       DateTime?
-  createdAt         DateTime         @default(now())
-  updatedAt         DateTime         @updatedAt
-  
-  article           Article          @relation(fields: [articleId], references: [id], onDelete: Cascade)
-  journal           Journal          @relation(fields: [journalId], references: [id], onDelete: Cascade)
-  checker           User             @relation("PlagiarismChecker", fields: [checkedBy], references: [id])
-  
-  @@index([articleId])
-  @@index([journalId])
-  @@index([status])
-  @@index([checkedBy])
-}
-
-// Quality Assurance Reports
-model QualityReport {
-  id                String         @id @default(uuid())
-  articleId         String         @unique
-  journalId         String
-  checkedBy         String
-  status            QualityStatus  @default(PENDING)
-  formattingScore   Int?
-  languageScore     Int?
-  structureScore    Int?
-  overallScore      Int?
-  comments          String?
-  issues            String[]
-  checkedDate       DateTime?
-  createdAt         DateTime       @default(now())
-  updatedAt         DateTime       @updatedAt
-  
-  article           Article        @relation(fields: [articleId], references: [id], onDelete: Cascade)
-  journal           Journal        @relation(fields: [journalId], references: [id], onDelete: Cascade)
-  checker           User           @relation("QualityChecker", fields: [checkedBy], references: [id])
-  
-  @@index([articleId])
-  @@index([journalId])
-  @@index([status])
-  @@index([checkedBy])
-}
-
-// Manuscript Status History
-model ManuscriptStatusHistory {
-  id          String           @id @default(uuid())
-  articleId   String
-  fromStatus  ManuscriptStatus?
-  toStatus    ManuscriptStatus
-  changedBy   String
-  reason      String?
-  comments    String?
-  createdAt   DateTime         @default(now())
-  
-  article     Article          @relation(fields: [articleId], references: [id], onDelete: Cascade)
-  user        User             @relation(fields: [changedBy], references: [id])
-  
-  @@index([articleId])
-  @@index([createdAt])
-}
-
-// Phase 4: Author Portal & Communication Models
-model ManuscriptDraft {
-  id              String    @id @default(uuid())
-  authorId        String
-  journalId       String
-  title           String?
-  abstract        String?
-  keywords        String?
-  fileUrl         String?
-  metadata        Json?     // Store additional form data
-  step            Int       @default(1) // Current wizard step
-  isSubmitted     Boolean   @default(false)
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
-  
-  author          User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
-  journal         Journal   @relation(fields: [journalId], references: [id])
-  
-  @@index([authorId])
-  @@index([journalId])
-  @@index([isSubmitted])
-}
-
-model ManuscriptRevision {
-  id              String    @id @default(uuid())
-  articleId       String
-  revisionNumber  Int
-  fileUrl         String
-  coverLetter     String?
-  responseToReviewers String?
-  changesDescription String?
-  submittedBy     String
-  submittedAt     DateTime  @default(now())
-  status          String    @default("PENDING") // PENDING, UNDER_REVIEW, ACCEPTED, REJECTED
-  
-  article         Article   @relation(fields: [articleId], references: [id], onDelete: Cascade)
-  submitter       User      @relation(fields: [submittedBy], references: [id])
-  
-  @@index([articleId])
-  @@index([status])
-}
-
-model ManuscriptCommunication {
-  id              String    @id @default(uuid())
-  articleId       String
-  fromUserId      String?
-  toUserId        String?
-  subject         String
-  message         String
-  type            String    // EMAIL, COMMENT, SYSTEM_NOTIFICATION
-  isRead          Boolean   @default(false)
-  sentAt          DateTime  @default(now())
-  
-  article         Article   @relation(fields: [articleId], references: [id], onDelete: Cascade)
-  fromUser        User?     @relation("SentCommunications", fields: [fromUserId], references: [id])
-  toUser          User?     @relation("ReceivedCommunications", fields: [toUserId], references: [id])
-  
-  @@index([articleId])
-  @@index([toUserId])
-  @@index([isRead])
-}
-
-model EmailTemplate {
-  id              String    @id @default(uuid())
-  name            String    @unique
-  subject         String
-  body            String    // HTML template with placeholders
-  variables       String[]  // List of available variables
-  category        String    // SUBMISSION, REVIEW, DECISION, PUBLICATION
-  isActive        Boolean   @default(true)
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
-  
-  @@index([category])
-  @@index([isActive])
-}
-
-model CoAuthorInvitation {
-  id              String    @id @default(uuid())
-  articleId       String
-  email           String
-  name            String?
-  affiliation     String?
-  invitedBy       String
-  token           String    @unique
-  status          String    @default("PENDING") // PENDING, ACCEPTED, DECLINED
-  expiresAt       DateTime
-  respondedAt     DateTime?
-  createdAt       DateTime  @default(now())
-  
-  article         Article   @relation(fields: [articleId], references: [id], onDelete: Cascade)
-  inviter         User      @relation(fields: [invitedBy], references: [id])
-  
-  @@index([articleId])
-  @@index([email])
-  @@index([token])
-  @@index([status])
-}
-
-// Enums for Publication Module
 enum ManuscriptStatus {
   SUBMITTED
   INITIAL_REVIEW
@@ -3114,308 +3310,6 @@ enum EditorialRole {
   EDITORIAL_ASSISTANT
   ADVISORY_BOARD
 }
-
-// ============================================
-// IT MANAGEMENT MODULE - Project & Task Management with Revenue Tracking
-// ============================================
-
-model ITProject {
-  id                String                @id @default(uuid())
-  companyId         String
-  projectCode       String                @unique
-  name              String
-  description       String?
-  category          ProjectCategory       @default(DEVELOPMENT)
-  type              ProjectType           @default(SUPPORT)
-  status            ProjectStatus         @default(PLANNING)
-  priority          Priority              @default(MEDIUM)
-  
-  // Client & Assignment
-  clientId          String?
-  clientType        ClientType?
-  projectManagerId  String?
-  teamLeadId        String?
-  
-  // Timeline
-  startDate         DateTime?
-  endDate           DateTime?
-  estimatedHours    Float?
-  actualHours       Float                 @default(0)
-  
-  // Financial
-  isRevenueBased    Boolean               @default(false)
-  estimatedRevenue  Float                 @default(0)
-  actualRevenue     Float                 @default(0)
-  currency          String                @default("INR")
-  itDepartmentCut   Float                 @default(0)
-  itRevenueEarned   Float                 @default(0)
-  
-  // Billing
-  billingType       BillingType?
-  hourlyRate        Float?
-  isBilled          Boolean               @default(false)
-  invoiceId         String?
-  
-  // Metadata
-  tags              String[]
-  attachments       String[]
-  createdAt         DateTime              @default(now())
-  updatedAt         DateTime              @updatedAt
-  completedAt       DateTime?
-  
-  // Relations
-  company           Company               @relation("CompanyITProjects", fields: [companyId], references: [id], onDelete: Cascade)
-  projectManager    User?                 @relation("ProjectManager", fields: [projectManagerId], references: [id])
-  teamLead          User?                 @relation("TeamLead", fields: [teamLeadId], references: [id])
-  tasks             ITTask[]
-  milestones        ITProjectMilestone[]
-  documents         ITProjectDocument[]
-  timeEntries       ITTimeEntry[]
-  comments          ITProjectComment[]
-  
-  @@index([companyId])
-  @@index([status])
-  @@index([type])
-  @@index([projectManagerId])
-  @@index([isRevenueBased])
-}
-
-model ITTask {
-  id                String                  @id @default(uuid())
-  companyId         String
-  projectId         String?
-  taskCode          String                  @unique
-  
-  // Basic Info
-  title             String
-  description       String?
-  category          TaskCategory            @default(GENERAL)
-  type              TaskType                @default(SUPPORT)
-  priority          Priority                @default(MEDIUM)
-  status            TaskStatus              @default(PENDING)
-  
-  // Assignment
-  assignedToId      String?
-  createdById       String
-  reporterId        String?
-  
-  // Timeline
-  startDate         DateTime?
-  dueDate           DateTime?
-  completedAt       DateTime?
-  estimatedHours    Float?
-  actualHours       Float                   @default(0)
-  
-  // Financial
-  isRevenueBased    Boolean                 @default(false)
-  estimatedValue    Float                   @default(0)
-  actualValue       Float                   @default(0)
-  currency          String                  @default("INR")
-  itDepartmentCut   Float                   @default(0)
-  itRevenueEarned   Float                   @default(0)
-  isPaid            Boolean                 @default(false)
-  paymentDate       DateTime?
-  
-  // Progress Tracking
-  progressPercent   Int                     @default(0)
-  blockers          String?
-  dependencies      String[]
-  
-  // Metadata
-  tags              String[]
-  attachments       String[]
-  createdAt         DateTime                @default(now())
-  updatedAt         DateTime                @updatedAt
-  
-  // Relations
-  company           Company                 @relation("CompanyITTasks", fields: [companyId], references: [id], onDelete: Cascade)
-  project           ITProject?              @relation(fields: [projectId], references: [id], onDelete: SetNull)
-  assignedTo        User?                   @relation("ITTaskAssignee", fields: [assignedToId], references: [id])
-  createdBy         User                    @relation("ITTaskCreator", fields: [createdById], references: [id])
-  reporter          User?                   @relation("ITTaskReporter", fields: [reporterId], references: [id])
-  serviceId         String?
-  service           ITServiceDefinition?    @relation("ServiceTasks", fields: [serviceId], references: [id])
-  timeEntries       ITTimeEntry[]
-  comments          ITTaskComment[]
-  statusHistory     ITTaskStatusHistory[]
-  
-  @@index([companyId])
-  @@index([projectId])
-  @@index([assignedToId])
-  @@index([createdById])
-  @@index([status])
-  @@index([type])
-  @@index([isRevenueBased])
-}
-
-model ITProjectDocument {
-  id              String          @id @default(uuid())
-  projectId       String
-  name            String
-  description     String?
-  url             String
-  fileType        String
-  fileSize        Int
-  category        String          @default("GENERAL") // SPEC, DESIGN, CONTRACT, MANUAL, etc.
-  createdAt       DateTime        @default(now())
-  updatedAt       DateTime        @updatedAt
-  
-  project         ITProject       @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  
-  @@index([projectId])
-  @@index([category])
-}
-
-model ITProjectMilestone {
-  id              String          @id @default(uuid())
-  projectId       String
-  name            String
-  description     String?
-  dueDate         DateTime
-  completedAt     DateTime?
-  status          String          @default("PENDING")
-  paymentAmount   Float?
-  isPaid          Boolean         @default(false)
-  createdAt       DateTime        @default(now())
-  updatedAt       DateTime        @updatedAt
-  
-  project         ITProject       @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  
-  @@index([projectId])
-  @@index([status])
-}
-
-model ITTimeEntry {
-  id              String          @id @default(uuid())
-  companyId       String
-  projectId       String?
-  taskId          String?
-  userId          String
-  
-  date            DateTime        @default(now())
-  hours           Float
-  description     String?
-  isBillable      Boolean         @default(false)
-  hourlyRate      Float?
-  amount          Float?
-  
-  createdAt       DateTime        @default(now())
-  updatedAt       DateTime        @updatedAt
-  
-  company         Company         @relation("CompanyITTimeEntries", fields: [companyId], references: [id], onDelete: Cascade)
-  project         ITProject?      @relation(fields: [projectId], references: [id], onDelete: SetNull)
-  task            ITTask?         @relation(fields: [taskId], references: [id], onDelete: SetNull)
-  user            User            @relation("ITTimeEntries", fields: [userId], references: [id])
-  
-  @@index([companyId])
-  @@index([projectId])
-  @@index([taskId])
-  @@index([userId])
-  @@index([date])
-}
-
-model ITTaskStatusHistory {
-  id              String          @id @default(uuid())
-  taskId          String
-  changedById     String
-  
-  previousStatus  TaskStatus
-  newStatus       TaskStatus
-  comment         String?
-  changedAt       DateTime        @default(now())
-  
-  task            ITTask          @relation(fields: [taskId], references: [id], onDelete: Cascade)
-  changedBy       User            @relation("ITStatusChanger", fields: [changedById], references: [id])
-  
-  @@index([taskId])
-  @@index([changedById])
-}
-
-model ITProjectComment {
-  id              String          @id @default(uuid())
-  projectId       String
-  userId          String
-  content         String
-  createdAt       DateTime        @default(now())
-  updatedAt       DateTime        @updatedAt
-  
-  project         ITProject       @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  user            User            @relation("ITProjectComments", fields: [userId], references: [id])
-  
-  @@index([projectId])
-  @@index([userId])
-}
-
-model ITTaskComment {
-  id              String          @id @default(uuid())
-  taskId          String
-  userId          String
-  content         String
-  createdAt       DateTime        @default(now())
-  updatedAt       DateTime        @updatedAt
-  
-  task            ITTask          @relation(fields: [taskId], references: [id], onDelete: Cascade)
-  user            User            @relation("ITTaskComments", fields: [userId], references: [id])
-  
-  @@index([taskId])
-  @@index([userId])
-}
-
-model ITDepartmentRevenue {
-  id              String          @id @default(uuid())
-  companyId       String
-  
-  month           Int
-  year            Int
-  
-  totalRevenue    Float           @default(0)
-  projectRevenue  Float           @default(0)
-  taskRevenue     Float           @default(0)
-  
-  totalProjects   Int             @default(0)
-  totalTasks      Int             @default(0)
-  completedTasks  Int             @default(0)
-  
-  createdAt       DateTime        @default(now())
-  updatedAt       DateTime        @updatedAt
-  
-  company         Company         @relation("CompanyITRevenue", fields: [companyId], references: [id], onDelete: Cascade)
-  
-  @@unique([companyId, month, year])
-  @@index([companyId])
-  @@index([year, month])
-}
-
-model ITPerformanceMetric {
-  id                    String          @id @default(uuid())
-  companyId             String
-  userId                String
-  
-  month                 Int
-  year                  Int
-  
-  tasksCompleted        Int             @default(0)
-  tasksInProgress       Int             @default(0)
-  tasksCreated          Int             @default(0)
-  averageCompletionTime Float           @default(0)
-  revenueGenerated      Float           @default(0)
-  billableHours         Float           @default(0)
-  nonBillableHours      Float           @default(0)
-  productivityScore     Float           @default(0)
-  
-  createdAt             DateTime        @default(now())
-  updatedAt             DateTime        @updatedAt
-  
-  company               Company         @relation("CompanyITPerformance", fields: [companyId], references: [id], onDelete: Cascade)
-  user                  User            @relation("ITPerformance", fields: [userId], references: [id])
-  
-  @@unique([companyId, userId, month, year])
-  @@index([companyId])
-  @@index([userId])
-  @@index([year, month])
-}
-
-// Enums for IT Management
 
 enum ProjectCategory {
   DEVELOPMENT
@@ -3479,126 +3373,6 @@ enum TaskType {
   MAINTENANCE
   URGENT
   SERVICE_REQUEST
-}
-
-model ITServiceDefinition {
-  id          String   @id @default(uuid())
-  companyId   String
-  name        String
-  description String?
-  category    String   @default("GENERAL")
-  price       Float    @default(0)
-  unit        String   @default("each")
-  estimatedDays Int?
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  tasks       ITTask[] @relation("ServiceTasks")
-
-  company     Company  @relation("CompanyITServices", fields: [companyId], references: [id], onDelete: Cascade)
-
-  @@index([companyId])
-}
-// ============================================
-// REVENUE TRANSACTION MANAGEMENT SYSTEM
-// Prevents duplicate revenue claims and provides single source of truth
-// ============================================
-
-model RevenueTransaction {
-  id                    String   @id @default(uuid())
-  companyId             String
-  
-  // Transaction Details
-  transactionNumber     String   @unique // Auto-generated: RT-YYYYMMDD-XXXX
-  amount                Float
-  currency              String   @default("INR")
-  paymentMethod         String   // RAZORPAY, CASH, CHEQUE, DD, BANK_TRANSFER, UPI, CARD, OTHER
-  paymentDate           DateTime
-  
-  // Customer Information
-  customerName          String?
-  customerEmail         String?
-  customerPhone         String?
-  customerProfileId     String?
-  institutionId         String?
-  
-  // Payment Proof
-  referenceNumber       String?  // Cheque number, DD number, Transaction ID, etc.
-  bankName              String?
-  proofDocument         String?  // URL to uploaded proof
-  
-  // Attribution
-  claimedByEmployeeId   String?  // Employee who claimed this revenue
-  approvedByManagerId   String?  // Manager who verified
-  departmentId          String?
-  
-  // Status & Verification
-  status                RevenueStatus @default(PENDING)
-  verificationStatus    VerificationStatus @default(UNVERIFIED)
-  verifiedAt            DateTime?
-  
-  // Linking
-  workReportId          String?  // If claimed via work report
-  invoiceId             String?  // If linked to invoice
-  paymentId             String?  // If from payment gateway
-  
-  // Metadata
-  description           String?
-  notes                 String?
-  tags                  Json?    // For categorization
-  
-  // Audit
-  createdAt             DateTime @default(now())
-  updatedAt             DateTime @updatedAt
-  createdBy             String?
-  
-  // Relations
-  company               Company? @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  claimedBy             EmployeeProfile? @relation("ClaimedRevenue", fields: [claimedByEmployeeId], references: [id])
-  approvedBy            EmployeeProfile? @relation("ApprovedRevenue", fields: [approvedByManagerId], references: [id])
-  department            Department? @relation(fields: [departmentId], references: [id])
-  customerProfile       CustomerProfile? @relation(fields: [customerProfileId], references: [id])
-  institution           Institution? @relation(fields: [institutionId], references: [id])
-  workReport            WorkReport? @relation(fields: [workReportId], references: [id])
-  invoice               Invoice? @relation(fields: [invoiceId], references: [id])
-  payment               Payment? @relation(fields: [paymentId], references: [id])
-  
-  claims                RevenueClaim[]
-  
-  @@index([companyId])
-  @@index([transactionNumber])
-  @@index([claimedByEmployeeId])
-  @@index([status])
-  @@index([paymentDate])
-  @@index([customerProfileId])
-}
-
-model RevenueClaim {
-  id                    String   @id @default(uuid())
-  revenueTransactionId  String
-  employeeId            String
-  workReportId          String?
-  
-  claimDate             DateTime @default(now())
-  claimAmount           Float
-  claimReason           String?
-  
-  status                ClaimStatus @default(PENDING)
-  reviewedBy            String?
-  reviewedAt            DateTime?
-  reviewNotes           String?
-  
-  createdAt             DateTime @default(now())
-  updatedAt             DateTime @updatedAt
-  
-  revenueTransaction    RevenueTransaction @relation(fields: [revenueTransactionId], references: [id], onDelete: Cascade)
-  employee              EmployeeProfile @relation(fields: [employeeId], references: [id], onDelete: Cascade)
-  workReport            WorkReport? @relation(fields: [workReportId], references: [id])
-  
-  @@index([revenueTransactionId])
-  @@index([employeeId])
-  @@index([status])
 }
 
 enum RevenueStatus {

@@ -899,7 +899,9 @@ const HRManagementContent = () => {
                                                 {(leave.employee?.user?.email?.[0] || 'U').toUpperCase()}
                                             </div>
                                             <div>
-                                                <p className="text-lg font-black text-secondary-900 leading-none mb-1">{leave.employee?.user?.email?.split('@')[0]}</p>
+                                                <p className="text-lg font-black text-secondary-900 leading-none mb-1">
+                                                    {leave.employee?.user?.name || leave.employee?.user?.email?.split('@')[0]}
+                                                </p>
                                                 <p className="text-[10px] font-black text-secondary-400 uppercase tracking-widest">{leave.employee?.designation}</p>
                                             </div>
                                         </div>
@@ -1146,7 +1148,7 @@ const HRManagementContent = () => {
                                         {allAttendance.filter(a => (filters.status === 'ALL' || a.status === filters.status) && (filters.employeeId === 'ALL' || a.employeeId === filters.employeeId) && (a.employee?.user?.name || '').toLowerCase().includes(filters.staffSearch.toLowerCase())).map(record => (
                                             <tr key={record.id} className="hover:bg-secondary-50/30 transition-all">
                                                 <td className="p-4">
-                                                    <p className="font-bold text-secondary-900">{record.employee?.user?.name}</p>
+                                                    <p className="font-bold text-secondary-900">{record.employee?.user?.name || record.employee?.user?.email?.split('@')[0]}</p>
                                                     <p className="text-[10px] text-secondary-400 font-bold uppercase">{record.employee?.designation}</p>
                                                 </td>
                                                 <td className="p-4 text-xs font-bold text-secondary-600">
@@ -1427,7 +1429,7 @@ const HRManagementContent = () => {
                                     <div key={review.id} className="p-6 flex justify-between items-start hover:bg-secondary-50 transition-colors">
                                         <div>
                                             <div className="flex items-center gap-2 mb-1">
-                                                <p className="font-bold text-secondary-900">{review.employee?.user?.email || 'Unknown Staff'}</p>
+                                                <p className="font-bold text-secondary-900">{review.employee?.user?.name || review.employee?.user?.email || 'Unknown Staff'}</p>
                                                 <span className="px-2 py-0.5 bg-warning-100 text-warning-700 text-[10px] font-black rounded">{review.rating} STARS</span>
                                             </div>
                                             <p className="text-sm text-secondary-500">{review.feedback || 'No feedback provided'}</p>
@@ -1486,7 +1488,7 @@ const HRManagementContent = () => {
                                             </div>
                                         </div>
                                         <div className="bg-white/90 backdrop-blur px-2 py-1 rounded shadow-lg mt-1 text-[10px] font-bold text-secondary-900 border border-secondary-200 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity">
-                                            {a.employee.user.email.split('@')[0]}
+                                            {a.employee.user.name || a.employee.user.email.split('@')[0]}
                                         </div>
                                     </div>
                                 ))}
@@ -1505,7 +1507,7 @@ const HRManagementContent = () => {
                                         {a.employee.user.email[0].toUpperCase()}
                                     </div>
                                     <div>
-                                        <h4 className="font-bold text-sm text-secondary-900">{a.employee.user.email}</h4>
+                                        <h4 className="font-bold text-sm text-secondary-900">{a.employee.user.name || a.employee.user.email}</h4>
                                         <div className="flex items-center gap-2">
 
                                             <span className="text-xs text-secondary-500">Checked in at <FormattedTime date={a.checkIn} /></span>

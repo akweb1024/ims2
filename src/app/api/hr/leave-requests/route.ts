@@ -65,11 +65,11 @@ export const GET = authorizedRoute(
                 where,
                 include: {
                     approvedBy: {
-                        select: { email: true }
+                        select: { email: true, name: true }
                     },
                     employee: {
                         include: {
-                            user: { select: { email: true } }
+                            user: { select: { email: true, name: true } }
                         }
                     }
                 },
