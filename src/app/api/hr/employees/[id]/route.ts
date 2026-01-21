@@ -72,7 +72,22 @@ export const GET = authorizedRoute(
                         orderBy: { endDate: 'desc' },
                         include: { kpi: true }
                     },
-                    kpis: true
+                    kpis: true,
+                    companyDesignations: {
+                        include: {
+                            company: {
+                                select: {
+                                    id: true,
+                                    name: true,
+                                    employeeIdPrefix: true
+                                }
+                            }
+                        },
+                        orderBy: [
+                            { isPrimary: 'desc' },
+                            { assignedAt: 'desc' }
+                        ]
+                    }
                 }
             });
 

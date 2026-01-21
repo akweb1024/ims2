@@ -497,6 +497,53 @@ export default function EmployeeProfilePage() {
                                     </dl>
                                 </div>
 
+                                {/* Leave Balance Card */}
+                                <div className="card-premium p-6">
+                                    <h3 className="font-bold text-lg mb-4 flex items-center gap-2">
+                                        <Calendar className="text-indigo-500" size={20} />
+                                        Leave Balance
+                                    </h3>
+                                    <dl className="space-y-4">
+                                        <div className="grid grid-cols-2">
+                                            <dt className="text-xs font-bold text-secondary-400 uppercase">Initial Balance</dt>
+                                            <dd className="font-medium text-secondary-900">{employee.initialLeaveBalance || 0} days</dd>
+                                        </div>
+                                        <div className="grid grid-cols-2">
+                                            <dt className="text-xs font-bold text-secondary-400 uppercase">Current Balance</dt>
+                                            <dd className="font-bold text-primary-600 text-lg">{employee.currentLeaveBalance || 0} days</dd>
+                                        </div>
+                                        <div className="grid grid-cols-2">
+                                            <dt className="text-xs font-bold text-secondary-400 uppercase">Manual Adjustment</dt>
+                                            <dd className="font-medium text-secondary-900">{employee.manualLeaveAdjustment || 0} days</dd>
+                                        </div>
+                                    </dl>
+                                </div>
+
+                                {/* Multi-Company Designations Card */}
+                                {employee.companyDesignations && employee.companyDesignations.length > 0 && (
+                                    <div className="card-premium p-6">
+                                        <h3 className="font-bold text-lg mb-4 flex items-center gap-2">
+                                            <Briefcase className="text-purple-500" size={20} />
+                                            Company Assignments
+                                        </h3>
+                                        <div className="space-y-3">
+                                            {employee.companyDesignations.map((cd: any) => (
+                                                <div key={cd.id} className="flex items-center justify-between p-3 bg-secondary-50/50 rounded-xl border border-secondary-100">
+                                                    <div>
+                                                        <p className="font-bold text-sm text-secondary-900">{cd.company?.name || 'Unknown Company'}</p>
+                                                        <p className="text-xs text-secondary-600">{cd.designation}</p>
+                                                    </div>
+                                                    {cd.isPrimary && (
+                                                        <span className="px-2 py-1 bg-primary-100 text-primary-700 text-[10px] font-black rounded-full">
+                                                            Primary
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+
                                 <div className="card-premium p-6 md:col-span-2">
                                     <h3 className="font-bold text-lg mb-4 flex items-center gap-2">
                                         <Award className="text-warning-500" size={20} />
