@@ -291,6 +291,195 @@ export default function IncrementDetailPage() {
                         )}
                     </div>
 
+                    {/* Visual Salary Comparison Analytics */}
+                    <div className="card-premium p-6">
+                        <h2 className="text-lg font-black text-secondary-900 mb-6 flex items-center gap-2">
+                            <TrendingUp className="text-indigo-500" size={20} />
+                            Visual Salary Analytics
+                        </h2>
+
+                        {/* Component-wise Comparison Chart */}
+                        <div className="mb-8">
+                            <h3 className="text-sm font-bold text-secondary-700 mb-4">Component-wise Comparison</h3>
+                            <div className="space-y-4">
+                                {/* Fixed Salary Bar */}
+                                <div>
+                                    <div className="flex justify-between mb-2">
+                                        <span className="text-xs font-bold text-secondary-600">Fixed Salary</span>
+                                        <div className="flex gap-4">
+                                            <span className="text-xs text-secondary-500">Old: ₹{(increment.oldFixedSalary || 0).toLocaleString()}</span>
+                                            <span className="text-xs font-bold text-primary-600">New: ₹{(increment.newFixedSalary || 0).toLocaleString()}</span>
+                                        </div>
+                                    </div>
+                                    <div className="relative h-8 bg-secondary-100 rounded-lg overflow-hidden">
+                                        <div
+                                            className="absolute top-0 left-0 h-full bg-secondary-300 transition-all"
+                                            style={{ width: `${(increment.oldFixedSalary / increment.newSalary) * 100}%` }}
+                                        />
+                                        <div
+                                            className="absolute top-0 left-0 h-full bg-primary-500 transition-all"
+                                            style={{ width: `${(increment.newFixedSalary / increment.newSalary) * 100}%` }}
+                                        />
+                                        <div className="absolute inset-0 flex items-center justify-center">
+                                            <span className="text-xs font-bold text-white drop-shadow">
+                                                {increment.oldFixedSalary > 0
+                                                    ? `${((increment.newFixedSalary - increment.oldFixedSalary) / increment.oldFixedSalary * 100).toFixed(1)}%`
+                                                    : 'New'}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Variable Salary Bar */}
+                                <div>
+                                    <div className="flex justify-between mb-2">
+                                        <span className="text-xs font-bold text-secondary-600">Variable Salary</span>
+                                        <div className="flex gap-4">
+                                            <span className="text-xs text-secondary-500">Old: ₹{(increment.oldVariableSalary || 0).toLocaleString()}</span>
+                                            <span className="text-xs font-bold text-blue-600">New: ₹{(increment.newVariableSalary || 0).toLocaleString()}</span>
+                                        </div>
+                                    </div>
+                                    <div className="relative h-8 bg-secondary-100 rounded-lg overflow-hidden">
+                                        <div
+                                            className="absolute top-0 left-0 h-full bg-secondary-300 transition-all"
+                                            style={{ width: `${(increment.oldVariableSalary / increment.newSalary) * 100}%` }}
+                                        />
+                                        <div
+                                            className="absolute top-0 left-0 h-full bg-blue-500 transition-all"
+                                            style={{ width: `${(increment.newVariableSalary / increment.newSalary) * 100}%` }}
+                                        />
+                                        <div className="absolute inset-0 flex items-center justify-center">
+                                            <span className="text-xs font-bold text-white drop-shadow">
+                                                {increment.oldVariableSalary > 0
+                                                    ? `${((increment.newVariableSalary - increment.oldVariableSalary) / increment.oldVariableSalary * 100).toFixed(1)}%`
+                                                    : 'New'}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Incentive Bar */}
+                                <div>
+                                    <div className="flex justify-between mb-2">
+                                        <span className="text-xs font-bold text-secondary-600">Incentive</span>
+                                        <div className="flex gap-4">
+                                            <span className="text-xs text-secondary-500">Old: ₹{(increment.oldIncentive || 0).toLocaleString()}</span>
+                                            <span className="text-xs font-bold text-purple-600">New: ₹{(increment.newIncentive || 0).toLocaleString()}</span>
+                                        </div>
+                                    </div>
+                                    <div className="relative h-8 bg-secondary-100 rounded-lg overflow-hidden">
+                                        <div
+                                            className="absolute top-0 left-0 h-full bg-secondary-300 transition-all"
+                                            style={{ width: `${(increment.oldIncentive / increment.newSalary) * 100}%` }}
+                                        />
+                                        <div
+                                            className="absolute top-0 left-0 h-full bg-purple-500 transition-all"
+                                            style={{ width: `${(increment.newIncentive / increment.newSalary) * 100}%` }}
+                                        />
+                                        <div className="absolute inset-0 flex items-center justify-center">
+                                            <span className="text-xs font-bold text-white drop-shadow">
+                                                {increment.oldIncentive > 0
+                                                    ? `${((increment.newIncentive - increment.oldIncentive) / increment.oldIncentive * 100).toFixed(1)}%`
+                                                    : 'New'}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Salary Distribution Pie Chart Representation */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            {/* Old Salary Distribution */}
+                            <div className="p-4 bg-secondary-50 rounded-xl">
+                                <h4 className="text-sm font-bold text-secondary-700 mb-4 text-center">Current Salary Distribution</h4>
+                                <div className="space-y-2">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-4 h-4 bg-secondary-400 rounded"></div>
+                                        <div className="flex-1">
+                                            <div className="flex justify-between text-xs">
+                                                <span>Fixed</span>
+                                                <span className="font-bold">{increment.oldSalary > 0 ? ((increment.oldFixedSalary / increment.oldSalary) * 100).toFixed(1) : 0}%</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-4 h-4 bg-blue-400 rounded"></div>
+                                        <div className="flex-1">
+                                            <div className="flex justify-between text-xs">
+                                                <span>Variable</span>
+                                                <span className="font-bold">{increment.oldSalary > 0 ? ((increment.oldVariableSalary / increment.oldSalary) * 100).toFixed(1) : 0}%</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-4 h-4 bg-purple-400 rounded"></div>
+                                        <div className="flex-1">
+                                            <div className="flex justify-between text-xs">
+                                                <span>Incentive</span>
+                                                <span className="font-bold">{increment.oldSalary > 0 ? ((increment.oldIncentive / increment.oldSalary) * 100).toFixed(1) : 0}%</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* New Salary Distribution */}
+                            <div className="p-4 bg-gradient-to-br from-primary-50 to-success-50 rounded-xl border-2 border-primary-200">
+                                <h4 className="text-sm font-bold text-primary-700 mb-4 text-center">New Salary Distribution</h4>
+                                <div className="space-y-2">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-4 h-4 bg-primary-500 rounded"></div>
+                                        <div className="flex-1">
+                                            <div className="flex justify-between text-xs">
+                                                <span>Fixed</span>
+                                                <span className="font-bold">{((increment.newFixedSalary / increment.newSalary) * 100).toFixed(1)}%</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-4 h-4 bg-blue-500 rounded"></div>
+                                        <div className="flex-1">
+                                            <div className="flex justify-between text-xs">
+                                                <span>Variable</span>
+                                                <span className="font-bold">{((increment.newVariableSalary / increment.newSalary) * 100).toFixed(1)}%</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-4 h-4 bg-purple-500 rounded"></div>
+                                        <div className="flex-1">
+                                            <div className="flex justify-between text-xs">
+                                                <span>Incentive</span>
+                                                <span className="font-bold">{((increment.newIncentive / increment.newSalary) * 100).toFixed(1)}%</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Overall Comparison Stats */}
+                        <div className="mt-6 grid grid-cols-2 md:grid-cols-4 gap-4">
+                            <div className="p-4 bg-gradient-to-br from-success-50 to-success-100 rounded-xl text-center">
+                                <p className="text-xs text-success-700 font-bold uppercase mb-1">Total Increase</p>
+                                <p className="text-2xl font-black text-success-600">₹{increment.incrementAmount.toLocaleString()}</p>
+                            </div>
+                            <div className="p-4 bg-gradient-to-br from-indigo-50 to-indigo-100 rounded-xl text-center">
+                                <p className="text-xs text-indigo-700 font-bold uppercase mb-1">Percentage</p>
+                                <p className="text-2xl font-black text-indigo-600">{increment.percentage.toFixed(2)}%</p>
+                            </div>
+                            <div className="p-4 bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl text-center">
+                                <p className="text-xs text-orange-700 font-bold uppercase mb-1">Monthly Impact</p>
+                                <p className="text-2xl font-black text-orange-600">+₹{increment.incrementAmount.toLocaleString()}</p>
+                            </div>
+                            <div className="p-4 bg-gradient-to-br from-pink-50 to-pink-100 rounded-xl text-center">
+                                <p className="text-xs text-pink-700 font-bold uppercase mb-1">Annual Impact</p>
+                                <p className="text-2xl font-black text-pink-600">+₹{(increment.incrementAmount * 12).toLocaleString()}</p>
+                            </div>
+                        </div>
+                    </div>
+
                     {/* Justification */}
                     {(increment.reason || increment.performanceNotes) && (
                         <div className="card-premium p-6">
