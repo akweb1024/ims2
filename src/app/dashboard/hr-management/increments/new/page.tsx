@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import RichTextEditor from '@/components/common/RichTextEditor';
 import { DollarSign, TrendingUp, Save, X, User } from 'lucide-react';
@@ -68,6 +68,19 @@ export default function NewIncrementPage() {
             newDesignation: employee?.designation || ''
         });
     };
+
+    const searchParams = useSearchParams();
+    const urlEmployeeId = searchParams.get('employeeId');
+
+    useEffect(() => {
+        if (urlEmployeeId && employees.length > 0 && !selectedEmployee) {
+            const employee = employees.find(e => e.id === urlEmployeeId);
+            if (employee) {
+                handleEmployeeChange(urlEmployeeId);
+            }
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [urlEmployeeId, employees]);
 
     const totalNewSalary = form.newFixedSalary + form.newVariableSalary + form.newIncentive;
     const oldSalary = selectedEmployee?.baseSalary || 0;

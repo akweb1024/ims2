@@ -582,9 +582,12 @@ export default function EmployeeProfilePage() {
                             <div className="space-y-6">
                                 <div className="flex justify-between items-center">
                                     <h3 className="font-bold text-lg text-secondary-900">Compensation History</h3>
-                                    <button onClick={() => setShowIncrementForm(!showIncrementForm)} className="btn btn-outline text-xs">
-                                        {showIncrementForm ? 'Cancel' : '+ Add Record'}
-                                    </button>
+                                    <Link
+                                        href={`/dashboard/hr-management/increments/new?employeeId=${employee.id}`}
+                                        className="btn btn-outline text-xs"
+                                    >
+                                        + Add Record
+                                    </Link>
                                 </div>
 
                                 {showIncrementForm && (
