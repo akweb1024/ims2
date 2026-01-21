@@ -61,7 +61,7 @@ export const POST = authorizedRoute(
                 );
             }
 
-            let updateData: any = {
+            const updateData: any = {
                 recommendedByUserId: user.id,
                 managerReviewDate: new Date(),
                 managerComments: comments,

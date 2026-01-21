@@ -278,7 +278,7 @@ export default function StaffPortalPage() {
 
                 <div className="bg-white rounded-2xl shadow-sm border border-secondary-100 min-h-[500px] relative">
                     {activeTab === 'onboarding' && <EmployeeOnboarding />}
-                    {activeTab === 'documents' && <EmployeeDocuments />}
+                    {activeTab === 'documents' && <EmployeeDocuments data={documents} fullProfile={fullProfile} />}
 
                     {activeTab === 'profile' && fullProfile && (
                         <div className="max-w-5xl mx-auto space-y-8 p-4 md:p-8">
@@ -1089,83 +1089,7 @@ export default function StaffPortalPage() {
                         )
                     }
 
-                    {
-                        activeTab === 'documents' && (
-                            <div className="space-y-8 max-w-4xl mx-auto">
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    <div className="card-premium p-8 bg-white border-l-8 border-primary-500">
-                                        <div className="w-16 h-16 bg-primary-100 text-primary-600 rounded-2xl flex items-center justify-center text-3xl mb-6">📄</div>
-                                        <h3 className="text-xl font-bold text-secondary-900 mb-2">Offer Letter</h3>
-                                        <p className="text-secondary-500 text-sm mb-6">Your official appointment letter confirming your role and compensation.</p>
-                                        {documents?.application?.offerLetterUrl || documents?.profile?.offerLetterUrl ? (
-                                            <a href={documents.application?.offerLetterUrl || documents.profile.offerLetterUrl} target="_blank" className="btn btn-primary w-full py-3 rounded-xl font-bold flex items-center justify-center gap-2">
-                                                <span>📥</span> Download Offer Letter
-                                            </a>
-                                        ) : (
-                                            <div className="bg-secondary-50 p-4 rounded-xl text-center text-secondary-400 text-xs font-bold border border-dashed border-secondary-200 uppercase tracking-widest">Not Uploaded Yet</div>
-                                        )}
-                                    </div>
 
-                                    <div className="card-premium p-8 bg-white border-l-8 border-primary-500">
-                                        <div className="w-16 h-16 bg-primary-100 text-primary-600 rounded-2xl flex items-center justify-center text-3xl mb-6">⚖️</div>
-                                        <h3 className="text-xl font-bold text-secondary-900 mb-2">Employment Contract</h3>
-                                        <p className="text-secondary-500 text-sm mb-6">Legal agreement outlining terms, conditions, and company policies.</p>
-                                        {documents?.application?.contractUrl || documents?.profile?.contractUrl ? (
-                                            <a href={documents.application?.contractUrl || documents.profile.contractUrl} target="_blank" className="btn btn-primary w-full py-3 rounded-xl font-bold flex items-center justify-center gap-2">
-                                                <span>📥</span> View Contract
-                                            </a>
-                                        ) : (
-                                            <div className="bg-secondary-50 p-4 rounded-xl text-center text-secondary-400 text-xs font-bold border border-dashed border-secondary-200 uppercase tracking-widest">Not Uploaded Yet</div>
-                                        )}
-                                    </div>
-                                </div>
-
-                                {/* Additional Documents Section */}
-                                {documents?.profile?.documents?.length > 0 && (
-                                    <div className="card-premium p-8">
-                                        <h3 className="text-xl font-bold text-secondary-900 mb-6">Additional Documents</h3>
-                                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                            {documents.profile.documents.map((doc: any) => (
-                                                <div key={doc.id} className="p-4 rounded-xl border border-secondary-100 flex items-center gap-4 hover:shadow-md transition-all">
-                                                    <div className="w-10 h-10 bg-secondary-50 flex items-center justify-center rounded-lg text-xl">📄</div>
-                                                    <div className="flex-1 min-w-0">
-                                                        <p className="font-bold text-secondary-900 truncate" title={doc.name}>{doc.name}</p>
-                                                        <p className="text-[10px] text-secondary-400">Uploaded {new Date(doc.uploadedAt).toLocaleDateString()}</p>
-                                                    </div>
-                                                    <a href={doc.fileUrl} target="_blank" rel="noreferrer" className="text-primary-600 hover:text-primary-800 text-sm font-bold">View</a>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-                                )}
-
-                                {documents?.application?.jobPosting && (
-                                    <div className="card-premium p-10 bg-secondary-900 text-white relative overflow-hidden">
-                                        <div className="absolute top-0 right-0 w-64 h-64 bg-primary-500/10 rounded-full -mr-32 -mt-32"></div>
-                                        <div className="relative z-10">
-                                            <div className="flex justify-between items-start mb-8">
-                                                <div>
-                                                    <span className="badge bg-primary-600 text-white border-none mb-3">{documents.application.jobPosting.type}</span>
-                                                    <h3 className="text-3xl font-black">{documents.application.jobPosting.title}</h3>
-                                                    <p className="text-primary-300 font-bold tracking-widest uppercase text-xs">{documents.application.jobPosting.company?.name || 'STM Indexing'}</p>
-                                                </div>
-                                                <div className="text-right">
-                                                    <p className="text-2xl font-black">{documents.application.jobPosting.salaryRange}</p>
-                                                    <p className="text-[10px] font-bold text-primary-400 uppercase tracking-widest">Assigned Package</p>
-                                                </div>
-                                            </div>
-
-                                            <div className="space-y-6">
-                                                <h4 className="text-xs font-bold text-primary-400 uppercase tracking-[0.2em] border-b border-white/10 pb-2">Job Roles & Responsibilities</h4>
-                                                <p className="text-secondary-300 leading-relaxed whitespace-pre-line text-sm bg-white/5 p-6 rounded-2xl border border-white/5">{documents.application.jobPosting.description}</p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-                        )
-                    }
-                    {activeTab === 'documents' && <DigitalWallet />}
 
                     {activeTab === 'id-card' && fullProfile && <EmployeeIDCard employee={fullProfile} />}
 

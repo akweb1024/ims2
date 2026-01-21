@@ -50,7 +50,7 @@ export const POST = authorizedRoute(
                 );
             }
 
-            let updateData: any = {
+            const updateData: any = {
                 approvedByUserId: user.id,
                 adminReviewDate: new Date(),
                 adminComments: comments,

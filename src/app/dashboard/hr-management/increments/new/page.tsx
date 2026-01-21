@@ -1,12 +1,12 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import RichTextEditor from '@/components/common/RichTextEditor';
 import { DollarSign, TrendingUp, Save, X, User } from 'lucide-react';
 
-export default function NewIncrementPage() {
+function NewIncrementContent() {
     const router = useRouter();
     const [employees, setEmployees] = useState<any[]>([]);
     const [loading, setLoading] = useState(false);
@@ -510,5 +510,13 @@ export default function NewIncrementPage() {
                 </div>
             </div>
         </DashboardLayout>
+    );
+}
+
+export default function NewIncrementPage() {
+    return (
+        <Suspense fallback={<div className="p-10 text-center font-bold text-secondary-400">Loading form...</div>}>
+            <NewIncrementContent />
+        </Suspense>
     );
 }

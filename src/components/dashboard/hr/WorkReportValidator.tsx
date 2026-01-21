@@ -117,6 +117,7 @@ export default function WorkReportValidator({ reports, onApprove, onAddComment }
                                 ? 'bg-white text-primary-600 shadow-sm'
                                 : 'text-secondary-500 hover:text-secondary-700'}`}
                             title="Grid View"
+                            aria-label="Switch to Grid View"
                         >
                             <Grid3x3 size={18} />
                         </button>
@@ -126,6 +127,7 @@ export default function WorkReportValidator({ reports, onApprove, onAddComment }
                                 ? 'bg-white text-primary-600 shadow-sm'
                                 : 'text-secondary-500 hover:text-secondary-700'}`}
                             title="Table View"
+                            aria-label="Switch to Table View"
                         >
                             <List size={18} />
                         </button>

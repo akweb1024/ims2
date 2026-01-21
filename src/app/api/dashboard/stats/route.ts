@@ -13,9 +13,7 @@ export const GET = authorizedRoute(
             const userCompanyId = user.companyId;
 
             // Fetch latest rates for precision
-            console.log('[DashboardStats] Request received for user:', user.email, 'Role:', user.role);
             await getLiveRates();
-            console.log('[DashboardStats] Live rates checked');
 
             // Determine filter based on role and company context
             let customerProfileId: string | undefined;
@@ -56,10 +54,10 @@ export const GET = authorizedRoute(
                     salesExecutiveId: { in: [userId, ...subordinateIds] }
                 };
             }
-            console.log('[DashboardStats] Filter constructed:', JSON.stringify(whereClause));
+
 
             // Revenue calculation needs to match the hierarchy
-            let revenueWhere: any = {};
+            const revenueWhere: any = {};
             if (userCompanyId) {
                 revenueWhere.companyId = userCompanyId;
             }
@@ -71,10 +69,10 @@ export const GET = authorizedRoute(
             } else if (whereClause.salesExecutiveId) {
                 revenueWhere.invoice = { subscription: { salesExecutiveId: whereClause.salesExecutiveId } };
             }
-            console.log('[DashboardStats] Revenue where:', JSON.stringify(revenueWhere));
+
 
             // 2. Fetch Stats with Model-Specific Filters
-            console.log('[DashboardStats] Executing counts...');
+
 
             const [
                 activeSubscriptionsCount,
@@ -99,16 +97,16 @@ export const GET = authorizedRoute(
                             : { companyId: userCompanyId || undefined }
                 })
             ]);
-            console.log('[DashboardStats] Counts done');
+
 
             // D. Payments
-            console.log('[DashboardStats] Executing Payment groupBy...');
+
             const paymentsByCurrency = await (prisma.payment as any).groupBy({
                 where: revenueWhere,
                 by: ['currency'],
                 _sum: { amount: true },
             }) as any[];
-            console.log('[DashboardStats] Payment groupBy done:', paymentsByCurrency.length);
+
 
             const totalRevenueINR = paymentsByCurrency.reduce((acc, curr) => {
                 const amount = curr._sum?.amount || 0;
@@ -116,7 +114,7 @@ export const GET = authorizedRoute(
             }, 0);
 
             // F. Open Tickets
-            console.log('[DashboardStats] Checking Tickets...');
+
             const openTicketsCount = await (prisma as any).supportTicket.count({
                 where: {
                     companyId: userCompanyId,
@@ -126,7 +124,7 @@ export const GET = authorizedRoute(
             });
 
             // G. Dispatches
-            console.log('[DashboardStats] Checking Dispatches...');
+
             const dispatchWhere: any = { status: 'PENDING' };
             if (userCompanyId) dispatchWhere.companyId = userCompanyId;
 
@@ -149,7 +147,7 @@ export const GET = authorizedRoute(
             });
 
             // H. Active Courses
-            console.log('[DashboardStats] Checking Courses & articles...');
+
             let activeCourses = 0;
             if (role === 'CUSTOMER') {
                 activeCourses = await (prisma as any).courseEnrollment.count({ where: { userId } });
@@ -167,7 +165,7 @@ export const GET = authorizedRoute(
             ]);
 
             // HR Stats
-            console.log('[DashboardStats] Checking HR logs...');
+
             let hrStats: any = null;
             if (role !== 'CUSTOMER' && role !== 'AGENCY') {
                 const profile = await prisma.employeeProfile.findUnique({
@@ -195,7 +193,7 @@ export const GET = authorizedRoute(
                 }
             }
 
-            console.log('[DashboardStats] Fetching activities & renewals...');
+
             const [recentActivities, upcomingRenewals] = await Promise.all([
                 fetchRecentActivities(whereClause, customerProfileId),
                 fetchUpcomingRenewals(whereClause, customerProfileId)
