@@ -347,6 +347,8 @@ const HRManagementContent = () => {
     useEffect(() => {
         if (activeTab === 'increments') {
             router.push('/dashboard/hr-management/increments');
+        } else if (activeTab === 'payroll') {
+            router.push('/dashboard/hr-management/payroll');
         }
     }, [activeTab, router]);
 
@@ -1180,54 +1182,16 @@ const HRManagementContent = () => {
                     </div>
                 )}
                 {activeTab === 'payroll' && (
-                    <div className="space-y-6">
-                        <div className="flex justify-between items-center">
-                            <h3 className="text-xl font-bold text-secondary-900">Payroll Records</h3>
-                            <button onClick={handleBulkPayroll} className="btn btn-primary shadow-lg">Run Bulk Payroll</button>
-                        </div>
-                        <div className="card-premium overflow-hidden">
-                            <table className="table">
-                                <thead>
-                                    <tr className="text-[10px] uppercase font-black text-secondary-400">
-                                        <th className="p-4">Staff</th>
-                                        <th className="p-4">Period</th>
-                                        <th className="p-4">Base Payout</th>
-                                        <th className="p-4">Deductions</th>
-                                        <th className="p-4">Net Paid</th>
-                                        <th className="p-4">Status</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-secondary-50">
-                                    {allSlips.length === 0 ? (
-                                        <tr>
-                                            <td colSpan={6} className="p-10 text-center text-secondary-400 italic font-bold">No payroll records generated yet.</td>
-                                        </tr>
-                                    ) : allSlips.map(slip => (
-                                        <tr key={slip.id} className="hover:bg-secondary-50 transition-colors text-sm">
-                                            <td className="p-4">
-                                                <p className="font-bold text-secondary-900">{slip.employee?.user?.name || slip.employee?.user?.email?.split('@')[0] || 'Unknown'}</p>
-                                                <p className="text-[10px] text-secondary-400 font-bold uppercase">{slip.employee?.designation}</p>
-                                            </td>
-                                            <td className="p-4 font-bold text-secondary-600">
-                                                {new Date(slip.year, slip.month - 1).toLocaleString('default', { month: 'short' })} {slip.year}
-                                            </td>
-                                            <td className="p-4 font-black">₹{slip.amountPaid.toLocaleString()}</td>
-                                            <td className="p-4">
-                                                <div className="space-y-1">
-                                                    {slip.lwpDeduction > 0 && <p className="text-[10px] text-danger-600 font-bold uppercase">LWP: -₹{slip.lwpDeduction.toLocaleString()}</p>}
-                                                    {slip.advanceDeduction > 0 && <p className="text-[10px] text-warning-600 font-bold uppercase">ADV: -₹{slip.advanceDeduction.toLocaleString()}</p>}
-                                                    {slip.lwpDeduction <= 0 && slip.advanceDeduction <= 0 && <span className="text-secondary-300">--</span>}
-                                                </div>
-                                            </td>
-                                            <td className="p-4 font-black text-primary-600">₹{(slip.amountPaid - (slip.lwpDeduction || 0) - (slip.advanceDeduction || 0)).toLocaleString()}</td>
-                                            <td className="p-4">
-                                                <span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase ${slip.status === 'PAID' ? 'bg-success-50 text-success-700' : 'bg-warning-50 text-warning-700'}`}>{slip.status}</span>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
+                    <div className="flex flex-col items-center justify-center p-20 card-premium">
+                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mb-4"></div>
+                        <h3 className="text-xl font-bold text-secondary-900">Redirecting to Payroll Management...</h3>
+                        <p className="text-secondary-500 mb-6">Accessing the full payroll suite.</p>
+                        <button
+                            onClick={() => router.push('/dashboard/hr-management/payroll')}
+                            className="btn btn-primary"
+                        >
+                            Go to Payroll
+                        </button>
                     </div>
                 )}
 

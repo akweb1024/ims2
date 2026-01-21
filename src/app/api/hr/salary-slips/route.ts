@@ -92,8 +92,10 @@ export const POST = authorizedRoute(
                 const y = parseInt(year);
 
                 const where: any = {
-                    isActive: true,
-                    companyId: user.companyId
+                    user: {
+                        isActive: true,
+                        companyId: user.companyId
+                    }
                 };
 
                 if (['MANAGER', 'TEAM_LEADER'].includes(user.role)) {
