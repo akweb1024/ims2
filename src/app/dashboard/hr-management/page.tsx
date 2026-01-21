@@ -33,7 +33,6 @@ import PointsRewardsManager from '@/components/dashboard/hr/PointsRewardsManager
 import GoalManager from '@/components/dashboard/hr/GoalManager';
 import RewardManager from '@/components/dashboard/hr/RewardManager';
 import PotentialCalculator from '@/components/dashboard/hr/PotentialCalculator';
-import IncrementPlanningView from '@/components/dashboard/hr/IncrementPlanningView';
 import WorkReportValidator from '@/components/dashboard/hr/WorkReportValidator';
 import { Briefcase, Info, Target, TrendingUp, Award, GraduationCap, Edit, Trash2 } from 'lucide-react';
 import {
@@ -344,6 +343,12 @@ const HRManagementContent = () => {
     // const [workReports, setWorkReports] = useState<any[]>([]); // Replaced by useWorkReports hook
 
     // fetchWorkReports removed, now handled by useWorkReports hook
+
+    useEffect(() => {
+        if (activeTab === 'increments') {
+            router.push('/dashboard/hr-management/increments');
+        }
+    }, [activeTab, router]);
 
     useEffect(() => {
         const userData = localStorage.getItem('user');
@@ -1238,7 +1243,17 @@ const HRManagementContent = () => {
                 )}
 
                 {activeTab === 'increments' && (
-                    <IncrementPlanningView />
+                    <div className="flex flex-col items-center justify-center p-20 card-premium">
+                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mb-4"></div>
+                        <h3 className="text-xl font-bold text-secondary-900">Redirecting to Salary Increments...</h3>
+                        <p className="text-secondary-500 mb-6">We have upgraded the salary planning system.</p>
+                        <button
+                            onClick={() => router.push('/dashboard/hr-management/increments')}
+                            className="btn btn-primary"
+                        >
+                            Go to New System
+                        </button>
+                    </div>
                 )}
 
                 {activeTab === 'potential' && (

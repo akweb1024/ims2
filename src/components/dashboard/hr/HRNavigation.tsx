@@ -51,7 +51,7 @@ const CATEGORIES = [
             { id: 'advances', label: 'Advance/Loans' },
             { id: 'statutory', label: 'Statutory Compliance' },
             { id: 'budgets', label: 'Allocated Budgets' },
-            { id: 'increments', label: 'Increment Planning' },
+            { id: 'increments', label: 'Salary Increments' },
             { id: 'rewards', label: 'Incentives & Bonuses' },
             { id: 'final-settlement', label: 'F&F Settlement' },
         ]
