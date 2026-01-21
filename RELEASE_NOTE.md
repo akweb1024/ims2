@@ -1,14 +1,14 @@
 # 🚀 Production Release: Salary Enhancements
 
-**Date**: January 21, 2026, 12:30 PM IST  
-**Version**: 1.2.0 (Stable)
+**Date**: January 21, 2026, 03:20 PM IST  
+**Version**: 1.3.0 (Stable)
 
 ---
 
 ## ✅ **Release Status**
 
 | Item | Status | Notes |
-|------|--------|-------|
+| :--- | :--- | :--- |
 | **Features** | ✅ Complete | Edit Page, Variables, Incentives, Navigation |
 | **Analytics** | ✅ Applied | Visual Charts, Distributions, Impact Stats |
 | **Linting** | ✅ Passed | No errors |
@@ -46,7 +46,18 @@
 - **Unified Payroll**: Consolidated navigation to dedicated Payroll Management module.
 - **Production Build**: Resolved lint/build errors for stable deployment.
 
-### 4. Staff Empowerment (New!)
+### 4. Financial Compliance & Professional Payslips (New!)
+
+- **Statutory Alignment**: Integrated Statutory Bonus, ESIC/PF (Employer Share), and Gratuity Provisions into the core calculation engine.
+- **Sec-10 Exemp/Perks**: Support for tax-efficient components:
+  - Health Care, Travelling, Mobile, Internet, and Books & Periodicals.
+- **Professional Payslip Layout**:
+  - Dual-column "Group Celnet" professional layout.
+  - Detailed breakdown of Earnings (Section A), Employer Contributions (Section B), and Sec-10 Perks (Section C).
+  - Automated "Amount in Words" conversion for net payable.
+- **Salary Manager**: Interactive editor for staff financial profiles with real-time Gross/Net/CTC impacts.
+
+### 5. Staff Empowerment
 
 - **Salary View**: Employees can now view their approved increment history and current salary structure in the Staff Portal.
 - **Self Service**: "Add Record" link in HR Profile seamlessly directs to the new increment creation form.

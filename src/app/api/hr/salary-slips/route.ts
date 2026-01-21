@@ -172,6 +172,13 @@ export const POST = authorizedRoute(
                         medical: struct.medical,
                         specialAllowance: struct.specialAllowance,
                         otherAllowances: struct.otherAllowances,
+                        statutoryBonus: (struct as any).statutoryBonus || 0,
+                        gratuity: (struct as any).gratuity || 0,
+                        healthCare: (struct as any).healthCare || 0,
+                        travelling: (struct as any).travelling || 0,
+                        mobile: (struct as any).mobile || 0,
+                        internet: (struct as any).internet || 0,
+                        booksAndPeriodicals: (struct as any).booksAndPeriodicals || 0,
                         lwpDays: overheadDays,
                         daysInMonth
                     }, statutoryConfig);
@@ -195,6 +202,7 @@ export const POST = authorizedRoute(
                             medical: breakdown.earnings.medical,
                             specialAllowance: breakdown.earnings.specialAllowance,
                             otherAllowances: breakdown.earnings.otherAllowances,
+                            statutoryBonus: breakdown.earnings.statutoryBonus,
                             grossSalary: breakdown.earnings.gross,
 
                             pfEmployee: breakdown.deductions.pfEmployee,
@@ -205,12 +213,20 @@ export const POST = authorizedRoute(
 
                             pfEmployer: breakdown.employerContribution.pfEmployer,
                             esicEmployer: breakdown.employerContribution.esicEmployer,
+                            gratuity: breakdown.employerContribution.gratuity,
                             ctc: breakdown.costToCompany,
                             arrears: breakdown.arrears || 0,
+                            expenses: 0,
+                            healthCare: breakdown.perks.healthCare,
+                            travelling: breakdown.perks.travelling,
+                            mobile: breakdown.perks.mobile,
+                            internet: breakdown.perks.internet,
+                            booksAndPeriodicals: breakdown.perks.booksAndPeriodicals,
+                            netPayable: breakdown.netPayable - advanceDeduction,
 
                             status: 'GENERATED',
                             companyId: user.companyId
-                        }
+                        } as any
                     });
 
                     // Mark EMI as paid if applicable

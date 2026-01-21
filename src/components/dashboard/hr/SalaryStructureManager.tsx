@@ -20,7 +20,14 @@ export default function SalaryStructureManager() {
         professionalTax: 0,
         tds: 0,
         pfEmployer: 0,
-        esicEmployer: 0
+        esicEmployer: 0,
+        statutoryBonus: 0,
+        gratuity: 0,
+        healthCare: 0,
+        travelling: 0,
+        mobile: 0,
+        internet: 0,
+        booksAndPeriodicals: 0
     });
 
     useEffect(() => {
@@ -41,22 +48,32 @@ export default function SalaryStructureManager() {
                     professionalTax: 0,
                     tds: 0,
                     pfEmployer: 0,
-                    esicEmployer: 0
+                    esicEmployer: 0,
+                    statutoryBonus: 0,
+                    gratuity: 0,
+                    healthCare: 0,
+                    travelling: 0,
+                    mobile: 0,
+                    internet: 0,
+                    booksAndPeriodicals: 0
                 });
             }
         }
     }, [selectedEmp, structures]);
 
     const calculateTotals = () => {
-        const earnings = (formData.basicSalary || 0) + (formData.hra || 0) + (formData.conveyance || 0) + (formData.medical || 0) + (formData.specialAllowance || 0) + (formData.otherAllowances || 0);
+        const earnings = (formData.basicSalary || 0) + (formData.hra || 0) + (formData.conveyance || 0) + (formData.medical || 0) + (formData.specialAllowance || 0) + (formData.otherAllowances || 0) + (formData.statutoryBonus || 0);
+        const perks = (formData.healthCare || 0) + (formData.travelling || 0) + (formData.mobile || 0) + (formData.internet || 0) + (formData.booksAndPeriodicals || 0);
         const deductions = (formData.pfEmployee || 0) + (formData.esicEmployee || 0) + (formData.professionalTax || 0) + (formData.tds || 0);
         const employerContrib = (formData.pfEmployer || 0) + (formData.esicEmployer || 0);
+        const provisionFields = (formData.gratuity || 0);
 
         return {
             gross: earnings,
+            perks,
             deductions,
-            net: earnings - deductions,
-            ctc: earnings + employerContrib
+            net: earnings - deductions + perks,
+            ctc: earnings + perks + employerContrib + provisionFields
         };
     };
 
@@ -85,11 +102,16 @@ export default function SalaryStructureManager() {
             let esic = 0;
             if (gross <= 21000) esic = Math.ceil(gross * 0.0075);
 
+            // Statutory Bonus (usually 8.33% of Basic/Minimum Wage, often capped)
+            const bonus = Math.round(Math.min(basic, 7000) * 0.0833);
+            const revisedGross = basic + hra + special + bonus;
+
             setFormData({
                 ...formData,
                 basicSalary: basic,
                 hra,
-                specialAllowance: special,
+                specialAllowance: special - bonus, // keep gross same
+                statutoryBonus: bonus,
                 conveyance: 0,
                 medical: 0,
                 otherAllowances: 0,
@@ -97,7 +119,8 @@ export default function SalaryStructureManager() {
                 pfEmployer: pf,
                 esicEmployee: esic,
                 esicEmployer: Math.ceil(gross * 0.0325),
-                professionalTax: gross > 10000 ? 200 : 0
+                professionalTax: gross > 10000 ? 200 : 0,
+                gratuity: Math.round(basic * (15 / 26) * (1 / 12)) // Approx monthly provision
             });
         }
     };
@@ -162,29 +185,33 @@ export default function SalaryStructureManager() {
                                         <div className="form-control">
                                             <label className="label-text mb-1 block text-[10px] font-bold text-secondary-400 uppercase">Basic Salary</label>
                                             <div className="relative">
-                                                <input type="number" value={formData.basicSalary} onChange={e => setFormData({ ...formData, basicSalary: parseFloat(e.target.value) || 0 })} className="input w-full bg-secondary-50 border-secondary-100 font-bold text-secondary-900 focus:ring-primary-500" />
+                                                <input type="number" title="Basic Salary" placeholder="0" value={formData.basicSalary} onChange={e => setFormData({ ...formData, basicSalary: parseFloat(e.target.value) || 0 })} className="input w-full bg-secondary-50 border-secondary-100 font-bold text-secondary-900 focus:ring-primary-500" />
                                                 <IndianRupee className="absolute right-4 top-1/2 -translate-y-1/2 text-secondary-300" size={14} />
                                             </div>
                                         </div>
                                         <div className="grid grid-cols-2 gap-4">
                                             <div className="form-control">
                                                 <label className="label-text mb-1 block text-[10px] font-bold text-secondary-400 uppercase">HRA</label>
-                                                <input type="number" value={formData.hra} onChange={e => setFormData({ ...formData, hra: parseFloat(e.target.value) || 0 })} className="input bg-secondary-50 border-secondary-100 font-bold text-secondary-900" />
+                                                <input type="number" title="House Rent Allowance" placeholder="0" value={formData.hra} onChange={e => setFormData({ ...formData, hra: parseFloat(e.target.value) || 0 })} className="input bg-secondary-50 border-secondary-100 font-bold text-secondary-900" />
                                             </div>
                                             <div className="form-control">
                                                 <label className="label-text mb-1 block text-[10px] font-bold text-secondary-400 uppercase">Special Allowance</label>
-                                                <input type="number" value={formData.specialAllowance} onChange={e => setFormData({ ...formData, specialAllowance: parseFloat(e.target.value) || 0 })} className="input bg-secondary-50 border-secondary-100 font-bold text-secondary-900" />
+                                                <input type="number" title="Special Allowance" placeholder="0" value={formData.specialAllowance} onChange={e => setFormData({ ...formData, specialAllowance: parseFloat(e.target.value) || 0 })} className="input bg-secondary-50 border-secondary-100 font-bold text-secondary-900" />
                                             </div>
                                         </div>
                                         <div className="grid grid-cols-2 gap-4">
                                             <div className="form-control">
                                                 <label className="label-text mb-1 block text-[10px] font-bold text-secondary-400 uppercase">Conveyance</label>
-                                                <input type="number" value={formData.conveyance} onChange={e => setFormData({ ...formData, conveyance: parseFloat(e.target.value) || 0 })} className="input bg-secondary-50 border-secondary-100 font-bold text-secondary-900" />
+                                                <input type="number" title="Conveyance" placeholder="0" value={formData.conveyance} onChange={e => setFormData({ ...formData, conveyance: parseFloat(e.target.value) || 0 })} className="input bg-secondary-50 border-secondary-100 font-bold text-secondary-900" />
                                             </div>
                                             <div className="form-control">
-                                                <label className="label-text mb-1 block text-[10px] font-bold text-secondary-400 uppercase">Medical</label>
-                                                <input type="number" value={formData.medical} onChange={e => setFormData({ ...formData, medical: parseFloat(e.target.value) || 0 })} className="input bg-secondary-50 border-secondary-100 font-bold text-secondary-900" />
+                                                <label className="label-text mb-1 block text-[10px] font-bold text-secondary-400 uppercase">Statutory Bonus</label>
+                                                <input type="number" title="Statutory Bonus" placeholder="0" value={formData.statutoryBonus} onChange={e => setFormData({ ...formData, statutoryBonus: parseFloat(e.target.value) || 0 })} className="input bg-secondary-50 border-secondary-100 font-bold text-secondary-900" />
                                             </div>
+                                        </div>
+                                        <div className="form-control">
+                                            <label className="label-text mb-1 block text-[10px] font-bold text-secondary-400 uppercase">Medical / Other</label>
+                                            <input type="number" title="Medical or Other Allowances" placeholder="0" value={formData.medical} onChange={e => setFormData({ ...formData, medical: parseFloat(e.target.value) || 0 })} className="input bg-secondary-50 border-secondary-100 font-bold text-secondary-900" />
                                         </div>
                                     </div>
                                 </div>
@@ -196,28 +223,76 @@ export default function SalaryStructureManager() {
                                         <div className="grid grid-cols-2 gap-4">
                                             <div className="form-control">
                                                 <label className="label-text mb-1 block text-[10px] font-bold text-secondary-400 uppercase">PF (Employee)</label>
-                                                <input type="number" value={formData.pfEmployee} onChange={e => setFormData({ ...formData, pfEmployee: parseFloat(e.target.value) || 0 })} className="input bg-secondary-50 border-secondary-100 font-bold text-secondary-900" />
+                                                <input type="number" title="Provident Fund (Employee Share)" placeholder="0" value={formData.pfEmployee} onChange={e => setFormData({ ...formData, pfEmployee: parseFloat(e.target.value) || 0 })} className="input bg-secondary-50 border-secondary-100 font-bold text-secondary-900" />
                                             </div>
                                             <div className="form-control">
                                                 <label className="label-text mb-1 block text-[10px] font-bold text-secondary-400 uppercase">ESIC (Employee)</label>
-                                                <input type="number" value={formData.esicEmployee} onChange={e => setFormData({ ...formData, esicEmployee: parseFloat(e.target.value) || 0 })} className="input bg-secondary-50 border-secondary-100 font-bold text-secondary-900" />
+                                                <input type="number" title="ESIC (Employee Share)" placeholder="0" value={formData.esicEmployee} onChange={e => setFormData({ ...formData, esicEmployee: parseFloat(e.target.value) || 0 })} className="input bg-secondary-50 border-secondary-100 font-bold text-secondary-900" />
                                             </div>
                                         </div>
                                         <div className="grid grid-cols-2 gap-4">
                                             <div className="form-control">
                                                 <label className="label-text mb-1 block text-[10px] font-bold text-secondary-400 uppercase">Prof. Tax (PT)</label>
-                                                <input type="number" value={formData.professionalTax} onChange={e => setFormData({ ...formData, professionalTax: parseFloat(e.target.value) || 0 })} className="input bg-secondary-50 border-secondary-100 font-bold text-secondary-900" />
+                                                <input type="number" title="Professional Tax" placeholder="0" value={formData.professionalTax} onChange={e => setFormData({ ...formData, professionalTax: parseFloat(e.target.value) || 0 })} className="input bg-secondary-50 border-secondary-100 font-bold text-secondary-900" />
                                             </div>
                                             <div className="form-control">
                                                 <label className="label-text mb-1 block text-[10px] font-bold text-secondary-400 uppercase">TDS (Est. Monthly)</label>
-                                                <input type="number" value={formData.tds} onChange={e => setFormData({ ...formData, tds: parseFloat(e.target.value) || 0 })} className="input bg-secondary-50 border-secondary-100 font-bold text-secondary-900" />
+                                                <input type="number" title="Tax Deducted at Source" placeholder="0" value={formData.tds} onChange={e => setFormData({ ...formData, tds: parseFloat(e.target.value) || 0 })} className="input bg-secondary-50 border-secondary-100 font-bold text-secondary-900" />
                                             </div>
                                         </div>
+                                        <div className="form-control">
+                                            <label className="label-text mb-1 block text-[10px] font-bold text-secondary-400 uppercase">Gratuity (Provision)</label>
+                                            <input type="number" title="Gratuity Monthly Provision" placeholder="0" value={formData.gratuity} onChange={e => setFormData({ ...formData, gratuity: parseFloat(e.target.value) || 0 })} className="input bg-secondary-50 border-secondary-100 font-bold text-secondary-900" />
+                                        </div>
+
+                                        <h4 className="text-[10px] font-black text-indigo-500 uppercase tracking-[0.2em] border-b border-indigo-100 pb-2 mt-6">Employer Contributions</h4>
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div className="form-control">
+                                                <label className="label-text mb-1 block text-[10px] font-bold text-secondary-400 uppercase">PF (Employer)</label>
+                                                <input type="number" title="Provident Fund (Employer Share)" placeholder="0" value={formData.pfEmployer} onChange={e => setFormData({ ...formData, pfEmployer: parseFloat(e.target.value) || 0 })} className="input bg-secondary-50 border-secondary-100 font-bold text-secondary-900" />
+                                            </div>
+                                            <div className="form-control">
+                                                <label className="label-text mb-1 block text-[10px] font-bold text-secondary-400 uppercase">ESIC (Employer)</label>
+                                                <input type="number" title="ESIC (Employer Share)" placeholder="0" value={formData.esicEmployer} onChange={e => setFormData({ ...formData, esicEmployer: parseFloat(e.target.value) || 0 })} className="input bg-secondary-50 border-secondary-100 font-bold text-secondary-900" />
+                                            </div>
+                                        </div>
+
                                         <div className="p-4 bg-rose-50 rounded-2xl">
                                             <div className="flex justify-between items-center">
                                                 <span className="text-[10px] font-black text-rose-600 uppercase tracking-widest">Total Deductions</span>
                                                 <span className="text-xl font-black text-rose-700">₹{totals.deductions.toLocaleString()}</span>
                                             </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Sec-10 Exemp/Perks */}
+                                <div className="space-y-6 md:col-span-2">
+                                    <h4 className="text-[10px] font-black text-success-600 uppercase tracking-[0.2em] border-b border-success-100 pb-2">Sec-10 Exemp / Perks</h4>
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                        <div className="form-control">
+                                            <label className="label-text mb-1 block text-[10px] font-bold text-secondary-400 uppercase">Health Care</label>
+                                            <input type="number" title="Health Care Allowance" placeholder="0" value={formData.healthCare} onChange={e => setFormData({ ...formData, healthCare: parseFloat(e.target.value) || 0 })} className="input bg-secondary-50 border-secondary-100 font-bold text-secondary-900" />
+                                        </div>
+                                        <div className="form-control">
+                                            <label className="label-text mb-1 block text-[10px] font-bold text-secondary-400 uppercase">Travelling</label>
+                                            <input type="number" title="Travelling Allowance" placeholder="0" value={formData.travelling} onChange={e => setFormData({ ...formData, travelling: parseFloat(e.target.value) || 0 })} className="input bg-secondary-50 border-secondary-100 font-bold text-secondary-900" />
+                                        </div>
+                                        <div className="form-control">
+                                            <label className="label-text mb-1 block text-[10px] font-bold text-secondary-400 uppercase">Mobile</label>
+                                            <input type="number" title="Mobile Allowance" placeholder="0" value={formData.mobile} onChange={e => setFormData({ ...formData, mobile: parseFloat(e.target.value) || 0 })} className="input bg-secondary-50 border-secondary-100 font-bold text-secondary-900" />
+                                        </div>
+                                        <div className="form-control">
+                                            <label className="label-text mb-1 block text-[10px] font-bold text-secondary-400 uppercase">Internet</label>
+                                            <input type="number" title="Internet Allowance" placeholder="0" value={formData.internet} onChange={e => setFormData({ ...formData, internet: parseFloat(e.target.value) || 0 })} className="input bg-secondary-50 border-secondary-100 font-bold text-secondary-900" />
+                                        </div>
+                                        <div className="form-control">
+                                            <label className="label-text mb-1 block text-[10px] font-bold text-secondary-400 uppercase">Books & Periodicals</label>
+                                            <input type="number" title="Books & Periodicals Allowance" placeholder="0" value={formData.booksAndPeriodicals} onChange={e => setFormData({ ...formData, booksAndPeriodicals: parseFloat(e.target.value) || 0 })} className="input bg-secondary-50 border-secondary-100 font-bold text-secondary-900" />
+                                        </div>
+                                        <div className="p-4 bg-success-50 rounded-2xl flex items-center justify-between">
+                                            <span className="text-[10px] font-black text-success-600 uppercase tracking-widest">Total Perks</span>
+                                            <span className="text-xl font-black text-success-700">₹{totals.perks.toLocaleString()}</span>
                                         </div>
                                     </div>
                                 </div>
