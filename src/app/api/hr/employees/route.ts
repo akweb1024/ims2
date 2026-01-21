@@ -229,6 +229,18 @@ export const POST = authorizedRoute(
         try {
             const body = await req.json();
 
+            // Helper to generate initials and random suffix from email
+            const generateID = (email: string) => {
+                const part = email.split('@')[0];
+                const initials = part
+                    .split(/[._-]/)
+                    .map(segment => segment[0]?.toUpperCase() || '')
+                    .join('');
+                const prefix = initials || 'EMP';
+                const suffix = Math.floor(1000 + Math.random() * 9000); // 4-digit random number
+                return `${prefix}${suffix}`;
+            };
+
             // Validate payload
             const result = createEmployeeSchema.safeParse(body);
             if (!result.success) {
@@ -238,6 +250,11 @@ export const POST = authorizedRoute(
                 email, name, password, role, companyId, companyIds, allowedModules, departmentId,
                 ...rest
             } = result.data as any;
+
+            // Generate default employeeId if not provided
+            if (!rest.employeeId) {
+                rest.employeeId = generateID(email);
+            }
 
             // Profile fields filtering - ensure no relation/meta fields leak into Prisma
             const profileData = { ...rest };

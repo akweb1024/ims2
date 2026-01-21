@@ -47,10 +47,26 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
                 // 2. Handle Standard Login
                 if (!credentials?.email || !credentials?.password) return null;
 
-                const user = await prisma.user.findUnique({
-                    where: { email: credentials.email as string },
+                const identifier = credentials.email as string;
+                let user = await prisma.user.findUnique({
+                    where: { email: identifier },
                     include: { companies: true }
                 });
+
+                // If user not found by email, try searching by employeeId in EmployeeProfile
+                if (!user) {
+                    const profile = await prisma.employeeProfile.findUnique({
+                        where: { employeeId: identifier },
+                        include: {
+                            user: {
+                                include: { companies: true }
+                            }
+                        }
+                    });
+                    if (profile) {
+                        user = profile.user as any;
+                    }
+                }
 
                 if (!user || user.isActive === false) return null;
 

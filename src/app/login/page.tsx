@@ -149,13 +149,13 @@ function LoginForm() {
             <form onSubmit={handleSubmit} className="space-y-6">
                 <div>
                     <label className="block text-sm font-medium text-slate-700 mb-2">
-                        Email Address
+                        Email or Employee ID
                     </label>
                     <input
-                        type="email"
+                        type="text"
                         required
                         className="w-full px-4 py-3 rounded-lg border border-slate-200 focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition-all"
-                        placeholder="you@example.com"
+                        placeholder="you@example.com or EMP-001"
                         value={formData.email}
                         onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                     />

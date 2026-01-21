@@ -125,6 +125,8 @@ export default function EmployeeForm({
                             type="text"
                             required
                             className="input-premium"
+                            title="Full Name"
+                            placeholder="John Doe"
                             value={empForm.name}
                             onChange={e => setEmpForm({ ...empForm, name: e.target.value })}
                         />
@@ -150,6 +152,8 @@ export default function EmployeeForm({
                                 type="email"
                                 disabled
                                 className="input-premium bg-secondary-50 opacity-60 cursor-not-allowed"
+                                title="System Email"
+                                placeholder="Email"
                                 value={empForm.email}
                             />
                         </div>
@@ -194,6 +198,8 @@ export default function EmployeeForm({
                         <input
                             type="text"
                             className="input-premium"
+                            title="Personal Mobile"
+                            placeholder="+1234567890"
                             value={empForm.phoneNumber}
                             onChange={e => setEmpForm({ ...empForm, phoneNumber: e.target.value })}
                         />
@@ -203,6 +209,8 @@ export default function EmployeeForm({
                         <input
                             type="email"
                             className="input-premium"
+                            title="Personal Email"
+                            placeholder="john@personal.com"
                             value={empForm.personalEmail}
                             onChange={e => setEmpForm({ ...empForm, personalEmail: e.target.value })}
                         />
@@ -212,6 +220,8 @@ export default function EmployeeForm({
                         <input
                             type="text"
                             className="input-premium"
+                            title="Aadhar Number"
+                            placeholder="0000 0000 0000"
                             value={empForm.aadharNumber}
                             onChange={e => setEmpForm({ ...empForm, aadharNumber: e.target.value })}
                         />
@@ -221,6 +231,8 @@ export default function EmployeeForm({
                         <input
                             type="text"
                             className="input-premium"
+                            title="PAN Number"
+                            placeholder="ABCDE1234F"
                             value={empForm.panNumber}
                             onChange={e => setEmpForm({ ...empForm, panNumber: e.target.value })}
                         />
@@ -230,6 +242,8 @@ export default function EmployeeForm({
                         <input
                             type="text"
                             className="input-premium"
+                            title="Blood Group"
+                            placeholder="O+"
                             value={empForm.bloodGroup}
                             onChange={e => setEmpForm({ ...empForm, bloodGroup: e.target.value })}
                         />
@@ -238,6 +252,8 @@ export default function EmployeeForm({
                         <label className="label-premium">Current Address</label>
                         <textarea
                             className="input-premium h-20"
+                            title="Current Address"
+                            placeholder="Street, City, State, ZIP"
                             value={empForm.address}
                             onChange={e => setEmpForm({ ...empForm, address: e.target.value })}
                         />
@@ -257,16 +273,18 @@ export default function EmployeeForm({
                         <input
                             type="text"
                             className="input-premium"
-                            placeholder="STM-001"
+                            placeholder="e.g. JD, EMP-001"
                             value={empForm.employeeId}
                             onChange={e => setEmpForm({ ...empForm, employeeId: e.target.value })}
                         />
+                        <p className="text-[10px] text-primary-600 font-bold mt-1">Can be used as a login username.</p>
                     </div>
                     <div>
                         <label className="label-premium">Date of Joining</label>
                         <input
                             type="date"
                             className="input-premium"
+                            title="Date of Joining"
                             value={empForm.dateOfJoining}
                             onChange={e => setEmpForm({ ...empForm, dateOfJoining: e.target.value })}
                         />
@@ -275,6 +293,7 @@ export default function EmployeeForm({
                         <label className="label-premium">System Role</label>
                         <select
                             className="input-premium"
+                            title="System Role"
                             value={empForm.role}
                             onChange={e => setEmpForm({ ...empForm, role: e.target.value })}
                         >
@@ -297,6 +316,7 @@ export default function EmployeeForm({
                         <label className="label-premium">Employee Type</label>
                         <select
                             className="input-premium"
+                            title="Employee Type"
                             value={empForm.employeeType}
                             onChange={e => setEmpForm({ ...empForm, employeeType: e.target.value })}
                         >
@@ -312,6 +332,7 @@ export default function EmployeeForm({
                         <label className="label-premium">Department</label>
                         <select
                             className="input-premium"
+                            title="Department"
                             value={empForm.departmentId}
                             onChange={e => setEmpForm({ ...empForm, departmentId: e.target.value })}
                         >
@@ -327,6 +348,7 @@ export default function EmployeeForm({
                         <label className="label-premium">Reports To (Manager)</label>
                         <select
                             className="input-premium"
+                            title="Reports To"
                             value={empForm.managerId}
                             onChange={e => setEmpForm({ ...empForm, managerId: e.target.value })}
                         >
@@ -344,6 +366,7 @@ export default function EmployeeForm({
                         <label className="label-premium">Designation Profile</label>
                         <select
                             className="input-premium"
+                            title="Designation Profile"
                             value={empForm.designationId}
                             onChange={e => {
                                 const d = designations.find(x => x.id === e.target.value);
@@ -367,6 +390,8 @@ export default function EmployeeForm({
                         <input
                             type="text"
                             className="input-premium"
+                            title="Designation Name"
+                            placeholder="Software Engineer"
                             value={empForm.designation}
                             onChange={e => setEmpForm({ ...empForm, designation: e.target.value })}
                         />
@@ -375,6 +400,7 @@ export default function EmployeeForm({
                         <label className="label-premium">Account Status</label>
                         <select
                             className="input-premium"
+                            title="Account Status"
                             value={empForm.isActive ? 'true' : 'false'}
                             onChange={e => setEmpForm({ ...empForm, isActive: e.target.value === 'true' })}
                         >
@@ -398,6 +424,7 @@ export default function EmployeeForm({
                             <label className="label-premium">Primary Company</label>
                             <select
                                 className="input-premium"
+                                title="Primary Company"
                                 value={empForm.companyId}
                                 onChange={e => setEmpForm({ ...empForm, companyId: e.target.value })}
                             >
@@ -501,6 +528,8 @@ export default function EmployeeForm({
                         <input
                             type="number"
                             className="input-premium"
+                            title="Base Salary"
+                            placeholder="0.00"
                             value={empForm.baseSalary}
                             onChange={e => setEmpForm({ ...empForm, baseSalary: e.target.value })}
                         />
@@ -510,6 +539,8 @@ export default function EmployeeForm({
                         <input
                             type="text"
                             className="input-premium"
+                            title="Bank Name"
+                            placeholder="HDFC Bank"
                             value={empForm.bankName}
                             onChange={e => setEmpForm({ ...empForm, bankName: e.target.value })}
                         />
@@ -519,6 +550,8 @@ export default function EmployeeForm({
                         <input
                             type="text"
                             className="input-premium"
+                            title="Account Number"
+                            placeholder="0000 0000 0000 00"
                             value={empForm.accountNumber}
                             onChange={e => setEmpForm({ ...empForm, accountNumber: e.target.value })}
                         />
@@ -528,6 +561,8 @@ export default function EmployeeForm({
                         <input
                             type="text"
                             className="input-premium"
+                            title="IFSC Code"
+                            placeholder="HDFC0001234"
                             value={empForm.ifscCode}
                             onChange={e => setEmpForm({ ...empForm, ifscCode: e.target.value })}
                         />
@@ -537,6 +572,8 @@ export default function EmployeeForm({
                         <input
                             type="text"
                             className="input-premium"
+                            title="UAN Number"
+                            placeholder="123456789012"
                             value={empForm.uanNumber}
                             onChange={e => setEmpForm({ ...empForm, uanNumber: e.target.value })}
                         />
@@ -546,6 +583,8 @@ export default function EmployeeForm({
                         <input
                             type="text"
                             className="input-premium"
+                            title="PF Number"
+                            placeholder="MH/PUN/12345/678"
                             value={empForm.pfNumber}
                             onChange={e => setEmpForm({ ...empForm, pfNumber: e.target.value })}
                         />
@@ -555,6 +594,8 @@ export default function EmployeeForm({
                         <input
                             type="text"
                             className="input-premium"
+                            title="ESIC Number"
+                            placeholder="31000123450001101"
                             value={empForm.esicNumber}
                             onChange={e => setEmpForm({ ...empForm, esicNumber: e.target.value })}
                         />
