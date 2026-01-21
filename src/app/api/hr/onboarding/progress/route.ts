@@ -12,7 +12,8 @@ export const GET = authorizedRoute(
                 where: { id: user.id },
                 include: {
                     department: true,
-                    employeeProfile: true
+                    employeeProfile: true,
+                    company: true
                 }
             });
 
@@ -90,8 +91,13 @@ export const GET = authorizedRoute(
                 // Update IsPrevious for next iteration
                 isPreviousCompleted = (status === 'COMPLETED');
 
+                // Replace Keywords (e.g., {{COMPANY_NAME}})
+                const companyName = userContext.company?.name || 'the Company';
+                const processedContent = (mod.content || '').replace(/\{\{COMPANY_NAME\}\}/g, companyName);
+
                 result.push({
                     ...mod,
+                    content: processedContent,
                     progress: {
                         status,
                         score,

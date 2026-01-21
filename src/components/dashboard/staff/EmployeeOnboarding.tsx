@@ -33,6 +33,7 @@ export default function EmployeeOnboarding() {
                 <button
                     onClick={() => { setActiveModule(null); setQuizMode(false); setQuizResult(null); setQuizAnswers({}); }}
                     className="text-secondary-400 font-bold uppercase tracking-widest text-[10px] flex items-center gap-2 hover:text-secondary-900 transition-colors"
+                    title="Back to Curriculum"
                 >
                     &larr; Back to Curriculum
                 </button>
@@ -84,6 +85,7 @@ export default function EmployeeOnboarding() {
                                                             checked={quizAnswers[q.id] === oIdx}
                                                             onChange={() => setQuizAnswers({ ...quizAnswers, [q.id]: oIdx })}
                                                             className="radio radio-primary radio-sm"
+                                                            title={`Option ${oIdx + 1}`}
                                                         />
                                                         <span className={`font-bold ${quizAnswers[q.id] === oIdx ? 'text-primary-900' : 'text-secondary-620'}`}>{opt}</span>
                                                     </label>

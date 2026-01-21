@@ -90,7 +90,7 @@ export default function OnboardingManager() {
                             <BookOpen className="text-primary-600" size={18} />
                             {editingModule ? 'Edit Module' : 'Configure New Module'}
                         </h4>
-                        <button onClick={resetForm} className="text-secondary-400 hover:text-secondary-620">
+                        <button onClick={resetForm} className="text-secondary-400 hover:text-secondary-620" title="Close">
                             <X size={20} />
                         </button>
                     </div>
@@ -112,6 +112,7 @@ export default function OnboardingManager() {
                                     value={formData.type}
                                     onChange={e => setFormData({ ...formData, type: e.target.value, departmentId: e.target.value === 'DEPARTMENT' ? formData.departmentId : null })}
                                     className="select w-full bg-white border-secondary-200 focus:ring-primary-500 font-bold"
+                                    title="Module Type"
                                 >
                                     <option value="COMPANY">Company-wide</option>
                                     <option value="DEPARTMENT">Department Specific</option>
@@ -127,6 +128,7 @@ export default function OnboardingManager() {
                                     value={formData.departmentId || ''}
                                     onChange={e => setFormData({ ...formData, departmentId: e.target.value })}
                                     className="select w-full bg-white border-secondary-200 focus:ring-primary-500 font-bold"
+                                    title="Target Department"
                                 >
                                     <option value="">Select Department</option>
                                     {departments?.map((d: any) => (
@@ -147,7 +149,12 @@ export default function OnboardingManager() {
                         </div>
 
                         <div className="space-y-4">
-                            <label className="label-text text-[10px] font-black text-secondary-400 uppercase tracking-widest">Study Material (Markdown Support)</label>
+                            <div className="flex justify-between items-end">
+                                <label className="label-text text-[10px] font-black text-secondary-400 uppercase tracking-widest">Study Material (Markdown Support)</label>
+                                <div className="bg-secondary-100 text-[9px] font-bold text-secondary-600 px-2 py-0.5 rounded cursor-help" title="Use {{COMPANY_NAME}} for dynamic company name">
+                                    Keyword: <code className="text-primary-600">{"{{COMPANY_NAME}}"}</code>
+                                </div>
+                            </div>
                             <div className="h-96 pb-12">
                                 <ReactQuill
                                     theme="snow"
@@ -186,6 +193,7 @@ export default function OnboardingManager() {
                                     <button
                                         onClick={() => removeQuestion(qIdx)}
                                         className="absolute top-4 right-4 text-secondary-300 hover:text-danger-500 transition-colors"
+                                        title="Remove Question"
                                     >
                                         <Trash2 size={16} />
                                     </button>
@@ -214,6 +222,7 @@ export default function OnboardingManager() {
                                                         setFormData({ ...formData, questions: newQs });
                                                     }}
                                                     className="radio radio-primary radio-xs"
+                                                    title="Correct Answer"
                                                 />
                                                 <input
                                                     value={opt}
@@ -264,12 +273,14 @@ export default function OnboardingManager() {
                                             });
                                         }}
                                         className="p-2 text-secondary-400 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-all"
+                                        title="Edit"
                                     >
                                         <Edit2 size={14} />
                                     </button>
                                     <button
                                         onClick={() => { if (confirm('Delete this module?')) deleteModule.mutate(module.id); }}
                                         className="p-2 text-secondary-400 hover:text-danger-600 hover:bg-danger-50 rounded-lg transition-all"
+                                        title="Delete"
                                     >
                                         <Trash2 size={14} />
                                     </button>
@@ -286,8 +297,8 @@ export default function OnboardingManager() {
                         <div className="mt-8 pt-6 border-t border-secondary-50 flex justify-between items-center">
                             <span className="text-[10px] font-black text-secondary-400 uppercase tracking-widest">{module.questions.length} Questions</span>
                             <div className="flex gap-1">
-                                <button className="p-1 text-secondary-300 hover:text-secondary-900"><MoveUp size={14} /></button>
-                                <button className="p-1 text-secondary-300 hover:text-secondary-900"><MoveDown size={14} /></button>
+                                <button className="p-1 text-secondary-300 hover:text-secondary-900" title="Move Up"><MoveUp size={14} /></button>
+                                <button className="p-1 text-secondary-300 hover:text-secondary-900" title="Move Down"><MoveDown size={14} /></button>
                             </div>
                         </div>
                     </div>
