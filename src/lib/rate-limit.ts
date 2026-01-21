@@ -24,6 +24,11 @@ export function rateLimit(config?: RateLimitConfig) {
     const windowMs = config?.windowMs || parseInt(process.env.RATE_LIMIT_WINDOW_MS || '60000');
 
     return (request: NextRequest) => {
+        // Skip rate limiting in development mode
+        if (process.env.NODE_ENV === 'development') {
+            return NextResponse.next();
+        }
+
         // Get client IP
         const ip = getClientIp(request);
 
