@@ -1,0 +1,205 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { prisma } from '@/lib/prisma';
+import { authorizedRoute } from '@/lib/middleware-auth';
+import { createErrorResponse } from '@/lib/api-utils';
+import { z } from 'zod';
+
+// Validation schema for increment creation/update
+const incrementSchema = z.object({
+    employeeProfileId: z.string(),
+    effectiveDate: z.string().optional(),
+
+    // New Salary Structure
+    newFixedSalary: z.number().min(0),
+    newVariableSalary: z.number().min(0).optional(),
+    newIncentive: z.number().min(0).optional(),
+
+    // Designation change
+    newDesignation: z.string().optional(),
+
+    // Reason and notes
+    reason: z.string().optional(),
+    performanceNotes: z.string().optional(),
+
+    // KRA/KPI Redefinition
+    newKRA: z.string().optional(),
+    newKPI: z.any().optional(),
+});
+
+// GET: List all increments (with filtering)
+export const GET = authorizedRoute(
+    ['SUPER_ADMIN', 'ADMIN', 'HR', 'MANAGER'],
+    async (req: NextRequest, user) => {
+        try {
+            const { searchParams } = new URL(req.url);
+            const status = searchParams.get('status');
+            const employeeId = searchParams.get('employeeId');
+
+            const where: any = {};
+
+            // Filter by status
+            if (status) {
+                where.status = status;
+            }
+
+            // Filter by employee
+            if (employeeId) {
+                where.employeeProfileId = employeeId;
+            }
+
+            // Managers can only see their team's increments
+            if (user.role === 'MANAGER') {
+                // Get employees under this manager
+                const managedUsers = await prisma.user.findMany({
+                    where: { managerId: user.id },
+                    select: { id: true }
+                });
+
+                const managedUserIds = managedUsers.map(u => u.id);
+
+                const managedProfiles = await prisma.employeeProfile.findMany({
+                    where: { userId: { in: managedUserIds } },
+                    select: { id: true }
+                });
+
+                where.employeeProfileId = {
+                    in: managedProfiles.map(p => p.id)
+                };
+            }
+
+            const increments = await prisma.salaryIncrementRecord.findMany({
+                where,
+                include: {
+                    employeeProfile: {
+                        include: {
+                            user: {
+                                select: {
+                                    id: true,
+                                    name: true,
+                                    email: true
+                                }
+                            }
+                        }
+                    }
+                },
+                orderBy: { createdAt: 'desc' }
+            });
+
+            return NextResponse.json(increments);
+        } catch (error) {
+            return createErrorResponse(error);
+        }
+    }
+);
+
+// POST: Create new increment (draft)
+export const POST = authorizedRoute(
+    ['SUPER_ADMIN', 'ADMIN', 'HR', 'MANAGER'],
+    async (req: NextRequest, user) => {
+        try {
+            const body = await req.json();
+
+            const result = incrementSchema.safeParse(body);
+            if (!result.success) {
+                return createErrorResponse(result.error);
+            }
+
+            const data = result.data;
+
+            // Get employee current salary
+            const employee = await prisma.employeeProfile.findUnique({
+                where: { id: data.employeeProfileId },
+                include: {
+                    user: true
+                }
+            });
+
+            if (!employee) {
+                return NextResponse.json(
+                    { error: 'Employee not found' },
+                    { status: 404 }
+                );
+            }
+
+            // Check if user is manager of this employee
+            const isManager = employee.user.managerId === user.id;
+            const isAdmin = ['SUPER_ADMIN', 'ADMIN', 'HR'].includes(user.role);
+
+            if (!isManager && !isAdmin) {
+                return NextResponse.json(
+                    { error: 'You are not authorized to create increment for this employee' },
+                    { status: 403 }
+                );
+            }
+
+            // Calculate old salary structure
+            const oldSalary = employee.baseSalary || 0;
+            const oldFixedSalary = employee.fixedSalary || oldSalary;
+            const oldVariableSalary = employee.variableSalary || 0;
+            const oldIncentive = employee.incentiveSalary || 0;
+
+            // Calculate new total salary
+            const newSalary = data.newFixedSalary + (data.newVariableSalary || 0) + (data.newIncentive || 0);
+            const incrementAmount = newSalary - oldSalary;
+            const percentage = oldSalary > 0 ? (incrementAmount / oldSalary) * 100 : 0;
+
+            // Create increment record
+            const increment = await prisma.salaryIncrementRecord.create({
+                data: {
+                    employeeProfileId: data.employeeProfileId,
+                    effectiveDate: data.effectiveDate ? new Date(data.effectiveDate) : new Date(),
+
+                    // Old salary
+                    oldSalary,
+                    oldFixedSalary,
+                    oldVariableSalary,
+                    oldIncentive,
+
+                    // New salary
+                    newSalary,
+                    newFixedSalary: data.newFixedSalary,
+                    newVariableSalary: data.newVariableSalary || 0,
+                    newIncentive: data.newIncentive || 0,
+
+                    incrementAmount,
+                    percentage,
+
+                    previousDesignation: employee.designation,
+                    newDesignation: data.newDesignation || employee.designation,
+
+                    reason: data.reason,
+                    performanceNotes: data.performanceNotes,
+                    newKRA: data.newKRA,
+                    newKPI: data.newKPI || null,
+
+                    // Set as draft
+                    status: 'DRAFT',
+                    isDraft: true,
+
+                    // If created by manager, mark as recommended
+                    ...(isManager && {
+                        recommendedByUserId: user.id,
+                        managerApproved: false
+                    })
+                },
+                include: {
+                    employeeProfile: {
+                        include: {
+                            user: {
+                                select: {
+                                    id: true,
+                                    name: true,
+                                    email: true
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+
+            return NextResponse.json(increment);
+        } catch (error) {
+            return createErrorResponse(error);
+        }
+    }
+);

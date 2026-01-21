@@ -794,6 +794,9 @@ model EmployeeProfile {
   dateOfJoining            DateTime?
   dateOfBirth              DateTime?
   baseSalary               Float?
+  fixedSalary              Float?                       // Fixed salary component
+  variableSalary           Float?                       // Variable salary component
+  incentiveSalary          Float?                       // Incentive component
   bankName                 String?
   accountNumber            String?
   ifscCode                 String?
@@ -927,20 +930,54 @@ model SalaryIncrementRecord {
   employeeProfileId   String
   date                DateTime        @default(now())
   effectiveDate       DateTime        @default(now())
+  
+  // Old Salary Structure
   oldSalary           Float
+  oldFixedSalary      Float?          // Fixed component
+  oldVariableSalary   Float?          // Variable component
+  oldIncentive        Float?          // Incentive component
+  
+  // New Salary Structure
   newSalary           Float
+  newFixedSalary      Float?          // Fixed component
+  newVariableSalary   Float?          // Variable component
+  newIncentive        Float?          // Incentive component
+  
   incrementAmount     Float
   percentage          Float
   type                String          @default("INCREMENT")
   previousDesignation String?
   newDesignation      String?
   reason              String?
-  approvedByUserId    String?
+  
+  // Dual Authentication Workflow
+  status              String          @default("DRAFT")  // DRAFT, MANAGER_APPROVED, APPROVED, REJECTED
+  isDraft             Boolean         @default(true)
+  
+  // Manager Review
+  recommendedByUserId String?         // Manager who recommends
+  managerReviewDate   DateTime?
+  managerComments     String?
+  managerApproved     Boolean         @default(false)
+  
+  // Admin Approval
+  approvedByUserId    String?         // Super Admin/Admin who approves
+  adminReviewDate     DateTime?
+  adminComments       String?
+  adminApproved       Boolean         @default(false)
+  
+  // KRA/KPI Redefinition
+  newKRA              String?         // Updated Key Responsibility Areas
+  newKPI              Json?           // Updated Key Performance Indicators
+  performanceNotes    String?         // Performance review notes
+  
   createdAt           DateTime        @default(now())
   updatedAt           DateTime        @updatedAt
-  recommendedByUserId String?
-  status              String          @default("APPROVED")
+  
   employeeProfile     EmployeeProfile @relation(fields: [employeeProfileId], references: [id], onDelete: Cascade)
+  
+  @@index([employeeProfileId])
+  @@index([status])
 }
 
 model EmployeeComment {
