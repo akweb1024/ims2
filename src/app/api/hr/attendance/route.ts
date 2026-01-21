@@ -5,6 +5,7 @@ import { authorizedRoute } from '@/lib/middleware-auth';
 import { createErrorResponse } from '@/lib/api-utils';
 import { attendanceCorrectionSchema, selfServiceAttendanceSchema } from '@/lib/validators/hr';
 import { getDownlineUserIds } from '@/lib/hierarchy';
+import { processLateArrival } from '@/lib/utils/leave-ledger-processor';
 
 export const GET = authorizedRoute(
     [],
@@ -190,6 +191,12 @@ export const POST = authorizedRoute(
                         lateMinutes
                     }
                 });
+
+                // Process late arrival for leave deduction (if applicable)
+                if (lateMinutes >= 31) {
+                    await processLateArrival(profile.id, lateMinutes, user.companyId);
+                }
+
                 return NextResponse.json(record);
             } else if (action === 'check-out') {
                 if (!existing?.checkIn) return createErrorResponse('Must check in first', 400);

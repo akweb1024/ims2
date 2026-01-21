@@ -20,6 +20,7 @@ model Company {
   fiscalYearStart       Int?
   currency              String                       @default("INR")
   timezone              String                       @default("Asia/Kolkata")
+  employeeIdPrefix      String?                      // e.g., "ACME", "TCS" for employee ID generation
   createdAt             DateTime                     @default(now())
   updatedAt             DateTime                     @updatedAt
   latitude              Float?
@@ -78,6 +79,7 @@ model Company {
   workReports           WorkReport[]
   designations          Designation[]                @relation("CompanyToDesignation")
   users                 User[]                       @relation("UserCompanies")
+  employeeCompanyDesignations EmployeeCompanyDesignation[]
 }
 
 model Department {
@@ -830,6 +832,8 @@ model EmployeeProfile {
   uanNumber                String?
   manualLeaveAdjustment    Float                        @default(0)
   leaveBalance             Float                        @default(0)
+  initialLeaveBalance      Float                        @default(0)
+  currentLeaveBalance      Float                        @default(0)
   metrics                  Json?
   employeeType             EmployeeType                 @default(FULL_TIME)
   attendance               Attendance[]
@@ -860,6 +864,27 @@ model EmployeeProfile {
   taxDeclarations          TaxDeclaration[]
   workPlans                WorkPlan[]
   workReports              WorkReport[]
+  companyDesignations      EmployeeCompanyDesignation[]
+}
+
+// Junction table for employee multi-company designations
+model EmployeeCompanyDesignation {
+  id            String          @id @default(uuid())
+  employeeId    String
+  companyId     String
+  designation   String
+  isActive      Boolean         @default(true)
+  isPrimary     Boolean         @default(false)  // Mark primary company
+  assignedAt    DateTime        @default(now())
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+  
+  employee      EmployeeProfile @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  company       Company         @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  
+  @@unique([employeeId, companyId])
+  @@index([employeeId])
+  @@index([companyId])
 }
 
 model SalaryAdvance {
@@ -2204,11 +2229,16 @@ model LeaveLedger {
   year           Int
   openingBalance Float           @default(0)
   takenLeaves    Float           @default(0)
-  closingBalance Float           @default(0)
-  remarks        String?
-  createdAt      DateTime        @default(now())
-  updatedAt      DateTime        @updatedAt
-  companyId      String?
+  closingBalance       Float           @default(0)
+  remarks              String?
+  autoCredit           Float?          // Monthly auto-credit amount (e.g., 1.5)
+  lateArrivalCount     Int             @default(0)  // Count of late arrivals (31-90 min) in this month
+  shortLeaveCount      Int             @default(0)  // Count of short leaves (90 min) in this month
+  lateDeductions       Float           @default(0)  // Total deductions from late arrivals
+  shortLeaveDeductions Float           @default(0)  // Total deductions from short leaves
+  createdAt            DateTime        @default(now())
+  updatedAt            DateTime        @updatedAt
+  companyId            String?
   company        Company?        @relation(fields: [companyId], references: [id])
   employee       EmployeeProfile @relation(fields: [employeeId], references: [id], onDelete: Cascade)
 

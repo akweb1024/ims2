@@ -229,18 +229,6 @@ export const POST = authorizedRoute(
         try {
             const body = await req.json();
 
-            // Helper to generate initials and random suffix from email
-            const generateID = (email: string) => {
-                const part = email.split('@')[0];
-                const initials = part
-                    .split(/[._-]/)
-                    .map(segment => segment[0]?.toUpperCase() || '')
-                    .join('');
-                const prefix = initials || 'EMP';
-                const suffix = Math.floor(1000 + Math.random() * 9000); // 4-digit random number
-                return `${prefix}${suffix}`;
-            };
-
             // Validate payload
             const result = createEmployeeSchema.safeParse(body);
             if (!result.success) {
@@ -251,9 +239,37 @@ export const POST = authorizedRoute(
                 ...rest
             } = result.data as any;
 
+            // Fetch company data to get employeeIdPrefix
+            const targetCompanyId = companyId || user.companyId;
+            let employeeIdPrefix = '';
+
+            if (targetCompanyId) {
+                const company = await prisma.company.findUnique({
+                    where: { id: targetCompanyId },
+                    select: { employeeIdPrefix: true }
+                });
+                employeeIdPrefix = company?.employeeIdPrefix || '';
+            }
+
             // Generate default employeeId if not provided
             if (!rest.employeeId) {
-                rest.employeeId = generateID(email);
+                const part = email.split('@')[0];
+                const initials = part
+                    .split(/[._-]/)
+                    .map(segment => segment[0]?.toUpperCase() || '')
+                    .join('');
+                const prefix = initials || 'EMP';
+                const suffix = Math.floor(1000 + Math.random() * 9000); // 4-digit random number
+
+                // Include company prefix if available
+                rest.employeeId = employeeIdPrefix
+                    ? `${employeeIdPrefix}-${prefix}${suffix}`
+                    : `${prefix}${suffix}`;
+            }
+
+            // Set initial leave balance if provided, otherwise default to 0
+            if (rest.initialLeaveBalance !== undefined) {
+                rest.currentLeaveBalance = rest.initialLeaveBalance;
             }
 
             // Profile fields filtering - ensure no relation/meta fields leak into Prisma
