@@ -199,6 +199,7 @@ export default function DashboardLayout({ children, userRole: propUserRole = 'CU
                             { name: 'Attendance', icon: '🕒', href: '/dashboard/hr-management?tab=attendance', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'TEAM_LEADER'] },
                             { name: 'Productivity', icon: '⚡', href: '/dashboard/hr-management?tab=productivity', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'TEAM_LEADER'] },
                             { name: 'Monthly Performance', icon: '📊', href: '/dashboard/hr-management/performance/monthly', roles: ['SUPER_ADMIN', 'ADMIN', 'HR_MANAGER'] },
+                            { name: 'Salary Increments', icon: '💰', href: '/dashboard/hr-management/increments', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER'] },
                             { name: 'Manage Team', icon: '👥', href: '/dashboard/team', roles: ['MANAGER', 'TEAM_LEADER'] },
                         ]
                     }
