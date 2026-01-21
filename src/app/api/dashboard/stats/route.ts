@@ -61,13 +61,17 @@ export const GET = authorizedRoute(
             // Revenue calculation needs to match the hierarchy
             let revenueWhere: any = {};
 
+            if (userCompanyId) {
+                revenueWhere.companyId = userCompanyId;
+            }
+
             if (customerProfileId) {
-                revenueWhere = { invoice: { subscription: { customerProfileId } } };
+                revenueWhere.invoice = { subscription: { customerProfileId } };
             } else if (whereClause.agencyId) {
-                revenueWhere = { invoice: { subscription: { agencyId: whereClause.agencyId } } };
+                revenueWhere.invoice = { subscription: { agencyId: whereClause.agencyId } };
             } else if (whereClause.salesExecutiveId) {
                 // Handles both Single Sales Exec and Manager (via 'in' array)
-                revenueWhere = { invoice: { subscription: { salesExecutiveId: whereClause.salesExecutiveId } } };
+                revenueWhere.invoice = { subscription: { salesExecutiveId: whereClause.salesExecutiveId } };
             }
 
             // Renewals due in the next 30 days
