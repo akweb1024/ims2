@@ -670,7 +670,12 @@ export default function EmployeeProfilePage() {
                                             {employee.incrementHistory && employee.incrementHistory.length > 0 ? (
                                                 employee.incrementHistory.map((rec: any) => (
                                                     <tr key={rec.id} className="hover:bg-secondary-50">
-                                                        <td className="px-6 py-4 text-sm font-medium"><FormattedDate date={rec.effectiveDate} /></td>
+                                                        <td className="px-6 py-4 text-sm font-medium">
+                                                            <a href={`/dashboard/hr-management/increments/${rec.id}`} className="text-primary-600 hover:underline flex items-center gap-1" title="View Details">
+                                                                <FormattedDate date={rec.effectiveDate} />
+                                                                <span className="text-[10px] text-secondary-400">↗</span>
+                                                            </a>
+                                                        </td>
                                                         <td className="px-6 py-4">
                                                             <div className="flex flex-col">
                                                                 <span className={`inline-block px-2 py-0.5 rounded text-[10px] font-bold uppercase w-fit ${rec.type === 'INCREMENT' ? 'bg-success-100 text-success-700' :
