@@ -20,10 +20,11 @@ const updateIncrementSchema = z.object({
 // GET: Get increment details
 export const GET = authorizedRoute(
     ['SUPER_ADMIN', 'ADMIN', 'HR', 'MANAGER'],
-    async (req: NextRequest, user, { params }: { params: { id: string } }) => {
+    async (req: NextRequest, user, { params }: { params: Promise<{ id: string }> }) => {
         try {
+            const { id } = await params;
             const increment = await prisma.salaryIncrementRecord.findUnique({
-                where: { id: params.id },
+                where: { id },
                 include: {
                     employeeProfile: {
                         include: {
@@ -68,12 +69,13 @@ export const GET = authorizedRoute(
 // PATCH: Update increment (only in DRAFT status)
 export const PATCH = authorizedRoute(
     ['SUPER_ADMIN', 'ADMIN', 'HR', 'MANAGER'],
-    async (req: NextRequest, user, { params }: { params: { id: string } }) => {
+    async (req: NextRequest, user, { params }: { params: Promise<{ id: string }> }) => {
         try {
+            const { id } = await params;
             const body = await req.json();
 
             const increment = await prisma.salaryIncrementRecord.findUnique({
-                where: { id: params.id },
+                where: { id },
                 include: {
                     employeeProfile: {
                         include: {
@@ -147,7 +149,7 @@ export const PATCH = authorizedRoute(
             if (data.effectiveDate) updateData.effectiveDate = new Date(data.effectiveDate);
 
             const updated = await prisma.salaryIncrementRecord.update({
-                where: { id: params.id },
+                where: { id },
                 data: updateData,
                 include: {
                     employeeProfile: {
@@ -174,10 +176,11 @@ export const PATCH = authorizedRoute(
 // DELETE: Delete increment (only drafts)
 export const DELETE = authorizedRoute(
     ['SUPER_ADMIN', 'ADMIN', 'HR', 'MANAGER'],
-    async (req: NextRequest, user, { params }: { params: { id: string } }) => {
+    async (req: NextRequest, user, { params }: { params: Promise<{ id: string }> }) => {
         try {
+            const { id } = await params;
             const increment = await prisma.salaryIncrementRecord.findUnique({
-                where: { id: params.id },
+                where: { id },
                 include: {
                     employeeProfile: {
                         include: {
@@ -214,7 +217,7 @@ export const DELETE = authorizedRoute(
             }
 
             await prisma.salaryIncrementRecord.delete({
-                where: { id: params.id }
+                where: { id }
             });
 
             return NextResponse.json({ success: true });

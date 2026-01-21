@@ -12,8 +12,9 @@ const adminReviewSchema = z.object({
 // POST: Admin approval (second authentication)
 export const POST = authorizedRoute(
     ['SUPER_ADMIN', 'ADMIN'],
-    async (req: NextRequest, user, { params }: { params: { id: string } }) => {
+    async (req: NextRequest, user, { params }: { params: Promise<{ id: string }> }) => {
         try {
+            const { id } = await params;
             const body = await req.json();
             const result = adminReviewSchema.safeParse(body);
 
@@ -24,7 +25,7 @@ export const POST = authorizedRoute(
             const { comments, action } = result.data;
 
             const increment = await prisma.salaryIncrementRecord.findUnique({
-                where: { id: params.id },
+                where: { id },
                 include: {
                     employeeProfile: {
                         include: {
@@ -87,7 +88,7 @@ export const POST = authorizedRoute(
             }
 
             const updated = await prisma.salaryIncrementRecord.update({
-                where: { id: params.id },
+                where: { id },
                 data: updateData,
                 include: {
                     employeeProfile: {
