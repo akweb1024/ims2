@@ -132,7 +132,7 @@ export default function IncrementDetailPage() {
 
     const isManager = increment.employeeProfile?.user?.managerId === currentUser?.id;
     const isAdmin = ['SUPER_ADMIN', 'ADMIN'].includes(currentUser?.role);
-    const canManagerReview = isManager && increment.status === 'DRAFT';
+    const canManagerReview = (isManager || isAdmin) && increment.status === 'DRAFT';
     const canAdminApprove = isAdmin && increment.status === 'MANAGER_APPROVED';
 
     const getStatusBadge = (status: string) => {

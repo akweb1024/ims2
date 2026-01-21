@@ -17,14 +17,6 @@ export default function MonthlyPerformancePage() {
         employeeId: ''
     });
 
-    useEffect(() => {
-        const userData = localStorage.getItem('user');
-        if (userData) {
-            setUser(JSON.parse(userData));
-        }
-        fetchSnapshots();
-    }, [fetchSnapshots]);
-
     const fetchSnapshots = useCallback(async () => {
         setLoading(true);
         try {
@@ -49,6 +41,14 @@ export default function MonthlyPerformancePage() {
             setLoading(false);
         }
     }, [filters.month, filters.year, filters.departmentId, filters.employeeId]);
+
+    useEffect(() => {
+        const userData = localStorage.getItem('user');
+        if (userData) {
+            setUser(JSON.parse(userData));
+        }
+        fetchSnapshots();
+    }, [fetchSnapshots]);
 
     const handleCalculate = async () => {
         if (!confirm(`Calculate performance for ${filters.month}/${filters.year} for all employees?`)) return;
