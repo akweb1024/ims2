@@ -46,6 +46,12 @@
 - **Unified Payroll**: Consolidated navigation to dedicated Payroll Management module.
 - **Production Build**: Resolved lint/build errors for stable deployment.
 
+### 4. Staff Empowerment (New!)
+
+- **Salary View**: Employees can now view their approved increment history and current salary structure in the Staff Portal.
+- **Self Service**: "Add Record" link in HR Profile seamlessly directs to the new increment creation form.
+- **Stability**: Resolved dashboard loading errors by synchronizing database client.
+
 ---
 
 ## 🛠️ **Technical Details**
