@@ -293,7 +293,7 @@ export default function EditIncrementPage() {
                                         placeholder="Define how variable salary is calculated, targets, and conditions..."
                                     />
                                     <p className="text-xs text-blue-600 mt-1">
-                                        Example: "₹{form.newVariablePerTarget || 0} per target achieved, maximum ₹{form.newVariableUpperCap || 0}"
+                                        Example: &quot;₹{form.newVariablePerTarget || 0} per target achieved, maximum ₹{form.newVariableUpperCap || 0}&quot;
                                     </p>
                                 </div>
                             </div>
@@ -339,7 +339,7 @@ export default function EditIncrementPage() {
                                         placeholder="Define how incentive is calculated, conditions, and when it applies..."
                                     />
                                     <p className="text-xs text-purple-600 mt-1">
-                                        Example: "{form.newIncentivePercentage || 0}% of additional earnings after reaching variable cap of ₹{form.newVariableUpperCap || 0}"
+                                        Example: &quot;{form.newIncentivePercentage || 0}% of additional earnings after reaching variable cap of ₹{form.newVariableUpperCap || 0}&quot;
                                     </p>
                                 </div>
                             </div>

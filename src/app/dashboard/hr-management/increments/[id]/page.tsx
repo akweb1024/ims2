@@ -713,7 +713,7 @@ export default function IncrementDetailPage() {
                                 {reviewForm.action === 'approve' && (
                                     <div className="p-4 bg-warning-50 rounded-xl border border-warning-200">
                                         <p className="text-sm font-bold text-warning-900">
-                                            ⚠️ This will immediately update the employee's salary in the system.
+                                            ⚠️ This will immediately update the employee&apos;s salary in the system.
                                         </p>
                                     </div>
                                 )}
