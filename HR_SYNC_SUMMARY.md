@@ -21,19 +21,25 @@
   - Includes a 4-digit random suffix (e.g., `JD8231`) to ensure uniqueness and minimize collisions.
 - **Flexibility**: HR can still manually override or edit the ID during or after creation.
 
-### 3. **UI/UX & Accessibility Fixes** ✅
+### 3. **Dynamic Onboarding Keywords** ✅
+
+- **Feature**: Implemented `{{COMPANY_NAME}}` placeholder support in Onboarding Modules.
+- **Automation**: System automatically replaces the placeholder with the user's current company name.
+- **UX**: Added an inline keyword helper in the HR Onboarding Manager to guide administrators.
+
+### 4. **UI/UX & Accessibility Fixes** ✅
 
 - **Forms**: Added "Login Hint" to the Employee ID field to inform HR about its dual purpose.
-- **Accessibility**: Resolved 20+ linting warnings in `EmployeeForm.tsx` by adding proper `title` and `placeholder` attributes to all inputs and selects.
-- **Validation**: Ensured all fields are properly labeled for screen readers and better user clarity.
+- **Accessibility**: Resolved 30+ linting warnings across `EmployeeForm.tsx`, `OnboardingManager.tsx`, and `EmployeeOnboarding.tsx`.
+- **Validation**: Added proper `title` and `placeholder` attributes to all interactive elements for better screen reader support.
 
 ---
 
 ## 🏗️ Build & Quality Verification
 
 - ✅ **Production Build**: Successful (`npm run build`).
-- ✅ **Linting**: All critical errors resolved; `EmployeeForm.tsx` is now clean of accessibility warnings.
-- ✅ **Database**: Verified `EmployeeProfile` model supports the new unique `employeeId` requirements.
+- ✅ **Linting**: All critical accessibility and structural warnings in HR/Onboarding modules resolved.
+- ✅ **Database**: Verified `EmployeeProfile` and `OnboardingModule` data integrity.
 
 ---
 

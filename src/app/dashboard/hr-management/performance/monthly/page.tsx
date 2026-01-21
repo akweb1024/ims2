@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { TrendingUp, Award, AlertCircle, Calendar, Play, Download, Filter } from 'lucide-react';
 
@@ -23,9 +23,9 @@ export default function MonthlyPerformancePage() {
             setUser(JSON.parse(userData));
         }
         fetchSnapshots();
-    }, []);
+    }, [fetchSnapshots]);
 
-    const fetchSnapshots = async () => {
+    const fetchSnapshots = useCallback(async () => {
         setLoading(true);
         try {
             const token = localStorage.getItem('token');
@@ -48,7 +48,7 @@ export default function MonthlyPerformancePage() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [filters.month, filters.year, filters.departmentId, filters.employeeId]);
 
     const handleCalculate = async () => {
         if (!confirm(`Calculate performance for ${filters.month}/${filters.year} for all employees?`)) return;
