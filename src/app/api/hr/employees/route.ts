@@ -256,7 +256,7 @@ export const POST = authorizedRoute(
                 const part = email.split('@')[0];
                 const initials = part
                     .split(/[._-]/)
-                    .map(segment => segment[0]?.toUpperCase() || '')
+                    .map((segment: string) => segment[0]?.toUpperCase() || '')
                     .join('');
                 const prefix = initials || 'EMP';
                 const suffix = Math.floor(1000 + Math.random() * 9000); // 4-digit random number

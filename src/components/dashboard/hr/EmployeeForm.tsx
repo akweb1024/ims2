@@ -60,6 +60,8 @@ const initialFormState = {
     profilePicture: '',
     employeeId: '',
     manualLeaveAdjustment: 0,
+    initialLeaveBalance: 0,
+    companyDesignations: [] as Array<{ companyId: string; designation: string; isPrimary: boolean }>,
     targets: {
         revenue: '',
         publication: '',
@@ -279,6 +281,22 @@ export default function EmployeeForm({
                         />
                         <p className="text-[10px] text-primary-600 font-bold mt-1">Can be used as a login username.</p>
                     </div>
+
+                    <div>
+                        <label className="label-premium">Initial Leave Balance</label>
+                        <input
+                            type="number"
+                            step="0.5"
+                            min="0"
+                            className="input-premium"
+                            placeholder="0"
+                            title="Initial Leave Balance"
+                            value={empForm.initialLeaveBalance}
+                            onChange={e => setEmpForm({ ...empForm, initialLeaveBalance: parseFloat(e.target.value) || 0 })}
+                        />
+                        <p className="text-[10px] text-secondary-400 mt-1 font-bold italic">Starting leave balance for this employee (default: 0)</p>
+                    </div>
+
                     <div>
                         <label className="label-premium">Date of Joining</label>
                         <input
@@ -457,6 +475,52 @@ export default function EmployeeForm({
                                 ))}
                             </div>
                         </div>
+
+                        {/* Multi-Company Designations */}
+                        {empForm.companyIds.length > 0 && (
+                            <div className="mt-6">
+                                <label className="label-premium mb-3">Company Designations</label>
+                                <div className="space-y-3">
+                                    {empForm.companyIds.map(companyId => {
+                                        const company = companies.find(c => c.id === companyId);
+                                        const designation = empForm.companyDesignations.find(d => d.companyId === companyId);
+
+                                        return (
+                                            <div key={companyId} className="flex items-center gap-3 p-3 bg-white rounded-xl border border-secondary-200">
+                                                <div className="flex-1">
+                                                    <p className="text-xs font-bold text-secondary-900 mb-1">{company?.name}</p>
+                                                    <input
+                                                        type="text"
+                                                        className="input-premium text-sm"
+                                                        placeholder="e.g., Senior Developer, Manager"
+                                                        value={designation?.designation || ''}
+                                                        onChange={e => {
+                                                            const newDesignations = empForm.companyDesignations.filter(d => d.companyId !== companyId);
+                                                            if (e.target.value) {
+                                                                newDesignations.push({
+                                                                    companyId,
+                                                                    designation: e.target.value,
+                                                                    isPrimary: companyId === empForm.companyId
+                                                                });
+                                                            }
+                                                            setEmpForm({ ...empForm, companyDesignations: newDesignations });
+                                                        }}
+                                                    />
+                                                </div>
+                                                {companyId === empForm.companyId && (
+                                                    <span className="px-2 py-1 bg-primary-100 text-primary-700 text-[10px] font-black rounded-full">
+                                                        Primary
+                                                    </span>
+                                                )}
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                                <p className="text-[10px] text-secondary-400 mt-2 font-bold italic">
+                                    Specify different designations for each company this employee works with
+                                </p>
+                            </div>
+                        )}
                     </div>
 
                     {/* Module Access Selection */}
