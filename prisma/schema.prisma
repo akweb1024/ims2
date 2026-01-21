@@ -941,7 +941,14 @@ model SalaryIncrementRecord {
   newSalary           Float
   newFixedSalary      Float?          // Fixed component
   newVariableSalary   Float?          // Variable component
+  newVariablePerTarget Float?         // Fixed amount per target achieved
+  newVariableUpperCap Float?          // Maximum variable salary cap
   newIncentive        Float?          // Incentive component
+  newIncentivePercentage Float?       // Incentive % after reaching variable cap
+  
+  // Salary Component Definitions
+  variableDefinition  String?         // Rich text definition of variable salary calculation
+  incentiveDefinition String?         // Rich text definition of incentive calculation
   
   incrementAmount     Float
   percentage          Float

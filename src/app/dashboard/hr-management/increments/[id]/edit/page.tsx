@@ -1,15 +1,17 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import RichTextEditor from '@/components/common/RichTextEditor';
-import { DollarSign, TrendingUp, Save, X, User } from 'lucide-react';
+import { DollarSign, TrendingUp, Save, X, User, ArrowLeft } from 'lucide-react';
+import Link from 'next/link';
 
-export default function NewIncrementPage() {
+export default function EditIncrementPage() {
+    const params = useParams();
     const router = useRouter();
     const [employees, setEmployees] = useState<any[]>([]);
-    const [loading, setLoading] = useState(false);
+    const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
 
     const [form, setForm] = useState({
@@ -31,42 +33,54 @@ export default function NewIncrementPage() {
     });
 
     const [selectedEmployee, setSelectedEmployee] = useState<any>(null);
+    const [increment, setIncrement] = useState<any>(null);
 
-    const fetchEmployees = useCallback(async () => {
+    const fetchIncrement = useCallback(async () => {
         try {
             const token = localStorage.getItem('token');
-            const res = await fetch('/api/hr/employees', {
+            const res = await fetch(`/api/hr/increments/${params.id}`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
 
             if (res.ok) {
                 const data = await res.json();
-                setEmployees(data);
+                setIncrement(data);
+                setSelectedEmployee(data.employeeProfile);
+
+                setForm({
+                    employeeProfileId: data.employeeProfileId,
+                    newFixedSalary: data.newFixedSalary || 0,
+                    newVariableSalary: data.newVariableSalary || 0,
+                    newVariablePerTarget: data.newVariablePerTarget || 0,
+                    newVariableUpperCap: data.newVariableUpperCap || 0,
+                    newIncentive: data.newIncentive || 0,
+                    newIncentivePercentage: data.newIncentivePercentage || 0,
+                    newDesignation: data.newDesignation || '',
+                    reason: data.reason || '',
+                    performanceNotes: data.performanceNotes || '',
+                    newKRA: data.newKRA || '',
+                    newKPI: data.newKPI ? JSON.stringify(data.newKPI, null, 2) : '',
+                    variableDefinition: data.variableDefinition || '',
+                    incentiveDefinition: data.incentiveDefinition || '',
+                    effectiveDate: data.effectiveDate ? new Date(data.effectiveDate).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]
+                });
+            } else {
+                alert('Increment not found');
+                router.push('/dashboard/hr-management/increments');
             }
         } catch (error) {
-            console.error('Error fetching employees:', error);
+            console.error('Error fetching increment:', error);
+        } finally {
+            setLoading(false);
         }
-    }, []);
+    }, [params.id, router]);
 
     useEffect(() => {
-        fetchEmployees();
-    }, [fetchEmployees]);
-
-    const handleEmployeeChange = (employeeId: string) => {
-        const employee = employees.find(e => e.id === employeeId);
-        setSelectedEmployee(employee);
-        setForm({
-            ...form,
-            employeeProfileId: employeeId,
-            newFixedSalary: employee?.fixedSalary || employee?.baseSalary || 0,
-            newVariableSalary: employee?.variableSalary || 0,
-            newIncentive: employee?.incentiveSalary || 0,
-            newDesignation: employee?.designation || ''
-        });
-    };
+        fetchIncrement();
+    }, [fetchIncrement]);
 
     const totalNewSalary = form.newFixedSalary + form.newVariableSalary + form.newIncentive;
-    const oldSalary = selectedEmployee?.baseSalary || 0;
+    const oldSalary = increment?.oldSalary || 0;
     const incrementAmount = totalNewSalary - oldSalary;
     const incrementPercentage = oldSalary > 0 ? (incrementAmount / oldSalary) * 100 : 0;
 
@@ -89,8 +103,8 @@ export default function NewIncrementPage() {
                 }
             }
 
-            const res = await fetch('/api/hr/increments', {
-                method: 'POST',
+            const res = await fetch(`/api/hr/increments/${params.id}`, {
+                method: 'PATCH',
                 headers: {
                     'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json'
@@ -102,19 +116,30 @@ export default function NewIncrementPage() {
             });
 
             if (res.ok) {
-                alert('Increment draft created successfully!');
-                router.push('/dashboard/hr-management/increments');
+                alert('Increment updated successfully!');
+                router.push(`/dashboard/hr-management/increments/${params.id}`);
             } else {
                 const error = await res.json();
-                alert(`Error: ${error.error || 'Failed to create increment'}`);
+                alert(`Error: ${error.error || 'Failed to update increment'}`);
             }
         } catch (error) {
-            console.error('Error creating increment:', error);
+            console.error('Error updating increment:', error);
             alert('An error occurred');
         } finally {
             setSaving(false);
         }
     };
+
+    if (loading) {
+        return (
+            <DashboardLayout>
+                <div className="p-12 text-center">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto"></div>
+                    <p className="text-secondary-600 mt-4">Loading increment...</p>
+                </div>
+            </DashboardLayout>
+        );
+    }
 
     return (
         <DashboardLayout>
@@ -122,38 +147,38 @@ export default function NewIncrementPage() {
                 <div className="max-w-5xl mx-auto">
                     {/* Header */}
                     <div className="mb-6">
+                        <Link
+                            href={`/dashboard/hr-management/increments/${params.id}`}
+                            className="text-primary-600 hover:text-primary-700 font-bold flex items-center gap-2 mb-2"
+                        >
+                            <ArrowLeft size={20} />
+                            Back to Increment Details
+                        </Link>
                         <h1 className="text-3xl font-black text-secondary-900">
-                            Create Salary Increment
+                            Edit Salary Increment
                         </h1>
                         <p className="text-secondary-600 mt-1">
-                            Create a new increment draft with salary breakdown and KRA/KPI updates
+                            Modify increment details (only drafts can be edited)
                         </p>
                     </div>
 
                     <form onSubmit={handleSubmit} className="space-y-6">
-                        {/* Employee Selection */}
+                        {/* Employee Info */}
                         <div className="card-premium p-6">
                             <h2 className="text-lg font-black text-secondary-900 mb-4 flex items-center gap-2">
                                 <User className="text-primary-500" size={20} />
-                                Employee Selection
+                                Employee Information
                             </h2>
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div>
-                                    <label className="label-premium">Select Employee *</label>
-                                    <select
-                                        required
-                                        className="input-premium"
-                                        value={form.employeeProfileId}
-                                        onChange={(e) => handleEmployeeChange(e.target.value)}
-                                    >
-                                        <option value="">Choose employee...</option>
-                                        {employees.map(emp => (
-                                            <option key={emp.id} value={emp.id}>
-                                                {emp.user?.name} ({emp.user?.email})
-                                            </option>
-                                        ))}
-                                    </select>
+                                    <label className="label-premium">Employee</label>
+                                    <input
+                                        type="text"
+                                        disabled
+                                        className="input-premium bg-secondary-50 opacity-60 cursor-not-allowed"
+                                        value={selectedEmployee?.user?.name || ''}
+                                    />
                                 </div>
 
                                 <div>
@@ -419,23 +444,21 @@ export default function NewIncrementPage() {
 
                         {/* Actions */}
                         <div className="flex justify-end gap-4">
-                            <button
-                                type="button"
-                                onClick={() => router.back()}
+                            <Link
+                                href={`/dashboard/hr-management/increments/${params.id}`}
                                 className="btn btn-outline"
-                                disabled={saving}
                             >
                                 <X size={20} />
                                 Cancel
-                            </button>
+                            </Link>
 
                             <button
                                 type="submit"
                                 className="btn btn-primary"
-                                disabled={saving || !form.employeeProfileId}
+                                disabled={saving}
                             >
                                 <Save size={20} />
-                                {saving ? 'Creating...' : 'Create Draft'}
+                                {saving ? 'Saving...' : 'Save Changes'}
                             </button>
                         </div>
                     </form>
