@@ -5,10 +5,9 @@ import { createErrorResponse } from '@/lib/api-utils';
 
 export const GET = authorizedRoute(
     [],
-    async (req: NextRequest, user: any, context: { params: Promise<{ id: string }> }) => {
+    async (req: NextRequest, user: any, { params }: { params: Promise<{ id: string }> }) => {
         try {
-            const params = await context.params;
-            const { id } = params;
+            const { id } = await params;
 
             const conference = await prisma.conference.findUnique({
                 where: { id },
@@ -44,10 +43,9 @@ export const GET = authorizedRoute(
 
 export const PATCH = authorizedRoute(
     ['SUPER_ADMIN', 'ADMIN', 'MANAGER'],
-    async (req: NextRequest, user: any, context: { params: Promise<{ id: string }> }) => {
+    async (req: NextRequest, user: any, { params }: { params: Promise<{ id: string }> }) => {
         try {
-            const params = await context.params;
-            const { id } = params;
+            const { id } = await params;
             const body = await req.json();
 
             // Convert date strings to Date objects if present
@@ -86,10 +84,9 @@ export const PATCH = authorizedRoute(
 
 export const DELETE = authorizedRoute(
     ['SUPER_ADMIN', 'ADMIN'],
-    async (req: NextRequest, user: any, context: { params: Promise<{ id: string }> }) => {
+    async (req: NextRequest, user: any, { params }: { params: Promise<{ id: string }> }) => {
         try {
-            const params = await context.params;
-            const { id } = params;
+            const { id } = await params;
 
             // Check if conference has registrations
             const conference = await prisma.conference.findUnique({

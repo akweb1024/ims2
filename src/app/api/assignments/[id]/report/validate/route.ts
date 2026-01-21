@@ -7,9 +7,9 @@ import { sendEmail, EmailTemplates } from '@/lib/email';
 // POST /api/assignments/[id]/report/validate - Validate review report
 export const POST = authorizedRoute(
     ['SUPER_ADMIN', 'ADMIN', 'MANAGER'],
-    async (req: NextRequest, user: any, context: { params: Promise<{ id: string }> }) => {
+    async (req: NextRequest, user: any, { params }: { params: Promise<{ id: string }> }) => {
         try {
-            const { id: assignmentId } = await context.params;
+            const { id: assignmentId } = await params;
             const body = await req.json();
             const { isValidated, rejectionReason } = body;
 

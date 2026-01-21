@@ -6,18 +6,16 @@ import { createErrorResponse } from '@/lib/api-utils';
 export const dynamic = 'force-dynamic';
 
 // GET /api/it/tasks/[id] - Get task details
-export async function GET(
-    req: NextRequest,
-    { params }: { params: { id: string } }
-) {
+export async function GET(req: NextRequest, context: { params: Promise<{ id: string }> }) {
     try {
+        const { id } = await params;
         const user = await getAuthenticatedUser();
         if (!user) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
         const task = await prisma.iTTask.findUnique({
-            where: { id: params.id },
+            where: { id: id },
             include: {
                 project: {
                     select: {
@@ -130,11 +128,9 @@ export async function GET(
 }
 
 // PATCH /api/it/tasks/[id] - Update task
-export async function PATCH(
-    req: NextRequest,
-    { params }: { params: { id: string } }
-) {
+export async function PATCH(req: NextRequest, context: { params: Promise<{ id: string }> }) {
     try {
+        const { id } = await params;
         const user = await getAuthenticatedUser();
         if (!user) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -144,7 +140,7 @@ export async function PATCH(
 
         // Check if task exists and user has access
         const existingTask = await prisma.iTTask.findUnique({
-            where: { id: params.id }
+            where: { id: id }
         });
 
         if (!existingTask) {
@@ -253,6 +249,7 @@ export async function PATCH(
 
             // --- NOTIFICATION LOGIC ---
             try {
+        const { id } = await params;
                 // If marked for review, notify the requester
                 if (updateData.status === 'UNDER_REVIEW') {
                     await prisma.notification.create({
@@ -284,7 +281,7 @@ export async function PATCH(
         }
 
         const task = await prisma.iTTask.update({
-            where: { id: params.id },
+            where: { id: id },
             data: updateData,
             include: {
                 project: {
@@ -319,18 +316,16 @@ export async function PATCH(
 }
 
 // DELETE /api/it/tasks/[id] - Delete task
-export async function DELETE(
-    req: NextRequest,
-    { params }: { params: { id: string } }
-) {
+export async function DELETE(req: NextRequest, context: { params: Promise<{ id: string }> }) {
     try {
+        const { id } = await params;
         const user = await getAuthenticatedUser();
         if (!user) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
         const task = await prisma.iTTask.findUnique({
-            where: { id: params.id }
+            where: { id: id }
         });
 
         if (!task) {
@@ -351,7 +346,7 @@ export async function DELETE(
         }
 
         await prisma.iTTask.delete({
-            where: { id: params.id }
+            where: { id: id }
         });
 
         return NextResponse.json({ message: 'Task deleted successfully' });

@@ -6,9 +6,9 @@ import { createErrorResponse } from '@/lib/api-utils';
 // GET /api/certificates/[id] - Get certificate details
 export const GET = authorizedRoute(
     [],
-    async (req: NextRequest, user: any, context: { params: Promise<{ id: string }> }) => {
+    async (req: NextRequest, user: any, { params }: { params: Promise<{ id: string }> }) => {
         try {
-            const { id } = await context.params;
+            const { id } = await params;
 
             const certificate = await prisma.reviewCertificate.findUnique({
                 where: { id },

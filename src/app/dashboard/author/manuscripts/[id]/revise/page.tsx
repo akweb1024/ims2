@@ -1,11 +1,12 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, use } from 'react';
 import { useRouter } from 'next/navigation';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { ArrowLeft, Upload, Check, Trash2 } from 'lucide-react';
 
-export default function SubmitRevision({ params }: { params: { id: string } }) {
+export default function SubmitRevision(props: { params: Promise<{ id: string }> }) {
+    const params = use(props.params);
     const router = useRouter();
     const [manuscript, setManuscript] = useState<any>(null);
     const [loading, setLoading] = useState(true);

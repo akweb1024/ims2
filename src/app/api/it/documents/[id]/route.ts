@@ -4,17 +4,15 @@ import { getAuthenticatedUser } from '@/lib/auth-legacy';
 import { createErrorResponse } from '@/lib/api-utils';
 
 // DELETE /api/it/documents/[id] - Remove a document
-export async function DELETE(
-    req: NextRequest,
-    { params }: { params: { id: string } }
-) {
+export async function DELETE(req: NextRequest, context: { params: Promise<{ id: string }> }) {
     try {
+        const { id } = await context.params;
         const user = await getAuthenticatedUser();
         if (!user) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        const documentId = params.id;
+        const documentId = id;
 
         // Fetch to get URL for potential file deletion if needed
         const document = await (prisma as any).iTProjectDocument.findUnique({

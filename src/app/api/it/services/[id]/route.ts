@@ -6,11 +6,9 @@ import { createErrorResponse } from '@/lib/api-utils';
 export const dynamic = 'force-dynamic';
 
 // PATCH /api/it/services/[id] - Update service
-export async function PATCH(
-    req: NextRequest,
-    { params }: { params: { id: string } }
-) {
+export async function PATCH(req: NextRequest, context: { params: Promise<{ id: string }> }) {
     try {
+        const { id } = await params;
         const user = await getAuthenticatedUser();
         if (!user) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -22,7 +20,7 @@ export async function PATCH(
         }
 
         const service = await prisma.iTServiceDefinition.findUnique({
-            where: { id: params.id }
+            where: { id: id }
         });
 
         if (!service) {
@@ -51,7 +49,7 @@ export async function PATCH(
         }
 
         const updatedService = await prisma.iTServiceDefinition.update({
-            where: { id: params.id },
+            where: { id: id },
             data: updateData
         });
 
@@ -63,11 +61,9 @@ export async function PATCH(
 }
 
 // DELETE /api/it/services/[id] - Delete (deactivate) service
-export async function DELETE(
-    req: NextRequest,
-    { params }: { params: { id: string } }
-) {
+export async function DELETE(req: NextRequest, context: { params: Promise<{ id: string }> }) {
     try {
+        const { id } = await params;
         const user = await getAuthenticatedUser();
         if (!user) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -79,7 +75,7 @@ export async function DELETE(
         }
 
         const service = await prisma.iTServiceDefinition.findUnique({
-            where: { id: params.id }
+            where: { id: id }
         });
 
         if (!service) {
@@ -93,7 +89,7 @@ export async function DELETE(
 
         // We use soft delete by setting isActive to false
         await prisma.iTServiceDefinition.update({
-            where: { id: params.id },
+            where: { id: id },
             data: { isActive: false }
         });
 

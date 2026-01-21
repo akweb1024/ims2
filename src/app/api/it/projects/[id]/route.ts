@@ -13,16 +13,17 @@ function canManageProjects(role: string): boolean {
 // GET /api/it/projects/[id] - Get project details
 export async function GET(
     req: NextRequest,
-    { params }: { params: { id: string } }
+    context: { params: Promise<{ id: string }> }
 ) {
     try {
+        const { id: projectId } = await params;
         const user = await getAuthenticatedUser();
         if (!user) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
         const project = await prisma.iTProject.findUnique({
-            where: { id: params.id },
+            where: { id: projectId },
             include: {
                 projectManager: {
                     select: {
@@ -139,9 +140,10 @@ export async function GET(
 // PATCH /api/it/projects/[id] - Update project
 export async function PATCH(
     req: NextRequest,
-    { params }: { params: { id: string } }
+    context: { params: Promise<{ id: string }> }
 ) {
     try {
+        const { id: projectId } = await params;
         const user = await getAuthenticatedUser();
         if (!user) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -151,7 +153,7 @@ export async function PATCH(
 
         // Check if project exists and user has access
         const existingProject = await prisma.iTProject.findUnique({
-            where: { id: params.id },
+            where: { id: projectId },
             include: { milestones: true }
         });
 
@@ -276,7 +278,7 @@ export async function PATCH(
             }
 
             const project = await prisma.iTProject.update({
-                where: { id: params.id },
+                where: { id: projectId },
                 data: updateData,
                 include: {
                     projectManager: {
@@ -313,9 +315,10 @@ export async function PATCH(
 // DELETE /api/it/projects/[id] - Delete project
 export async function DELETE(
     req: NextRequest,
-    { params }: { params: { id: string } }
+    context: { params: Promise<{ id: string }> }
 ) {
     try {
+        const { id: projectId } = await params;
         const user = await getAuthenticatedUser();
         if (!user) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -326,7 +329,7 @@ export async function DELETE(
         }
 
         const project = await prisma.iTProject.findUnique({
-            where: { id: params.id }
+            where: { id: projectId }
         });
 
         if (!project) {
@@ -339,7 +342,7 @@ export async function DELETE(
         }
 
         await prisma.iTProject.delete({
-            where: { id: params.id }
+            where: { id: projectId }
         });
 
         return NextResponse.json({ message: 'Project deleted successfully' });

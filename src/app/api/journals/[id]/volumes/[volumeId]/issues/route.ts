@@ -7,8 +7,8 @@ export const POST = authorizedRoute(
     ['SUPER_ADMIN', 'ADMIN', 'MANAGER'],
     async (req: NextRequest, user: any, context: { params: Promise<{ id: string, volumeId: string }> }) => {
         try {
-            const params = await context.params;
-            const { volumeId } = params;
+            const { id } = await params;
+            const { volumeId } = await params;
             const body = await req.json();
             const { issueNumber, month, title, year } = body;
             // note: year technically belongs to volume but some issues might span? No, schema says Issue belongs to Volume.

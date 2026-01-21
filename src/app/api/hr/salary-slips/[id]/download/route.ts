@@ -27,7 +27,7 @@ export async function GET(req: NextRequest, props: { params: Promise<{ id: strin
         const user = await getAuthenticatedUser();
         if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-        const { id } = params;
+        const { id } = await params;
 
         const slip = (await prisma.salarySlip.findUnique({
             where: { id },

@@ -5,10 +5,10 @@ import { createErrorResponse } from '@/lib/api-utils';
 
 export const GET = authorizedRoute(
     [],
-    async (req: NextRequest, user: any, context: { params: Promise<{ lid: string }> }) => {
+    async (req: NextRequest, user: any, { params }: { params: Promise<{ lid: string }> }) => {
         try {
-            const params = await context.params;
-            const { lid: lessonId } = params;
+            const { lid } = await params;
+            const lessonId = lid;
 
             const quizzes = await prisma.quiz.findMany({
                 where: { lessonId },
@@ -31,10 +31,10 @@ export const GET = authorizedRoute(
 
 export const POST = authorizedRoute(
     ['SUPER_ADMIN', 'ADMIN', 'MANAGER'],
-    async (req: NextRequest, user: any, context: { params: Promise<{ lid: string }> }) => {
+    async (req: NextRequest, user: any, { params }: { params: Promise<{ lid: string }> }) => {
         try {
-            const params = await context.params;
-            const { lid: lessonId } = params;
+            const { lid } = await params;
+            const lessonId = lid;
             const body = await req.json();
             const {
                 title,

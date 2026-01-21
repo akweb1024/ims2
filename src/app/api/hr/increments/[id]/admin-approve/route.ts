@@ -72,16 +72,14 @@ export const POST = authorizedRoute(
                         designation: increment.newDesignation || increment.previousDesignation,
                         lastIncrementDate: increment.effectiveDate,
                         lastIncrementPercentage: increment.percentage,
+                        monthlyTarget: increment.newMonthlyTarget || 0,
+                        yearlyTarget: (increment as any).newYearlyTarget || 0,
                         // Update KRA if provided
-                        ...(increment.newKRA && { kra: increment.newKRA })
-                    }
+                        ...(increment.newKRA && { kra: increment.newKRA }),
+                        // Update KPIs (metrics) if provided
+                        ...(increment.newKPI && { metrics: increment.newKPI as any })
+                    } as any
                 });
-
-                // Update KPIs if provided
-                if (increment.newKPI) {
-                    // You can create new KPI records here if needed
-                    // For now, we'll just store it in the increment record
-                }
             } else {
                 // Reject
                 updateData.status = 'REJECTED';

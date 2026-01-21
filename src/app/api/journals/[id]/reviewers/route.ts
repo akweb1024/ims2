@@ -6,9 +6,9 @@ import { createErrorResponse } from '@/lib/api-utils';
 // GET /api/journals/[id]/reviewers - List all reviewers for a journal
 export const GET = authorizedRoute(
     ['SUPER_ADMIN', 'ADMIN', 'MANAGER'],
-    async (req: NextRequest, user: any, context: { params: Promise<{ id: string }> }) => {
+    async (req: NextRequest, user: any, { params }: { params: Promise<{ id: string }> }) => {
         try {
-            const { id: journalId } = await context.params;
+            const { id: journalId } = await params;
             const { searchParams } = new URL(req.url);
             const isActive = searchParams.get('isActive');
             const specialization = searchParams.get('specialization');
@@ -56,9 +56,9 @@ export const GET = authorizedRoute(
 // POST /api/journals/[id]/reviewers - Add a new reviewer
 export const POST = authorizedRoute(
     ['SUPER_ADMIN', 'ADMIN', 'MANAGER'],
-    async (req: NextRequest, user: any, context: { params: Promise<{ id: string }> }) => {
+    async (req: NextRequest, user: any, { params }: { params: Promise<{ id: string }> }) => {
         try {
-            const { id: journalId } = await context.params;
+            const { id: journalId } = await params;
             const body = await req.json();
             const { userId, specialization, bio } = body;
 

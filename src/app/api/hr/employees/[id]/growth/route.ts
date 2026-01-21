@@ -5,10 +5,10 @@ import { createErrorResponse } from '@/lib/api-utils';
 
 export const GET = authorizedRoute(
     ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'HR'],
-    async (req: NextRequest, user: any, context: { params: Promise<{ id: string }> }) => {
+    async (req: NextRequest, user: any, { params }: { params: Promise<{ id: string }> }) => {
         try {
-            const params = await context.params;
-            const { id: employeeId } = params;
+            const { id } = await params;
+            const employeeId = id;
 
             // 1. Get the User ID associated with this Employee Profile
             const employeeProfile = await prisma.employeeProfile.findUnique({
@@ -52,7 +52,11 @@ export const GET = authorizedRoute(
                             title: true,
                             lesson: {
                                 select: {
-                                    course: { select: { title: true } }
+                                    module: {
+                                        select: {
+                                            course: { select: { title: true } }
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -127,7 +131,7 @@ export const GET = authorizedRoute(
                 recentQuizzes: quizAttempts.map(q => ({
                     id: q.id,
                     quizTitle: q.quiz.title,
-                    courseTitle: q.quiz.lesson.course.title,
+                    courseTitle: q.quiz.lesson.module.course.title,
                     score: q.score,
                     passed: q.passed,
                     date: q.attemptedAt

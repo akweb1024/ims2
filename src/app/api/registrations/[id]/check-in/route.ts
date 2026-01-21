@@ -6,10 +6,10 @@ import { createErrorResponse } from '@/lib/api-utils';
 // Check-in
 export const POST = authorizedRoute(
     ['SUPER_ADMIN', 'ADMIN', 'MANAGER'],
-    async (req: NextRequest, user: any, context: { params: Promise<{ id: string }> }) => {
+    async (req: NextRequest, user: any, { params }: { params: Promise<{ id: string }> }) => {
         try {
-            const params = await context.params;
-            const { id: registrationId } = params;
+            const { id } = await params;
+            const registrationId = id;
 
             const registration = await prisma.conferenceRegistration.update({
                 where: { id: registrationId },

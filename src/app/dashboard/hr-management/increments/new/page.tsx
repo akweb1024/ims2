@@ -29,6 +29,8 @@ function NewIncrementContent() {
         incentiveDefinition: '',
         currentMonthlyTarget: 0,
         newMonthlyTarget: 0,
+        currentYearlyTarget: 0,
+        newYearlyTarget: 0,
         effectiveDate: new Date().toISOString().split('T')[0]
     });
 
@@ -65,6 +67,8 @@ function NewIncrementContent() {
             newIncentive: employee?.incentiveSalary || 0,
             currentMonthlyTarget: employee?.monthlyTarget || 0,
             newMonthlyTarget: employee?.monthlyTarget || 0,
+            currentYearlyTarget: employee?.yearlyTarget || 0,
+            newYearlyTarget: employee?.yearlyTarget || 0,
             newDesignation: employee?.designation || ''
         });
     };
@@ -160,6 +164,7 @@ function NewIncrementContent() {
                                     <label className="label-premium">Select Employee *</label>
                                     <select
                                         required
+                                        title="Select Employee"
                                         className="input-premium"
                                         value={form.employeeProfileId}
                                         onChange={(e) => handleEmployeeChange(e.target.value)}
@@ -174,10 +179,13 @@ function NewIncrementContent() {
                                 </div>
 
                                 <div>
-                                    <label className="label-premium">Effective Date *</label>
+                                    <label htmlFor="effective-date" className="label-premium">Effective Date *</label>
                                     <input
+                                        id="effective-date"
                                         type="date"
                                         required
+                                        title="Effective Date"
+                                        placeholder="YYYY-MM-DD"
                                         className="input-premium"
                                         value={form.effectiveDate}
                                         onChange={(e) => setForm({ ...form, effectiveDate: e.target.value })}
@@ -225,6 +233,8 @@ function NewIncrementContent() {
                                     required
                                     min="0"
                                     step="100"
+                                    title="New Fixed Salary"
+                                    placeholder="0"
                                     className="input-premium"
                                     value={form.newFixedSalary}
                                     onChange={(e) => setForm({ ...form, newFixedSalary: parseFloat(e.target.value) || 0 })}
@@ -406,6 +416,30 @@ function NewIncrementContent() {
                                         {incrementAmount > 0 && (form.newMonthlyTarget - form.currentMonthlyTarget) > 0 ? ((form.newMonthlyTarget - form.currentMonthlyTarget) / (incrementAmount / 12)).toFixed(1) : '0'}x
                                     </p>
                                     <p className="text-[10px] text-secondary-400">Target Incr. / Cost Incr.</p>
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+                                <div>
+                                    <label className="label-premium">Current Yearly Target</label>
+                                    <input
+                                        type="number"
+                                        className="input-premium bg-secondary-50"
+                                        readOnly
+                                        title="Current Yearly Target"
+                                        value={form.currentYearlyTarget}
+                                    />
+                                </div>
+                                <div>
+                                    <label className="label-premium">New Yearly Target (Proposed)</label>
+                                    <input
+                                        type="number"
+                                        className="input-premium"
+                                        title="New Yearly Target"
+                                        placeholder="0"
+                                        value={form.newYearlyTarget}
+                                        onChange={(e) => setForm({ ...form, newYearlyTarget: parseFloat(e.target.value) || 0 })}
+                                    />
                                 </div>
                             </div>
                         </div>

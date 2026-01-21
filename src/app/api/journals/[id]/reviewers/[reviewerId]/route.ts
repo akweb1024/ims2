@@ -8,7 +8,7 @@ export const GET = authorizedRoute(
     ['SUPER_ADMIN', 'ADMIN', 'MANAGER'],
     async (req: NextRequest, user: any, context: { params: Promise<{ id: string, reviewerId: string }> }) => {
         try {
-            const { reviewerId } = await context.params;
+            const { reviewerId } = await params;
 
             const reviewer = await prisma.journalReviewer.findUnique({
                 where: { id: reviewerId },
@@ -68,7 +68,7 @@ export const PATCH = authorizedRoute(
     ['SUPER_ADMIN', 'ADMIN', 'MANAGER'],
     async (req: NextRequest, user: any, context: { params: Promise<{ id: string, reviewerId: string }> }) => {
         try {
-            const { reviewerId } = await context.params;
+            const { reviewerId } = await params;
             const body = await req.json();
             const { specialization, bio, isActive } = body;
 
@@ -111,7 +111,7 @@ export const DELETE = authorizedRoute(
     ['SUPER_ADMIN', 'ADMIN'],
     async (req: NextRequest, user: any, context: { params: Promise<{ id: string, reviewerId: string }> }) => {
         try {
-            const { reviewerId } = await context.params;
+            const { reviewerId } = await params;
 
             // Check if reviewer has pending assignments
             const pendingAssignments = await prisma.reviewAssignment.count({

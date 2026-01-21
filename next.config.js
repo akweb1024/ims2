@@ -16,10 +16,10 @@ const nextConfig = {
         // experimental options
     },
     eslint: {
-        ignoreDuringBuilds: true,
+        ignoreDuringBuilds: false,
     },
     typescript: {
-        ignoreBuildErrors: true,
+        ignoreBuildErrors: false,
     },
     productionBrowserSourceMaps: false,
     compress: true,

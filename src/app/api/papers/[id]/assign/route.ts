@@ -5,9 +5,9 @@ import { createErrorResponse } from '@/lib/api-utils';
 
 export const POST = authorizedRoute(
     ['SUPER_ADMIN', 'ADMIN', 'MANAGER'],
-    async (req: NextRequest, user: any, context: { params: Promise<{ id: string }> }) => {
+    async (req: NextRequest, user: any, { params }: { params: Promise<{ id: string }> }) => {
         try {
-            const { id: paperId } = await context.params;
+            const { id: paperId } = await params;
             const { reviewerId } = await req.json();
 
             if (!reviewerId) {

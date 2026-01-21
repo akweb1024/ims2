@@ -10,10 +10,25 @@
         "build": "prisma generate && next build",
         "start": "next start",
         "lint": "next lint",
+        "lint:fix": "next lint --fix",
+        "type-check": "tsc --noEmit",
         "prisma:generate": "prisma generate",
         "prisma:push": "prisma db push",
         "prisma:studio": "prisma studio",
-        "seed": "tsx prisma/seed.ts"
+        "prisma:migrate": "prisma migrate deploy",
+        "prisma:migrate:dev": "prisma migrate dev",
+        "seed": "tsx prisma/seed.ts",
+        "test": "echo \"No tests configured yet\" && exit 0",
+        "test:e2e": "playwright test",
+        "docker:build": "docker build -t stm-customer:latest .",
+        "docker:up": "docker-compose up -d",
+        "docker:down": "docker-compose down",
+        "docker:logs": "docker-compose logs -f app",
+        "backup": "./scripts/backup-database.sh",
+        "production:start": "./scripts/start-production.sh",
+        "check:health": "curl -f http://localhost:3000/api/health || exit 1",
+        "audit:security": "npm audit --audit-level=moderate",
+        "prepare:production": "npm ci && npm run build && npm run prisma:migrate"
     },
     "prisma": {
         "seed": "tsx prisma/seed.ts"

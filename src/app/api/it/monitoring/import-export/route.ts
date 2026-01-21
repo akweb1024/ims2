@@ -71,7 +71,8 @@ export const POST = authorizedRoute(
 
             for (const record of records) {
                 // Validation
-                if (!record.name || !record.url) {
+                const rec = record as any;
+                if (!rec.name || !rec.url) {
                     errors.push({ record, error: 'Missing name or url' });
                     continue;
                 }
@@ -79,11 +80,11 @@ export const POST = authorizedRoute(
                 try {
                     const monitor = await prisma.websiteMonitor.create({
                         data: {
-                            name: record.name,
-                            url: record.url,
-                            frequency: parseInt(record.frequency) || 5,
-                            notifyEmail: record.notifyEmail === 'true' || record.notifyEmail === true,
-                            notifyWhatsapp: record.notifyWhatsapp === 'true' || record.notifyWhatsapp === true,
+                            name: rec.name,
+                            url: rec.url,
+                            frequency: parseInt(rec.frequency) || 5,
+                            notifyEmail: rec.notifyEmail === 'true' || rec.notifyEmail === true,
+                            notifyWhatsapp: rec.notifyWhatsapp === 'true' || rec.notifyWhatsapp === true,
                             companyId: user.companyId,
                             status: 'PENDING'
                         }

@@ -521,6 +521,17 @@ export default function IncrementDetailPage() {
                                 </div>
                             </div>
 
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pb-4 border-b border-indigo-100">
+                                <div>
+                                    <p className="label-premium">Current Yearly Target</p>
+                                    <p className="text-xl font-bold text-secondary-900">₹{increment.currentYearlyTarget?.toLocaleString() || 0}</p>
+                                </div>
+                                <div>
+                                    <p className="label-premium">Proposed Yearly Target</p>
+                                    <p className="text-xl font-black text-indigo-600">₹{increment.newYearlyTarget?.toLocaleString() || 0}</p>
+                                </div>
+                            </div>
+
                             {/* ROI Stats */}
                             <div className="mt-4 p-4 bg-indigo-50 rounded-xl grid grid-cols-1 md:grid-cols-3 gap-4">
                                 <div>
@@ -546,27 +557,51 @@ export default function IncrementDetailPage() {
                         </div>
                     )}
 
-                    {(increment.newKRA || increment.newKPI) && (
+                    {(increment.newKRA || increment.newKPI || increment.oldKRA || increment.oldKPI) && (
                         <div className="card-premium p-6">
-                            <h2 className="text-lg font-black text-secondary-900 mb-4">
-                                KRA/KPI Redefinition
+                            <h2 className="text-lg font-black text-secondary-900 mb-6">
+                                KRA & KPI Comparison
                             </h2>
-                            {increment.newKRA && (
-                                <div className="mb-4">
-                                    <p className="text-sm font-bold text-secondary-600 mb-2">New Key Responsibility Areas:</p>
+
+                            {/* KRA Comparison */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                                <div className="p-4 bg-secondary-50 rounded-xl border border-secondary-100">
+                                    <p className="text-sm font-bold text-secondary-600 mb-2 uppercase">Previous KRA</p>
                                     <div className="prose prose-sm max-w-none">
-                                        <SafeHTML html={increment.newKRA} />
+                                        <SafeHTML html={increment.oldKRA || '<p class="text-secondary-400 italic">No previous KRA defined.</p>'} />
                                     </div>
                                 </div>
-                            )}
-                            {increment.newKPI && (
-                                <div>
-                                    <p className="text-sm font-bold text-secondary-600 mb-2">New Key Performance Indicators:</p>
-                                    <pre className="bg-secondary-50 p-4 rounded-xl overflow-x-auto text-sm">
-                                        {JSON.stringify(increment.newKPI, null, 2)}
-                                    </pre>
+                                <div className="p-4 bg-primary-50 rounded-xl border border-primary-100">
+                                    <p className="text-sm font-bold text-primary-700 mb-2 uppercase">New KRA (Proposed)</p>
+                                    <div className="prose prose-sm max-w-none">
+                                        <SafeHTML html={increment.newKRA || '<p class="text-secondary-400 italic">No KRA changes proposed.</p>'} />
+                                    </div>
                                 </div>
-                            )}
+                            </div>
+
+                            {/* KPI Comparison */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div className="p-4 bg-secondary-50 rounded-xl border border-secondary-100">
+                                    <p className="text-sm font-bold text-secondary-600 mb-2 uppercase">Previous KPI Metrics</p>
+                                    {increment.oldKPI ? (
+                                        <pre className="bg-white/50 p-4 rounded-lg overflow-x-auto text-[10px] sm:text-xs">
+                                            {JSON.stringify(increment.oldKPI, null, 2)}
+                                        </pre>
+                                    ) : (
+                                        <p className="text-secondary-400 italic text-sm">No previous KPIs defined.</p>
+                                    )}
+                                </div>
+                                <div className="p-4 bg-purple-50 rounded-xl border border-purple-100">
+                                    <p className="text-sm font-bold text-purple-700 mb-2 uppercase">New KPI Metrics (Proposed)</p>
+                                    {increment.newKPI ? (
+                                        <pre className="bg-white/50 p-4 rounded-lg overflow-x-auto text-[10px] sm:text-xs">
+                                            {JSON.stringify(increment.newKPI, null, 2)}
+                                        </pre>
+                                    ) : (
+                                        <p className="text-secondary-400 italic text-sm">No KPI changes proposed.</p>
+                                    )}
+                                </div>
+                            </div>
                         </div>
                     )}
 

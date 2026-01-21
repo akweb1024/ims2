@@ -12,8 +12,8 @@ export async function GET(
         // const user = await getAuthenticatedUser();
         // if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-        const params = await context.params;
-        const filePath = params.file.join('/');
+        const { file } = await context.params;
+        const filePath = file.join('/');
 
         const { buffer, contentType } = await StorageService.readFile(filePath);
 

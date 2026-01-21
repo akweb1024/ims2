@@ -798,6 +798,7 @@ model EmployeeProfile {
   variableSalary           Float?                       // Variable salary component
   incentiveSalary          Float?                       // Incentive component
   monthlyTarget            Float?                       @default(0) // Monthly Revenue/Sales Target
+  yearlyTarget             Float?                       @default(0) // Yearly Revenue/Sales Target
   bankName                 String?
   accountNumber            String?
   ifscCode                 String?
@@ -950,6 +951,8 @@ model SalaryIncrementRecord {
   // Target Comparisons
   currentMonthlyTarget  Float?          @default(0)
   newMonthlyTarget      Float?          @default(0)
+  currentYearlyTarget   Float?          @default(0)
+  newYearlyTarget       Float?          @default(0)
   
   // Salary Component Definitions
   variableDefinition  String?         // Rich text definition of variable salary calculation
@@ -979,6 +982,8 @@ model SalaryIncrementRecord {
   adminApproved       Boolean         @default(false)
   
   // KRA/KPI Redefinition
+  oldKRA              String?         // Previous Key Responsibility Areas
+  oldKPI              Json?           // Previous Key Performance Indicators
   newKRA              String?         // Updated Key Responsibility Areas
   newKPI              Json?           // Updated Key Performance Indicators
   performanceNotes    String?         // Performance review notes

@@ -15,9 +15,9 @@ const companyDesignationSchema = z.object({
 // GET: Fetch all company-designation mappings for an employee
 export const GET = authorizedRoute(
     ['SUPER_ADMIN', 'ADMIN', 'HR', 'MANAGER'],
-    async (req: NextRequest, user, { params }: { params: { id: string } }) => {
+    async (req: NextRequest, user, { params }: { params: Promise<{ id: string }> }) => {
         try {
-            const employeeId = params.id;
+            const { id: employeeId } = await params;
 
             const designations = await prisma.employeeCompanyDesignation.findMany({
                 where: { employeeId },
@@ -46,9 +46,9 @@ export const GET = authorizedRoute(
 // POST: Add employee to a company with designation
 export const POST = authorizedRoute(
     ['SUPER_ADMIN', 'ADMIN', 'HR'],
-    async (req: NextRequest, user, { params }: { params: { id: string } }) => {
+    async (req: NextRequest, user, { params }: { params: Promise<{ id: string }> }) => {
         try {
-            const employeeId = params.id;
+            const { id: employeeId } = await params;
             const body = await req.json();
 
             const result = companyDesignationSchema.safeParse(body);
@@ -124,9 +124,9 @@ export const POST = authorizedRoute(
 // PATCH: Update designation for a specific company
 export const PATCH = authorizedRoute(
     ['SUPER_ADMIN', 'ADMIN', 'HR'],
-    async (req: NextRequest, user, { params }: { params: { id: string } }) => {
+    async (req: NextRequest, user, { params }: { params: Promise<{ id: string }> }) => {
         try {
-            const employeeId = params.id;
+            const { id: employeeId } = await params;
             const body = await req.json();
             const { designationId, ...updateData } = body;
 
@@ -175,9 +175,9 @@ export const PATCH = authorizedRoute(
 // DELETE: Remove employee from a company
 export const DELETE = authorizedRoute(
     ['SUPER_ADMIN', 'ADMIN', 'HR'],
-    async (req: NextRequest, user, { params }: { params: { id: string } }) => {
+    async (req: NextRequest, user, { params }: { params: Promise<{ id: string }> }) => {
         try {
-            const employeeId = params.id;
+            const { id: employeeId } = await params;
             const { searchParams } = new URL(req.url);
             const designationId = searchParams.get('designationId');
 

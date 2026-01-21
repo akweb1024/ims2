@@ -5,10 +5,10 @@ import { createErrorResponse } from '@/lib/api-utils';
 
 export const GET = authorizedRoute(
     [],
-    async (req: NextRequest, user: any, context: { params: Promise<{ id: string }> }) => {
+    async (req: NextRequest, user: any, { params }: { params: Promise<{ id: string }> }) => {
         try {
-            const params = await context.params;
-            const { id: conferenceId } = params;
+            const { id } = await params;
+            const conferenceId = id;
             const { searchParams } = new URL(req.url);
 
             const status = searchParams.get('status');
@@ -51,10 +51,10 @@ export const GET = authorizedRoute(
 
 export const POST = authorizedRoute(
     [],
-    async (req: NextRequest, user: any, context: { params: Promise<{ id: string }> }) => {
+    async (req: NextRequest, user: any, { params }: { params: Promise<{ id: string }> }) => {
         try {
-            const params = await context.params;
-            const { id: conferenceId } = params;
+            const { id } = await params;
+            const conferenceId = id;
             const body = await req.json();
 
             // Validate Ticket

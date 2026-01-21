@@ -5,17 +5,15 @@ import { createErrorResponse } from '@/lib/api-utils';
 import { StorageService } from '@/lib/storage';
 
 // GET /api/it/projects/[id]/documents - List project documents
-export async function GET(
-    req: NextRequest,
-    { params }: { params: { id: string } }
-) {
+export async function GET(req: NextRequest, context: { params: Promise<{ id: string }> }) {
     try {
+        const { id } = await context.params;
         const user = await getAuthenticatedUser();
         if (!user) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        const projectId = params.id;
+        const projectId = id;
         const documents = await (prisma as any).iTProjectDocument.findMany({
             where: { projectId },
             orderBy: { createdAt: 'desc' }
@@ -29,17 +27,15 @@ export async function GET(
 }
 
 // POST /api/it/projects/[id]/documents - Upload/Add a project document
-export async function POST(
-    req: NextRequest,
-    { params }: { params: { id: string } }
-) {
+export async function POST(req: NextRequest, context: { params: Promise<{ id: string }> }) {
     try {
+        const { id } = await context.params;
         const user = await getAuthenticatedUser();
         if (!user) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        const projectId = params.id;
+        const projectId = id;
         const formData = await req.formData();
         const file = formData.get('file') as File;
         const name = formData.get('name') as string;

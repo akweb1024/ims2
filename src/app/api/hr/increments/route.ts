@@ -24,6 +24,10 @@ const incrementSchema = z.object({
     // KRA/KPI Redefinition
     newKRA: z.string().optional(),
     newKPI: z.any().optional(),
+
+    // Targets
+    newMonthlyTarget: z.number().min(0).optional(),
+    newYearlyTarget: z.number().min(0).optional(),
 });
 
 // GET: List all increments (with filtering)
@@ -169,12 +173,18 @@ export const POST = authorizedRoute(
 
                     reason: data.reason,
                     performanceNotes: data.performanceNotes,
+
+                    // KRA/KPI History
+                    oldKRA: employee.kra,
+                    oldKPI: employee.metrics as any,
                     newKRA: data.newKRA,
                     newKPI: data.newKPI || null,
 
                     // Target Comparisons
-                    currentMonthlyTarget: data.currentMonthlyTarget || (employee as any).monthlyTarget || 0,
-                    newMonthlyTarget: data.newMonthlyTarget || 0,
+                    currentMonthlyTarget: employee.monthlyTarget || 0,
+                    newMonthlyTarget: data.newMonthlyTarget || employee.monthlyTarget || 0,
+                    currentYearlyTarget: employee.yearlyTarget || 0,
+                    newYearlyTarget: data.newYearlyTarget || employee.yearlyTarget || 0,
 
                     // Set as draft
                     status: 'DRAFT',

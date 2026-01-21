@@ -7,9 +7,9 @@ import { sendEmail, EmailTemplates } from '@/lib/email';
 // GET /api/assignments/[id]/report - Get review report
 export const GET = authorizedRoute(
     [],
-    async (req: NextRequest, user: any, context: { params: Promise<{ id: string }> }) => {
+    async (req: NextRequest, user: any, { params }: { params: Promise<{ id: string }> }) => {
         try {
-            const { id: assignmentId } = await context.params;
+            const { id: assignmentId } = await params;
 
             const assignment = await prisma.reviewAssignment.findUnique({
                 where: { id: assignmentId },
@@ -46,9 +46,9 @@ export const GET = authorizedRoute(
 // POST /api/assignments/[id]/report - Submit review report
 export const POST = authorizedRoute(
     [],
-    async (req: NextRequest, user: any, context: { params: Promise<{ id: string }> }) => {
+    async (req: NextRequest, user: any, { params }: { params: Promise<{ id: string }> }) => {
         try {
-            const { id: assignmentId } = await context.params;
+            const { id: assignmentId } = await params;
             const body = await req.json();
             const {
                 overallRating,
@@ -154,9 +154,9 @@ export const POST = authorizedRoute(
 // PATCH /api/assignments/[id]/report - Update review report
 export const PATCH = authorizedRoute(
     [],
-    async (req: NextRequest, user: any, context: { params: Promise<{ id: string }> }) => {
+    async (req: NextRequest, user: any, { params }: { params: Promise<{ id: string }> }) => {
         try {
-            const { id: assignmentId } = await context.params;
+            const { id: assignmentId } = await params;
             const body = await req.json();
 
             // Verify assignment and report exist

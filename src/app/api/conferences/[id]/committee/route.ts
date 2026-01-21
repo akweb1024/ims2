@@ -5,9 +5,9 @@ import { createErrorResponse } from '@/lib/api-utils';
 
 export const GET = authorizedRoute(
     ['SUPER_ADMIN', 'ADMIN', 'MANAGER'],
-    async (req: NextRequest, user: any, context: { params: Promise<{ id: string }> }) => {
+    async (req: NextRequest, user: any, { params }: { params: Promise<{ id: string }> }) => {
         try {
-            const { id } = await context.params;
+            const { id } = await params;
             console.log('Fetching committee for conference:', id);
             const members = await prisma.conferenceCommitteeMember.findMany({
                 where: { conferenceId: id },
@@ -23,9 +23,9 @@ export const GET = authorizedRoute(
 
 export const POST = authorizedRoute(
     ['SUPER_ADMIN', 'ADMIN', 'MANAGER'],
-    async (req: NextRequest, user: any, context: { params: Promise<{ id: string }> }) => {
+    async (req: NextRequest, user: any, { params }: { params: Promise<{ id: string }> }) => {
         try {
-            const { id } = await context.params;
+            const { id } = await params;
             const body = await req.json();
             const { name, role, affiliation, bio, photoUrl, userId } = body;
 

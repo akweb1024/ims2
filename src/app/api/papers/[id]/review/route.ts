@@ -5,10 +5,10 @@ import { createErrorResponse } from '@/lib/api-utils';
 
 export const POST = authorizedRoute(
     ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'REVIEWER'],
-    async (req: NextRequest, context: { params: Promise<{ id: string }> }, user) => {
+    async (req: NextRequest, user: any, { params }: { params: Promise<{ id: string }> }) => {
         try {
-            const params = await context.params;
-            const { id: paperId } = params;
+            const { id } = await params;
+            const paperId = id;
             const body = await req.json();
             const { score, comments, decision } = body;
 

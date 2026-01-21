@@ -3,11 +3,9 @@ import { auth } from '@/lib/nextauth';
 import prisma from '@/lib/prisma';
 
 // GET - Journal analytics and performance metrics
-export async function GET(
-    req: NextRequest,
-    { params }: { params: { id: string } }
-) {
+export async function GET(req: NextRequest, context: { params: Promise<{ id: string }> }) {
     try {
+        const { id } = await params;
         const session = await auth();
         if (!session?.user) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

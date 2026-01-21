@@ -2,16 +2,14 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getAuthenticatedUser } from '@/lib/auth-legacy';
 
-export async function GET(
-    req: NextRequest,
-    { params }: { params: { id: string } }
-) {
+export async function GET(req: NextRequest, context: { params: Promise<{ id: string }> }) {
     try {
+        const { id } = await params;
         const user = await getAuthenticatedUser();
         if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
         const ticket = await prisma.iTSupportTicket.findUnique({
-            where: { id: params.id },
+            where: { id: id },
             include: {
                 requester: { select: { id: true, name: true, email: true } },
                 assignedTo: { select: { id: true, name: true, email: true } },
@@ -33,16 +31,14 @@ export async function GET(
     }
 }
 
-export async function PATCH(
-    req: NextRequest,
-    { params }: { params: { id: string } }
-) {
+export async function PATCH(req: NextRequest, context: { params: Promise<{ id: string }> }) {
     try {
+        const { id } = await params;
         const user = await getAuthenticatedUser();
         if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
         const body = await req.json();
-        const existingTicket = await prisma.iTSupportTicket.findUnique({ where: { id: params.id } });
+        const existingTicket = await prisma.iTSupportTicket.findUnique({ where: { id: id } });
 
         if (!existingTicket) return NextResponse.json({ error: 'Ticket not found' }, { status: 404 });
 
@@ -51,7 +47,7 @@ export async function PATCH(
         }
 
         const updatedTicket = await prisma.iTSupportTicket.update({
-            where: { id: params.id },
+            where: { id: id },
             data: {
                 title: body.title,
                 description: body.description,
@@ -71,24 +67,22 @@ export async function PATCH(
     }
 }
 
-export async function DELETE(
-    req: NextRequest,
-    { params }: { params: { id: string } }
-) {
+export async function DELETE(req: NextRequest, context: { params: Promise<{ id: string }> }) {
     try {
+        const { id } = await params;
         const user = await getAuthenticatedUser();
         if (!user || !['SUPER_ADMIN', 'ADMIN', 'IT_MANAGER', 'IT_ADMIN'].includes(user.role)) {
             return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
         }
 
-        const existingTicket = await prisma.iTSupportTicket.findUnique({ where: { id: params.id } });
+        const existingTicket = await prisma.iTSupportTicket.findUnique({ where: { id: id } });
         if (!existingTicket) return NextResponse.json({ error: 'Ticket not found' }, { status: 404 });
 
         if (existingTicket.companyId !== (user as any).companyId && user.role !== 'SUPER_ADMIN') {
             return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
         }
 
-        await prisma.iTSupportTicket.delete({ where: { id: params.id } });
+        await prisma.iTSupportTicket.delete({ where: { id: id } });
 
         return NextResponse.json({ message: 'Ticket deleted successfully' });
     } catch (error) {

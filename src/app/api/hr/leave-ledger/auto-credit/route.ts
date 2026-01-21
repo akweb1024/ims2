@@ -153,7 +153,7 @@ export const POST = authorizedRoute(
                 year: targetYear,
                 totalEmployees: employees.length,
                 processed: results.length,
-                errors: errors.length,
+                errorCount: errors.length,
                 results,
                 errors
             });

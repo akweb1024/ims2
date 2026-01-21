@@ -5,10 +5,9 @@ import { createErrorResponse } from '@/lib/api-utils';
 
 export const GET = authorizedRoute(
     [],
-    async (req: NextRequest, user: any, context: { params: Promise<{ lid: string }> }) => {
+    async (req: NextRequest, user: any, { params }: { params: Promise<{ lid: string }> }) => {
         try {
-            const params = await context.params;
-            const { lid } = params;
+            const { lid } = await params;
 
             const lesson = await prisma.courseLesson.findUnique({
                 where: { id: lid },
@@ -45,10 +44,9 @@ export const GET = authorizedRoute(
 
 export const PATCH = authorizedRoute(
     ['SUPER_ADMIN', 'ADMIN', 'MANAGER'],
-    async (req: NextRequest, user: any, context: { params: Promise<{ lid: string }> }) => {
+    async (req: NextRequest, user: any, { params }: { params: Promise<{ lid: string }> }) => {
         try {
-            const params = await context.params;
-            const { lid } = params;
+            const { lid } = await params;
             const body = await req.json();
 
             const lesson = await prisma.courseLesson.update({
@@ -65,10 +63,9 @@ export const PATCH = authorizedRoute(
 
 export const DELETE = authorizedRoute(
     ['SUPER_ADMIN', 'ADMIN', 'MANAGER'],
-    async (req: NextRequest, user: any, context: { params: Promise<{ lid: string }> }) => {
+    async (req: NextRequest, user: any, { params }: { params: Promise<{ lid: string }> }) => {
         try {
-            const params = await context.params;
-            const { lid } = params;
+            const { lid } = await params;
 
             await prisma.courseLesson.delete({
                 where: { id: lid }

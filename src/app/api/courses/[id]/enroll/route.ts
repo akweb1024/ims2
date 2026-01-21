@@ -6,10 +6,10 @@ import { createErrorResponse } from '@/lib/api-utils';
 // Self-enrollment endpoint for students
 export const POST = authorizedRoute(
     [],
-    async (req: NextRequest, user: any, context: { params: Promise<{ id: string }> }) => {
+    async (req: NextRequest, user: any, { params }: { params: Promise<{ id: string }> }) => {
         try {
-            const params = await context.params;
-            const { id: courseId } = params;
+            const { id } = await params;
+            const courseId = id;
 
             // Check if course exists and is published
             const course = await prisma.course.findUnique({

@@ -171,7 +171,7 @@ export const DELETE = authorizedRoute(
 );
 
 // Helper function to get decrypted configuration value (for internal use)
-export async function getConfigValue(category: string, key: string, companyId?: string): Promise<string | null> {
+async function getConfigValue(category: string, key: string, companyId?: string): Promise<string | null> {
     try {
         const config = await prisma.appConfiguration.findFirst({
             where: {

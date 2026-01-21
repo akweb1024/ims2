@@ -5,10 +5,9 @@ import { createErrorResponse } from '@/lib/api-utils';
 
 export const POST = authorizedRoute(
     ['SUPER_ADMIN', 'ADMIN', 'MANAGER'],
-    async (req: NextRequest, user: any, context: { params: Promise<{ id: string }> }) => {
+    async (req: NextRequest, user: any, { params }: { params: Promise<{ id: string }> }) => {
         try {
-            const params = await context.params;
-            const { id } = params;
+            const { id } = await params;
 
             const conference = await prisma.conference.findUnique({
                 where: { id },

@@ -93,7 +93,7 @@ export async function GET(req: NextRequest) {
         const monthlyTrends = [];
         for (let i = 0; i < months; i++) {
             const mStart = startOfMonth(subMonths(now, i));
-            const mEnd = endOfMonth(now, i);
+            const mEnd = endOfMonth(subMonths(now, i));
 
             // Using the already fetched data to calculate trends in memory for even better performance
             const trendTasks = allTasksInCompany.filter((t: any) => {

@@ -4,17 +4,15 @@ import { getAuthenticatedUser } from '@/lib/auth-legacy';
 import { createErrorResponse } from '@/lib/api-utils';
 
 // PATCH /api/it/milestones/[id] - Update a milestone
-export async function PATCH(
-    req: NextRequest,
-    { params }: { params: { id: string } }
-) {
+export async function PATCH(req: NextRequest, context: { params: Promise<{ id: string }> }) {
     try {
+        const { id } = await context.params;
         const user = await getAuthenticatedUser();
         if (!user) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        const milestoneId = params.id;
+        const milestoneId = id;
         const body = await req.json();
 
         // Get current state to check if we need to update revenue and verify access
@@ -95,17 +93,15 @@ export async function PATCH(
 }
 
 // DELETE /api/it/milestones/[id] - Delete a milestone
-export async function DELETE(
-    req: NextRequest,
-    { params }: { params: { id: string } }
-) {
+export async function DELETE(req: NextRequest, context: { params: Promise<{ id: string }> }) {
     try {
+        const { id } = await context.params;
         const user = await getAuthenticatedUser();
         if (!user) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        const milestoneId = params.id;
+        const milestoneId = id;
 
         // Get current state to check revenue and verify access
         const milestone = await (prisma as any).iTProjectMilestone.findUnique({

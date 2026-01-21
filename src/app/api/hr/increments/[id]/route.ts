@@ -15,6 +15,8 @@ const updateIncrementSchema = z.object({
     newKRA: z.string().optional(),
     newKPI: z.any().optional(),
     effectiveDate: z.string().optional(),
+    newMonthlyTarget: z.number().min(0).optional(),
+    newYearlyTarget: z.number().min(0).optional(),
 });
 
 // GET: Get increment details
@@ -146,8 +148,8 @@ export const PATCH = authorizedRoute(
             if (data.performanceNotes) updateData.performanceNotes = data.performanceNotes;
             if (data.newKRA) updateData.newKRA = data.newKRA;
             if (data.newKPI) updateData.newKPI = data.newKPI;
-            if (typeof data.currentMonthlyTarget === 'number') updateData.currentMonthlyTarget = data.currentMonthlyTarget;
             if (typeof data.newMonthlyTarget === 'number') updateData.newMonthlyTarget = data.newMonthlyTarget;
+            if (typeof data.newYearlyTarget === 'number') updateData.newYearlyTarget = data.newYearlyTarget;
             if (data.effectiveDate) updateData.effectiveDate = new Date(data.effectiveDate);
 
             const updated = await prisma.salaryIncrementRecord.update({

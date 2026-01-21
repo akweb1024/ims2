@@ -5,10 +5,9 @@ import { createErrorResponse } from '@/lib/api-utils';
 
 export const PATCH = authorizedRoute(
     ['SUPER_ADMIN', 'ADMIN', 'MANAGER'],
-    async (req: NextRequest, user: any, context: { params: Promise<{ mid: string }> }) => {
+    async (req: NextRequest, user: any, { params }: { params: Promise<{ mid: string }> }) => {
         try {
-            const params = await context.params;
-            const { mid } = params;
+            const { mid } = await params;
             const body = await req.json();
 
             const courseModule = await prisma.courseModule.update({
@@ -25,10 +24,9 @@ export const PATCH = authorizedRoute(
 
 export const DELETE = authorizedRoute(
     ['SUPER_ADMIN', 'ADMIN', 'MANAGER'],
-    async (req: NextRequest, user: any, context: { params: Promise<{ mid: string }> }) => {
+    async (req: NextRequest, user: any, { params }: { params: Promise<{ mid: string }> }) => {
         try {
-            const params = await context.params;
-            const { mid } = params;
+            const { mid } = await params;
 
             await prisma.courseModule.delete({
                 where: { id: mid }

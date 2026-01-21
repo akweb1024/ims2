@@ -31,6 +31,8 @@ export default function EditIncrementPage() {
         incentiveDefinition: '',
         currentMonthlyTarget: 0,
         newMonthlyTarget: 0,
+        currentYearlyTarget: 0,
+        newYearlyTarget: 0,
         effectiveDate: new Date().toISOString().split('T')[0]
     });
 
@@ -66,6 +68,8 @@ export default function EditIncrementPage() {
                     incentiveDefinition: data.incentiveDefinition || '',
                     currentMonthlyTarget: data.currentMonthlyTarget || 0,
                     newMonthlyTarget: data.newMonthlyTarget || 0,
+                    currentYearlyTarget: data.currentYearlyTarget || 0,
+                    newYearlyTarget: data.newYearlyTarget || 0,
                     effectiveDate: data.effectiveDate ? new Date(data.effectiveDate).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]
                 });
             } else {
@@ -415,6 +419,30 @@ export default function EditIncrementPage() {
                                         {incrementAmount > 0 && (form.newMonthlyTarget - form.currentMonthlyTarget) > 0 ? ((form.newMonthlyTarget - form.currentMonthlyTarget) / (incrementAmount / 12)).toFixed(1) : '0'}x
                                     </p>
                                     <p className="text-[10px] text-secondary-400">Target Incr. / Cost Incr.</p>
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+                                <div>
+                                    <label className="label-premium">Current Yearly Target</label>
+                                    <input
+                                        type="number"
+                                        className="input-premium bg-secondary-50"
+                                        readOnly
+                                        title="Current Yearly Target"
+                                        value={form.currentYearlyTarget}
+                                    />
+                                </div>
+                                <div>
+                                    <label className="label-premium">New Yearly Target (Proposed)</label>
+                                    <input
+                                        type="number"
+                                        className="input-premium"
+                                        title="New Yearly Target"
+                                        placeholder="0"
+                                        value={form.newYearlyTarget}
+                                        onChange={(e) => setForm({ ...form, newYearlyTarget: parseFloat(e.target.value) || 0 })}
+                                    />
                                 </div>
                             </div>
                         </div>

@@ -7,8 +7,8 @@ export const DELETE = authorizedRoute(
     ['SUPER_ADMIN', 'ADMIN', 'MANAGER'],
     async (req: NextRequest, user: any, context: { params: Promise<{ id: string, memberId: string }> }) => {
         try {
-            const params = await context.params;
-            const { memberId } = params;
+            const { id } = await params;
+            const { memberId } = await params;
 
             await prisma.editorialBoardMember.delete({
                 where: { id: memberId }
@@ -25,8 +25,8 @@ export const PATCH = authorizedRoute(
     ['SUPER_ADMIN', 'ADMIN', 'MANAGER'],
     async (req: NextRequest, user: any, context: { params: Promise<{ id: string, memberId: string }> }) => {
         try {
-            const params = await context.params;
-            const { memberId } = params;
+            const { id } = await params;
+            const { memberId } = await params;
             const body = await req.json();
 
             const member = await prisma.editorialBoardMember.update({

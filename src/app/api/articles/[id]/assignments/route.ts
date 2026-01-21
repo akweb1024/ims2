@@ -7,9 +7,9 @@ import { sendEmail, EmailTemplates } from '@/lib/email';
 // GET /api/articles/[id]/assignments - List assignments for an article
 export const GET = authorizedRoute(
     ['SUPER_ADMIN', 'ADMIN', 'MANAGER'],
-    async (req: NextRequest, user: any, context: { params: Promise<{ id: string }> }) => {
+    async (req: NextRequest, user: any, { params }: { params: Promise<{ id: string }> }) => {
         try {
-            const { id: articleId } = await context.params;
+            const { id: articleId } = await params;
             const { searchParams } = new URL(req.url);
             const status = searchParams.get('status');
             const round = searchParams.get('round');
@@ -61,9 +61,9 @@ export const GET = authorizedRoute(
 // POST /api/articles/[id]/assignments - Assign reviewer to article
 export const POST = authorizedRoute(
     ['SUPER_ADMIN', 'ADMIN', 'MANAGER'],
-    async (req: NextRequest, user: any, context: { params: Promise<{ id: string }> }) => {
+    async (req: NextRequest, user: any, { params }: { params: Promise<{ id: string }> }) => {
         try {
-            const { id: articleId } = await context.params;
+            const { id: articleId } = await params;
             const body = await req.json();
             const { reviewerId, dueDate, priority, round, notes } = body;
 

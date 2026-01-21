@@ -5,9 +5,9 @@ import { createErrorResponse } from '@/lib/api-utils';
 
 export const GET = authorizedRoute(
     [],
-    async (req: NextRequest, user: any, context: { params: Promise<{ qid: string }> }) => {
+    async (req: NextRequest, user: any, { params }: { params: Promise<{ qid: string }> }) => {
         try {
-            const params = await context.params;
+            const { qid } = await params;
             const { qid: quizId } = params;
 
             const quiz = await prisma.quiz.findUnique({
@@ -67,9 +67,9 @@ export const GET = authorizedRoute(
 
 export const POST = authorizedRoute(
     [],
-    async (req: NextRequest, user: any, context: { params: Promise<{ qid: string }> }) => {
+    async (req: NextRequest, user: any, { params }: { params: Promise<{ qid: string }> }) => {
         try {
-            const params = await context.params;
+            const { qid } = await params;
             const { qid: quizId } = params;
             const body = await req.json();
             const { answers, timeSpent } = body; // answers: { questionId: answer }

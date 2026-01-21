@@ -216,7 +216,7 @@ async function calculateEmployeePerformance(employeeId: string, month: number, y
         // Flags
         needsAttention,
         isTopPerformer,
-        warningFlags: warningFlags.length > 0 ? warningFlags : null,
+        warningFlags: warningFlags.length > 0 ? warningFlags : undefined,
 
         calculatedAt: new Date()
     };

@@ -7,8 +7,7 @@ export const GET = authorizedRoute(
     [],
     async (req: NextRequest, context: { params: Promise<{ id: string }> }, user) => {
         try {
-            const params = await context.params;
-            const { id } = params;
+            const { id } = await params;
 
             const paper = await prisma.conferencePaper.findUnique({
                 where: { id },
@@ -69,8 +68,7 @@ export const PATCH = authorizedRoute(
     [],
     async (req: NextRequest, context: { params: Promise<{ id: string }> }, user) => {
         try {
-            const params = await context.params;
-            const { id } = params;
+            const { id } = await params;
             const body = await req.json();
 
             const paper = await prisma.conferencePaper.findUnique({
@@ -122,10 +120,9 @@ export const PATCH = authorizedRoute(
 // Delete paper
 export const DELETE = authorizedRoute(
     ['SUPER_ADMIN', 'ADMIN', 'MANAGER'],
-    async (req: NextRequest, context: { params: Promise<{ id: string }> }) => {
+    async (req: NextRequest, user: any, { params }: { params: Promise<{ id: string }> }) => {
         try {
-            const params = await context.params;
-            const { id } = params;
+            const { id } = await params;
 
             await prisma.conferencePaper.delete({
                 where: { id }

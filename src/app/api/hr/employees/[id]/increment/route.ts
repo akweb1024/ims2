@@ -4,9 +4,10 @@ import { getAuthenticatedUser } from '@/lib/auth-legacy';
 
 export async function POST(
     req: NextRequest,
-    { params }: { params: { id: string } }
+    context: { params: Promise<{ id: string }> }
 ) {
     try {
+        const { id: employeeId } = await context.params;
         const user = await getAuthenticatedUser();
         if (!user) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -24,7 +25,7 @@ export async function POST(
         const { amount, date, type, reason, designation } = body;
 
         const employee = await prisma.employeeProfile.findUnique({
-            where: { id: params.id },
+            where: { id: employeeId },
             include: { user: true }
         });
 

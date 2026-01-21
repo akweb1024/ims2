@@ -5,9 +5,9 @@ import { createErrorResponse } from '@/lib/api-utils';
 
 export const DELETE = authorizedRoute(
     ['SUPER_ADMIN', 'ADMIN', 'MANAGER'],
-    async (req: NextRequest, user: any, context: { params: Promise<{ id: string, memberId: string }> }) => {
+    async (req: NextRequest, user: any, { params }: { params: Promise<{ id: string, memberId: string }> }) => {
         try {
-            const { memberId } = await context.params;
+            const { memberId } = await params;
             await prisma.conferenceCommitteeMember.delete({
                 where: { id: memberId }
             });
@@ -20,9 +20,9 @@ export const DELETE = authorizedRoute(
 
 export const PATCH = authorizedRoute(
     ['SUPER_ADMIN', 'ADMIN', 'MANAGER'],
-    async (req: NextRequest, user: any, context: { params: Promise<{ id: string, memberId: string }> }) => {
+    async (req: NextRequest, user: any, { params }: { params: Promise<{ id: string, memberId: string }> }) => {
         try {
-            const { memberId } = await context.params;
+            const { memberId } = await params;
             const body = await req.json();
             const updated = await prisma.conferenceCommitteeMember.update({
                 where: { id: memberId },

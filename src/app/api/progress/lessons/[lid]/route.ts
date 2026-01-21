@@ -5,9 +5,9 @@ import { createErrorResponse } from '@/lib/api-utils';
 
 export const GET = authorizedRoute(
     [],
-    async (req: NextRequest, user: any, context: { params: Promise<{ lid: string }> }) => {
+    async (req: NextRequest, user: any, { params }: { params: Promise<{ lid: string }> }) => {
         try {
-            const params = await context.params;
+            const { lid } = await params;
             const { lid: lessonId } = params;
 
             const progress = await prisma.userLessonProgress.findUnique({
@@ -34,9 +34,9 @@ export const GET = authorizedRoute(
 
 export const POST = authorizedRoute(
     [],
-    async (req: NextRequest, user: any, context: { params: Promise<{ lid: string }> }) => {
+    async (req: NextRequest, user: any, { params }: { params: Promise<{ lid: string }> }) => {
         try {
-            const params = await context.params;
+            const { lid } = await params;
             const { lid: lessonId } = params;
             const body = await req.json();
             const { lastPosition, isCompleted, timeSpent } = body;

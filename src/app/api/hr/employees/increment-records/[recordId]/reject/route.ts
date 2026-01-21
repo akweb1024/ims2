@@ -4,15 +4,14 @@ import { getAuthenticatedUser } from '@/lib/auth-legacy';
 
 export async function POST(
     req: NextRequest,
-    { params }: { params: { recordId: string } }
+    context: { params: Promise<{ recordId: string }> }
 ) {
     try {
+        const { recordId } = await context.params;
         const user = await getAuthenticatedUser();
         if (!user || !['HR_MANAGER', 'ADMIN', 'SUPER_ADMIN'].includes(user.role)) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
-
-        const recordId = params.recordId;
 
         const record = await prisma.salaryIncrementRecord.findUnique({
             where: { id: recordId }

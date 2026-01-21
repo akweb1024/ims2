@@ -9,7 +9,7 @@ export async function GET(req: NextRequest, props: { params: Promise<{ id: strin
         // Allow public access? Or restricted? Let's assume authenticated for now.
         if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-        const { id } = params;
+        const { id } = await params;
 
         const course = await prisma.course.findUnique({
             where: { id },
@@ -61,7 +61,7 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ id: str
             return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
         }
 
-        const { id } = params;
+        const { id } = await params;
         const body = await req.json();
 
         const course = await prisma.course.update({
@@ -84,7 +84,7 @@ export async function DELETE(req: NextRequest, props: { params: Promise<{ id: st
             return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
         }
 
-        const { id } = params;
+        const { id } = await params;
 
         await prisma.course.delete({
             where: { id }

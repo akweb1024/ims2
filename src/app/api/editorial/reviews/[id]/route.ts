@@ -41,7 +41,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
             userId: user.id,
             type: 'REVIEWER',
             title: 'Certificate of Reviewing',
-            description: `Verify that ${user.name || user.email} has completed a peer review for the article "${existing.article.title}".`
+            description: `Verify that ${user.email} has completed a peer review for the article "${existing.article.title}".`
         });
 
         // 3. Notify the Editorial Team

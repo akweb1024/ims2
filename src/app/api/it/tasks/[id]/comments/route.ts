@@ -6,11 +6,9 @@ import { createErrorResponse } from '@/lib/api-utils';
 export const dynamic = 'force-dynamic';
 
 // GET /api/it/tasks/[id]/comments - Get task comments
-export async function GET(
-    req: NextRequest,
-    { params }: { params: { id: string } }
-) {
+export async function GET(req: NextRequest, context: { params: Promise<{ id: string }> }) {
     try {
+        const { id } = await params;
         const user = await getAuthenticatedUser();
         if (!user) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -44,11 +42,9 @@ export async function GET(
 }
 
 // POST /api/it/tasks/[id]/comments - Add task comment
-export async function POST(
-    req: NextRequest,
-    { params }: { params: { id: string } }
-) {
+export async function POST(req: NextRequest, context: { params: Promise<{ id: string }> }) {
     try {
+        const { id } = await params;
         const user = await getAuthenticatedUser();
         if (!user) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -63,7 +59,7 @@ export async function POST(
 
         // Verify task exists and user has access
         const task = await prisma.iTTask.findUnique({
-            where: { id: params.id }
+            where: { id: id }
         });
 
         if (!task) {

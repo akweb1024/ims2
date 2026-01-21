@@ -5,10 +5,10 @@ import { createErrorResponse } from '@/lib/api-utils';
 
 export const GET = authorizedRoute(
     ['SUPER_ADMIN', 'ADMIN', 'MANAGER'],
-    async (req: NextRequest, context: { params: Promise<{ id: string }> }) => {
+    async (req: NextRequest, user: any, { params }: { params: Promise<{ id: string }> }) => {
         try {
-            const params = await context.params;
-            const { id: courseId } = params;
+            const { id } = await params;
+            const courseId = id;
 
             const enrollments = await prisma.courseEnrollment.findMany({
                 where: { courseId },
@@ -33,10 +33,10 @@ export const GET = authorizedRoute(
 
 export const POST = authorizedRoute(
     ['SUPER_ADMIN', 'ADMIN', 'MANAGER'],
-    async (req: NextRequest, context: { params: Promise<{ id: string }> }) => {
+    async (req: NextRequest, user: any, { params }: { params: Promise<{ id: string }> }) => {
         try {
-            const params = await context.params;
-            const { id: courseId } = params;
+            const { id } = await params;
+            const courseId = id;
             const body = await req.json();
             const { userIds } = body; // Array of user IDs for bulk enrollment
 

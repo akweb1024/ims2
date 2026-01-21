@@ -6,9 +6,9 @@ import { createErrorResponse } from '@/lib/api-utils';
 // GET /api/assignments/[id] - Get assignment details
 export const GET = authorizedRoute(
     [],
-    async (req: NextRequest, user: any, context: { params: Promise<{ id: string }> }) => {
+    async (req: NextRequest, user: any, { params }: { params: Promise<{ id: string }> }) => {
         try {
-            const { id } = await context.params;
+            const { id } = await params;
 
             const assignment = await prisma.reviewAssignment.findUnique({
                 where: { id },
@@ -69,9 +69,9 @@ export const GET = authorizedRoute(
 // PATCH /api/assignments/[id] - Update assignment
 export const PATCH = authorizedRoute(
     ['SUPER_ADMIN', 'ADMIN', 'MANAGER'],
-    async (req: NextRequest, user: any, context: { params: Promise<{ id: string }> }) => {
+    async (req: NextRequest, user: any, { params }: { params: Promise<{ id: string }> }) => {
         try {
-            const { id } = await context.params;
+            const { id } = await params;
             const body = await req.json();
             const { status, dueDate, priority, notes } = body;
 
@@ -111,9 +111,9 @@ export const PATCH = authorizedRoute(
 // DELETE /api/assignments/[id] - Remove assignment
 export const DELETE = authorizedRoute(
     ['SUPER_ADMIN', 'ADMIN', 'MANAGER'],
-    async (req: NextRequest, user: any, context: { params: Promise<{ id: string }> }) => {
+    async (req: NextRequest, user: any, { params }: { params: Promise<{ id: string }> }) => {
         try {
-            const { id } = await context.params;
+            const { id } = await params;
 
             // Check if report has been submitted
             const assignment = await prisma.reviewAssignment.findUnique({

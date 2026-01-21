@@ -1,12 +1,13 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, use } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { ArrowLeft, Clock, CheckCircle, FileText, Users, MessageSquare, AlertCircle, Upload } from 'lucide-react';
 
-export default function ManuscriptDetail({ params }: { params: { id: string } }) {
+export default function ManuscriptDetail(props: { params: Promise<{ id: string }> }) {
+    const params = use(props.params);
     const router = useRouter();
     const [manuscript, setManuscript] = useState<any>(null);
     const [timeline, setTimeline] = useState<any[]>([]);

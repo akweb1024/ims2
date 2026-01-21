@@ -59,7 +59,7 @@ export const GET = authorizedRoute(
                 },
                 orderBy: {
                     report: {
-                        submittedAt: 'desc'
+                        submittedDate: 'desc'
                     }
                 }
             });

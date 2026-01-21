@@ -5,10 +5,10 @@ import { createErrorResponse } from '@/lib/api-utils';
 
 export const POST = authorizedRoute(
     ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'CUSTOMER'], // Customers (authors) can upload revisions
-    async (req: NextRequest, user: any, context: { params: Promise<{ id: string }> }) => {
+    async (req: NextRequest, user: any, { params }: { params: Promise<{ id: string }> }) => {
         try {
-            const params = await context.params;
-            const articleId = params.id;
+            const { id } = await params;
+            const articleId = id;
             const body = await req.json();
             const { fileUrl, changelog } = body;
 
@@ -63,10 +63,10 @@ export const POST = authorizedRoute(
 
 export const GET = authorizedRoute(
     ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'EDITOR', 'CUSTOMER', 'STAFF'],
-    async (req: NextRequest, user: any, context: { params: Promise<{ id: string }> }) => {
+    async (req: NextRequest, user: any, { params }: { params: Promise<{ id: string }> }) => {
         try {
-            const params = await context.params;
-            const articleId = params.id;
+            const { id } = await params;
+            const articleId = id;
 
             const versions = await prisma.articleVersion.findMany({
                 where: { articleId },
