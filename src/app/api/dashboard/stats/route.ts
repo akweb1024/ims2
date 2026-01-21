@@ -13,7 +13,9 @@ export const GET = authorizedRoute(
             const userCompanyId = user.companyId;
 
             // Fetch latest rates for precision
+            console.log('[DashboardStats] Request received for user:', user.email, 'Role:', user.role);
             await getLiveRates();
+            console.log('[DashboardStats] Live rates checked');
 
             // Determine filter based on role and company context
             let customerProfileId: string | undefined;
@@ -40,7 +42,6 @@ export const GET = authorizedRoute(
             } else if (role === 'EXECUTIVE') {
                 whereClause = { ...whereClause, salesExecutiveId: userId };
             } else if (role === 'MANAGER' || role === 'TEAM_LEADER') {
-                // Manager/TL sees data for all their subordinates within their company
                 const subordinates = await prisma.user.findMany({
                     where: {
                         managerId: userId,
@@ -50,17 +51,15 @@ export const GET = authorizedRoute(
                 });
 
                 const subordinateIds = subordinates.map((s) => s.id);
-
-                // Include own direct sales + Subordinates' sales
                 whereClause = {
                     ...whereClause,
                     salesExecutiveId: { in: [userId, ...subordinateIds] }
                 };
             }
+            console.log('[DashboardStats] Filter constructed:', JSON.stringify(whereClause));
 
             // Revenue calculation needs to match the hierarchy
             let revenueWhere: any = {};
-
             if (userCompanyId) {
                 revenueWhere.companyId = userCompanyId;
             }
@@ -70,62 +69,54 @@ export const GET = authorizedRoute(
             } else if (whereClause.agencyId) {
                 revenueWhere.invoice = { subscription: { agencyId: whereClause.agencyId } };
             } else if (whereClause.salesExecutiveId) {
-                // Handles both Single Sales Exec and Manager (via 'in' array)
                 revenueWhere.invoice = { subscription: { salesExecutiveId: whereClause.salesExecutiveId } };
             }
-
-            // Renewals due in the next 30 days
-            const thirtyDaysFromNow = new Date();
-            thirtyDaysFromNow.setDate(thirtyDaysFromNow.getDate() + 30);
-
-            // Customer Count logic
-            let customerWhere: any = {};
-            if (role === 'AGENCY') {
-                customerWhere = { agencyDetails: { id: whereClause.agencyId || 'none' } };
-            } else if (whereClause.salesExecutiveId) {
-                customerWhere = { subscriptions: { some: { salesExecutiveId: whereClause.salesExecutiveId } } };
-            }
+            console.log('[DashboardStats] Revenue where:', JSON.stringify(revenueWhere));
 
             // 2. Fetch Stats with Model-Specific Filters
+            console.log('[DashboardStats] Executing counts...');
 
-            // A. Subscriptions (Supports full filtering: Company, Customer, SalesExec, Agency)
-            const activeSubscriptionsCount = await prisma.subscription.count({
-                where: { ...whereClause, status: 'ACTIVE' },
-            });
+            const [
+                activeSubscriptionsCount,
+                renewalsCount,
+                pendingRequestsCount,
+                totalCustomers
+            ] = await Promise.all([
+                prisma.subscription.count({ where: { ...whereClause, status: 'ACTIVE' } }),
+                prisma.subscription.count({
+                    where: {
+                        ...whereClause,
+                        endDate: { lte: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), gte: new Date() },
+                        status: 'ACTIVE',
+                    },
+                }),
+                prisma.subscription.count({ where: { ...whereClause, status: 'REQUESTED' } }),
+                role === 'CUSTOMER' ? Promise.resolve(1) : prisma.customerProfile.count({
+                    where: role === 'AGENCY'
+                        ? { agencyDetails: { id: whereClause.agencyId || 'none' } }
+                        : whereClause.salesExecutiveId
+                            ? { subscriptions: { some: { salesExecutiveId: whereClause.salesExecutiveId } } }
+                            : { companyId: userCompanyId || undefined }
+                })
+            ]);
+            console.log('[DashboardStats] Counts done');
 
-            // B. Renewals (Supports full filtering)
-            const renewalsCount = await prisma.subscription.count({
-                where: {
-                    ...whereClause,
-                    endDate: { lte: thirtyDaysFromNow, gte: new Date() },
-                    status: 'ACTIVE',
-                },
-            });
-
-            // C. Pending Requests (Supports full filtering)
-            const pendingRequestsCount = await prisma.subscription.count({
-                where: { ...whereClause, status: 'REQUESTED' },
-            });
-
-            // D. Payments (Using revenueWhere which is already safely constructed)
+            // D. Payments
+            console.log('[DashboardStats] Executing Payment groupBy...');
             const paymentsByCurrency = await (prisma.payment as any).groupBy({
                 where: revenueWhere,
                 by: ['currency'],
                 _sum: { amount: true },
             }) as any[];
+            console.log('[DashboardStats] Payment groupBy done:', paymentsByCurrency.length);
 
             const totalRevenueINR = paymentsByCurrency.reduce((acc, curr) => {
                 const amount = curr._sum?.amount || 0;
                 return acc + convertToINR(amount, curr.currency || 'INR');
             }, 0);
 
-            // E. Total Customers (Role specific count)
-            // customerWhere is already constructed safely above
-            const totalCustomers = role === 'CUSTOMER' ? 1 : await prisma.customerProfile.count({
-                where: customerWhere
-            });
-
-            // F. Open Tickets (Safe, explicit logic)
+            // F. Open Tickets
+            console.log('[DashboardStats] Checking Tickets...');
             const openTicketsCount = await (prisma as any).supportTicket.count({
                 where: {
                     companyId: userCompanyId,
@@ -134,9 +125,8 @@ export const GET = authorizedRoute(
                 }
             });
 
-            // --- NEW MODULES ---
-
             // G. Dispatches
+            console.log('[DashboardStats] Checking Dispatches...');
             const dispatchWhere: any = { status: 'PENDING' };
             if (userCompanyId) dispatchWhere.companyId = userCompanyId;
 
@@ -152,12 +142,6 @@ export const GET = authorizedRoute(
                     select: { id: true }
                 }).then(s => s.map(x => x.id));
                 dispatchWhere.subscriptionId = { in: subIds };
-            } else if (whereClause.agencyId) {
-                const subIds = await prisma.subscription.findMany({
-                    where: { agencyId: whereClause.agencyId },
-                    select: { id: true }
-                }).then(s => s.map(x => x.id));
-                dispatchWhere.subscriptionId = { in: subIds };
             }
 
             const pendingDispatches = await (prisma as any).dispatchOrder.count({
@@ -165,70 +149,57 @@ export const GET = authorizedRoute(
             });
 
             // H. Active Courses
+            console.log('[DashboardStats] Checking Courses & articles...');
             let activeCourses = 0;
             if (role === 'CUSTOMER') {
-                activeCourses = await (prisma as any).courseEnrollment.count({
-                    where: { userId }
-                });
+                activeCourses = await (prisma as any).courseEnrollment.count({ where: { userId } });
             } else {
                 activeCourses = await (prisma as any).course.count({
-                    where: {
-                        isPublished: true,
-                        ...(userCompanyId ? { companyId: userCompanyId } : {})
-                    }
+                    where: { isPublished: true, ...(userCompanyId ? { companyId: userCompanyId } : {}) }
                 });
             }
 
-            // I. Articles
-            const articlesInReview = await (prisma as any).article.count({
-                where: { status: 'UNDER_REVIEW' }
-            });
+            const [articlesInReview, upcomingEvents] = await Promise.all([
+                (prisma as any).article.count({ where: { status: 'UNDER_REVIEW' } }),
+                (prisma as any).conference.count({
+                    where: { startDate: { gte: new Date() }, ...(userCompanyId ? { companyId: userCompanyId } : {}) }
+                })
+            ]);
 
-            // J. Events
-            const upcomingEvents = await (prisma as any).conference.count({
-                where: {
-                    startDate: { gte: new Date() },
-                    ...(userCompanyId ? { companyId: userCompanyId } : {})
-                }
-            });
-
-            // K. Employee Specific HR Stats
+            // HR Stats
+            console.log('[DashboardStats] Checking HR logs...');
             let hrStats: any = null;
             if (role !== 'CUSTOMER' && role !== 'AGENCY') {
                 const profile = await prisma.employeeProfile.findUnique({
                     where: { userId },
                     include: {
-                        _count: {
-                            select: {
-                                attendance: true,
-                                workReports: true,
-                                leaveRequests: true,
-                            }
-                        }
+                        _count: { select: { attendance: true, workReports: true, leaveRequests: true } }
                     }
                 });
 
                 if (profile) {
                     const today = new Date();
                     today.setHours(0, 0, 0, 0);
-                    const todayAttendance = await prisma.attendance.findFirst({
-                        where: { employeeId: profile.id, date: { gte: today } }
-                    });
+                    const [todayAttendance, pendingLeaves] = await Promise.all([
+                        prisma.attendance.findFirst({ where: { employeeId: profile.id, date: { gte: today } } }),
+                        prisma.leaveRequest.count({ where: { employeeId: profile.id, status: 'PENDING' } })
+                    ]);
 
                     hrStats = {
                         totalAttendance: profile._count.attendance,
                         totalReports: profile._count.workReports,
                         hasCheckedIn: !!todayAttendance?.checkIn,
                         hasCheckedOut: !!todayAttendance?.checkOut,
-                        pendingLeaves: await prisma.leaveRequest.count({
-                            where: { employeeId: profile.id, status: 'PENDING' }
-                        })
+                        pendingLeaves
                     };
                 }
             }
 
-            const recentActivities = await fetchRecentActivities(whereClause, customerProfileId);
-            const upcomingRenewals = await fetchUpcomingRenewals(whereClause, customerProfileId);
+            console.log('[DashboardStats] Fetching activities & renewals...');
+            const [recentActivities, upcomingRenewals] = await Promise.all([
+                fetchRecentActivities(whereClause, customerProfileId),
+                fetchUpcomingRenewals(whereClause, customerProfileId)
+            ]);
 
             return NextResponse.json({
                 stats: [
@@ -313,9 +284,10 @@ export const GET = authorizedRoute(
                 hrStats
             });
         } catch (error) {
+            console.error('[DashboardStats] CRITICAL ERROR:', error);
             return createErrorResponse(error);
         }
-    }
+    },
 );
 
 async function fetchRecentActivities(whereClause: any, customerProfileId?: string) {

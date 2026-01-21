@@ -47,7 +47,12 @@ export default function DashboardPage() {
             } else if (response.status === 401) {
                 router.push('/login');
             } else {
-                throw new Error(`Server responded with ${response.status}`);
+                const errorData = await response.json().catch(() => ({}));
+                const message = errorData.message || `Server responded with ${response.status}`;
+                if (errorData.details) {
+                    console.error('[Dashboard] Server error details:', errorData.details);
+                }
+                throw new Error(message);
             }
         } catch (error: any) {
             console.error('Error fetching dashboard data:', error);
