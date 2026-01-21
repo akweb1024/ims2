@@ -35,6 +35,7 @@
 - **Percentages**: Automatic calculation of % increase per component.
 - **Distribution**: Pie-chart style breakdown of salary components.
 - **Impact Stats**: Monthly/Annual impact cards.
+- **Target ROI**: Revenue target justification and ROI multiplier analysis.
 
 ### 3. Navigation & Integration
 
@@ -42,6 +43,8 @@
 - **Auto-Redirect**: Existing bookmarks or tabs redirect seamlessy to the new module.
 - **HR Sidebar**: Updated label under Team Management.
 - **Access**: Available to Admins and Managers.
+- **Unified Payroll**: Consolidated navigation to dedicated Payroll Management module.
+- **Production Build**: Resolved lint/build errors for stable deployment.
 
 ---
 

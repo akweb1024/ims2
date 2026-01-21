@@ -146,6 +146,8 @@ export const PATCH = authorizedRoute(
             if (data.performanceNotes) updateData.performanceNotes = data.performanceNotes;
             if (data.newKRA) updateData.newKRA = data.newKRA;
             if (data.newKPI) updateData.newKPI = data.newKPI;
+            if (typeof data.currentMonthlyTarget === 'number') updateData.currentMonthlyTarget = data.currentMonthlyTarget;
+            if (typeof data.newMonthlyTarget === 'number') updateData.newMonthlyTarget = data.newMonthlyTarget;
             if (data.effectiveDate) updateData.effectiveDate = new Date(data.effectiveDate);
 
             const updated = await prisma.salaryIncrementRecord.update({

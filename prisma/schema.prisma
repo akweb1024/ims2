@@ -797,6 +797,7 @@ model EmployeeProfile {
   fixedSalary              Float?                       // Fixed salary component
   variableSalary           Float?                       // Variable salary component
   incentiveSalary          Float?                       // Incentive component
+  monthlyTarget            Float?                       @default(0) // Monthly Revenue/Sales Target
   bankName                 String?
   accountNumber            String?
   ifscCode                 String?
@@ -945,6 +946,10 @@ model SalaryIncrementRecord {
   newVariableUpperCap Float?          // Maximum variable salary cap
   newIncentive        Float?          // Incentive component
   newIncentivePercentage Float?       // Incentive % after reaching variable cap
+  
+  // Target Comparisons
+  currentMonthlyTarget  Float?          @default(0)
+  newMonthlyTarget      Float?          @default(0)
   
   // Salary Component Definitions
   variableDefinition  String?         // Rich text definition of variable salary calculation

@@ -27,6 +27,8 @@ export default function NewIncrementPage() {
         newKPI: '',
         variableDefinition: '',
         incentiveDefinition: '',
+        currentMonthlyTarget: 0,
+        newMonthlyTarget: 0,
         effectiveDate: new Date().toISOString().split('T')[0]
     });
 
@@ -61,6 +63,8 @@ export default function NewIncrementPage() {
             newFixedSalary: employee?.fixedSalary || employee?.baseSalary || 0,
             newVariableSalary: employee?.variableSalary || 0,
             newIncentive: employee?.incentiveSalary || 0,
+            currentMonthlyTarget: employee?.monthlyTarget || 0,
+            newMonthlyTarget: employee?.monthlyTarget || 0,
             newDesignation: employee?.designation || ''
         });
     };
@@ -338,6 +342,57 @@ export default function NewIncrementPage() {
                                         <p className="text-xs text-secondary-600 font-bold uppercase">Old Salary</p>
                                         <p className="text-2xl font-black text-secondary-400">₹{oldSalary.toLocaleString()}</p>
                                     </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Target & ROI Analysis */}
+                        <div className="card-premium p-6 border-l-4 border-indigo-500">
+                            <h2 className="text-lg font-black text-secondary-900 mb-4 flex items-center gap-2">
+                                <TrendingUp className="text-indigo-500" size={20} />
+                                Revenue Target & ROI Analysis
+                            </h2>
+                            <p className="text-sm text-secondary-500 mb-4">
+                                Define the revenue/sales targets to justify this increment.
+                            </p>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <label className="label-premium">Current Monthly Target</label>
+                                    <input
+                                        type="number"
+                                        className="input-premium"
+                                        value={form.currentMonthlyTarget}
+                                        onChange={(e) => setForm({ ...form, currentMonthlyTarget: parseFloat(e.target.value) || 0 })}
+                                    />
+                                </div>
+                                <div>
+                                    <label className="label-premium">New Monthly Target (Proposed)</label>
+                                    <input
+                                        type="number"
+                                        className="input-premium"
+                                        value={form.newMonthlyTarget}
+                                        onChange={(e) => setForm({ ...form, newMonthlyTarget: parseFloat(e.target.value) || 0 })}
+                                    />
+                                </div>
+                            </div>
+
+                            {/* ROI Stats */}
+                            <div className="mt-6 p-4 bg-indigo-50 rounded-xl grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div>
+                                    <p className="text-xs font-bold uppercase text-secondary-500">Cost Increase (Monthly)</p>
+                                    <p className="text-lg font-black text-danger-600">+₹{Math.round(incrementAmount / 12).toLocaleString()}</p>
+                                </div>
+                                <div>
+                                    <p className="text-xs font-bold uppercase text-secondary-500">Target Increase (Monthly)</p>
+                                    <p className="text-lg font-black text-success-600">+₹{Math.max(0, form.newMonthlyTarget - form.currentMonthlyTarget).toLocaleString()}</p>
+                                </div>
+                                <div>
+                                    <p className="text-xs font-bold uppercase text-secondary-500">Revenue Multiplier</p>
+                                    <p className="text-lg font-black text-primary-600">
+                                        {incrementAmount > 0 && (form.newMonthlyTarget - form.currentMonthlyTarget) > 0 ? ((form.newMonthlyTarget - form.currentMonthlyTarget) / (incrementAmount / 12)).toFixed(1) : '0'}x
+                                    </p>
+                                    <p className="text-[10px] text-secondary-400">Target Incr. / Cost Incr.</p>
                                 </div>
                             </div>
                         </div>

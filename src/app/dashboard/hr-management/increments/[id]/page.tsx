@@ -502,6 +502,50 @@ export default function IncrementDetailPage() {
                     )}
 
                     {/* KRA/KPI */}
+                    {/* Revenue Target & ROI */}
+                    {(increment.newMonthlyTarget > 0) && (
+                        <div className="card-premium p-6 border-l-4 border-indigo-500">
+                            <h2 className="text-lg font-black text-secondary-900 mb-4 flex items-center gap-2">
+                                <TrendingUp className="text-indigo-500" size={20} />
+                                Revenue Target & ROI Analysis
+                            </h2>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
+                                <div>
+                                    <p className="label-premium">Current Monthly Target</p>
+                                    <p className="text-xl font-bold text-secondary-900">₹{increment.currentMonthlyTarget?.toLocaleString() || 0}</p>
+                                </div>
+                                <div>
+                                    <p className="label-premium">Proposed Monthly Target</p>
+                                    <p className="text-xl font-black text-indigo-600">₹{increment.newMonthlyTarget?.toLocaleString() || 0}</p>
+                                </div>
+                            </div>
+
+                            {/* ROI Stats */}
+                            <div className="mt-4 p-4 bg-indigo-50 rounded-xl grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div>
+                                    <p className="text-xs font-bold uppercase text-secondary-500">Cost Increase (Monthly)</p>
+                                    <p className="text-lg font-black text-danger-600">+₹{Math.round(increment.incrementAmount / 12).toLocaleString()}</p>
+                                </div>
+                                <div>
+                                    <p className="text-xs font-bold uppercase text-secondary-500">Target Comparison</p>
+                                    <p className="text-lg font-black text-success-600">
+                                        +₹{Math.max(0, increment.newMonthlyTarget - (increment.currentMonthlyTarget || 0)).toLocaleString()}
+                                    </p>
+                                </div>
+                                <div>
+                                    <p className="text-xs font-bold uppercase text-secondary-500">Revenue Multiplier</p>
+                                    <p className="text-lg font-black text-primary-600">
+                                        {increment.incrementAmount > 0 && (increment.newMonthlyTarget - (increment.currentMonthlyTarget || 0)) > 0
+                                            ? ((increment.newMonthlyTarget - (increment.currentMonthlyTarget || 0)) / (increment.incrementAmount / 12)).toFixed(1)
+                                            : '0'}x
+                                    </p>
+                                    <p className="text-[10px] text-secondary-400">Target Incr. / Cost Incr.</p>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
                     {(increment.newKRA || increment.newKPI) && (
                         <div className="card-premium p-6">
                             <h2 className="text-lg font-black text-secondary-900 mb-4">

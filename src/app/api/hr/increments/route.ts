@@ -172,6 +172,10 @@ export const POST = authorizedRoute(
                     newKRA: data.newKRA,
                     newKPI: data.newKPI || null,
 
+                    // Target Comparisons
+                    currentMonthlyTarget: data.currentMonthlyTarget || (employee as any).monthlyTarget || 0,
+                    newMonthlyTarget: data.newMonthlyTarget || 0,
+
                     // Set as draft
                     status: 'DRAFT',
                     isDraft: true,
