@@ -24,6 +24,11 @@ export function rateLimit(config?: RateLimitConfig) {
     const windowMs = config?.windowMs || parseInt(process.env.RATE_LIMIT_WINDOW_MS || '60000');
 
     return (request: NextRequest) => {
+        // RATE LIMITING DISABLED PER USER REQUEST
+        return NextResponse.next();
+
+        /* 
+        // Original logic preserved for potential future re-enablement
         // Skip rate limiting in development mode
         if (process.env.NODE_ENV === 'development') {
             return NextResponse.next();
@@ -31,65 +36,9 @@ export function rateLimit(config?: RateLimitConfig) {
 
         // Get client IP
         const ip = getClientIp(request);
-
-        if (!ip) {
-            // If we can't get IP, allow the request but log it
-            console.warn('Could not determine client IP for rate limiting');
-            return NextResponse.next();
-        }
-
-        const now = Date.now();
-        const rateLimitKey = `ratelimit:${ip}`;
-
-        // Get or create rate limit entry
-        let entry = rateLimitStore.get(rateLimitKey);
-
-        // Reset if window has passed
-        if (!entry || now > entry.resetTime) {
-            entry = {
-                count: 0,
-                resetTime: now + windowMs
-            };
-        }
-
-        // Increment request count
-        entry.count++;
-        rateLimitStore.set(rateLimitKey, entry);
-
-        // Clean up old entries periodically
-        if (Math.random() < 0.01) { // 1% chance to clean up
-            cleanupRateLimitStore();
-        }
-
-        // Check if rate limit exceeded
-        if (entry.count > maxRequests) {
-            const retryAfter = Math.ceil((entry.resetTime - now) / 1000);
-
-            return NextResponse.json(
-                {
-                    error: 'Too many requests',
-                    message: 'Rate limit exceeded. Please try again later.',
-                    retryAfter
-                },
-                {
-                    status: 429,
-                    headers: {
-                        'Retry-After': retryAfter.toString(),
-                        'X-RateLimit-Limit': maxRequests.toString(),
-                        'X-RateLimit-Remaining': '0',
-                        'X-RateLimit-Reset': new Date(entry.resetTime).toISOString()
-                    }
-                }
-            );
-        }
-
-        // Add rate limit headers to response
-        const response = NextResponse.next();
-        response.headers.set('X-RateLimit-Limit', maxRequests.toString());
-        response.headers.set('X-RateLimit-Remaining', (maxRequests - entry.count).toString());
-        response.headers.set('X-RateLimit-Reset', new Date(entry.resetTime).toISOString());
-
-        return response;
+        
+        // ... (rest of logic commented out)
+        */
     };
 }
 
