@@ -476,23 +476,29 @@ export default function EmployeeForm({
                                             <div key={companyId} className="flex items-center gap-3 p-3 bg-white rounded-xl border border-secondary-200">
                                                 <div className="flex-1">
                                                     <p className="text-xs font-bold text-secondary-900 mb-1">{company?.name}</p>
-                                                    <input
-                                                        type="text"
+                                                    <select
                                                         className="input-premium text-sm"
-                                                        placeholder="e.g., Senior Developer, Manager"
                                                         value={designation?.designation || ''}
                                                         onChange={e => {
+                                                            const selectedDes = designations.find(d => d.name === e.target.value || d.id === e.target.value);
+                                                            const desName = selectedDes ? selectedDes.name : e.target.value;
+
                                                             const newDesignations = empForm.companyDesignations.filter(d => d.companyId !== companyId);
                                                             if (e.target.value) {
                                                                 newDesignations.push({
                                                                     companyId,
-                                                                    designation: e.target.value,
+                                                                    designation: desName,
                                                                     isPrimary: companyId === empForm.companyId
                                                                 });
                                                             }
                                                             setEmpForm({ ...empForm, companyDesignations: newDesignations });
                                                         }}
-                                                    />
+                                                    >
+                                                        <option value="">Select Designation...</option>
+                                                        {designations.map(d => (
+                                                            <option key={d.id} value={d.name}>{d.name}</option>
+                                                        ))}
+                                                    </select>
                                                 </div>
                                                 {companyId === empForm.companyId && (
                                                     <span className="px-2 py-1 bg-primary-100 text-primary-700 text-[10px] font-black rounded-full">
