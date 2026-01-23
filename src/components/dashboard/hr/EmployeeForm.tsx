@@ -380,39 +380,26 @@ export default function EmployeeForm({
                                 ))}
                         </select>
                     </div>
-                    <div>
-                        <label className="label-premium">Designation Profile</label>
+                    <div className="md:col-span-2">
+                        <label className="label-premium">Designation</label>
                         <select
                             className="input-premium"
-                            title="Designation Profile"
+                            title="Designation"
                             value={empForm.designationId}
                             onChange={e => {
                                 const d = designations.find(x => x.id === e.target.value);
                                 setEmpForm({
                                     ...empForm,
                                     designationId: e.target.value,
-                                    designation: d?.name || empForm.designation,
-                                    jobDescription: d?.jobDescription || empForm.jobDescription,
-                                    kra: d?.kra || empForm.kra
+                                    designation: d?.name || ''
                                 });
                             }}
                         >
-                            <option value="">Manual/Custom</option>
+                            <option value="">Select Designation...</option>
                             {designations
                                 .filter(d => !empForm.companyId || d.companies?.some((c: any) => c.id === empForm.companyId))
                                 .map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
                         </select>
-                    </div>
-                    <div>
-                        <label className="label-premium">Designation Name</label>
-                        <input
-                            type="text"
-                            className="input-premium"
-                            title="Designation Name"
-                            placeholder="Software Engineer"
-                            value={empForm.designation}
-                            onChange={e => setEmpForm({ ...empForm, designation: e.target.value })}
-                        />
                     </div>
                     <div>
                         <label className="label-premium">Account Status</label>
@@ -667,72 +654,7 @@ export default function EmployeeForm({
                 </div>
             </div>
 
-            {/* KRA & JD Section */}
-            <div className="card-premium p-8">
-                <h2 className="text-lg font-black text-secondary-900 mb-6 flex items-center gap-2">
-                    <Award className="w-5 h-5 text-purple-500" />
-                    KRA & Job Description
-                </h2>
-                <div className="space-y-6">
-                    <div>
-                        <label className="label-premium mb-2 block">Key Responsibility Areas (KRA)</label>
-                        <RichTextEditor
-                            value={empForm.kra}
-                            onChange={v => setEmpForm({ ...empForm, kra: v })}
-                        />
-                    </div>
-                    <div>
-                        <label className="label-premium mb-2 block">Job Description</label>
-                        <RichTextEditor
-                            value={empForm.jobDescription}
-                            onChange={v => setEmpForm({ ...empForm, jobDescription: v })}
-                        />
-                    </div>
-                </div>
-            </div>
-
-            {/* Targets Section */}
-            <div className="card-premium p-8">
-                <h2 className="text-lg font-black text-secondary-900 mb-6 flex items-center gap-2">
-                    <Target className="w-5 h-5 text-rose-500" />
-                    Performance Targets
-                </h2>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div>
-                        <label className="label-premium">Revenue Target</label>
-                        <div className="relative">
-                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-secondary-400 font-bold">₹</span>
-                            <input
-                                type="number"
-                                className="input-premium pl-8"
-                                placeholder="e.g 500000"
-                                value={empForm.targets.revenue}
-                                onChange={e => setEmpForm({ ...empForm, targets: { ...empForm.targets, revenue: e.target.value } })}
-                            />
-                        </div>
-                    </div>
-                    <div>
-                        <label className="label-premium">Publication Deadline/Issues</label>
-                        <input
-                            type="text"
-                            className="input-premium"
-                            placeholder="e.g. 2 Issues / Month"
-                            value={empForm.targets.publication}
-                            onChange={e => setEmpForm({ ...empForm, targets: { ...empForm.targets, publication: e.target.value } })}
-                        />
-                    </div>
-                    <div>
-                        <label className="label-premium">Web Dev / Correction</label>
-                        <input
-                            type="text"
-                            className="input-premium"
-                            placeholder="e.g. 5 Modules / Week"
-                            value={empForm.targets.development}
-                            onChange={e => setEmpForm({ ...empForm, targets: { ...empForm.targets, development: e.target.value } })}
-                        />
-                    </div>
-                </div>
-            </div>
+            {/* Removed KRA, Job Description, and Targets Sections as per new requirement */}
 
             {/* Action Bar */}
             <div className="sticky bottom-8 z-10">

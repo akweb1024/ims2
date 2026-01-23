@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import { prisma } from '../src/lib/prisma';
 import bcrypt from 'bcryptjs';
 
@@ -87,6 +88,12 @@ async function main() {
                     country: 'United States',
                 } as any,
             },
+            employeeProfile: {
+                create: {
+                    designation: 'Super Admin',
+                    dateOfJoining: new Date(),
+                } as any,
+            },
         },
     });
 
@@ -117,7 +124,7 @@ async function main() {
         data: {
             email: 'john.sales@stm.com',
             password: hashedPassword,
-            role: 'SALES_EXECUTIVE',
+            role: 'EXECUTIVE',
             emailVerified: true,
             companyId: company.id,
             managerId: manager.id,
@@ -138,7 +145,7 @@ async function main() {
         data: {
             email: 'sarah.sales@stm.com',
             password: hashedPassword,
-            role: 'SALES_EXECUTIVE',
+            role: 'EXECUTIVE',
             emailVerified: true,
             companyId: company.id,
             managerId: manager.id,

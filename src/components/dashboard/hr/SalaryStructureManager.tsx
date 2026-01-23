@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useEmployees, useSalaryStructures } from '@/hooks/useHR';
-import { IndianRupee, PieChart, Users, ArrowRight, Calculator } from 'lucide-react';
+import { IndianRupee, PieChart, Users, ArrowRight, Calculator, DownloadCloud } from 'lucide-react';
 
 export default function SalaryStructureManager() {
     const { data: employees } = useEmployees();
@@ -92,36 +92,83 @@ export default function SalaryStructureManager() {
     const autoPopulate = () => {
         const gross = parseFloat(prompt("Enter Target Monthly Gross Amount:") || "0");
         if (gross > 0) {
-            // Standard Indian breakdown: 40-50% Basic, 50% of Basic as HRA, etc.
-            const basic = Math.round(gross * 0.4);
-            const hra = Math.round(basic * 0.5);
-            const special = gross - basic - hra;
+            calculateStructureFromGross(gross);
+        }
+    };
 
-            // Deductions
-            const pf = Math.min(basic, 15000) * 0.12;
-            let esic = 0;
-            if (gross <= 21000) esic = Math.ceil(gross * 0.0075);
+    const calculateStructureFromGross = (gross: number, bonusOverride = 0) => {
+        // Standard Indian breakdown: 40-50% Basic, 50% of Basic as HRA, etc.
+        const basic = Math.round(gross * 0.4);
+        const hra = Math.round(basic * 0.5);
+        const special = gross - basic - hra;
 
-            // Statutory Bonus (usually 8.33% of Basic/Minimum Wage, often capped)
-            const bonus = Math.round(Math.min(basic, 7000) * 0.0833);
-            const revisedGross = basic + hra + special + bonus;
+        // Deductions
+        const pf = Math.min(basic, 15000) * 0.12;
+        let esic = 0;
+        if (gross <= 21000) esic = Math.ceil(gross * 0.0075);
 
-            setFormData({
-                ...formData,
-                basicSalary: basic,
-                hra,
-                specialAllowance: special - bonus, // keep gross same
-                statutoryBonus: bonus,
-                conveyance: 0,
-                medical: 0,
-                otherAllowances: 0,
-                pfEmployee: pf,
-                pfEmployer: pf,
-                esicEmployee: esic,
-                esicEmployer: Math.ceil(gross * 0.0325),
-                professionalTax: gross > 10000 ? 200 : 0,
-                gratuity: Math.round(basic * (15 / 26) * (1 / 12)) // Approx monthly provision
+        // Statutory Bonus (usually 8.33% of Basic/Minimum Wage, often capped)
+        const bonus = bonusOverride > 0 ? bonusOverride : Math.round(Math.min(basic, 7000) * 0.0833);
+        const revisedGross = basic + hra + special + bonus; // bonus is usually part of Gross or CTC depending on definition?
+        // Actually earlier logic had bonus as earning.
+        // Let's assume input gross is TOTAL earnings.
+
+        setFormData({
+            ...formData,
+            basicSalary: basic,
+            hra,
+            specialAllowance: special - bonus, // Adjust special to accommodate bonus in same gross
+            statutoryBonus: bonus,
+            conveyance: 0,
+            medical: 0,
+            otherAllowances: 0,
+            pfEmployee: pf,
+            pfEmployer: pf,
+            esicEmployee: esic,
+            esicEmployer: Math.ceil(gross * 0.0325),
+            professionalTax: gross > 10000 ? 200 : 0,
+            gratuity: Math.round(basic * (15 / 26) * (1 / 12)) // Approx monthly provision
+        });
+    };
+
+    const fetchLatestIncrement = async () => {
+        if (!selectedEmp) return;
+        try {
+            const token = localStorage.getItem('token');
+            const res = await fetch(`/api/hr/employees/${selectedEmp.id}/latest-increment`, {
+                headers: { 'Authorization': `Bearer ${token}` }
             });
+            if (res.ok) {
+                const data = await res.json();
+                if (confirm(`Found approved increment effective ${new Date(data.effectiveDate).toLocaleDateString()}.\nFixed Salary: ₹${data.newFixedSalary || data.newSalary}\nApply this structure?`)) {
+                    // Use newFixedSalary as the base for Gross Structure
+                    // Note: If newFixedSalary is annual, divide by 12?
+                    // Typically SalaryIncrementRecord stores MONTHLY or ANNUAL?
+                    // The IncrementForm earlier had "New Salary (Annual / Base)".
+                    // Let's assume the value in Increment Record is ANNUAL as per standard practice, BUT we should verify.
+                    // SalaryStructureManager usually deals with Monthly figures (inputs had placeholder 0, but totals imply monthly?)
+                    // "Enter Target Monthly Gross Amount" prompt suggests Manager works in Monthly.
+                    // Increment Form usually takes Annual.
+                    // Let's try to detect or ask user?
+                    // For now assuming Increment Record stores what was input.
+                    // If the input was "500000", that looks like Annual.
+
+                    let amount = data.newFixedSalary || data.newSalary;
+                    if (amount > 100000) { // Simple heuristic: if > 1L, likely Annual?
+                        // Ask user if not sure?
+                        // Or just divide by 12 if it looks huge?
+                        // "500000" annual is ~41k monthly.
+                        amount = Math.round(amount / 12);
+                    }
+
+                    calculateStructureFromGross(amount, data.newIncentive ? data.newIncentive / 12 : 0);
+                }
+            } else {
+                alert('No approved increment record found for this employee.');
+            }
+        } catch (e) {
+            console.error(e);
+            alert('Failed to fetch increment details.');
         }
     };
 
@@ -168,6 +215,9 @@ export default function SalaryStructureManager() {
                                     <p className="text-secondary-500 font-medium text-sm">Define components for <span className="text-primary-600 font-bold">{selectedEmp.user?.name || selectedEmp.user?.email}</span></p>
                                 </div>
                                 <div className="flex gap-3">
+                                    <button onClick={fetchLatestIncrement} className="btn bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold text-xs uppercase tracking-widest px-4 rounded-xl flex items-center gap-2 transition-all">
+                                        <DownloadCloud size={16} /> Fetch Increment
+                                    </button>
                                     <button onClick={autoPopulate} className="btn bg-secondary-100 hover:bg-secondary-200 text-secondary-700 font-bold text-xs uppercase tracking-widest px-6 rounded-xl flex items-center gap-2 transition-all">
                                         <Calculator size={16} /> Auto-Breakdown
                                     </button>

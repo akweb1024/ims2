@@ -8,78 +8,78 @@ datasource db {
 }
 
 model Company {
-  id                    String                       @id @default(uuid())
-  name                  String
-  registrationNumber    String?
-  domain                String?
-  address               String?
-  phone                 String?
-  email                 String?
-  website               String?
-  logoUrl               String?
-  fiscalYearStart       Int?
-  currency              String                       @default("INR")
-  timezone              String                       @default("Asia/Kolkata")
-  employeeIdPrefix      String?                      // e.g., "ACME", "TCS" for employee ID generation
-  createdAt             DateTime                     @default(now())
-  updatedAt             DateTime                     @updatedAt
-  latitude              Float?
-  longitude             Float?
-  appConfigurations     AppConfiguration[]
-  attendance            Attendance[]
-  bonusSchemas          BonusSchema[]
-  chatRooms             ChatRoom[]
-  communications        CommunicationLog[]
-  companyPerformance    CompanyPerformance[]
-  potential             CompanyPotential?
-  conferences           Conference[]
-  courses               Course[]
-  customers             CustomerProfile[]
-  departments           Department[]
-  departmentBudgets     DepartmentBudget[]
-  departmentPerformance DepartmentPerformance[]
-  dispatchOrders        DispatchOrder[]
-  documentTemplates     DocumentTemplate[]
-  employeeGoals         EmployeeGoal[]
-  employeeKpis          EmployeeKPI[]
-  pointLogs             EmployeePointLog[]
-  taskTemplates         EmployeeTaskTemplate[]
-  financialRecords      FinancialRecord[]
-  holidays              Holiday[]
-  itAssets              ITAsset[]
-  itDepartmentRevenue   ITDepartmentRevenue[]        @relation("CompanyITRevenue")
-  itPerformanceMetrics  ITPerformanceMetric[]        @relation("CompanyITPerformance")
-  itProjects            ITProject[]                  @relation("CompanyITProjects")
-  itServices            ITServiceDefinition[]        @relation("CompanyITServices")
-  itTickets             ITSupportTicket[]
-  itTasks               ITTask[]                     @relation("CompanyITTasks")
-  itTimeEntries         ITTimeEntry[]                @relation("CompanyITTimeEntries")
-  incentiveSchemas      IncentiveSchema[]
-  institutions          Institution[]
-  invoices              Invoice[]
-  jobPostings           JobPosting[]
-  leaveLedgers          LeaveLedger[]
-  leaveRequests         LeaveRequest[]
-  performanceSnapshots  MonthlyPerformanceSnapshot[]
-  onboardingModules     OnboardingModule[]
-  payments              Payment[]
-  performanceInsights   PerformanceInsight[]
-  performanceReviews    PerformanceReview[]
-  revenueTransactions   RevenueTransaction[]
-  salaryAdvances        SalaryAdvance[]
-  salarySlips           SalarySlip[]
-  shifts                Shift[]
-  shiftRosters          ShiftRoster[]
-  statutoryConfig       StatutoryConfig?
-  subscriptions         Subscription[]
-  supportTickets        SupportTicket[]
-  tasks                 Task[]
-  primaryUsers          User[]                       @relation("PrimaryCompany")
-  workPlans             WorkPlan[]
-  workReports           WorkReport[]
-  designations          Designation[]                @relation("CompanyToDesignation")
-  users                 User[]                       @relation("UserCompanies")
+  id                          String                       @id @default(uuid())
+  name                        String
+  registrationNumber          String?
+  domain                      String?
+  address                     String?
+  phone                       String?
+  email                       String?
+  website                     String?
+  logoUrl                     String?
+  fiscalYearStart             Int?
+  currency                    String                       @default("INR")
+  timezone                    String                       @default("Asia/Kolkata")
+  employeeIdPrefix            String?
+  createdAt                   DateTime                     @default(now())
+  updatedAt                   DateTime                     @updatedAt
+  latitude                    Float?
+  longitude                   Float?
+  appConfigurations           AppConfiguration[]
+  attendance                  Attendance[]
+  bonusSchemas                BonusSchema[]
+  chatRooms                   ChatRoom[]
+  communications              CommunicationLog[]
+  companyPerformance          CompanyPerformance[]
+  potential                   CompanyPotential?
+  conferences                 Conference[]
+  courses                     Course[]
+  customers                   CustomerProfile[]
+  departments                 Department[]
+  departmentBudgets           DepartmentBudget[]
+  departmentPerformance       DepartmentPerformance[]
+  dispatchOrders              DispatchOrder[]
+  documentTemplates           DocumentTemplate[]
   employeeCompanyDesignations EmployeeCompanyDesignation[]
+  employeeGoals               EmployeeGoal[]
+  employeeKpis                EmployeeKPI[]
+  pointLogs                   EmployeePointLog[]
+  taskTemplates               EmployeeTaskTemplate[]
+  financialRecords            FinancialRecord[]
+  holidays                    Holiday[]
+  itAssets                    ITAsset[]
+  itDepartmentRevenue         ITDepartmentRevenue[]        @relation("CompanyITRevenue")
+  itPerformanceMetrics        ITPerformanceMetric[]        @relation("CompanyITPerformance")
+  itProjects                  ITProject[]                  @relation("CompanyITProjects")
+  itServices                  ITServiceDefinition[]        @relation("CompanyITServices")
+  itTickets                   ITSupportTicket[]
+  itTasks                     ITTask[]                     @relation("CompanyITTasks")
+  itTimeEntries               ITTimeEntry[]                @relation("CompanyITTimeEntries")
+  incentiveSchemas            IncentiveSchema[]
+  institutions                Institution[]
+  invoices                    Invoice[]
+  jobPostings                 JobPosting[]
+  leaveLedgers                LeaveLedger[]
+  leaveRequests               LeaveRequest[]
+  performanceSnapshots        MonthlyPerformanceSnapshot[]
+  onboardingModules           OnboardingModule[]
+  payments                    Payment[]
+  performanceInsights         PerformanceInsight[]
+  performanceReviews          PerformanceReview[]
+  revenueTransactions         RevenueTransaction[]
+  salaryAdvances              SalaryAdvance[]
+  salarySlips                 SalarySlip[]
+  shifts                      Shift[]
+  shiftRosters                ShiftRoster[]
+  statutoryConfig             StatutoryConfig?
+  subscriptions               Subscription[]
+  supportTickets              SupportTicket[]
+  tasks                       Task[]
+  primaryUsers                User[]                       @relation("PrimaryCompany")
+  workPlans                   WorkPlan[]
+  workReports                 WorkReport[]
+  designations                Designation[]                @relation("CompanyToDesignation")
+  users                       User[]                       @relation("UserCompanies")
 }
 
 model Department {
@@ -845,6 +845,7 @@ model EmployeeProfile {
   dailyTaskCompletions     DailyTaskCompletion[]
   digitalDocuments         DigitalDocument[]
   hrComments               EmployeeComment[]
+  companyDesignations      EmployeeCompanyDesignation[]
   documents                EmployeeDocument[]
   goals                    EmployeeGoal[]
   incentives               EmployeeIncentive[]
@@ -869,24 +870,21 @@ model EmployeeProfile {
   taxDeclarations          TaxDeclaration[]
   workPlans                WorkPlan[]
   workReports              WorkReport[]
-  companyDesignations      EmployeeCompanyDesignation[]
 }
 
-// Junction table for employee multi-company designations
 model EmployeeCompanyDesignation {
-  id            String          @id @default(uuid())
-  employeeId    String
-  companyId     String
-  designation   String
-  isActive      Boolean         @default(true)
-  isPrimary     Boolean         @default(false)  // Mark primary company
-  assignedAt    DateTime        @default(now())
-  createdAt     DateTime        @default(now())
-  updatedAt     DateTime        @updatedAt
-  
-  employee      EmployeeProfile @relation(fields: [employeeId], references: [id], onDelete: Cascade)
-  company       Company         @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  
+  id          String          @id @default(uuid())
+  employeeId  String
+  companyId   String
+  designation String
+  isActive    Boolean         @default(true)
+  isPrimary   Boolean         @default(false)
+  assignedAt  DateTime        @default(now())
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+  company     Company         @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  employee    EmployeeProfile @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
   @@unique([employeeId, companyId])
   @@index([employeeId])
   @@index([companyId])
@@ -928,6 +926,7 @@ model AdvanceEMI {
 }
 
 model SalaryIncrementRecord {
+<<<<<<< Updated upstream
   id                  String          @id @default(uuid())
   employeeProfileId   String
   date                DateTime        @default(now())
@@ -993,6 +992,54 @@ model SalaryIncrementRecord {
   
   employeeProfile     EmployeeProfile @relation(fields: [employeeProfileId], references: [id], onDelete: Cascade)
   
+=======
+  id                     String          @id @default(uuid())
+  employeeProfileId      String
+  date                   DateTime        @default(now())
+  effectiveDate          DateTime        @default(now())
+  oldSalary              Float
+  oldFixedSalary         Float?
+  oldVariableSalary      Float?
+  oldIncentive           Float?
+  newSalary              Float
+  newFixedSalary         Float?
+  newVariableSalary      Float?
+  newVariablePerTarget   Float?
+  newVariableUpperCap    Float?
+  newIncentive           Float?
+  newIncentivePercentage Float?
+  currentMonthlyTarget   Float?          @default(0)
+  newMonthlyTarget       Float?          @default(0)
+  currentYearlyTarget    Float?          @default(0)
+  newYearlyTarget        Float?          @default(0)
+  variableDefinition     String?
+  incentiveDefinition    String?
+  incrementAmount        Float
+  percentage             Float
+  type                   String          @default("INCREMENT")
+  previousDesignation    String?
+  newDesignation         String?
+  reason                 String?
+  status                 String          @default("DRAFT")
+  isDraft                Boolean         @default(true)
+  recommendedByUserId    String?
+  managerReviewDate      DateTime?
+  managerComments        String?
+  managerApproved        Boolean         @default(false)
+  approvedByUserId       String?
+  adminReviewDate        DateTime?
+  adminComments          String?
+  adminApproved          Boolean         @default(false)
+  oldKRA                 String?
+  oldKPI                 Json?
+  newKRA                 String?
+  newKPI                 Json?
+  performanceNotes       String?
+  createdAt              DateTime        @default(now())
+  updatedAt              DateTime        @updatedAt
+  employeeProfile        EmployeeProfile @relation(fields: [employeeProfileId], references: [id], onDelete: Cascade)
+
+>>>>>>> Stashed changes
   @@index([employeeProfileId])
   @@index([status])
 }
@@ -1129,48 +1176,48 @@ model ProductionOrder {
 }
 
 model SalarySlip {
-  id                String          @id @default(uuid())
-  employeeId        String
-  month             Int
-  year              Int
-  amountPaid        Float
-  status            String          @default("GENERATED")
-  fileUrl           String?
-  generatedAt       DateTime        @default(now())
-  companyId         String?
-  advanceDeduction  Float           @default(0)
-  lwpDeduction      Float           @default(0)
-  basicSalary       Float           @default(0)
-  conveyance        Float           @default(0)
-  ctc               Float           @default(0)
-  esicEmployee      Float           @default(0)
-  esicEmployer      Float           @default(0)
-  grossSalary       Float           @default(0)
-  hra               Float           @default(0)
-  medical           Float           @default(0)
-  otherAllowances   Float           @default(0)
-  pfEmployee        Float           @default(0)
-  pfEmployer        Float           @default(0)
-  professionalTax   Float           @default(0)
-  specialAllowance  Float           @default(0)
-  statutoryBonus    Float           @default(0)
-  tds               Float           @default(0)
-  totalDeductions   Float           @default(0)
-  arrears           Float           @default(0)
-  expenses          Float           @default(0)
-  gratuity          Float           @default(0)
-  netPayable        Float           @default(0)
-  healthCare        Float           @default(0)
-  travelling        Float           @default(0)
-  mobile            Float           @default(0)
-  internet          Float           @default(0)
+  id                  String          @id @default(uuid())
+  employeeId          String
+  month               Int
+  year                Int
+  amountPaid          Float
+  status              String          @default("GENERATED")
+  fileUrl             String?
+  generatedAt         DateTime        @default(now())
+  companyId           String?
+  advanceDeduction    Float           @default(0)
+  lwpDeduction        Float           @default(0)
+  basicSalary         Float           @default(0)
+  conveyance          Float           @default(0)
+  ctc                 Float           @default(0)
+  esicEmployee        Float           @default(0)
+  esicEmployer        Float           @default(0)
+  grossSalary         Float           @default(0)
+  hra                 Float           @default(0)
+  medical             Float           @default(0)
+  otherAllowances     Float           @default(0)
+  pfEmployee          Float           @default(0)
+  pfEmployer          Float           @default(0)
+  professionalTax     Float           @default(0)
+  specialAllowance    Float           @default(0)
+  statutoryBonus      Float           @default(0)
+  tds                 Float           @default(0)
+  totalDeductions     Float           @default(0)
+  arrears             Float           @default(0)
+  expenses            Float           @default(0)
+  gratuity            Float           @default(0)
+  netPayable          Float           @default(0)
+  healthCare          Float           @default(0)
+  travelling          Float           @default(0)
+  mobile              Float           @default(0)
+  internet            Float           @default(0)
   booksAndPeriodicals Float           @default(0)
-  isFinalSettlement Boolean         @default(false)
-  notes             String?
-  advanceEmi        AdvanceEMI?
-  arrearRecords     ArrearRecord[]
-  company           Company?        @relation(fields: [companyId], references: [id])
-  employee          EmployeeProfile @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  isFinalSettlement   Boolean         @default(false)
+  notes               String?
+  advanceEmi          AdvanceEMI?
+  arrearRecords       ArrearRecord[]
+  company             Company?        @relation(fields: [companyId], references: [id])
+  employee            EmployeeProfile @relation(fields: [employeeId], references: [id], onDelete: Cascade)
 
   @@index([companyId])
 }
@@ -1288,36 +1335,36 @@ model ShiftRoster {
 }
 
 model SalaryStructure {
-  id               String          @id @default(uuid())
-  employeeId       String          @unique
-  basicSalary      Float           @default(0)
-  hra              Float           @default(0)
-  conveyance       Float           @default(0)
-  medical          Float           @default(0)
-  specialAllowance Float           @default(0)
-  statutoryBonus   Float           @default(0)
-  otherAllowances  Float           @default(0)
-  grossSalary      Float           @default(0)
-  pfEmployee       Float           @default(0)
-  esicEmployee     Float           @default(0)
-  professionalTax  Float           @default(0)
-  tds              Float           @default(0)
-  totalDeductions  Float           @default(0)
-  pfEmployer       Float           @default(0)
-  esicEmployer     Float           @default(0)
-  gratuity         Float           @default(0)
-  insurance        Float           @default(0)
-  netSalary        Float           @default(0)
-  healthCare       Float           @default(0)
-  travelling       Float           @default(0)
-  mobile           Float           @default(0)
-  internet         Float           @default(0)
+  id                  String          @id @default(uuid())
+  employeeId          String          @unique
+  basicSalary         Float           @default(0)
+  hra                 Float           @default(0)
+  conveyance          Float           @default(0)
+  medical             Float           @default(0)
+  specialAllowance    Float           @default(0)
+  statutoryBonus      Float           @default(0)
+  otherAllowances     Float           @default(0)
+  grossSalary         Float           @default(0)
+  pfEmployee          Float           @default(0)
+  esicEmployee        Float           @default(0)
+  professionalTax     Float           @default(0)
+  tds                 Float           @default(0)
+  totalDeductions     Float           @default(0)
+  pfEmployer          Float           @default(0)
+  esicEmployer        Float           @default(0)
+  gratuity            Float           @default(0)
+  insurance           Float           @default(0)
+  netSalary           Float           @default(0)
+  healthCare          Float           @default(0)
+  travelling          Float           @default(0)
+  mobile              Float           @default(0)
+  internet            Float           @default(0)
   booksAndPeriodicals Float           @default(0)
-  ctc              Float           @default(0)
-  effectiveFrom    DateTime        @default(now())
-  createdAt        DateTime        @default(now())
-  updatedAt        DateTime        @updatedAt
-  employee         EmployeeProfile @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  ctc                 Float           @default(0)
+  effectiveFrom       DateTime        @default(now())
+  createdAt           DateTime        @default(now())
+  updatedAt           DateTime        @updatedAt
+  employee            EmployeeProfile @relation(fields: [employeeId], references: [id], onDelete: Cascade)
 }
 
 model PerformanceReview {
@@ -2292,24 +2339,24 @@ model FinancialRecord {
 }
 
 model LeaveLedger {
-  id             String          @id @default(uuid())
-  employeeId     String
-  month          Int
-  year           Int
-  openingBalance Float           @default(0)
-  takenLeaves    Float           @default(0)
+  id                   String          @id @default(uuid())
+  employeeId           String
+  month                Int
+  year                 Int
+  openingBalance       Float           @default(0)
+  takenLeaves          Float           @default(0)
   closingBalance       Float           @default(0)
   remarks              String?
-  autoCredit           Float?          // Monthly auto-credit amount (e.g., 1.5)
-  lateArrivalCount     Int             @default(0)  // Count of late arrivals (31-90 min) in this month
-  shortLeaveCount      Int             @default(0)  // Count of short leaves (90 min) in this month
-  lateDeductions       Float           @default(0)  // Total deductions from late arrivals
-  shortLeaveDeductions Float           @default(0)  // Total deductions from short leaves
+  autoCredit           Float?
+  lateArrivalCount     Int             @default(0)
+  shortLeaveCount      Int             @default(0)
+  lateDeductions       Float           @default(0)
+  shortLeaveDeductions Float           @default(0)
   createdAt            DateTime        @default(now())
   updatedAt            DateTime        @updatedAt
   companyId            String?
-  company        Company?        @relation(fields: [companyId], references: [id])
-  employee       EmployeeProfile @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  company              Company?        @relation(fields: [companyId], references: [id])
+  employee             EmployeeProfile @relation(fields: [employeeId], references: [id], onDelete: Cascade)
 
   @@unique([employeeId, month, year])
   @@index([companyId])

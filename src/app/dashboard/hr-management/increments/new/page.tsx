@@ -11,6 +11,8 @@ function NewIncrementContent() {
     const [employees, setEmployees] = useState<any[]>([]);
     const [loading, setLoading] = useState(false);
     const [saving, setSaving] = useState(false);
+    const [taskTemplates, setTaskTemplates] = useState<any[]>([]);
+    const [selectedTemplates, setSelectedTemplates] = useState<string[]>([]);
 
     const [form, setForm] = useState({
         employeeProfileId: '',
@@ -39,16 +41,21 @@ function NewIncrementContent() {
     const fetchEmployees = useCallback(async () => {
         try {
             const token = localStorage.getItem('token');
-            const res = await fetch('/api/hr/employees', {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
+            const [empRes, tmplRes] = await Promise.all([
+                fetch('/api/hr/employees', { headers: { 'Authorization': `Bearer ${token}` } }),
+                fetch('/api/hr/task-templates', { headers: { 'Authorization': `Bearer ${token}` } })
+            ]);
 
-            if (res.ok) {
-                const data = await res.json();
+            if (empRes.ok) {
+                const data = await empRes.json();
                 setEmployees(data);
             }
+            if (tmplRes.ok) {
+                const data = await tmplRes.json();
+                setTaskTemplates(data);
+            }
         } catch (error) {
-            console.error('Error fetching employees:', error);
+            console.error('Error fetching data:', error);
         }
     }, []);
 
@@ -98,17 +105,23 @@ function NewIncrementContent() {
         try {
             const token = localStorage.getItem('token');
 
-            // Parse KPI JSON if provided
-            let kpiData = null;
-            if (form.newKPI) {
-                try {
-                    kpiData = JSON.parse(form.newKPI);
-                } catch {
-                    alert('Invalid KPI JSON format');
-                    setSaving(false);
-                    return;
-                }
+            // Prepare KPI Data (Linked Templates)
+            // If user selected templates, we store them in newKPI as JSON object
+            let kpiData: any = {};
+            if (selectedTemplates.length > 0) {
+                const selectedDetails = taskTemplates
+                    .filter(t => selectedTemplates.includes(t.id))
+                    .map(t => ({ id: t.id, title: t.title, points: t.points, designation: t.designation?.name }));
+
+                kpiData.linkedTaskTemplates = selectedDetails;
             }
+
+            // Also keep text from textarea if needed? 
+            // The constraint is "use Multi select there... save that in json newKPI"
+            // So we replace the textarea logic entirely?
+            // Or allow both? 
+            // User said "link the KPI... so that we can save that in json newKPI".
+            // I'll assume this replaces the manual JSON entry.
 
             const res = await fetch('/api/hr/increments', {
                 method: 'POST',
@@ -504,16 +517,39 @@ function NewIncrementContent() {
                                 </div>
 
                                 <div>
-                                    <label className="label-premium">New Key Performance Indicators (KPI) - JSON Format</label>
-                                    <textarea
-                                        className="input-premium font-mono text-sm"
-                                        rows={6}
-                                        placeholder={'{\n  "projectsCompleted": 12,\n  "codeQuality": 95,\n  "teamLeadership": "Excellent"\n}'}
-                                        value={form.newKPI}
-                                        onChange={(e) => setForm({ ...form, newKPI: e.target.value })}
-                                    />
-                                    <p className="text-xs text-secondary-500 mt-1">
-                                        Enter KPIs in JSON format. Leave empty if no changes.
+                                    <label className="label-premium">Link Task Templates (KPIs)</label>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-60 overflow-y-auto p-4 bg-secondary-50/50 rounded-xl border border-secondary-100">
+                                        {taskTemplates.length === 0 ? (
+                                            <div className="text-sm text-secondary-400 p-2">No task templates found.</div>
+                                        ) : (
+                                            taskTemplates.map(tmpl => (
+                                                <label key={tmpl.id} className="flex items-start gap-3 p-3 bg-white rounded-lg border border-transparent hover:border-primary-100 shadow-sm cursor-pointer transition-all">
+                                                    <input
+                                                        type="checkbox"
+                                                        className="mt-1 w-4 h-4 rounded text-primary-600 focus:ring-primary-500"
+                                                        checked={selectedTemplates.includes(tmpl.id)}
+                                                        onChange={(e) => {
+                                                            if (e.target.checked) {
+                                                                setSelectedTemplates(prev => [...prev, tmpl.id]);
+                                                            } else {
+                                                                setSelectedTemplates(prev => prev.filter(id => id !== tmpl.id));
+                                                            }
+                                                        }}
+                                                    />
+                                                    <div>
+                                                        <p className="font-bold text-sm text-secondary-900">{tmpl.title}</p>
+                                                        <p className="text-xs text-secondary-500 line-clamp-2">{tmpl.description || 'No description'}</p>
+                                                        <div className="flex gap-2 mt-1">
+                                                            <span className="px-2 py-0.5 bg-primary-50 text-primary-600 rounded text-[10px] font-bold uppercase">{tmpl.points} Pts</span>
+                                                            {tmpl.designation?.name && <span className="px-2 py-0.5 bg-secondary-100 text-secondary-600 rounded text-[10px] font-bold uppercase">{tmpl.designation.name}</span>}
+                                                        </div>
+                                                    </div>
+                                                </label>
+                                            ))
+                                        )}
+                                    </div>
+                                    <p className="text-xs text-secondary-500 mt-2">
+                                        Selected templates will be assigned as performance indicators (KPIs) for this increment period.
                                     </p>
                                 </div>
                             </div>
