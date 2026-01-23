@@ -137,16 +137,16 @@ function cleanupRateLimitStore() {
  * API-specific rate limiter (stricter limits)
  */
 export const apiRateLimit = rateLimit({
-    maxRequests: 60,
-    windowMs: 60000 // 60 requests per minute
+    maxRequests: 300,
+    windowMs: 60000 // 300 requests per minute
 });
 
 /**
  * Auth endpoint rate limiter (very strict)
  */
 export const authRateLimit = rateLimit({
-    maxRequests: 5,
-    windowMs: 60000 // 5 requests per minute
+    maxRequests: 30,
+    windowMs: 60000 // 30 requests per minute
 });
 
 /**
