@@ -6,7 +6,7 @@ import {
     FileText,
     Upload,
     Save,
-    CHECK_CIRCLE,
+    CheckCircle,
     AlertCircle,
     DollarSign,
     Shield
@@ -193,8 +193,8 @@ export default function TaxDeclarationPage() {
 
                         <div className="pt-6 border-t border-gray-200 dark:border-gray-700 flex justify-end gap-4">
                             <span className={`px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 ${declaration.status === 'APPROVED' ? 'bg-green-100 text-green-700' :
-                                    declaration.status === 'SUBMITTED' ? 'bg-blue-100 text-blue-700' :
-                                        'bg-gray-100 text-gray-700'
+                                declaration.status === 'SUBMITTED' ? 'bg-blue-100 text-blue-700' :
+                                    'bg-gray-100 text-gray-700'
                                 }`}>
                                 Status: {declaration.status}
                             </span>

@@ -8,7 +8,7 @@ export const GET = authorizedRoute(
     [],
     async (req: NextRequest, user, context) => {
         try {
-            const id = context.params.id;
+            const { id } = await context.params;
 
             const draft = await prisma.manuscriptDraft.findUnique({
                 where: { id },
@@ -44,7 +44,7 @@ export const PATCH = authorizedRoute(
     [],
     async (req: NextRequest, user, context) => {
         try {
-            const id = context.params.id;
+            const { id } = await context.params;
             const body = await req.json();
             const { title, abstract, keywords, fileUrl, metadata, step } = body;
 
@@ -93,7 +93,7 @@ export const DELETE = authorizedRoute(
     [],
     async (req: NextRequest, user, context) => {
         try {
-            const id = context.params.id;
+            const { id } = await context.params;
 
             // Verify ownership
             const existing = await prisma.manuscriptDraft.findUnique({

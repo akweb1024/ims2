@@ -107,7 +107,7 @@ function NewIncrementContent() {
 
             // Prepare KPI Data (Linked Templates)
             // If user selected templates, we store them in newKPI as JSON object
-            let kpiData: any = {};
+            const kpiData: any = {};
             if (selectedTemplates.length > 0) {
                 const selectedDetails = taskTemplates
                     .filter(t => selectedTemplates.includes(t.id))

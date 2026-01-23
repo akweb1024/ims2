@@ -47,14 +47,14 @@ export const GET = authorizedRoute(
                         select: {
                             status: true,
                             similarityScore: true,
-                            checkedAt: true
+                            checkedDate: true
                         }
                     },
                     qualityReport: {
                         select: {
                             status: true,
                             overallScore: true,
-                            checkedAt: true
+                            checkedDate: true
                         }
                     },
                     revisions: {

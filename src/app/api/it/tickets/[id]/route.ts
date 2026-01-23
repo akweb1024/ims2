@@ -4,7 +4,7 @@ import { getAuthenticatedUser } from '@/lib/auth-legacy';
 
 export async function GET(req: NextRequest, context: { params: Promise<{ id: string }> }) {
     try {
-        const { id } = await params;
+        const { id } = await context.params;
         const user = await getAuthenticatedUser();
         if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
@@ -33,7 +33,7 @@ export async function GET(req: NextRequest, context: { params: Promise<{ id: str
 
 export async function PATCH(req: NextRequest, context: { params: Promise<{ id: string }> }) {
     try {
-        const { id } = await params;
+        const { id } = await context.params;
         const user = await getAuthenticatedUser();
         if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
@@ -69,7 +69,7 @@ export async function PATCH(req: NextRequest, context: { params: Promise<{ id: s
 
 export async function DELETE(req: NextRequest, context: { params: Promise<{ id: string }> }) {
     try {
-        const { id } = await params;
+        const { id } = await context.params;
         const user = await getAuthenticatedUser();
         if (!user || !['SUPER_ADMIN', 'ADMIN', 'IT_MANAGER', 'IT_ADMIN'].includes(user.role)) {
             return NextResponse.json({ error: 'Forbidden' }, { status: 403 });

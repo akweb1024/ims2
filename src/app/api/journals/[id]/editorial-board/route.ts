@@ -8,12 +8,12 @@ export const GET = authorizedRoute(
     async (req: NextRequest, user: any, { params }: { params: Promise<{ id: string }> }) => {
         try {
             const { id } = await params;
-            const journalId = params.id;
+            const journalId = id;
 
             const members = await prisma.editorialBoardMember.findMany({
                 where: { journalId },
                 orderBy: { displayOrder: 'asc' },
-                include: { user: { select: { email: true, profileImage: true } } }
+                include: { user: { select: { email: true, name: true } } }
             });
 
             return NextResponse.json(members);
@@ -28,7 +28,7 @@ export const POST = authorizedRoute(
     async (req: NextRequest, user: any, { params }: { params: Promise<{ id: string }> }) => {
         try {
             const { id } = await params;
-            const journalId = params.id;
+            const journalId = id;
             const body = await req.json();
             const { name, email, designation, affiliation, bio, userId } = body;
 

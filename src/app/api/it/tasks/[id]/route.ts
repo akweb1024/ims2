@@ -8,7 +8,7 @@ export const dynamic = 'force-dynamic';
 // GET /api/it/tasks/[id] - Get task details
 export async function GET(req: NextRequest, context: { params: Promise<{ id: string }> }) {
     try {
-        const { id } = await params;
+        const { id } = await context.params;
         const user = await getAuthenticatedUser();
         if (!user) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -130,7 +130,7 @@ export async function GET(req: NextRequest, context: { params: Promise<{ id: str
 // PATCH /api/it/tasks/[id] - Update task
 export async function PATCH(req: NextRequest, context: { params: Promise<{ id: string }> }) {
     try {
-        const { id } = await params;
+        const { id } = await context.params;
         const user = await getAuthenticatedUser();
         if (!user) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -239,7 +239,7 @@ export async function PATCH(req: NextRequest, context: { params: Promise<{ id: s
         if (updateData.status && updateData.status !== existingTask.status) {
             await prisma.iTTaskStatusHistory.create({
                 data: {
-                    taskId: params.id,
+                    taskId: id,
                     changedById: user.id,
                     previousStatus: existingTask.status,
                     newStatus: updateData.status,
@@ -249,7 +249,7 @@ export async function PATCH(req: NextRequest, context: { params: Promise<{ id: s
 
             // --- NOTIFICATION LOGIC ---
             try {
-        const { id } = await params;
+                const { id } = await context.params;
                 // If marked for review, notify the requester
                 if (updateData.status === 'UNDER_REVIEW') {
                     await prisma.notification.create({
@@ -270,7 +270,7 @@ export async function PATCH(req: NextRequest, context: { params: Promise<{ id: s
                             title: 'IT Task Accepted',
                             message: `Task "${existingTask.title}" has been accepted and closed by the requester.`,
                             type: 'SUCCESS',
-                            link: `/dashboard/it-management/tasks/${params.id}`,
+                            link: `/dashboard/it-management/tasks/${id}`,
                         }
                     });
                 }
@@ -318,7 +318,7 @@ export async function PATCH(req: NextRequest, context: { params: Promise<{ id: s
 // DELETE /api/it/tasks/[id] - Delete task
 export async function DELETE(req: NextRequest, context: { params: Promise<{ id: string }> }) {
     try {
-        const { id } = await params;
+        const { id } = await context.params;
         const user = await getAuthenticatedUser();
         if (!user) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

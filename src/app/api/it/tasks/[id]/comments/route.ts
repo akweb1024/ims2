@@ -8,14 +8,14 @@ export const dynamic = 'force-dynamic';
 // GET /api/it/tasks/[id]/comments - Get task comments
 export async function GET(req: NextRequest, context: { params: Promise<{ id: string }> }) {
     try {
-        const { id } = await params;
+        const { id } = await context.params;
         const user = await getAuthenticatedUser();
         if (!user) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
         const comments = await prisma.iTTaskComment.findMany({
-            where: { taskId: params.id },
+            where: { taskId: id },
             include: {
                 user: {
                     select: {
@@ -44,7 +44,7 @@ export async function GET(req: NextRequest, context: { params: Promise<{ id: str
 // POST /api/it/tasks/[id]/comments - Add task comment
 export async function POST(req: NextRequest, context: { params: Promise<{ id: string }> }) {
     try {
-        const { id } = await params;
+        const { id } = await context.params;
         const user = await getAuthenticatedUser();
         if (!user) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -73,7 +73,7 @@ export async function POST(req: NextRequest, context: { params: Promise<{ id: st
 
         const comment = await prisma.iTTaskComment.create({
             data: {
-                taskId: params.id,
+                taskId: id,
                 userId: user.id,
                 content: content.trim(),
             },

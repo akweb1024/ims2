@@ -16,7 +16,7 @@ export async function GET(
     context: { params: Promise<{ id: string }> }
 ) {
     try {
-        const { id: projectId } = await params;
+        const { id: projectId } = await context.params;
         const user = await getAuthenticatedUser();
         if (!user) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -143,7 +143,7 @@ export async function PATCH(
     context: { params: Promise<{ id: string }> }
 ) {
     try {
-        const { id: projectId } = await params;
+        const { id: projectId } = await context.params;
         const user = await getAuthenticatedUser();
         if (!user) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -318,7 +318,7 @@ export async function DELETE(
     context: { params: Promise<{ id: string }> }
 ) {
     try {
-        const { id: projectId } = await params;
+        const { id: projectId } = await context.params;
         const user = await getAuthenticatedUser();
         if (!user) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

@@ -10,8 +10,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
             where: { id, status: 'PUBLISHED' },
             include: {
                 journal: { select: { name: true, id: true } },
-                issue: { select: { issueNumber: true, volume: { select: { volumeNumber: true, year: true } }, month: true, year: true } },
-                authors: { select: { name: true, affiliation: true, bio: true } },
+                issue: { select: { issueNumber: true, volume: { select: { volumeNumber: true, year: true } }, month: true } },
+                authors: { select: { name: true, affiliation: true } },
                 versions: { take: 1, orderBy: { versionNumber: 'desc' }, select: { fileUrl: true } }
             }
         });

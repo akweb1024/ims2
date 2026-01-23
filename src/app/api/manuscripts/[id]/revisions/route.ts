@@ -9,7 +9,7 @@ export const POST = authorizedRoute(
     [],
     async (req: NextRequest, user, context) => {
         try {
-            const articleId = context.params.id;
+            const { id: articleId } = await context.params;
             const body = await req.json();
             const { fileUrl, coverLetter, responseToReviewers, changesDescription } = body;
 
@@ -121,7 +121,7 @@ export const GET = authorizedRoute(
     [],
     async (req: NextRequest, user, context) => {
         try {
-            const articleId = context.params.id;
+            const { id: articleId } = await context.params;
 
             // Verify article exists and user is an author
             const article = await prisma.article.findUnique({

@@ -8,7 +8,7 @@ export const GET = authorizedRoute(
     async (req: NextRequest, user: any, { params }: { params: Promise<{ id: string }> }) => {
         try {
             const { id } = await params;
-            const journalId = params.id;
+            const journalId = id;
 
             const volumes = await prisma.journalVolume.findMany({
                 where: { journalId },
@@ -33,7 +33,7 @@ export const POST = authorizedRoute(
     async (req: NextRequest, user: any, { params }: { params: Promise<{ id: string }> }) => {
         try {
             const { id } = await params;
-            const journalId = params.id;
+            const journalId = id;
             const body = await req.json();
             const { volumeNumber, year } = body;
 

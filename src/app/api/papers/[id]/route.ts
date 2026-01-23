@@ -5,9 +5,9 @@ import { createErrorResponse } from '@/lib/api-utils';
 
 export const GET = authorizedRoute(
     [],
-    async (req: NextRequest, context: { params: Promise<{ id: string }> }, user) => {
+    async (req: NextRequest, user: any, context: { params: Promise<{ id: string }> }) => {
         try {
-            const { id } = await params;
+            const { id } = await context.params;
 
             const paper = await prisma.conferencePaper.findUnique({
                 where: { id },
@@ -66,9 +66,9 @@ export const GET = authorizedRoute(
 
 export const PATCH = authorizedRoute(
     [],
-    async (req: NextRequest, context: { params: Promise<{ id: string }> }, user) => {
+    async (req: NextRequest, user: any, context: { params: Promise<{ id: string }> }) => {
         try {
-            const { id } = await params;
+            const { id } = await context.params;
             const body = await req.json();
 
             const paper = await prisma.conferencePaper.findUnique({

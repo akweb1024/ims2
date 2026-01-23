@@ -8,7 +8,7 @@ export const GET = authorizedRoute(
     async (req: NextRequest, user: any, { params }: { params: Promise<{ qid: string }> }) => {
         try {
             const { qid } = await params;
-            const { qid: quizId } = params;
+            const quizId = qid;
 
             const quiz = await prisma.quiz.findUnique({
                 where: { id: quizId },
@@ -70,7 +70,7 @@ export const POST = authorizedRoute(
     async (req: NextRequest, user: any, { params }: { params: Promise<{ qid: string }> }) => {
         try {
             const { qid } = await params;
-            const { qid: quizId } = params;
+            const quizId = qid;
             const body = await req.json();
             const { answers, timeSpent } = body; // answers: { questionId: answer }
 

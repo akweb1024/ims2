@@ -16,7 +16,6 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
                     orderBy: { issueNumber: 'asc' },
                     select: {
                         id: true, issueNumber: true, month: true, title: true,
-                        year: true, // If we added year to issue, otherwise use volume year
                         _count: { select: { articles: { where: { status: 'PUBLISHED' } } } }
                     }
                 }

@@ -1,0 +1,104 @@
+
+> stm-customer@0.1.0 build
+> prisma generate && next build
+
+Loaded Prisma config from prisma.config.ts.
+
+Prisma schema loaded from prisma/schema.prisma.
+
+✔ Generated Prisma Client (v7.2.0) to ./node_modules/@prisma/client in 865ms
+
+Start by importing your Prisma Client (See: https://pris.ly/d/importing-client)
+
+Tip: Need your database queries to be 1000x faster? Accelerate offers you that and more: https://pris.ly/tip-2-accelerate
+
+   ▲ Next.js 15.5.9
+   - Environments: .env
+
+   Creating an optimized production build ...
+ ✓ Compiled successfully in 15.1s
+   Linting and checking validity of types ...
+
+./src/app/careers/[id]/page.tsx
+20:8  Warning: React Hook useEffect has a missing dependency: 'fetchJob'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/app/careers/exam/page.tsx
+23:8  Warning: React Hook useEffect has a missing dependency: 'fetchExam'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/app/dashboard/ai-insights/page.tsx
+23:8  Warning: React Hook useEffect has a missing dependency: 'fetchInsights'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/app/dashboard/analytics/razorpay/page.tsx
+28:8  Warning: React Hook useEffect has a missing dependency: 'fetchData'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/app/dashboard/articles/[id]/assign/page.tsx
+41:8  Warning: React Hook useEffect has a missing dependency: 'fetchData'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/app/dashboard/articles/page.tsx
+29:8  Warning: React Hook useEffect has a missing dependency: 'fetchArticles'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/app/dashboard/author/manuscripts/[id]/page.tsx
+20:8  Warning: React Hook useEffect has missing dependencies: 'fetchManuscript' and 'fetchTimeline'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/app/dashboard/author/manuscripts/[id]/revise/page.tsx
+24:8  Warning: React Hook useEffect has a missing dependency: 'fetchManuscript'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/app/dashboard/author/submit/page.tsx
+54:8  Warning: React Hook useEffect has a missing dependency: 'saveDraft'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/app/dashboard/communications/bulk/page.tsx
+29:8  Warning: React Hook useEffect has a missing dependency: 'router'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/app/dashboard/communications/page.tsx
+26:8  Warning: React Hook useEffect has a missing dependency: 'fetchLogs'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/app/dashboard/conferences/[id]/papers/[paperId]/page.tsx
+45:8  Warning: React Hook useEffect has missing dependencies: 'fetchCommittee' and 'fetchPaper'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/app/dashboard/conferences/[id]/papers/page.tsx
+29:8  Warning: React Hook useEffect has a missing dependency: 'fetchData'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/app/dashboard/conferences/[id]/register/page.tsx
+34:8  Warning: React Hook useEffect has a missing dependency: 'fetchConference'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/app/dashboard/conferences/[id]/registrations/page.tsx
+31:8  Warning: React Hook useEffect has a missing dependency: 'fetchData'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/app/dashboard/conferences/[id]/submit/page.tsx
+24:8  Warning: React Hook useEffect has a missing dependency: 'fetchConference'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/app/dashboard/conferences/page.tsx
+26:8  Warning: React Hook useEffect has a missing dependency: 'fetchConferences'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/app/dashboard/courses/[id]/lessons/[lid]/page.tsx
+19:8  Warning: React Hook useEffect has a missing dependency: 'fetchLesson'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/app/dashboard/courses/[id]/page.tsx
+33:8  Warning: React Hook useEffect has a missing dependency: 'fetchCourse'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/app/dashboard/customers/page.tsx
+97:8  Warning: React Hook useEffect has a missing dependency: 'fetchCustomers'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/app/dashboard/finance/forecasting/page.tsx
+47:8  Warning: React Hook useEffect has a missing dependency: 'generateForecast'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/app/dashboard/institutions/[id]/page.tsx
+26:8  Warning: React Hook useEffect has a missing dependency: 'fetchInstitution'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/app/dashboard/institutions/page.tsx
+86:8  Warning: React Hook useEffect has a missing dependency: 'fetchInstitutions'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+info  - Need to disable some ESLint rules? Learn more here: https://nextjs.org/docs/app/api-reference/config/eslint#disabling-rules
+Failed to compile.
+
+./src/app/api/courses/[id]/route.ts:12:30
+Type error: Cannot find name 'context'.
+
+[0m [90m 10 |[39m         [36mif[39m ([33m![39muser) [36mreturn[39m [33mNextResponse[39m[33m.[39mjson({ error[33m:[39m [32m'Unauthorized'[39m }[33m,[39m { status[33m:[39m [35m401[39m })[33m;[39m
+ [90m 11 |[39m
+[31m[1m>[22m[39m[90m 12 |[39m         [36mconst[39m { id } [33m=[39m [36mawait[39m context[33m.[39mparams[33m;[39m
+ [90m    |[39m                              [31m[1m^[22m[39m
+ [90m 13 |[39m
+ [90m 14 |[39m         [36mconst[39m course [33m=[39m [36mawait[39m prisma[33m.[39mcourse[33m.[39mfindUnique({
+ [90m 15 |[39m             where[33m:[39m { id }[33m,[39m[0m
+Next.js build worker exited with code: 1 and signal: null

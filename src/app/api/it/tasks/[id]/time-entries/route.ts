@@ -5,13 +5,13 @@ import { createErrorResponse } from '@/lib/api-utils';
 
 export async function POST(req: NextRequest, context: { params: Promise<{ id: string }> }) {
     try {
-        const { id } = await params;
+        const { id } = await context.params;
         const user = await getAuthenticatedUser();
         if (!user) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        const taskId = params.id;
+        const taskId = id;
         const { hours, description, date, isBillable } = await req.json();
 
         if (!hours || parseFloat(hours) <= 0) {
@@ -80,8 +80,8 @@ export async function POST(req: NextRequest, context: { params: Promise<{ id: st
 
 export async function GET(req: NextRequest, context: { params: Promise<{ id: string }> }) {
     try {
-        const { id } = await params;
-        const taskId = params.id;
+        const { id } = await context.params;
+        const taskId = id;
         const timeEntries = await prisma.iTTimeEntry.findMany({
             where: { taskId },
             include: {

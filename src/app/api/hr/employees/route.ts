@@ -184,7 +184,8 @@ export const PATCH = authorizedRoute(
                 'user', 'manager', 'designatRef', 'incrementHistory', 'hrComments', 'workReports',
                 'attendance', 'documents', 'leaveRequests', 'onboardingProgress', 'leaveLedgers',
                 'digitalDocuments', 'goals', 'incentives', 'kpis', 'performance', 'performanceInsights',
-                'salaryAdvances', 'salarySlips', 'salaryStructure', 'shiftRosters', 'taxDeclarations', 'workPlans'
+                'salaryAdvances', 'salarySlips', 'salaryStructure', 'shiftRosters', 'taxDeclarations', 'workPlans',
+                'companyDesignations'
             ];
             metadataFields.forEach(f => delete (profileData as any)[f]);
 

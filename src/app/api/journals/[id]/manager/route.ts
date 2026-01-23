@@ -5,13 +5,13 @@ import prisma from '@/lib/prisma';
 // GET - Get journal manager details
 export async function GET(req: NextRequest, context: { params: Promise<{ id: string }> }) {
     try {
-        const { id } = await params;
+        const { id } = await context.params;
         const session = await auth();
         if (!session?.user) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        const journalId = params.id;
+        const journalId = id;
 
         const journal = await prisma.journal.findUnique({
             where: { id: journalId },
@@ -44,7 +44,7 @@ export async function GET(req: NextRequest, context: { params: Promise<{ id: str
 // POST - Assign journal manager
 export async function POST(req: NextRequest, context: { params: Promise<{ id: string }> }) {
     try {
-        const { id } = await params;
+        const { id } = await context.params;
         const session = await auth();
         if (!session?.user) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -55,7 +55,7 @@ export async function POST(req: NextRequest, context: { params: Promise<{ id: st
             return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
         }
 
-        const journalId = params.id;
+        const journalId = id;
         const body = await req.json();
         const { managerId } = body;
 
@@ -120,7 +120,7 @@ export async function POST(req: NextRequest, context: { params: Promise<{ id: st
 // DELETE - Remove journal manager
 export async function DELETE(req: NextRequest, context: { params: Promise<{ id: string }> }) {
     try {
-        const { id } = await params;
+        const { id } = await context.params;
         const session = await auth();
         if (!session?.user) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -131,7 +131,7 @@ export async function DELETE(req: NextRequest, context: { params: Promise<{ id: 
             return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
         }
 
-        const journalId = params.id;
+        const journalId = id;
 
         const journal = await prisma.journal.update({
             where: { id: journalId },

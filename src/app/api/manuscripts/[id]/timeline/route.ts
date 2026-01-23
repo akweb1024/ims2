@@ -8,7 +8,7 @@ export const GET = authorizedRoute(
     [],
     async (req: NextRequest, user, context) => {
         try {
-            const articleId = context.params.id;
+            const { id: articleId } = await context.params;
 
             // Verify article exists and user has access
             const article = await prisma.article.findUnique({
@@ -159,7 +159,7 @@ export const GET = authorizedRoute(
             if (plagiarismReport) {
                 timeline.push({
                     type: 'plagiarism_check',
-                    timestamp: plagiarismReport.checkedAt,
+                    timestamp: plagiarismReport.checkedDate,
                     title: `Plagiarism check ${plagiarismReport.status.toLowerCase()}`,
                     description: `Similarity score: ${plagiarismReport.similarityScore}%`,
                     user: plagiarismReport.checker,
@@ -175,7 +175,7 @@ export const GET = authorizedRoute(
             if (qualityReport) {
                 timeline.push({
                     type: 'quality_check',
-                    timestamp: qualityReport.checkedAt,
+                    timestamp: qualityReport.checkedDate,
                     title: `Quality check ${qualityReport.status.toLowerCase()}`,
                     description: `Overall score: ${qualityReport.overallScore}/10`,
                     user: qualityReport.checker,
@@ -187,7 +187,11 @@ export const GET = authorizedRoute(
             }
 
             // Sort by timestamp
-            timeline.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+            timeline.sort((a, b) => {
+                const timeA = a.timestamp ? new Date(a.timestamp).getTime() : 0;
+                const timeB = b.timestamp ? new Date(b.timestamp).getTime() : 0;
+                return timeA - timeB;
+            });
 
             return NextResponse.json({
                 manuscript: {

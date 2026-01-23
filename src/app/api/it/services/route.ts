@@ -73,6 +73,9 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
         }
 
+        if (!user.companyId) {
+            return NextResponse.json({ error: 'Company ID required' }, { status: 400 });
+        }
         const companyId = user.companyId;
         const body = await req.json();
         const { name, description, category, price, unit, estimatedDays } = body;
