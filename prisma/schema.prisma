@@ -926,7 +926,6 @@ model AdvanceEMI {
 }
 
 model SalaryIncrementRecord {
-<<<<<<< Updated upstream
   id                  String          @id @default(uuid())
   employeeProfileId   String
   date                DateTime        @default(now())
@@ -991,55 +990,7 @@ model SalaryIncrementRecord {
   updatedAt           DateTime        @updatedAt
   
   employeeProfile     EmployeeProfile @relation(fields: [employeeProfileId], references: [id], onDelete: Cascade)
-  
-=======
-  id                     String          @id @default(uuid())
-  employeeProfileId      String
-  date                   DateTime        @default(now())
-  effectiveDate          DateTime        @default(now())
-  oldSalary              Float
-  oldFixedSalary         Float?
-  oldVariableSalary      Float?
-  oldIncentive           Float?
-  newSalary              Float
-  newFixedSalary         Float?
-  newVariableSalary      Float?
-  newVariablePerTarget   Float?
-  newVariableUpperCap    Float?
-  newIncentive           Float?
-  newIncentivePercentage Float?
-  currentMonthlyTarget   Float?          @default(0)
-  newMonthlyTarget       Float?          @default(0)
-  currentYearlyTarget    Float?          @default(0)
-  newYearlyTarget        Float?          @default(0)
-  variableDefinition     String?
-  incentiveDefinition    String?
-  incrementAmount        Float
-  percentage             Float
-  type                   String          @default("INCREMENT")
-  previousDesignation    String?
-  newDesignation         String?
-  reason                 String?
-  status                 String          @default("DRAFT")
-  isDraft                Boolean         @default(true)
-  recommendedByUserId    String?
-  managerReviewDate      DateTime?
-  managerComments        String?
-  managerApproved        Boolean         @default(false)
-  approvedByUserId       String?
-  adminReviewDate        DateTime?
-  adminComments          String?
-  adminApproved          Boolean         @default(false)
-  oldKRA                 String?
-  oldKPI                 Json?
-  newKRA                 String?
-  newKPI                 Json?
-  performanceNotes       String?
-  createdAt              DateTime        @default(now())
-  updatedAt              DateTime        @updatedAt
-  employeeProfile        EmployeeProfile @relation(fields: [employeeProfileId], references: [id], onDelete: Cascade)
 
->>>>>>> Stashed changes
   @@index([employeeProfileId])
   @@index([status])
 }
