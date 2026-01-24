@@ -29,6 +29,8 @@ export default function InstitutionsPage() {
 
     const [showModal, setShowModal] = useState(false);
     const [selectedInstitution, setSelectedInstitution] = useState<any>(null);
+    const [errorMessage, setErrorMessage] = useState('');
+    const [successMessage, setSuccessMessage] = useState('');
 
     const [formData, setFormData] = useState({
         name: '',
@@ -118,6 +120,9 @@ export default function InstitutionsPage() {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        setErrorMessage('');
+        setSuccessMessage('');
+
         try {
             const token = localStorage.getItem('token');
             const method = selectedInstitution ? 'PATCH' : 'POST';
@@ -134,14 +139,23 @@ export default function InstitutionsPage() {
                 body: JSON.stringify(body)
             });
 
+            const data = await res.json();
+
             if (res.ok) {
-                setShowModal(false);
-                setSelectedInstitution(null);
-                resetForm();
-                fetchInstitutions(pagination.page);
+                setSuccessMessage(selectedInstitution ? 'Institution updated successfully!' : 'Institution created successfully!');
+                setTimeout(() => {
+                    setShowModal(false);
+                    setSelectedInstitution(null);
+                    resetForm();
+                    fetchInstitutions(pagination.page);
+                    setSuccessMessage('');
+                }, 1500);
+            } else {
+                setErrorMessage(data.error || 'Failed to save institution. Please check all required fields.');
             }
-        } catch (error) {
+        } catch (error: any) {
             console.error('Error saving institution:', error);
+            setErrorMessage(error.message || 'An unexpected error occurred. Please try again.');
         }
     };
 
@@ -174,6 +188,8 @@ export default function InstitutionsPage() {
             logo: institution.logo || '',
             assignedToUserId: institution.assignedToUserId || ''
         });
+        setErrorMessage('');
+        setSuccessMessage('');
         setShowModal(true);
     };
 
@@ -322,6 +338,8 @@ export default function InstitutionsPage() {
                         onClick={() => {
                             setSelectedInstitution(null);
                             resetForm();
+                            setErrorMessage('');
+                            setSuccessMessage('');
                             setShowModal(true);
                         }}
                         className="btn btn-primary flex items-center gap-2"
@@ -684,6 +702,35 @@ export default function InstitutionsPage() {
                             </div>
 
                             <form onSubmit={handleSubmit} className="p-6 overflow-y-auto max-h-[calc(90vh-180px)]">
+                                {/* Error/Success Messages */}
+                                {errorMessage && (
+                                    <div className="mb-4 p-4 bg-red-50 border-l-4 border-red-500 rounded-lg">
+                                        <div className="flex items-center">
+                                            <div className="flex-shrink-0">
+                                                <svg className="h-5 w-5 text-red-500" viewBox="0 0 20 20" fill="currentColor">
+                                                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                                                </svg>
+                                            </div>
+                                            <div className="ml-3">
+                                                <p className="text-sm font-bold text-red-800">{errorMessage}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+                                {successMessage && (
+                                    <div className="mb-4 p-4 bg-green-50 border-l-4 border-green-500 rounded-lg">
+                                        <div className="flex items-center">
+                                            <div className="flex-shrink-0">
+                                                <svg className="h-5 w-5 text-green-500" viewBox="0 0 20 20" fill="currentColor">
+                                                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                                                </svg>
+                                            </div>
+                                            <div className="ml-3">
+                                                <p className="text-sm font-bold text-green-800">{successMessage}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
                                 <div className="space-y-6">
                                     {/* Basic Information */}
                                     <div>

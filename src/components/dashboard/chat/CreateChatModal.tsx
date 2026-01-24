@@ -5,7 +5,7 @@ import { useChat } from './ChatContext';
 import { X, Search, CheckCircle2, User, Building2 } from 'lucide-react';
 
 export default function CreateChatModal({ onClose }: { onClose: () => void }) {
-    const { setActiveRoom, rooms } = useChat();
+    const { setActiveRoom, rooms, refreshRooms } = useChat();
     const [users, setUsers] = useState<any[]>([]);
     const [customers, setCustomers] = useState<any[]>([]);
     const [selectedIds, setSelectedIds] = useState<string[]>([]);
@@ -13,6 +13,8 @@ export default function CreateChatModal({ onClose }: { onClose: () => void }) {
     const [groupName, setGroupName] = useState('');
     const [tab, setTab] = useState<'employees' | 'customers'>('employees');
     const [search, setSearch] = useState('');
+    const [error, setError] = useState('');
+    const [loading, setLoading] = useState(false);
 
     useEffect(() => {
         fetchUsers();
@@ -35,7 +37,18 @@ export default function CreateChatModal({ onClose }: { onClose: () => void }) {
     };
 
     const handleCreate = async () => {
-        if (selectedIds.length === 0) return;
+        if (selectedIds.length === 0) {
+            setError('Please select at least one person');
+            return;
+        }
+
+        if (isGroup && !groupName.trim()) {
+            setError('Please enter a group name');
+            return;
+        }
+
+        setError('');
+        setLoading(true);
 
         try {
             const token = localStorage.getItem('token');
@@ -52,18 +65,22 @@ export default function CreateChatModal({ onClose }: { onClose: () => void }) {
                 })
             });
 
+            const data = await res.json();
+
             if (res.ok) {
-                const newRoom = await res.json();
-                // Context will refresh rooms automatically or we can force it
-                // For now, let's just close and maybe user sees it
-                // Ideally we push to context rooms
+                // Refresh rooms in context
+                await refreshRooms();
+                // Set the newly created room as active
+                setActiveRoom(data);
                 onClose();
-                // We'd want to access setRooms here but strictly we should rely on the Sidebar polling or a refresh function
-                // Let's reload page for simplicity or rely on sidebar update
-                window.location.reload();
+            } else {
+                setError(data.error || 'Failed to create chat. Please try again.');
             }
-        } catch (err) {
+        } catch (err: any) {
             console.error(err);
+            setError(err.message || 'An unexpected error occurred');
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -89,6 +106,12 @@ export default function CreateChatModal({ onClose }: { onClose: () => void }) {
                         <X size={20} />
                     </button>
                 </div>
+
+                {error && (
+                    <div className="mx-6 mt-4 p-4 bg-red-50 border-l-4 border-red-500 rounded-lg">
+                        <p className="text-sm font-bold text-red-800">{error}</p>
+                    </div>
+                )}
 
                 <div className="p-6 space-y-4 flex-1 overflow-y-auto">
                     {/* Toggle Group */}
@@ -150,8 +173,8 @@ export default function CreateChatModal({ onClose }: { onClose: () => void }) {
                                     key={id}
                                     onClick={() => toggleSelection(id)}
                                     className={`p-3 rounded-xl flex items-center gap-3 cursor-pointer border transition-all ${isSelected
-                                            ? 'bg-indigo-50 border-indigo-200 shadow-sm'
-                                            : 'bg-white border-gray-100 hover:border-indigo-200 hover:bg-gray-50'
+                                        ? 'bg-indigo-50 border-indigo-200 shadow-sm'
+                                        : 'bg-white border-gray-100 hover:border-indigo-200 hover:bg-gray-50'
                                         }`}
                                 >
                                     <div className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${isSelected ? 'bg-indigo-200 text-indigo-700' : 'bg-gray-100 text-gray-400'}`}>
@@ -171,10 +194,10 @@ export default function CreateChatModal({ onClose }: { onClose: () => void }) {
                 <div className="p-6 border-t border-gray-100 bg-gray-50">
                     <button
                         onClick={handleCreate}
-                        disabled={selectedIds.length === 0}
-                        className="btn btn-primary w-full py-4 text-lg rounded-2xl shadow-xl shadow-indigo-200 disabled:opacity-50"
+                        disabled={selectedIds.length === 0 || loading}
+                        className="btn btn-primary w-full py-4 text-lg rounded-2xl shadow-xl shadow-indigo-200 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                        Start {isGroup ? 'Group' : 'Chat'}
+                        {loading ? 'Creating...' : `Start ${isGroup ? 'Group' : 'Chat'}`}
                     </button>
                 </div>
             </div>
