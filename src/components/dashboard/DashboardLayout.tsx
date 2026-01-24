@@ -15,13 +15,31 @@ interface DashboardLayoutProps {
 
 export default function DashboardLayout({ children, userRole: propUserRole = 'CUSTOMER' }: DashboardLayoutProps) {
     const { data: session, status, update } = useSession();
-    const [sidebarOpen, setSidebarOpen] = useState(true);
+    // Default to false to prevent mobile flash, will adjust in useEffect
+    const [sidebarOpen, setSidebarOpen] = useState(false);
     const [notifications, setNotifications] = useState<any[]>([]);
     const [isImpersonating, setIsImpersonating] = useState(false);
     const [mounted, setMounted] = useState(false);
     const [availableCompanies, setAvailableCompanies] = useState<any[]>([]);
     const pathname = usePathname();
     const router = useRouter();
+
+    // Handle responsive sidebar behavior
+    useEffect(() => {
+        const handleResize = () => {
+            if (window.innerWidth >= 1024) {
+                setSidebarOpen(true);
+            } else {
+                setSidebarOpen(false);
+            }
+        };
+
+        // Set initial state
+        handleResize();
+
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
 
     const fetchNotifications = useCallback(async () => {
         if (typeof document !== 'undefined' && document.visibilityState !== 'visible') return;
@@ -724,6 +742,14 @@ export default function DashboardLayout({ children, userRole: propUserRole = 'CU
                 </div>
             </nav>
 
+            {/* Mobile Sidebar Backdrop */}
+            {sidebarOpen && (
+                <div
+                    className="fixed inset-0 bg-black/50 z-10 lg:hidden backdrop-blur-sm transition-opacity"
+                    onClick={() => setSidebarOpen(false)}
+                />
+            )}
+
             {/* Sidebar */}
             <aside
                 className={`fixed left-0 h-full bg-white border-r border-secondary-200 transition-all duration-300 z-20 ${sidebarOpen ? 'w-64' : 'w-0 lg:w-20'} ${isImpersonating ? 'top-[calc(4rem+2.5rem)]' : 'top-16'}
@@ -771,6 +797,11 @@ export default function DashboardLayout({ children, userRole: propUserRole = 'CU
                                             <Link
                                                 key={item.href}
                                                 href={item.href}
+                                                onClick={() => {
+                                                    if (window.innerWidth < 1024) {
+                                                        setSidebarOpen(false);
+                                                    }
+                                                }}
                                                 className={`relative flex items-center space-x-3 px-3 py-2.5 rounded-xl transition-all duration-300 group overflow-hidden ${isActive
                                                     ? 'bg-secondary-900 text-white shadow-lg shadow-secondary-200'
                                                     : 'text-secondary-600 hover:bg-secondary-50 hover:text-secondary-900'

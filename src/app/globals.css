@@ -2,6 +2,54 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Focus Management Styles for Accessibility */
+@layer base {
+  /* Remove default outline and add custom focus ring */
+  *:focus {
+    @apply outline-none;
+  }
+
+  /* Visible focus ring for keyboard navigation */
+  *:focus-visible {
+    @apply ring-2 ring-blue-500 ring-offset-2 ring-offset-white;
+  }
+
+  /* Focus styles for interactive elements */
+  button:focus-visible,
+  a:focus-visible,
+  input:focus-visible,
+  textarea:focus-visible,
+  select:focus-visible {
+    @apply ring-2 ring-blue-500 ring-offset-2;
+  }
+
+  /* Focus styles for custom components */
+  [role="button"]:focus-visible,
+  [role="link"]:focus-visible,
+  [role="tab"]:focus-visible,
+  [role="menuitem"]:focus-visible {
+    @apply ring-2 ring-blue-500 ring-offset-2;
+  }
+
+  /* High contrast focus for dark backgrounds */
+  .dark *:focus-visible,
+  [data-theme="dark"] *:focus-visible {
+    @apply ring-blue-400 ring-offset-gray-900;
+  }
+
+  /* Skip navigation link styles */
+  .skip-nav:focus {
+    @apply translate-y-0 opacity-100;
+  }
+}
+
+/* Ensure smooth transitions for focus states */
+@layer utilities {
+  .focus-transition {
+    @apply transition-all duration-150 ease-in-out;
+  }
+}
+
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
 
 @layer base {

@@ -28,9 +28,14 @@ export default function FinancePage() {
     const fetchData = async () => {
         setLoading(true);
         try {
+            const token = localStorage.getItem('token');
             const [analyticsRes, recordsRes] = await Promise.all([
-                fetch('/api/finance/analytics'),
-                fetch('/api/finance')
+                fetch('/api/finance/analytics', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                }),
+                fetch('/api/finance', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                })
             ]);
 
             if (analyticsRes.ok) setAnalytics(await analyticsRes.json());
@@ -51,9 +56,13 @@ export default function FinancePage() {
         const url = isEditing ? `/api/finance/${isEditing.id}` : '/api/finance';
         const method = isEditing ? 'PATCH' : 'POST';
 
+        const token = localStorage.getItem('token');
         const res = await fetch(url, {
             method,
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
             body: JSON.stringify(formData)
         });
 
@@ -74,7 +83,11 @@ export default function FinancePage() {
 
     const handleDelete = async (id: string) => {
         if (!confirm('Are you sure?')) return;
-        const res = await fetch(`/api/finance/${id}`, { method: 'DELETE' });
+        const token = localStorage.getItem('token');
+        const res = await fetch(`/api/finance/${id}`, {
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
         if (res.ok) fetchData();
     };
 
@@ -98,9 +111,13 @@ export default function FinancePage() {
                 return obj;
             }).filter((d: any) => d.Type || d.type);
 
+            const token = localStorage.getItem('token');
             const res = await fetch('/api/finance/import', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
                 body: JSON.stringify({ data })
             });
 

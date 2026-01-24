@@ -1,5 +1,5 @@
 import { auth } from "@/lib/nextauth";
-import { TokenPayload, verifyToken } from "./auth-legacy";
+import { TokenPayload, verifyToken } from "./auth-core";
 import { headers } from "next/headers";
 
 export const getSessionUser = async (): Promise<TokenPayload | null> => {
@@ -11,7 +11,7 @@ export const getSessionUser = async (): Promise<TokenPayload | null> => {
                 id: session.user.id,
                 email: session.user.email as string,
                 role: session.user.role,
-                companyId: session.user.companyId,
+                companyId: session.user.companyId || undefined,
                 allowedModules: (session.user as any).allowedModules,
             };
         }

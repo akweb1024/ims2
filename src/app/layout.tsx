@@ -10,6 +10,8 @@ import { ThemeProvider } from '@/components/theme/ThemeProvider';
 
 import QueryProvider from '@/components/providers/QueryProvider';
 import AuthProvider from '@/components/providers/AuthProvider';
+import ToastProvider from '@/components/providers/ToastProvider';
+import SkipNavigation from '@/components/ui/SkipNavigation';
 
 export default function RootLayout({
     children,
@@ -19,10 +21,12 @@ export default function RootLayout({
     return (
         <html lang="en" suppressHydrationWarning>
             <body className="antialiased" suppressHydrationWarning>
+                <SkipNavigation />
                 <QueryProvider>
                     <AuthProvider>
                         <ThemeProvider>
                             {children}
+                            <ToastProvider />
                         </ThemeProvider>
                     </AuthProvider>
                 </QueryProvider>

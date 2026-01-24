@@ -198,12 +198,26 @@ model User {
   workPlanComments         WorkPlanComment[]
   workReportComments       WorkReportComment[]         @relation("WorkReportCommentAuthor")
   assignedToCustomers      CustomerProfile[]           @relation("CustomerToExecutives")
+  passwordResetTokens      PasswordResetToken[]
   companies                Company[]                   @relation("UserCompanies")
 
   @@index([email])
   @@index([role])
   @@index([companyId])
   @@index([departmentId])
+}
+
+model PasswordResetToken {
+  id        String   @id @default(uuid())
+  token     String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([token])
+  @@index([userId])
 }
 
 model Announcement {

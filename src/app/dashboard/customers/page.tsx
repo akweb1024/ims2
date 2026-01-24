@@ -6,6 +6,7 @@ import FormattedDate from '@/components/common/FormattedDate';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { CustomerType } from '@/types';
+import { TableSkeleton } from '@/components/ui/skeletons';
 
 export default function CustomersPage() {
     const router = useRouter();
@@ -326,9 +327,8 @@ export default function CustomersPage() {
                             <tbody>
                                 {loading ? (
                                     <tr>
-                                        <td colSpan={8} className="text-center py-12">
-                                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600 mx-auto mb-4"></div>
-                                            <p className="text-secondary-500">Loading customers...</p>
+                                        <td colSpan={8} className="p-0">
+                                            <TableSkeleton rows={5} columns={7} showHeader={false} />
                                         </td>
                                     </tr>
                                 ) : error ? (

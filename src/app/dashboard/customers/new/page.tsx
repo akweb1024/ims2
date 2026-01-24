@@ -2,21 +2,37 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
+import FormField from '@/components/ui/FormField';
+import { customerSchema, type CustomerFormData } from '@/lib/validation/schemas';
+import { showSuccess, showError } from '@/lib/toast';
 
 export default function NewCustomerPage() {
     const router = useRouter();
     const [userRole, setUserRole] = useState('CUSTOMER');
     const [loading, setLoading] = useState(false);
-    const [customerType, setCustomerType] = useState('INDIVIDUAL');
     const [institutions, setInstitutions] = useState<any[]>([]);
+
+    const {
+        register,
+        handleSubmit,
+        watch,
+        formState: { errors, isValid },
+    } = useForm<CustomerFormData>({
+        resolver: zodResolver(customerSchema),
+        mode: 'onChange', // Validate on change for real-time feedback
+    });
+
+    const customerType = watch('type', 'INDIVIDUAL');
 
     useEffect(() => {
         const userData = localStorage.getItem('user');
         if (userData) {
             const user = JSON.parse(userData);
             setUserRole(user.role);
-            if (!['SUPER_ADMIN', 'MANAGER', 'EXECUTIVE'].includes(user.role)) {
+            if (!['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'EXECUTIVE'].includes(user.role)) {
                 router.push('/dashboard/customers');
             }
         } else {
@@ -25,7 +41,9 @@ export default function NewCustomerPage() {
 
         const fetchInstitutions = async () => {
             const token = localStorage.getItem('token');
-            const res = await fetch('/api/institutions', { headers: { 'Authorization': `Bearer ${token}` } });
+            const res = await fetch('/api/institutions', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
             if (res.ok) {
                 const data = await res.json();
                 setInstitutions(Array.isArray(data) ? data : (data.data || []));
@@ -34,42 +52,50 @@ export default function NewCustomerPage() {
         fetchInstitutions();
     }, [router]);
 
-    const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-        e.preventDefault();
+    const onSubmit = async (data: CustomerFormData) => {
         setLoading(true);
-
-        const formData = new FormData(e.currentTarget);
-        const data: any = {};
-        formData.forEach((value, key) => {
-            if (key.includes('inst_')) {
-                if (!data.institutionDetails) data.institutionDetails = {};
-                data.institutionDetails[key.replace('inst_', '')] = value;
-            } else {
-                data[key] = value;
-            }
-        });
 
         try {
             const token = localStorage.getItem('token');
+
+            // Transform data for API
+            const payload = {
+                name: data.name,
+                primaryEmail: data.email,
+                primaryPhone: data.phone,
+                secondaryPhone: data.secondaryPhone || null,
+                customerType: data.type,
+                organizationName: data.organizationName || null,
+                designation: data.designation || null,
+                institutionId: data.institutionId || null,
+                billingAddress: data.address || null,
+                city: data.city || null,
+                state: data.state || null,
+                country: data.country || null,
+                pincode: data.postalCode || null,
+                notes: data.notes || null,
+            };
+
             const res = await fetch('/api/customers', {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify(data)
+                body: JSON.stringify(payload)
             });
 
             if (res.ok) {
                 const customer = await res.json();
-                alert('Customer created successfully!');
+                showSuccess('Customer created successfully!');
                 router.push(`/dashboard/customers/${customer.id}`);
             } else {
                 const err = await res.json();
-                alert(err.error || 'Failed to create customer');
+                showError(err.error || 'Failed to create customer');
             }
         } catch (error) {
-            alert('A network error occurred');
+            console.error('Create customer error:', error);
+            showError('A network error occurred');
         } finally {
             setLoading(false);
         }
@@ -85,155 +111,208 @@ export default function NewCustomerPage() {
                     </div>
                 </div>
 
-                <form onSubmit={handleSubmit} className="space-y-8 pb-12">
-                    {/* Basic Info */}
+                <form onSubmit={handleSubmit(onSubmit)} className="space-y-8 pb-12">
+                    {/* Basic Information */}
                     <div className="card-premium">
-                        <h3 className="text-lg font-bold text-secondary-900 mb-6 border-l-4 border-primary-500 pl-4">Basic Information</h3>
+                        <h3 className="text-lg font-bold text-secondary-900 mb-6 border-l-4 border-primary-500 pl-4">
+                            Basic Information
+                        </h3>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div>
-                                <label className="label">Full Name / Contact Person *</label>
-                                <input name="name" type="text" className="input" required placeholder="John Doe" />
-                            </div>
-                            <div>
-                                <label className="label">Primary Email *</label>
-                                <input name="primaryEmail" type="email" className="input" required placeholder="john@example.com" />
-                            </div>
-                            <div>
-                                <label className="label">Primary Phone</label>
-                                <input name="primaryPhone" type="tel" className="input" placeholder="+1 234 567 890" />
-                            </div>
-                            <div>
-                                <label className="label">Customer Type</label>
-                                <select
-                                    name="customerType"
-                                    className="input"
-                                    value={customerType}
-                                    onChange={(e) => setCustomerType(e.target.value)}
-                                >
-                                    <option value="INDIVIDUAL">Individual</option>
-                                    <option value="INSTITUTION">Institution</option>
-                                    <option value="AGENCY">Agency</option>
-                                </select>
-                            </div>
+                            <FormField
+                                label="Full Name / Contact Person"
+                                name="name"
+                                type="text"
+                                placeholder="John Doe"
+                                required
+                                register={register}
+                                error={errors.name}
+                            />
+
+                            <FormField
+                                label="Primary Email"
+                                name="email"
+                                type="email"
+                                placeholder="john@example.com"
+                                required
+                                register={register}
+                                error={errors.email}
+                            />
+
+                            <FormField
+                                label="Primary Phone"
+                                name="phone"
+                                type="tel"
+                                placeholder="+1 234 567 890"
+                                required
+                                register={register}
+                                error={errors.phone}
+                                helpText="Include country code for international numbers"
+                            />
+
+                            <FormField
+                                label="Secondary Phone"
+                                name="secondaryPhone"
+                                type="tel"
+                                placeholder="+1 234 567 890"
+                                register={register}
+                                error={errors.secondaryPhone}
+                            />
+
+                            <FormField
+                                label="Customer Type"
+                                name="type"
+                                type="select"
+                                required
+                                register={register}
+                                error={errors.type}
+                                options={[
+                                    { value: 'INDIVIDUAL', label: 'Individual' },
+                                    { value: 'INSTITUTION', label: 'Institution' },
+                                    { value: 'AGENCY', label: 'Agency' },
+                                ]}
+                            />
+
+                            <FormField
+                                label="Designation / Role"
+                                name="designation"
+                                type="text"
+                                placeholder="e.g., Professor, Librarian, Director"
+                                register={register}
+                                error={errors.designation}
+                            />
+
                             <div className="md:col-span-2">
-                                <label className="label">Organization Name</label>
-                                <input name="organizationName" type="text" className="input" placeholder="e.g. Harvard University or Acme Corp" />
+                                <FormField
+                                    label="Organization Name"
+                                    name="organizationName"
+                                    type="text"
+                                    placeholder="e.g., Harvard University or Acme Corp"
+                                    register={register}
+                                    error={errors.organizationName}
+                                    helpText="Leave blank for individual customers"
+                                />
                             </div>
-                            <div>
-                                <label className="label">Link to Institution (Global)</label>
-                                <select name="institutionId" className="input">
-                                    <option value="">-- None / Individual --</option>
-                                    {institutions.map(inst => (
-                                        <option key={inst.id} value={inst.id}>{inst.name} ({inst.code})</option>
-                                    ))}
-                                </select>
-                            </div>
-                            <div>
-                                <label className="label">Designation / Role</label>
-                                <select name="designation" className="input">
-                                    <option value="">-- Select Designation --</option>
-                                    {[
-                                        'STUDENT', 'TEACHER', 'FACULTY', 'HOD', 'PRINCIPAL', 'DEAN',
-                                        'RESEARCHER', 'LIBRARIAN', 'ACCOUNTANT', 'DIRECTOR', 'REGISTRAR',
-                                        'VICE_CHANCELLOR', 'CHANCELLOR', 'STAFF', 'OTHER'
-                                    ].map(d => (
-                                        <option key={d} value={d}>{d.replace('_', ' ')}</option>
-                                    ))}
-                                </select>
-                            </div>
+
+                            <FormField
+                                label="Link to Institution (Global)"
+                                name="institutionId"
+                                type="select"
+                                register={register}
+                                error={errors.institutionId}
+                                options={[
+                                    { value: '', label: '-- None / Individual --' },
+                                    ...institutions.map(inst => ({
+                                        value: inst.id,
+                                        label: `${inst.name} (${inst.code})`
+                                    }))
+                                ]}
+                            />
                         </div>
                     </div>
 
-                    {/* Address Info */}
+                    {/* Address & Contact Details */}
                     <div className="card-premium">
-                        <h3 className="text-lg font-bold text-secondary-900 mb-6 border-l-4 border-secondary-400 pl-4">Address & Tax Details</h3>
+                        <h3 className="text-lg font-bold text-secondary-900 mb-6 border-l-4 border-secondary-400 pl-4">
+                            Address & Contact Details
+                        </h3>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div className="md:col-span-2">
-                                <label className="label">Billing Address</label>
-                                <textarea name="billingAddress" className="input h-20" placeholder="Street, Building, etc."></textarea>
+                                <FormField
+                                    label="Address"
+                                    name="address"
+                                    type="textarea"
+                                    placeholder="Street, Building, etc."
+                                    rows={3}
+                                    register={register}
+                                    error={errors.address}
+                                />
                             </div>
-                            <div>
-                                <label className="label">City</label>
-                                <input name="city" type="text" className="input" />
-                            </div>
-                            <div>
-                                <label className="label">State / Province</label>
-                                <input name="state" type="text" className="input" />
-                            </div>
-                            <div>
-                                <label className="label">Country</label>
-                                <input name="country" type="text" className="input" placeholder="e.g. United States" />
-                            </div>
-                            <div>
-                                <label className="label">Pincode / Zip Code</label>
-                                <input name="pincode" type="text" className="input" />
-                            </div>
-                            <div>
-                                <label className="label">GST / VAT / Tax ID</label>
-                                <input name="gstVatTaxId" type="text" className="input" placeholder="Optional" />
-                            </div>
-                            <div>
-                                <label className="label">Tags</label>
-                                <input name="tags" type="text" className="input" placeholder="VIP, New, Academic (comma separated)" />
-                            </div>
+
+                            <FormField
+                                label="City"
+                                name="city"
+                                type="text"
+                                placeholder="e.g., New York"
+                                register={register}
+                                error={errors.city}
+                            />
+
+                            <FormField
+                                label="State / Province"
+                                name="state"
+                                type="text"
+                                placeholder="e.g., California"
+                                register={register}
+                                error={errors.state}
+                            />
+
+                            <FormField
+                                label="Country"
+                                name="country"
+                                type="text"
+                                placeholder="e.g., United States"
+                                register={register}
+                                error={errors.country}
+                            />
+
+                            <FormField
+                                label="Postal Code"
+                                name="postalCode"
+                                type="text"
+                                placeholder="e.g., 10001"
+                                register={register}
+                                error={errors.postalCode}
+                            />
                         </div>
                     </div>
 
-                    {/* Institutional Specific - Conditional */}
-                    {customerType === 'INSTITUTION' && (
-                        <div className="card-premium border-primary-100 bg-primary-50/30">
-                            <h3 className="text-lg font-bold text-primary-900 mb-6 border-l-4 border-primary-600 pl-4">Institutional Details</h3>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <div>
-                                    <label className="label">Category</label>
-                                    <select name="inst_category" className="input">
-                                        <option value="University">University</option>
-                                        <option value="College">College</option>
-                                        <option value="Research Organization">Research Organization</option>
-                                        <option value="Corporate">Corporate</option>
-                                        <option value="Government">Government</option>
-                                        <option value="Other">Other</option>
-                                    </select>
-                                </div>
-                                <div>
-                                    <label className="label">Department</label>
-                                    <input name="inst_department" type="text" className="input" placeholder="e.g. Science & Technology" />
-                                </div>
-                                <div>
-                                    <label className="label">Library Contact</label>
-                                    <input name="inst_libraryContact" type="text" className="input" placeholder="Name of librarian" />
-                                </div>
-                                <div>
-                                    <label className="label">IP Range(s)</label>
-                                    <input name="inst_ipRange" type="text" className="input" placeholder="e.g. 192.168.1.1-192.168.1.255" />
-                                </div>
-                                <div>
-                                    <label className="label">Number of Users</label>
-                                    <input name="inst_numberOfUsers" type="number" className="input" placeholder="Total user base" />
-                                </div>
-                                <div>
-                                    <label className="label">Number of Seats</label>
-                                    <input name="inst_numberOfSeats" type="number" className="input" placeholder="Concurrent licenses" />
-                                </div>
-                            </div>
-                        </div>
-                    )}
+                    {/* Additional Notes */}
+                    <div className="card-premium">
+                        <h3 className="text-lg font-bold text-secondary-900 mb-6 border-l-4 border-purple-400 pl-4">
+                            Additional Information
+                        </h3>
+                        <FormField
+                            label="Notes"
+                            name="notes"
+                            type="textarea"
+                            placeholder="Any additional information about this customer..."
+                            rows={4}
+                            register={register}
+                            error={errors.notes}
+                            helpText="Internal notes visible only to staff"
+                        />
+                    </div>
 
-                    <div className="flex justify-end space-x-4">
-                        <button
-                            type="button"
-                            onClick={() => router.back()}
-                            className="btn btn-secondary px-8"
-                        >
-                            Cancel
-                        </button>
-                        <button
-                            type="submit"
-                            disabled={loading}
-                            className="btn btn-primary px-12"
-                        >
-                            {loading ? 'Creating...' : 'Create Customer'}
-                        </button>
+                    {/* Form Actions */}
+                    <div className="flex justify-between items-center">
+                        <div className="text-sm text-gray-500">
+                            {Object.keys(errors).length > 0 && (
+                                <span className="text-red-600 font-medium">
+                                    ⚠️ Please fix {Object.keys(errors).length} error{Object.keys(errors).length > 1 ? 's' : ''} before submitting
+                                </span>
+                            )}
+                            {isValid && Object.keys(errors).length === 0 && (
+                                <span className="text-green-600 font-medium">
+                                    ✓ Form is valid and ready to submit
+                                </span>
+                            )}
+                        </div>
+                        <div className="flex space-x-4">
+                            <button
+                                type="button"
+                                onClick={() => router.back()}
+                                className="btn btn-secondary px-8"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                type="submit"
+                                disabled={loading || !isValid}
+                                className="btn btn-primary px-12 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                {loading ? 'Creating...' : 'Create Customer'}
+                            </button>
+                        </div>
                     </div>
                 </form>
             </div>

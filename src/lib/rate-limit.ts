@@ -24,21 +24,49 @@ export function rateLimit(config?: RateLimitConfig) {
     const windowMs = config?.windowMs || parseInt(process.env.RATE_LIMIT_WINDOW_MS || '60000');
 
     return (request: NextRequest) => {
-        // RATE LIMITING DISABLED PER USER REQUEST
-        return NextResponse.next();
-
-        /* 
-        // Original logic preserved for potential future re-enablement
         // Skip rate limiting in development mode
         if (process.env.NODE_ENV === 'development') {
             return NextResponse.next();
         }
 
-        // Get client IP
         const ip = getClientIp(request);
-        
-        // ... (rest of logic commented out)
-        */
+
+        if (!ip) {
+            return NextResponse.next();
+        }
+
+        const now = Date.now();
+        const key = `${ip}`;
+
+        // Cleanup expired
+        cleanupRateLimitStore();
+
+        const currentWindow = rateLimitStore.get(key) || { count: 0, resetTime: now + windowMs };
+
+        if (now > currentWindow.resetTime) {
+            currentWindow.count = 1;
+            currentWindow.resetTime = now + windowMs;
+        } else {
+            currentWindow.count++;
+        }
+
+        rateLimitStore.set(key, currentWindow);
+
+        const response = NextResponse.next();
+
+        // Add rate limit headers
+        response.headers.set('X-RateLimit-Limit', maxRequests.toString());
+        response.headers.set('X-RateLimit-Remaining', Math.max(0, maxRequests - currentWindow.count).toString());
+        response.headers.set('X-RateLimit-Reset', currentWindow.resetTime.toString());
+
+        if (currentWindow.count > maxRequests) {
+            return new NextResponse('Too Many Requests', {
+                status: 429,
+                headers: response.headers
+            });
+        }
+
+        return response;
     };
 }
 

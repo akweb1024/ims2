@@ -34,7 +34,7 @@ export default function AiConsultantPage() {
                             </div>
                             <h1 className="text-4xl font-black text-white tracking-tight">AI Strategy Consultant</h1>
                             <p className="text-secondary-400 mt-2 font-medium max-w-lg">
-                                Real-time algorithmic analysis of your company's financials, employee performance, and market vectors.
+                                Real-time algorithmic analysis of your company&apos;s financials, employee performance, and market vectors.
                             </p>
                         </div>
                     </div>
