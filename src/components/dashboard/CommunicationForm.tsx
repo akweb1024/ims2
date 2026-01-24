@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { useCRMMutations } from '@/hooks/useCRM';
+import ConversationChecklist from './ConversationChecklist';
+import { calculatePredictions } from '@/lib/predictions';
 
 interface CommunicationFormProps {
     customerId: string;
@@ -10,15 +12,27 @@ interface CommunicationFormProps {
 export default function CommunicationForm({ customerId, previousFollowUpId, onSuccess }: CommunicationFormProps) {
     const [type, setType] = useState('COMMENT');
     const [loading, setLoading] = useState(false);
+    const [checkedItems, setCheckedItems] = useState<string[]>([]);
 
     const { createCommunication } = useCRMMutations();
 
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
+
+        // Validate checklist
+        if (checkedItems.length === 0) {
+            alert('Please check at least one item in the conversation checklist');
+            return;
+        }
+
         setLoading(true);
 
         const form = e.target as HTMLFormElement;
         const formData = new FormData(form);
+
+        // Calculate predictions
+        const predictions = calculatePredictions(checkedItems);
+
         const payload: any = {
             customerProfileId: customerId,
             previousFollowUpId,
@@ -27,7 +41,11 @@ export default function CommunicationForm({ customerId, previousFollowUpId, onSu
             subject: formData.get('subject'),
             notes: formData.get('notes'),
             outcome: formData.get('outcome'),
-            nextFollowUpDate: formData.get('nextFollowUpDate') || null
+            nextFollowUpDate: formData.get('nextFollowUpDate') || null,
+            checklist: {
+                checkedItems,
+                ...predictions
+            }
         };
 
         if (payload.type === 'CALL') {
@@ -40,6 +58,7 @@ export default function CommunicationForm({ customerId, previousFollowUpId, onSu
             alert('Communication logged successfully!');
             form.reset();
             setType('COMMENT'); // Reset type
+            setCheckedItems([]); // Reset checklist
             if (onSuccess) {
                 onSuccess();
             }
@@ -140,6 +159,16 @@ export default function CommunicationForm({ customerId, previousFollowUpId, onSu
                 <div>
                     <label className="label">Next Follow-up Date</label>
                     <input type="date" name="nextFollowUpDate" className="input" />
+                </div>
+
+                {/* Conversation Checklist */}
+                <div className="md:col-span-2 border-t border-gray-200 pt-6 mt-2">
+                    <ConversationChecklist
+                        checkedItems={checkedItems}
+                        onChange={setCheckedItems}
+                        showPredictions={true}
+                        customerId={customerId}
+                    />
                 </div>
             </div>
 

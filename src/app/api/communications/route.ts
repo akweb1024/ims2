@@ -23,11 +23,19 @@ export async function POST(req: NextRequest) {
             duration,
             recordingUrl,
             referenceId,
-            previousFollowUpId
+            previousFollowUpId,
+            checklist // New: checklist data with predictions
         } = body;
 
         if (!customerProfileId || !channel || !subject || !notes) {
             return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+        }
+
+        // Validate checklist (mandatory)
+        if (!checklist || !checklist.checkedItems || checklist.checkedItems.length === 0) {
+            return NextResponse.json({
+                error: 'Conversation checklist is required. Please check at least one item.'
+            }, { status: 400 });
         }
 
         // 3. Create Log
@@ -44,9 +52,27 @@ export async function POST(req: NextRequest) {
                 recordingUrl,
                 referenceId,
                 nextFollowUpDate: nextFollowUpDate ? new Date(nextFollowUpDate) : null,
-                date: new Date()
+                date: new Date(),
+                companyId: decoded.companyId || null
             }
         });
+
+        // 3.5. Create Checklist Record
+        if (checklist) {
+            await prisma.conversationChecklist.create({
+                data: {
+                    communicationLogId: log.id,
+                    checkedItems: checklist.checkedItems,
+                    renewalLikelihood: checklist.renewalLikelihood,
+                    upsellPotential: checklist.upsellPotential,
+                    churnRisk: checklist.churnRisk,
+                    customerHealth: checklist.customerHealth,
+                    insights: checklist.insights || [],
+                    recommendedActions: checklist.recommendedActions || [],
+                    companyId: decoded.companyId || null
+                }
+            });
+        }
 
         // 4. If this is a response to a follow-up, mark the previous one as completed
         if (previousFollowUpId) {

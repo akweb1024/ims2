@@ -591,6 +591,7 @@ model CommunicationLog {
   customerProfile     CustomerProfile   @relation(fields: [customerProfileId], references: [id])
   institution         Institution?      @relation(fields: [institutionId], references: [id])
   user                User?             @relation("UserCommunications", fields: [userId], references: [id])
+  checklist           ConversationChecklist?
 
   @@index([customerProfileId])
   @@index([type])
@@ -598,6 +599,34 @@ model CommunicationLog {
   @@index([nextFollowUpDate])
   @@index([companyId])
   @@index([institutionId])
+}
+
+model ConversationChecklist {
+  id                    String           @id @default(uuid())
+  communicationLogId    String           @unique
+  communicationLog      CommunicationLog @relation(fields: [communicationLogId], references: [id], onDelete: Cascade)
+  
+  // Checklist responses (JSON array of checked item IDs)
+  checkedItems          Json             // Array of strings like ["sentiment_1", "engagement_3", "business_2"]
+  
+  // AI-generated predictions (calculated on save)
+  renewalLikelihood     Float?           // 0-100 score
+  upsellPotential       Float?           // 0-100 score
+  churnRisk             Float?           // 0-100 score
+  customerHealth        String?          // "EXCELLENT", "GOOD", "AT_RISK", "CRITICAL"
+  
+  // Insights and recommendations
+  insights              Json?            // Array of insight strings
+  recommendedActions    Json?            // Array of recommended action strings
+  
+  // Metadata
+  createdAt             DateTime         @default(now())
+  updatedAt             DateTime         @updatedAt
+  companyId             String?
+  
+  @@index([communicationLogId])
+  @@index([companyId])
+  @@index([customerHealth])
 }
 
 model Task {
