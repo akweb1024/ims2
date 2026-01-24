@@ -467,6 +467,7 @@ model Journal {
   certificates      ReviewCertificate[]
   subscriptionItems SubscriptionItem[]
   indexings         JournalIndexing[]      @relation("JournalToIndexing")
+  indexingTracking  JournalIndexingTracking[]
 
   @@index([isActive])
   @@index([name])
@@ -2707,9 +2708,41 @@ model JournalIndexing {
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
   journals    Journal[] @relation("JournalToIndexing")
+  tracking    JournalIndexingTracking[]
 
   @@index([code])
   @@index([tier])
+}
+
+model JournalIndexingTracking {
+  id                String          @id @default(uuid())
+  journalId         String
+  indexingId        String
+  
+  status            String          @default("PLANNED") // PLANNED, APPLIED, UNDER_REVIEW, REJECTED, INDEXED
+  
+  submissionDate    DateTime?
+  decisionDate      DateTime?
+  indexedDate       DateTime?
+  
+  rejectionReason   String?
+  embargoEndDate    DateTime?      // If rejected, when can we re-apply?
+  reApplicationDate DateTime?      // Planned re-application
+  
+  publicUrl         String?        // Link to Master Journal List entry
+  
+  auditScore        Float?         // Score from Readiness Audit
+  auditData         Json?          // Detailed audit checklist responses
+  
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+  
+  journal           Journal         @relation(fields: [journalId], references: [id], onDelete: Cascade)
+  indexingMaster    JournalIndexing @relation(fields: [indexingId], references: [id])
+
+  @@unique([journalId, indexingId])
+  @@index([journalId])
+  @@index([status])
 }
 
 model Publisher {

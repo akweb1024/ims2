@@ -4,7 +4,8 @@ import { useState, useEffect, use, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import Link from 'next/link';
-import { Users, BookOpen, Layers, Save, Trash2, Plus, Edit2, X, Check } from 'lucide-react';
+import { Users, BookOpen, Layers, Save, Trash2, Plus, Edit2, X, Check, Target } from 'lucide-react';
+import WoSReadinessAudit from '@/components/journals/WoSReadinessAudit';
 
 export default function EditJournalPage({ params }: { params: Promise<{ id: string }> }) {
     const { id } = use(params);
@@ -34,6 +35,15 @@ export default function EditJournalPage({ params }: { params: Promise<{ id: stri
     const [showIssueModal, setShowIssueModal] = useState<string | null>(null); // Volume ID
     const [volumeForm, setVolumeForm] = useState({ volumeNumber: '', year: new Date().getFullYear().toString() });
     const [issueForm, setIssueForm] = useState({ issueNumber: '', month: '', title: '' });
+
+    // Indexing Data
+    const [trackings, setTrackings] = useState<any[]>([]);
+    const [showTrackingModal, setShowTrackingModal] = useState(false);
+    // Hardcoded for demo/simplicity - In real app, fetch from /api/master/indexing
+    const [availableIndexings] = useState([
+        { id: 'wos-123', name: 'Web of Science (WoS)', code: 'WOS' },
+        { id: 'scopus-456', name: 'Scopus', code: 'SCOPUS' }
+    ]);
 
     const fetchJournal = useCallback(async () => {
         try {
@@ -66,6 +76,14 @@ export default function EditJournalPage({ params }: { params: Promise<{ id: stri
         } catch (err) { console.error(err); }
     }, [id]);
 
+    const fetchTrackings = useCallback(async () => {
+        try {
+            const token = localStorage.getItem('token');
+            const res = await fetch(`/api/journals/${id}/indexing`, { headers: { 'Authorization': `Bearer ${token}` } });
+            if (res.ok) setTrackings(await res.json());
+        } catch (err) { console.error(err); }
+    }, [id]);
+
     useEffect(() => {
         const userData = localStorage.getItem('user');
         if (userData) {
@@ -75,7 +93,24 @@ export default function EditJournalPage({ params }: { params: Promise<{ id: stri
         fetchJournal();
         fetchBoard();
         fetchVolumes();
-    }, [id, fetchJournal, fetchBoard, fetchVolumes]);
+        fetchTrackings();
+    }, [id, fetchJournal, fetchBoard, fetchVolumes, fetchTrackings]);
+
+    // --- INDEXING HANDLERS ---
+    const handleAddTracking = async (indexingId: string) => {
+        try {
+            const token = localStorage.getItem('token');
+            const res = await fetch(`/api/journals/${id}/indexing`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify({ indexingId, status: 'PLANNED' })
+            });
+            if (res.ok) {
+                fetchTrackings();
+                setShowTrackingModal(false);
+            }
+        } catch (error) { console.error(error); }
+    };
 
     // --- OVERVIEW HANDLERS ---
     const handleOverviewSubmit = async (e: React.FormEvent) => {
@@ -192,6 +227,12 @@ export default function EditJournalPage({ params }: { params: Promise<{ id: stri
                     >
                         <Layers size={18} /> Volumes & Issues
                     </button>
+                    <button
+                        onClick={() => setActiveTab('indexing')}
+                        className={`px-6 py-3 text-sm font-bold uppercase tracking-wider border-b-2 transition-colors flex items-center gap-2 ${activeTab === 'indexing' ? 'border-primary-500 text-primary-600' : 'border-transparent text-secondary-400'}`}
+                    >
+                        <Target size={18} /> Indexing & Audit
+                    </button>
                 </div>
 
                 {/* OVERVIEW TAB */}
@@ -281,7 +322,72 @@ export default function EditJournalPage({ params }: { params: Promise<{ id: stri
                         </div>
                     </div>
                 )}
+
+                {/* INDEXING TAB */}
+                {activeTab === 'indexing' && (
+                    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4">
+                        <div className="flex justify-between items-center bg-secondary-50 p-4 rounded-xl border border-secondary-200">
+                            <div>
+                                <h3 className="font-bold text-lg text-secondary-900">Indexing Applications</h3>
+                                <p className="text-secondary-500 text-sm">Manage applications to Web of Science, Scopus, etc.</p>
+                            </div>
+                            <button onClick={() => setShowTrackingModal(true)} className="btn btn-primary flex items-center gap-2"><Plus size={18} /> Apply for Indexing</button>
+                        </div>
+
+                        {trackings.length === 0 ? (
+                            <div className="p-12 text-center text-secondary-400 italic bg-white rounded-xl border border-dashed border-secondary-300">
+                                No indexing applications started. Click &quot;Apply&quot; to begin.
+                            </div>
+                        ) : (
+                            <div className="space-y-8">
+                                {trackings.map((t: any) => (
+                                    <div key={t.id} className="space-y-4">
+                                        <div className="flex items-center justify-between">
+                                            <h4 className="text-xl font-bold text-secondary-900 border-b-2 border-primary-500 inline-block pb-1">
+                                                {availableIndexings.find(i => i.id === t.indexingId)?.name || 'Indexing Application'}
+                                            </h4>
+                                            <span className={`badge ${t.status === 'INDEXED' ? 'badge-success' : t.status === 'REJECTED' ? 'badge-error' : 'badge-warning'}`}>
+                                                Status: {t.status}
+                                            </span>
+                                        </div>
+
+                                        {/* Render WoS Audit if applicable */}
+                                        {/* In real app, check indexing code. Assuming first one is WoS for demo */}
+                                        <WoSReadinessAudit
+                                            journalId={id as string}
+                                            indexingId={t.indexingId}
+                                            initialData={t.auditData as any}
+                                            initialScore={t.auditScore || 0}
+                                            onUpdate={fetchTrackings}
+                                        />
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                )}
             </div>
+
+            {/* TRACKING MODAL */}
+            {showTrackingModal && (
+                <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+                    <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-2xl animate-in zoom-in duration-200">
+                        <h3 className="text-xl font-bold mb-4">Select Indexing Service</h3>
+                        <div className="space-y-2">
+                            {availableIndexings.map(idx => (
+                                <button
+                                    key={idx.id}
+                                    onClick={() => handleAddTracking(idx.id)}
+                                    className="w-full p-4 text-left border border-secondary-200 rounded-xl hover:bg-primary-50 hover:border-primary-500 transition-colors font-bold text-secondary-900"
+                                >
+                                    {idx.name}
+                                </button>
+                            ))}
+                        </div>
+                        <button onClick={() => setShowTrackingModal(false)} className="btn btn-secondary w-full mt-4">Cancel</button>
+                    </div>
+                </div>
+            )}
 
             {/* MODALS */}
             {showMemberModal && (
