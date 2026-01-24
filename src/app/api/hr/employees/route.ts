@@ -86,7 +86,44 @@ export const GET = authorizedRoute(
                 }
             });
 
-            return NextResponse.json(employees);
+            const mappedEmployees = employees.map(emp => {
+                let calculatedTotalExperience = "0 years";
+                if (emp.dateOfJoining) {
+                    const today = new Date();
+                    const joining = new Date(emp.dateOfJoining);
+
+                    // Tenure in months
+                    let tenureMonths = (today.getFullYear() - joining.getFullYear()) * 12;
+                    tenureMonths -= joining.getMonth();
+                    tenureMonths += today.getMonth();
+                    if (today.getDate() < joining.getDate()) {
+                        tenureMonths--;
+                    }
+                    if (tenureMonths < 0) tenureMonths = 0;
+
+                    // Add previous experience
+                    const prevYears = emp.totalExperienceYears || 0;
+                    const prevMonths = emp.totalExperienceMonths || 0;
+
+                    const totalMonths = (prevYears * 12) + prevMonths + tenureMonths;
+                    const years = Math.floor(totalMonths / 12);
+                    const months = totalMonths % 12;
+
+                    calculatedTotalExperience = `${years} years${months > 0 ? ` ${months} months` : ''}`;
+                } else {
+                    // Fallback to manual fields if no joining date
+                    const years = emp.totalExperienceYears || 0;
+                    const months = emp.totalExperienceMonths || 0;
+                    calculatedTotalExperience = `${years} years${months > 0 ? ` ${months} months` : ''}`;
+                }
+
+                return {
+                    ...emp,
+                    calculatedTotalExperience
+                };
+            });
+
+            return NextResponse.json(mappedEmployees);
         } catch (error) {
             return createErrorResponse(error);
         }

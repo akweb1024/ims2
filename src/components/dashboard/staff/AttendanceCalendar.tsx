@@ -71,6 +71,38 @@ export default function AttendanceCalendar({ attendance, workReports }: Attendan
                     <p className="text-primary-100 text-xs font-bold uppercase tracking-widest">Attendance & Reports Tracker</p>
                 </div>
                 <div className="flex gap-2">
+                    <div className="flex gap-1 mr-2">
+                        <button
+                            className="p-2 hover:bg-white/10 rounded-xl transition-all text-xs font-bold flex items-center gap-1"
+                            title="Export CSV"
+                            onClick={() => window.open(`/api/hr/attendance/export?startDate=${year}-${month + 1}-01&endDate=${year}-${month + 1}-${totalDays}`, '_blank')}
+                        >
+                            Export
+                        </button>
+                        <button
+                            className="p-2 hover:bg-white/10 rounded-xl transition-all text-xs font-bold flex items-center gap-1"
+                            title="Import CSV"
+                            onClick={() => {
+                                const input = document.createElement('input');
+                                input.type = 'file';
+                                input.accept = '.csv';
+                                input.onchange = async (e: any) => {
+                                    const file = e.target.files[0];
+                                    if (!file) return;
+                                    const fd = new FormData();
+                                    fd.append('file', file);
+                                    try {
+                                        const res = await fetch('/api/hr/attendance/import', { method: 'POST', body: fd });
+                                        if (res.ok) alert('Import Successful');
+                                        else alert('Import Failed');
+                                    } catch (err) { alert('Error: ' + err); }
+                                };
+                                input.click();
+                            }}
+                        >
+                            Import
+                        </button>
+                    </div>
                     <button onClick={prevMonth} className="p-2 hover:bg-white/10 rounded-xl transition-all">
                         <ChevronLeft size={20} />
                     </button>

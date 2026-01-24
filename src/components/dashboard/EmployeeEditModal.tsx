@@ -44,7 +44,9 @@ export default function EmployeeEditModal({ employee, isOpen, onClose, onSave }:
         nextReviewDate: employee?.nextReviewDate?.split('T')[0] || '',
         lastIncrementPercentage: employee?.lastIncrementPercentage || '',
         designationId: employee?.designationId || '',
-        qualification: employee?.qualification || ''
+        qualification: employee?.qualification || '',
+        skills: employee?.skills || [],
+        expertise: employee?.expertise || []
     });
 
     const [designations, setDesignations] = useState<any[]>([]);
@@ -265,9 +267,34 @@ export default function EmployeeEditModal({ employee, isOpen, onClose, onSave }:
                         {/* Experience & Growth */}
                         <div>
                             <h3 className="text-lg font-black text-secondary-900 mb-4 pb-2 border-b">Experience & Growth Tracker</h3>
+
+                            {/* Skills & Expertise */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                                <div>
+                                    <label className="label">Skills (Comma separated)</label>
+                                    <input
+                                        type="text"
+                                        className="input"
+                                        placeholder="React, Node.js"
+                                        value={Array.isArray(formData.skills) ? formData.skills.join(', ') : formData.skills || ''}
+                                        onChange={(e) => setFormData({ ...formData, skills: e.target.value.split(',').map(s => s.trim()) })}
+                                    />
+                                </div>
+                                <div>
+                                    <label className="label">Expertise (Comma separated)</label>
+                                    <input
+                                        type="text"
+                                        className="input"
+                                        placeholder="Leadership, Architecture"
+                                        value={Array.isArray(formData.expertise) ? formData.expertise.join(', ') : formData.expertise || ''}
+                                        onChange={(e) => setFormData({ ...formData, expertise: e.target.value.split(',').map(s => s.trim()) })}
+                                    />
+                                </div>
+                            </div>
+
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div className="space-y-4 p-4 bg-secondary-50 rounded-2xl">
-                                    <h4 className="font-bold text-secondary-700 text-sm uppercase">Total Experience</h4>
+                                    <h4 className="font-bold text-secondary-700 text-sm uppercase">Pre-joining Experience</h4>
                                     <div className="grid grid-cols-2 gap-2">
                                         <div>
                                             <label className="text-[10px] uppercase font-bold text-secondary-400">Years</label>

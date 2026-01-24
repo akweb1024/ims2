@@ -71,6 +71,8 @@ export const createEmployeeSchema = z.object({
     phoneNumber: z.string().optional().nullable(),
     companyId: z.string().optional(),
     companyIds: z.array(z.string()).optional(),
+    skills: z.array(z.string()).optional(),
+    expertise: z.array(z.string()).optional(),
     allowedModules: z.array(z.string()).default(["CORE"]),
 });
 
@@ -114,6 +116,10 @@ export const updateEmployeeSchema = z.object({
     jobDescription: z.preprocess(emptyToNull, z.string().nullable().optional()),
     kra: z.preprocess(emptyToNull, z.string().nullable().optional()),
     designationId: z.preprocess(emptyToNull, z.string().uuid().nullable().optional()).or(z.literal(null)).optional(),
+
+    // Skills & Expertise
+    skills: z.array(z.string()).optional(),
+    expertise: z.array(z.string()).optional(),
 
     // Experience tracking
     totalExperienceYears: z.preprocess(emptyToUndefined, z.coerce.number().min(0).optional()),

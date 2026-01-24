@@ -189,6 +189,9 @@ export default function EmployeeList({
                                             <p className="text-sm font-bold text-secondary-900">
                                                 {emp.dateOfJoining ? new Date(emp.dateOfJoining).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : 'N/A'}
                                             </p>
+                                            <p className="text-[10px] text-secondary-400 font-bold uppercase tracking-wide mt-0.5">
+                                                {emp.calculatedTotalExperience ? `Exp: ${emp.calculatedTotalExperience}` : ''}
+                                            </p>
                                         </td>
                                         <td className="px-6 py-4 text-right">
                                             <div className="flex flex-col items-end gap-1">
@@ -202,9 +205,9 @@ export default function EmployeeList({
                                         <td className="px-6 py-4">
                                             <div className="flex flex-col items-center gap-1">
                                                 <div className={`text-2xl font-black ${monthScore >= 80 ? 'text-success-600' :
-                                                        monthScore >= 60 ? 'text-primary-600' :
-                                                            monthScore >= 40 ? 'text-warning-600' :
-                                                                'text-danger-600'
+                                                    monthScore >= 60 ? 'text-primary-600' :
+                                                        monthScore >= 40 ? 'text-warning-600' :
+                                                            'text-danger-600'
                                                     }`}>
                                                     {monthScore.toFixed(0)}
                                                 </div>
@@ -274,6 +277,15 @@ export default function EmployeeList({
                                     <span className={`inline-block text-[9px] font-black px-2 py-0.5 rounded-full uppercase tracking-widest ${emp.user.isActive ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' : 'bg-rose-50 text-rose-700 border border-rose-100'}`}>
                                         {emp.user.isActive ? 'Active Staff' : 'Inactive'}
                                     </span>
+                                    {emp.skills && emp.skills.length > 0 && (
+                                        <div className="flex flex-wrap justify-center gap-1 mt-3 px-4 h-6 overflow-hidden">
+                                            {emp.skills.slice(0, 3).map((skill: string, i: number) => (
+                                                <span key={i} className="text-[9px] px-1.5 py-0.5 bg-secondary-100 text-secondary-600 rounded-md font-bold truncate max-w-[80px]">
+                                                    {skill}
+                                                </span>
+                                            ))}
+                                        </div>
+                                    )}
                                 </div>
 
                                 <div className="grid grid-cols-2 gap-3 border-t border-dashed border-secondary-200 pt-4 bg-secondary-50/50 -mx-6 -mb-6 p-4 rounded-b-2xl">
@@ -292,9 +304,9 @@ export default function EmployeeList({
                                     <div className="text-center border-l border-secondary-200">
                                         <p className="text-[9px] text-secondary-400 font-bold uppercase tracking-wider">Score</p>
                                         <p className={`text-lg font-black ${monthScore >= 80 ? 'text-success-600' :
-                                                monthScore >= 60 ? 'text-primary-600' :
-                                                    monthScore >= 40 ? 'text-warning-600' :
-                                                        'text-danger-600'
+                                            monthScore >= 60 ? 'text-primary-600' :
+                                                monthScore >= 40 ? 'text-warning-600' :
+                                                    'text-danger-600'
                                             }`}>{monthScore.toFixed(0)}</p>
                                     </div>
                                 </div>
@@ -306,7 +318,8 @@ export default function EmployeeList({
                         );
                     })}
                 </div>
-            )}
-        </div>
+            )
+            }
+        </div >
     );
 }

@@ -799,6 +799,8 @@ model EmployeeProfile {
   incentiveSalary          Float?                       // Incentive component
   monthlyTarget            Float?                       @default(0) // Monthly Revenue/Sales Target
   yearlyTarget             Float?                       @default(0) // Yearly Revenue/Sales Target
+  skills                   String[]
+  expertise                String[]
   bankName                 String?
   accountNumber            String?
   ifscCode                 String?

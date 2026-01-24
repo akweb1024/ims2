@@ -33,7 +33,6 @@ const initialFormState = {
     kra: '',
     totalExperienceYears: 0,
     totalExperienceMonths: 0,
-    relevantExperienceYears: 0,
     relevantExperienceMonths: 0,
     qualification: '',
     grade: '',
@@ -71,7 +70,9 @@ const initialFormState = {
     companyId: '',
     companyIds: [] as string[],
     departmentId: '',
-    allowedModules: ['CORE'] as string[]
+    allowedModules: ['CORE'] as string[],
+    skills: [] as string[],
+    expertise: [] as string[]
 };
 
 export default function EmployeeForm({
@@ -412,6 +413,31 @@ export default function EmployeeForm({
                             <option value="true">Active</option>
                             <option value="false">Inactive</option>
                         </select>
+                    </div>
+
+                    <div className="md:col-span-3 grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-secondary-100 mt-2">
+                        <div>
+                            <label className="label-premium">Skills (Comma separated)</label>
+                            <input
+                                type="text"
+                                className="input-premium"
+                                placeholder="React, Node.js, Project Management"
+                                value={Array.isArray(empForm.skills) ? empForm.skills.join(', ') : empForm.skills || ''}
+                                onChange={e => setEmpForm({ ...empForm, skills: e.target.value.split(',').map(s => s.trim()) })}
+                            />
+                            <p className="text-[10px] text-secondary-400 mt-1 font-bold italic">Technical or professional skills</p>
+                        </div>
+                        <div>
+                            <label className="label-premium">Expertise (Comma separated)</label>
+                            <input
+                                type="text"
+                                className="input-premium"
+                                placeholder="Frontend Architecture, Team Leadership"
+                                value={Array.isArray(empForm.expertise) ? empForm.expertise.join(', ') : empForm.expertise || ''}
+                                onChange={e => setEmpForm({ ...empForm, expertise: e.target.value.split(',').map(s => s.trim()) })}
+                            />
+                            <p className="text-[10px] text-secondary-400 mt-1 font-bold italic">Areas of deep knowledge or specialization</p>
+                        </div>
                     </div>
                 </div>
             </div>

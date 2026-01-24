@@ -6,6 +6,8 @@ import { usePathname, useRouter } from 'next/navigation';
 import { registerPush } from '@/lib/push-register';
 import GlobalSearch from './GlobalSearch';
 import { useSession, signOut, signIn } from 'next-auth/react';
+import { Toaster } from 'react-hot-toast';
+
 interface DashboardLayoutProps {
     children: React.ReactNode;
     userRole?: string;
@@ -498,6 +500,7 @@ export default function DashboardLayout({ children, userRole: propUserRole = 'CU
     return (
         <div className="min-h-screen bg-secondary-50">
             {/* Impersonation Warning Bar */}
+            <Toaster position="top-right" />
             {isImpersonating && (
                 <div className="bg-primary-600 text-white px-4 py-2 flex items-center justify-between fixed w-full z-50 top-0 shadow-lg animate-in slide-in-from-top duration-300">
                     <div className="flex items-center gap-2 text-sm font-bold">
