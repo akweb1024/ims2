@@ -302,7 +302,7 @@ export default function InstitutionsPage() {
 
     // Note: Removed client-side filteredInstitutions logic as it's now handled by backend
 
-    const institutionTypes = ['UNIVERSITY', 'COLLEGE', 'SCHOOL', 'RESEARCH_INSTITUTE', 'CORPORATE', 'LIBRARY', 'GOVERNMENT', 'HOSPITAL', 'NGO', 'OTHER'];
+    const institutionTypes = ['UNIVERSITY', 'COLLEGE', 'SCHOOL', 'RESEARCH_INSTITUTE', 'CORPORATE', 'LIBRARY', 'GOVERNMENT', 'HOSPITAL', 'NGO', 'AGENCY', 'OTHER'];
 
     // Stats calculations might need to be adjusted if they rely on full dataset, 
     // but for now we can show stats for current page or fetch stats separately.
@@ -334,19 +334,13 @@ export default function InstitutionsPage() {
                         <h1 className="text-3xl font-black text-secondary-900">Institution Management</h1>
                         <p className="text-secondary-600 mt-1">Manage educational and corporate institutions</p>
                     </div>
-                    <button
-                        onClick={() => {
-                            setSelectedInstitution(null);
-                            resetForm();
-                            setErrorMessage('');
-                            setSuccessMessage('');
-                            setShowModal(true);
-                        }}
+                    <Link
+                        href="/dashboard/institutions/new"
                         className="btn btn-primary flex items-center gap-2"
                     >
                         <Plus size={20} />
                         Add Institution
-                    </button>
+                    </Link>
                 </div>
 
                 {/* Bulk Action Bar */}

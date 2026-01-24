@@ -3216,6 +3216,7 @@ enum InstitutionType {
   GOVERNMENT
   HOSPITAL
   NGO
+  AGENCY
   OTHER
 }
 

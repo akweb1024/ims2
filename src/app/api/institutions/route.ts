@@ -179,7 +179,7 @@ export async function POST(req: NextRequest) {
                 ipRange,
                 notes,
                 logo,
-                assignedToUserId, // Add ownership
+                assignedToUserId: assignedToUserId || null, // Add ownership to executive
                 companyId: user.companyId
             }
         });
