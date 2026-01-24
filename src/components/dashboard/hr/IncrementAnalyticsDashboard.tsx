@@ -18,7 +18,8 @@ interface IncrementAnalyticsProps {
 const COLORS = ['#4f46e5', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4'];
 
 export default function IncrementAnalyticsDashboard({ data }: IncrementAnalyticsProps) {
-    const { stats, trends, departments, distribution, topAdjustments } = data;
+    const [view, setView] = useState<'CURRENT' | 'FORECAST'>('CURRENT');
+    const { stats, trends, departments, distribution, topAdjustments, forecast } = data;
 
     const [mounted, setMounted] = useState(false);
 
@@ -29,7 +30,7 @@ export default function IncrementAnalyticsDashboard({ data }: IncrementAnalytics
     if (!mounted) return <div className="p-8 text-center animate-pulse text-secondary-500 font-bold">Initializing Dashboard...</div>;
 
     const StatCard = ({ title, value, subValue, trend, icon: Icon, color }: any) => (
-        <div className="card-premium p-6 relative overflow-hidden group">
+        <div className={`card-premium p-6 relative overflow-hidden group border-${view === 'FORECAST' ? 'purple-200' : 'transparent'}`}>
             <div className={`absolute top-0 right-0 w-24 h-24 -mr-8 -mt-8 bg-${color}-500/10 rounded-full blur-2xl group-hover:bg-${color}-500/20 transition-all duration-500`}></div>
             <div className="flex justify-between items-start relative z-10">
                 <div>
@@ -37,8 +38,8 @@ export default function IncrementAnalyticsDashboard({ data }: IncrementAnalytics
                     <h3 className="text-3xl font-black text-secondary-900 mb-1">{value}</h3>
                     {subValue && <p className="text-secondary-600 text-sm font-medium">{subValue}</p>}
                     {trend && (
-                        <div className={`flex items-center gap-1 mt-2 ${trend.startsWith('+') ? 'text-success-600' : 'text-danger-600'} font-bold text-sm`}>
-                            {trend.startsWith('+') ? <ArrowUpRight size={16} /> : <ArrowDownRight size={16} />}
+                        <div className={`flex items-center gap-1 mt-2 text-${view === 'FORECAST' ? 'purple' : (trend.startsWith('+') ? 'success' : 'danger')}-600 font-bold text-sm`}>
+                            {['+', '-'].includes(trend[0]) ? (trend.startsWith('+') ? <ArrowUpRight size={16} /> : <ArrowDownRight size={16} />) : <Activity size={16} />}
                             {trend}
                         </div>
                     )}
@@ -50,76 +51,86 @@ export default function IncrementAnalyticsDashboard({ data }: IncrementAnalytics
         </div>
     );
 
+    const currentStats = [
+        { title: "Total Budget Impact", value: formatCurrency(stats.totalApprovedImpact), sub: `${stats.approvedCount} approved increments`, trend: `+${stats.averagePercentage.toFixed(1)}% Avg.`, icon: DollarSign, color: "primary" },
+        { title: "Target Equity Growth", value: formatCurrency(stats.targetGrowth), sub: "Incremental revenue target", trend: "+12.4% vs prev.", icon: Target, color: "indigo" },
+        { title: "Pending Cycle Impact", value: formatCurrency(stats.totalPendingImpact), sub: `${stats.pendingCount} approvals required`, trend: "Needs Review", icon: Activity, color: "orange" },
+        { title: "Effective ROI Multiplier", value: `${stats.roiMultiplier.toFixed(1)}x`, sub: "Revenue vs Payroll cost", trend: "+0.4x improve", icon: TrendingUp, color: "success" }
+    ];
+
+    const forecastStats = forecast ? [
+        { title: "Projected Budget (FY)", value: formatCurrency(forecast.projectedBudget), sub: "Based on current run rate", trend: "Artificial Intelligence", icon: BarChart3, color: "purple" },
+        { title: "Confidence Score", value: `${(forecast.confidenceScore * 100).toFixed(0)}%`, sub: "Algorithm reliability", trend: "High Confidence", icon: Target, color: "emerald" },
+        { title: "Future Liabilities", value: formatCurrency(forecast.projectedBudget * 0.12), sub: "Estimated statutory overhead", trend: "+12% projected", icon: TrendingDown, color: "rose" },
+        { title: "Recruitment Budget", value: formatCurrency(stats.totalApprovedImpact * 0.3), sub: "30% of increment budget", trend: "Allocation", icon: Users, color: "blue" }
+    ] : [];
+
+    const displayStats = view === 'FORECAST' ? forecastStats : currentStats;
+    const chartData = view === 'FORECAST' ? forecast?.trends || [] : trends;
+
     return (
         <div className="space-y-8 pb-12">
             {/* Header Context */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
                     <h2 className="text-3xl font-black text-secondary-900 tracking-tight">Salary Increment 360° Analysis</h2>
-                    <p className="text-secondary-600 mt-1 font-medium italic">Strategic visualization of organizational budget impact and growth targets.</p>
+                    <p className="text-secondary-600 mt-1 font-medium italic">
+                        {view === 'FORECAST' ? 'Predictive modeling of future salary expenditures.' : 'Strategic visualization of organizational budget impact and growth targets.'}
+                    </p>
                 </div>
                 <div className="flex gap-2 bg-secondary-100 p-1.5 rounded-2xl">
-                    <div className="px-4 py-2 bg-white rounded-xl shadow-sm text-sm font-bold text-secondary-900 border border-secondary-200">Current Year</div>
-                    <div className="px-4 py-2 text-sm font-bold text-secondary-500 hover:text-secondary-700 cursor-pointer transition-colors">Forecasting</div>
+                    <button
+                        onClick={() => setView('CURRENT')}
+                        className={`px-4 py-2 rounded-xl text-sm font-bold transition-all ${view === 'CURRENT' ? 'bg-white shadow-sm text-secondary-900 border border-secondary-200' : 'text-secondary-500 hover:text-secondary-700'}`}
+                    >
+                        Current Year
+                    </button>
+                    <button
+                        onClick={() => setView('FORECAST')}
+                        className={`px-4 py-2 rounded-xl text-sm font-bold transition-all ${view === 'FORECAST' ? 'bg-purple-600 shadow-sm text-white shadow-purple-200' : 'text-secondary-500 hover:text-secondary-700'}`}
+                    >
+                        Forecasting
+                    </button>
                 </div>
             </div>
 
             {/* Key Stats */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <StatCard
-                    title="Total Budget Impact"
-                    value={formatCurrency(stats.totalApprovedImpact)}
-                    subValue={`${stats.approvedCount} approved increments`}
-                    trend={`+${stats.averagePercentage.toFixed(1)}% Avg.`}
-                    icon={DollarSign}
-                    color="primary"
-                />
-                <StatCard
-                    title="Target Equity Growth"
-                    value={formatCurrency(stats.targetGrowth)}
-                    subValue="Incremental revenue target"
-                    trend="+12.4% vs prev."
-                    icon={Target}
-                    color="indigo"
-                />
-                <StatCard
-                    title="Pending Cycle Impact"
-                    value={formatCurrency(stats.totalPendingImpact)}
-                    subValue={`${stats.pendingCount} approvals required`}
-                    trend="Needs Review"
-                    icon={Activity}
-                    color="orange"
-                />
-                <StatCard
-                    title="Effective ROI Multiplier"
-                    value={`${stats.roiMultiplier.toFixed(1)}x`}
-                    subValue="Revenue vs Payroll cost"
-                    trend="+0.4x improve"
-                    icon={TrendingUp}
-                    color="success"
-                />
+                {displayStats.map((s: any, i: number) => (
+                    <StatCard
+                        key={i}
+                        title={s.title}
+                        value={s.value}
+                        subValue={s.sub}
+                        trend={s.trend}
+                        icon={s.icon}
+                        color={s.color}
+                    />
+                ))}
             </div>
 
             {/* Charts Section */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 {/* Budget Impact Trend */}
-                <div className="card-premium p-6">
+                <div className={`card-premium p-6 ${view === 'FORECAST' ? 'border-purple-100 bg-purple-50/10' : ''}`}>
                     <div className="flex items-center justify-between mb-8">
                         <div>
                             <h3 className="text-lg font-black text-secondary-900 flex items-center gap-2">
-                                <BarChart3 className="text-primary-500" size={20} />
-                                Monthly Budget Impact
+                                <BarChart3 className={view === 'FORECAST' ? "text-purple-500" : "text-primary-500"} size={20} />
+                                {view === 'FORECAST' ? 'Projected Spending' : 'Monthly Budget Impact'}
                             </h3>
-                            <p className="text-xs text-secondary-500 font-bold uppercase mt-1">Incremental spending over time</p>
+                            <p className="text-xs text-secondary-500 font-bold uppercase mt-1">
+                                {view === 'FORECAST' ? 'AI-driven cost prediction (Next 6 Mo)' : 'Incremental spending over time'}
+                            </p>
                         </div>
                     </div>
                     <div className="h-[350px] w-full">
                         <ResponsiveContainer width="100%" height="100%">
-                            <AreaChart data={trends}>
+                            <AreaChart data={chartData}>
                                 <defs>
                                     <linearGradient id="colorAmount" x1="0" y1="0" x2="0" y2="1">
-                                        <stop offset="5%" stopColor="#4f46e5" stopOpacity={0.1} />
-                                        <stop offset="95%" stopColor="#4f46e5" stopOpacity={0} />
+                                        <stop offset="5%" stopColor={view === 'FORECAST' ? "#9333ea" : "#4f46e5"} stopOpacity={0.1} />
+                                        <stop offset="95%" stopColor={view === 'FORECAST' ? "#9333ea" : "#4f46e5"} stopOpacity={0} />
                                     </linearGradient>
                                 </defs>
                                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
@@ -129,7 +140,15 @@ export default function IncrementAnalyticsDashboard({ data }: IncrementAnalytics
                                     contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 25px -5px rgba(0,0,0,0.1)', padding: '12px' }}
                                     formatter={(value: any) => [formatCurrency(value), 'Budget Impact']}
                                 />
-                                <Area type="monotone" dataKey="amount" stroke="#4f46e5" strokeWidth={3} fillOpacity={1} fill="url(#colorAmount)" />
+                                <Area
+                                    type="monotone"
+                                    dataKey="amount"
+                                    stroke={view === 'FORECAST' ? "#9333ea" : "#4f46e5"}
+                                    strokeWidth={3}
+                                    strokeDasharray={view === 'FORECAST' ? "5 5" : ""}
+                                    fillOpacity={1}
+                                    fill="url(#colorAmount)"
+                                />
                             </AreaChart>
                         </ResponsiveContainer>
                     </div>

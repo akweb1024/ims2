@@ -345,6 +345,7 @@ export default function EmployeeForm({
                             <option value="GIG_WORKIE">GIG Worker</option>
                             <option value="FREELANCE">Freelance</option>
                             <option value="INTERN">Intern</option>
+                            <option value="TRAINEE">Trainee</option>
                         </select>
                     </div>
                     <div>

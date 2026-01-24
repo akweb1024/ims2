@@ -3309,6 +3309,7 @@ enum EmployeeType {
   GIG_WORKIE
   FREELANCE
   INTERN
+  TRAINEE
 }
 
 enum GoalType {

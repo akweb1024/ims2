@@ -5,12 +5,16 @@ import { useState } from 'react';
 interface AttendanceModalProps {
     isOpen: boolean;
     onClose: () => void;
+    initialData?: any;
     onSave: (data: any) => Promise<void>;
 }
 
-export default function AttendanceModal({ isOpen, onClose, onSave }: AttendanceModalProps) {
+export default function AttendanceModal({ isOpen, onClose, initialData, onSave }: AttendanceModalProps) {
     const [attendanceForm, setAttendanceForm] = useState({
-        checkIn: '', checkOut: '', status: 'PRESENT'
+        id: initialData?.id || '',
+        checkIn: initialData?.checkIn || '',
+        checkOut: initialData?.checkOut || '',
+        status: initialData?.status || 'PRESENT'
     });
 
     const handleSubmit = async (e: React.FormEvent) => {

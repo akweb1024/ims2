@@ -25,7 +25,8 @@ export const EmployeeType = z.enum([
     "CONTRACT",
     "GIG_WORKIE",
     "FREELANCE",
-    "INTERN"
+    "INTERN",
+    "TRAINEE"
 ]);
 
 export const GoalType = z.enum(["MONTHLY", "QUARTERLY", "HALF_YEARLY", "YEARLY"]);
