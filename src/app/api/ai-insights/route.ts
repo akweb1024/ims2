@@ -315,8 +315,22 @@ export async function GET(req: NextRequest) {
             });
         }
 
+        if (type === 'consultant') {
+            const { StrategyOrchestrator } = await import('@/lib/ai/orchestrator');
+            const { StrategyEngine } = await import('@/lib/ai/strategy-engine');
+
+            const profile = await StrategyOrchestrator.getBusinessProfile(user.companyId || '');
+            const insightfulStrategies = StrategyEngine.generateStrategies(profile);
+
+            return NextResponse.json({
+                profile,
+                insights: insightfulStrategies,
+                timestamp: new Date().toISOString()
+            });
+        }
+
         // SALES / ORIGINAL LOGIC
-        // 1. Calculate Projected Revenue (Simple Forecast)
+        // ... (existing code)
         const companyFilter = (user.role !== 'SUPER_ADMIN' && user.companyId) ? { companyId: user.companyId } : {};
 
         // Get last 6 months revenue
