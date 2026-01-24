@@ -57,7 +57,10 @@ export async function GET(
                     orderBy: { createdAt: 'desc' }
                 },
                 communications: {
-                    include: { user: { select: { id: true, email: true, role: true } } },
+                    include: {
+                        user: { select: { id: true, email: true, role: true } },
+                        checklist: true
+                    },
                     orderBy: { date: 'desc' }
                 }
             } as any

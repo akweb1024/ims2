@@ -8,6 +8,7 @@ import FormattedDate from '@/components/common/FormattedDate';
 import CommunicationForm from '@/components/dashboard/CommunicationForm';
 import CustomerAssignmentManager from '@/components/dashboard/CustomerAssignmentManager';
 import { useCustomer, useCustomerMutations } from '@/hooks/useCRM';
+import { getHealthBadgeColor, getScoreColor } from '@/lib/predictions';
 
 export default function CustomerDetailPage({ params }: { params: Promise<{ id: string }> }) {
     const { id } = use(params);
@@ -607,6 +608,42 @@ export default function CustomerDetailPage({ params }: { params: Promise<{ id: s
                                                 <div className="text-sm text-secondary-700 bg-secondary-50 p-3 rounded-lg border border-secondary-100 italic">
                                                     &quot;{log.notes}&quot;
                                                 </div>
+
+                                                {log.checklist && (
+                                                    <div className="mt-3 p-3 bg-white border border-secondary-100 rounded-xl shadow-sm">
+                                                        <div className="flex items-center gap-2 mb-2 border-b border-secondary-50 pb-2">
+                                                            <span className="text-sm font-black text-secondary-900 flex items-center gap-1">
+                                                                🎯 Prediction Analysis
+                                                            </span>
+                                                            <span className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase border ${getHealthBadgeColor(log.checklist.customerHealth)}`}>
+                                                                {log.checklist.customerHealth.replace('_', ' ')}
+                                                            </span>
+                                                        </div>
+                                                        <div className="grid grid-cols-3 gap-2 mb-3">
+                                                            <div className="text-center">
+                                                                <p className="text-[10px] text-secondary-400 font-bold uppercase leading-tight">Renewal</p>
+                                                                <p className={`text-sm font-black ${getScoreColor(log.checklist.renewalLikelihood)}`}>{log.checklist.renewalLikelihood}%</p>
+                                                            </div>
+                                                            <div className="text-center">
+                                                                <p className="text-[10px] text-secondary-400 font-bold uppercase leading-tight">Upsell</p>
+                                                                <p className={`text-sm font-black ${getScoreColor(log.checklist.upsellPotential)}`}>{log.checklist.upsellPotential}%</p>
+                                                            </div>
+                                                            <div className="text-center">
+                                                                <p className="text-[10px] text-secondary-400 font-bold uppercase leading-tight">Churn Risk</p>
+                                                                <p className={`text-sm font-black ${getScoreColor(log.checklist.churnRisk, true)}`}>{log.checklist.churnRisk}%</p>
+                                                            </div>
+                                                        </div>
+                                                        {log.checklist.insights?.length > 0 && (
+                                                            <div className="space-y-1">
+                                                                {log.checklist.insights.slice(0, 2).map((insight: string, idx: number) => (
+                                                                    <p key={idx} className="text-[11px] text-secondary-600 flex items-start gap-1">
+                                                                        <span className="text-primary-500">•</span> {insight}
+                                                                    </p>
+                                                                ))}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                )}
                                                 {log.nextFollowUpDate && (
                                                     <div className="mt-3 text-xs font-bold text-primary-600 flex items-center">
                                                         <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -704,6 +741,48 @@ export default function CustomerDetailPage({ params }: { params: Promise<{ id: s
                                 onUpdate={fetchCustomer}
                             />
                         </div>
+
+                        {customer.communications?.find((c: any) => c.checklist) && (
+                            <div className="card-premium bg-gradient-to-br from-indigo-50/50 to-white border-primary-100 shadow-lg shadow-indigo-100/20">
+                                <h3 className="text-lg font-bold text-secondary-900 mb-4 flex items-center gap-2">
+                                    <span className="text-xl">🧬</span> Customer Health
+                                </h3>
+                                {(() => {
+                                    const latestChecklist = customer.communications.find((c: any) => c.checklist)?.checklist;
+                                    if (!latestChecklist) return null;
+                                    return (
+                                        <div className="space-y-4">
+                                            <div className="flex justify-between items-center bg-white p-2 rounded-xl border border-secondary-50">
+                                                <span className="text-xs text-secondary-500 font-bold uppercase tracking-tighter">Current Status</span>
+                                                <span className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase border shadow-sm ${getHealthBadgeColor(latestChecklist.customerHealth)}`}>
+                                                    {latestChecklist.customerHealth.replace('_', ' ')}
+                                                </span>
+                                            </div>
+                                            <div className="space-y-2">
+                                                <div className="flex justify-between text-xs mb-1">
+                                                    <span className="text-secondary-600 font-bold uppercase tracking-tighter">Renewal Likelihood</span>
+                                                    <span className={`font-black ${getScoreColor(latestChecklist.renewalLikelihood)}`}>{latestChecklist.renewalLikelihood}%</span>
+                                                </div>
+                                                <div className="w-full h-2 bg-gray-200/50 rounded-full overflow-hidden border border-gray-100">
+                                                    <div
+                                                        className="h-full bg-gradient-to-r from-primary-400 to-primary-600 transition-all duration-1000 shadow-[0_0_8px_rgba(79,70,229,0.3)]"
+                                                        style={{ width: `${latestChecklist.renewalLikelihood}%` }}
+                                                    ></div>
+                                                </div>
+                                            </div>
+                                            <div className="pt-3 border-t border-indigo-100">
+                                                <p className="text-[10px] text-indigo-600 font-black uppercase mb-1 flex items-center gap-1">
+                                                    <span className="w-1 h-1 rounded-full bg-indigo-600"></span> Latest Insight
+                                                </p>
+                                                <p className="text-xs text-secondary-700 italic font-medium leading-relaxed">
+                                                    &quot;{latestChecklist.insights?.[0] || 'Relationship stable based on latest interaction.'}&quot;
+                                                </p>
+                                            </div>
+                                        </div>
+                                    );
+                                })()}
+                            </div>
+                        )}
 
                         <div className="card-premium">
                             <h3 className="text-lg font-bold text-secondary-900 mb-4">Quick Stats</h3>
