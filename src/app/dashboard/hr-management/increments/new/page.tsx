@@ -33,7 +33,12 @@ function NewIncrementContent() {
         newMonthlyTarget: 0,
         currentYearlyTarget: 0,
         newYearlyTarget: 0,
-        effectiveDate: new Date().toISOString().split('T')[0]
+        effectiveDate: new Date().toISOString().split('T')[0],
+        fiscalYear: '',
+        q1Target: 0,
+        q2Target: 0,
+        q3Target: 0,
+        q4Target: 0
     });
 
     const [selectedEmployee, setSelectedEmployee] = useState<any>(null);
@@ -453,6 +458,83 @@ function NewIncrementContent() {
                                         value={form.newYearlyTarget}
                                         onChange={(e) => setForm({ ...form, newYearlyTarget: parseFloat(e.target.value) || 0 })}
                                     />
+                                </div>
+                            </div>
+
+                            {/* Fiscal Year & Quarterly Targets */}
+                            <div className="mt-6 p-4 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-xl border border-indigo-200">
+                                <h3 className="font-bold text-indigo-900 mb-4 flex items-center gap-2">
+                                    📅 Fiscal Year & Quarterly Breakdown
+                                </h3>
+
+                                <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+                                    <div>
+                                        <label className="label-premium">Fiscal Year</label>
+                                        <select
+                                            className="input-premium"
+                                            value={form.fiscalYear}
+                                            onChange={(e) => setForm({ ...form, fiscalYear: e.target.value })}
+                                        >
+                                            <option value="">Select FY</option>
+                                            <option value="22-23">FY 2022-23</option>
+                                            <option value="23-24">FY 2023-24</option>
+                                            <option value="24-25">FY 2024-25</option>
+                                            <option value="25-26">FY 2025-26</option>
+                                            <option value="26-27">FY 2026-27</option>
+                                        </select>
+                                    </div>
+
+                                    <div>
+                                        <label className="label-premium">Q1 Target (Apr-Jun)</label>
+                                        <input
+                                            type="number"
+                                            className="input-premium"
+                                            placeholder="Q1"
+                                            value={form.q1Target}
+                                            onChange={(e) => setForm({ ...form, q1Target: parseFloat(e.target.value) || 0 })}
+                                        />
+                                    </div>
+
+                                    <div>
+                                        <label className="label-premium">Q2 Target (Jul-Sep)</label>
+                                        <input
+                                            type="number"
+                                            className="input-premium"
+                                            placeholder="Q2"
+                                            value={form.q2Target}
+                                            onChange={(e) => setForm({ ...form, q2Target: parseFloat(e.target.value) || 0 })}
+                                        />
+                                    </div>
+
+                                    <div>
+                                        <label className="label-premium">Q3 Target (Oct-Dec)</label>
+                                        <input
+                                            type="number"
+                                            className="input-premium"
+                                            placeholder="Q3"
+                                            value={form.q3Target}
+                                            onChange={(e) => setForm({ ...form, q3Target: parseFloat(e.target.value) || 0 })}
+                                        />
+                                    </div>
+
+                                    <div>
+                                        <label className="label-premium">Q4 Target (Jan-Mar)</label>
+                                        <input
+                                            type="number"
+                                            className="input-premium"
+                                            placeholder="Q4"
+                                            value={form.q4Target}
+                                            onChange={(e) => setForm({ ...form, q4Target: parseFloat(e.target.value) || 0 })}
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="mt-4 p-3 bg-white/60 rounded-lg">
+                                    <p className="text-xs font-bold text-indigo-700 uppercase mb-1">Total Quarterly Targets</p>
+                                    <p className="text-2xl font-black text-indigo-900">₹{(form.q1Target + form.q2Target + form.q3Target + form.q4Target).toLocaleString()}</p>
+                                    {(form.q1Target + form.q2Target + form.q3Target + form.q4Target) !== form.newYearlyTarget && form.newYearlyTarget > 0 && (
+                                        <p className="text-xs text-orange-600 mt-1">⚠️ Quarterly sum doesn&apos;t match yearly target</p>
+                                    )}
                                 </div>
                             </div>
                         </div>

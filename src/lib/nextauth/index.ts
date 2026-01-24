@@ -48,25 +48,14 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
                 if (!credentials?.email || !credentials?.password) return null;
 
                 const identifier = credentials.email as string;
-                let user = await prisma.user.findUnique({
+                const user = await prisma.user.findUnique({
                     where: { email: identifier },
                     include: { companies: true }
                 });
 
-                // If user not found by email, try searching by employeeId in EmployeeProfile
-                if (!user) {
-                    const profile = await prisma.employeeProfile.findUnique({
-                        where: { employeeId: identifier },
-                        include: {
-                            user: {
-                                include: { companies: true }
-                            }
-                        }
-                    });
-                    if (profile) {
-                        user = profile.user as any;
-                    }
-                }
+                // REMOVED: employeeId fallback login - was causing Prisma error
+                // The employeeId field doesn't have proper unique constraint in production DB
+                // Users must login with email only
 
                 if (!user || user.isActive === false) return null;
 

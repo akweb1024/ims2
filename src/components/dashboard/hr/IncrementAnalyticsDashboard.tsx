@@ -19,7 +19,7 @@ const COLORS = ['#4f46e5', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4'
 
 export default function IncrementAnalyticsDashboard({ data }: IncrementAnalyticsProps) {
     const [view, setView] = useState<'CURRENT' | 'FORECAST'>('CURRENT');
-    const { stats, trends, departments, distribution, topAdjustments, forecast } = data;
+    const { stats, trends, departments, distribution, topAdjustments, forecast, quarterlyBreakdown, fiscalYear } = data;
 
     const [mounted, setMounted] = useState(false);
 

@@ -8,15 +8,33 @@ export const GET = authorizedRoute(
     async (req: NextRequest, user) => {
         try {
             const companyId = user.companyId;
+            const { searchParams } = new URL(req.url);
+            const fiscalYearParam = searchParams.get('fiscalYear'); // e.g., "2024-25"
 
-            // Fetch all increment records for the company
+            // Determine fiscal year range
+            let fiscalYearStart: Date | undefined;
+            let fiscalYearEnd: Date | undefined;
+
+            if (fiscalYearParam) {
+                const [startYear, endYear] = fiscalYearParam.split('-').map(y => parseInt(y));
+                fiscalYearStart = new Date(`20${startYear}-04-01`); // April 1st
+                fiscalYearEnd = new Date(`20${endYear}-03-31T23:59:59`); // March 31st
+            }
+
+            // Fetch all increment records for the company (filtered by FY if provided)
             const increments = await prisma.salaryIncrementRecord.findMany({
                 where: {
                     employeeProfile: {
                         user: {
                             companyId: companyId
                         }
-                    }
+                    },
+                    ...(fiscalYearStart && fiscalYearEnd ? {
+                        effectiveDate: {
+                            gte: fiscalYearStart,
+                            lte: fiscalYearEnd
+                        }
+                    } : {})
                 },
                 include: {
                     employeeProfile: {
@@ -107,6 +125,36 @@ export const GET = authorizedRoute(
             // 5. ROI Calculation (Ratio of revenue target growth to increment cost)
             const roiMultiplier = totalApprovedImpact > 0 ? targetGrowth / totalApprovedImpact : 0;
 
+            // 6. Quarterly Breakdown (if FY is selected)
+            let quarterlyBreakdown = null;
+            if (fiscalYearStart && fiscalYearEnd) {
+                const quarters = [
+                    { name: 'Q1', start: new Date(fiscalYearStart), end: new Date(fiscalYearStart.getFullYear(), fiscalYearStart.getMonth() + 3, 0) },
+                    { name: 'Q2', start: new Date(fiscalYearStart.getFullYear(), fiscalYearStart.getMonth() + 3, 1), end: new Date(fiscalYearStart.getFullYear(), fiscalYearStart.getMonth() + 6, 0) },
+                    { name: 'Q3', start: new Date(fiscalYearStart.getFullYear(), fiscalYearStart.getMonth() + 6, 1), end: new Date(fiscalYearStart.getFullYear(), fiscalYearStart.getMonth() + 9, 0) },
+                    { name: 'Q4', start: new Date(fiscalYearStart.getFullYear(), fiscalYearStart.getMonth() + 9, 1), end: new Date(fiscalYearEnd) }
+                ];
+
+                quarterlyBreakdown = quarters.map(q => {
+                    const qIncrements = approved.filter(inc => {
+                        const date = new Date(inc.effectiveDate);
+                        return date >= q.start && date <= q.end;
+                    });
+
+                    const qImpact = qIncrements.reduce((sum, i) => sum + (i.incrementAmount || 0), 0);
+                    const qCount = qIncrements.length;
+                    const qTargetGrowth = qIncrements.reduce((sum, i) => sum + (Math.max(0, (i.newMonthlyTarget || 0) - (i.currentMonthlyTarget || 0))), 0);
+
+                    return {
+                        quarter: q.name,
+                        impact: qImpact,
+                        count: qCount,
+                        targetGrowth: qTargetGrowth,
+                        avgPercentage: qCount > 0 ? qIncrements.reduce((sum, i) => sum + (i.percentage || 0), 0) / qCount : 0
+                    };
+                });
+            }
+
             return NextResponse.json({
                 stats: {
                     totalApprovedImpact,
@@ -120,6 +168,8 @@ export const GET = authorizedRoute(
                 trends: last6Months,
                 departments,
                 distribution,
+                quarterlyBreakdown,
+                fiscalYear: fiscalYearParam,
                 topAdjustments: approved.slice(0, 5).map(inc => ({
                     employee: {
                         name: inc.employeeProfile?.user?.name || 'Unknown'

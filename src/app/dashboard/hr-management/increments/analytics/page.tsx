@@ -9,12 +9,30 @@ import Link from 'next/link';
 export default function IncrementAnalyticsPage() {
     const [data, setData] = useState<any>(null);
     const [loading, setLoading] = useState(true);
+    const [fiscalYear, setFiscalYear] = useState<string>(''); // Empty means all time
+
+    // Generate FY options (last 3 years + current + next)
+    const currentYear = new Date().getFullYear();
+    const currentMonth = new Date().getMonth();
+    const fyOptions = [];
+    for (let i = -2; i <= 1; i++) {
+        const startYear = currentMonth >= 3 ? currentYear + i : currentYear + i - 1;
+        const endYear = startYear + 1;
+        fyOptions.push({
+            value: `${startYear.toString().slice(-2)}-${endYear.toString().slice(-2)}`,
+            label: `FY ${startYear}-${endYear}`
+        });
+    }
 
     useEffect(() => {
         const fetchData = async () => {
             try {
+                setLoading(true);
                 const token = localStorage.getItem('token');
-                const res = await fetch('/api/hr/increments/analytics', {
+                const url = fiscalYear
+                    ? `/api/hr/increments/analytics?fiscalYear=${fiscalYear}`
+                    : '/api/hr/increments/analytics';
+                const res = await fetch(url, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 if (res.ok) {
@@ -28,7 +46,7 @@ export default function IncrementAnalyticsPage() {
             }
         };
         fetchData();
-    }, []);
+    }, [fiscalYear]);
 
     if (loading) {
         return (
@@ -61,6 +79,29 @@ export default function IncrementAnalyticsPage() {
                     </Link>
                     <ChevronRight size={14} className="text-secondary-300" />
                     <span className="text-primary-600">360° Analysis</span>
+                </div>
+
+                {/* Fiscal Year Selector */}
+                <div className="mb-6 flex items-center gap-4">
+                    <label className="text-sm font-bold text-secondary-700">Filter by Fiscal Year:</label>
+                    <select
+                        value={fiscalYear}
+                        onChange={(e) => setFiscalYear(e.target.value)}
+                        className="px-4 py-2 border-2 border-secondary-200 rounded-lg font-bold text-sm focus:border-primary-500 focus:outline-none transition-colors bg-white"
+                    >
+                        <option value="">All Time</option>
+                        {fyOptions.map(fy => (
+                            <option key={fy.value} value={fy.value}>{fy.label}</option>
+                        ))}
+                    </select>
+                    {fiscalYear && (
+                        <button
+                            onClick={() => setFiscalYear('')}
+                            className="text-sm text-primary-600 hover:text-primary-700 font-bold underline"
+                        >
+                            Clear Filter
+                        </button>
+                    )}
                 </div>
 
                 {data ? (
