@@ -29,7 +29,11 @@ export async function GET(
                     }
                 },
                 institutionDetails: true,
-                agencyDetails: true,
+                agencyDetails: {
+                    include: {
+                        performance: true
+                    }
+                },
                 assignedTo: {
                     select: { id: true, email: true, role: true }
                 },

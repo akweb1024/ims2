@@ -310,17 +310,57 @@ model InstitutionDetails {
 }
 
 model AgencyDetails {
-  id                String          @id @default(uuid())
-  customerProfileId String          @unique
+  id                String             @id @default(uuid())
+  customerProfileId String             @unique
   companyInfo       String?
   territory         String?
   region            String?
   primaryContact    String?
   commissionTerms   String?
-  createdAt         DateTime        @default(now())
-  updatedAt         DateTime        @updatedAt
-  customerProfile   CustomerProfile @relation(fields: [customerProfileId], references: [id], onDelete: Cascade)
+  
+  // Profile Extensions
+  yearsOfExperience Int?
+  workingRegions    String[]           @default([]) // States/Countries covered
+  institutionTypes  String[]           @default([]) // Colleges, Universities, etc.
+  
+  // Compliance
+  agreementSigned   Boolean            @default(false)
+  gstNumber         String?
+  hasPaymentDisputes Boolean           @default(false)
+  creditLimit       Float              @default(0)
+  riskFlag          Boolean            @default(false)
+  
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  
+  customerProfile   CustomerProfile    @relation(fields: [customerProfileId], references: [id], onDelete: Cascade)
   subscriptions     Subscription[]
+  performance       AgencyPerformance?
+}
+
+model AgencyPerformance {
+  id                 String        @id @default(uuid())
+  agencyDetailsId    String        @unique
+  agencyDetails      AgencyDetails @relation(fields: [agencyDetailsId], references: [id], onDelete: Cascade)
+  
+  // Business Metrics
+  businessLastYear   Float         @default(0)
+  targetCurrentYear  Float         @default(0)
+  avgOrdersPerMonth  Float         @default(0)
+  
+  // Quality Metrics
+  rating             Float         @default(0) // 1 to 5 stars
+  category           String        @default("MODERATE") // NON_PERFORMING, MODERATE, HIGH_PERFORMING
+  strategicFitScore  Int           @default(0) // 1-10
+  managementRecommendation String  @default("MAINTAIN") // INVEST, MAINTAIN, EXIT
+  
+  // Operational Metrics
+  profileCompletion  Int           @default(0) // Percentage
+  renewalSuccessRate Float         @default(0) // Percentage
+  lastAuditDate      DateTime?
+  
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
 }
 
 model Institution {

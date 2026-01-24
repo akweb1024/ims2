@@ -9,6 +9,7 @@ import CommunicationForm from '@/components/dashboard/CommunicationForm';
 import CustomerAssignmentManager from '@/components/dashboard/CustomerAssignmentManager';
 import { useCustomer, useCustomerMutations } from '@/hooks/useCRM';
 import { getHealthBadgeColor, getScoreColor } from '@/lib/predictions';
+import AgencyPerformanceDashboard from '@/components/dashboard/AgencyPerformanceDashboard';
 
 export default function CustomerDetailPage({ params }: { params: Promise<{ id: string }> }) {
     const { id } = use(params);
@@ -78,6 +79,7 @@ export default function CustomerDetailPage({ params }: { params: Promise<{ id: s
 
     const tabs = [
         { id: 'overview', name: 'Overview', icon: '📋' },
+        ...(customer.customerType === 'AGENCY' ? [{ id: 'performance', name: 'Performance', icon: '📈' }] : []),
         { id: 'subscriptions', name: 'Subscriptions', icon: '📚' },
         { id: 'communication', name: 'Communication', icon: '💬' },
         { id: 'billing', name: 'Billing & History', icon: '💰' },
@@ -500,6 +502,10 @@ export default function CustomerDetailPage({ params }: { params: Promise<{ id: s
                                     </div>
                                 )}
                             </div>
+                        )}
+
+                        {activeTab === 'performance' && customer.customerType === 'AGENCY' && customer.agencyDetails && (
+                            <AgencyPerformanceDashboard details={customer.agencyDetails} />
                         )}
 
                         {activeTab === 'subscriptions' && (
