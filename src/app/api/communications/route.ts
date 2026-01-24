@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getAuthenticatedUser } from '@/lib/auth-legacy';
+import { calculatePredictions } from '@/lib/predictions';
 
 export async function POST(req: NextRequest) {
     try {
@@ -58,17 +59,20 @@ export async function POST(req: NextRequest) {
         });
 
         // 3.5. Create Checklist Record
-        if (checklist) {
+        if (checklist && checklist.checkedItems) {
+            // Recalculate predictions on the server to ensure accuracy
+            const serverPredictions = calculatePredictions(checklist.checkedItems);
+
             await prisma.conversationChecklist.create({
                 data: {
                     communicationLogId: log.id,
                     checkedItems: checklist.checkedItems,
-                    renewalLikelihood: checklist.renewalLikelihood,
-                    upsellPotential: checklist.upsellPotential,
-                    churnRisk: checklist.churnRisk,
-                    customerHealth: checklist.customerHealth,
-                    insights: checklist.insights || [],
-                    recommendedActions: checklist.recommendedActions || [],
+                    renewalLikelihood: serverPredictions.renewalLikelihood,
+                    upsellPotential: serverPredictions.upsellPotential,
+                    churnRisk: serverPredictions.churnRisk,
+                    customerHealth: serverPredictions.customerHealth,
+                    insights: serverPredictions.insights || [],
+                    recommendedActions: serverPredictions.recommendedActions || [],
                     companyId: decoded.companyId || null
                 }
             });
