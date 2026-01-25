@@ -3,17 +3,28 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 
+interface AuditData {
+    [key: string]: boolean;
+}
+
 interface IndexingReadinessAuditProps {
     journalId: string;
-    indexingId: string; // The ID of the indexing application record
+    indexingId: string;
     auditType: 'WOS' | 'SCOPUS';
-    journalDetails: any; // Passed to check for missing fields
-    initialData?: any; // The saved JSON audit data
+    journalDetails: {
+        issnPrint?: string | null;
+        issnOnline?: string | null;
+        frequency?: string;
+        subjectCategory?: string | null;
+        abbreviation?: string | null;
+        [key: string]: any;
+    };
+    initialData?: AuditData;
     initialScore?: number;
     onUpdate?: () => void;
 }
 
-const WOS_CRITERIA = {
+const WOS_CRITERIA: Record<string, string[]> = {
     "Journal Info": [
         "ISSN registered and verifiable",
         "Journal Title consistent on all platforms",
@@ -43,7 +54,7 @@ const WOS_CRITERIA = {
     ]
 };
 
-const SCOPUS_CRITERIA = {
+const SCOPUS_CRITERIA: Record<string, string[]> = {
     "Content Policy": [
         "Convincing editorial concept/policy",
         "Peer-review type clearly stated",
@@ -77,7 +88,7 @@ export default function IndexingReadinessAudit({
     initialScore = 0,
     onUpdate
 }: IndexingReadinessAuditProps) {
-    const [auditData, setAuditData] = useState<Record<string, boolean>>(initialData);
+    const [auditData, setAuditData] = useState<AuditData>(initialData || {});
     const [loading, setLoading] = useState(false);
     const router = useRouter();
 
@@ -92,8 +103,6 @@ export default function IndexingReadinessAudit({
     if (!journalDetails.frequency) missingPoints.push("Publication Frequency");
     if (!journalDetails.subjectCategory) missingPoints.push("Subject Category");
     if (!journalDetails.abbreviation) missingPoints.push("Journal Abbreviation");
-    // Add more logical checks as per schema availability
-    // e.g., if we had a dedicated 'url' field, we'd check it.
 
     const handleToggle = (item: string) => {
         setAuditData(prev => ({
@@ -182,8 +191,8 @@ export default function IndexingReadinessAudit({
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                             {items.map(item => (
                                 <label key={item} className={`flex items-start gap-3 p-3 rounded-lg border transition-all cursor-pointer ${auditData[item]
-                                        ? 'bg-white border-green-200 shadow-sm'
-                                        : 'bg-gray-50 border-transparent hover:border-gray-200'
+                                    ? 'bg-white border-green-200 shadow-sm'
+                                    : 'bg-gray-50 border-transparent hover:border-gray-200'
                                     }`}>
                                     <div className="relative flex items-center pt-0.5">
                                         <input

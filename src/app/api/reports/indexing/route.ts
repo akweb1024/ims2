@@ -10,10 +10,16 @@ export async function GET(req: NextRequest) {
         }
 
         const data = await prisma.journalIndexingTracking.findMany({
-            include: {
+            select: {
+                id: true,
+                journalId: true,
+                indexingId: true,
+                status: true,
+                auditScore: true,
+                updatedAt: true,
                 journal: {
                     select: {
-                        id: true,
+                        id: true, // Needed for link
                         name: true,
                         abbreviation: true,
                         issnPrint: true,
@@ -24,7 +30,6 @@ export async function GET(req: NextRequest) {
                 },
                 indexingMaster: {
                     select: {
-                        id: true,
                         name: true,
                         code: true
                     }
