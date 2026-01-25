@@ -332,6 +332,7 @@ export default function DashboardLayout({ children, userRole: propUserRole = 'CU
                         items: [
                             { name: 'Articles', href: '/dashboard/articles', icon: '📄', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'EDITOR', 'CUSTOMER', 'AGENCY', 'EXECUTIVE'] },
                             { name: 'Volumes & Issues', href: '/dashboard/volumes', icon: '📚', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'EDITOR'] },
+                            { name: 'Indexing Report', href: '/dashboard/reports/indexing', icon: '📈', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'EDITOR'] },
                         ]
                     },
                     {
