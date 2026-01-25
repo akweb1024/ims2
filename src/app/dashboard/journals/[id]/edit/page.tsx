@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import Link from 'next/link';
 import { Users, BookOpen, Layers, Save, Trash2, Plus, Edit2, X, Check, Target } from 'lucide-react';
-import WoSReadinessAudit from '@/components/journals/WoSReadinessAudit';
+import IndexingReadinessAudit from '@/components/journals/IndexingReadinessAudit';
 
 export default function EditJournalPage({ params }: { params: Promise<{ id: string }> }) {
     const { id } = use(params);
@@ -388,28 +388,34 @@ export default function EditJournalPage({ params }: { params: Promise<{ id: stri
                             </div>
                         ) : (
                             <div className="space-y-8">
-                                {trackings.map((t: any) => (
-                                    <div key={t.id} className="space-y-4">
-                                        <div className="flex items-center justify-between">
-                                            <h4 className="text-xl font-bold text-secondary-900 border-b-2 border-primary-500 inline-block pb-1">
-                                                {availableIndexings.find(i => i.id === t.indexingId)?.name || 'Indexing Application'}
-                                            </h4>
-                                            <span className={`badge ${t.status === 'INDEXED' ? 'badge-success' : t.status === 'REJECTED' ? 'badge-error' : 'badge-warning'}`}>
-                                                Status: {t.status}
-                                            </span>
-                                        </div>
+                                {trackings.map((t: any) => {
+                                    // Determine Audt Type
+                                    const isScopus = t.indexing?.name?.toLowerCase().includes('scopus') || t.indexingId.toLowerCase().includes('scopus');
+                                    const type = isScopus ? 'SCOPUS' : 'WOS';
 
-                                        {/* Render WoS Audit if applicable */}
-                                        {/* In real app, check indexing code. Assuming first one is WoS for demo */}
-                                        <WoSReadinessAudit
-                                            journalId={id as string}
-                                            indexingId={t.indexingId}
-                                            initialData={t.auditData as any}
-                                            initialScore={t.auditScore || 0}
-                                            onUpdate={fetchTrackings}
-                                        />
-                                    </div>
-                                ))}
+                                    return (
+                                        <div key={t.id} className="space-y-4">
+                                            <div className="flex items-center justify-between">
+                                                <h4 className="text-xl font-bold text-secondary-900 border-b-2 border-primary-500 inline-block pb-1">
+                                                    {availableIndexings.find(i => i.id === t.indexingId)?.name || 'Indexing Application'}
+                                                </h4>
+                                                <span className={`badge ${t.status === 'INDEXED' ? 'badge-success' : t.status === 'REJECTED' ? 'badge-error' : 'badge-warning'}`}>
+                                                    Status: {t.status}
+                                                </span>
+                                            </div>
+
+                                            <IndexingReadinessAudit
+                                                journalId={id as string}
+                                                indexingId={t.indexingId}
+                                                auditType={type}
+                                                journalDetails={formData}
+                                                initialData={t.auditData as any}
+                                                initialScore={t.auditScore || 0}
+                                                onUpdate={fetchTrackings}
+                                            />
+                                        </div>
+                                    );
+                                })}
                             </div>
                         )}
                     </div>
