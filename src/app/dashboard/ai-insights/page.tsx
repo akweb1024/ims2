@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import Link from 'next/link';
 
@@ -18,11 +18,7 @@ export default function AIPredictionPage() {
         }
     }, []);
 
-    useEffect(() => {
-        fetchInsights();
-    }, [selectedTab]);
-
-    const fetchInsights = async () => {
+    const fetchInsights = useCallback(async () => {
         setLoading(true);
         try {
             const token = localStorage.getItem('token');
@@ -37,7 +33,11 @@ export default function AIPredictionPage() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [selectedTab]);
+
+    useEffect(() => {
+        fetchInsights();
+    }, [fetchInsights]);
 
     const tabs = [
         { id: 'sales', name: 'Sales Pipeline', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'EXECUTIVE'] },

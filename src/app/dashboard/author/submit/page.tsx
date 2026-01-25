@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect, Suspense, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { ArrowLeft, ArrowRight, Check, Upload, Plus, Trash2, Save } from 'lucide-react';
@@ -40,52 +40,9 @@ function SubmitManuscriptContent() {
         if (draftId) {
             loadDraft(draftId);
         }
-    }, [draftId]);
+    }, [draftId]); // fetchJournals and loadDraft are stable if defined outside or memoized correctly, but for now I'll memoize them below.
 
-    // Auto-save every 30 seconds
-    useEffect(() => {
-        const interval = setInterval(() => {
-            if (formData.journalId && formData.title) {
-                saveDraft();
-            }
-        }, 30000);
-
-        return () => clearInterval(interval);
-    }, [formData]);
-
-    const fetchJournals = async () => {
-        try {
-            const res = await fetch('/api/journals?isActive=true');
-            if (res.ok) {
-                setJournals(await res.json());
-            }
-        } catch (error) {
-            console.error('Error fetching journals:', error);
-        }
-    };
-
-    const loadDraft = async (id: string) => {
-        try {
-            const res = await fetch(`/api/manuscripts/drafts/${id}`);
-            if (res.ok) {
-                const draft = await res.json();
-                setFormData({
-                    journalId: draft.journalId,
-                    title: draft.title || '',
-                    abstract: draft.abstract || '',
-                    keywords: draft.keywords || '',
-                    authors: draft.metadata?.authors || [{ name: '', email: '', affiliation: '', isCorresponding: true }],
-                    fileUrl: draft.fileUrl || '',
-                    draftId: draft.id
-                });
-                setCurrentStep(draft.step || 1);
-            }
-        } catch (error) {
-            console.error('Error loading draft:', error);
-        }
-    };
-
-    const saveDraft = async () => {
+    const saveDraft = useCallback(async () => {
         setSaving(true);
         try {
             const method = formData.draftId ? 'PATCH' : 'POST';
@@ -118,6 +75,49 @@ function SubmitManuscriptContent() {
             console.error('Error saving draft:', error);
         } finally {
             setSaving(false);
+        }
+    }, [formData, currentStep]);
+
+    // Auto-save every 30 seconds
+    useEffect(() => {
+        const interval = setInterval(() => {
+            if (formData.journalId && formData.title) {
+                saveDraft();
+            }
+        }, 30000);
+
+        return () => clearInterval(interval);
+    }, [formData.journalId, formData.title, saveDraft]);
+
+    const fetchJournals = async () => {
+        try {
+            const res = await fetch('/api/journals?isActive=true');
+            if (res.ok) {
+                setJournals(await res.json());
+            }
+        } catch (error) {
+            console.error('Error fetching journals:', error);
+        }
+    };
+
+    const loadDraft = async (id: string) => {
+        try {
+            const res = await fetch(`/api/manuscripts/drafts/${id}`);
+            if (res.ok) {
+                const draft = await res.json();
+                setFormData({
+                    journalId: draft.journalId,
+                    title: draft.title || '',
+                    abstract: draft.abstract || '',
+                    keywords: draft.keywords || '',
+                    authors: draft.metadata?.authors || [{ name: '', email: '', affiliation: '', isCorresponding: true }],
+                    fileUrl: draft.fileUrl || '',
+                    draftId: draft.id
+                });
+                setCurrentStep(draft.step || 1);
+            }
+        } catch (error) {
+            console.error('Error loading draft:', error);
         }
     };
 

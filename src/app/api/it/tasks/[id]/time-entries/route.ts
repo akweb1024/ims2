@@ -12,46 +12,49 @@ export async function POST(req: NextRequest, context: { params: Promise<{ id: st
         }
 
         const taskId = id;
-        const { hours, description, date, isBillable } = await req.json();
+        const body = await req.json();
+        const { date, hours, description, isBillable } = body;
 
-        if (!hours || parseFloat(hours) <= 0) {
+        const parsedHours = parseFloat(hours);
+
+        if (!parsedHours || parsedHours <= 0) {
             return NextResponse.json({ error: 'Hours must be greater than 0' }, { status: 400 });
         }
 
         // Get task to get companyId and projectId
         const task = await prisma.iTTask.findUnique({
-            where: { id: taskId },
-            include: { project: true }
+            where: { id: id }
         });
 
         if (!task) {
             return NextResponse.json({ error: 'Task not found' }, { status: 404 });
         }
 
-        const parsedHours = parseFloat(hours);
+        // Check access
+        const companyId = (user as any).companyId;
+        if (task.companyId !== companyId) {
+            return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+        }
 
-        // Log the time entry
+        // Create time entry
         const timeEntry = await prisma.iTTimeEntry.create({
             data: {
-                taskId,
-                projectId: task.projectId,
-                companyId: task.companyId,
-                userId: user.id,
+                company: { connect: { id: companyId } },
+                task: { connect: { id: id } },
+                user: { connect: { id: user.id } },
+                project: task.projectId ? { connect: { id: task.projectId } } : undefined,
+                date: new Date(date),
                 hours: parsedHours,
                 description,
-                date: date ? new Date(date) : new Date(),
-                isBillable: !!isBillable,
-            },
-            include: {
-                user: {
-                    select: { name: true }
-                }
+                isBillable: isBillable || false,
+                amount: 0, // Default amount 0, should be calculated if rate exists
+                hourlyRate: 0, // Default rate 0
             }
         });
 
         // Update task actual hours
         await prisma.iTTask.update({
-            where: { id: taskId },
+            where: { id: id },
             data: {
                 actualHours: {
                     increment: parsedHours

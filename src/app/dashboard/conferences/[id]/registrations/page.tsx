@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
@@ -24,13 +24,7 @@ export default function RegistrationManagementPage() {
     const [statusFilter, setStatusFilter] = useState('all');
     const [ticketFilter, setTicketFilter] = useState('all');
 
-    useEffect(() => {
-        const user = localStorage.getItem('user');
-        if (user) setUserRole(JSON.parse(user).role);
-        fetchData();
-    }, [conferenceId]);
-
-    const fetchData = async () => {
+    const fetchData = useCallback(async () => {
         try {
             const token = localStorage.getItem('token');
             const [confRes, regRes] = await Promise.all([
@@ -45,7 +39,13 @@ export default function RegistrationManagementPage() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [conferenceId]);
+
+    useEffect(() => {
+        const user = localStorage.getItem('user');
+        if (user) setUserRole(JSON.parse(user).role);
+        fetchData();
+    }, [fetchData]);
 
     const handleCheckIn = async (id: string) => {
         if (!confirm('Confirm Check-in for this attendee?')) return;

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
 
@@ -13,13 +13,7 @@ export default function JobDetailPage() {
     const [applicationStatus, setApplicationStatus] = useState<'idle' | 'submitting' | 'success'>('idle');
     const [examLink, setExamLink] = useState('');
 
-    useEffect(() => {
-        if (params.id) {
-            fetchJob(params.id as string);
-        }
-    }, [params.id]);
-
-    const fetchJob = async (id: string) => {
+    const fetchJob = useCallback(async (id: string) => {
         try {
             // Re-using the jobs API but filtering on client or fetching specific if endpoint supports
             // The existing list API /api/recruitment/jobs likely returns all, but we can verify if it supports ID
@@ -38,7 +32,13 @@ export default function JobDetailPage() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [router]);
+
+    useEffect(() => {
+        if (params.id) {
+            fetchJob(params.id as string);
+        }
+    }, [params.id, fetchJob]);
 
     const handleApply = async (e: React.FormEvent) => {
         e.preventDefault();

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
@@ -19,13 +19,7 @@ export default function ConferencesPage() {
     const [modeFilter, setModeFilter] = useState('all');
     const [showCreateModal, setShowCreateModal] = useState(false);
 
-    useEffect(() => {
-        const user = localStorage.getItem('user');
-        if (user) setUserRole(JSON.parse(user).role);
-        fetchConferences();
-    }, [statusFilter, modeFilter]);
-
-    const fetchConferences = async () => {
+    const fetchConferences = useCallback(async () => {
         try {
             const token = localStorage.getItem('token');
             let url = '/api/conferences?';
@@ -46,7 +40,13 @@ export default function ConferencesPage() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [statusFilter, modeFilter]);
+
+    useEffect(() => {
+        const user = localStorage.getItem('user');
+        if (user) setUserRole(JSON.parse(user).role);
+        fetchConferences();
+    }, [fetchConferences]);
 
     const handleCreateConference = async (e: React.FormEvent) => {
         e.preventDefault();

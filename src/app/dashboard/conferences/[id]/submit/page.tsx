@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
@@ -17,13 +17,7 @@ export default function SubmitPaperPage() {
     const [error, setError] = useState('');
     const [userRole, setUserRole] = useState('');
 
-    useEffect(() => {
-        const user = localStorage.getItem('user');
-        if (user) setUserRole(JSON.parse(user).role);
-        fetchConference();
-    }, [conferenceId]);
-
-    const fetchConference = async () => {
+    const fetchConference = useCallback(async () => {
         try {
             const token = localStorage.getItem('token');
             const res = await fetch(`/api/conferences/${conferenceId}`, {
@@ -46,7 +40,13 @@ export default function SubmitPaperPage() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [conferenceId]);
+
+    useEffect(() => {
+        const user = localStorage.getItem('user');
+        if (user) setUserRole(JSON.parse(user).role);
+        fetchConference();
+    }, [fetchConference]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();

@@ -13,6 +13,7 @@ import {
     User,
     AlertCircle,
 } from 'lucide-react';
+import TaskDetailModal from '@/components/dashboard/it/TaskDetailModal';
 
 interface Task {
     id: string;
@@ -28,6 +29,10 @@ interface Task {
     itRevenueEarned: number;
     dueDate: string | null;
     progressPercent: number;
+    estimatedHours: number | null;
+    assignedToId: string | null;
+    projectId: string | null;
+    dependencies: string[];
     project: {
         id: string;
         name: string;
@@ -66,6 +71,9 @@ export default function TasksPage() {
 
     const [allProjects, setAllProjects] = useState<any[]>([]);
     const [allUsers, setAllUsers] = useState<any[]>([]);
+
+    const [showTaskModal, setShowTaskModal] = useState(false);
+    const [selectedTask, setSelectedTask] = useState<Task | null>(null);
 
     const fetchTasks = useCallback(async () => {
         try {
@@ -200,8 +208,11 @@ export default function TasksPage() {
         <div
             draggable
             onDragStart={(e) => handleDragStart(e, task.id)}
-            onClick={() => router.push(`/dashboard/it-management/tasks/${task.id}`)}
-            className={`bg-white dark:bg-gray-800 rounded-lg shadow-md hover:shadow-lg transition-all cursor-move p-4 mb-3 active:scale-95 active:rotate-1 ${getPriorityColor(
+            onClick={() => {
+                setSelectedTask(task);
+                setShowTaskModal(true);
+            }}
+            className={`bg-white dark:bg-gray-800 rounded-lg shadow-md hover:shadow-lg transition-all cursor-pointer p-4 mb-3 active:scale-95 active:rotate-1 ${getPriorityColor(
                 task.priority
             )}`}
         >
@@ -516,7 +527,19 @@ export default function TasksPage() {
                         </div>
                     </div>
                 )}
+                <TaskDetailModal
+                    isOpen={showTaskModal}
+                    onClose={() => setShowTaskModal(false)}
+                    taskId={selectedTask?.id}
+                    task={selectedTask || undefined}
+                    onSuccess={() => {
+                        fetchTasks();
+                    }}
+                    allUsers={allUsers}
+                    allProjects={allProjects}
+                    otherTasks={tasks} // Pass all tasks for dependencies
+                />
             </div>
-        </DashboardLayout>
+        </DashboardLayout >
     );
 }

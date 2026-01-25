@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
@@ -33,18 +33,7 @@ export default function PaperDetailPage() {
     const [finalDecision, setFinalDecision] = useState('');
     const [submittingDecision, setSubmittingDecision] = useState(false);
 
-    useEffect(() => {
-        const user = localStorage.getItem('user');
-        if (user) {
-            const userData = JSON.parse(user);
-            setUserRole(userData.role);
-            setUserId(userData.id);
-        }
-        fetchPaper();
-        fetchCommittee();
-    }, [paperId]);
-
-    const fetchCommittee = async () => {
+    const fetchCommittee = useCallback(async () => {
         try {
             const token = localStorage.getItem('token');
             const res = await fetch(`/api/conferences/${conferenceId}/committee`, {
@@ -56,7 +45,7 @@ export default function PaperDetailPage() {
                 setCommittee(data.filter((m: any) => m.userId && ['REVIEWER', 'EDITOR'].includes(m.role)));
             }
         } catch (error) { console.error(error); }
-    };
+    }, [conferenceId]);
 
     const assignReviewer = async () => {
         if (!selectedReviewer) return;
@@ -84,7 +73,7 @@ export default function PaperDetailPage() {
         finally { setAssigning(false); }
     };
 
-    const fetchPaper = async () => {
+    const fetchPaper = useCallback(async () => {
         try {
             const token = localStorage.getItem('token');
             const res = await fetch(`/api/papers/${paperId}`, {
@@ -116,7 +105,18 @@ export default function PaperDetailPage() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [paperId, router, userId, userRole]);
+
+    useEffect(() => {
+        const user = localStorage.getItem('user');
+        if (user) {
+            const userData = JSON.parse(user);
+            setUserRole(userData.role);
+            setUserId(userData.id);
+        }
+        fetchPaper();
+        fetchCommittee();
+    }, [paperId, fetchPaper, fetchCommittee]);
 
     const submitReview = async (e: React.FormEvent) => {
         e.preventDefault();

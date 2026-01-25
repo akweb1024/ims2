@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import {
@@ -26,13 +26,7 @@ export default function CourseBuilderPage() {
     const [selectedModule, setSelectedModule] = useState<any>(null);
     const [selectedLesson, setSelectedLesson] = useState<any>(null);
 
-    useEffect(() => {
-        const user = localStorage.getItem('user');
-        if (user) setUserRole(JSON.parse(user).role);
-        fetchCourse();
-    }, [courseId]);
-
-    const fetchCourse = async () => {
+    const fetchCourse = useCallback(async () => {
         try {
             const token = localStorage.getItem('token');
             const res = await fetch(`/api/courses/${courseId}`, {
@@ -48,7 +42,13 @@ export default function CourseBuilderPage() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [courseId]);
+
+    useEffect(() => {
+        const user = localStorage.getItem('user');
+        if (user) setUserRole(JSON.parse(user).role);
+        fetchCourse();
+    }, [fetchCourse]);
 
     const handleUpdateCourse = async (e: React.FormEvent) => {
         e.preventDefault();

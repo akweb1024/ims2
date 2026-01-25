@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import {
     AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -21,13 +21,7 @@ export default function RazorpayTrackerPage() {
     const [activeTab, setActiveTab] = useState<'LEDGER' | 'MONTHLY' | 'YEARLY'>('LEDGER');
     const [summarySearch, setSummarySearch] = useState<string>('');
 
-    useEffect(() => {
-        const user = localStorage.getItem('user');
-        if (user) setUserRole(JSON.parse(user).role);
-        fetchData();
-    }, [startDate, endDate]);
-
-    const fetchData = async () => {
+    const fetchData = useCallback(async () => {
         setLoading(true);
         try {
             const token = localStorage.getItem('token');
@@ -44,7 +38,13 @@ export default function RazorpayTrackerPage() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [startDate, endDate]);
+
+    useEffect(() => {
+        const user = localStorage.getItem('user');
+        if (user) setUserRole(JSON.parse(user).role);
+        fetchData();
+    }, [fetchData]);
 
     const handleManualSync = async () => {
         setIsSyncing(true);

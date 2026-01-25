@@ -17,6 +17,7 @@ import {
     AlertCircle,
     Pause,
 } from 'lucide-react';
+import ProjectAnalytics from '@/components/dashboard/it/ProjectAnalytics';
 
 interface Project {
     id: string;
@@ -31,6 +32,7 @@ interface Project {
     estimatedRevenue: number;
     actualRevenue: number;
     itRevenueEarned: number;
+    itDepartmentCut: number;
     startDate: string | null;
     endDate: string | null;
     projectManager: {
@@ -59,6 +61,7 @@ export default function ProjectsPage() {
     const [statusFilter, setStatusFilter] = useState<string>('');
     const [typeFilter, setTypeFilter] = useState<string>('');
     const [showFilters, setShowFilters] = useState(false);
+    const [viewMode, setViewMode] = useState<'grid' | 'analytics'>('grid');
 
     const fetchProjects = useCallback(async () => {
         try {
@@ -147,13 +150,37 @@ export default function ProjectsPage() {
                         </p>
                     </div>
 
-                    <button
-                        onClick={() => router.push('/dashboard/it-management/projects/new')}
-                        className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium flex items-center gap-2 shadow-lg hover:shadow-xl transition-all"
-                    >
-                        <Plus className="h-5 w-5" />
-                        New Project
-                    </button>
+                    <div className="flex items-center gap-3">
+                        {/* View Mode Toggle */}
+                        <div className="flex gap-1 bg-gray-100 dark:bg-gray-700 p-1 rounded-lg">
+                            <button
+                                onClick={() => setViewMode('grid')}
+                                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${viewMode === 'grid'
+                                    ? 'bg-white dark:bg-gray-600 text-blue-600 dark:text-blue-400 shadow-sm'
+                                    : 'text-gray-600 dark:text-gray-400'
+                                    }`}
+                            >
+                                Grid
+                            </button>
+                            <button
+                                onClick={() => setViewMode('analytics')}
+                                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${viewMode === 'analytics'
+                                    ? 'bg-white dark:bg-gray-600 text-blue-600 dark:text-blue-400 shadow-sm'
+                                    : 'text-gray-600 dark:text-gray-400'
+                                    }`}
+                            >
+                                Analytics
+                            </button>
+                        </div>
+
+                        <button
+                            onClick={() => router.push('/dashboard/it-management/projects/new')}
+                            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium flex items-center gap-2 shadow-lg hover:shadow-xl transition-all"
+                        >
+                            <Plus className="h-5 w-5" />
+                            New Project
+                        </button>
+                    </div>
                 </div>
 
                 {/* Search and Filters */}
@@ -225,8 +252,10 @@ export default function ProjectsPage() {
                     )}
                 </div>
 
-                {/* Projects Grid */}
-                {loading ? (
+                {/* Analytics View */}
+                {viewMode === 'analytics' ? (
+                    <ProjectAnalytics projects={filteredProjects} />
+                ) : loading ? (
                     <div className="flex items-center justify-center py-12">
                         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
                     </div>
@@ -367,7 +396,7 @@ export default function ProjectsPage() {
                 )}
 
                 {/* Summary Stats */}
-                {!loading && filteredProjects.length > 0 && (
+                {!loading && filteredProjects.length > 0 && viewMode === 'grid' && (
                     <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
                         <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
                             Summary

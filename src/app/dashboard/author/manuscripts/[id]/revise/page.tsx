@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, use } from 'react';
+import { useState, useEffect, use, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { ArrowLeft, Upload, Check, Trash2 } from 'lucide-react';
@@ -19,11 +19,7 @@ export default function SubmitRevision(props: { params: Promise<{ id: string }> 
         changesDescription: ''
     });
 
-    useEffect(() => {
-        fetchManuscript();
-    }, [params.id]);
-
-    const fetchManuscript = async () => {
+    const fetchManuscript = useCallback(async () => {
         try {
             const res = await fetch(`/api/manuscripts/author`);
             if (res.ok) {
@@ -36,7 +32,11 @@ export default function SubmitRevision(props: { params: Promise<{ id: string }> 
         } finally {
             setLoading(false);
         }
-    };
+    }, [params.id]);
+
+    useEffect(() => {
+        fetchManuscript();
+    }, [params.id, fetchManuscript]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();

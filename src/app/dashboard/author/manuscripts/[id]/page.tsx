@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, use } from 'react';
+import { useState, useEffect, use, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
@@ -14,12 +14,7 @@ export default function ManuscriptDetail(props: { params: Promise<{ id: string }
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState<'overview' | 'timeline' | 'revisions'>('overview');
 
-    useEffect(() => {
-        fetchManuscript();
-        fetchTimeline();
-    }, [params.id]);
-
-    const fetchManuscript = async () => {
+    const fetchManuscript = useCallback(async () => {
         try {
             const res = await fetch(`/api/manuscripts/author`);
             if (res.ok) {
@@ -32,9 +27,9 @@ export default function ManuscriptDetail(props: { params: Promise<{ id: string }
         } finally {
             setLoading(false);
         }
-    };
+    }, [params.id]);
 
-    const fetchTimeline = async () => {
+    const fetchTimeline = useCallback(async () => {
         try {
             const res = await fetch(`/api/manuscripts/${params.id}/timeline`);
             if (res.ok) {
@@ -44,7 +39,12 @@ export default function ManuscriptDetail(props: { params: Promise<{ id: string }
         } catch (error) {
             console.error('Error fetching timeline:', error);
         }
-    };
+    }, [params.id]);
+
+    useEffect(() => {
+        fetchManuscript();
+        fetchTimeline();
+    }, [params.id, fetchManuscript, fetchTimeline]);
 
     const getStatusColor = (status: string) => {
         const colors: Record<string, string> = {
@@ -160,8 +160,8 @@ export default function ManuscriptDetail(props: { params: Promise<{ id: string }
                                 key={tab}
                                 onClick={() => setActiveTab(tab as any)}
                                 className={`pb-3 px-1 font-bold text-sm capitalize transition-colors border-b-2 ${activeTab === tab
-                                        ? 'border-primary-600 text-primary-600'
-                                        : 'border-transparent text-secondary-600 hover:text-secondary-900'
+                                    ? 'border-primary-600 text-primary-600'
+                                    : 'border-transparent text-secondary-600 hover:text-secondary-900'
                                     }`}
                             >
                                 {tab}
@@ -261,8 +261,8 @@ export default function ManuscriptDetail(props: { params: Promise<{ id: string }
                                         <div className="flex justify-between items-center">
                                             <span className="text-sm text-secondary-600">Status</span>
                                             <span className={`text-xs px-2 py-1 rounded-full font-bold ${manuscript.plagiarismReport.status === 'PASSED'
-                                                    ? 'bg-green-100 text-green-700'
-                                                    : 'bg-orange-100 text-orange-700'
+                                                ? 'bg-green-100 text-green-700'
+                                                : 'bg-orange-100 text-orange-700'
                                                 }`}>
                                                 {manuscript.plagiarismReport.status}
                                             </span>
@@ -285,8 +285,8 @@ export default function ManuscriptDetail(props: { params: Promise<{ id: string }
                                         <div className="flex justify-between items-center">
                                             <span className="text-sm text-secondary-600">Status</span>
                                             <span className={`text-xs px-2 py-1 rounded-full font-bold ${manuscript.qualityReport.status === 'APPROVED'
-                                                    ? 'bg-green-100 text-green-700'
-                                                    : 'bg-orange-100 text-orange-700'
+                                                ? 'bg-green-100 text-green-700'
+                                                : 'bg-orange-100 text-orange-700'
                                                 }`}>
                                                 {manuscript.qualityReport.status}
                                             </span>

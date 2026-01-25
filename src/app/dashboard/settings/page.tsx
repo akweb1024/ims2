@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 
 type Tab = 'General' | 'Security' | 'Billing' | 'Notifications';
@@ -22,17 +22,7 @@ export default function SettingsPage() {
         maintenanceMode: false
     });
 
-    useEffect(() => {
-        const userData = localStorage.getItem('user');
-        if (userData) {
-            const user = JSON.parse(userData);
-            setUserRole(user.role);
-        }
-        fetchUserSettings();
-        fetchSystemSettings();
-    }, []);
-
-    const fetchUserSettings = async () => {
+    const fetchUserSettings = useCallback(async () => {
         try {
             const token = localStorage.getItem('token');
             const res = await fetch('/api/settings/user', {
@@ -46,9 +36,9 @@ export default function SettingsPage() {
         } catch (err) {
             console.error('Fetch user settings error:', err);
         }
-    };
+    }, []);
 
-    const fetchSystemSettings = async () => {
+    const fetchSystemSettings = useCallback(async () => {
         try {
             const token = localStorage.getItem('token');
             const res = await fetch('/api/settings/system', {
@@ -61,7 +51,17 @@ export default function SettingsPage() {
         } catch (err) {
             console.error('Fetch system settings error:', err);
         }
-    };
+    }, []);
+
+    useEffect(() => {
+        const userData = localStorage.getItem('user');
+        if (userData) {
+            const user = JSON.parse(userData);
+            setUserRole(user.role);
+        }
+        fetchUserSettings();
+        fetchSystemSettings();
+    }, [fetchUserSettings, fetchSystemSettings]);
 
     const handleUpdateUserPref = async (updates: any) => {
         try {
@@ -126,8 +126,8 @@ export default function SettingsPage() {
                                     key={tab}
                                     onClick={() => setActiveTab(tab as Tab)}
                                     className={`w-full text-left px-4 py-3 rounded-xl text-sm font-bold transition-all ${activeTab === tab
-                                            ? 'bg-primary-600 text-white shadow-lg shadow-primary-200'
-                                            : 'text-secondary-500 hover:bg-secondary-100'
+                                        ? 'bg-primary-600 text-white shadow-lg shadow-primary-200'
+                                        : 'text-secondary-500 hover:bg-secondary-100'
                                         }`}
                                 >
                                     {tab}

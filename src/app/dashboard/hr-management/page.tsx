@@ -445,19 +445,7 @@ const HRManagementContent = () => {
     // fetchAttendance removed, now handled by useAttendance hook
 
 
-    useEffect(() => {
-        // All fetches are now handled by React Query hooks, which re-fetch on dependency changes
-        // The activeTab, selectedDocEmp, prodDateRange dependencies are implicitly handled by the hooks themselves
-        // No manual fetches needed here anymore.
-        // if (activeTab === 'leaves') fetchLeaves(); // Removed
-        // if (activeTab === 'analytics' || activeTab === 'payroll') fetchSlips(); // Removed
-        // if (activeTab === 'attendance') fetchAttendance(); // Removed
-        // if (activeTab === 'recruitment') fetchRecruitmentData(); // Removed
-        // if (activeTab === 'documents' && selectedDocEmp) fetchDocuments(selectedDocEmp.id); // Removed
-        // if (activeTab === 'reports') fetchWorkReports(); // Removed
-        // Holidays fetched inside component
-        // if (activeTab === 'productivity') fetchProductivity(); // Removed
-    }, [activeTab, selectedDocEmp, prodDateRange]);
+
 
     // fetchHolidays removed
 

@@ -96,7 +96,6 @@ export async function GET(req: NextRequest) {
                         email: true,
                         employeeProfile: {
                             select: {
-                                designation: true,
                                 profilePicture: true,
                             }
                         }

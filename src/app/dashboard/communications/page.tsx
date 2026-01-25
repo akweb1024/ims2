@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import FormattedDate from '@/components/common/FormattedDate';
 import Link from 'next/link';
@@ -16,16 +16,7 @@ export default function CommunicationsPage() {
         totalPages: 1
     });
 
-    useEffect(() => {
-        const userData = localStorage.getItem('user');
-        if (userData) {
-            const user = JSON.parse(userData);
-            setUserRole(user.role);
-        }
-        fetchLogs();
-    }, []);
-
-    const fetchLogs = async (page = 1) => {
+    const fetchLogs = useCallback(async (page = 1) => {
         setLoading(true);
         try {
             const token = localStorage.getItem('token');
@@ -46,7 +37,16 @@ export default function CommunicationsPage() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [pagination.limit]);
+
+    useEffect(() => {
+        const userData = localStorage.getItem('user');
+        if (userData) {
+            const user = JSON.parse(userData);
+            setUserRole(user.role);
+        }
+        fetchLogs();
+    }, [fetchLogs]);
 
     const getChannelIcon = (channel: string) => {
         switch (channel.toUpperCase()) {

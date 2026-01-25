@@ -239,15 +239,20 @@ export async function GET(req: NextRequest) {
             take: 10
         });
 
-        // Fetch tasks by priority
-        const [highPriorityTasks, mediumPriorityTasks, lowPriorityTasks] = await Promise.all([
+        // Fetch tasks by priority and type
+        const [
+            highPriorityTasks,
+            mediumPriorityTasks,
+            lowPriorityTasks,
+            revenueTasksCount,
+            supportTasksCount,
+            maintenanceTasksCount,
+            urgentTasksCount,
+            serviceRequestsCount
+        ] = await Promise.all([
             prisma.iTTask.count({ where: { ...taskWhere, priority: 'HIGH', status: { not: 'COMPLETED' } } }),
             prisma.iTTask.count({ where: { ...taskWhere, priority: 'MEDIUM', status: { not: 'COMPLETED' } } }),
             prisma.iTTask.count({ where: { ...taskWhere, priority: 'LOW', status: { not: 'COMPLETED' } } }),
-        ]);
-
-        // Fetch tasks by type
-        const [revenueTasksCount, supportTasksCount, maintenanceTasksCount, urgentTasksCount, serviceRequestsCount] = await Promise.all([
             prisma.iTTask.count({ where: { ...taskWhere, type: 'REVENUE' } }),
             prisma.iTTask.count({ where: { ...taskWhere, type: 'SUPPORT' } }),
             prisma.iTTask.count({ where: { ...taskWhere, type: 'MAINTENANCE' } }),

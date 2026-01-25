@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, use, useRef } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import FormattedDate from '@/components/common/FormattedDate';
@@ -28,6 +28,8 @@ export default function CustomerDetailPage({ params }: { params: Promise<{ id: s
 
     const formRef = useRef<HTMLDivElement>(null);
 
+    const searchParams = useSearchParams();
+
     useEffect(() => {
         if (showEditModal) {
             const token = localStorage.getItem('token');
@@ -50,11 +52,10 @@ export default function CustomerDetailPage({ params }: { params: Promise<{ id: s
             const user = JSON.parse(userData);
             setUserRole(user.role);
         }
-    }, [id, router]);
+    }, [id, router]); // id and router are stable enough, or router changes only on nav.
 
     // Handle incoming follow-up from query params
     useEffect(() => {
-        const searchParams = new URLSearchParams(window.location.search);
         const fId = searchParams.get('followUpId');
         if (fId) {
             setActiveFollowUpId(fId);
@@ -63,7 +64,7 @@ export default function CustomerDetailPage({ params }: { params: Promise<{ id: s
                 formRef.current?.scrollIntoView({ behavior: 'smooth' });
             }, 500);
         }
-    }, [customer]); // Run when customer data is loaded and tabs are ready
+    }, [customer, searchParams]);
 
     if (loading) {
         return (

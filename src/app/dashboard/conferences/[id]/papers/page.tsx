@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
@@ -22,13 +22,7 @@ export default function PaperManagementPage() {
     const [filterDecision, setFilterDecision] = useState('all');
     const [searchTerm, setSearchTerm] = useState('');
 
-    useEffect(() => {
-        const user = localStorage.getItem('user');
-        if (user) setUserRole(JSON.parse(user).role);
-        fetchData();
-    }, [conferenceId]);
-
-    const fetchData = async () => {
+    const fetchData = useCallback(async () => {
         try {
             const token = localStorage.getItem('token');
             const [confRes, papersRes] = await Promise.all([
@@ -43,7 +37,13 @@ export default function PaperManagementPage() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [conferenceId]);
+
+    useEffect(() => {
+        const user = localStorage.getItem('user');
+        if (user) setUserRole(JSON.parse(user).role);
+        fetchData();
+    }, [fetchData]);
 
     const filteredPapers = papers.filter(p => {
         const matchesSearch = p.title.toLowerCase().includes(searchTerm.toLowerCase()) ||

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import Link from 'next/link';
@@ -15,17 +15,7 @@ export default function InstitutionDetailPage() {
     const [loading, setLoading] = useState(true);
     const [userRole, setUserRole] = useState('');
 
-    useEffect(() => {
-        const user = localStorage.getItem('user');
-        if (user) {
-            setUserRole(JSON.parse(user).role);
-        }
-        if (params.id) {
-            fetchInstitution();
-        }
-    }, [params.id]);
-
-    const fetchInstitution = async () => {
+    const fetchInstitution = useCallback(async () => {
         try {
             const token = localStorage.getItem('token');
             const res = await fetch(`/api/institutions?id=${params.id}`, {
@@ -40,7 +30,17 @@ export default function InstitutionDetailPage() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [params.id]);
+
+    useEffect(() => {
+        const user = localStorage.getItem('user');
+        if (user) {
+            setUserRole(JSON.parse(user).role);
+        }
+        if (params.id) {
+            fetchInstitution();
+        }
+    }, [params.id, fetchInstitution]);
 
     if (loading) {
         return (

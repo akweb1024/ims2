@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import FormattedDate from '@/components/common/FormattedDate';
 import Link from 'next/link';
@@ -24,11 +24,7 @@ export default function ArticlesPage() {
     const [search, setSearch] = useState('');
     const [statusFilter, setStatusFilter] = useState<string>('ALL');
 
-    useEffect(() => {
-        fetchArticles();
-    }, [search, statusFilter]);
-
-    const fetchArticles = async () => {
+    const fetchArticles = useCallback(async () => {
         setLoading(true);
         try {
             const token = localStorage.getItem('token');
@@ -52,7 +48,11 @@ export default function ArticlesPage() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [search, statusFilter]);
+
+    useEffect(() => {
+        fetchArticles();
+    }, [fetchArticles]);
 
     const getStatusColor = (status: string) => {
         switch (status) {

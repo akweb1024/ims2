@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, use } from 'react';
+import { useState, useEffect, use, useCallback } from 'react';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import {
     ChevronLeft,
@@ -34,13 +34,7 @@ export default function ArticleAssignmentPage({ params }: { params: Promise<{ id
         notes: ''
     });
 
-    useEffect(() => {
-        const user = localStorage.getItem('user');
-        if (user) setUserRole(JSON.parse(user).role);
-        fetchData();
-    }, [articleId]);
-
-    const fetchData = async () => {
+    const fetchData = useCallback(async () => {
         setLoading(true);
         try {
             const token = localStorage.getItem('token');
@@ -70,7 +64,13 @@ export default function ArticleAssignmentPage({ params }: { params: Promise<{ id
         } finally {
             setLoading(false);
         }
-    };
+    }, [articleId]);
+
+    useEffect(() => {
+        const user = localStorage.getItem('user');
+        if (user) setUserRole(JSON.parse(user).role);
+        fetchData();
+    }, [fetchData]);
 
     const handleAssign = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -175,8 +175,8 @@ export default function ArticleAssignmentPage({ params }: { params: Promise<{ id
                                             key={rev.id}
                                             onClick={() => setSelectedReviewerId(rev.id)}
                                             className={`p-4 rounded-2xl border-2 transition-all cursor-pointer flex items-center gap-4 ${selectedReviewerId === rev.id
-                                                    ? 'border-primary-600 bg-primary-50 ring-4 ring-primary-50'
-                                                    : 'border-secondary-100 hover:border-primary-200 hover:bg-secondary-50'
+                                                ? 'border-primary-600 bg-primary-50 ring-4 ring-primary-50'
+                                                : 'border-secondary-100 hover:border-primary-200 hover:bg-secondary-50'
                                                 } ${!rev.isActive ? 'opacity-50 grayscale' : ''}`}
                                         >
                                             <div className={`w-12 h-12 rounded-full flex items-center justify-center font-black text-lg ${selectedReviewerId === rev.id ? 'bg-primary-600 text-white' : 'bg-secondary-100 text-secondary-500'

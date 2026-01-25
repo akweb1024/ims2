@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
@@ -23,17 +23,7 @@ export default function RegisterPage() {
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState('');
 
-    useEffect(() => {
-        const userData = localStorage.getItem('user');
-        if (userData) {
-            const u = JSON.parse(userData);
-            setUserRole(u.role);
-            setUser(u);
-        }
-        fetchConference();
-    }, [conferenceId]);
-
-    const fetchConference = async () => {
+    const fetchConference = useCallback(async () => {
         try {
             const token = localStorage.getItem('token');
             const res = await fetch(`/api/conferences/${conferenceId}`, {
@@ -51,7 +41,17 @@ export default function RegisterPage() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [conferenceId]);
+
+    useEffect(() => {
+        const userData = localStorage.getItem('user');
+        if (userData) {
+            const u = JSON.parse(userData);
+            setUserRole(u.role);
+            setUser(u);
+        }
+        fetchConference();
+    }, [fetchConference]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -219,8 +219,8 @@ export default function RegisterPage() {
                                         <label
                                             key={ticket.id}
                                             className={`relative flex flex-col p-4 border-2 rounded-xl cursor-pointer transition-all ${selectedTicket === ticket.id
-                                                    ? 'border-primary-500 bg-white shadow-md'
-                                                    : 'border-secondary-200 bg-white hover:border-primary-200'
+                                                ? 'border-primary-500 bg-white shadow-md'
+                                                : 'border-secondary-200 bg-white hover:border-primary-200'
                                                 } ${isSoldOut ? 'opacity-50 grayscale pointer-events-none' : ''}`}
                                         >
                                             <input

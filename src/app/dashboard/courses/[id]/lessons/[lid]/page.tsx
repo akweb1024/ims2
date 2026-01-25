@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
@@ -12,13 +12,7 @@ export default function LessonPlayerPage() {
     const [loading, setLoading] = useState(true);
     const [userRole, setUserRole] = useState<string>('');
 
-    useEffect(() => {
-        const user = localStorage.getItem('user');
-        if (user) setUserRole(JSON.parse(user).role);
-        fetchLesson();
-    }, [lessonId]);
-
-    const fetchLesson = async () => {
+    const fetchLesson = useCallback(async () => {
         setLoading(true);
         try {
             const token = localStorage.getItem('token');
@@ -30,7 +24,13 @@ export default function LessonPlayerPage() {
             }
         } catch (error) { console.error(error); }
         finally { setLoading(false); }
-    };
+    }, [lessonId]);
+
+    useEffect(() => {
+        const user = localStorage.getItem('user');
+        if (user) setUserRole(JSON.parse(user).role);
+        fetchLesson();
+    }, [fetchLesson]);
 
     const handleComplete = async () => {
         try {

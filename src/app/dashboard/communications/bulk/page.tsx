@@ -26,7 +26,7 @@ export default function BulkCommunicationPage() {
                 router.push('/dashboard');
             }
         }
-    }, []);
+    }, [router]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();

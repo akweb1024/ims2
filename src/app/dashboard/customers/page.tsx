@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import FormattedDate from '@/components/common/FormattedDate';
 import Link from 'next/link';
@@ -53,7 +53,7 @@ export default function CustomersPage() {
 
     const [error, setError] = useState<string | null>(null);
 
-    const fetchCustomers = async () => {
+    const fetchCustomers = useCallback(async () => {
         setLoading(true);
         setError(null);
         // Clear selection on refetch/page change to avoid issues
@@ -88,14 +88,14 @@ export default function CustomersPage() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [pagination.page, pagination.limit, search, typeFilter, stateFilter, countryFilter]);
 
     useEffect(() => {
         const timer = setTimeout(() => {
             fetchCustomers();
         }, 300);
         return () => clearTimeout(timer);
-    }, [search, typeFilter, stateFilter, countryFilter, pagination.page]);
+    }, [fetchCustomers]);
 
     const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.checked) {

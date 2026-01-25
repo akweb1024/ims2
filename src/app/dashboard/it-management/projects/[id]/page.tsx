@@ -21,7 +21,8 @@ import {
 } from 'lucide-react';
 import MilestoneModal from '@/components/dashboard/it/MilestoneModal';
 import ITDocumentManager from '@/components/dashboard/it/ITDocumentManager';
-import { LayoutDashboard, FileText as FileIcon } from 'lucide-react';
+import ProjectTimeline from '@/components/dashboard/it/ProjectTimeline';
+import { LayoutDashboard, FileText as FileIcon, GanttChart } from 'lucide-react';
 
 interface Project {
     id: string;
@@ -135,7 +136,7 @@ export default function ProjectDetailPage() {
     const [deleting, setDeleting] = useState(false);
     const [showMilestoneModal, setShowMilestoneModal] = useState(false);
     const [selectedMilestone, setSelectedMilestone] = useState<Milestone | null>(null);
-    const [activeTab, setActiveTab] = useState<'overview' | 'documents'>('overview');
+    const [activeTab, setActiveTab] = useState<'overview' | 'timeline' | 'documents'>('overview');
 
     const fetchProject = useCallback(async () => {
         try {
@@ -306,6 +307,16 @@ export default function ProjectDetailPage() {
                     >
                         <LayoutDashboard className="h-4 w-4" />
                         Project Overview
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('timeline')}
+                        className={`flex items-center gap-2 px-6 py-3 text-sm font-bold transition-all border-b-2 ${activeTab === 'timeline'
+                            ? 'border-blue-600 text-blue-600'
+                            : 'border-transparent text-gray-500 hover:text-gray-700'
+                            }`}
+                    >
+                        <GanttChart className="h-4 w-4" />
+                        Timeline
                     </button>
                     <button
                         onClick={() => setActiveTab('documents')}
@@ -517,6 +528,13 @@ export default function ProjectDetailPage() {
                                     )}
                                 </div>
                             </>
+                        ) : activeTab === 'timeline' ? (
+                            <ProjectTimeline
+                                startDate={project.startDate}
+                                endDate={project.endDate}
+                                milestones={project.milestones}
+                                tasks={project.tasks}
+                            />
                         ) : (
                             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
                                 <ITDocumentManager projectId={projectId} />

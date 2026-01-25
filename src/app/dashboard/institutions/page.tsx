@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -79,15 +79,7 @@ export default function InstitutionsPage() {
         }
     }, []);
 
-    useEffect(() => {
-        const delayDebounceFn = setTimeout(() => {
-            fetchInstitutions(1);
-        }, 500);
-
-        return () => clearTimeout(delayDebounceFn);
-    }, [searchTerm, filterType, stateFilter, cityFilter]);
-
-    const fetchInstitutions = async (page = 1) => {
+    const fetchInstitutions = useCallback(async (page = 1) => {
         setLoading(true);
         setSelectedIds(new Set()); // Clear selection on fetch
         try {
@@ -116,7 +108,15 @@ export default function InstitutionsPage() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [pagination.limit, searchTerm, filterType, stateFilter, cityFilter]);
+
+    useEffect(() => {
+        const delayDebounceFn = setTimeout(() => {
+            fetchInstitutions(1);
+        }, 500);
+
+        return () => clearTimeout(delayDebounceFn);
+    }, [fetchInstitutions]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();

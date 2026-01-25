@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect, Suspense, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
 
 function ExamContent() {
@@ -13,16 +13,7 @@ function ExamContent() {
     const [result, setResult] = useState<any>(null);
     const [error, setError] = useState('');
 
-    useEffect(() => {
-        if (applicationId) {
-            fetchExam();
-        } else {
-            setError('Invalid Exam Link');
-            setLoading(false);
-        }
-    }, [applicationId]);
-
-    const fetchExam = async () => {
+    const fetchExam = useCallback(async () => {
         try {
             const res = await fetch(`/api/recruitment/exam?applicationId=${applicationId}`);
             const data = await res.json();
@@ -40,7 +31,16 @@ function ExamContent() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [applicationId]);
+
+    useEffect(() => {
+        if (applicationId) {
+            fetchExam();
+        } else {
+            setError('Invalid Exam Link');
+            setLoading(false);
+        }
+    }, [applicationId, fetchExam]);
 
     const handleSubmit = async () => {
         if (answers.includes(-1)) {

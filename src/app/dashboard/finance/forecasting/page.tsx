@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import {
     TrendingUp,
@@ -37,16 +37,7 @@ export default function CashflowForecastingPage() {
     const [loading, setLoading] = useState(true);
     const [forecastData, setForecastData] = useState<any[]>([]);
 
-    useEffect(() => {
-        // Simulate advanced AI calculation
-        setLoading(true);
-        setTimeout(() => {
-            generateForecast();
-            setLoading(false);
-        }, 800);
-    }, [scenarios]);
-
-    const generateForecast = () => {
+    const generateForecast = useCallback(() => {
         const baseData = [];
         const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec', 'Jan', 'Feb', 'Mar'];
 
@@ -82,7 +73,16 @@ export default function CashflowForecastingPage() {
             });
         }
         setForecastData(baseData);
-    };
+    }, [scenarios]);
+
+    useEffect(() => {
+        // Simulate advanced AI calculation
+        setLoading(true);
+        setTimeout(() => {
+            generateForecast();
+            setLoading(false);
+        }, 800);
+    }, [generateForecast]);
 
     return (
         <DashboardLayout>
