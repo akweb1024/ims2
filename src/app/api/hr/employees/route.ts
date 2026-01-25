@@ -241,13 +241,20 @@ export const PATCH = authorizedRoute(
             const nonNullableNumbers = [
                 'totalExperienceYears', 'totalExperienceMonths',
                 'relevantExperienceYears', 'relevantExperienceMonths',
-                'lastIncrementPercentage', 'manualLeaveAdjustment', 'leaveBalance'
+                'lastIncrementPercentage', 'manualLeaveAdjustment', 'leaveBalance', 'currentLeaveBalance'
             ];
             nonNullableNumbers.forEach(key => {
                 if (updateData[key] === null) {
                     delete updateData[key];
                 }
             });
+
+            // Keep balances in sync if one is provided
+            if (updateData.leaveBalance !== undefined && updateData.currentLeaveBalance === undefined) {
+                updateData.currentLeaveBalance = updateData.leaveBalance;
+            } else if (updateData.currentLeaveBalance !== undefined && updateData.leaveBalance === undefined) {
+                updateData.leaveBalance = updateData.currentLeaveBalance;
+            }
 
             const updated = await prisma.employeeProfile.update({
                 where: { id },
@@ -307,7 +314,13 @@ export const POST = authorizedRoute(
 
             // Set initial leave balance if provided, otherwise default to 0
             if (rest.initialLeaveBalance !== undefined) {
-                rest.currentLeaveBalance = rest.initialLeaveBalance;
+                const bal = parseFloat(rest.initialLeaveBalance) || 0;
+                rest.currentLeaveBalance = bal;
+                rest.leaveBalance = bal;
+            } else {
+                // Also default both to 0 if not provided explicitly
+                rest.currentLeaveBalance = rest.leaveBalance || 0;
+                rest.leaveBalance = rest.currentLeaveBalance || 0;
             }
 
             // Profile fields filtering - ensure no relation/meta fields leak into Prisma

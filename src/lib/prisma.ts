@@ -13,7 +13,7 @@ const getClient = () => {
 
     // Standard Postgres connection via adapter
     // Manual parsing to ensure password is a string
-    const match = url.match(/postgresql:\/\/([^:]+):([^@]+)@([^:]+):(\d+)\/(.+)/);
+    const match = url.match(/postgresql:\/\/([^:]+):(.*)@([^:]+):(\d+)\/(.+)/);
 
     let pool;
     if (match) {

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { authorizedRoute } from '@/lib/middleware-auth';
 import { createErrorResponse } from '@/lib/api-utils';
+import { calculateLeaveBalance } from '@/lib/utils/leave-calculator';
 import { leaveRequestSchema, updateLeaveRequestSchema } from '@/lib/validators/hr';
 import { getDownlineUserIds } from '@/lib/hierarchy';
 
@@ -168,16 +169,28 @@ export const PATCH = authorizedRoute(
                     const diffTime = Math.abs(end.getTime() - start.getTime());
                     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1; // Inclusive
 
-                    await tx.employeeProfile.update({
-                        where: { id: existing.employeeId },
-                        data: {
-                            currentLeaveBalance: { decrement: diffDays }
-                        }
-                    });
+                    // Balance will be set precisely by the ledger logic below to ensure synchronization
 
                     // Update Ledger for the month
                     const month = start.getMonth() + 1;
                     const year = start.getFullYear();
+
+                    const currentLedger = await tx.leaveLedger.findUnique({
+                        where: {
+                            employeeId_month_year: {
+                                employeeId: existing.employeeId,
+                                month,
+                                year
+                            }
+                        }
+                    });
+
+                    const opening = currentLedger?.openingBalance || existing.employee.currentLeaveBalance || 0;
+                    const autoCredit = currentLedger?.autoCredit || 0;
+                    const newTaken = (currentLedger?.takenLeaves || 0) + diffDays;
+                    const lateDeds = (currentLedger?.lateDeductions || 0) + (currentLedger?.shortLeaveDeductions || 0);
+
+                    const { displayBalance } = calculateLeaveBalance(opening, autoCredit, newTaken, lateDeds, 0);
 
                     await tx.leaveLedger.upsert({
                         where: {
@@ -188,17 +201,27 @@ export const PATCH = authorizedRoute(
                             }
                         },
                         update: {
-                            takenLeaves: { increment: diffDays },
-                            closingBalance: { decrement: diffDays } // Assuming closing tracks remaining? Or just calculated? 
-                            // If closingBalance is 'remaining', we decrement. If it's 'end of month balance', we decrement.
+                            takenLeaves: newTaken,
+                            closingBalance: displayBalance
                         },
                         create: {
                             employeeId: existing.employeeId,
                             month,
                             year,
-                            openingBalance: 0, // Should be fetched from previous, but 0 for now if new
-                            takenLeaves: diffDays,
-                            closingBalance: -diffDays // Simplified logic
+                            openingBalance: opening,
+                            autoCredit,
+                            takenLeaves: newTaken,
+                            closingBalance: displayBalance,
+                            companyId: user.companyId
+                        }
+                    });
+
+                    // Update employee profile
+                    await tx.employeeProfile.update({
+                        where: { id: existing.employeeId },
+                        data: {
+                            currentLeaveBalance: displayBalance,
+                            leaveBalance: displayBalance
                         }
                     });
 
@@ -208,15 +231,27 @@ export const PATCH = authorizedRoute(
                     const diffTime = Math.abs(new Date(existing.endDate).getTime() - start.getTime());
                     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
 
-                    await tx.employeeProfile.update({
-                        where: { id: existing.employeeId },
-                        data: {
-                            currentLeaveBalance: { increment: diffDays }
-                        }
-                    });
+                    // Balance will be reset precisely by the ledger logic below
 
                     const month = start.getMonth() + 1;
                     const year = start.getFullYear();
+
+                    const currentLedger = await tx.leaveLedger.findUnique({
+                        where: {
+                            employeeId_month_year: {
+                                employeeId: existing.employeeId,
+                                month,
+                                year
+                            }
+                        }
+                    });
+
+                    const opening = currentLedger?.openingBalance || existing.employee.currentLeaveBalance || 0;
+                    const autoCredit = currentLedger?.autoCredit || 0;
+                    const newTaken = Math.max(0, (currentLedger?.takenLeaves || 0) - diffDays);
+                    const lateDeds = (currentLedger?.lateDeductions || 0) + (currentLedger?.shortLeaveDeductions || 0);
+
+                    const { displayBalance } = calculateLeaveBalance(opening, autoCredit, newTaken, lateDeds, 0);
 
                     await tx.leaveLedger.upsert({
                         where: {
@@ -227,16 +262,27 @@ export const PATCH = authorizedRoute(
                             }
                         },
                         update: {
-                            takenLeaves: { decrement: diffDays },
-                            closingBalance: { increment: diffDays }
+                            takenLeaves: newTaken,
+                            closingBalance: displayBalance
                         },
                         create: {
                             employeeId: existing.employeeId,
                             month,
                             year,
-                            openingBalance: 0,
-                            takenLeaves: -diffDays, // Weird case but technically correcting a mistake
-                            closingBalance: diffDays
+                            openingBalance: opening,
+                            autoCredit,
+                            takenLeaves: newTaken,
+                            closingBalance: displayBalance,
+                            companyId: user.companyId
+                        }
+                    });
+
+                    // Update employee profile
+                    await tx.employeeProfile.update({
+                        where: { id: existing.employeeId },
+                        data: {
+                            currentLeaveBalance: displayBalance,
+                            leaveBalance: displayBalance
                         }
                     });
                 }

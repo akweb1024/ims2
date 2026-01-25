@@ -57,50 +57,47 @@ export const POST = authorizedRoute(
                 adminApproved: action === 'approve'
             };
 
-            if (action === 'approve') {
-                // Final approval - update employee salary
-                updateData.status = 'APPROVED';
+            const updated = await prisma.$transaction(async (tx) => {
+                if (action === 'approve') {
+                    // Update employee profile with new salary
+                    await tx.employeeProfile.update({
+                        where: { id: increment.employeeProfileId },
+                        data: {
+                            baseSalary: increment.newSalary,
+                            fixedSalary: increment.newFixedSalary,
+                            variableSalary: increment.newVariableSalary,
+                            incentiveSalary: increment.newIncentive,
+                            designation: increment.newDesignation || increment.previousDesignation,
+                            lastIncrementDate: increment.effectiveDate,
+                            lastIncrementPercentage: increment.percentage,
+                            monthlyTarget: increment.newMonthlyTarget || 0,
+                            yearlyTarget: (increment as any).newYearlyTarget || 0,
+                            ...(increment.newKRA && { kra: increment.newKRA }),
+                            ...(increment.newKPI && { metrics: increment.newKPI as any })
+                        } as any
+                    });
+                    updateData.status = 'APPROVED';
+                } else {
+                    updateData.status = 'REJECTED';
+                }
 
-                // Update employee profile with new salary
-                await prisma.employeeProfile.update({
-                    where: { id: increment.employeeProfileId },
-                    data: {
-                        baseSalary: increment.newSalary,
-                        fixedSalary: increment.newFixedSalary,
-                        variableSalary: increment.newVariableSalary,
-                        incentiveSalary: increment.newIncentive,
-                        designation: increment.newDesignation || increment.previousDesignation,
-                        lastIncrementDate: increment.effectiveDate,
-                        lastIncrementPercentage: increment.percentage,
-                        monthlyTarget: increment.newMonthlyTarget || 0,
-                        yearlyTarget: (increment as any).newYearlyTarget || 0,
-                        // Update KRA if provided
-                        ...(increment.newKRA && { kra: increment.newKRA }),
-                        // Update KPIs (metrics) if provided
-                        ...(increment.newKPI && { metrics: increment.newKPI as any })
-                    } as any
-                });
-            } else {
-                // Reject
-                updateData.status = 'REJECTED';
-            }
-
-            const updated = await prisma.salaryIncrementRecord.update({
-                where: { id },
-                data: updateData,
-                include: {
-                    employeeProfile: {
-                        include: {
-                            user: {
-                                select: {
-                                    id: true,
-                                    name: true,
-                                    email: true
+                return await tx.salaryIncrementRecord.update({
+                    where: { id },
+                    data: updateData,
+                    include: {
+                        employeeProfile: {
+                            include: {
+                                user: {
+                                    select: {
+                                        id: true,
+                                        name: true,
+                                        email: true
+                                    }
                                 }
                             }
                         }
                     }
-                }
+                });
             });
 
             return NextResponse.json({

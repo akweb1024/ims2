@@ -107,13 +107,13 @@ export function getWorkingDaysInMonth(
 }
 
 /**
- * Calculate total leave balance
- * @param openingBalance - Opening balance at start of month
+ * Calculate total leave balance details
+ * @param openingBalance - Opening balance at start of month (last bal leave)
  * @param autoCredit - Monthly auto-credit (e.g., 1.5)
  * @param takenLeaves - Leaves taken during the month
  * @param lateDeductions - Deductions from late arrivals
  * @param shortLeaveDeductions - Deductions from short leaves
- * @returns Closing balance
+ * @returns Object with balance components
  */
 export function calculateLeaveBalance(
     openingBalance: number,
@@ -121,8 +121,18 @@ export function calculateLeaveBalance(
     takenLeaves: number,
     lateDeductions: number,
     shortLeaveDeductions: number
-): number {
-    return openingBalance + autoCredit - takenLeaves - lateDeductions - shortLeaveDeductions;
+): {
+    actualBalance: number;
+    displayBalance: number;
+    negativeLeaves: number;
+} {
+    const actualBalance = openingBalance + autoCredit - takenLeaves - lateDeductions - shortLeaveDeductions;
+
+    return {
+        actualBalance,
+        displayBalance: Math.max(0, actualBalance),
+        negativeLeaves: actualBalance < 0 ? Math.abs(actualBalance) : 0
+    };
 }
 
 /**

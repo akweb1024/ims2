@@ -1,5 +1,5 @@
 import { prisma } from '@/lib/prisma';
-import { calculateLateDeduction, calculateShortLeaveDeduction, getCurrentMonthYear } from './leave-calculator';
+import { calculateLateDeduction, calculateShortLeaveDeduction, getCurrentMonthYear, calculateLeaveBalance } from './leave-calculator';
 
 /**
  * Process late arrival and update leave ledger
@@ -46,25 +46,31 @@ export async function processLateArrival(
     // Calculate deduction based on current late count
     const deduction = calculateLateDeduction(lateMinutes, ledger.lateArrivalCount);
 
+    const { displayBalance } = calculateLeaveBalance(
+        ledger.openingBalance,
+        ledger.autoCredit || 0,
+        ledger.takenLeaves,
+        ledger.lateDeductions + deduction,
+        ledger.shortLeaveDeductions
+    );
+
     // Update ledger
     await prisma.leaveLedger.update({
         where: { id: ledger.id },
         data: {
             lateArrivalCount: { increment: 1 },
             lateDeductions: { increment: deduction },
-            closingBalance: { decrement: deduction }
+            closingBalance: displayBalance
         }
     });
 
     // Update employee's current leave balance
-    if (deduction > 0) {
-        await prisma.employeeProfile.update({
-            where: { id: employeeId },
-            data: {
-                currentLeaveBalance: { decrement: deduction }
-            }
-        });
-    }
+    await prisma.employeeProfile.update({
+        where: { id: employeeId },
+        data: {
+            currentLeaveBalance: displayBalance
+        }
+    });
 }
 
 /**
@@ -112,25 +118,31 @@ export async function processShortLeave(
     // Calculate deduction based on current short leave count
     const deduction = calculateShortLeaveDeduction(shortLeaveMinutes, ledger.shortLeaveCount);
 
+    const { displayBalance } = calculateLeaveBalance(
+        ledger.openingBalance,
+        ledger.autoCredit || 0,
+        ledger.takenLeaves,
+        ledger.lateDeductions,
+        ledger.shortLeaveDeductions + deduction
+    );
+
     // Update ledger
     await prisma.leaveLedger.update({
         where: { id: ledger.id },
         data: {
             shortLeaveCount: { increment: 1 },
             shortLeaveDeductions: { increment: deduction },
-            closingBalance: { decrement: deduction }
+            closingBalance: displayBalance
         }
     });
 
     // Update employee's current leave balance
-    if (deduction > 0) {
-        await prisma.employeeProfile.update({
-            where: { id: employeeId },
-            data: {
-                currentLeaveBalance: { decrement: deduction }
-            }
-        });
-    }
+    await prisma.employeeProfile.update({
+        where: { id: employeeId },
+        data: {
+            currentLeaveBalance: displayBalance
+        }
+    });
 }
 
 /**

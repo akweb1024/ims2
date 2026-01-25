@@ -114,150 +114,146 @@ export const POST = authorizedRoute(
 
                 let generatedCount = 0;
                 for (const emp of employees) {
-                    const existing = await prisma.salarySlip.findFirst({
-                        where: { employeeId: emp.id, month: m, year: y }
-                    });
-                    if (existing) continue;
+                    try {
+                        await prisma.$transaction(async (tx) => {
+                            const existing = await tx.salarySlip.findFirst({
+                                where: { employeeId: emp.id, month: m, year: y }
+                            });
+                            if (existing) return;
 
-                    const struct = emp.salaryStructure;
-                    if (!struct || struct.grossSalary <= 0) continue;
+                            const struct = emp.salaryStructure;
+                            if (!struct || struct.grossSalary <= 0) return;
 
-                    // 1. Check for Advances / EMIs
-                    const activeEmi = await prisma.advanceEMI.findFirst({
-                        where: {
-                            advance: { employeeId: emp.id, status: 'APPROVED' },
-                            month: m,
-                            year: y,
-                            status: 'PENDING'
-                        }
-                    });
-
-                    // 2. Compute Leaves / LWP
-                    const startDate = new Date(y, m - 1, 1);
-                    const endDate = new Date(y, m, 0);
-                    const daysInMonth = endDate.getDate();
-
-                    const approvedLeaves = await prisma.leaveRequest.findMany({
-                        where: {
-                            employeeId: emp.id,
-                            status: 'APPROVED',
-                            startDate: { lte: endDate },
-                            endDate: { gte: startDate }
-                        }
-                    });
-
-                    let leaveTakenThisMonth = 0;
-                    approvedLeaves.forEach(leave => {
-                        const start = new Date(Math.max(leave.startDate.getTime(), startDate.getTime()));
-                        const end = new Date(Math.min(leave.endDate.getTime(), endDate.getTime()));
-                        const diff = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1;
-                        leaveTakenThisMonth += diff;
-                    });
-
-                    const availableBal = emp.leaveBalance;
-                    const overheadDays = Math.max(0, leaveTakenThisMonth - availableBal);
-
-                    // Update employee leave balance
-                    const newBal = Math.max(0, availableBal - leaveTakenThisMonth);
-                    await prisma.employeeProfile.update({
-                        where: { id: emp.id },
-                        data: { leaveBalance: newBal }
-                    });
-
-                    // 3. New Advanced Payroll Calculation
-                    const breakdown = PayrollCalculator.calculate({
-                        basicSalary: struct.basicSalary,
-                        hra: struct.hra,
-                        conveyance: struct.conveyance,
-                        medical: struct.medical,
-                        specialAllowance: struct.specialAllowance,
-                        otherAllowances: struct.otherAllowances,
-                        statutoryBonus: (struct as any).statutoryBonus || 0,
-                        gratuity: (struct as any).gratuity || 0,
-                        healthCare: (struct as any).healthCare || 0,
-                        travelling: (struct as any).travelling || 0,
-                        mobile: (struct as any).mobile || 0,
-                        internet: (struct as any).internet || 0,
-                        booksAndPeriodicals: (struct as any).booksAndPeriodicals || 0,
-                        lwpDays: overheadDays,
-                        daysInMonth
-                    }, statutoryConfig);
-
-                    const advanceDeduction = activeEmi ? activeEmi.amount : 0;
-                    const finalPayable = Math.max(0, breakdown.netPayable - advanceDeduction);
-
-                    const slip = await prisma.salarySlip.create({
-                        data: {
-                            employeeId: emp.id,
-                            month: m,
-                            year: y,
-                            amountPaid: parseFloat(finalPayable.toFixed(2)),
-                            advanceDeduction,
-                            lwpDeduction: breakdown.deductions.lwpDeduction,
-
-                            // Breakdown storage
-                            basicSalary: breakdown.earnings.basic,
-                            hra: breakdown.earnings.hra,
-                            conveyance: breakdown.earnings.conveyance,
-                            medical: breakdown.earnings.medical,
-                            specialAllowance: breakdown.earnings.specialAllowance,
-                            otherAllowances: breakdown.earnings.otherAllowances,
-                            statutoryBonus: breakdown.earnings.statutoryBonus,
-                            grossSalary: breakdown.earnings.gross,
-
-                            pfEmployee: breakdown.deductions.pfEmployee,
-                            esicEmployee: breakdown.deductions.esicEmployee,
-                            professionalTax: breakdown.deductions.professionalTax,
-                            tds: breakdown.deductions.tds,
-                            totalDeductions: breakdown.deductions.total + advanceDeduction,
-
-                            pfEmployer: breakdown.employerContribution.pfEmployer,
-                            esicEmployer: breakdown.employerContribution.esicEmployer,
-                            gratuity: breakdown.employerContribution.gratuity,
-                            ctc: breakdown.costToCompany,
-                            arrears: breakdown.arrears || 0,
-                            expenses: 0,
-                            healthCare: breakdown.perks.healthCare,
-                            travelling: breakdown.perks.travelling,
-                            mobile: breakdown.perks.mobile,
-                            internet: breakdown.perks.internet,
-                            booksAndPeriodicals: breakdown.perks.booksAndPeriodicals,
-                            netPayable: breakdown.netPayable - advanceDeduction,
-
-                            status: 'GENERATED',
-                            companyId: user.companyId
-                        } as any
-                    });
-
-                    // Mark EMI as paid if applicable
-                    if (activeEmi) {
-                        await prisma.advanceEMI.update({
-                            where: { id: activeEmi.id },
-                            data: {
-                                status: 'PAID',
-                                salarySlipId: slip.id,
-                                paidAt: new Date()
-                            }
-                        });
-
-                        const advance = await prisma.salaryAdvance.findUnique({
-                            where: { id: activeEmi.advanceId },
-                            include: { emis: true }
-                        });
-
-                        if (advance) {
-                            const pendingEmis = advance.emis.filter(e => e.status === 'PENDING').length;
-                            await prisma.salaryAdvance.update({
-                                where: { id: advance.id },
-                                data: {
-                                    status: pendingEmis === 0 ? 'COMPLETED' : 'APPROVED',
-                                    paidEmis: advance.totalEmis - pendingEmis
+                            // 1. Check for Advances / EMIs
+                            const activeEmi = await tx.advanceEMI.findFirst({
+                                where: {
+                                    advance: { employeeId: emp.id, status: 'APPROVED' },
+                                    month: m,
+                                    year: y,
+                                    status: 'PENDING'
                                 }
                             });
-                        }
-                    }
 
-                    generatedCount++;
+                            // 2. Compute Leaves / LWP from LeaveLedger
+                            const ledger = await tx.leaveLedger.findUnique({
+                                where: {
+                                    employeeId_month_year: {
+                                        employeeId: emp.id,
+                                        month: m,
+                                        year: y
+                                    }
+                                }
+                            });
+
+                            const opening = ledger?.openingBalance || emp.currentLeaveBalance || 0;
+                            const allotted = ledger?.autoCredit || 0;
+                            const taken = ledger?.takenLeaves || 0;
+                            const delayDeds = (ledger?.lateDeductions || 0) + (ledger?.shortLeaveDeductions || 0);
+
+                            const actualBalance = opening + allotted - taken - delayDeds;
+                            const overheadDays = actualBalance < 0 ? Math.abs(actualBalance) : 0;
+
+                            const displayBalance = Math.max(0, actualBalance);
+                            await tx.employeeProfile.update({
+                                where: { id: emp.id },
+                                data: {
+                                    currentLeaveBalance: displayBalance,
+                                    leaveBalance: displayBalance
+                                }
+                            });
+
+                            const daysInMonth = new Date(y, m, 0).getDate();
+
+                            const breakdown = PayrollCalculator.calculate({
+                                basicSalary: struct.basicSalary,
+                                hra: struct.hra,
+                                conveyance: struct.conveyance,
+                                medical: struct.medical,
+                                specialAllowance: struct.specialAllowance,
+                                otherAllowances: struct.otherAllowances,
+                                statutoryBonus: (struct as any).statutoryBonus || 0,
+                                gratuity: (struct as any).gratuity || 0,
+                                healthCare: (struct as any).healthCare || 0,
+                                travelling: (struct as any).travelling || 0,
+                                mobile: (struct as any).mobile || 0,
+                                internet: (struct as any).internet || 0,
+                                booksAndPeriodicals: (struct as any).booksAndPeriodicals || 0,
+                                lwpDays: overheadDays,
+                                daysInMonth
+                            }, statutoryConfig);
+
+                            const advanceDeduction = activeEmi ? activeEmi.amount : 0;
+                            const finalPayable = Math.max(0, breakdown.netPayable - advanceDeduction);
+
+                            const slip = await tx.salarySlip.create({
+                                data: {
+                                    employeeId: emp.id,
+                                    month: m,
+                                    year: y,
+                                    amountPaid: parseFloat(finalPayable.toFixed(2)),
+                                    advanceDeduction,
+                                    lwpDeduction: breakdown.deductions.lwpDeduction,
+                                    basicSalary: breakdown.earnings.basic,
+                                    hra: breakdown.earnings.hra,
+                                    conveyance: breakdown.earnings.conveyance,
+                                    medical: breakdown.earnings.medical,
+                                    specialAllowance: breakdown.earnings.specialAllowance,
+                                    otherAllowances: breakdown.earnings.otherAllowances,
+                                    statutoryBonus: breakdown.earnings.statutoryBonus,
+                                    grossSalary: breakdown.earnings.gross,
+                                    pfEmployee: breakdown.deductions.pfEmployee,
+                                    esicEmployee: breakdown.deductions.esicEmployee,
+                                    professionalTax: breakdown.deductions.professionalTax,
+                                    tds: breakdown.deductions.tds,
+                                    totalDeductions: breakdown.deductions.total + advanceDeduction,
+                                    pfEmployer: breakdown.employerContribution.pfEmployer,
+                                    esicEmployer: breakdown.employerContribution.esicEmployer,
+                                    gratuity: breakdown.employerContribution.gratuity,
+                                    ctc: breakdown.costToCompany,
+                                    arrears: breakdown.arrears || 0,
+                                    expenses: 0,
+                                    healthCare: breakdown.perks.healthCare,
+                                    travelling: breakdown.perks.travelling,
+                                    mobile: breakdown.perks.mobile,
+                                    internet: breakdown.perks.internet,
+                                    booksAndPeriodicals: breakdown.perks.booksAndPeriodicals,
+                                    netPayable: breakdown.netPayable - advanceDeduction,
+                                    status: 'GENERATED',
+                                    companyId: user.companyId
+                                } as any
+                            });
+
+                            if (activeEmi) {
+                                await tx.advanceEMI.update({
+                                    where: { id: activeEmi.id },
+                                    data: {
+                                        status: 'PAID',
+                                        salarySlipId: slip.id,
+                                        paidAt: new Date()
+                                    }
+                                });
+
+                                const advance = await tx.salaryAdvance.findUnique({
+                                    where: { id: activeEmi.advanceId },
+                                    include: { emis: true }
+                                });
+
+                                if (advance) {
+                                    const pendingEmis = advance.emis.filter(e => e.status === 'PENDING').length;
+                                    await tx.salaryAdvance.update({
+                                        where: { id: advance.id },
+                                        data: {
+                                            status: pendingEmis === 0 ? 'COMPLETED' : 'APPROVED',
+                                            paidEmis: advance.totalEmis - pendingEmis
+                                        }
+                                    });
+                                }
+                            }
+                            generatedCount++;
+                        });
+                    } catch (err) {
+                        console.error(`Failed to generate slip for ${emp.id}:`, err);
+                    }
                 }
 
                 return NextResponse.json({ message: `Automated Statutory Payroll run complete for ${generatedCount} staff.`, count: generatedCount });

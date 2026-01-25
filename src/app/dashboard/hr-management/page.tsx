@@ -54,29 +54,46 @@ const FormattedTime = ({ date }: { date: string | Date | null }) => {
 };
 
 const LeaveLedgerRow = ({ row, onSave }: { row: any, onSave: (data: any) => Promise<any> }) => {
-    const [editData, setEditData] = useState({ ...row });
+    const [editData, setEditData] = useState({
+        ...row,
+        openingBalance: row.openingBalance ?? 0,
+        autoCredit: row.autoCredit ?? 1.5,
+        takenLeaves: row.takenLeaves ?? 0,
+        lateDeductions: row.lateDeductions ?? 0,
+        shortLeaveDeductions: row.shortLeaveDeductions ?? 0,
+        closingBalance: row.closingBalance ?? 0,
+        remarks: row.remarks ?? ''
+    });
+    const [negativeLeaves, setNegativeLeaves] = useState(0);
     const [saving, setSaving] = useState(false);
 
-    // Auto-calculate closing balance (Opening - Taken) whenever those change
+    // Auto-calculate closing balance & negative leaves whenever inputs change
     useEffect(() => {
         const opening = parseFloat(editData.openingBalance) || 0;
+        const allotted = parseFloat(editData.autoCredit) || 0;
         const taken = parseFloat(editData.takenLeaves) || 0;
-        const calculatedClosing = opening - taken;
+        const lateDeds = parseFloat(editData.lateDeductions) || 0;
+        const shortDeds = parseFloat(editData.shortLeaveDeductions) || 0;
 
-        // Only update if the calculated value is different to avoid loops/stale overwrites
-        // We check against the current closingBalance in editData
-        if (calculatedClosing !== parseFloat(editData.closingBalance)) {
-            setEditData((prev: any) => ({ ...prev, closingBalance: calculatedClosing }));
+        // Systematic calculation: Opening + Allotted - Taken - (Late + Short Deductions)
+        const actualBalance = opening + allotted - taken - lateDeds - shortDeds;
+        const displayClosing = Math.max(0, actualBalance);
+        const neg = actualBalance < 0 ? Math.abs(actualBalance) : 0;
+
+        setNegativeLeaves(neg);
+
+        if (displayClosing !== parseFloat(editData.closingBalance)) {
+            setEditData((prev: any) => ({ ...prev, closingBalance: displayClosing }));
         }
-    }, [editData.openingBalance, editData.takenLeaves, editData.closingBalance]);
+    }, [editData.openingBalance, editData.autoCredit, editData.takenLeaves, editData.lateDeductions, editData.shortLeaveDeductions, editData.closingBalance]);
 
     const handleSave = async () => {
         setSaving(true);
         try {
             await onSave(editData);
-            alert('Saved!');
+            toast.success('Saved!');
         } catch (err) {
-            alert('Failed to save');
+            toast.error('Failed to save');
         } finally {
             setSaving(false);
         }
@@ -85,46 +102,73 @@ const LeaveLedgerRow = ({ row, onSave }: { row: any, onSave: (data: any) => Prom
     return (
         <tr className="hover:bg-secondary-50/30 transition-colors">
             <td className="px-6 py-4">
-                <p className="font-bold text-secondary-900 text-sm">{row.name || row.email.split('@')[0]}</p>
+                <p className="font-bold text-secondary-900 text-sm whitespace-nowrap">{row.name || row.email.split('@')[0]}</p>
                 <p className="text-[10px] text-secondary-400 font-medium">{row.email}</p>
             </td>
             <td className="px-6 py-4">
                 <input
                     type="number"
                     step="0.5"
-                    className="input py-1 text-center w-24 text-sm font-bold bg-secondary-50 border-secondary-200"
+                    className="input py-1 text-center w-20 text-xs font-bold bg-secondary-50 border-secondary-200"
                     value={editData.openingBalance}
                     onChange={e => setEditData({ ...editData, openingBalance: parseFloat(e.target.value) || 0 })}
-                    title="Opening Balance"
-                    placeholder="0"
+                    title="Last Bal Leave (Carry Forward)"
                 />
             </td>
             <td className="px-6 py-4">
                 <input
                     type="number"
                     step="0.5"
-                    className="input py-1 text-center w-24 text-sm font-bold bg-secondary-50 border-secondary-200"
+                    className="input py-1 text-center w-20 text-xs font-bold bg-primary-50 border-primary-200 text-primary-700"
+                    value={editData.autoCredit}
+                    onChange={e => setEditData({ ...editData, autoCredit: parseFloat(e.target.value) || 0 })}
+                    title="Leave Allotted (Monthly Credit)"
+                />
+            </td>
+            <td className="px-6 py-4">
+                <input
+                    type="number"
+                    step="0.5"
+                    className="input py-1 text-center w-20 text-xs font-bold bg-secondary-50 border-secondary-200"
                     value={editData.takenLeaves}
                     onChange={e => setEditData({ ...editData, takenLeaves: parseFloat(e.target.value) || 0 })}
-                    title="Taken Leaves"
-                    placeholder="0"
+                    title="Leave Taken"
                 />
             </td>
             <td className="px-6 py-4">
                 <input
                     type="number"
                     step="0.5"
-                    className="input py-1 text-center w-24 text-sm font-bold bg-primary-50 border-primary-200 text-primary-700"
-                    value={editData.closingBalance}
-                    onChange={e => setEditData({ ...editData, closingBalance: parseFloat(e.target.value) || 0 })}
-                    title="Closing Balance"
-                    placeholder="0"
+                    className="input py-1 text-center w-16 text-[10px] font-bold bg-amber-50 border-amber-200 text-amber-700"
+                    value={editData.lateDeductions}
+                    onChange={e => setEditData({ ...editData, lateDeductions: parseFloat(e.target.value) || 0 })}
+                    title="Late Arrival Deductions"
                 />
+            </td>
+            <td className="px-6 py-4">
+                <input
+                    type="number"
+                    step="0.5"
+                    className="input py-1 text-center w-16 text-[10px] font-bold bg-orange-50 border-orange-200 text-orange-700"
+                    value={editData.shortLeaveDeductions}
+                    onChange={e => setEditData({ ...editData, shortLeaveDeductions: parseFloat(e.target.value) || 0 })}
+                    title="Short Leave / Early Exit Deductions"
+                />
+            </td>
+            <td className="px-6 py-4">
+                <div className={`w-20 text-center py-1 font-black rounded text-sm ${negativeLeaves > 0 ? 'bg-rose-100 text-rose-700 border border-rose-200' : 'bg-secondary-50 text-secondary-400 opacity-30'}`}>
+                    {negativeLeaves > 0 ? `-${negativeLeaves}` : '0'}
+                </div>
+            </td>
+            <td className="px-6 py-4">
+                <div className="w-20 text-center py-1 font-black text-secondary-900 bg-secondary-100 rounded text-sm">
+                    {editData.closingBalance}
+                </div>
             </td>
             <td className="px-6 py-4">
                 <input
                     type="text"
-                    className="input py-1 text-sm w-full min-w-[150px]"
+                    className="input py-1 text-xs w-full min-w-[120px]"
                     placeholder="Remarks..."
                     value={editData.remarks}
                     onChange={e => setEditData({ ...editData, remarks: e.target.value })}
@@ -978,53 +1022,125 @@ const HRManagementContent = () => {
                             <div>
                                 <h3 className="text-xl font-black text-secondary-900 flex items-center gap-2">
                                     <span className="w-8 h-8 rounded-lg bg-primary-600 text-white flex items-center justify-center text-sm shadow-lg shadow-primary-200">🗓️</span>
-                                    Manual Leave Ledger Management
+                                    Leave Ledger Management
                                 </h3>
-                                <p className="text-[10px] text-secondary-500 font-black uppercase tracking-[0.2em] mt-1 pl-10">Adjust opening/closing balances for precise payroll sync</p>
+                                <p className="text-[10px] text-secondary-500 font-black uppercase tracking-[0.2em] mt-1 pl-10">Systematic balance calculation & bulk import/export</p>
                             </div>
-                            <div className="flex bg-white p-1 rounded-2xl shadow-inner border border-secondary-100">
-                                <div className="relative border-r border-secondary-100 pr-2 mr-2">
-                                    <input
-                                        type="text"
-                                        placeholder="Search employee..."
-                                        className="input h-full py-2 px-3 text-xs w-48 border-none focus:ring-0"
-                                        value={ledgerSearch}
-                                        onChange={(e) => setLedgerSearch(e.target.value)}
-                                    />
+                            <div className="flex flex-wrap gap-4 items-center">
+                                <div className="flex bg-white p-1 rounded-2xl shadow-inner border border-secondary-100">
+                                    <div className="relative border-r border-secondary-100 pr-2 mr-2">
+                                        <input
+                                            type="text"
+                                            placeholder="Search employee..."
+                                            className="input h-full py-2 px-3 text-xs w-48 border-none focus:ring-0"
+                                            value={ledgerSearch}
+                                            onChange={(e) => setLedgerSearch(e.target.value)}
+                                        />
+                                    </div>
+                                    <select
+                                        className="input py-2 px-4 text-xs font-bold border-none bg-transparent focus:ring-0"
+                                        value={ledgerFilter.month}
+                                        onChange={e => setLedgerFilter({ ...ledgerFilter, month: parseInt(e.target.value) })}
+                                        title="Filter Ledger by Month"
+                                    >
+                                        {Array.from({ length: 12 }, (_, i) => (
+                                            <option key={i + 1} value={i + 1}>{new Date(2024, i).toLocaleString('default', { month: 'long' })}</option>
+                                        ))}
+                                    </select>
+                                    <select
+                                        className="input py-2 px-4 text-xs font-bold border-none bg-transparent focus:ring-0"
+                                        value={ledgerFilter.year}
+                                        onChange={e => setLedgerFilter({ ...ledgerFilter, year: parseInt(e.target.value) })}
+                                        title="Filter Ledger by Year"
+                                    >
+                                        {[2024, 2025, 2026].map(y => (
+                                            <option key={y} value={y}>{y}</option>
+                                        ))}
+                                    </select>
                                 </div>
-                                <select
-                                    className="input py-2 px-4 text-xs font-bold border-none bg-transparent focus:ring-0"
-                                    value={ledgerFilter.month}
-                                    onChange={e => setLedgerFilter({ ...ledgerFilter, month: parseInt(e.target.value) })}
-                                    title="Filter Ledger by Month"
-                                >
-                                    {Array.from({ length: 12 }, (_, i) => (
-                                        <option key={i + 1} value={i + 1}>{new Date(2024, i).toLocaleString('default', { month: 'long' })}</option>
-                                    ))}
-                                </select>
-                                <div className="w-[1px] bg-secondary-100 my-2"></div>
-                                <select
-                                    className="input py-2 px-4 text-xs font-bold border-none bg-transparent focus:ring-0"
-                                    value={ledgerFilter.year}
-                                    onChange={e => setLedgerFilter({ ...ledgerFilter, year: parseInt(e.target.value) })}
-                                    title="Filter Ledger by Year"
-                                >
-                                    {[2024, 2025, 2026].map(y => (
-                                        <option key={y} value={y}>{y}</option>
-                                    ))}
-                                </select>
+
+                                <div className="flex gap-2">
+                                    <button
+                                        onClick={async () => {
+                                            const res = await fetch(`/api/hr/leave-ledger/export?month=${ledgerFilter.month}&year=${ledgerFilter.year}`, {
+                                                headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+                                            });
+                                            if (res.ok) {
+                                                const blob = await res.blob();
+                                                const url = window.URL.createObjectURL(blob);
+                                                const a = document.createElement('a');
+                                                a.href = url;
+                                                a.download = `leave_ledger_${ledgerFilter.month}_${ledgerFilter.year}.csv`;
+                                                a.click();
+                                            }
+                                        }}
+                                        className="btn btn-secondary py-2 px-4 text-xs font-bold flex items-center gap-2"
+                                    >
+                                        <span>📥</span> Export CSV
+                                    </button>
+                                    <label className="btn btn-primary py-2 px-4 text-xs font-bold flex items-center gap-2 cursor-pointer">
+                                        <span>📤</span> Import CSV
+                                        <input
+                                            type="file"
+                                            accept=".csv"
+                                            className="hidden"
+                                            onChange={async (e) => {
+                                                const file = e.target.files?.[0];
+                                                if (!file) return;
+
+                                                const reader = new FileReader();
+                                                reader.onload = async (event) => {
+                                                    const text = event.target?.result as string;
+                                                    const lines = text.split('\n');
+                                                    const headers = lines[0].split(',');
+                                                    const rows = lines.slice(1).map(line => {
+                                                        const values = line.split(',');
+                                                        const obj: any = {};
+                                                        headers.forEach((h, i) => obj[h.trim()] = values[i]?.trim());
+                                                        return obj;
+                                                    }).filter(r => r['Employee ID']);
+
+                                                    try {
+                                                        const res = await fetch('/api/hr/leave-ledger/import', {
+                                                            method: 'POST',
+                                                            headers: {
+                                                                'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                                                                'Content-Type': 'application/json'
+                                                            },
+                                                            body: JSON.stringify({ rows, month: ledgerFilter.month, year: ledgerFilter.year })
+                                                        });
+                                                        const result = await res.json();
+                                                        if (res.ok) {
+                                                            alert(`Import successful! Updated: ${result.updated}, Created: ${result.created}`);
+                                                            window.location.reload();
+                                                        } else {
+                                                            alert(`Import failed: ${result.message}`);
+                                                        }
+                                                    } catch (err) {
+                                                        alert('Failed to connect to server');
+                                                    }
+                                                };
+                                                reader.readAsText(file);
+                                            }}
+                                        />
+                                    </label>
+                                </div>
                             </div>
                         </div>
                         <div className="overflow-x-auto">
                             <table className="table w-full border-collapse">
                                 <thead className="bg-secondary-50/50">
                                     <tr className="text-[10px] uppercase font-black text-secondary-400 tracking-wider">
-                                        <th className="px-8 py-5 text-left">Staff Details</th>
-                                        <th className="px-8 py-5 text-center">Old Leave (Opening)</th>
-                                        <th className="px-8 py-5 text-center">Leaves Taken</th>
-                                        <th className="px-8 py-5 text-center">Balance (Closing)</th>
-                                        <th className="px-8 py-5 text-left">Internal Remarks</th>
-                                        <th className="px-8 py-5 text-right">Action</th>
+                                        <th className="px-6 py-5 text-left">Staff Details</th>
+                                        <th className="px-6 py-5 text-center">Last Bal</th>
+                                        <th className="px-6 py-5 text-center">Allotted</th>
+                                        <th className="px-6 py-5 text-center">Taken</th>
+                                        <th className="px-6 py-5 text-center">Late Deds</th>
+                                        <th className="px-6 py-5 text-center">Short Deds</th>
+                                        <th className="px-6 py-5 text-center">Neg Leave</th>
+                                        <th className="px-6 py-5 text-center">New Bal</th>
+                                        <th className="px-6 py-5 text-left">Remarks</th>
+                                        <th className="px-6 py-5 text-right">Action</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-secondary-50">
@@ -1042,7 +1158,7 @@ const HRManagementContent = () => {
                                         ))}
                                     {manualLedger.length === 0 && (
                                         <tr>
-                                            <td colSpan={6} className="px-8 py-20 text-center text-secondary-400 font-bold italic bg-secondary-50/20">
+                                            <td colSpan={8} className="px-8 py-20 text-center text-secondary-400 font-bold italic bg-secondary-50/20">
                                                 No employee records found for this period.
                                             </td>
                                         </tr>

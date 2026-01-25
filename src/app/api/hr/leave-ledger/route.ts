@@ -53,7 +53,10 @@ export const GET = authorizedRoute(
                     month,
                     year,
                     openingBalance: ledger?.openingBalance || 0,
+                    autoCredit: ledger?.autoCredit || 1.5, // Default to 1.5
                     takenLeaves: ledger?.takenLeaves || 0,
+                    lateDeductions: ledger?.lateDeductions || 0,
+                    shortLeaveDeductions: ledger?.shortLeaveDeductions || 0,
                     closingBalance: ledger?.closingBalance || 0,
                     remarks: ledger?.remarks || ''
                 };
@@ -77,7 +80,7 @@ export const POST = authorizedRoute(
                 return createErrorResponse('Invalid JSON', 400);
             }
 
-            const { employeeId, month, year, openingBalance, takenLeaves, closingBalance, remarks } = body;
+            const { employeeId, month, year, openingBalance, autoCredit, takenLeaves, lateDeductions, shortLeaveDeductions, closingBalance, remarks } = body;
 
             if (!employeeId || !month || !year) {
                 return createErrorResponse('Missing required fields (employeeId, month, year)', 400);
@@ -89,44 +92,87 @@ export const POST = authorizedRoute(
             };
 
             const safeOpening = parseNum(openingBalance);
+            const safeAllotted = parseNum(autoCredit || 1.5);
             const safeTaken = parseNum(takenLeaves);
+            const safeLateDeds = parseNum(lateDeductions);
+            const safeShortDeds = parseNum(shortLeaveDeductions);
             const safeClosing = parseNum(closingBalance);
 
-            const ledger = await prisma.leaveLedger.upsert({
-                where: {
-                    employeeId_month_year: {
+            const result = await prisma.$transaction(async (tx) => {
+                const ledger = await tx.leaveLedger.upsert({
+                    where: {
+                        employeeId_month_year: {
+                            employeeId,
+                            month,
+                            year
+                        }
+                    },
+                    update: {
+                        openingBalance: safeOpening,
+                        autoCredit: safeAllotted,
+                        takenLeaves: safeTaken,
+                        lateDeductions: safeLateDeds,
+                        shortLeaveDeductions: safeShortDeds,
+                        closingBalance: safeClosing,
+                        remarks,
+                        companyId: user.companyId
+                    },
+                    create: {
                         employeeId,
                         month,
-                        year
+                        year,
+                        openingBalance: safeOpening,
+                        autoCredit: safeAllotted,
+                        takenLeaves: safeTaken,
+                        lateDeductions: safeLateDeds,
+                        shortLeaveDeductions: safeShortDeds,
+                        closingBalance: safeClosing,
+                        remarks,
+                        companyId: user.companyId
                     }
-                },
-                update: {
-                    openingBalance: safeOpening,
-                    takenLeaves: safeTaken,
-                    closingBalance: safeClosing,
-                    remarks,
-                    companyId: user.companyId
-                },
-                create: {
-                    employeeId,
-                    month,
-                    year,
-                    openingBalance: safeOpening,
-                    takenLeaves: safeTaken,
-                    closingBalance: safeClosing,
-                    remarks,
-                    companyId: user.companyId
+                });
+
+                // CASCADE: Update next month's opening balance if it exists
+                const nextMonth = month === 12 ? 1 : month + 1;
+                const nextYear = month === 12 ? year + 1 : year;
+
+                const nextLedger = await tx.leaveLedger.findUnique({
+                    where: {
+                        employeeId_month_year: {
+                            employeeId,
+                            month: nextMonth,
+                            year: nextYear
+                        }
+                    }
+                });
+
+                if (nextLedger) {
+                    // Determine new closing for next month too
+                    const nextActual = safeClosing + (nextLedger.autoCredit || 1.5) - nextLedger.takenLeaves - nextLedger.lateDeductions - nextLedger.shortLeaveDeductions;
+                    const nextClosing = Math.max(0, nextActual);
+
+                    await tx.leaveLedger.update({
+                        where: { id: nextLedger.id },
+                        data: {
+                            openingBalance: safeClosing,
+                            closingBalance: nextClosing
+                        }
+                    });
                 }
+
+                // Sync with EmployeeProfile
+                await tx.employeeProfile.update({
+                    where: { id: employeeId },
+                    data: {
+                        currentLeaveBalance: safeClosing,
+                        leaveBalance: safeClosing
+                    }
+                });
+
+                return ledger;
             });
 
-            // Also update the main leaveBalance in EmployeeProfile if this is the latest closing balance
-            // For simplicity, we update it whenever a ledger is saved
-            await prisma.employeeProfile.update({
-                where: { id: employeeId },
-                data: { leaveBalance: safeClosing }
-            });
-
-            return NextResponse.json(ledger);
+            return NextResponse.json(result);
         } catch (error) {
             return createErrorResponse(error);
         }
