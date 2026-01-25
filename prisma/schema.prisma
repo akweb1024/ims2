@@ -427,6 +427,7 @@ model CustomerAssignment {
 model Journal {
   id                String                 @id @default(uuid())
   name              String
+  abbreviation      String?                @unique
   issnPrint         String?
   issnOnline        String?
   frequency         String

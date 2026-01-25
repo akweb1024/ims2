@@ -12,6 +12,7 @@ export default function NewJournalPage() {
 
     const [formData, setFormData] = useState({
         name: '',
+        abbreviation: '',
         issnPrint: '',
         issnOnline: '',
         frequency: 'Monthly',
@@ -19,6 +20,10 @@ export default function NewJournalPage() {
         subjectCategory: '',
         priceINR: '',
         priceUSD: '',
+        apcOpenAccessINR: '', apcOpenAccessUSD: '',
+        apcRapidINR: '', apcRapidUSD: '',
+        apcWoSINR: '', apcWoSUSD: '',
+        apcOtherINR: '', apcOtherUSD: ''
     });
 
     const [plans, setPlans] = useState([
@@ -110,6 +115,18 @@ export default function NewJournalPage() {
                                 />
                             </div>
                             <div>
+                                <label className="label">Abbreviation*</label>
+                                <input
+                                    type="text"
+                                    name="abbreviation"
+                                    required
+                                    className="input"
+                                    placeholder="e.g. IJS"
+                                    value={formData.abbreviation}
+                                    onChange={handleJournalChange}
+                                />
+                            </div>
+                            <div>
                                 <label className="label">ISSN (Print)</label>
                                 <input
                                     type="text"
@@ -142,7 +159,7 @@ export default function NewJournalPage() {
                                 </select>
                             </div>
                             <div>
-                                <label className="label">Base Price (INR)*</label>
+                                <label className="label">Subscription Price (INR)*</label>
                                 <input
                                     type="number"
                                     name="priceINR"
@@ -154,7 +171,7 @@ export default function NewJournalPage() {
                                 />
                             </div>
                             <div>
-                                <label className="label">Base Price (USD)</label>
+                                <label className="label">Subscription Price (USD)</label>
                                 <input
                                     type="number"
                                     name="priceUSD"
@@ -175,6 +192,46 @@ export default function NewJournalPage() {
                                     onChange={handleJournalChange}
                                 />
                             </div>
+                        </div>
+                    </div>
+                    {/* APC Charges */}
+                    <div className="card-premium p-6">
+                        <h3 className="text-lg font-bold text-secondary-900 mb-4 border-l-4 border-primary-500 pl-3">Article Processing Charges (APC)</h3>
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                            {[
+                                { label: 'Open Access', p: 'apcOpenAccess' },
+                                { label: 'Rapid Publication', p: 'apcRapid' },
+                                { label: 'WoS Indexed', p: 'apcWoS' },
+                                { label: 'Other', p: 'apcOther' }
+                            ].map((apc) => (
+                                <div key={apc.p} className="p-4 bg-secondary-50 rounded-lg border border-secondary-100">
+                                    <h4 className="font-bold text-sm text-secondary-700 mb-3">{apc.label}</h4>
+                                    <div className="space-y-3">
+                                        <div>
+                                            <label className="text-xs font-bold text-secondary-400">INR</label>
+                                            <input
+                                                type="number"
+                                                name={`${apc.p}INR`}
+                                                className="input py-1 h-8 text-sm"
+                                                placeholder="0.00"
+                                                value={(formData as any)[`${apc.p}INR`]}
+                                                onChange={handleJournalChange}
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="text-xs font-bold text-secondary-400">USD</label>
+                                            <input
+                                                type="number"
+                                                name={`${apc.p}USD`}
+                                                className="input py-1 h-8 text-sm"
+                                                placeholder="0.00"
+                                                value={(formData as any)[`${apc.p}USD`]}
+                                                onChange={handleJournalChange}
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
                         </div>
                     </div>
 

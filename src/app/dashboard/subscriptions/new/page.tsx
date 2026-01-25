@@ -104,7 +104,7 @@ export default function NewSubscriptionPage() {
         setLoading(true);
         try {
             const token = localStorage.getItem('token');
-            const endpoint = userRole === 'CUSTOMER' ? '/api/subscriptions/request' : '/api/subscriptions/create';
+            const endpoint = userRole === 'CUSTOMER' ? '/api/customer/subscriptions' : '/api/subscriptions/create';
 
             const res = await fetch(endpoint, {
                 method: 'POST',

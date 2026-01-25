@@ -39,12 +39,18 @@ export async function PATCH(
         }
 
         const body = await req.json();
-        const { name, issnPrint, issnOnline, frequency, formatAvailable, subjectCategory, priceINR, priceUSD, isActive } = body;
+        const {
+            name, abbreviation, issnPrint, issnOnline, frequency, formatAvailable, subjectCategory,
+            priceINR, priceUSD, isActive,
+            apcOpenAccessINR, apcOpenAccessUSD, apcRapidINR, apcRapidUSD,
+            apcWoSINR, apcWoSUSD, apcOtherINR, apcOtherUSD
+        } = body;
 
         const journal = await prisma.journal.update({
             where: { id },
             data: {
                 ...(name && { name }),
+                ...(abbreviation !== undefined && { abbreviation }),
                 ...(issnPrint !== undefined && { issnPrint }),
                 ...(issnOnline !== undefined && { issnOnline }),
                 ...(frequency && { frequency }),
@@ -52,7 +58,15 @@ export async function PATCH(
                 ...(subjectCategory !== undefined && { subjectCategory }),
                 ...(priceINR !== undefined && { priceINR: parseFloat(priceINR) }),
                 ...(priceUSD !== undefined && { priceUSD: parseFloat(priceUSD) }),
-                ...(isActive !== undefined && { isActive })
+                ...(isActive !== undefined && { isActive }),
+                ...(apcOpenAccessINR !== undefined && { apcOpenAccessINR: parseFloat(apcOpenAccessINR) }),
+                ...(apcOpenAccessUSD !== undefined && { apcOpenAccessUSD: parseFloat(apcOpenAccessUSD) }),
+                ...(apcRapidINR !== undefined && { apcRapidINR: parseFloat(apcRapidINR) }),
+                ...(apcRapidUSD !== undefined && { apcRapidUSD: parseFloat(apcRapidUSD) }),
+                ...(apcWoSINR !== undefined && { apcWoSINR: parseFloat(apcWoSINR) }),
+                ...(apcWoSUSD !== undefined && { apcWoSUSD: parseFloat(apcWoSUSD) }),
+                ...(apcOtherINR !== undefined && { apcOtherINR: parseFloat(apcOtherINR) }),
+                ...(apcOtherUSD !== undefined && { apcOtherUSD: parseFloat(apcOtherUSD) })
             }
         });
 

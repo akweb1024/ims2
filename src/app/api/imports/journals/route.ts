@@ -25,6 +25,9 @@ export async function POST(req: NextRequest) {
                 item[key.toLowerCase().replace(/\s/g, '')] = rawItem[key];
             });
 
+            // Handle optional abbreviation safely
+            const abbreviation = item.abbreviation ? String(item.abbreviation).trim() : null;
+
             const name = item.name || item.journalname;
             if (!name) {
                 skippedCount++;
@@ -35,9 +38,10 @@ export async function POST(req: NextRequest) {
             const existing = await prisma.journal.findFirst({
                 where: {
                     OR: [
-                        { name: name },
-                        { issnPrint: item.issnprint && item.issnprint !== 'N/A' ? item.issnprint : undefined },
-                        { issnOnline: item.issnonline && item.issnonline !== 'N/A' ? item.issnonline : undefined }
+                        { name: { equals: name, mode: 'insensitive' } },
+                        { abbreviation: abbreviation && abbreviation !== 'N/A' ? { equals: abbreviation, mode: 'insensitive' } : undefined },
+                        { issnPrint: item.issnprint && item.issnprint !== 'N/A' ? { equals: item.issnprint } : undefined },
+                        { issnOnline: item.issnonline && item.issnonline !== 'N/A' ? { equals: item.issnonline } : undefined }
                     ].filter(Boolean) as any
                 }
             });
@@ -53,9 +57,18 @@ export async function POST(req: NextRequest) {
                     issnPrint: item.issnprint === 'N/A' || !item.issnprint ? null : item.issnprint,
                     issnOnline: item.issnonline === 'N/A' || !item.issnonline ? null : item.issnonline,
                     frequency: item.frequency || 'Monthly',
-                    priceINR: parseFloat(String(item.priceinr).replace(/[^0-9.]/g, '')) || 0,
-                    priceUSD: parseFloat(String(item.priceusd).replace(/[^0-9.]/g, '')) || 0,
-                    isActive: true
+                    priceINR: parseFloat(String(item.subscriptionpriceinr || item.priceinr || '0').replace(/[^0-9.]/g, '')) || 0,
+                    priceUSD: parseFloat(String(item.subscriptionpriceusd || item.priceusd || '0').replace(/[^0-9.]/g, '')) || 0,
+                    isActive: true,
+                    abbreviation,
+                    apcOpenAccessINR: parseFloat(String(item.apcopenaccessinr || '0').replace(/[^0-9.]/g, '')) || 0,
+                    apcOpenAccessUSD: parseFloat(String(item.apcopenaccessusd || '0').replace(/[^0-9.]/g, '')) || 0,
+                    apcRapidINR: parseFloat(String(item.apcrapidinr || '0').replace(/[^0-9.]/g, '')) || 0,
+                    apcRapidUSD: parseFloat(String(item.apcrapidusd || '0').replace(/[^0-9.]/g, '')) || 0,
+                    apcWoSINR: parseFloat(String(item.apcwosinr || '0').replace(/[^0-9.]/g, '')) || 0,
+                    apcWoSUSD: parseFloat(String(item.apcwosusd || '0').replace(/[^0-9.]/g, '')) || 0,
+                    apcOtherINR: parseFloat(String(item.apcotherinr || '0').replace(/[^0-9.]/g, '')) || 0,
+                    apcOtherUSD: parseFloat(String(item.apcotherusd || '0').replace(/[^0-9.]/g, '')) || 0
                 }
             });
             createdCount++;

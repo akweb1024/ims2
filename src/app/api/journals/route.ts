@@ -23,6 +23,8 @@ export async function GET(req: NextRequest) {
                 search ? {
                     OR: [
                         { name: { contains: search, mode: 'insensitive' } },
+                        { abbreviation: { contains: search, mode: 'insensitive' } },
+                        { issnPrint: { contains: search, mode: 'insensitive' } },
                         { issnPrint: { contains: search, mode: 'insensitive' } },
                         { issnOnline: { contains: search, mode: 'insensitive' } }
                     ]
@@ -65,7 +67,7 @@ export async function POST(req: NextRequest) {
         // 2. Parse Body
         const body = await req.json();
         const {
-            name, issnPrint, issnOnline, frequency, formatAvailable, subjectCategory,
+            name, abbreviation, issnPrint, issnOnline, frequency, formatAvailable, subjectCategory,
             priceINR, priceUSD, plans, editorId,
             apcOpenAccessINR, apcOpenAccessUSD,
             apcRapidINR, apcRapidUSD,
@@ -77,6 +79,7 @@ export async function POST(req: NextRequest) {
         const journal = await prisma.journal.create({
             data: {
                 name,
+                abbreviation,
                 issnPrint,
                 issnOnline,
                 frequency,

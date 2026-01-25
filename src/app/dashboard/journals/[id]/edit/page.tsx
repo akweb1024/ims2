@@ -16,9 +16,13 @@ export default function EditJournalPage({ params }: { params: Promise<{ id: stri
 
     // Overview Data
     const [formData, setFormData] = useState({
-        name: '', issnPrint: '', issnOnline: '', frequency: 'Monthly',
+        name: '', abbreviation: '', issnPrint: '', issnOnline: '', frequency: 'Monthly',
         formatAvailable: 'Print,Online,Hybrid', subjectCategory: '',
-        priceINR: '', priceUSD: '', isActive: true
+        priceINR: '', priceUSD: '', isActive: true,
+        apcOpenAccessINR: '', apcOpenAccessUSD: '',
+        apcRapidINR: '', apcRapidUSD: '',
+        apcWoSINR: '', apcWoSUSD: '',
+        apcOtherINR: '', apcOtherUSD: ''
     });
     const [savingOverview, setSavingOverview] = useState(false);
 
@@ -52,9 +56,14 @@ export default function EditJournalPage({ params }: { params: Promise<{ id: stri
             if (res.ok) {
                 const data = await res.json();
                 setFormData({
-                    name: data.name, issnPrint: data.issnPrint || '', issnOnline: data.issnOnline || '',
+                    name: data.name, abbreviation: data.abbreviation || '',
+                    issnPrint: data.issnPrint || '', issnOnline: data.issnOnline || '',
                     frequency: data.frequency, formatAvailable: data.formatAvailable, subjectCategory: data.subjectCategory || '',
-                    priceINR: data.priceINR.toString(), priceUSD: data.priceUSD.toString(), isActive: data.isActive
+                    priceINR: data.priceINR.toString(), priceUSD: data.priceUSD.toString(), isActive: data.isActive,
+                    apcOpenAccessINR: (data.apcOpenAccessINR || 0).toString(), apcOpenAccessUSD: (data.apcOpenAccessUSD || 0).toString(),
+                    apcRapidINR: (data.apcRapidINR || 0).toString(), apcRapidUSD: (data.apcRapidUSD || 0).toString(),
+                    apcWoSINR: (data.apcWoSINR || 0).toString(), apcWoSUSD: (data.apcWoSUSD || 0).toString(),
+                    apcOtherINR: (data.apcOtherINR || 0).toString(), apcOtherUSD: (data.apcOtherUSD || 0).toString()
                 });
             }
         } catch (err) { console.error(err); } finally { setLoading(false); }
@@ -239,10 +248,49 @@ export default function EditJournalPage({ params }: { params: Promise<{ id: stri
                 {activeTab === 'overview' && (
                     <form onSubmit={handleOverviewSubmit} className="card-premium p-8 grid grid-cols-2 gap-6 animate-in fade-in slide-in-from-bottom-4">
                         <div className="col-span-2"><label className="label">Journal Name</label><input className="input" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} /></div>
+                        <div className="col-span-2"><label className="label">Abbreviation*</label><input className="input" placeholder="e.g. IJS" required value={formData.abbreviation} onChange={e => setFormData({ ...formData, abbreviation: e.target.value })} /></div>
                         <div><label className="label">ISSN (Print)</label><input className="input" value={formData.issnPrint} onChange={e => setFormData({ ...formData, issnPrint: e.target.value })} /></div>
                         <div><label className="label">ISSN (Online)</label><input className="input" value={formData.issnOnline} onChange={e => setFormData({ ...formData, issnOnline: e.target.value })} /></div>
                         <div><label className="label">Frequency</label><select className="input" value={formData.frequency} onChange={e => setFormData({ ...formData, frequency: e.target.value })}><option>Monthly</option><option>Quarterly</option><option>Annual</option></select></div>
-                        <div><label className="label">Price (INR)</label><input type="number" className="input" value={formData.priceINR} onChange={e => setFormData({ ...formData, priceINR: e.target.value })} /></div>
+                        <div><label className="label">Subscription Price (INR)</label><input type="number" className="input" value={formData.priceINR} onChange={e => setFormData({ ...formData, priceINR: e.target.value })} /></div>
+
+                        {/* APC SECTION */}
+                        <div className="col-span-2 border-t border-secondary-200 my-4 pt-4">
+                            <h4 className="font-bold text-lg text-secondary-900 mb-4">Article Processing Charges (APC)</h4>
+                            <div className="grid grid-cols-2 gap-4">
+                                {[
+                                    { label: 'Open Access', p: 'apcOpenAccess' },
+                                    { label: 'Rapid Publication', p: 'apcRapid' },
+                                    { label: 'WoS Indexed', p: 'apcWoS' },
+                                    { label: 'Other', p: 'apcOther' }
+                                ].map((apc) => (
+                                    <div key={apc.p} className="p-3 bg-secondary-50 rounded-lg border border-secondary-100">
+                                        <h5 className="font-bold text-xs text-secondary-600 mb-2 uppercase">{apc.label}</h5>
+                                        <div className="grid grid-cols-2 gap-2">
+                                            <div>
+                                                <label className="text-[10px] font-bold text-secondary-400">INR</label>
+                                                <input
+                                                    type="number"
+                                                    className="input py-1 h-8 text-sm"
+                                                    value={(formData as any)[`${apc.p}INR`]}
+                                                    onChange={e => setFormData({ ...formData, [`${apc.p}INR`]: e.target.value })}
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="text-[10px] font-bold text-secondary-400">USD</label>
+                                                <input
+                                                    type="number"
+                                                    className="input py-1 h-8 text-sm"
+                                                    value={(formData as any)[`${apc.p}USD`]}
+                                                    onChange={e => setFormData({ ...formData, [`${apc.p}USD`]: e.target.value })}
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
                         <div className="col-span-2 pt-4"><button type="submit" className="btn btn-primary w-full" disabled={savingOverview}>{savingOverview ? 'Saving...' : 'Save Changes'}</button></div>
                     </form>
                 )}
