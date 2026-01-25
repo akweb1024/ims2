@@ -97,8 +97,8 @@ export default function InternshipsPage() {
                                         <input name="price" type="number" className="input" defaultValue="0" />
                                     </div>
                                     <div>
-                                        <label className="label">Mentor (User ID)</label>
-                                        <input name="mentorId" className="input" placeholder="User ID" />
+                                        <label className="label">Mentor Email</label>
+                                        <input name="mentorEmail" type="email" className="input" placeholder="mentor@example.com" />
                                     </div>
                                     <div>
                                         <label className="label">Mentor Reward</label>

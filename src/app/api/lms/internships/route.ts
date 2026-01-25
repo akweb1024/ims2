@@ -34,7 +34,13 @@ export async function GET(req: Request) {
 export async function POST(req: Request) {
     try {
         const body = await req.json();
-        const { title, description, startDate, duration, stipend, price, mentorId, mentorReward, type } = body;
+        const { title, description, startDate, duration, stipend, price, mentorId, mentorEmail, mentorReward, type } = body;
+
+        let resolvedMentorId = mentorId;
+        if (mentorEmail && !mentorId) {
+            const mentor = await prisma.user.findUnique({ where: { email: mentorEmail } });
+            if (mentor) resolvedMentorId = mentor.id;
+        }
 
         const internship = await prisma.internship.create({
             data: {
@@ -44,7 +50,7 @@ export async function POST(req: Request) {
                 duration,
                 stipend: parseFloat(stipend || '0'),
                 price: parseFloat(price || '0'),
-                mentorId,
+                mentorId: resolvedMentorId,
                 mentorReward: parseFloat(mentorReward || '0'),
                 type: type || 'REMOTE'
             }

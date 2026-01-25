@@ -357,6 +357,16 @@ export default function DashboardLayout({ children, userRole: propUserRole = 'CU
                             { name: 'Courses', href: '/dashboard/courses', icon: '🎓', roles: ['*'] },
                             { name: 'Knowledge Article', href: '/dashboard/knowledge-base', icon: '📚', roles: ['*'] },
                         ]
+                    },
+                    {
+                        title: 'Management',
+                        items: [
+                            { name: 'LMS Dashboard', href: '/dashboard/lms', icon: '📊', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'HR_MANAGER'] },
+                            { name: 'Mentors', href: '/dashboard/lms/mentors', icon: '👨‍🏫', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'HR_MANAGER'] },
+                            { name: 'Financial Report', href: '/dashboard/lms/financials', icon: '💰', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'HR_MANAGER'] },
+                            { name: 'Workshops', href: '/dashboard/lms/workshops', icon: '📹', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'HR_MANAGER'] },
+                            { name: 'Internships', href: '/dashboard/lms/internships', icon: '💼', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'HR_MANAGER'] },
+                        ]
                     }
                 ]
             },

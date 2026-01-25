@@ -34,7 +34,13 @@ export async function GET(req: Request) {
 export async function POST(req: Request) {
     try {
         const body = await req.json();
-        const { title, description, startDate, endDate, price, currency, mentorId, mentorReward, vehicleType, duration, type } = body;
+        const { title, description, startDate, endDate, price, currency, mentorId, mentorEmail, mentorReward, vehicleType, duration, type } = body;
+
+        let resolvedMentorId = mentorId;
+        if (mentorEmail && !mentorId) {
+            const mentor = await prisma.user.findUnique({ where: { email: mentorEmail } });
+            if (mentor) resolvedMentorId = mentor.id;
+        }
 
         const workshop = await prisma.workshop.create({
             data: {
@@ -44,7 +50,7 @@ export async function POST(req: Request) {
                 endDate: endDate ? new Date(endDate) : null,
                 price: parseFloat(price || '0'),
                 currency: currency || 'INR',
-                mentorId,
+                mentorId: resolvedMentorId,
                 mentorReward: parseFloat(mentorReward || '0'),
                 duration
             }
