@@ -1,19 +1,28 @@
+
 import { NextRequest, NextResponse } from 'next/server';
-import { authorizedRoute } from '@/lib/middleware-auth';
-import prisma from '@/lib/prisma';
+import { prisma } from '@/lib/prisma';
+import { getAuthenticatedUser } from '@/lib/auth-legacy';
 
-/**
- * Revenue Analytics API
- * Accessible to TEAM_LEADER, MANAGER, ADMIN, SUPER_ADMIN
- */
+export const dynamic = 'force-dynamic';
 
-export const GET = authorizedRoute(['TEAM_LEADER', 'MANAGER', 'ADMIN', 'SUPER_ADMIN', 'HR_MANAGER'], async (req: NextRequest, user: any) => {
+export async function GET(req: NextRequest) {
     try {
-        const { searchParams } = new URL(req.url);
-        const period = searchParams.get('period') || 'month'; // month, quarter, year, all
-        const departmentId = searchParams.get('departmentId');
+        const user = await getAuthenticatedUser();
 
+        if (!user) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
+
+        const allowedRoles = ['TEAM_LEADER', 'MANAGER', 'ADMIN', 'SUPER_ADMIN', 'HR_MANAGER'];
+        if (!allowedRoles.includes(user.role)) {
+            return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+        }
+
+        const { searchParams } = new URL(req.url);
+        const period = searchParams.get('period') || 'month';
+        const departmentId = searchParams.get('departmentId');
         const companyId = user.companyId;
+
         if (!companyId) {
             return NextResponse.json({ error: 'Company ID required' }, { status: 400 });
         }
@@ -37,66 +46,48 @@ export const GET = authorizedRoute(['TEAM_LEADER', 'MANAGER', 'ADMIN', 'SUPER_AD
                 startDate = new Date(now.getFullYear(), 0, 1);
                 break;
             case 'all':
-                startDate = new Date(2020, 0, 1); // Start from 2020
+                startDate = new Date(2020, 0, 1);
                 break;
             default:
                 startDate = new Date(now.getFullYear(), now.getMonth(), 1);
         }
 
-        // 1. Payment Gateway Revenue (Razorpay, etc.)
+        // 1. Payment Gateway Revenue
         const payments = await prisma.payment.findMany({
             where: {
                 companyId,
                 paymentDate: { gte: startDate },
                 status: { in: ['captured', 'SUCCESS', 'COMPLETED'] }
             },
-            select: {
-                amount: true,
-                currency: true,
-                paymentDate: true,
-                paymentMethod: true
-            }
+            select: { amount: true, paymentMethod: true }
         });
-
         const totalPaymentRevenue = payments.reduce((sum, p) => sum + p.amount, 0);
 
-        // 2. Work Report Revenue (from employee reports)
+        // 2. Work Report Revenue
         const workReportWhere: any = {
             companyId,
             date: { gte: startDate }
         };
-
-        // If specific department requested and user is not admin
         if (departmentId && !['ADMIN', 'SUPER_ADMIN'].includes(user.role)) {
-            workReportWhere.employee = {
-                user: { departmentId }
-            };
+            workReportWhere.employee = { user: { departmentId } };
         }
-
         const workReports = await prisma.workReport.findMany({
             where: workReportWhere,
             select: {
                 revenueGenerated: true,
-                date: true,
                 employee: {
                     select: {
                         user: {
                             select: {
                                 name: true,
                                 email: true,
-                                departmentId: true,
-                                department: {
-                                    select: {
-                                        name: true
-                                    }
-                                }
+                                department: { select: { name: true } }
                             }
                         }
                     }
                 }
             }
         });
-
         const totalWorkReportRevenue = workReports.reduce((sum, r) => sum + (r.revenueGenerated || 0), 0);
 
         // 3. Invoice Revenue
@@ -106,53 +97,29 @@ export const GET = authorizedRoute(['TEAM_LEADER', 'MANAGER', 'ADMIN', 'SUPER_AD
                 createdAt: { gte: startDate },
                 status: { in: ['PAID', 'PARTIALLY_PAID'] }
             },
-            select: {
-                total: true,
-                amount: true,
-                status: true,
-                createdAt: true
-            }
+            select: { total: true }
         });
-
         const totalInvoiceRevenue = invoices.reduce((sum, inv) => sum + inv.total, 0);
 
-        // 4. Monthly Performance Revenue (from performance snapshots)
+        // 4. Performance Revenue
         const performanceSnapshots = await prisma.monthlyPerformanceSnapshot.findMany({
             where: {
                 companyId,
                 calculatedAt: { gte: startDate }
             },
-            select: {
-                totalRevenueGenerated: true,
-                month: true,
-                year: true,
-                employee: {
-                    select: {
-                        user: {
-                            select: {
-                                name: true,
-                                department: {
-                                    select: {
-                                        name: true
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
+            select: { totalRevenueGenerated: true }
         });
+        const totalPerformanceRevenue = performanceSnapshots.reduce((sum, s) => sum + s.totalRevenueGenerated, 0);
 
-        const totalPerformanceRevenue = performanceSnapshots.reduce((sum: number, s: any) => sum + s.totalRevenueGenerated, 0);
-
-        // 5. Revenue by Department
+        // Aggregations
         const revenueByDepartment: Record<string, number> = {};
         workReports.forEach(report => {
             const deptName = report.employee.user.department?.name || 'Unassigned';
             revenueByDepartment[deptName] = (revenueByDepartment[deptName] || 0) + (report.revenueGenerated || 0);
         });
 
-        // 6. Revenue Trend (last 6 months)
+        // Trends (simplified for now to basic total for month/period to avoid complex loops)
+        // Re-implementing simplified monthly trend
         const monthlyTrend = [];
         for (let i = 5; i >= 0; i--) {
             const monthDate = new Date(now.getFullYear(), now.getMonth() - i, 1);
@@ -163,20 +130,16 @@ export const GET = authorizedRoute(['TEAM_LEADER', 'MANAGER', 'ADMIN', 'SUPER_AD
                     companyId,
                     date: { gte: monthDate, lte: monthEnd }
                 },
-                select: {
-                    revenueGenerated: true
-                }
+                select: { revenueGenerated: true }
             });
-
             const monthRevenue = monthReports.reduce((sum, r) => sum + (r.revenueGenerated || 0), 0);
-
             monthlyTrend.push({
                 month: monthDate.toLocaleString('default', { month: 'short', year: 'numeric' }),
                 revenue: monthRevenue
             });
         }
 
-        // 7. Top Revenue Generators
+        // Top Performers
         const employeeRevenue: Record<string, { name: string; revenue: number; email: string }> = {};
         workReports.forEach(report => {
             const email = report.employee.user.email;
@@ -186,19 +149,17 @@ export const GET = authorizedRoute(['TEAM_LEADER', 'MANAGER', 'ADMIN', 'SUPER_AD
             }
             employeeRevenue[email].revenue += report.revenueGenerated || 0;
         });
-
         const topPerformers = Object.values(employeeRevenue)
             .sort((a, b) => b.revenue - a.revenue)
             .slice(0, 10);
 
-        // 8. Payment Methods Breakdown
+        // Payment Methods
         const paymentMethodBreakdown: Record<string, number> = {};
         payments.forEach(payment => {
             const method = payment.paymentMethod || 'Unknown';
             paymentMethodBreakdown[method] = (paymentMethodBreakdown[method] || 0) + payment.amount;
         });
 
-        // Calculate total revenue (use the highest value to avoid double counting)
         const totalRevenue = Math.max(
             totalPaymentRevenue,
             totalWorkReportRevenue,
@@ -236,4 +197,4 @@ export const GET = authorizedRoute(['TEAM_LEADER', 'MANAGER', 'ADMIN', 'SUPER_AD
         console.error('Revenue analytics error:', error);
         return NextResponse.json({ error: error.message }, { status: 500 });
     }
-});
+}

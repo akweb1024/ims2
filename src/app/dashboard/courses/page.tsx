@@ -117,6 +117,16 @@ export default function CoursesPage() {
                                     <label className="label">Thumbnail URL</label>
                                     <input name="thumbnailUrl" className="input" placeholder="https://..." />
                                 </div>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="label">Mentor (User ID)</label>
+                                        <input name="mentorId" className="input" placeholder="User ID" />
+                                    </div>
+                                    <div>
+                                        <label className="label">Mentor Reward</label>
+                                        <input name="mentorReward" type="number" className="input" defaultValue="0" />
+                                    </div>
+                                </div>
                                 <div className="flex gap-2 pt-4">
                                     <button type="submit" className="btn btn-primary flex-1">Create Draft</button>
                                     <button type="button" onClick={() => setIsCreating(false)} className="btn btn-secondary">Cancel</button>

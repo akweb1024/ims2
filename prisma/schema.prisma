@@ -80,6 +80,10 @@ model Company {
   workReports                 WorkReport[]
   designations                Designation[]                @relation("CompanyToDesignation")
   users                       User[]                       @relation("UserCompanies")
+  
+  // LMS Relations
+  workshops                   Workshop[]
+  internships                 Internship[]
 }
 
 model Department {
@@ -200,6 +204,16 @@ model User {
   assignedToCustomers      CustomerProfile[]           @relation("CustomerToExecutives")
   passwordResetTokens      PasswordResetToken[]
   companies                Company[]                   @relation("UserCompanies")
+  
+  // LMS Mentor Relations
+  mentoredCourses          Course[]                    @relation("CourseMentor")
+  mentoredWorkshops        Workshop[]                  @relation("WorkshopMentor")
+  mentoredInternships      Internship[]                @relation("InternshipMentor")
+  
+  // LMS Student/Applicant Relations
+  workshopEnrollments      WorkshopEnrollment[]
+  internshipApplications   InternshipApplication[]
+  sentLMSEmails            LMSEmailLog[]
 
   @@index([email])
   @@index([role])
@@ -2139,6 +2153,117 @@ model Course {
   discussions    CourseDiscussion[]
   enrollments    CourseEnrollment[]
   modules        CourseModule[]
+  
+  // LMS Enhancement Fields
+  mentorId       String?
+  mentorReward   Float                @default(0)
+  totalRevenue   Float                @default(0)
+  emailCount     Int                  @default(0)
+  mentor         User?                @relation("CourseMentor", fields: [mentorId], references: [id])
+}
+
+model Workshop {
+  id             String               @id @default(uuid())
+  title          String
+  description    String
+  startDate      DateTime
+  endDate        DateTime?
+  duration       String?              // e.g., "2 Hours", "3 Days"
+  status         String               @default("DRAFT") // DRAFT, PUBLISHED, COMPLETED
+  price          Float                @default(0)
+  currency       String               @default("INR")
+  
+  // Mentor & Revenue
+  mentorId       String?
+  mentorReward   Float                @default(0)
+  totalRevenue   Float                @default(0)
+  emailCount     Int                  @default(0)
+  
+  maxAttendees   Int?
+  venue          String?              // Online or Physical Address
+  meetingLink    String?
+
+  createdAt      DateTime             @default(now())
+  updatedAt      DateTime             @updatedAt
+  
+  companyId      String?
+  company        Company?             @relation(fields: [companyId], references: [id])
+  mentor         User?                @relation("WorkshopMentor", fields: [mentorId], references: [id])
+  enrollments    WorkshopEnrollment[]
+}
+
+model WorkshopEnrollment {
+  id             String      @id @default(uuid())
+  workshopId     String
+  userId         String
+  enrolledAt     DateTime    @default(now())
+  amountPaid     Float       @default(0)
+  currency       String      @default("INR")
+  status         String      @default("CONFIRMED") // CONFIRMED, PENDING, CANCELLED
+  invoiceId      String?
+  
+  workshop       Workshop    @relation(fields: [workshopId], references: [id])
+  user           User        @relation(fields: [userId], references: [id])
+
+  @@unique([userId, workshopId])
+}
+
+model Internship {
+  id             String                 @id @default(uuid())
+  title          String
+  description    String
+  startDate      DateTime
+  duration       String?                // e.g., "6 Months"
+  stipend        Float?                 // If paid to student
+  price          Float                  @default(0) // If student pays
+  currency       String                 @default("INR")
+  status         String                 @default("OPEN")
+  
+  // Mentor & Revenue
+  mentorId       String?
+  mentorReward   Float                  @default(0)
+  totalRevenue   Float                  @default(0)
+  emailCount     Int                    @default(0)
+  
+  department     String?
+  type           String                 @default("REMOTE") // REMOTE, ON_SITE, HYBRID
+
+  createdAt      DateTime               @default(now())
+  updatedAt      DateTime               @updatedAt
+
+  companyId      String?
+  company        Company?               @relation(fields: [companyId], references: [id])
+  mentor         User?                  @relation("InternshipMentor", fields: [mentorId], references: [id])
+  applications   InternshipApplication[]
+}
+
+model InternshipApplication {
+  id             String      @id @default(uuid())
+  internshipId   String
+  userId         String
+  appliedAt      DateTime    @default(now())
+  status         String      @default("APPLIED") // APPLIED, SHORTLISTED, SELECTED, REJECTED
+  resumeUrl      String?
+  coverLetter    String?
+  
+  internship     Internship  @relation(fields: [internshipId], references: [id])
+  user           User        @relation(fields: [userId], references: [id])
+
+  @@unique([userId, internshipId])
+}
+
+model LMSEmailLog {
+  id             String      @id @default(uuid())
+  type           String      // COURSE, WORKSHOP, INTERNSHIP
+  referenceId    String      // ID of the Course/Workshop/Internship
+  recipient      String
+  subject        String
+  content        String?
+  sentAt         DateTime    @default(now())
+  status         String      @default("SENT")
+  userId         String?     // If sender is tracked
+  
+  user           User?       @relation(fields: [userId], references: [id])
 }
 
 model CourseModule {

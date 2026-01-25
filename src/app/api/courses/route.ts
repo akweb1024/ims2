@@ -34,6 +34,9 @@ export async function GET(req: NextRequest) {
             include: {
                 _count: {
                     select: { modules: true, enrollments: true }
+                },
+                mentor: {
+                    select: { id: true, name: true, email: true }
                 }
             },
             orderBy: { createdAt: 'desc' }
@@ -65,7 +68,9 @@ export async function POST(req: NextRequest) {
                 thumbnailUrl,
                 instructorId: user.id,
                 companyId: user.companyId,
-                isPublished: false // Draft by default
+                isPublished: false, // Draft by default
+                mentorId: body.mentorId,
+                mentorReward: parseFloat(body.mentorReward || '0')
             }
         });
 
