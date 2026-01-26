@@ -117,13 +117,13 @@ export const POST = authorizedRoute(
                 const { sendEmail, EmailTemplates } = await import('@/lib/email');
                 const template = action === 'approve'
                     ? EmailTemplates.incrementApproved(
-                        increment.employeeProfile.user.name,
+                        increment.employeeProfile.user.name || 'Employee',
                         `₹${increment.incrementAmount?.toLocaleString()}`,
                         `${increment.percentage?.toFixed(2)}%`,
                         new Date(increment.effectiveDate).toLocaleDateString()
                     )
                     : EmailTemplates.incrementRejected(
-                        increment.employeeProfile.user.name,
+                        increment.employeeProfile.user.name || 'Employee',
                         'Admin',
                         comments || 'No reason provided'
                     );

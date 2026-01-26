@@ -10,6 +10,8 @@ import { getAuthenticatedUser } from '@/lib/auth';
 import { cookies } from 'next/headers';
 import { verifyToken } from '@/lib/auth-core';
 
+export const dynamic = 'force-dynamic';
+
 
 async function getIncrements() {
     try {

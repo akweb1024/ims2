@@ -245,5 +245,63 @@ export const EmailTemplates = {
                 <p>Best regards,<br/>The Editorial Team</p>
             </div>
         `
+    }),
+
+    incrementManagerApproved: (employeeName: string, amount: string, percentage: string) => ({
+        subject: `Salary Increment Approved by Manager - STM`,
+        text: `Dear ${employeeName}, your salary increment of ${amount} (${percentage}) has been approved by your manager and is now pending admin approval.`,
+        html: `
+            <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 8px;">
+                <h1 style="color: #2563eb;">Increment Approved by Manager</h1>
+                <p>Dear <strong>${employeeName}</strong>,</p>
+                <p>Great news! Your salary increment request has been approved by your manager.</p>
+                <div style="background: #eff6ff; padding: 15px; border-radius: 4px; margin: 20px 0; border-left: 4px solid #2563eb;">
+                    <p style="margin: 5px 0;"><strong>Increment Amount:</strong> ${amount}</p>
+                    <p style="margin: 5px 0;"><strong>Percentage:</strong> ${percentage}</p>
+                    <p style="margin: 5px 0;"><strong>Status:</strong> Pending Admin Approval</p>
+                </div>
+                <p>Your increment is now awaiting final approval from the admin team. You will be notified once the process is complete.</p>
+                <p>Best regards,<br/>The HR Team</p>
+            </div>
+        `
+    }),
+
+    incrementApproved: (employeeName: string, amount: string, percentage: string, effectiveDate: string) => ({
+        subject: `🎉 Salary Increment Approved! - STM`,
+        text: `Dear ${employeeName}, congratulations! Your salary increment of ${amount} (${percentage}) has been fully approved and will be effective from ${effectiveDate}.`,
+        html: `
+            <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 8px;">
+                <h1 style="color: #16a34a;">🎉 Salary Increment Approved!</h1>
+                <p>Dear <strong>${employeeName}</strong>,</p>
+                <p>Congratulations! We are pleased to inform you that your salary increment has been fully approved.</p>
+                <div style="background: #f0fdf4; padding: 15px; border-radius: 4px; margin: 20px 0; border-left: 4px solid #16a34a;">
+                    <p style="margin: 5px 0;"><strong>Increment Amount:</strong> ${amount}</p>
+                    <p style="margin: 5px 0;"><strong>Percentage:</strong> ${percentage}</p>
+                    <p style="margin: 5px 0;"><strong>Effective Date:</strong> ${effectiveDate}</p>
+                    <p style="margin: 5px 0;"><strong>Status:</strong> <span style="color: #16a34a; font-weight: bold;">APPROVED</span></p>
+                </div>
+                <p>Your new salary will be reflected in your payroll starting from the effective date mentioned above.</p>
+                <p>Thank you for your continued dedication and hard work!</p>
+                <p>Best regards,<br/>The HR Team</p>
+            </div>
+        `
+    }),
+
+    incrementRejected: (employeeName: string, rejectedBy: string, reason: string) => ({
+        subject: `Salary Increment Update - STM`,
+        text: `Dear ${employeeName}, your salary increment request has been rejected by ${rejectedBy}. Reason: ${reason}`,
+        html: `
+            <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 8px;">
+                <h1 style="color: #dc2626;">Increment Request Update</h1>
+                <p>Dear <strong>${employeeName}</strong>,</p>
+                <p>We regret to inform you that your salary increment request has not been approved at this time.</p>
+                <div style="background: #fef2f2; padding: 15px; border-radius: 4px; margin: 20px 0; border-left: 4px solid #dc2626;">
+                    <p style="margin: 5px 0;"><strong>Rejected By:</strong> ${rejectedBy}</p>
+                    <p style="margin: 5px 0;"><strong>Reason:</strong> ${reason}</p>
+                </div>
+                <p>If you have any questions or would like to discuss this decision, please feel free to reach out to your manager or the HR department.</p>
+                <p>Best regards,<br/>The HR Team</p>
+            </div>
+        `
     })
 };
