@@ -84,6 +84,11 @@ model Company {
   // LMS Relations
   workshops                   Workshop[]
   internships                 Internship[]
+
+  // Finance Module
+  accounts                    Account[]
+  journalEntries              JournalEntry[]
+  taxRates                    TaxRate[]
 }
 
 model Department {
@@ -214,6 +219,9 @@ model User {
   workshopEnrollments      WorkshopEnrollment[]
   internshipApplications   InternshipApplication[]
   sentLMSEmails            LMSEmailLog[]
+
+  // Finance Module
+  postedJournalEntries     JournalEntry[]
 
   @@index([email])
   @@index([role])
@@ -3738,3 +3746,88 @@ enum ClaimStatus {
   REJECTED
   DUPLICATE
 }
+
+// Finance Module Upgrade - Double Entry System
+
+enum AccountType {
+  ASSET
+  LIABILITY
+  EQUITY
+  REVENUE
+  EXPENSE
+}
+
+model Account {
+  id              String        @id @default(uuid())
+  companyId       String
+  code            String
+  name            String
+  type            AccountType
+  description     String?
+  parentAccountId String?
+  isActive        Boolean       @default(true)
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  parentAccount   Account?      @relation("AccountHierarchy", fields: [parentAccountId], references: [id])
+  subAccounts     Account[]     @relation("AccountHierarchy")
+  journalLines    JournalLine[]
+  company         Company       @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@unique([companyId, code])
+  @@index([companyId])
+  @@index([type])
+}
+
+model JournalEntry {
+  id          String        @id @default(uuid())
+  companyId   String
+  entryNumber String        @unique // Auto-generated sequence, e.g. JE-2024-0001
+  date        DateTime
+  description String
+  reference   String?
+  status      String        @default("DRAFT") // DRAFT, POSTED
+  postedBy    String?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  lines       JournalLine[]
+  company     Company       @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  user        User?         @relation(fields: [postedBy], references: [id])
+
+  @@index([companyId])
+  @@index([date])
+  @@index([entryNumber])
+}
+
+model JournalLine {
+  id             String       @id @default(uuid())
+  journalEntryId String
+  accountId      String
+  description    String?
+  debit          Decimal      @db.Decimal(20, 2) @default(0)
+  credit         Decimal      @db.Decimal(20, 2) @default(0)
+
+  journalEntry   JournalEntry @relation(fields: [journalEntryId], references: [id], onDelete: Cascade)
+  account        Account      @relation(fields: [accountId], references: [id])
+
+  @@index([journalEntryId])
+  @@index([accountId])
+}
+
+model TaxRate {
+  id          String   @id @default(uuid())
+  companyId   String
+  name        String
+  code        String
+  rate        Decimal  @db.Decimal(5, 2)
+  description String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@unique([companyId, code])
+}
+

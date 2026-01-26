@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { razorpay } from '@/lib/razorpay';
 import { getAuthenticatedUser } from '@/lib/auth-legacy';
+import { FinanceService } from '@/lib/services/finance';
 
 export async function POST() {
     try {
@@ -63,7 +64,7 @@ export async function POST() {
                 }
 
                 try {
-                    await prisma.payment.create({
+                    const savedPayment = await prisma.payment.create({
                         data: {
                             amount: rpPayment.amount / 100,
                             currency: rpPayment.currency || 'INR',
@@ -77,6 +78,17 @@ export async function POST() {
                         },
                     });
                     syncedCount++;
+
+                    // --- Finance Automation ---
+                    if (savedPayment.companyId) {
+                        try {
+                            await FinanceService.postPaymentJournal(savedPayment.companyId, savedPayment.id);
+                        } catch (finErr) {
+                            console.error(`Failed to post journal for payment ${savedPayment.id}:`, finErr);
+                        }
+                    }
+                    // --------------------------
+
                 } catch (err) {
                     console.error(`Error syncing payment ${rpPayment.id}:`, err);
                 }

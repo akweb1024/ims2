@@ -37,52 +37,73 @@ export default function CashflowForecastingPage() {
     const [loading, setLoading] = useState(true);
     const [forecastData, setForecastData] = useState<any[]>([]);
 
-    const generateForecast = useCallback(() => {
-        const baseData = [];
-        const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec', 'Jan', 'Feb', 'Mar'];
+    const fetchAndForecast = useCallback(async () => {
+        setLoading(true);
+        try {
+            // 1. Get History (Past 6 months)
+            const res = await fetch('/api/finance/reports?type=metrics');
+            if (!res.ok) throw new Error('Failed to fetch metrics');
+            const history = await res.json();
 
-        let currentBalance = 1200000;
-        let monthlyRevenue = 450000;
-        let monthlyExpense = 320000;
+            // 2. Project Future (Next 9 months)
+            const projected = [...history];
 
-        for (let i = 0; i < 15; i++) {
-            // Apply Growth & Scenarios
-            if (i > 5) { // Future months (after June)
-                monthlyRevenue = monthlyRevenue * (1 + (scenarios.salesGrowth / 100));
-                monthlyExpense = monthlyExpense + (scenarios.hiring * 50000) + scenarios.marketingSpend;
+            // Calculate baseline from last month
+            const lastMonth = history[history.length - 1] || {
+                balance: 0, inflow: 0, outflow: 0, netCash: 0
+            };
+
+            let currentBalance = lastMonth.balance;
+            let currentInflow = lastMonth.inflow || 100000; // Fallback to avoid dead chart
+            let currentOutflow = lastMonth.outflow || 80000;
+
+            const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+            const startMonthIdx = new Date().getMonth();
+
+            for (let i = 1; i <= 9; i++) {
+                // Apply Scenarios
+                const growthFactor = 1 + (scenarios.salesGrowth / 100);
+                const marketingCost = scenarios.marketingSpend;
+                const hiringCost = scenarios.hiring * 50000;
+
+                // Simple Linear Growth Projection
+                currentInflow = currentInflow * growthFactor;
+                // Marketing spend usually increases inflow, simplified here:
+                currentInflow += (marketingCost * 1.5);
+
+                currentOutflow = currentOutflow + hiringCost + marketingCost;
+
+                const net = currentInflow - currentOutflow;
+                currentBalance += net;
+
+                // Month Label
+                const mIdx = (startMonthIdx + i) % 12;
+
+                projected.push({
+                    month: months[mIdx],
+                    isFuture: true,
+                    inflow: Math.round(currentInflow),
+                    outflow: Math.round(currentOutflow),
+                    netCash: Math.round(net),
+                    balance: Math.round(currentBalance),
+                    confidenceLower: Math.round(currentBalance * 0.9),
+                    confidenceUpper: Math.round(currentBalance * 1.1)
+                });
             }
 
-            // Fluctuation
-            const revenueVariance = Math.random() * 50000 - 25000;
-            const expenseVariance = Math.random() * 30000 - 15000;
-
-            const inflow = monthlyRevenue + revenueVariance;
-            const outflow = monthlyExpense + expenseVariance;
-            const net = inflow - outflow;
-            currentBalance += net;
-
-            baseData.push({
-                month: months[i],
-                isFuture: i > 5,
-                inflow: Math.round(inflow),
-                outflow: Math.round(outflow),
-                netCash: Math.round(net),
-                balance: Math.round(currentBalance),
-                confidenceLower: i > 5 ? Math.round(currentBalance * 0.9) : null,
-                confidenceUpper: i > 5 ? Math.round(currentBalance * 1.1) : null
-            });
+            setForecastData(projected);
+        } catch (e) {
+            console.error(e);
+        } finally {
+            setLoading(false);
         }
-        setForecastData(baseData);
     }, [scenarios]);
 
     useEffect(() => {
-        // Simulate advanced AI calculation
-        setLoading(true);
-        setTimeout(() => {
-            generateForecast();
-            setLoading(false);
-        }, 800);
-    }, [generateForecast]);
+        fetchAndForecast();
+    }, [fetchAndForecast]);
+
+
 
     return (
         <DashboardLayout>

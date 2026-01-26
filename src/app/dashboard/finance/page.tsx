@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import Link from 'next/link';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import {
     AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -185,7 +186,55 @@ export default function FinancePage() {
                     </div>
                 </div>
 
-                {/* Stats Grid */}
+                {/* New Feature Navigation */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <Link href="/dashboard/finance/coa" className="bg-white p-6 rounded-xl border border-secondary-100 shadow-sm hover:shadow-md transition-all group">
+                        <div className="flex items-center gap-4">
+                            <div className="p-3 bg-purple-50 text-purple-600 rounded-lg group-hover:bg-purple-100 transition-colors">
+                                📊
+                            </div>
+                            <div>
+                                <h3 className="font-bold text-gray-900">Chart of Accounts</h3>
+                                <p className="text-xs text-gray-500 mt-1">Manage account hierarchy</p>
+                            </div>
+                        </div>
+                    </Link>
+                    <Link href="/dashboard/finance/journal" className="bg-white p-6 rounded-xl border border-secondary-100 shadow-sm hover:shadow-md transition-all group">
+                        <div className="flex items-center gap-4">
+                            <div className="p-3 bg-blue-50 text-blue-600 rounded-lg group-hover:bg-blue-100 transition-colors">
+                                📒
+                            </div>
+                            <div>
+                                <h3 className="font-bold text-gray-900">Journal Entries</h3>
+                                <p className="text-xs text-gray-500 mt-1">Record double-entry transactions</p>
+                            </div>
+                        </div>
+                    </Link>
+                    <Link href="/dashboard/finance/ledger" className="bg-white p-6 rounded-xl border border-secondary-100 shadow-sm hover:shadow-md transition-all group">
+                        <div className="flex items-center gap-4">
+                            <div className="p-3 bg-green-50 text-green-600 rounded-lg group-hover:bg-green-100 transition-colors">
+                                📈
+                            </div>
+                            <div>
+                                <h3 className="font-bold text-gray-900">General Ledger</h3>
+                                <p className="text-xs text-gray-500 mt-1">View account transactions</p>
+                            </div>
+                        </div>
+                    </Link>
+                    <Link href="/dashboard/finance/reports" className="bg-white p-6 rounded-xl border border-secondary-100 shadow-sm hover:shadow-md transition-all group">
+                        <div className="flex items-center gap-4">
+                            <div className="p-3 bg-amber-50 text-amber-600 rounded-lg group-hover:bg-amber-100 transition-colors">
+                                📑
+                            </div>
+                            <div>
+                                <h3 className="font-bold text-gray-900">Reports</h3>
+                                <p className="text-xs text-gray-500 mt-1">Balance Sheet & P&L</p>
+                            </div>
+                        </div>
+                    </Link>
+                </div>
+
+                {/* Legacy Stats Grid (To be migrated) */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                     <div className="bg-white p-6 rounded-2xl border border-secondary-100 shadow-sm">
                         <p className="text-xs font-bold text-secondary-400 uppercase tracking-wider">Total Revenue (12m)</p>

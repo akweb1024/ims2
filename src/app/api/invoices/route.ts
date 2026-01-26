@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getAuthenticatedUser } from '@/lib/auth-legacy';
 import { InvoiceStatus } from '@/types';
+import { FinanceService } from '@/lib/services/finance';
 
 // ... imports
 
@@ -153,6 +154,17 @@ export async function POST(req: NextRequest) {
                 companyId: (decoded as any).companyId
             }
         });
+
+        // --- Finance Automation ---
+        try {
+            if ((decoded as any).companyId) {
+                await FinanceService.postInvoiceJournal((decoded as any).companyId, newInvoice.id);
+            }
+        } catch (financeError) {
+            console.error('Failed to post invoice journal:', financeError);
+            // Non-blocking error
+        }
+        // --------------------------
 
         return NextResponse.json(newInvoice);
 
