@@ -95,6 +95,39 @@ export const POST = authorizedRoute(
                 }
             });
 
+            // Send notification to employee
+            if (increment.employeeProfile.user.id) {
+                const { createNotification } = await import('@/lib/notifications');
+                await createNotification({
+                    userId: increment.employeeProfile.user.id,
+                    title: action === 'approve' ? 'Increment Approved by Manager' : 'Increment Rejected',
+                    message: action === 'approve'
+                        ? `Your salary increment of ₹${increment.incrementAmount?.toLocaleString()} (${increment.percentage?.toFixed(2)}%) has been approved by your manager and is now pending admin approval.`
+                        : `Your salary increment request has been rejected by your manager. ${comments ? `Reason: ${comments}` : ''}`,
+                    type: action === 'approve' ? 'SUCCESS' : 'WARNING',
+                    link: `/dashboard/hr-management/increments/${id}`
+                });
+
+                // Send email notification
+                const { sendEmail, EmailTemplates } = await import('@/lib/email');
+                const template = action === 'approve'
+                    ? EmailTemplates.incrementManagerApproved(
+                        increment.employeeProfile.user.name,
+                        `₹${increment.incrementAmount?.toLocaleString()}`,
+                        `${increment.percentage?.toFixed(2)}%`
+                    )
+                    : EmailTemplates.incrementRejected(
+                        increment.employeeProfile.user.name,
+                        'Manager',
+                        comments || 'No reason provided'
+                    );
+
+                await sendEmail({
+                    to: increment.employeeProfile.user.email,
+                    ...template
+                });
+            }
+
             return NextResponse.json({
                 success: true,
                 message: action === 'approve'

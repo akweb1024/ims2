@@ -100,6 +100,40 @@ export const POST = authorizedRoute(
                 });
             });
 
+            // Send notification to employee
+            if (increment.employeeProfile.user.id) {
+                const { createNotification } = await import('@/lib/notifications');
+                await createNotification({
+                    userId: increment.employeeProfile.user.id,
+                    title: action === 'approve' ? 'Salary Increment Approved!' : 'Increment Rejected by Admin',
+                    message: action === 'approve'
+                        ? `Congratulations! Your salary increment of ₹${increment.incrementAmount?.toLocaleString()} (${increment.percentage?.toFixed(2)}%) has been fully approved and will be effective from ${new Date(increment.effectiveDate).toLocaleDateString()}.`
+                        : `Your salary increment request has been rejected by admin. ${comments ? `Reason: ${comments}` : ''}`,
+                    type: action === 'approve' ? 'SUCCESS' : 'ERROR',
+                    link: `/dashboard/hr-management/increments/${id}`
+                });
+
+                // Send email notification
+                const { sendEmail, EmailTemplates } = await import('@/lib/email');
+                const template = action === 'approve'
+                    ? EmailTemplates.incrementApproved(
+                        increment.employeeProfile.user.name,
+                        `₹${increment.incrementAmount?.toLocaleString()}`,
+                        `${increment.percentage?.toFixed(2)}%`,
+                        new Date(increment.effectiveDate).toLocaleDateString()
+                    )
+                    : EmailTemplates.incrementRejected(
+                        increment.employeeProfile.user.name,
+                        'Admin',
+                        comments || 'No reason provided'
+                    );
+
+                await sendEmail({
+                    to: increment.employeeProfile.user.email,
+                    ...template
+                });
+            }
+
             return NextResponse.json({
                 success: true,
                 message: action === 'approve'
