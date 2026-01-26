@@ -197,17 +197,10 @@ export const ALL_MODULES: NavModule[] = [
         icon: '🎓',
         categories: [
             {
-                title: 'Academy',
-                items: [
-                    { name: 'My Learning', href: '/dashboard/my-learning', icon: '📖', roles: ['*'] },
-                    { name: 'Courses', href: '/dashboard/courses', icon: '🎓', roles: ['*'] },
-                    { name: 'Knowledge Article', href: '/dashboard/knowledge-base', icon: '📚', roles: ['*'] },
-                ]
-            },
-            {
                 title: 'Management',
                 items: [
                     { name: 'LMS Dashboard', href: '/dashboard/lms', icon: '📊', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'HR_MANAGER'] },
+                    { name: 'Course Library', href: '/dashboard/courses', icon: '🎓', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'HR_MANAGER'] },
                     { name: 'Mentors', href: '/dashboard/lms/mentors', icon: '👨‍🏫', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'HR_MANAGER'] },
                     { name: 'Financial Report', href: '/dashboard/lms/financials', icon: '💰', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'HR_MANAGER'] },
                     { name: 'Workshops', href: '/dashboard/lms/workshops', icon: '📹', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'HR_MANAGER'] },

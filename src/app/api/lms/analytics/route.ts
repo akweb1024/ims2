@@ -23,13 +23,23 @@ export async function GET(req: Request) {
             total: {
                 revenue: 0,
                 emailCount: 0,
-                mentorPayouts: 0
+                mentorPayouts: 0,
+                enrollments: 0
             }
         };
 
         stats.total.revenue = stats.courses.revenue + stats.workshops.revenue + stats.internships.revenue;
         stats.total.emailCount = stats.courses.emailCount + stats.workshops.emailCount + stats.internships.emailCount;
         stats.total.mentorPayouts = stats.courses.mentorPayouts + stats.workshops.mentorPayouts + stats.internships.mentorPayouts;
+
+        // Get total enrollments across all courses, workshops, and internships
+        const [courseEnrollments, workshopEnrollments, internshipApplications] = await Promise.all([
+            prisma.courseEnrollment.count(),
+            prisma.workshopEnrollment.count(),
+            prisma.internshipApplication.count()
+        ]);
+
+        stats.total.enrollments = courseEnrollments + workshopEnrollments + internshipApplications;
 
         // Mentor Leaderboard
         const mentors = await prisma.user.findMany({
