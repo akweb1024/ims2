@@ -2482,7 +2482,9 @@ model ITSupportTicket {
 
   @@index([companyId])
   @@index([requesterId])
+  @@index([assignedToId])
   @@index([status])
+  @@index([priority])
 }
 
 model FinancialRecord {
@@ -3153,6 +3155,7 @@ model ITTask {
   @@index([status])
   @@index([type])
   @@index([isRevenueBased])
+  @@index([priority])
 }
 
 model ITProjectDocument {

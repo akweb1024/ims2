@@ -1,25 +1,10 @@
-import bcrypt from 'bcryptjs';
-import { TokenPayload, generateToken as coreGenerateToken, verifyToken as coreVerifyToken } from './auth-core';
-import { getSessionUser } from './session';
+// Re-export unified auth logic
+export * from './auth';
+export { getAuthenticatedUser } from './auth';
 
-export type { TokenPayload };
-
-export const generateToken = (payload: TokenPayload): string => {
-    return coreGenerateToken(payload);
-};
-
-export const verifyToken = (token: string): TokenPayload | null => {
-    return coreVerifyToken(token);
-};
-
-export const hashPassword = async (password: string): Promise<string> => {
-    return await bcrypt.hash(password, 10);
-};
-
-export const verifyPassword = async (password: string, hash: string): Promise<boolean> => {
-    return await bcrypt.compare(password, hash);
-};
-
-export const getAuthenticatedUser = async (): Promise<TokenPayload | null> => {
-    return getSessionUser();
-};
+// Backward compatibility aliases if needed (though * exports most)
+import { generateToken as gt, verifyToken as vt, hashPassword as hp, verifyPassword as vp } from './auth-core';
+export const generateToken = gt;
+export const verifyToken = vt;
+export const hashPassword = hp;
+export const verifyPassword = vp;

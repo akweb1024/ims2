@@ -2,7 +2,7 @@ import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import { authConfig } from "./config";
 import { prisma } from "@/lib/prisma";
-import { verifyPassword, verifyToken } from "@/lib/auth-legacy";
+import { verifyPassword, verifyToken } from "@/lib/auth-core";
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
     ...authConfig,

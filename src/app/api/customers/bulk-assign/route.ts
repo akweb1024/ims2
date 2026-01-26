@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getAuthenticatedUser } from '@/lib/auth-legacy';
-import { createNotification } from '@/lib/notifications';
+import { createNotification } from '@/lib/system-notifications';
 
 export async function POST(req: NextRequest) {
     try {

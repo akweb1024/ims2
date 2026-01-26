@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { authorizedRoute } from '@/lib/middleware-auth';
 import { createErrorResponse } from '@/lib/api-utils';
-import { sendSubmissionAcknowledgment } from '@/lib/notification-service';
+import { sendSubmissionAcknowledgment } from '@/lib/email-service';
 
 // POST - Submit new manuscript
 export const POST = authorizedRoute(

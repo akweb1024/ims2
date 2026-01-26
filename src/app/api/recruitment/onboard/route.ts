@@ -3,7 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { authorizedRoute } from '@/lib/middleware-auth';
 import { createErrorResponse } from '@/lib/api-utils';
 import bcrypt from 'bcryptjs';
-import { createNotification } from '@/lib/notifications';
+import { createNotification } from '@/lib/system-notifications';
 
 // Helper to replace placeholders
 const hydrateTemplate = (content: string, vars: Record<string, string>) => {

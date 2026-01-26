@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { sendEmail, EmailTemplates } from '@/lib/email';
-import { createNotification } from '@/lib/notifications';
+import { createNotification } from '@/lib/system-notifications';
 
 /**
  * API to process subscription renewals

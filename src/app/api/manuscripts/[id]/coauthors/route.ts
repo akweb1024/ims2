@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { authorizedRoute } from '@/lib/middleware-auth';
 import { createErrorResponse } from '@/lib/api-utils';
-import { sendCoAuthorInvitation } from '@/lib/notification-service';
+import { sendCoAuthorInvitation } from '@/lib/email-service';
 import crypto from 'crypto';
 
 // POST - Invite co-author
