@@ -4,17 +4,59 @@ import { Plus } from 'lucide-react';
 import Link from 'next/link';
 import IncrementList from './IncrementList';
 import IncrementDashboardSkeleton from './IncrementDashboardSkeleton';
+import { prisma } from '@/lib/prisma';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
+import { redirect } from 'next/navigation';
 
 async function getIncrements() {
-    const res = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/hr/increments`, {
-        cache: 'no-store'
-    });
+    const session = await getServerSession(authOptions);
 
-    if (!res.ok) {
-        throw new Error('Failed to fetch increments');
+    if (!session?.user) {
+        redirect('/login');
     }
 
-    return res.json();
+    const user = session.user as any;
+    const where: any = {};
+
+    // Managers can only see their team's increments
+    if (user.role === 'MANAGER') {
+        const managedUsers = await prisma.user.findMany({
+            where: { managerId: user.id },
+            select: { id: true }
+        });
+
+        const managedUserIds = managedUsers.map(u => u.id);
+
+        const managedProfiles = await prisma.employeeProfile.findMany({
+            where: { userId: { in: managedUserIds } },
+            select: { id: true }
+        });
+
+        where.employeeProfileId = {
+            in: managedProfiles.map(p => p.id)
+        };
+    }
+
+    const increments = await prisma.salaryIncrementRecord.findMany({
+        where,
+        include: {
+            employeeProfile: {
+                include: {
+                    user: {
+                        select: {
+                            id: true,
+                            name: true,
+                            email: true
+                        }
+                    }
+                }
+            }
+        },
+        orderBy: { createdAt: 'desc' }
+    });
+
+    return increments;
 }
 
 async function IncrementData() {
