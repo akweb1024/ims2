@@ -20,7 +20,7 @@ export default function Error({
                 <div className="text-6xl">🎓</div>
                 <h2 className="text-2xl font-bold text-secondary-900">LMS Dashboard Error</h2>
                 <p className="text-secondary-500 max-w-md text-center">
-                    We couldn't load the LMS analytics data. This might be a temporary issue with our servers.
+                    We couldn&apos;t load the LMS analytics data. This might be a temporary issue with our servers.
                 </p>
                 <div className="flex gap-4 pt-4">
                     <button
