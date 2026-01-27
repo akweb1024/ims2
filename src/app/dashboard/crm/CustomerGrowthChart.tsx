@@ -13,7 +13,8 @@ const data = [
     { name: 'Jul', customers: 349 },
 ];
 
-export default function CustomerGrowthChart() {
+export default function CustomerGrowthChart({ user }: { user: any }) {
+    // TODO: Fetch real growth data based on user role
     return (
         <ResponsiveContainer width="100%" height="100%">
             <AreaChart

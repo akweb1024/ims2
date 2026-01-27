@@ -285,22 +285,42 @@ export default function SettingsPage() {
                         )}
 
                         {userRole === 'SUPER_ADMIN' && activeTab === 'General' && (
-                            <section className="card-premium border-danger-100">
-                                <h3 className="text-lg font-bold text-danger-900 mb-2">Danger Zone</h3>
-                                <p className="text-sm text-secondary-500 mb-6">Irreversible actions that affect the entire workspace</p>
-                                <div className="flex items-center justify-between">
-                                    <div>
-                                        <p className="font-bold text-secondary-900">Maintenance Mode</p>
-                                        <p className="text-xs text-secondary-500">Restrict access to all users during maintenance</p>
+                            <>
+                                <section className="card-premium border-danger-100">
+                                    <h3 className="text-lg font-bold text-danger-900 mb-2">Danger Zone</h3>
+                                    <p className="text-sm text-secondary-500 mb-6">Irreversible actions that affect the entire workspace</p>
+                                    <div className="flex items-center justify-between">
+                                        <div>
+                                            <p className="font-bold text-secondary-900">Maintenance Mode</p>
+                                            <p className="text-xs text-secondary-500">Restrict access to all users during maintenance</p>
+                                        </div>
+                                        <button
+                                            onClick={() => setSystemSettings({ ...systemSettings, maintenanceMode: !systemSettings.maintenanceMode })}
+                                            className={`w-12 h-6 rounded-full transition-all relative ${systemSettings.maintenanceMode ? 'bg-danger-500' : 'bg-secondary-200'}`}
+                                        >
+                                            <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${systemSettings.maintenanceMode ? 'translate-x-7' : 'translate-x-1'}`} />
+                                        </button>
                                     </div>
-                                    <button
-                                        onClick={() => setSystemSettings({ ...systemSettings, maintenanceMode: !systemSettings.maintenanceMode })}
-                                        className={`w-12 h-6 rounded-full transition-all relative ${systemSettings.maintenanceMode ? 'bg-danger-500' : 'bg-secondary-200'}`}
-                                    >
-                                        <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${systemSettings.maintenanceMode ? 'translate-x-7' : 'translate-x-1'}`} />
-                                    </button>
-                                </div>
-                            </section>
+                                </section>
+
+                                <section className="card-premium mt-6 bg-secondary-900 text-white overflow-hidden relative">
+                                    <div className="absolute top-0 right-0 w-32 h-32 bg-primary-500/10 rounded-full blur-3xl -mr-16 -mt-16"></div>
+                                    <div className="relative z-10 flex justify-between items-center">
+                                        <div>
+                                            <h3 className="text-lg font-bold mb-2">System Logs</h3>
+                                            <p className="text-secondary-300 text-xs max-w-sm">
+                                                View detailed logs of system emails, errors, and critical events for debugging.
+                                            </p>
+                                        </div>
+                                        <a
+                                            href="/dashboard/settings/email-logs"
+                                            className="bg-white text-secondary-900 px-4 py-2 rounded-lg text-sm font-bold shadow hover:bg-secondary-100 transition-colors"
+                                        >
+                                            View Logs
+                                        </a>
+                                    </div>
+                                </section>
+                            </>
                         )}
                     </div>
                 </div>

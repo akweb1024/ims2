@@ -1,10 +1,17 @@
 import { prisma } from '@/lib/prisma';
 import { formatDistanceToNow } from 'date-fns';
 
-export default async function RecentActivities() {
+export default async function RecentActivities({ user }: { user: any }) {
+    const isGlobal = ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'TEAM_LEADER'].includes(user.role);
+
+    // Filter activities where the log is created by the user OR the customer is assigned to the user
+    // For simplicity in V1, we filter by who performed the action (userId) for non-admins.
+    const whereClause = isGlobal ? {} : { userId: user.id };
+
     const activities = await prisma.communicationLog.findMany({
         take: 5,
         orderBy: { createdAt: 'desc' },
+        where: whereClause,
         include: {
             customerProfile: {
                 select: { name: true, organizationName: true }

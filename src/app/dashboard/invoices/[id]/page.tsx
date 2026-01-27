@@ -110,6 +110,12 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
 
     const currencySymbol = invoice.currency === 'INR' ? '₹' : '$';
 
+    // Robustly resolve customer details (Subscription -> Invoice Direct)
+    const customer = invoice.subscription?.customerProfile || invoice.customerProfile || {};
+
+    // Robustly resolve items
+    const invoiceItems = invoice.subscription?.items || (Array.isArray(invoice.lineItems) ? invoice.lineItems : []) || [];
+
     return (
         <DashboardLayout userRole={userRole}>
             <div className="max-w-5xl mx-auto space-y-6 pb-12">
@@ -185,10 +191,10 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
                             <div className="space-y-4">
                                 <h3 className="text-xs font-bold text-secondary-400 uppercase tracking-widest">Billed To</h3>
                                 <div>
-                                    <p className="text-lg font-bold text-secondary-900">{invoice.subscription.customerProfile.name}</p>
-                                    <p className="text-secondary-600 font-medium">{invoice.subscription.customerProfile.organizationName || 'Individual'}</p>
-                                    <p className="text-secondary-500 text-sm mt-1">{invoice.subscription.customerProfile.primaryEmail}</p>
-                                    <p className="text-secondary-500 text-sm">{invoice.subscription.customerProfile.billingAddress}</p>
+                                    <p className="text-lg font-bold text-secondary-900">{customer.name || 'Unknown Client'}</p>
+                                    <p className="text-secondary-600 font-medium">{customer.organizationName || 'Individual'}</p>
+                                    <p className="text-secondary-500 text-sm mt-1">{customer.primaryEmail}</p>
+                                    <p className="text-secondary-500 text-sm">{customer.billingAddress}</p>
                                 </div>
                             </div>
                             <div className="space-y-4 md:text-right">
@@ -218,17 +224,27 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-secondary-100">
-                                    {invoice.subscription.items.map((item: any) => (
-                                        <tr key={item.id}>
-                                            <td className="py-6">
-                                                <div className="font-bold text-secondary-900">{item.journal.name}</div>
-                                                <div className="text-sm text-secondary-500">{item.plan.planType} - {item.plan.format}</div>
+                                    {invoiceItems.length > 0 ? (
+                                        invoiceItems.map((item: any) => (
+                                            <tr key={item.id}>
+                                                <td className="py-6">
+                                                    <div className="font-bold text-secondary-900">{item.journal?.name || item.description || 'Item'}</div>
+                                                    <div className="text-sm text-secondary-500">
+                                                        {item.plan?.planType ? `${item.plan.planType} - ${item.plan.format}` : ''}
+                                                    </div>
+                                                </td>
+                                                <td className="py-6 text-center font-medium">{item.quantity || 1}</td>
+                                                <td className="py-6 text-right font-medium">{currencySymbol}{(item.price || item.unitPrice || 0).toLocaleString()}</td>
+                                                <td className="py-6 text-right font-bold text-secondary-900">{currencySymbol}{((item.price || item.unitPrice || 0) * (item.quantity || 1)).toLocaleString()}</td>
+                                            </tr>
+                                        ))
+                                    ) : (
+                                        <tr>
+                                            <td colSpan={4} className="py-6 text-center text-secondary-500 italic">
+                                                No specific line items. Refer to total amount.
                                             </td>
-                                            <td className="py-6 text-center font-medium">{item.quantity}</td>
-                                            <td className="py-6 text-right font-medium">{currencySymbol}{item.price.toLocaleString()}</td>
-                                            <td className="py-6 text-right font-bold text-secondary-900">{currencySymbol}{(item.price * item.quantity).toLocaleString()}</td>
                                         </tr>
-                                    ))}
+                                    )}
                                 </tbody>
                             </table>
                         </div>
