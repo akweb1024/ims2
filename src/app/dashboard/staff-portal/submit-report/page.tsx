@@ -2,8 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
-import { Briefcase, Send, CheckCircle, Award, Settings, TrendingUp, Users, DollarSign, Search, X } from 'lucide-react';
+import { Briefcase, Send, CheckCircle, Award, Settings, TrendingUp, Users, DollarSign, Search, X, PlusCircle } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import RevenueFlowHelp from '@/components/dashboard/hr/RevenueFlowHelp';
 import { toast } from 'react-hot-toast';
 
 export default function SubmitReportPage() {
@@ -21,6 +22,30 @@ export default function SubmitReportPage() {
     const [revenueResults, setRevenueResults] = useState([]);
     const [searchingRevenue, setSearchingRevenue] = useState(false);
     const [selectedRevenueClaims, setSelectedRevenueClaims] = useState<any[]>([]);
+
+    // New State for "My Recent Transactions"
+    const [myRecentTransactions, setMyRecentTransactions] = useState<any[]>([]);
+    const [loadingRecentRevenue, setLoadingRecentRevenue] = useState(false);
+
+    // Revenue Form Modal State
+    const [showRevenueModal, setShowRevenueModal] = useState(false);
+    const [revenueFormData, setRevenueFormData] = useState({
+        amount: '',
+        paymentMethod: 'BANK_TRANSFER',
+        date: new Date().toISOString().split('T')[0],
+        customerName: '',
+        customerEmail: '',
+        customerPhone: '',
+        referenceNumber: '',
+        bankName: '',
+        description: '',
+        category: 'SALE',
+        // Tax & Currency fields
+        tax: '',
+        originalAmount: '',
+        currency: 'INR',
+        inrAmount: ''
+    });
 
     // Form State - Simplified to narrative only
     const [commonData, setCommonData] = useState({
@@ -56,6 +81,22 @@ export default function SubmitReportPage() {
         if (userData) {
             const u = JSON.parse(userData);
             setUser(u);
+
+            // Fetch My Recent Transactions (Created by self, today, pending claim)
+            // We'll fetch slightly broader (last 24h or createdBy=self and unclaimed)
+            setLoadingRecentRevenue(true);
+            const today = new Date().toISOString().split('T')[0];
+            fetch(`/api/revenue/transactions?createdBy=self&excludeClaimed=true&startDate=${today}&endDate=${today}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            })
+                .then(res => res.json())
+                .then(data => {
+                    if (Array.isArray(data)) {
+                        setMyRecentTransactions(data);
+                    }
+                })
+                .catch(err => console.error("Error fetching my revenue", err))
+                .finally(() => setLoadingRecentRevenue(false));
 
             // Fetch Profile & Tasks
             fetch('/api/hr/profile/me', { headers: { 'Authorization': `Bearer ${token}` } })
@@ -260,7 +301,7 @@ export default function SubmitReportPage() {
         setSearchingRevenue(true);
         try {
             const token = localStorage.getItem('token');
-            const res = await fetch(`/api/revenue/transactions?status=PENDING&method=ALL`, {
+            const res = await fetch(`/api/revenue/transactions?status=PENDING&method=ALL&excludeClaimed=true`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             if (res.ok) {
@@ -295,7 +336,72 @@ export default function SubmitReportPage() {
         setRevenueSearch('');
         setRevenueResults([]);
         setShowRevenueSearch(false);
+
+        // Remove from myRecentTransactions locally to update UI immediately
+        setMyRecentTransactions(prev => prev.filter(t => t.id !== rt.id));
+
         toast.success('Revenue linked to report');
+    };
+
+    const handleRevenueSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setLoading(true);
+        try {
+            const token = localStorage.getItem('token');
+            const res = await fetch('/api/revenue/transactions', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    amount: parseFloat(revenueFormData.amount),
+                    paymentMethod: revenueFormData.paymentMethod,
+                    paymentDate: revenueFormData.date,
+                    customerName: revenueFormData.customerName,
+                    customerEmail: revenueFormData.customerEmail,
+                    customerPhone: revenueFormData.customerPhone,
+                    referenceNumber: revenueFormData.referenceNumber,
+                    bankName: revenueFormData.bankName,
+                    description: revenueFormData.description
+                })
+            });
+
+            if (res.ok) {
+                const newTransaction = await res.json();
+                toast.success('Revenue recorded successfully!');
+
+                // Add to myRecentTransactions
+                setMyRecentTransactions(prev => [newTransaction, ...prev]);
+
+                // Reset form
+                setRevenueFormData({
+                    amount: '',
+                    paymentMethod: 'BANK_TRANSFER',
+                    date: new Date().toISOString().split('T')[0],
+                    customerName: '',
+                    customerEmail: '',
+                    customerPhone: '',
+                    referenceNumber: '',
+                    bankName: '',
+                    description: '',
+                    category: 'SALE',
+                    tax: '',
+                    originalAmount: '',
+                    currency: 'INR',
+                    inrAmount: ''
+                });
+                setShowRevenueModal(false);
+            } else {
+                const error = await res.json();
+                toast.error(error.error || 'Failed to record revenue');
+            }
+        } catch (error) {
+            console.error('Revenue submission error:', error);
+            toast.error('Error recording revenue');
+        } finally {
+            setLoading(false);
+        }
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -331,7 +437,7 @@ export default function SubmitReportPage() {
                 ...commonData,
                 category: 'TASK_BASED',
                 userRole: user?.role,
-                revenueGenerated: derivedMetrics.revenue + selectedRevenueClaims.reduce((sum, c) => sum + c.amount, 0),
+                revenueGenerated: derivedMetrics.revenue, // Only base revenue, claims will update this when approved
                 tasksCompleted: derivedMetrics.tasksCount,
                 completedTaskIds,
                 taskQuantities: scaledTaskValues,
@@ -731,65 +837,130 @@ export default function SubmitReportPage() {
 
                         {/* Revenue Claims Section */}
                         <div className="card-premium p-6 border-t-4 border-success-500">
-                            <h3 className="font-bold text-lg mb-4 flex items-center gap-2 text-secondary-900">
-                                <DollarSign size={20} className="text-success-600" />
-                                Revenue Attribution
-                            </h3>
-                            <div className="space-y-4">
-                                <div className="flex items-center justify-between mb-4">
-                                    <p className="text-sm text-secondary-500">Did you generate or collect any revenue today?</p>
+                            <div className="flex justify-between items-center mb-4">
+                                <div>
+                                    <h3 className="font-bold text-lg flex items-center gap-2 text-secondary-900">
+                                        <DollarSign size={20} className="text-success-600" />
+                                        Revenue Attribution
+                                    </h3>
+                                    <p className="text-xs text-secondary-500 mt-1">Link client payments to your report</p>
+                                </div>
+                                <div className="flex items-center gap-2">
                                     <button
                                         type="button"
-                                        onClick={() => setShowRevenueSearch(!showRevenueSearch)}
-                                        className={`px-4 py-2 rounded-xl text-xs font-black transition-all ${showRevenueSearch ? 'bg-danger-50 text-danger-600' : 'bg-success-50 text-success-600'
-                                            }`}
+                                        onClick={() => setShowRevenueModal(true)}
+                                        className="px-4 py-2 text-sm font-bold text-white bg-success-600 hover:bg-success-700 rounded-xl transition-all shadow-md flex items-center gap-2"
                                     >
-                                        {showRevenueSearch ? 'Hide Search' : 'Link Transaction'}
+                                        <PlusCircle size={16} /> Record New Revenue
                                     </button>
+                                    <RevenueFlowHelp />
                                 </div>
+                            </div>
 
-                                {showRevenueSearch && (
-                                    <div className="space-y-3 animate-in fade-in slide-in-from-top duration-300">
-                                        <div className="relative">
-                                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-secondary-400" size={16} />
-                                            <input
-                                                type="text"
-                                                className="input pl-10 h-10 text-sm"
-                                                placeholder="Search by Customer name, RT#, or Reference..."
-                                                value={revenueSearch}
-                                                onChange={(e) => {
-                                                    setRevenueSearch(e.target.value);
-                                                    searchRevenueTransactions(e.target.value);
-                                                }}
-                                            />
+                            <div className="space-y-6">
+                                {/* 1. My Recent Transactions (Auto-fetch) */}
+                                {loadingRecentRevenue ? (
+                                    <div className="p-4 rounded-xl border border-secondary-100 bg-secondary-50/50 flex justify-center">
+                                        <span className="animate-spin w-5 h-5 border-2 border-primary-500 border-t-transparent rounded-full"></span>
+                                    </div>
+                                ) : myRecentTransactions.length > 0 ? (
+                                    <div className="space-y-3">
+                                        <div className="flex items-center gap-2">
+                                            <div className="w-2 h-2 rounded-full bg-success-500"></div>
+                                            <p className="text-xs font-black text-secondary-900 uppercase tracking-widest">My Recent Transactions (Pending Claim)</p>
                                         </div>
-
-                                        <div className="max-h-48 overflow-y-auto space-y-2 p-2 bg-secondary-50 rounded-xl border border-secondary-200">
-                                            {searchingRevenue ? (
-                                                <div className="text-center py-4"><span className="animate-spin inline-block w-4 h-4 border-b-2 border-primary-600 rounded-full"></span></div>
-                                            ) : revenueResults.length === 0 ? (
-                                                <p className="text-center py-4 text-xs text-secondary-400">No matching verified transactions found</p>
-                                            ) : (
-                                                revenueResults.map((rt: any) => (
-                                                    <div
-                                                        key={rt.id}
-                                                        onClick={() => addRevenueClaim(rt)}
-                                                        className="flex justify-between items-center p-3 bg-white rounded-lg border border-secondary-100 hover:border-success-400 cursor-pointer transition-all"
-                                                    >
-                                                        <div>
-                                                            <p className="text-sm font-bold text-secondary-900">{rt.customerName}</p>
-                                                            <p className="text-[10px] text-secondary-500 uppercase">{rt.transactionNumber} • {rt.paymentMethod}</p>
-                                                        </div>
-                                                        <div className="text-right">
-                                                            <p className="text-sm font-black text-success-600">₹{rt.amount.toLocaleString()}</p>
-                                                            <p className="text-[10px] text-secondary-400">{new Date(rt.paymentDate).toLocaleDateString()}</p>
-                                                        </div>
+                                        {myRecentTransactions.map((rt: any) => (
+                                            <div key={rt.id} className="flex justify-between items-center p-3 bg-white rounded-xl border border-indigo-100 hover:border-indigo-300 hover:shadow-md transition-all group">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="p-2 bg-indigo-50 text-indigo-600 rounded-lg group-hover:bg-indigo-100 transition-colors">
+                                                        <DollarSign size={18} />
                                                     </div>
-                                                ))
-                                            )}
-                                        </div>
+                                                    <div>
+                                                        <p className="text-sm font-bold text-secondary-900">{rt.customerName}</p>
+                                                        <p className="text-[10px] text-secondary-500 font-medium">
+                                                            {new Date(rt.paymentDate).toLocaleDateString()} • {rt.transactionNumber}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                                <div className="flex items-center gap-3">
+                                                    <span className="font-black text-success-600">₹{rt.amount.toLocaleString()}</span>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => addRevenueClaim(rt)}
+                                                        className="btn btn-sm bg-indigo-600 text-white hover:bg-indigo-700 rounded-lg px-3 py-1.5 text-xs font-bold flex items-center gap-1"
+                                                    >
+                                                        <PlusCircle size={14} /> Claim
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <div className="p-4 rounded-xl border border-dashed border-secondary-200 bg-secondary-50 text-center">
+                                        <p className="text-xs text-secondary-500 italic">No recent unclaimed transactions created by you.</p>
                                     </div>
                                 )}
+
+
+                                {/* 2. Search / Manual Link (Fallback) */}
+                                <div className="pt-4 border-t border-secondary-100">
+                                    <div className="flex items-center justify-between mb-3">
+                                        <p className="text-xs font-bold text-secondary-500 uppercase tracking-widest">Other Sources</p>
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowRevenueSearch(!showRevenueSearch)}
+                                            className={`px-3 py-1.5 rounded-lg text-[10px] font-black transition-all border ${showRevenueSearch
+                                                ? 'bg-secondary-100 text-secondary-600 border-secondary-200'
+                                                : 'bg-white text-secondary-500 border-secondary-200 hover:border-secondary-300'
+                                                }`}
+                                        >
+                                            {showRevenueSearch ? 'Close Search' : 'Find Other Revenue (e.g. Bank Transfers)'}
+                                        </button>
+                                    </div>
+
+                                    {showRevenueSearch && (
+                                        <div className="space-y-3 animate-in fade-in slide-in-from-top duration-300 bg-secondary-50 p-3 rounded-xl border border-secondary-200">
+                                            <div className="relative">
+                                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-secondary-400" size={16} />
+                                                <input
+                                                    type="text"
+                                                    className="input pl-10 h-10 text-sm bg-white"
+                                                    placeholder="Search by Customer name, RT#, or Reference..."
+                                                    value={revenueSearch}
+                                                    onChange={(e) => {
+                                                        setRevenueSearch(e.target.value);
+                                                        searchRevenueTransactions(e.target.value);
+                                                    }}
+                                                />
+                                            </div>
+
+                                            <div className="max-h-48 overflow-y-auto space-y-2 p-1">
+                                                {searchingRevenue ? (
+                                                    <div className="text-center py-4"><span className="animate-spin inline-block w-4 h-4 border-b-2 border-primary-600 rounded-full"></span></div>
+                                                ) : revenueResults.length === 0 ? (
+                                                    revenueSearch.length > 1 && <p className="text-center py-4 text-xs text-secondary-400">No matching verified transactions found</p>
+                                                ) : (
+                                                    revenueResults.map((rt: any) => (
+                                                        <div
+                                                            key={rt.id}
+                                                            onClick={() => addRevenueClaim(rt)}
+                                                            className="flex justify-between items-center p-3 bg-white rounded-lg border border-secondary-100 hover:border-success-400 cursor-pointer transition-all"
+                                                        >
+                                                            <div>
+                                                                <p className="text-sm font-bold text-secondary-900">{rt.customerName}</p>
+                                                                <p className="text-[10px] text-secondary-500 uppercase">{rt.transactionNumber} • {rt.paymentMethod}</p>
+                                                            </div>
+                                                            <div className="text-right">
+                                                                <p className="text-sm font-black text-success-600">₹{rt.amount.toLocaleString()}</p>
+                                                                <p className="text-[10px] text-secondary-400">{new Date(rt.paymentDate).toLocaleDateString()}</p>
+                                                            </div>
+                                                        </div>
+                                                    ))
+                                                )}
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
 
                                 {/* Selected Claims */}
                                 {selectedRevenueClaims.length > 0 && (
@@ -876,6 +1047,208 @@ export default function SubmitReportPage() {
                         </button>
                     </div>
                 </form>
+
+                {/* Revenue Form Modal */}
+                {showRevenueModal && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-secondary-900/60 backdrop-blur-sm">
+                        <div className="bg-white rounded-3xl w-full max-w-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
+                            <form onSubmit={handleRevenueSubmit}>
+                                <div className="p-6 border-b border-secondary-100 flex justify-between items-center bg-indigo-50">
+                                    <h3 className="text-xl font-black text-indigo-900">Record New Revenue</h3>
+                                    <button type="button" onClick={() => setShowRevenueModal(false)} className="text-secondary-400 hover:text-secondary-600" title="Close Modal">
+                                        <X size={24} />
+                                    </button>
+                                </div>
+
+                                <div className="p-6 grid grid-cols-2 gap-4 max-h-[70vh] overflow-y-auto">
+                                    {/* Amount & Payment Method */}
+                                    <div className="col-span-1">
+                                        <label className="text-[10px] font-black text-secondary-400 uppercase tracking-widest block mb-1">Amount (₹)</label>
+                                        <input
+                                            type="number"
+                                            required
+                                            className="w-full px-4 py-3 rounded-xl border border-secondary-200 focus:ring-2 focus:ring-primary-500 transition-all outline-none font-black text-lg"
+                                            placeholder="50000"
+                                            value={revenueFormData.amount}
+                                            onChange={(e) => setRevenueFormData({ ...revenueFormData, amount: e.target.value })}
+                                        />
+                                    </div>
+                                    <div className="col-span-1">
+                                        <label className="text-[10px] font-black text-secondary-400 uppercase tracking-widest block mb-1">Payment Method</label>
+                                        <select
+                                            className="w-full px-4 py-3 rounded-xl border border-secondary-200 focus:ring-2 focus:ring-primary-500 transition-all outline-none"
+                                            value={revenueFormData.paymentMethod}
+                                            onChange={(e) => setRevenueFormData({ ...revenueFormData, paymentMethod: e.target.value })}
+                                            title="Select Payment Method"
+                                        >
+                                            <option value="BANK_TRANSFER">Bank Transfer (IMPS/NEFT)</option>
+                                            <option value="UPI">UPI / PhonePe / GPay</option>
+                                            <option value="RAZORPAY">Razorpay</option>
+                                            <option value="CASH">Cash Payment</option>
+                                            <option value="CHEQUE">Cheque Payment</option>
+                                            <option value="DD">Demand Draft (DD)</option>
+                                            <option value="OTHER">Other Method</option>
+                                        </select>
+                                    </div>
+
+                                    {/* Date & Reference */}
+                                    <div className="col-span-1">
+                                        <label className="text-[10px] font-black text-secondary-400 uppercase tracking-widest block mb-1">Payment Date</label>
+                                        <input
+                                            type="date"
+                                            required
+                                            className="w-full px-4 py-3 rounded-xl border border-secondary-200 focus:ring-2 focus:ring-primary-500 transition-all outline-none"
+                                            value={revenueFormData.date}
+                                            onChange={(e) => setRevenueFormData({ ...revenueFormData, date: e.target.value })}
+                                            title="Payment Date"
+                                        />
+                                    </div>
+                                    <div className="col-span-1">
+                                        <label className="text-[10px] font-black text-secondary-400 uppercase tracking-widest block mb-1">Reference # (Cheque/UTR/DD) *</label>
+                                        <input
+                                            type="text"
+                                            required
+                                            className="w-full px-4 py-3 rounded-xl border border-secondary-200 focus:ring-2 focus:ring-primary-500 transition-all outline-none font-mono"
+                                            placeholder="UTR123456789"
+                                            value={revenueFormData.referenceNumber}
+                                            onChange={(e) => setRevenueFormData({ ...revenueFormData, referenceNumber: e.target.value })}
+                                        />
+                                    </div>
+
+                                    {/* Customer Information Section */}
+                                    <div className="col-span-2 grid grid-cols-3 gap-3 p-4 bg-secondary-50 rounded-2xl border border-secondary-200">
+                                        <div className="col-span-3 pb-2 border-b border-secondary-200">
+                                            <span className="text-xs font-black text-secondary-500 uppercase">Customer Information</span>
+                                        </div>
+                                        <div className="col-span-2">
+                                            <label className="text-[10px] font-black text-secondary-400 uppercase tracking-widest block mb-1">Customer Name</label>
+                                            <input
+                                                type="text"
+                                                className="w-full px-3 py-2 rounded-lg border border-secondary-200 focus:ring-2 focus:ring-primary-500 outline-none text-sm"
+                                                value={revenueFormData.customerName}
+                                                onChange={(e) => setRevenueFormData({ ...revenueFormData, customerName: e.target.value })}
+                                                placeholder="Customer Name"
+                                                title="Customer Name"
+                                            />
+                                        </div>
+                                        <div className="col-span-1">
+                                            <label className="text-[10px] font-black text-secondary-400 uppercase tracking-widest block mb-1">Bank Name</label>
+                                            <input
+                                                type="text"
+                                                className="w-full px-3 py-2 rounded-lg border border-secondary-200 focus:ring-2 focus:ring-primary-500 outline-none text-sm"
+                                                value={revenueFormData.bankName}
+                                                onChange={(e) => setRevenueFormData({ ...revenueFormData, bankName: e.target.value })}
+                                                placeholder="Bank Name"
+                                                title="Bank Name (if Cheque/DD)"
+                                            />
+                                        </div>
+                                        <div className="col-span-1">
+                                            <label className="text-[10px] font-black text-secondary-400 uppercase tracking-widest block mb-1">Email</label>
+                                            <input
+                                                type="email"
+                                                className="w-full px-3 py-2 rounded-lg border border-secondary-200 focus:ring-2 focus:ring-primary-500 outline-none text-sm"
+                                                value={revenueFormData.customerEmail}
+                                                onChange={(e) => setRevenueFormData({ ...revenueFormData, customerEmail: e.target.value })}
+                                                placeholder="Customer Email"
+                                                title="Customer Email"
+                                            />
+                                        </div>
+                                        <div className="col-span-1">
+                                            <label className="text-[10px] font-black text-secondary-400 uppercase tracking-widest block mb-1">Phone</label>
+                                            <input
+                                                type="text"
+                                                className="w-full px-3 py-2 rounded-lg border border-secondary-200 focus:ring-2 focus:ring-primary-500 outline-none text-sm"
+                                                value={revenueFormData.customerPhone}
+                                                onChange={(e) => setRevenueFormData({ ...revenueFormData, customerPhone: e.target.value })}
+                                                placeholder="Customer Phone"
+                                                title="Customer Phone"
+                                            />
+                                        </div>
+                                    </div>
+
+                                    {/* Tax & Currency Section (Optional) */}
+                                    <div className="col-span-2 grid grid-cols-4 gap-3 p-4 bg-amber-50 rounded-2xl border border-amber-200">
+                                        <div className="col-span-4 pb-2 border-b border-amber-200">
+                                            <span className="text-xs font-black text-amber-700 uppercase">Tax & Currency (Optional)</span>
+                                        </div>
+                                        <div className="col-span-1">
+                                            <label className="text-[10px] font-black text-secondary-400 uppercase tracking-widest block mb-1">Tax (%)</label>
+                                            <input
+                                                type="number"
+                                                step="0.01"
+                                                className="w-full px-3 py-2 rounded-lg border border-amber-200 focus:ring-2 focus:ring-amber-500 outline-none text-sm"
+                                                value={revenueFormData.tax}
+                                                onChange={(e) => setRevenueFormData({ ...revenueFormData, tax: e.target.value })}
+                                                placeholder="18"
+                                                title="Tax Percentage"
+                                            />
+                                        </div>
+                                        <div className="col-span-1">
+                                            <label className="text-[10px] font-black text-secondary-400 uppercase tracking-widest block mb-1">Currency</label>
+                                            <select
+                                                className="w-full px-3 py-2 rounded-lg border border-amber-200 focus:ring-2 focus:ring-amber-500 outline-none text-sm"
+                                                value={revenueFormData.currency}
+                                                onChange={(e) => setRevenueFormData({ ...revenueFormData, currency: e.target.value })}
+                                                title="Currency"
+                                            >
+                                                <option value="INR">INR (₹)</option>
+                                                <option value="USD">USD ($)</option>
+                                                <option value="EUR">EUR (€)</option>
+                                                <option value="GBP">GBP (£)</option>
+                                                <option value="AED">AED</option>
+                                                <option value="SGD">SGD</option>
+                                            </select>
+                                        </div>
+                                        <div className="col-span-1">
+                                            <label className="text-[10px] font-black text-secondary-400 uppercase tracking-widest block mb-1">Original Amt</label>
+                                            <input
+                                                type="number"
+                                                step="0.01"
+                                                className="w-full px-3 py-2 rounded-lg border border-amber-200 focus:ring-2 focus:ring-amber-500 outline-none text-sm"
+                                                value={revenueFormData.originalAmount}
+                                                onChange={(e) => setRevenueFormData({ ...revenueFormData, originalAmount: e.target.value })}
+                                                placeholder="1000"
+                                                title="Original Amount (Foreign Currency)"
+                                            />
+                                        </div>
+                                        <div className="col-span-1">
+                                            <label className="text-[10px] font-black text-secondary-400 uppercase tracking-widest block mb-1">INR Amount</label>
+                                            <input
+                                                type="number"
+                                                step="0.01"
+                                                className="w-full px-3 py-2 rounded-lg border border-amber-200 focus:ring-2 focus:ring-amber-500 outline-none text-sm"
+                                                value={revenueFormData.inrAmount}
+                                                onChange={(e) => setRevenueFormData({ ...revenueFormData, inrAmount: e.target.value })}
+                                                placeholder="85000"
+                                                title="Converted INR Amount"
+                                            />
+                                        </div>
+                                    </div>
+
+                                    {/* Notes / Description */}
+                                    <div className="col-span-2">
+                                        <label className="text-[10px] font-black text-secondary-400 uppercase tracking-widest block mb-1">Notes / Description</label>
+                                        <textarea
+                                            className="w-full px-4 py-3 rounded-xl border border-secondary-200 focus:ring-2 focus:ring-primary-500 transition-all outline-none"
+                                            rows={2}
+                                            value={revenueFormData.description}
+                                            onChange={(e) => setRevenueFormData({ ...revenueFormData, description: e.target.value })}
+                                            placeholder="Notes or description"
+                                            title="Description"
+                                        ></textarea>
+                                    </div>
+                                </div>
+
+                                <div className="p-6 bg-secondary-50 border-t border-secondary-100 flex justify-end gap-3">
+                                    <button type="button" onClick={() => setShowRevenueModal(false)} className="px-6 py-3 text-sm font-bold text-secondary-500 hover:bg-secondary-100 rounded-xl transition-all">Cancel</button>
+                                    <button type="submit" disabled={loading} className="px-8 py-3 text-sm font-bold text-white bg-primary-600 hover:bg-primary-700 rounded-xl transition-all shadow-lg disabled:opacity-50">
+                                        {loading ? 'Saving...' : 'Save Transaction'}
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                )}
             </div>
         </DashboardLayout>
     );

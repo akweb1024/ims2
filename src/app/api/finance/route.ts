@@ -49,10 +49,19 @@ export const POST = authorizedRoute(
     async (req: NextRequest, user) => {
         try {
             const body = await req.json();
-            const { type, category, amount, currency, date, description, status, paymentMethod, referenceId } = body;
+            const {
+                type, category, amount, currency, date, description, status, paymentMethod, referenceId,
+                // Extended fields for Revenue Sync
+                customerName, bankName, customerEmail, customerPhone, referenceNumber
+            } = body;
 
             if (!type || !category || !amount) {
                 return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+            }
+
+            // For REVENUE type, referenceNumber is required
+            if (type === 'REVENUE' && (!referenceNumber || referenceNumber.trim() === '')) {
+                return NextResponse.json({ error: 'Reference number is required for revenue transactions' }, { status: 400 });
             }
 
             const record = await prisma.financialRecord.create({
@@ -65,11 +74,48 @@ export const POST = authorizedRoute(
                     description,
                     status: status || 'COMPLETED',
                     paymentMethod,
-                    referenceId,
+                    referenceId: referenceNumber || referenceId, // Use referenceNumber if provided, fallback to referenceId
                     companyId: user.companyId,
                     createdByUserId: user.id
                 }
             });
+
+            // SYNC: If this is a REVENUE record, also create a RevenueTransaction
+            // so it appears in the Income Registry for staff to claim.
+            if (type === 'REVENUE' && user.companyId) {
+                try {
+                    // Generate a temporary TRN number
+                    const trn = `TRN-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+
+                    await prisma.revenueTransaction.create({
+                        data: {
+                            companyId: user.companyId,
+                            transactionNumber: trn,
+                            amount: record.amount,
+                            currency: record.currency,
+                            paymentMethod: paymentMethod || 'OTHER',
+                            paymentDate: record.date,
+                            description: description || `Manual Entry from Finance: ${category}`,
+                            notes: `Auto-generated from Financial Record ID: ${record.id}`,
+                            status: 'VERIFIED', // It's coming from Finance, so it's verified
+                            verificationStatus: 'VERIFIED',
+                            createdBy: user.id,
+
+                            // Extended fields mapped here
+                            customerName: customerName || null,
+                            bankName: bankName || null,
+                            customerEmail: customerEmail || null,
+                            customerPhone: customerPhone || null,
+                            referenceNumber: referenceNumber || referenceId || null
+                        }
+                    });
+                    console.log('✅ Auto-synced RevenueTransaction:', trn);
+                } catch (syncError) {
+                    console.error('❌ Failed to sync RevenueTransaction:', syncError);
+                    // We don't fail the main request, but log the error
+                }
+            }
+
 
             return NextResponse.json(record);
         } catch (error) {

@@ -29,9 +29,19 @@ export const GET = authorizedRoute(['ADMIN', 'SUPER_ADMIN', 'MANAGER', 'TEAM_LEA
         const startDate = searchParams.get('startDate');
         const endDate = searchParams.get('endDate');
 
+        const createdBy = searchParams.get('createdBy');
+
         const where: any = {
             companyId: user.companyId
         };
+
+        if (createdBy) {
+            if (createdBy === 'self') {
+                where.createdBy = user.id;
+            } else {
+                where.createdBy = createdBy;
+            }
+        }
 
         if (status) where.status = status;
         if (method) where.paymentMethod = method;
@@ -69,6 +79,17 @@ export const GET = authorizedRoute(['ADMIN', 'SUPER_ADMIN', 'MANAGER', 'TEAM_LEA
             orderBy: { paymentDate: 'desc' }
         });
 
+        // Filter out fully claimed transactions if requested
+        // Note: We do this in memory or via improved query if possible. 
+        // A transaction is "claimed" if it has a RevenueClaim associated.
+        // However, one transaction might have partial claims (not implemented yet, assuming 1:1 or 1:Many)
+        // For now, if excludeClaimed is true, we filter out transactions that have ANY claims.
+
+        const excludeClaimed = searchParams.get('excludeClaimed') === 'true';
+        if (excludeClaimed) {
+            return NextResponse.json(transactions.filter(t => t.claims.length === 0));
+        }
+
         return NextResponse.json(transactions);
     } catch (error: any) {
         return NextResponse.json({ error: error.message }, { status: 500 });
@@ -97,18 +118,23 @@ export const POST = authorizedRoute(['ADMIN', 'SUPER_ADMIN', 'MANAGER', 'TEAM_LE
             invoiceId
         } = body;
 
-        // Check for duplicates based on referenceNumber if provided
-        if (referenceNumber) {
-            const existing = await prisma.revenueTransaction.findFirst({
-                where: {
-                    companyId: user.companyId as string,
-                    referenceNumber,
-                    paymentMethod
-                }
-            });
-            if (existing) {
-                return NextResponse.json({ error: 'A transaction with this reference number already exists.' }, { status: 400 });
+        // Validate required fields
+        if (!referenceNumber || referenceNumber.trim() === '') {
+            return NextResponse.json({ error: 'Reference number is required' }, { status: 400 });
+        }
+
+        // Check for duplicate reference number (must be globally unique within company)
+        const existing = await prisma.revenueTransaction.findFirst({
+            where: {
+                companyId: user.companyId as string,
+                referenceNumber: referenceNumber.trim()
             }
+        });
+
+        if (existing) {
+            return NextResponse.json({
+                error: `Reference number "${referenceNumber}" already exists. Please use a unique reference number.`
+            }, { status: 400 });
         }
 
         const transactionNumber = await generateTransactionNumber(user.companyId as string);
@@ -126,13 +152,13 @@ export const POST = authorizedRoute(['ADMIN', 'SUPER_ADMIN', 'MANAGER', 'TEAM_LE
                 referenceNumber,
                 bankName,
                 proofDocument,
-                claimedByEmployeeId,
-                departmentId,
+                claimedByEmployeeId: claimedByEmployeeId || null,
+                departmentId: departmentId || null,
                 description,
                 notes,
-                customerProfileId,
-                institutionId,
-                invoiceId,
+                customerProfileId: customerProfileId || null,
+                institutionId: institutionId || null,
+                invoiceId: invoiceId || null,
                 createdBy: user.id
             }
         });
@@ -148,6 +174,31 @@ export const POST = authorizedRoute(['ADMIN', 'SUPER_ADMIN', 'MANAGER', 'TEAM_LE
                     status: 'PENDING'
                 }
             });
+        }
+
+        // SYNC BACKWARD: Create a General Ledger (FinancialRecord) entry for this revenue
+        try {
+            // We use 'SALE' as a generic category for revenue transactions, or derive it
+            // If we had a category field in RevenueTransaction, we'd use it.
+            await prisma.financialRecord.create({
+                data: {
+                    companyId: user.companyId as string,
+                    type: 'REVENUE',
+                    category: 'SALE', // Defaulting to SALE as it's the most common revenue type here
+                    amount: Number(amount),
+                    currency: 'INR',
+                    date: new Date(paymentDate),
+                    description: `Revenue via Transaction #${transactionNumber} (${customerName || 'Unknown Customer'})`,
+                    status: 'COMPLETED',
+                    paymentMethod,
+                    referenceId: referenceNumber || transactionNumber, // Use Ref or TRN
+                    createdByUserId: user.id
+                }
+            });
+            console.log('✅ Auto-synced FinancialRecord for:', transactionNumber);
+        } catch (syncError) {
+            console.error('❌ Failed to sync FinancialRecord:', syncError);
+            // Don't fail the request, just log
         }
 
         return NextResponse.json(transaction);

@@ -18,12 +18,23 @@ export default function FinancePage() {
     const [isEditing, setIsEditing] = useState<any>(null);
 
     const [formData, setFormData] = useState({
-        type: 'EXPENSE',
-        category: 'BILLS',
+        type: 'REVENUE',
+        category: 'SALE',
         amount: '',
         date: new Date().toISOString().split('T')[0],
         description: '',
-        paymentMethod: 'BANK_TRANSFER'
+        paymentMethod: 'BANK_TRANSFER',
+        // Extended fields
+        customerName: '',
+        customerEmail: '',
+        customerPhone: '',
+        referenceNumber: '',
+        bankName: '',
+        // Tax & Currency fields
+        tax: '',
+        originalAmount: '',
+        currency: 'INR',
+        inrAmount: ''
     });
 
     const fetchData = useCallback(async () => {
@@ -71,12 +82,21 @@ export default function FinancePage() {
             setShowAddModal(false);
             setIsEditing(null);
             setFormData({
-                type: 'EXPENSE',
-                category: 'BILLS',
+                type: 'REVENUE',
+                category: 'SALE',
                 amount: '',
                 date: new Date().toISOString().split('T')[0],
                 description: '',
-                paymentMethod: 'BANK_TRANSFER'
+                paymentMethod: 'BANK_TRANSFER',
+                customerName: '',
+                customerEmail: '',
+                customerPhone: '',
+                referenceNumber: '',
+                bankName: '',
+                tax: '',
+                originalAmount: '',
+                currency: 'INR',
+                inrAmount: ''
             });
             fetchData();
         }
@@ -181,7 +201,7 @@ export default function FinancePage() {
                             onClick={() => { setIsEditing(null); setShowAddModal(true); }}
                             className="px-4 py-2 text-sm font-semibold text-white bg-primary-600 rounded-xl hover:bg-primary-700 transition-all shadow-md flex items-center gap-2"
                         >
-                            <span>➕</span> Add Record
+                            <span>➕</span> Record New Revenue
                         </button>
                     </div>
                 </div>
@@ -385,85 +405,212 @@ export default function FinancePage() {
 
             {/* Add/Edit Modal */}
             {showAddModal && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-secondary-900/40 backdrop-blur-sm">
-                    <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden">
-                        <div className="p-6 border-b border-secondary-100">
-                            <h3 className="text-xl font-bold text-secondary-900">{isEditing ? 'Edit Record' : 'Add Financial Record'}</h3>
-                        </div>
-                        <form onSubmit={handleSubmit} className="p-6 space-y-4">
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label className="text-[10px] font-black text-secondary-400 uppercase tracking-widest block mb-1">Type</label>
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-secondary-900/60 backdrop-blur-sm">
+                    <div className="bg-white rounded-3xl w-full max-w-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
+                        <form onSubmit={handleSubmit}>
+                            <div className="p-6 border-b border-secondary-100 flex justify-between items-center bg-indigo-50">
+                                <h3 className="text-xl font-black text-indigo-900">{isEditing ? 'Edit Record' : 'Record New Revenue'}</h3>
+                                <button type="button" onClick={() => setShowAddModal(false)} className="text-secondary-400 hover:text-secondary-600" title="Close Modal">
+                                    ✕
+                                </button>
+                            </div>
+
+                            <div className="p-6 grid grid-cols-2 gap-4 max-h-[70vh] overflow-y-auto">
+                                {/* Amount & Payment Method */}
+                                <div className="col-span-1">
+                                    <label className="text-[10px] font-black text-secondary-400 uppercase tracking-widest block mb-1">Amount (₹)</label>
+                                    <input
+                                        type="number"
+                                        required
+                                        className="w-full px-4 py-3 rounded-xl border border-secondary-200 focus:ring-2 focus:ring-primary-500 transition-all outline-none font-black text-lg"
+                                        placeholder="50000"
+                                        value={formData.amount}
+                                        onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
+                                    />
+                                </div>
+                                <div className="col-span-1">
+                                    <label className="text-[10px] font-black text-secondary-400 uppercase tracking-widest block mb-1">Payment Method</label>
                                     <select
                                         className="w-full px-4 py-3 rounded-xl border border-secondary-200 focus:ring-2 focus:ring-primary-500 transition-all outline-none"
-                                        value={formData.type}
-                                        onChange={(e) => setFormData({ ...formData, type: e.target.value })}
+                                        value={formData.paymentMethod}
+                                        onChange={(e) => setFormData({ ...formData, paymentMethod: e.target.value })}
+                                        title="Select Payment Method"
                                     >
-                                        <option value="REVENUE">Revenue</option>
-                                        <option value="EXPENSE">Expense</option>
+                                        <option value="BANK_TRANSFER">Bank Transfer (IMPS/NEFT)</option>
+                                        <option value="UPI">UPI / PhonePe / GPay</option>
+                                        <option value="RAZORPAY">Razorpay</option>
+                                        <option value="CASH">Cash Payment</option>
+                                        <option value="CHEQUE">Cheque Payment</option>
+                                        <option value="DD">Demand Draft (DD)</option>
+                                        <option value="OTHER">Other Method</option>
                                     </select>
                                 </div>
-                                <div>
+
+                                {/* Date & Reference */}
+                                <div className="col-span-1">
+                                    <label className="text-[10px] font-black text-secondary-400 uppercase tracking-widest block mb-1">Payment Date</label>
+                                    <input
+                                        type="date"
+                                        required
+                                        className="w-full px-4 py-3 rounded-xl border border-secondary-200 focus:ring-2 focus:ring-primary-500 transition-all outline-none"
+                                        value={formData.date}
+                                        onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                                        title="Payment Date"
+                                    />
+                                </div>
+                                <div className="col-span-1">
+                                    <label className="text-[10px] font-black text-secondary-400 uppercase tracking-widest block mb-1">Reference # (Cheque/UTR/DD) *</label>
+                                    <input
+                                        type="text"
+                                        required
+                                        className="w-full px-4 py-3 rounded-xl border border-secondary-200 focus:ring-2 focus:ring-primary-500 transition-all outline-none font-mono"
+                                        placeholder="UTR123456789"
+                                        value={formData.referenceNumber}
+                                        onChange={(e) => setFormData({ ...formData, referenceNumber: e.target.value })}
+                                    />
+                                </div>
+
+                                {/* Customer Information Section */}
+                                <div className="col-span-2 grid grid-cols-3 gap-3 p-4 bg-secondary-50 rounded-2xl border border-secondary-200">
+                                    <div className="col-span-3 pb-2 border-b border-secondary-200">
+                                        <span className="text-xs font-black text-secondary-500 uppercase">Customer Information</span>
+                                    </div>
+                                    <div className="col-span-2">
+                                        <label className="text-[10px] font-black text-secondary-400 uppercase tracking-widest block mb-1">Customer Name</label>
+                                        <input
+                                            type="text"
+                                            className="w-full px-3 py-2 rounded-lg border border-secondary-200 focus:ring-2 focus:ring-primary-500 outline-none text-sm"
+                                            value={formData.customerName}
+                                            onChange={(e) => setFormData({ ...formData, customerName: e.target.value })}
+                                            placeholder="Customer Name"
+                                            title="Customer Name"
+                                        />
+                                    </div>
+                                    <div className="col-span-1">
+                                        <label className="text-[10px] font-black text-secondary-400 uppercase tracking-widest block mb-1">Bank Name</label>
+                                        <input
+                                            type="text"
+                                            className="w-full px-3 py-2 rounded-lg border border-secondary-200 focus:ring-2 focus:ring-primary-500 outline-none text-sm"
+                                            value={formData.bankName}
+                                            onChange={(e) => setFormData({ ...formData, bankName: e.target.value })}
+                                            placeholder="Bank Name"
+                                            title="Bank Name (if Cheque/DD)"
+                                        />
+                                    </div>
+                                    <div className="col-span-1">
+                                        <label className="text-[10px] font-black text-secondary-400 uppercase tracking-widest block mb-1">Email</label>
+                                        <input
+                                            type="email"
+                                            className="w-full px-3 py-2 rounded-lg border border-secondary-200 focus:ring-2 focus:ring-primary-500 outline-none text-sm"
+                                            value={formData.customerEmail}
+                                            onChange={(e) => setFormData({ ...formData, customerEmail: e.target.value })}
+                                            placeholder="Customer Email"
+                                            title="Customer Email"
+                                        />
+                                    </div>
+                                    <div className="col-span-1">
+                                        <label className="text-[10px] font-black text-secondary-400 uppercase tracking-widest block mb-1">Phone</label>
+                                        <input
+                                            type="text"
+                                            className="w-full px-3 py-2 rounded-lg border border-secondary-200 focus:ring-2 focus:ring-primary-500 outline-none text-sm"
+                                            value={formData.customerPhone}
+                                            onChange={(e) => setFormData({ ...formData, customerPhone: e.target.value })}
+                                            placeholder="Customer Phone"
+                                            title="Customer Phone"
+                                        />
+                                    </div>
+                                </div>
+
+                                {/* Tax & Currency Section (Optional) */}
+                                <div className="col-span-2 grid grid-cols-4 gap-3 p-4 bg-amber-50 rounded-2xl border border-amber-200">
+                                    <div className="col-span-4 pb-2 border-b border-amber-200">
+                                        <span className="text-xs font-black text-amber-700 uppercase">Tax & Currency (Optional)</span>
+                                    </div>
+                                    <div className="col-span-1">
+                                        <label className="text-[10px] font-black text-secondary-400 uppercase tracking-widest block mb-1">Tax (%)</label>
+                                        <input
+                                            type="number"
+                                            step="0.01"
+                                            className="w-full px-3 py-2 rounded-lg border border-amber-200 focus:ring-2 focus:ring-amber-500 outline-none text-sm"
+                                            value={formData.tax}
+                                            onChange={(e) => setFormData({ ...formData, tax: e.target.value })}
+                                            placeholder="18"
+                                            title="Tax Percentage"
+                                        />
+                                    </div>
+                                    <div className="col-span-1">
+                                        <label className="text-[10px] font-black text-secondary-400 uppercase tracking-widest block mb-1">Currency</label>
+                                        <select
+                                            className="w-full px-3 py-2 rounded-lg border border-amber-200 focus:ring-2 focus:ring-amber-500 outline-none text-sm"
+                                            value={formData.currency}
+                                            onChange={(e) => setFormData({ ...formData, currency: e.target.value })}
+                                            title="Currency"
+                                        >
+                                            <option value="INR">INR (₹)</option>
+                                            <option value="USD">USD ($)</option>
+                                            <option value="EUR">EUR (€)</option>
+                                            <option value="GBP">GBP (£)</option>
+                                            <option value="AED">AED</option>
+                                            <option value="SGD">SGD</option>
+                                        </select>
+                                    </div>
+                                    <div className="col-span-1">
+                                        <label className="text-[10px] font-black text-secondary-400 uppercase tracking-widest block mb-1">Original Amt</label>
+                                        <input
+                                            type="number"
+                                            step="0.01"
+                                            className="w-full px-3 py-2 rounded-lg border border-amber-200 focus:ring-2 focus:ring-amber-500 outline-none text-sm"
+                                            value={formData.originalAmount}
+                                            onChange={(e) => setFormData({ ...formData, originalAmount: e.target.value })}
+                                            placeholder="1000"
+                                            title="Original Amount (Foreign Currency)"
+                                        />
+                                    </div>
+                                    <div className="col-span-1">
+                                        <label className="text-[10px] font-black text-secondary-400 uppercase tracking-widest block mb-1">INR Amount</label>
+                                        <input
+                                            type="number"
+                                            step="0.01"
+                                            className="w-full px-3 py-2 rounded-lg border border-amber-200 focus:ring-2 focus:ring-amber-500 outline-none text-sm"
+                                            value={formData.inrAmount}
+                                            onChange={(e) => setFormData({ ...formData, inrAmount: e.target.value })}
+                                            placeholder="85000"
+                                            title="Converted INR Amount"
+                                        />
+                                    </div>
+                                </div>
+
+                                {/* Category (for Finance compatibility) */}
+                                <div className="col-span-2">
                                     <label className="text-[10px] font-black text-secondary-400 uppercase tracking-widest block mb-1">Category</label>
                                     <select
                                         className="w-full px-4 py-3 rounded-xl border border-secondary-200 focus:ring-2 focus:ring-primary-500 transition-all outline-none"
                                         value={formData.category}
                                         onChange={(e) => setFormData({ ...formData, category: e.target.value })}
                                     >
-                                        <option value="SALARY">Salary</option>
-                                        <option value="RENT">Rent</option>
-                                        <option value="BILLS">Bills / Utilities</option>
                                         <option value="SALE">Product Sale</option>
                                         <option value="SUBSCRIPTION">Subscription</option>
-                                        <option value="MARKETING">Marketing</option>
                                         <option value="OTHER">Other</option>
                                     </select>
                                 </div>
+
+                                {/* Notes / Description */}
+                                <div className="col-span-2">
+                                    <label className="text-[10px] font-black text-secondary-400 uppercase tracking-widest block mb-1">Notes / Description</label>
+                                    <textarea
+                                        className="w-full px-4 py-3 rounded-xl border border-secondary-200 focus:ring-2 focus:ring-primary-500 transition-all outline-none"
+                                        rows={2}
+                                        value={formData.description}
+                                        onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                                        placeholder="Notes or description"
+                                        title="Description"
+                                    ></textarea>
+                                </div>
                             </div>
-                            <div>
-                                <label className="text-[10px] font-black text-secondary-400 uppercase tracking-widest block mb-1">Amount (INR)</label>
-                                <input
-                                    type="number"
-                                    required
-                                    className="w-full px-4 py-3 rounded-xl border border-secondary-200 focus:ring-2 focus:ring-primary-500 transition-all outline-none"
-                                    value={formData.amount}
-                                    placeholder="0.00"
-                                    onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
-                                />
-                            </div>
-                            <div>
-                                <label className="text-[10px] font-black text-secondary-400 uppercase tracking-widest block mb-1">Date</label>
-                                <input
-                                    type="date"
-                                    required
-                                    className="w-full px-4 py-3 rounded-xl border border-secondary-200 focus:ring-2 focus:ring-primary-500 transition-all outline-none"
-                                    value={formData.date}
-                                    onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                                />
-                            </div>
-                            <div>
-                                <label className="text-[10px] font-black text-secondary-400 uppercase tracking-widest block mb-1">Description</label>
-                                <textarea
-                                    className="w-full px-4 py-3 rounded-xl border border-secondary-200 focus:ring-2 focus:ring-primary-500 transition-all outline-none"
-                                    rows={2}
-                                    value={formData.description}
-                                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                                ></textarea>
-                            </div>
-                            <div className="flex gap-3 pt-4">
-                                <button
-                                    type="button"
-                                    onClick={() => setShowAddModal(false)}
-                                    className="flex-1 px-4 py-3 text-sm font-bold text-secondary-500 hover:bg-secondary-50 rounded-xl transition-all"
-                                >
-                                    Cancel
-                                </button>
-                                <button
-                                    type="submit"
-                                    className="flex-1 px-4 py-3 text-sm font-bold text-white bg-primary-600 hover:bg-primary-700 rounded-xl transition-all shadow-lg"
-                                >
-                                    {isEditing ? 'Save Changes' : 'Create Record'}
-                                </button>
+
+                            <div className="p-6 bg-secondary-50 border-t border-secondary-100 flex justify-end gap-3">
+                                <button type="button" onClick={() => setShowAddModal(false)} className="px-6 py-3 text-sm font-bold text-secondary-500 hover:bg-secondary-100 rounded-xl transition-all">Cancel</button>
+                                <button type="submit" className="px-8 py-3 text-sm font-bold text-white bg-primary-600 hover:bg-primary-700 rounded-xl transition-all shadow-lg">{isEditing ? 'Save Changes' : 'Save Transaction'}</button>
                             </div>
                         </form>
                     </div>

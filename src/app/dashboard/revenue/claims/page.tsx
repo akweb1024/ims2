@@ -117,10 +117,10 @@ export default function RevenueClaimsPage() {
                                     <div className="col-span-1">
                                         <div className="flex items-center gap-3">
                                             <div className="w-12 h-12 rounded-2xl bg-indigo-100 flex items-center justify-center text-indigo-600 font-black">
-                                                {claim.employee.user.name.charAt(0)}
+                                                {claim.employee?.user?.name?.charAt(0) || 'U'}
                                             </div>
                                             <div>
-                                                <h3 className="font-black text-secondary-900">{claim.employee.user.name}</h3>
+                                                <h3 className="font-black text-secondary-900">{claim.employee?.user?.name || 'Unknown User'}</h3>
                                                 <p className="text-xs text-secondary-500">Claimed {new Date(claim.createdAt).toLocaleDateString()}</p>
                                             </div>
                                         </div>

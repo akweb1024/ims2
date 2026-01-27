@@ -48,14 +48,26 @@ export async function GET(req: Request) {
 
         const EMAIL_CHARGE_PER_1000 = 1;
 
+        // Fetch expense configurations for all products
+        const expenseConfigs = await prisma.lMSExpenseConfig.findMany();
+        const configMap = new Map(
+            expenseConfigs.map(c => [`${c.type}-${c.referenceId}`, c])
+        );
+
         const processItem = (item: any, category: string) => {
-            const revenue = item.totalRevenue || 0; // Or item.price * enrollments if not pre-aggregated
+            const revenue = item.totalRevenue || 0;
             const emailCount = item.emailCount || 0;
             const emailCharge = Math.ceil(emailCount / 1000) * EMAIL_CHARGE_PER_1000;
             const mentorCut = item.mentorReward || 0;
 
-            // Platform Expense Logic: Max(40% of Revenue, 30000)
-            const platformExpense = Math.max(revenue * 0.40, 30000);
+            // Get expense config or use defaults
+            const configKey = `${category.toUpperCase()}-${item.id}`;
+            const config = configMap.get(configKey);
+            const minExpense = config?.minExpense || 30000;
+            const expensePercentage = config?.expensePercentage || 0.30;
+
+            // Platform Expense Logic: Max(configured min, configured % of Revenue)
+            const platformExpense = Math.max(revenue * expensePercentage, minExpense);
 
             const finalRevenue = revenue - emailCharge - mentorCut - platformExpense;
 
@@ -70,7 +82,10 @@ export async function GET(req: Request) {
                 mentorCut,
                 emailCharge,
                 platformExpense,
-                finalRevenue
+                finalRevenue,
+                // Expense config details
+                minExpense,
+                expensePercentage: expensePercentage * 100 // Convert to percentage
             };
         };
 

@@ -214,6 +214,7 @@ model User {
   mentoredCourses          Course[]                    @relation("CourseMentor")
   mentoredWorkshops        Workshop[]                  @relation("WorkshopMentor")
   mentoredInternships      Internship[]                @relation("InternshipMentor")
+  mentorPayments           LMSMentorPayment[]          @relation("MentorPayments")
   
   // LMS Student/Applicant Relations
   workshopEnrollments      WorkshopEnrollment[]
@@ -2269,10 +2270,56 @@ model LMSEmailLog {
   subject        String
   content        String?
   sentAt         DateTime    @default(now())
+  date           DateTime    @default(now()) // For daily grouping
   status         String      @default("SENT")
   userId         String?     // If sender is tracked
   
   user           User?       @relation(fields: [userId], references: [id])
+  
+  @@index([type, referenceId, date])
+}
+
+model LMSDailyRevenue {
+  id            String   @id @default(uuid())
+  date          DateTime @default(now())
+  type          String   // COURSE, WORKSHOP, INTERNSHIP
+  referenceId   String   // ID of the product
+  amount        Float    @default(0)
+  enrollments   Int      @default(0) // Number of enrollments that day
+  notes         String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  @@index([type, referenceId, date])
+}
+
+model LMSExpenseConfig {
+  id                String   @id @default(uuid())
+  type              String   // COURSE, WORKSHOP, INTERNSHIP
+  referenceId       String   // ID of the product
+  minExpense        Float    @default(30000) // Minimum expense
+  expensePercentage Float    @default(0.30)  // 30% of revenue
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  @@unique([type, referenceId])
+}
+
+model LMSMentorPayment {
+  id          String    @id @default(uuid())
+  mentorId    String
+  type        String    // COURSE, WORKSHOP, INTERNSHIP
+  referenceId String    // ID of the product
+  amount      Float
+  period      String    // e.g., "2026-01", "Q1-2026"
+  status      String    @default("PENDING") // PENDING, PAID, CANCELLED
+  paidAt      DateTime?
+  notes       String?
+  createdAt   DateTime  @default(now())
+  
+  mentor      User      @relation("MentorPayments", fields: [mentorId], references: [id])
+  
+  @@index([mentorId, status])
 }
 
 model CourseModule {
