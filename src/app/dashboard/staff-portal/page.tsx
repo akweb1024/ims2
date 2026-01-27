@@ -775,7 +775,8 @@ export default function StaffPortalPage() {
                                                 <select name="type" className="input" required title="Leave Category Selection">
                                                     <option value="SICK">Sick Leave</option>
                                                     <option value="CASUAL">Casual Leave</option>
-                                                    <option value="VACATION">Vacation / Earned Leave</option>
+                                                    <option value="EARNED">Earned Leave (EL)</option>
+                                                    <option value="UNPAID">Unpaid Leave (LWP)</option>
                                                 </select>
                                             </div>
                                             <div className="grid grid-cols-2 gap-4">
