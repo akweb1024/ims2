@@ -17,6 +17,7 @@ if (vapidKeys.publicKey && vapidKeys.privateKey) {
 }
 
 type NotificationChannel = 'IN_APP' | 'PUSH' | 'EMAIL' | 'WHATSAPP';
+type NotificationCategory = 'GENERAL' | 'ONBOARDING' | 'OFFER_LETTER' | 'EXIT' | 'HR_DOCS';
 
 interface NotificationPayload {
     userId: string;
@@ -25,6 +26,7 @@ interface NotificationPayload {
     type?: 'INFO' | 'SUCCESS' | 'WARNING' | 'DANGER' | 'CHAT' | 'TICKET';
     link?: string | null;
     channels?: NotificationChannel[];
+    category?: NotificationCategory;
     // Specific overrides
     emailHtml?: string;
     whatsappMessage?: string; // If different from main message
@@ -36,7 +38,8 @@ export async function createNotification({
     message,
     type = 'INFO',
     link = null,
-    channels = ['IN_APP', 'PUSH'] // Default channels
+    channels = ['IN_APP', 'PUSH'], // Default channels
+    category = 'GENERAL'
 }: NotificationPayload) {
     try {
         // 1. IN_APP (Always create db record if IN_APP is requested or default)
@@ -57,19 +60,41 @@ export async function createNotification({
         if (channels.includes('EMAIL') || channels.includes('WHATSAPP') || channels.includes('PUSH')) {
             const user = await prisma.user.findUnique({
                 where: { id: userId },
-                include: { employeeProfile: true } // For phone number if stored there
+                include: { employeeProfile: true }
             });
 
             if (user) {
+                // Determine Routing Logic
+                const isPersonalDocs = ['ONBOARDING', 'OFFER_LETTER', 'EXIT', 'HR_DOCS'].includes(category);
+
+                // Email Routing
+                // Priority: Specific Email based on category -> User's Login Email (Fallback)
+                let targetEmail = user.email; // Default to login email
+                if (user.employeeProfile) {
+                    if (isPersonalDocs && user.employeeProfile.personalEmail) {
+                        targetEmail = user.employeeProfile.personalEmail;
+                    } else if (!isPersonalDocs && user.employeeProfile.officialEmail) {
+                        targetEmail = user.employeeProfile.officialEmail;
+                    }
+                }
+
+                // Phone Routing
+                let targetPhone = user.employeeProfile?.phoneNumber || null; // Default to personal Phone
+                if (user.employeeProfile) {
+                    if (!isPersonalDocs && user.employeeProfile.officePhone) {
+                        targetPhone = user.employeeProfile.officePhone;
+                    }
+                }
+
                 // 2. PUSH
                 if (channels.includes('PUSH')) {
                     await sendPushNotification(userId, title, message, link);
                 }
 
                 // 3. EMAIL
-                if (channels.includes('EMAIL') && user.email) {
+                if (channels.includes('EMAIL') && targetEmail) {
                     await sendEmail({
-                        to: user.email,
+                        to: targetEmail,
                         subject: title,
                         text: message,
                         html: `
@@ -77,16 +102,23 @@ export async function createNotification({
                                 <h2 style="color: #2563eb;">${title}</h2>
                                 <p>${message}</p>
                                 ${link ? `<a href="${process.env.NEXT_PUBLIC_APP_URL}${link}" style="background: #2563eb; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px;">View Details</a>` : ''}
+                                <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;" />
+                                <p style="font-size: 12px; color: #666;">
+                                    Sent to: ${targetEmail} (${isPersonalDocs ? 'Personal' : 'Official'})
+                                </p>
                             </div>
                         `
                     });
                 }
 
                 // 4. WHATSAPP
-                const mobile = user.employeeProfile?.phoneNumber || null; // Assume user has phone linked
-                if (channels.includes('WHATSAPP') && mobile) {
+                if (channels.includes('WHATSAPP') && targetPhone) {
+                    // Only send personal WhatsApps for personal categories if strictly required, 
+                    // but usually WhatsApp is personal. The prompt implies "personal number wahats".
+                    // We use targetPhone which logic selects personal for personal docs.
+
                     await sendWhatsApp({
-                        to: mobile,
+                        to: targetPhone,
                         message: `*${title}*\n${message}\n${link ? `Link: ${process.env.NEXT_PUBLIC_APP_URL}${link}` : ''}`
                     });
                 }

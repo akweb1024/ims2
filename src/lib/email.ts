@@ -44,6 +44,8 @@ const getTransporter = () => {
     return transporterInstance;
 };
 
+import { prisma } from './prisma';
+
 export async function sendEmail({ to, subject, text, html }: EmailOptions) {
     const hasAws = !!(process.env.AWS_ACCESS_KEY_ID && process.env.AWS_SECRET_ACCESS_KEY);
     const hasSmtp = !!(process.env.EMAIL_USER && process.env.EMAIL_PASS);
@@ -55,6 +57,22 @@ export async function sendEmail({ to, subject, text, html }: EmailOptions) {
         console.log(`Subject: ${subject}`);
         console.log('Text content truncated...');
         console.log('-------------------------------------------');
+
+        // Log Mock Email
+        try {
+            await prisma.systemEmailLog.create({
+                data: {
+                    recipient: to,
+                    subject,
+                    status: 'SENT',
+                    messageId: 'MOCK-' + Date.now(),
+                    metadata: { type: 'MOCK' }
+                }
+            });
+        } catch (err) {
+            console.error('Failed to log mock email:', err);
+        }
+
         return { success: true, message: 'Mock email logged' };
     }
 
@@ -69,9 +87,37 @@ export async function sendEmail({ to, subject, text, html }: EmailOptions) {
         });
 
         console.log('📧 Email sent successfully:', info.messageId);
+
+        // Log Success
+        await prisma.systemEmailLog.create({
+            data: {
+                recipient: to,
+                subject,
+                status: 'SENT',
+                messageId: info.messageId,
+                metadata: { provider: hasAws ? 'SES' : 'SMTP' }
+            }
+        });
+
         return { success: true, messageId: info.messageId };
     } catch (error: any) {
         console.error('❌ Email sending failed:', error);
+
+        // Log Failure
+        try {
+            await prisma.systemEmailLog.create({
+                data: {
+                    recipient: to,
+                    subject,
+                    status: 'FAILED',
+                    error: error.message,
+                    metadata: { provider: hasAws ? 'SES' : 'SMTP' }
+                }
+            });
+        } catch (logErr) {
+            console.error('Failed to log email error:', logErr);
+        }
+
         return { success: false, error: error.message };
     }
 }

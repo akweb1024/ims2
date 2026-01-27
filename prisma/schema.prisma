@@ -3835,3 +3835,14 @@ model TaxRate {
   @@unique([companyId, code])
 }
 
+model SystemEmailLog {
+  id        String   @id @default(uuid())
+  recipient String
+  subject   String
+  status    String   // SENT, FAILED
+  messageId String?
+  error     String?
+  createdAt DateTime @default(now())
+  metadata  Json?
+}
+

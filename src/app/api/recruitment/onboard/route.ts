@@ -121,6 +121,7 @@ export const POST = authorizedRoute(
                     message: `Your account has been created. \nEmail: ${application.applicantEmail}\nPassword: ${rawPassword}\nPlease login and complete your onboarding tasks.`,
                     type: 'INFO',
                     channels: ['EMAIL', 'IN_APP'], // Force Email
+                    category: 'ONBOARDING',
                     link: '/dashboard/staff-portal'
                 });
 
