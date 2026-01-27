@@ -11,18 +11,24 @@ export default function NewSubscriptionPage() {
     const [userRole, setUserRole] = useState('CUSTOMER');
 
     // Data for Selection
+    // Data for Selection
     const [customers, setCustomers] = useState<any[]>([]);
     const [journals, setJournals] = useState<any[]>([]);
+    const [agencies, setAgencies] = useState<any[]>([]);
 
     const [searchTerm, setSearchTerm] = useState('');
     const [customerSearch, setCustomerSearch] = useState('');
 
-    // Form State
+    // Agency State
+    const [selectedAgency, setSelectedAgency] = useState<any>(null);
+    const [discountDisplay, setDiscountDisplay] = useState(0);
+
     const [formData, setFormData] = useState({
         customerProfileId: '',
         startDate: new Date().toISOString().split('T')[0],
         endDate: new Date(new Date().getFullYear() + 1, new Date().getMonth(), new Date().getDate()).toISOString().split('T')[0],
         salesChannel: 'DIRECT',
+        agencyId: '',
         items: [] as any[], // { journalId, planId, quantity, journalName, planName, price }
         autoRenew: false,
         currency: 'INR'
@@ -50,11 +56,12 @@ export default function NewSubscriptionPage() {
             // Only fetch customers if not a customer role
             const fetchCustomers = role !== 'CUSTOMER';
 
-            const [custRes, jourRes] = await Promise.all([
+            const [custRes, jourRes, agencyRes] = await Promise.all([
                 fetchCustomers
                     ? fetch('/api/customers?limit=100', { headers: { 'Authorization': `Bearer ${token}` } })
                     : Promise.resolve(null),
-                fetch('/api/journals', { headers: { 'Authorization': `Bearer ${token}` } })
+                fetch('/api/journals', { headers: { 'Authorization': `Bearer ${token}` } }),
+                fetch('/api/agencies?limit=100', { headers: { 'Authorization': `Bearer ${token}` } })
             ]);
 
             if (custRes && custRes.ok) {
@@ -70,10 +77,31 @@ export default function NewSubscriptionPage() {
                 const data = await jourRes.json();
                 setJournals(data);
             }
+            if (agencyRes.ok) {
+                const data = await agencyRes.json();
+                setAgencies(data);
+            }
         };
 
         fetchData();
     }, []);
+
+    const handleAgencyChange = async (agencyId: string) => {
+        const agency = agencies.find(a => a.id === agencyId);
+        setSelectedAgency(agency);
+
+        let discount = 0;
+        if (agency && agency.agencyDetails?.discountRate) {
+            discount = agency.agencyDetails.discountRate;
+        }
+
+        setDiscountDisplay(discount);
+        setFormData(prev => ({
+            ...prev,
+            agencyId,
+            salesChannel: 'AGENCY'
+        }));
+    };
 
     const addItem = (journal: any, plan: any) => {
         if (formData.items.some(i => i.journalId === journal.id)) return;
@@ -130,7 +158,10 @@ export default function NewSubscriptionPage() {
         }
     };
 
-    const totalAmount = formData.items.reduce((acc, item) => acc + (item.price * item.quantity), 0);
+    const subtotalAmount = formData.items.reduce((acc, item) => acc + (item.price * item.quantity), 0);
+    const discountAmount = selectedAgency ? (subtotalAmount * (discountDisplay / 100)) : 0;
+    const totalAmount = subtotalAmount - discountAmount;
+
     const currencySymbol = formData.currency === 'INR' ? '₹' : '$';
 
     return (
@@ -191,9 +222,10 @@ export default function NewSubscriptionPage() {
                                 .filter(c => {
                                     const term = customerSearch.toLowerCase();
                                     return (
-                                        c.name.toLowerCase().includes(term) ||
-                                        (c.organizationName && c.organizationName.toLowerCase().includes(term)) ||
-                                        c.primaryEmail.toLowerCase().includes(term)
+                                        c.customerType !== 'AGENCY' && (
+                                            c.name.toLowerCase().includes(term) ||
+                                            (c.organizationName && c.organizationName.toLowerCase().includes(term)) ||
+                                            c.primaryEmail.toLowerCase().includes(term))
                                     );
                                 })
                                 .map((c) => (
@@ -222,18 +254,11 @@ export default function NewSubscriptionPage() {
                                         </div>
                                     </button>
                                 ))}
-                            {customers.filter(c => {
-                                const term = customerSearch.toLowerCase();
-                                return (
-                                    c.name.toLowerCase().includes(term) ||
-                                    (c.organizationName && c.organizationName.toLowerCase().includes(term)) ||
-                                    c.primaryEmail.toLowerCase().includes(term)
-                                );
-                            }).length === 0 && (
-                                    <div className="text-center py-10 text-secondary-400 italic">
-                                        No customers found matching &quot;{customerSearch}&quot;
-                                    </div>
-                                )}
+                            {customers.filter(c => c.customerType !== 'AGENCY').length === 0 && (
+                                <div className="text-center py-10 text-secondary-400 italic">
+                                    No customers found. (Agencies excluded from subscription target)
+                                </div>
+                            )}
                         </div>
                     </div>
                 )}
@@ -335,7 +360,7 @@ export default function NewSubscriptionPage() {
                                     ))}
                                     <div className="flex justify-between items-center border-t border-secondary-200 pt-4 mt-4">
                                         <div className="text-lg font-bold text-secondary-900">Total</div>
-                                        <div className="text-2xl font-bold text-primary-600">{currencySymbol}{totalAmount.toLocaleString()}</div>
+                                        <div className="text-2xl font-bold text-primary-600">{currencySymbol}{subtotalAmount.toLocaleString()}</div>
                                     </div>
                                     <button
                                         onClick={() => setStep(3)}
@@ -378,12 +403,43 @@ export default function NewSubscriptionPage() {
                                 <select
                                     className="input"
                                     value={formData.salesChannel}
-                                    onChange={(e) => setFormData({ ...formData, salesChannel: e.target.value })}
+                                    onChange={(e) => {
+                                        setFormData({ ...formData, salesChannel: e.target.value });
+                                        if (e.target.value !== 'AGENCY') {
+                                            setSelectedAgency(null);
+                                            setDiscountDisplay(0);
+                                        }
+                                    }}
                                 >
                                     <option value="DIRECT">Direct Sales</option>
                                     <option value="AGENCY">Agency Partner</option>
                                 </select>
                             </div>
+
+                            {formData.salesChannel === 'AGENCY' && (
+                                <div>
+                                    <label className="label">Select Agency Partner</label>
+                                    <select
+                                        className="input border-primary-300 ring-2 ring-primary-50 bg-primary-50 text-primary-900"
+                                        value={formData.agencyId}
+                                        onChange={(e) => handleAgencyChange(e.target.value)}
+                                        required
+                                    >
+                                        <option value="">-- Choose Agency --</option>
+                                        {agencies.map(a => (
+                                            <option key={a.id} value={a.id}>
+                                                {a.name} ({a.agencyDetails?.discountRate}% Off)
+                                            </option>
+                                        ))}
+                                    </select>
+                                    {selectedAgency && (
+                                        <p className="text-xs text-primary-600 font-bold mt-1">
+                                            Applying {selectedAgency.agencyDetails?.discountRate}% Discount
+                                        </p>
+                                    )}
+                                </div>
+                            )}
+
                             <div className="flex items-center space-x-3 pt-8">
                                 <input
                                     type="checkbox"
@@ -408,9 +464,19 @@ export default function NewSubscriptionPage() {
                                 <span className="text-primary-700">Items</span>
                                 <span className="font-bold text-primary-900">{formData.items.length} Journals</span>
                             </div>
-                            <div className="flex justify-between text-sm">
-                                <span className="text-primary-700">Initial Invoice</span>
-                                <span className="font-bold text-primary-900">{currencySymbol}{totalAmount.toLocaleString()}</span>
+                            <div className="flex justify-between text-sm border-t border-primary-200 pt-2">
+                                <span className="text-primary-700">Subtotal</span>
+                                <span className="font-bold text-primary-900 opacity-70">{currencySymbol}{subtotalAmount.toLocaleString()}</span>
+                            </div>
+                            {selectedAgency && (
+                                <div className="flex justify-between text-sm">
+                                    <span className="text-success-600 font-bold">Agency Discount ({discountDisplay}%)</span>
+                                    <span className="font-bold text-success-600">-{currencySymbol}{discountAmount.toLocaleString()}</span>
+                                </div>
+                            )}
+                            <div className="flex justify-between text-lg pt-2 border-t border-primary-300">
+                                <span className="font-bold text-primary-900">Total Payable</span>
+                                <span className="font-bold text-primary-700 text-xl">{currencySymbol}{totalAmount.toLocaleString()}</span>
                             </div>
                         </div>
 
@@ -423,7 +489,7 @@ export default function NewSubscriptionPage() {
                             </button>
                             <button
                                 onClick={handleSubmit}
-                                disabled={loading}
+                                disabled={loading || (formData.salesChannel === 'AGENCY' && !formData.agencyId)}
                                 className="btn btn-primary flex-1"
                             >
                                 {loading ? 'Creating...' : 'Confirm & Create Subscription'}

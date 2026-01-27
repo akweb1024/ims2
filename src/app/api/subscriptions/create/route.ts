@@ -15,10 +15,12 @@ export async function POST(request: NextRequest) {
 
         const body = await request.json();
         const {
+
             customerProfileId,
             startDate,
             endDate,
             salesChannel,
+            agencyId,
             items, // list of { journalId, planId, quantity }
             autoRenew,
             currency = 'INR'
@@ -27,6 +29,26 @@ export async function POST(request: NextRequest) {
         // 2. Validation
         if (!customerProfileId || !items || items.length === 0) {
             return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+        }
+
+        // Validate Agency if Sales Channel is AGENCY
+        let appliedDiscountRate = 0;
+        if (salesChannel === 'AGENCY') {
+            if (!agencyId) {
+                return NextResponse.json({ error: 'Agency is required for Agency Sales Channel' }, { status: 400 });
+            }
+            const agency = await prisma.customerProfile.findUnique({
+                where: { id: agencyId },
+                include: { agencyDetails: true }
+            });
+
+            if (!agency || agency.customerType !== 'AGENCY') {
+                return NextResponse.json({ error: 'Invalid Agency' }, { status: 400 });
+            }
+
+            if (agency.agencyDetails?.discountRate) {
+                appliedDiscountRate = agency.agencyDetails.discountRate;
+            }
         }
 
         // 3. Calculate Totals
@@ -57,32 +79,43 @@ export async function POST(request: NextRequest) {
             });
         }
 
+        // Apply Discount
+        // Discount is applied to the total amount in selected currency
+        const discountAmount = selectedCurrencyTotal * (appliedDiscountRate / 100);
+        const finalTotal = selectedCurrencyTotal - discountAmount;
+
         // 4. Create Subscription and Invoice in a transaction
         const result = await prisma.$transaction(async (tx: any) => {
             try {
                 // Create Subscription
                 console.log('Creating subscription...');
-                const subscription = await tx.subscription.create({
-                    data: {
-                        customerProfileId,
-                        companyId: (decoded as any).companyId,
-                        startDate: new Date(startDate),
-                        endDate: new Date(endDate),
-                        salesChannel,
-                        autoRenew: autoRenew || false,
-                        status: 'PENDING_PAYMENT',
-                        currency,
-                        subtotal: selectedCurrencyTotal,
-                        total: selectedCurrencyTotal,
-                        subtotalInINR: totalInINR,
-                        subtotalInUSD: totalInUSD,
-                        totalInINR: totalInINR,
-                        totalInUSD: totalInUSD,
-                        salesExecutiveId: decoded.id,
-                        items: {
-                            create: subscriptionItems
-                        }
+                const subscriptionData: any = {
+                    customerProfileId,
+                    companyId: (decoded as any).companyId,
+                    startDate: new Date(startDate),
+                    endDate: new Date(endDate),
+                    salesChannel,
+                    agencyId: salesChannel === 'AGENCY' ? agencyId : null,
+                    autoRenew: autoRenew || false,
+                    status: 'PENDING_PAYMENT',
+                    currency,
+                    subtotal: selectedCurrencyTotal,
+                    discount: discountAmount,
+                    total: finalTotal, // Store discounted total
+                    subtotalInINR: totalInINR, // Base amounts stored without discount for reporting? OR should we apply discount? 
+                    // Usually reporting needs both. Let's keep subtotal as gross.
+                    subtotalInUSD: totalInUSD,
+                    // For totalInINR/USD, we should probably apply distinct approximate discount
+                    totalInINR: totalInINR * (1 - appliedDiscountRate / 100),
+                    totalInUSD: totalInUSD * (1 - appliedDiscountRate / 100),
+                    salesExecutiveId: decoded.id,
+                    items: {
+                        create: subscriptionItems
                     }
+                };
+
+                const subscription = await tx.subscription.create({
+                    data: subscriptionData
                 });
 
                 // Create Invoice
@@ -94,9 +127,9 @@ export async function POST(request: NextRequest) {
                         companyId: (decoded as any).companyId,
                         invoiceNumber,
                         currency,
-                        amount: selectedCurrencyTotal,
+                        amount: finalTotal, // Invoice amount is the final discounted total
                         tax: 0,
-                        total: selectedCurrencyTotal,
+                        total: finalTotal,
                         status: 'UNPAID',
                         dueDate: new Date(new Date().getTime() + 15 * 24 * 60 * 60 * 1000)
                     }
@@ -110,7 +143,7 @@ export async function POST(request: NextRequest) {
                         action: 'create',
                         entity: 'subscription',
                         entityId: subscription.id,
-                        changes: JSON.stringify({ total: selectedCurrencyTotal, totalInINR, totalInUSD, startDate, endDate, itemsCount: items.length })
+                        changes: JSON.stringify({ total: finalTotal, discount: discountAmount, agencyId, itemsCount: items.length })
                     }
                 });
 

@@ -31,7 +31,16 @@ export async function GET(
                 institutionDetails: true,
                 agencyDetails: {
                     include: {
-                        performance: true
+                        performance: true,
+                        subscriptions: {
+                            include: {
+                                items: {
+                                    include: { journal: true }
+                                },
+                                invoices: true
+                            },
+                            orderBy: { createdAt: 'desc' }
+                        }
                     }
                 },
                 assignedTo: {

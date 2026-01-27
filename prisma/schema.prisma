@@ -339,6 +339,7 @@ model AgencyDetails {
   region            String?
   primaryContact    String?
   commissionTerms   String?
+  discountRate      Float              @default(0)
   
   // Profile Extensions
   yearsOfExperience Int?
