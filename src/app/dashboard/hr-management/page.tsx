@@ -35,7 +35,7 @@ import GoalManager from '@/components/dashboard/hr/GoalManager';
 import RewardManager from '@/components/dashboard/hr/RewardManager';
 import PotentialCalculator from '@/components/dashboard/hr/PotentialCalculator';
 import WorkReportValidator from '@/components/dashboard/hr/WorkReportValidator';
-import { Briefcase, Info, Target, TrendingUp, Award, GraduationCap, Edit, Trash2 } from 'lucide-react';
+import { Briefcase, Info, Target, TrendingUp, Award, GraduationCap, Edit, Trash2, ChevronDown } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import {
     useEmployees, useHolidays, useDesignations, useJobs, useApplications,
@@ -1025,26 +1025,59 @@ const HRManagementContent = () => {
                                             onChange={(e) => setLedgerSearch(e.target.value)}
                                         />
                                     </div>
-                                    <select
-                                        className="input py-2 px-4 text-xs font-bold border-none bg-transparent focus:ring-0"
-                                        value={ledgerFilter.month}
-                                        onChange={e => setLedgerFilter({ ...ledgerFilter, month: parseInt(e.target.value) })}
-                                        title="Filter Ledger by Month"
+                                    <button
+                                        onClick={() => {
+                                            const newMonth = ledgerFilter.month - 1;
+                                            if (newMonth < 1) {
+                                                setLedgerFilter({ month: 12, year: ledgerFilter.year - 1 });
+                                            } else {
+                                                setLedgerFilter({ ...ledgerFilter, month: newMonth });
+                                            }
+                                        }}
+                                        className="p-2 hover:bg-secondary-50 text-secondary-500 rounded-lg transition-colors"
+                                        title="Previous Month"
                                     >
-                                        {Array.from({ length: 12 }, (_, i) => (
-                                            <option key={i + 1} value={i + 1}>{new Date(2024, i).toLocaleString('default', { month: 'long' })}</option>
-                                        ))}
-                                    </select>
-                                    <select
-                                        className="input py-2 px-4 text-xs font-bold border-none bg-transparent focus:ring-0"
-                                        value={ledgerFilter.year}
-                                        onChange={e => setLedgerFilter({ ...ledgerFilter, year: parseInt(e.target.value) })}
-                                        title="Filter Ledger by Year"
+                                        <ChevronDown size={14} className="rotate-90" />
+                                    </button>
+
+                                    <div className="flex items-center bg-white border border-secondary-200 rounded-lg px-2">
+                                        <select
+                                            className="input py-2 px-2 text-xs font-bold border-none bg-transparent focus:ring-0 cursor-pointer"
+                                            value={ledgerFilter.month}
+                                            onChange={e => setLedgerFilter({ ...ledgerFilter, month: parseInt(e.target.value) })}
+                                            title="Filter Ledger by Month"
+                                        >
+                                            {Array.from({ length: 12 }, (_, i) => (
+                                                <option key={i + 1} value={i + 1}>{new Date(2024, i).toLocaleString('default', { month: 'long' })}</option>
+                                            ))}
+                                        </select>
+                                        <div className="h-4 w-px bg-secondary-200 mx-2"></div>
+                                        <select
+                                            className="input py-2 px-2 text-xs font-bold border-none bg-transparent focus:ring-0 cursor-pointer"
+                                            value={ledgerFilter.year}
+                                            onChange={e => setLedgerFilter({ ...ledgerFilter, year: parseInt(e.target.value) })}
+                                            title="Filter Ledger by Year"
+                                        >
+                                            {[2024, 2025, 2026].map(y => (
+                                                <option key={y} value={y}>{y}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+
+                                    <button
+                                        onClick={() => {
+                                            const newMonth = ledgerFilter.month + 1;
+                                            if (newMonth > 12) {
+                                                setLedgerFilter({ month: 1, year: ledgerFilter.year + 1 });
+                                            } else {
+                                                setLedgerFilter({ ...ledgerFilter, month: newMonth });
+                                            }
+                                        }}
+                                        className="p-2 hover:bg-secondary-50 text-secondary-500 rounded-lg transition-colors"
+                                        title="Next Month"
                                     >
-                                        {[2024, 2025, 2026].map(y => (
-                                            <option key={y} value={y}>{y}</option>
-                                        ))}
-                                    </select>
+                                        <ChevronDown size={14} className="-rotate-90" />
+                                    </button>
                                 </div>
 
                                 <div className="flex gap-2">

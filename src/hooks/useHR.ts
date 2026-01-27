@@ -79,10 +79,24 @@ export const useApplications = () => {
     });
 };
 
-export const useLeaveRequests = () => {
+export const useLeaveRequests = (employeeId?: string, all: boolean = true) => {
+    const params = new URLSearchParams();
+    if (employeeId) params.append('employeeId', employeeId);
+    if (all) params.append('all', 'true');
     return useQuery<any[]>({
-        queryKey: ['leave-requests'],
-        queryFn: () => fetchJson('/api/hr/leave-requests'),
+        queryKey: ['leave-requests', { employeeId, all }],
+        queryFn: () => fetchJson(`/api/hr/leave-requests?${params.toString()}`),
+    });
+};
+
+export const useUpdateLeaveRequest = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: (data: { leaveId: string, status: string }) => fetchJson('/api/hr/leave-requests', 'PATCH', data),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['leave-requests'] });
+            queryClient.invalidateQueries({ queryKey: ['leave-ledger'] });
+        },
     });
 };
 
@@ -93,10 +107,14 @@ export const useSalarySlips = () => {
     });
 };
 
-export const useAttendance = (all: boolean = true) => {
+export const useAttendance = (month?: number, year?: number, all: boolean = true) => {
+    const params = new URLSearchParams();
+    if (month) params.append('month', month.toString());
+    if (year) params.append('year', year.toString());
+    if (all) params.append('all', 'true');
     return useQuery<any[]>({
-        queryKey: ['attendance', { all }],
-        queryFn: () => fetchJson(`/api/hr/attendance?all=${all}`),
+        queryKey: ['attendance', { month, year, all }],
+        queryFn: () => fetchJson(`/api/hr/attendance?${params.toString()}`),
     });
 };
 
@@ -142,6 +160,20 @@ export const useHRInsights = (type: string = 'hr', enabled: boolean = true) => {
         queryKey: ['hr-insights', type],
         queryFn: () => fetchJson(`/api/ai-insights?type=${type}`),
         enabled,
+    });
+};
+
+export const useIncrements = (employeeId?: string) => {
+    return useQuery<any[]>({
+        queryKey: ['increments', employeeId],
+        queryFn: () => fetchJson(`/api/hr/increments${employeeId ? `?employeeId=${employeeId}` : ''}`),
+    });
+};
+
+export const usePerformanceMetrics = (month?: number, year?: number) => {
+    return useQuery<any>({
+        queryKey: ['performance-metrics', { month, year }],
+        queryFn: () => fetchJson(`/api/hr/performance/metrics?month=${month}&year=${year}`),
     });
 };
 

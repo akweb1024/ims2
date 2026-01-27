@@ -51,18 +51,14 @@ export const GET = authorizedRoute(
                 where.employeeProfileId = employeeId;
             }
 
-            // Managers can only see their team's increments
-            if (user.role === 'MANAGER') {
-                // Get employees under this manager
-                const managedUsers = await prisma.user.findMany({
-                    where: { managerId: user.id },
-                    select: { id: true }
-                });
-
-                const managedUserIds = managedUsers.map(u => u.id);
+            // Managers can only see their team's increments (including recursive downline)
+            if (['MANAGER', 'TEAM_LEADER'].includes(user.role)) {
+                const { getDownlineUserIds } = await import('@/lib/hierarchy');
+                const subIds = await getDownlineUserIds(user.id, user.companyId || undefined);
+                const allowedUserIds = [...subIds, user.id];
 
                 const managedProfiles = await prisma.employeeProfile.findMany({
-                    where: { userId: { in: managedUserIds } },
+                    where: { userId: { in: allowedUserIds } },
                     select: { id: true }
                 });
 

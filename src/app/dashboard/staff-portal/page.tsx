@@ -15,7 +15,19 @@ import EmployeeDocuments from '@/components/dashboard/staff/EmployeeDocuments';
 import EmployeeKPIView from '@/components/dashboard/staff/EmployeeKPIView';
 import AttendanceCalendar from '@/components/dashboard/staff/AttendanceCalendar';
 import DailyTaskTracker from '@/components/dashboard/DailyTaskTracker';
-import { Lock, AlertOctagon, FileText, Calendar as CalendarIcon, Wallet, TrendingUp } from 'lucide-react';
+import { Lock, AlertOctagon, FileText, Calendar as CalendarIcon, Wallet, TrendingUp, Users, PieChart, Clipboard, Zap, Briefcase } from 'lucide-react';
+
+// Manager Center Views
+import TeamMembersView from '@/components/dashboard/manager/TeamMembersView';
+import TeamAttendanceView from '@/components/dashboard/manager/TeamAttendanceView';
+import TeamLeaveRequestsView from '@/components/dashboard/manager/TeamLeaveRequestsView';
+import TeamLeaveBalancesView from '@/components/dashboard/manager/TeamLeaveBalancesView';
+import TeamSalaryView from '@/components/dashboard/manager/TeamSalaryView';
+import TeamAnalyticsView from '@/components/dashboard/manager/TeamAnalyticsView';
+import TeamGoalTrackingView from '@/components/dashboard/manager/TeamGoalTrackingView';
+import TeamTaskMasterView from '@/components/dashboard/manager/TeamTaskMasterView';
+import TeamPointsRewardsView from '@/components/dashboard/manager/TeamPointsRewardsView';
+import TeamWorkReportsView from '@/components/dashboard/manager/TeamWorkReportsView';
 
 export default function StaffPortalPage() {
     const [user, setUser] = useState<any>(null);
@@ -33,6 +45,12 @@ export default function StaffPortalPage() {
     const [checkingIn, setCheckingIn] = useState(false);
     const [submittingReport, setSubmittingReport] = useState(false);
     const [workFromMode, setWorkFromMode] = useState<'OFFICE' | 'REMOTE'>('OFFICE');
+    const [managerFilters, setManagerFilters] = useState({
+        month: new Date().getMonth() + 1,
+        year: new Date().getFullYear(),
+        status: 'PENDING'
+    });
+    const [activeSubTab, setActiveSubTab] = useState('members');
 
     useEffect(() => {
         const userData = localStorage.getItem('user');
@@ -154,7 +172,7 @@ export default function StaffPortalPage() {
 
 
 
-    const tabs = [
+    const baseTabs = [
         { id: 'overview', name: 'Overview', icon: '🏠' },
         { id: 'profile', name: 'My Profile', icon: '👤' },
         { id: 'attendance', name: 'Attendance', icon: '📅' },
@@ -168,6 +186,22 @@ export default function StaffPortalPage() {
         { id: 'it-services', name: 'IT Services', icon: '🛠️' },
         { id: 'id-card', name: 'ID Card', icon: '🪪' },
     ];
+
+    const managerTabs = ['MANAGER', 'TEAM_LEADER', 'ADMIN', 'SUPER_ADMIN'].includes(user?.role) ? [
+        { id: 'separator', name: '', icon: '', isSeparator: true },
+        { id: 'team-ops', name: 'Team Ops', icon: '🏢' },
+        { id: 'team-payroll', name: 'Team Payroll', icon: '💰' },
+        { id: 'team-perf', name: 'Team Performance', icon: '🚀' },
+    ] : [];
+
+    const tabs: any[] = [...baseTabs, ...managerTabs];
+
+    const handleTabChange = (tabId: string) => {
+        setActiveTab(tabId);
+        if (tabId === 'team-ops') setActiveSubTab('members');
+        else if (tabId === 'team-payroll') setActiveSubTab('salary');
+        else if (tabId === 'team-perf') setActiveSubTab('analytics');
+    };
 
     return (
         <DashboardLayout userRole={user?.role}>
@@ -231,6 +265,8 @@ export default function StaffPortalPage() {
                 {/* Tabs */}
                 <div className="flex flex-wrap gap-2 mb-8 bg-white p-2 rounded-xl shadow-sm border border-secondary-100">
                     {tabs.map((tab) => {
+                        if (tab.isSeparator) return <div key="sep" className="w-px h-8 bg-secondary-100 mx-2 self-center"></div>;
+
                         // Compliance Lock Logic
                         const isLocked = !compliance.isCompliant &&
                             tab.id !== 'documents' &&
@@ -241,14 +277,16 @@ export default function StaffPortalPage() {
                         return (
                             <button
                                 key={tab.id}
-                                onClick={() => !isLocked && setActiveTab(tab.id)}
+                                onClick={() => !isLocked && handleTabChange(tab.id)}
                                 className={`
                                 flex items-center gap-2 px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200
                                 ${activeTab === tab.id
                                         ? 'bg-primary-600 text-white shadow-md transform scale-105'
                                         : isLocked
                                             ? 'text-gray-400 cursor-not-allowed bg-gray-50'
-                                            : 'text-secondary-600 hover:bg-secondary-50 hover:text-primary-600'
+                                            : tab.id.startsWith('team-')
+                                                ? 'text-indigo-600 hover:bg-indigo-50 font-bold'
+                                                : 'text-secondary-600 hover:bg-secondary-50 hover:text-primary-600'
                                     }
                             `}
                             >

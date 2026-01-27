@@ -8,12 +8,35 @@ export const GET = authorizedRoute(
     async (req: NextRequest, user) => {
         try {
             const { searchParams } = new URL(req.url);
-            const companyId = user.companyId // Context
-
-            // If we want specific employee
             const employeeId = searchParams.get('employeeId');
+            const where: any = {};
+
+            if (user.companyId) {
+                where.employee = { user: { companyId: user.companyId } };
+            }
+
+            if (['MANAGER', 'TEAM_LEADER'].includes(user.role)) {
+                const { getDownlineUserIds } = await import('@/lib/hierarchy');
+                const subIds = await getDownlineUserIds(user.id, user.companyId || undefined);
+                const allowedIds = [...subIds, user.id];
+                where.employee = {
+                    ...where.employee,
+                    userId: { in: allowedIds }
+                };
+            }
 
             if (employeeId) {
+                // If it's a manager, ensure the employee is in their downline
+                if (['MANAGER', 'TEAM_LEADER'].includes(user.role)) {
+                    const { getDownlineUserIds } = await import('@/lib/hierarchy');
+                    const subIds = await getDownlineUserIds(user.id, user.companyId || undefined);
+                    const allowedIds = [...subIds, user.id];
+                    const targetEmp = await prisma.employeeProfile.findUnique({ where: { id: employeeId }, select: { userId: true } });
+                    if (!targetEmp || !allowedIds.includes(targetEmp.userId)) {
+                        return createErrorResponse('Forbidden: Not in your team', 403);
+                    }
+                }
+                where.employeeId = employeeId;
                 const structure = await prisma.salaryStructure.findUnique({
                     where: { employeeId }
                 });
@@ -21,13 +44,7 @@ export const GET = authorizedRoute(
             }
 
             const structures = await prisma.salaryStructure.findMany({
-                where: {
-                    employee: {
-                        user: {
-                            companyId: companyId || undefined
-                        }
-                    }
-                },
+                where,
                 include: {
                     employee: {
                         select: {

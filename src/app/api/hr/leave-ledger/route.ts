@@ -132,33 +132,50 @@ export const POST = authorizedRoute(
                     }
                 });
 
-                // CASCADE: Update next month's opening balance if it exists
-                const nextMonth = month === 12 ? 1 : month + 1;
-                const nextYear = month === 12 ? year + 1 : year;
+                // RECURSIVE CARRY FORWARD: Update all future months for this employee in the same year
+                // This ensures if you update Jan, it flows to Feb -> Mar -> Apr...
+                const updateFutureMonths = async (currentMonth: number, currentYear: number, currentClosingBalance: number) => {
+                    // Stop if we go beyond December
+                    if (currentMonth >= 12) return;
 
-                const nextLedger = await tx.leaveLedger.findUnique({
-                    where: {
-                        employeeId_month_year: {
-                            employeeId,
-                            month: nextMonth,
-                            year: nextYear
-                        }
-                    }
-                });
+                    const nextMonth = currentMonth + 1;
+                    const nextYear = currentYear; // Keeping it simple to current year for now to avoid infinite complexity
 
-                if (nextLedger) {
-                    // Determine new closing for next month too
-                    const nextActual = safeClosing + (nextLedger.autoCredit || 1.5) - nextLedger.takenLeaves - nextLedger.lateDeductions - nextLedger.shortLeaveDeductions;
-                    const nextClosing = Math.max(0, nextActual);
-
-                    await tx.leaveLedger.update({
-                        where: { id: nextLedger.id },
-                        data: {
-                            openingBalance: safeClosing,
-                            closingBalance: nextClosing
+                    const nextLedger = await tx.leaveLedger.findUnique({
+                        where: {
+                            employeeId_month_year: {
+                                employeeId,
+                                month: nextMonth,
+                                year: nextYear
+                            }
                         }
                     });
-                }
+
+                    if (nextLedger) {
+                        // Calculate new closing for next month
+                        // New Opening = Previous Closing
+                        const newOpening = currentClosingBalance;
+
+                        // New Closing = New Opening + AutoCredit - Taken - Deductions
+                        const nextActual = newOpening + (nextLedger.autoCredit || 1.5) - nextLedger.takenLeaves - nextLedger.lateDeductions - nextLedger.shortLeaveDeductions;
+                        const nextClosing = Math.max(0, nextActual);
+
+                        // Update the next ledger
+                        await tx.leaveLedger.update({
+                            where: { id: nextLedger.id },
+                            data: {
+                                openingBalance: newOpening,
+                                closingBalance: nextClosing
+                            }
+                        });
+
+                        // Recursively update the month after that
+                        await updateFutureMonths(nextMonth, nextYear, nextClosing);
+                    }
+                };
+
+                // Trigger recursive update starting from next month
+                await updateFutureMonths(month, year, safeClosing);
 
                 // Sync with EmployeeProfile
                 await tx.employeeProfile.update({
