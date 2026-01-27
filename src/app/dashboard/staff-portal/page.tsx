@@ -1174,6 +1174,54 @@ export default function StaffPortalPage() {
                             </div>
                         </div>
                     )}
+                    {activeTab === 'team-ops' && (
+                        <div className="p-8 space-y-8">
+                            <div className="flex flex-wrap gap-4 mb-8 bg-secondary-50 p-2 rounded-2xl w-fit">
+                                <button onClick={() => setActiveSubTab('members')} className={`px-6 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeSubTab === 'members' ? 'bg-white shadow-sm text-primary-600' : 'text-secondary-400 hover:text-secondary-600'}`}>Members</button>
+                                <button onClick={() => setActiveSubTab('attendance')} className={`px-6 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeSubTab === 'attendance' ? 'bg-white shadow-sm text-primary-600' : 'text-secondary-400 hover:text-secondary-600'}`}>Attendance</button>
+                                <button onClick={() => setActiveSubTab('leaves')} className={`px-6 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeSubTab === 'leaves' ? 'bg-white shadow-sm text-primary-600' : 'text-secondary-400 hover:text-secondary-600'}`}>Leaves</button>
+                                <button onClick={() => setActiveSubTab('balances')} className={`px-6 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeSubTab === 'balances' ? 'bg-white shadow-sm text-primary-600' : 'text-secondary-400 hover:text-secondary-600'}`}>Balances</button>
+                            </div>
+                            <div className="animate-in fade-in duration-500">
+                                {activeSubTab === 'members' && <TeamMembersView />}
+                                {activeSubTab === 'attendance' && <TeamAttendanceView filters={managerFilters} setFilters={setManagerFilters} />}
+                                {activeSubTab === 'leaves' && <TeamLeaveRequestsView />}
+                                {activeSubTab === 'balances' && <TeamLeaveBalancesView filters={managerFilters} setFilters={setManagerFilters} />}
+                            </div>
+                        </div>
+                    )}
+
+                    {activeTab === 'team-payroll' && (
+                        <div className="p-8 space-y-8">
+                            <div className="flex flex-wrap gap-4 mb-8 bg-secondary-50 p-2 rounded-2xl w-fit">
+                                <button onClick={() => setActiveSubTab('salary')} className={`px-6 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeSubTab === 'salary' ? 'bg-white shadow-sm text-primary-600' : 'text-secondary-400 hover:text-secondary-600'}`}>Structures</button>
+                                <button onClick={() => setActiveSubTab('advances')} className={`px-6 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeSubTab === 'advances' ? 'bg-white shadow-sm text-primary-600' : 'text-secondary-400 hover:text-secondary-600'}`}>Advances</button>
+                                <button onClick={() => setActiveSubTab('increments')} className={`px-6 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeSubTab === 'increments' ? 'bg-white shadow-sm text-primary-600' : 'text-secondary-400 hover:text-secondary-600'}`}>Increments</button>
+                            </div>
+                            <div className="animate-in fade-in duration-500">
+                                <TeamSalaryView activeSubTab={activeSubTab} />
+                            </div>
+                        </div>
+                    )}
+
+                    {activeTab === 'team-perf' && (
+                        <div className="p-8 space-y-8">
+                            <div className="flex flex-wrap gap-4 mb-8 bg-secondary-50 p-2 rounded-2xl w-fit">
+                                <button onClick={() => setActiveSubTab('analytics')} className={`px-6 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeSubTab === 'analytics' ? 'bg-white shadow-sm text-primary-600' : 'text-secondary-400 hover:text-secondary-600'}`}>Analytics</button>
+                                <button onClick={() => setActiveSubTab('goals')} className={`px-6 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeSubTab === 'goals' ? 'bg-white shadow-sm text-primary-600' : 'text-secondary-400 hover:text-secondary-600'}`}>Goals (KRA)</button>
+                                <button onClick={() => setActiveSubTab('tasks')} className={`px-6 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeSubTab === 'tasks' ? 'bg-white shadow-sm text-primary-600' : 'text-secondary-400 hover:text-secondary-600'}`}>Tasks</button>
+                                <button onClick={() => setActiveSubTab('points')} className={`px-6 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeSubTab === 'points' ? 'bg-white shadow-sm text-primary-600' : 'text-secondary-400 hover:text-secondary-600'}`}>Rewards</button>
+                                <button onClick={() => setActiveSubTab('reports')} className={`px-6 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeSubTab === 'reports' ? 'bg-white shadow-sm text-primary-600' : 'text-secondary-400 hover:text-secondary-600'}`}>Reports</button>
+                            </div>
+                            <div className="animate-in fade-in duration-500">
+                                {activeSubTab === 'analytics' && <TeamAnalyticsView filters={managerFilters} />}
+                                {activeSubTab === 'goals' && <TeamGoalTrackingView />}
+                                {activeSubTab === 'tasks' && <TeamTaskMasterView />}
+                                {activeSubTab === 'points' && <TeamPointsRewardsView />}
+                                {activeSubTab === 'reports' && <TeamWorkReportsView />}
+                            </div>
+                        </div>
+                    )}
                 </div >
             </div >
         </DashboardLayout >
