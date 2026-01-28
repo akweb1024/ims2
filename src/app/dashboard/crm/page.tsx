@@ -8,6 +8,8 @@ import AlertsPanel from './AlertsPanel';
 import CRMClientLayout from './CRMClientLayout';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
 
+export const dynamic = 'force-dynamic';
+
 export default async function CRMDashboardPage() {
     const user = await getAuthenticatedUser();
 
