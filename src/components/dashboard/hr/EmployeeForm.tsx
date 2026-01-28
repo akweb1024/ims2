@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import RichTextEditor from '@/components/common/RichTextEditor';
-import { User, Mail, Briefcase, DollarSign, Award, Target, Save, Shield, Phone } from 'lucide-react';
+import { User, Mail, Briefcase, DollarSign, Award, Target, Save, Shield, Phone, Plus, Trash2 } from 'lucide-react';
 
 interface EmployeeFormProps {
     initialData?: any;
@@ -72,7 +72,9 @@ const initialFormState = {
     departmentId: '',
     allowedModules: ['CORE'] as string[],
     skills: [] as string[],
-    expertise: [] as string[]
+    expertise: [] as string[],
+    educationDetails: [] as any[],
+    experienceDetails: [] as any[]
 };
 
 export default function EmployeeForm({
@@ -103,7 +105,9 @@ export default function EmployeeForm({
                 ...sanitized,
                 targets: sanitized.targets || initialFormState.targets,
                 companyIds: sanitized.companies?.map((c: any) => c.id) || sanitized.companyIds || [],
-                allowedModules: sanitized.allowedModules && sanitized.allowedModules.length > 0 ? sanitized.allowedModules : ['CORE']
+                allowedModules: sanitized.allowedModules && sanitized.allowedModules.length > 0 ? sanitized.allowedModules : ['CORE'],
+                educationDetails: Array.isArray(sanitized.educationDetails) ? sanitized.educationDetails : [],
+                experienceDetails: Array.isArray(sanitized.experienceDetails) ? sanitized.experienceDetails : []
             });
         }
     }, [initialData]);
@@ -688,7 +692,228 @@ export default function EmployeeForm({
                 </div>
             </div>
 
-            {/* Removed KRA, Job Description, and Targets Sections as per new requirement */}
+            {/* Education & Past Experience Section */}
+            <div className="card-premium p-8">
+                <h2 className="text-lg font-black text-secondary-900 mb-6 flex items-center gap-2">
+                    <Award className="w-5 h-5 text-purple-500" />
+                    Education & Experience
+                </h2>
+
+                <div className="space-y-8">
+                    {/* Education */}
+                    <div>
+                        <div className="flex justify-between items-center mb-4">
+                            <h3 className="text-sm font-bold text-secondary-700 uppercase tracking-wider">Education Qualification</h3>
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    const edu = [...(empForm.educationDetails || [])];
+                                    edu.push({ degree: '', institution: '', year: '', grade: '' });
+                                    setEmpForm({ ...empForm, educationDetails: edu });
+                                }}
+                                className="text-xs font-black text-indigo-600 hover:text-indigo-800 flex items-center gap-1"
+                            >
+                                <Plus size={14} /> Add Education
+                            </button>
+                        </div>
+
+                        {(empForm.educationDetails || []).length === 0 && (
+                            <div className="p-4 bg-secondary-50 rounded-xl text-center text-xs text-secondary-400 font-medium italic">
+                                No education details added.
+                            </div>
+                        )}
+
+                        <div className="space-y-3">
+                            {(empForm.educationDetails || []).map((edu: any, index: number) => (
+                                <div key={index} className="grid grid-cols-12 gap-3 p-3 bg-secondary-50/50 rounded-xl border border-secondary-100 group">
+                                    <div className="col-span-12 md:col-span-4">
+                                        <input
+                                            type="text"
+                                            className="input-premium h-9 text-xs"
+                                            placeholder="Degree / Title"
+                                            value={edu.degree}
+                                            onChange={(e) => {
+                                                const list = [...(empForm.educationDetails || [])];
+                                                list[index].degree = e.target.value;
+                                                setEmpForm({ ...empForm, educationDetails: list });
+                                            }}
+                                        />
+                                    </div>
+                                    <div className="col-span-12 md:col-span-4">
+                                        <input
+                                            type="text"
+                                            className="input-premium h-9 text-xs"
+                                            placeholder="Institution / University"
+                                            value={edu.institution}
+                                            onChange={(e) => {
+                                                const list = [...(empForm.educationDetails || [])];
+                                                list[index].institution = e.target.value;
+                                                setEmpForm({ ...empForm, educationDetails: list });
+                                            }}
+                                        />
+                                    </div>
+                                    <div className="col-span-6 md:col-span-2">
+                                        <input
+                                            type="text"
+                                            className="input-premium h-9 text-xs"
+                                            placeholder="Year"
+                                            value={edu.year}
+                                            onChange={(e) => {
+                                                const list = [...(empForm.educationDetails || [])];
+                                                list[index].year = e.target.value;
+                                                setEmpForm({ ...empForm, educationDetails: list });
+                                            }}
+                                        />
+                                    </div>
+                                    <div className="col-span-5 md:col-span-1">
+                                        <input
+                                            type="text"
+                                            className="input-premium h-9 text-xs"
+                                            placeholder="Grade/%"
+                                            value={edu.grade}
+                                            onChange={(e) => {
+                                                const list = [...(empForm.educationDetails || [])];
+                                                list[index].grade = e.target.value;
+                                                setEmpForm({ ...empForm, educationDetails: list });
+                                            }}
+                                        />
+                                    </div>
+                                    <div className="col-span-1 flex items-center justify-center">
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                const list = [...(empForm.educationDetails || [])];
+                                                list.splice(index, 1);
+                                                setEmpForm({ ...empForm, educationDetails: list });
+                                            }}
+                                            className="text-secondary-400 hover:text-red-500 transition-colors"
+                                        >
+                                            <Trash2 size={16} />
+                                        </button>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    <div className="w-full h-px bg-secondary-100"></div>
+
+                    {/* Past Experience */}
+                    <div>
+                        <div className="flex justify-between items-center mb-4">
+                            <h3 className="text-sm font-bold text-secondary-700 uppercase tracking-wider">Past Experience</h3>
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    const exp = [...(empForm.experienceDetails || [])];
+                                    exp.push({ company: '', role: '', from: '', to: '', description: '' });
+                                    setEmpForm({ ...empForm, experienceDetails: exp });
+                                }}
+                                className="text-xs font-black text-indigo-600 hover:text-indigo-800 flex items-center gap-1"
+                            >
+                                <Plus size={14} /> Add Experience
+                            </button>
+                        </div>
+
+                        {(empForm.experienceDetails || []).length === 0 && (
+                            <div className="p-4 bg-secondary-50 rounded-xl text-center text-xs text-secondary-400 font-medium italic">
+                                No past experience credentials added.
+                            </div>
+                        )}
+
+                        <div className="space-y-4">
+                            {(empForm.experienceDetails || []).map((exp: any, index: number) => (
+                                <div key={index} className="p-4 bg-secondary-50/50 rounded-xl border border-secondary-100 group relative">
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            const list = [...(empForm.experienceDetails || [])];
+                                            list.splice(index, 1);
+                                            setEmpForm({ ...empForm, experienceDetails: list });
+                                        }}
+                                        className="absolute right-2 top-2 text-secondary-300 hover:text-red-500 transition-colors p-1"
+                                    >
+                                        <Trash2 size={16} />
+                                    </button>
+
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-3 pr-8">
+                                        <div>
+                                            <label className="text-[10px] font-bold text-secondary-500 uppercase">Company Name</label>
+                                            <input
+                                                type="text"
+                                                className="input-premium h-9 text-xs mt-1"
+                                                placeholder="Company Name"
+                                                value={exp.company}
+                                                onChange={(e) => {
+                                                    const list = [...(empForm.experienceDetails || [])];
+                                                    list[index].company = e.target.value;
+                                                    setEmpForm({ ...empForm, experienceDetails: list });
+                                                }}
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="text-[10px] font-bold text-secondary-500 uppercase">Designation / Role</label>
+                                            <input
+                                                type="text"
+                                                className="input-premium h-9 text-xs mt-1"
+                                                placeholder="Role"
+                                                value={exp.role}
+                                                onChange={(e) => {
+                                                    const list = [...(empForm.experienceDetails || [])];
+                                                    list[index].role = e.target.value;
+                                                    setEmpForm({ ...empForm, experienceDetails: list });
+                                                }}
+                                            />
+                                        </div>
+                                    </div>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-3">
+                                        <div>
+                                            <label className="text-[10px] font-bold text-secondary-500 uppercase">From Date</label>
+                                            <input
+                                                type="date"
+                                                className="input-premium h-9 text-xs mt-1"
+                                                value={exp.from}
+                                                onChange={(e) => {
+                                                    const list = [...(empForm.experienceDetails || [])];
+                                                    list[index].from = e.target.value;
+                                                    setEmpForm({ ...empForm, experienceDetails: list });
+                                                }}
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="text-[10px] font-bold text-secondary-500 uppercase">To Date</label>
+                                            <input
+                                                type="date"
+                                                className="input-premium h-9 text-xs mt-1"
+                                                value={exp.to}
+                                                onChange={(e) => {
+                                                    const list = [...(empForm.experienceDetails || [])];
+                                                    list[index].to = e.target.value;
+                                                    setEmpForm({ ...empForm, experienceDetails: list });
+                                                }}
+                                            />
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label className="text-[10px] font-bold text-secondary-500 uppercase">Description / Achievement</label>
+                                        <textarea
+                                            className="input-premium text-xs mt-1 min-h-[60px]"
+                                            rows={2}
+                                            placeholder="Key responsibilities or achievements..."
+                                            value={exp.description}
+                                            onChange={(e) => {
+                                                const list = [...(empForm.experienceDetails || [])];
+                                                list[index].description = e.target.value;
+                                                setEmpForm({ ...empForm, experienceDetails: list });
+                                            }}
+                                        />
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            </div>
 
             {/* Action Bar */}
             <div className="sticky bottom-8 z-10">

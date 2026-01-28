@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 
 export default function GeneralLedgerPage() {
@@ -25,15 +25,7 @@ export default function GeneralLedgerPage() {
             });
     }, []);
 
-    useEffect(() => {
-        if (selectedAccount) {
-            fetchLedger();
-        } else {
-            setLedger([]);
-        }
-    }, [selectedAccount, dateRange]);
-
-    const fetchLedger = async () => {
+    const fetchLedger = useCallback(async () => {
         setLoading(true);
         try {
             const params = new URLSearchParams({ accountId: selectedAccount });
@@ -47,7 +39,15 @@ export default function GeneralLedgerPage() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [selectedAccount, dateRange]);
+
+    useEffect(() => {
+        if (selectedAccount) {
+            fetchLedger();
+        } else {
+            setLedger([]);
+        }
+    }, [fetchLedger, selectedAccount]);
 
     return (
         <DashboardLayout>

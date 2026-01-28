@@ -210,6 +210,7 @@ export const POST = authorizedRoute(
                     include: { shift: true }
                 });
 
+                let shortLeaveMinutes = 0;
                 if (attendanceWithShift?.shift) {
                     const shift = attendanceWithShift.shift;
                     const [eHrs, eMin] = shift.endTime.split(':').map(Number);
@@ -218,6 +219,8 @@ export const POST = authorizedRoute(
 
                     if (now > shiftEnd) {
                         otMinutes = Math.floor((now.getTime() - shiftEnd.getTime()) / (1000 * 60));
+                    } else {
+                        shortLeaveMinutes = Math.floor((shiftEnd.getTime() - now.getTime()) / (1000 * 60));
                     }
                 }
 
@@ -225,9 +228,19 @@ export const POST = authorizedRoute(
                     where: { id: existing.id },
                     data: {
                         checkOut: now,
-                        otMinutes
+                        otMinutes,
+                        // Assuming we want to track shortLeaveMinutes in attendance record too if schema allowed, 
+                        // but let's check if it exists in schema.
+                        // Actually, processShortLeave handles the ledger part.
                     }
                 });
+
+                // Process short leave for leave deduction (if applicable)
+                if (shortLeaveMinutes >= 90) {
+                    const { processShortLeave } = await import('@/lib/utils/leave-ledger-processor');
+                    await processShortLeave(profile.id, shortLeaveMinutes, user.companyId);
+                }
+
                 return NextResponse.json(record);
             }
 

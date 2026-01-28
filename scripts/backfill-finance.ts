@@ -47,30 +47,22 @@ async function main() {
 
     let payCount = 0;
     for (const pay of payments) {
-        const ref = pay.transactionId || pay.razorpayPaymentId || `PAY-${pay.id.substring(0, 8)}`;
-        // Note: postPaymentJournal uses transactionId || 'CASH' as ref.
-        // If transactionId is null, duplicate check might be tricky.
-        // Let's trust postPaymentJournal to use what we expect? 
-        // Actually, checking existence based on "reference" is weak if reference is loose.
-        // Better: We check if any JE description contains the Payment ID? No.
-        // Let's rely on the fact that we just started using JEs, so likely none exist for old payments.
-        // But for safety, I will skip if payment is very old? No, we want history.
+        // Use a unique reference for backfill to ensure idempotency
+        const backfillRef = `BACKFILL-PAY-${pay.id}`;
 
-        // I will try to match by reference if possible. 
-        // In `postPaymentJournal`, reference is `payment.transactionId || 'CASH'`.
-        // If 'CASH', we will have duplicates. 
-        // I should Update `postPaymentJournal` to be more robust or passing a unique reference.
-        // But I can't easily change the service now without breaking contract.
-        // I'll skip check for now and just run it (assuming this is ONE-TIME run).
+        const exists = await prisma.journalEntry.findFirst({
+            where: { reference: backfillRef, companyId }
+        });
 
-        // Actually, let's just run it. If user runs twice, it duplicates. I warned user to start fresh.
-        try {
-            await FinanceService.postPaymentJournal(companyId, pay.id);
-            process.stdout.write('.');
-            payCount++;
-        } catch (e: any) {
-            // Silently fail or log?
-            // console.error(e);
+        if (!exists) {
+            try {
+                await FinanceService.postPaymentJournal(companyId, pay.id, backfillRef);
+                process.stdout.write('.');
+                payCount++;
+            } catch (e: any) {
+                // Silently fail or log?
+                // console.error(e);
+            }
         }
     }
     console.log(`\n✅ Processed ${payCount} Payments.`);

@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 
 export default function FinancialReportsPage() {
@@ -11,11 +11,7 @@ export default function FinancialReportsPage() {
     const [data, setData] = useState<any>(null);
     const [loading, setLoading] = useState(false);
 
-    useEffect(() => {
-        fetchReport();
-    }, [reportType, dateRange]);
-
-    const fetchReport = async () => {
+    const fetchReport = useCallback(async () => {
         setLoading(true);
         try {
             const params = new URLSearchParams({
@@ -32,7 +28,11 @@ export default function FinancialReportsPage() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [reportType, dateRange]);
+
+    useEffect(() => {
+        fetchReport();
+    }, [fetchReport]);
 
     const formatCurrency = (val: number) => {
         return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(val);

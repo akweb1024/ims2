@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import Link from 'next/link';
@@ -11,11 +11,7 @@ export default function AgencyListPage() {
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState('');
 
-    useEffect(() => {
-        fetchAgencies();
-    }, [search]);
-
-    const fetchAgencies = async () => {
+    const fetchAgencies = useCallback(async () => {
         try {
             const token = localStorage.getItem('token');
             const res = await fetch(`/api/agencies?search=${search}`, {
@@ -30,7 +26,11 @@ export default function AgencyListPage() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [search]);
+
+    useEffect(() => {
+        fetchAgencies();
+    }, [fetchAgencies]);
 
     const handleDelete = async (id: string) => {
         if (!confirm('Are you sure you want to delete this agency? This action cannot be undone.')) return;

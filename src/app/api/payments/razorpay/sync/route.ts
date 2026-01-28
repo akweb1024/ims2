@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { razorpay } from '@/lib/razorpay';
+import Razorpay from 'razorpay';
 import { getAuthenticatedUser } from '@/lib/auth-legacy';
 import { FinanceService } from '@/lib/services/finance';
 
@@ -11,87 +12,148 @@ export async function POST() {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        const lastSync = await prisma.razorpaySync.findFirst({
-            where: { status: 'SUCCESS' },
-            orderBy: { createdAt: 'desc' },
+        const currentSyncAt = new Date();
+        let totalSynced = 0;
+
+        // 1. Fetch ALL Razorpay Configurations (Company-specific)
+        // We look for any key that starts with RAZORPAY_KEY_ID
+        const allConfigs = await prisma.appConfiguration.findMany({
+            where: {
+                category: 'PAYMENT_GATEWAY',
+                key: { startsWith: 'RAZORPAY_KEY_ID' },
+                isActive: true
+            }
         });
 
-        // Razorpay expects timestamp in seconds
-        const from = lastSync ? Math.floor(lastSync.lastSyncAt.getTime() / 1000) : undefined;
+        // If no DB configs, try one fallback with ENV vars
+        const accountsToSync = [];
 
-        console.log(`Manual Razorpay sync started from: ${from || 'beginning'}`);
+        if (allConfigs.length > 0) {
+            for (const config of allConfigs) {
+                // Find matching secret
+                // Convention: RAZORPAY_KEY_ID -> RAZORPAY_KEY_SECRET
+                //             RAZORPAY_KEY_ID_2 -> RAZORPAY_KEY_SECRET_2
+                const secretKey = config.key.replace('ID', 'SECRET');
 
-        let payments: any;
-        try {
-            payments = await razorpay.payments.all({
-                from,
-                count: 100,
+                const secretConfig = await prisma.appConfiguration.findFirst({
+                    where: {
+                        companyId: config.companyId,
+                        category: 'PAYMENT_GATEWAY',
+                        key: secretKey,
+                        isActive: true
+                    }
+                });
+
+                if (secretConfig) {
+                    accountsToSync.push({
+                        key_id: config.value,
+                        key_secret: secretConfig.value,
+                        companyId: config.companyId,
+                        alias: config.key // To track which account
+                    });
+                }
+            }
+        } else if (process.env.RAZORPAY_KEY_ID && process.env.RAZORPAY_KEY_SECRET) {
+            accountsToSync.push({
+                key_id: process.env.RAZORPAY_KEY_ID,
+                key_secret: process.env.RAZORPAY_KEY_SECRET,
+                companyId: null, // Global env fallback
+                alias: 'ENV_DEFAULT'
             });
-        } catch (err: any) {
-            console.error('Razorpay API failure:', err);
-            return NextResponse.json({ error: `Razorpay API Error: ${err.message}` }, { status: 500 });
         }
 
-        let syncedCount = 0;
-        const currentSyncAt = new Date();
+        if (accountsToSync.length === 0) {
+            return NextResponse.json({ error: 'No Razorpay credentials found' }, { status: 404 });
+        }
 
-        if (payments && payments.items) {
-            for (const rpPayment of payments.items) {
-                // Check if already exists
-                const existing = await prisma.payment.findUnique({
-                    where: { razorpayPaymentId: rpPayment.id },
+        console.log(`Starting Multi-Account Sync for ${accountsToSync.length} accounts`);
+
+        // 2. Loop through each account and sync
+        for (const account of accountsToSync) {
+            try {
+                // Determine last sync time for this account (or global)
+                // Ideally we should track lastSync per account, but schema is simple.
+                // We'll use the global RazorpaySync table for now, effectively syncing from the oldest common time or just overlap.
+                // Better approach: sync from 1 day ago if nothing specified, or use the global last sync.
+
+                const lastSync = await prisma.razorpaySync.findFirst({
+                    where: { status: 'SUCCESS' },
+                    orderBy: { createdAt: 'desc' },
                 });
-                if (existing) continue;
 
-                // Determine companyId
-                let companyId = rpPayment.notes?.company_id || rpPayment.notes?.companyId;
+                const from = lastSync ? Math.floor(lastSync.lastSyncAt.getTime() / 1000) : undefined;
 
-                // Fallback to email mapping
-                if (!companyId && rpPayment.email) {
-                    const matchedUser = await prisma.user.findUnique({
-                        where: { email: rpPayment.email },
-                        select: { companyId: true }
-                    });
-                    if (matchedUser?.companyId) {
-                        companyId = matchedUser.companyId;
-                    }
-                }
+                // Initialize Razorpay instance manually for this account
+                // We can't use the singleton 'razorpay' from lib here nicely
+                const rpInstance = new Razorpay({
+                    key_id: account.key_id,
+                    key_secret: account.key_secret
+                });
 
-                // FK verify
-                if (companyId) {
-                    const company = await prisma.company.findUnique({ where: { id: companyId } });
-                    if (!company) companyId = null;
-                }
+                const payments = await rpInstance.payments.all({
+                    from,
+                    count: 100
+                });
 
-                try {
-                    const savedPayment = await prisma.payment.create({
-                        data: {
-                            amount: rpPayment.amount / 100,
-                            currency: rpPayment.currency || 'INR',
-                            paymentMethod: rpPayment.method,
-                            paymentDate: new Date(rpPayment.created_at * 1000),
-                            razorpayPaymentId: rpPayment.id,
-                            razorpayOrderId: rpPayment.order_id,
-                            status: rpPayment.status,
-                            notes: rpPayment.notes ? JSON.stringify(rpPayment.notes) : null,
-                            companyId: companyId || null,
-                        },
-                    });
-                    syncedCount++;
+                if (payments && payments.items) {
+                    for (const rpPayment of payments.items) {
+                        const existing = await prisma.payment.findUnique({
+                            where: { razorpayPaymentId: rpPayment.id },
+                        });
+                        if (existing) continue;
 
-                    // --- Finance Automation ---
-                    if (savedPayment.companyId) {
-                        try {
-                            await FinanceService.postPaymentJournal(savedPayment.companyId, savedPayment.id);
-                        } catch (finErr) {
-                            console.error(`Failed to post journal for payment ${savedPayment.id}:`, finErr);
+                        let companyId = account.companyId; // Default to config owner
+
+                        // Override if payment notes specify otherwise
+                        if (rpPayment.notes?.company_id || rpPayment.notes?.companyId) {
+                            companyId = rpPayment.notes.company_id || rpPayment.notes.companyId;
+                        }
+
+                        // Fallback: Look up by email if no company yet
+                        if (!companyId && rpPayment.email) {
+                            const matchedUser = await prisma.user.findUnique({
+                                where: { email: rpPayment.email },
+                                select: { companyId: true }
+                            });
+                            if (matchedUser?.companyId) companyId = matchedUser.companyId;
+                        }
+
+                        // Final Verify
+                        if (companyId) {
+                            const company = await prisma.company.findUnique({ where: { id: companyId } });
+                            if (!company) companyId = account.companyId; // Revert to account owner if invalid
+                        }
+
+                        // Save Payment
+                        const savedPayment = await prisma.payment.create({
+                            data: {
+                                amount: Number(rpPayment.amount) / 100,
+                                currency: rpPayment.currency || 'INR',
+                                paymentMethod: rpPayment.method,
+                                paymentDate: new Date(Number(rpPayment.created_at) * 1000),
+                                razorpayPaymentId: rpPayment.id,
+                                razorpayOrderId: rpPayment.order_id,
+                                status: rpPayment.status,
+                                notes: rpPayment.notes ? JSON.stringify(rpPayment.notes) : null,
+                                companyId: companyId || null,
+                            },
+                        });
+                        totalSynced++;
+
+                        // Journal Entry
+                        if (savedPayment.companyId) {
+                            try {
+                                await FinanceService.postPaymentJournal(savedPayment.companyId, savedPayment.id);
+                            } catch (finErr) {
+                                console.error(`Failed to post journal for payment ${savedPayment.id}:`, finErr);
+                            }
                         }
                     }
-                    // --------------------------
-
-                } catch (err) {
-                    console.error(`Error syncing payment ${rpPayment.id}:`, err);
                 }
+
+            } catch (err: any) {
+                console.error(`Error syncing account ${account.alias}:`, err.message);
+                // Continue to next account even if one fails
             }
         }
 
@@ -99,13 +161,14 @@ export async function POST() {
             data: {
                 lastSyncAt: currentSyncAt,
                 status: 'SUCCESS',
-                syncedCount,
+                syncedCount: totalSynced,
             },
         });
 
-        return NextResponse.json({ success: true, syncedCount });
+        return NextResponse.json({ success: true, syncedCount: totalSynced });
+
     } catch (error: any) {
-        console.error('Razorpay Manual Sync Error:', error);
+        console.error('Razorpay Sync Fatal Error:', error);
         await prisma.razorpaySync.create({
             data: {
                 lastSyncAt: new Date(),

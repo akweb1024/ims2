@@ -252,7 +252,7 @@ export class FinanceService {
     /**
      * Auto-post Payment to Ledger
      */
-    static async postPaymentJournal(companyId: string, paymentId: string) {
+    static async postPaymentJournal(companyId: string, paymentId: string, referenceOverride?: string) {
         await this.ensureDefaultAccounts(companyId);
 
         const payment = await prisma.payment.findUnique({
@@ -271,7 +271,7 @@ export class FinanceService {
         await this.createJournalEntry(companyId, {
             date: payment.paymentDate,
             description: `Payment Received ${payment.invoice ? `for #${payment.invoice.invoiceNumber}` : ''}`,
-            reference: payment.transactionId || 'CASH',
+            reference: referenceOverride || payment.transactionId || 'CASH',
             lines: [
                 { accountId: bankAccount.id, debit: amount, credit: 0, description: 'Bank Deposit' },
                 { accountId: arAccount.id, debit: 0, credit: amount, description: 'Payment applied to AR' }

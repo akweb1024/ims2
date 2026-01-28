@@ -309,7 +309,7 @@ export const ALL_MODULES: NavModule[] = [
             {
                 title: 'Revenue Management',
                 items: [
-                    { name: 'Income Registry', href: '/dashboard/revenue/transactions', icon: '🏦', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'FINANCE_ADMIN'] },
+                    { name: 'Income Registry', href: '/dashboard/revenue/transactions', icon: '🏦', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'FINANCE_ADMIN', 'TEAM_LEADER', 'EXECUTIVE', 'HR', 'IT_MANAGER', 'IT_ADMIN'] },
                     { name: 'Verify Claims', href: '/dashboard/revenue/claims', icon: '⚖️', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'TEAM_LEADER', 'FINANCE_ADMIN'] },
                 ]
             }

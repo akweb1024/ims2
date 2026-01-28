@@ -21,7 +21,7 @@ async function generateTransactionNumber(companyId: string) {
     return `RT-${dateStr}-${(count + 1).toString().padStart(4, '0')}`;
 }
 
-export const GET = authorizedRoute(['ADMIN', 'SUPER_ADMIN', 'MANAGER', 'TEAM_LEADER', 'FINANCE_ADMIN', 'HR'], async (req: NextRequest, user) => {
+export const GET = authorizedRoute(['ADMIN', 'SUPER_ADMIN', 'MANAGER', 'TEAM_LEADER', 'FINANCE_ADMIN', 'HR', 'EXECUTIVE', 'IT_MANAGER', 'IT_ADMIN'], async (req: NextRequest, user) => {
     try {
         const { searchParams } = new URL(req.url);
         const status = searchParams.get('status');
