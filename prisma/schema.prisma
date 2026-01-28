@@ -1353,6 +1353,7 @@ model TaxDeclaration {
   updatedAt        DateTime           @updatedAt
   proofs           DeclarationProof[]
   employee         EmployeeProfile    @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  screenerConfig   Json?              // Template for interview rounds
 
   @@index([employeeId])
 }
@@ -1687,6 +1688,8 @@ model RecruitmentInterview {
   meetingLink   String?
   rating        Int?
   type          String         @default("VIRTUAL")
+  roundName     String         @default("General") // HR, TECHNICAL, FINAL
+  screenerData  Json?          // Stores the Q&A or checklist results
   application   JobApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
   interviewer   User           @relation("RecruitmentInterviewer", fields: [interviewerId], references: [id])
 

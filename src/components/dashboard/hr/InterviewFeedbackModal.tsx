@@ -17,6 +17,24 @@ export default function InterviewFeedbackModal({ interview, onClose }: Interview
     const [feedback, setFeedback] = useState('');
     const [submitting, setSubmitting] = useState(false);
 
+    // Determine checkpoints based on round name/level passed in the interview object
+    // In a real app, this would come from the JobPosting screenerConfig
+    const getCheckpointsForRound = (roundName: string) => {
+        if (roundName?.includes('HR')) return ['Basic Communication Skills', 'Resume Verification', 'Notice Period Confirmed', 'Salary Expectations Within Budget', 'Willing to Relocate (if req)'];
+        if (roundName?.includes('Departmental')) return ['Core Technical Skills', 'Problem Solving Ability', 'Tool Proficiency', 'relevant Experience Depth', 'Code/Portfolio Review'];
+        if (roundName?.includes('Final')) return ['Cultural Fit', 'Leadership Potential', 'Long-term Goals Alignment', 'Offer Readiness', 'Final Salary Negotiation'];
+        return ['General Competency', 'Professional Demeanor', 'Communication'];
+    };
+
+    const checkpoints = getCheckpointsForRound(interview.roundName);
+    const [checkedPoints, setCheckedPoints] = useState<string[]>([]);
+
+    const toggleCheckpoint = (point: string) => {
+        setCheckedPoints(prev =>
+            prev.includes(point) ? prev.filter(p => p !== point) : [...prev, point]
+        );
+    };
+
     const handleSubmit = async () => {
         if (rating === 0) {
             toast.error('Please provide a rating');
@@ -33,7 +51,12 @@ export default function InterviewFeedbackModal({ interview, onClose }: Interview
                 id: interview.id,
                 rating,
                 result,
-                feedback
+                feedback,
+                screenerData: {
+                    checkedPoints,
+                    totalPoints: checkpoints.length,
+                    score: Math.round((checkedPoints.length / checkpoints.length) * 100)
+                }
             });
             toast.success('Feedback submitted successfully');
             onClose();
@@ -82,10 +105,10 @@ export default function InterviewFeedbackModal({ interview, onClose }: Interview
                                     key={res}
                                     onClick={() => setResult(res)}
                                     className={`py-3 rounded-xl border-2 font-bold text-xs transition-all ${result === res
-                                            ? res === 'PASSED' ? 'border-green-500 bg-green-50 text-green-700'
-                                                : res === 'REJECTED' ? 'border-red-500 bg-red-50 text-red-700'
-                                                    : 'border-orange-500 bg-orange-50 text-orange-700'
-                                            : 'border-gray-100 bg-white text-gray-500 hover:border-gray-200'
+                                        ? res === 'PASSED' ? 'border-green-500 bg-green-50 text-green-700'
+                                            : res === 'REJECTED' ? 'border-red-500 bg-red-50 text-red-700'
+                                                : 'border-orange-500 bg-orange-50 text-orange-700'
+                                        : 'border-gray-100 bg-white text-gray-500 hover:border-gray-200'
                                         }`}
                                 >
                                     {res}
@@ -105,6 +128,23 @@ export default function InterviewFeedbackModal({ interview, onClose }: Interview
                             className="w-full h-32 bg-gray-50 border-none rounded-xl p-4 font-medium focus:ring-2 focus:ring-primary-500 resize-none"
                             placeholder="Strengths, weaknesses, technical/cultural fit notes..."
                         />
+                    </div>
+
+                    {/* Screener Checkpoints */}
+                    <div className="space-y-3 pb-2 border-t border-gray-100 pt-4">
+                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
+                            Assessment Checkpoints ({interview.roundName || 'General Round'})
+                        </label>
+                        <div className="space-y-2">
+                            {checkpoints.map((cp, idx) => (
+                                <div key={idx} className="flex items-center gap-3 bg-gray-50 p-3 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer" onClick={() => toggleCheckpoint(cp)}>
+                                    <div className={`w-5 h-5 rounded border flex items-center justify-center transition-colors ${checkedPoints.includes(cp) ? 'bg-primary-500 border-primary-500 text-white' : 'border-gray-300 bg-white'}`}>
+                                        {checkedPoints.includes(cp) && <span className="text-[10px]">✓</span>}
+                                    </div>
+                                    <span className={`text-sm font-medium ${checkedPoints.includes(cp) ? 'text-gray-900' : 'text-gray-500'}`}>{cp}</span>
+                                </div>
+                            ))}
+                        </div>
                     </div>
                 </div>
 

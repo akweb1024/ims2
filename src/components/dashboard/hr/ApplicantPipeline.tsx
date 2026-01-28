@@ -29,7 +29,9 @@ export default function ApplicantPipeline() {
         interviewerId: '',
         scheduledAt: '',
         type: 'VIRTUAL',
-        meetingLink: ''
+        meetingLink: '',
+        roundName: 'HR Round',
+        level: 1
     });
 
     const { data: employees } = useEmployees();
@@ -83,7 +85,7 @@ export default function ApplicantPipeline() {
             ...interviewData
         });
         setShowInterviewModal(false);
-        setInterviewData({ interviewerId: '', scheduledAt: '', type: 'VIRTUAL', meetingLink: '' });
+        setInterviewData({ interviewerId: '', scheduledAt: '', type: 'VIRTUAL', meetingLink: '', roundName: 'HR Round', level: 1 });
     };
 
     const getMatchColor = (score: number) => {
@@ -321,6 +323,19 @@ export default function ApplicantPipeline() {
                                         <option value="PHONE">Phone Screen</option>
                                     </select>
                                 </div>
+                            </div>
+
+                            <div className="space-y-2">
+                                <label className="text-[11px] font-bold text-gray-500 uppercase tracking-wider">Interview Round</label>
+                                <select
+                                    className="w-full bg-gray-50 border-gray-200 rounded-xl p-3 text-sm font-medium focus:ring-2 focus:ring-purple-500 outline-none transition-all"
+                                    value={interviewData.roundName}
+                                    onChange={(e) => setInterviewData({ ...interviewData, roundName: e.target.value, level: e.target.value === 'HR Round' ? 1 : e.target.value === 'Departmental Round' ? 2 : 3 })}
+                                >
+                                    <option value="HR Round">HR Round (Initial Screening)</option>
+                                    <option value="Departmental Round">Departmental Round (Technical)</option>
+                                    <option value="Final Round">Final Round (Leadership/Cultural)</option>
+                                </select>
                             </div>
                             <div className="space-y-2">
                                 <label className="text-[11px] font-bold text-gray-500 uppercase tracking-wider">Meeting Link / Location</label>

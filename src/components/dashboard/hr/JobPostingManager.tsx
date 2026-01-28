@@ -166,7 +166,7 @@ export default function JobPostingManager() {
                                         setShowExamModal(true);
                                     }}
                                     className="text-primary-600 hover:text-primary-800 bg-primary-50 p-2 rounded-full transition-colors"
-                                    title="Manage Entrance Exam"
+                                    title="Manage Assessment (MCQ)"
                                 >
                                     <BookOpen size={14} />
                                 </button>

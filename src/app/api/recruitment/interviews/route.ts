@@ -40,7 +40,7 @@ export const POST = authorizedRoute(
     async (req: NextRequest, user) => {
         try {
             const body = await req.json();
-            const { applicationId, interviewerId, scheduledAt, duration, type, meetingLink, location } = body;
+            const { applicationId, interviewerId, scheduledAt, duration, type, meetingLink, location, roundName, level } = body;
 
             if (!applicationId || !interviewerId || !scheduledAt) {
                 return createErrorResponse('Missing required fields', 400);
@@ -56,7 +56,8 @@ export const POST = authorizedRoute(
                     meetingLink,
                     location,
                     status: 'SCHEDULED',
-                    level: 1 // Default level if not provided
+                    level: level || 1,
+                    roundName: roundName || 'HR Round'
                 }
             });
 
@@ -78,7 +79,7 @@ export const PATCH = authorizedRoute(
     async (req: NextRequest, user) => {
         try {
             const body = await req.json();
-            const { id, status, feedback, rating } = body;
+            const { id, status, feedback, rating, screenerData } = body;
 
             if (!id) return createErrorResponse('Interview ID required', 400);
 
@@ -87,7 +88,8 @@ export const PATCH = authorizedRoute(
                 data: {
                     status,
                     feedback,
-                    rating
+                    rating,
+                    screenerData
                 }
             });
 
