@@ -55,7 +55,7 @@ export const GET = authorizedRoute(
                     },
                     shift: true
                 },
-                orderBy: { date: 'asc' }
+                orderBy: { date: 'desc' }
             });
 
             return NextResponse.json(attendance);

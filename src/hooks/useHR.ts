@@ -360,7 +360,8 @@ export const useWorkReportMutations = () => {
             managerComment?: string,
             managerRating?: number,
             approvedTaskIds?: string[],
-            rejectedTaskIds?: string[]
+            rejectedTaskIds?: string[],
+            evaluation?: any
         }) =>
             fetchJson('/api/hr/work-reports', 'PATCH', data),
         onSuccess: () => queryClient.invalidateQueries({ queryKey: ['work-reports'] }),

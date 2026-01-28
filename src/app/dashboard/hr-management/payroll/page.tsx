@@ -3,12 +3,18 @@
 import { useState, useEffect, useCallback } from 'react';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import FormattedDate from '@/components/common/FormattedDate';
-import { Download, Plus, RefreshCw, FileText } from 'lucide-react';
+import { Download, Plus, RefreshCw, FileText, UserPlus, X, Search } from 'lucide-react';
 
 export default function PayrollPage() {
     const [slips, setSlips] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [generating, setGenerating] = useState(false);
+
+    // Individual Generation State
+    const [employees, setEmployees] = useState<any[]>([]);
+    const [showIndividualModal, setShowIndividualModal] = useState(false);
+    const [selectedEmployeeId, setSelectedEmployeeId] = useState('');
+    const [empSearch, setEmpSearch] = useState('');
 
     const today = new Date();
     const [selectedMonth, setSelectedMonth] = useState(today.getMonth() === 0 ? 12 : today.getMonth());
@@ -35,6 +41,21 @@ export default function PayrollPage() {
         }
     }, [selectedMonth, selectedYear]);
 
+    const fetchEmployees = async () => {
+        try {
+            const token = localStorage.getItem('token');
+            const res = await fetch('/api/hr/employees', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (res.ok) {
+                const data = await res.json();
+                setEmployees(data);
+            }
+        } catch (error) {
+            console.error(error);
+        }
+    };
+
     useEffect(() => {
         const userData = localStorage.getItem('user');
         if (userData) {
@@ -43,8 +64,25 @@ export default function PayrollPage() {
         fetchSlips();
     }, [fetchSlips]);
 
-    const handleGenerate = async () => {
-        if (!confirm(`Are you sure you want to generate salary slips for ${selectedMonth}/${selectedYear}? This will calculate payroll for all active employees.`)) return;
+    useEffect(() => {
+        if (showIndividualModal && employees.length === 0) {
+            fetchEmployees();
+        }
+    }, [showIndividualModal, employees.length]);
+
+    const handleGenerate = async (isBulk: boolean = true) => {
+        const payload: any = {
+            action: isBulk ? 'BULK_GENERATE' : 'GENERATE',
+            month: selectedMonth,
+            year: selectedYear
+        };
+
+        if (!isBulk) {
+            if (!selectedEmployeeId) return alert('Please select an employee');
+            payload.employeeId = selectedEmployeeId;
+        } else {
+            if (!confirm(`Are you sure you want to generate salary slips for ${selectedMonth}/${selectedYear}? This will calculate payroll for all active employees.`)) return;
+        }
 
         setGenerating(true);
         try {
@@ -55,17 +93,14 @@ export default function PayrollPage() {
                     'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({
-                    action: 'BULK_GENERATE',
-                    month: selectedMonth,
-                    year: selectedYear
-                })
+                body: JSON.stringify(payload)
             });
 
             if (res.ok) {
                 const data = await res.json();
                 alert(data.message);
                 fetchSlips();
+                if (!isBulk) setShowIndividualModal(false);
             } else {
                 alert('Failed to generate payroll');
             }
@@ -123,6 +158,11 @@ export default function PayrollPage() {
     const currentYear = new Date().getFullYear();
     const years = [currentYear - 1, currentYear, currentYear + 1];
 
+    const filteredEmployees = employees.filter(e =>
+        e.user.name?.toLowerCase().includes(empSearch.toLowerCase()) ||
+        e.user.email?.toLowerCase().includes(empSearch.toLowerCase())
+    );
+
     return (
         <DashboardLayout userRole={userRole}>
             <div className="space-y-6">
@@ -131,7 +171,7 @@ export default function PayrollPage() {
                         <h1 className="text-3xl font-bold text-secondary-900">Payroll Management</h1>
                         <p className="text-secondary-600 mt-1">Generate and manage monthly salary slips</p>
                     </div>
-                    <div className="flex items-center gap-3 bg-white p-2 rounded-xl shadow-sm border border-gray-100">
+                    <div className="flex items-center gap-3 bg-white p-2 rounded-xl shadow-sm border border-gray-100 flex-wrap">
                         <select
                             value={selectedMonth}
                             onChange={(e) => setSelectedMonth(Number(e.target.value))}
@@ -148,14 +188,25 @@ export default function PayrollPage() {
                         >
                             {years.map(y => <option key={y} value={y}>{y}</option>)}
                         </select>
-                        <button
-                            onClick={handleGenerate}
-                            disabled={generating}
-                            className="btn btn-primary flex items-center gap-2 whitespace-nowrap"
-                        >
-                            {generating ? <RefreshCw className="animate-spin" size={18} /> : <Plus size={18} />}
-                            Generate Slip
-                        </button>
+
+                        <div className="flex gap-2">
+                            <button
+                                onClick={() => setShowIndividualModal(true)}
+                                className="btn btn-secondary flex items-center gap-2 whitespace-nowrap"
+                                title="Generate for Single Employee"
+                            >
+                                <UserPlus size={18} />
+                                Individual
+                            </button>
+                            <button
+                                onClick={() => handleGenerate(true)}
+                                disabled={generating}
+                                className="btn btn-primary flex items-center gap-2 whitespace-nowrap"
+                            >
+                                {generating ? <RefreshCw className="animate-spin" size={18} /> : <Plus size={18} />}
+                                Bulk Generate
+                            </button>
+                        </div>
                     </div>
                 </div>
 
@@ -267,6 +318,65 @@ export default function PayrollPage() {
                         </table>
                     </div>
                 </div>
+
+                {/* Individual Generation Modal */}
+                {showIndividualModal && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm animate-in fade-in">
+                        <div className="bg-white rounded-2xl w-full max-w-lg shadow-2xl p-6 space-y-4 animate-in zoom-in-95">
+                            <div className="flex justify-between items-center pb-4 border-b">
+                                <h3 className="text-xl font-bold text-gray-900">Generate Individual Payroll</h3>
+                                <button onClick={() => setShowIndividualModal(false)} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
+                                    <X size={20} className="text-gray-500" />
+                                </button>
+                            </div>
+
+                            <div className="space-y-4">
+                                <div className="p-4 bg-yellow-50 rounded-xl border border-yellow-100 flex gap-3 text-sm text-yellow-800">
+                                    <span className="text-xl">⚠️</span>
+                                    <p>Generating payroll prematurely may affect attendance tracking. Ensure all leaves for <strong>{months.find(m => m.value === selectedMonth)?.label}</strong> are reconciled.</p>
+                                </div>
+
+                                <div className="space-y-2">
+                                    <label className="text-xs font-bold text-gray-500 uppercase">Select Employee</label>
+                                    <div className="relative">
+                                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+                                        <input
+                                            className="w-full bg-gray-50 border border-gray-200 rounded-xl py-2 pl-9 pr-4 text-sm focus:ring-2 focus:ring-primary-500 outline-none transition-all"
+                                            placeholder="Search by name or email..."
+                                            value={empSearch}
+                                            onChange={e => setEmpSearch(e.target.value)}
+                                        />
+                                    </div>
+                                    <div className="max-h-60 overflow-y-auto border border-gray-200 rounded-xl bg-white divide-y divide-gray-100">
+                                        {filteredEmployees.length === 0 ? (
+                                            <div className="p-4 text-center text-sm text-gray-400">No employees found</div>
+                                        ) : filteredEmployees.map(emp => (
+                                            <button
+                                                key={emp.id}
+                                                onClick={() => setSelectedEmployeeId(emp.id)}
+                                                className={`w-full text-left p-3 flex items-center justify-between hover:bg-primary-50 transition-colors ${selectedEmployeeId === emp.id ? 'bg-primary-50 ring-1 ring-primary-200' : ''}`}
+                                            >
+                                                <div>
+                                                    <div className="font-bold text-gray-900">{emp.user.name}</div>
+                                                    <div className="text-xs text-gray-500">{emp.user.email}</div>
+                                                </div>
+                                                {selectedEmployeeId === emp.id && <div className="w-2 h-2 rounded-full bg-primary-600"></div>}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                <button
+                                    onClick={() => handleGenerate(false)}
+                                    disabled={generating || !selectedEmployeeId}
+                                    className="btn btn-primary w-full py-3 text-sm font-bold text-center mt-4 disabled:opacity-50"
+                                >
+                                    {generating ? 'Processing...' : `Generate Payroll for Selected Employee`}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
             </div>
         </DashboardLayout>
     );

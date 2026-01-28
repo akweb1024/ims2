@@ -5,8 +5,10 @@ import {
     Briefcase, Users, UserPlus,
     Search, Filter, MapPin, DollarSign,
     MoreHorizontal, Edit, CheckCircle2, Clock,
-    Loader2
+    Loader2, BookOpen, Ban
 } from 'lucide-react';
+import RichTextEditor from '@/components/common/RichTextEditor';
+import ExamManagerModal from './ExamManagerModal';
 import { useJobPostings, useJobMutations } from '@/hooks/useRecruitment';
 import { useDepartments } from '@/hooks/useHR';
 
@@ -40,6 +42,8 @@ export default function JobPostingManager() {
     const { createJob, updateJob } = useJobMutations();
 
     const [showModal, setShowModal] = useState(false);
+    const [showExamModal, setShowExamModal] = useState(false);
+    const [selectedJob, setSelectedJob] = useState<any>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [formData, setFormData] = useState<JobForm>(initialForm);
 
@@ -154,13 +158,50 @@ export default function JobPostingManager() {
                                     <span className="text-secondary-400 text-xs italic">No applicants yet</span>
                                 )}
                             </div>
-                            <button className="text-secondary-400 hover:text-secondary-900 bg-secondary-50 p-2 rounded-full transition-colors">
-                                <Edit size={14} />
-                            </button>
+                            <div className="flex gap-2">
+                                <button
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        setSelectedJob(job);
+                                        setShowExamModal(true);
+                                    }}
+                                    className="text-primary-600 hover:text-primary-800 bg-primary-50 p-2 rounded-full transition-colors"
+                                    title="Manage Entrance Exam"
+                                >
+                                    <BookOpen size={14} />
+                                </button>
+                                <button className="text-secondary-400 hover:text-secondary-900 bg-secondary-50 p-2 rounded-full transition-colors" onClick={() => handleEdit(job)}>
+                                    <Edit size={14} />
+                                </button>
+                                <button
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        const newStatus = job.status === 'OPEN' ? 'CLOSED' : 'OPEN';
+                                        if (confirm(`Are you sure you want to ${newStatus === 'OPEN' ? 're-open' : 'close'} hiring for this position?`)) {
+                                            updateJob.mutate({ id: job.id, status: newStatus });
+                                        }
+                                    }}
+                                    className={`p-2 rounded-full transition-colors ${job.status === 'OPEN' ? 'text-red-400 hover:text-red-600 bg-red-50' : 'text-green-400 hover:text-green-600 bg-green-50'}`}
+                                    title={job.status === 'OPEN' ? 'Close Hiring' : 'Re-open Hiring'}
+                                >
+                                    {job.status === 'OPEN' ? <Ban size={14} /> : <CheckCircle2 size={14} />}
+                                </button>
+                            </div>
                         </div>
                     </div>
                 ))}
             </div>
+
+            {showExamModal && selectedJob && (
+                <ExamManagerModal
+                    jobId={selectedJob.id}
+                    jobTitle={selectedJob.title}
+                    onClose={() => {
+                        setShowExamModal(false);
+                        setSelectedJob(null);
+                    }}
+                />
+            )}
 
             {/* Create/Edit Job Modal */}
             {showModal && (
@@ -251,23 +292,25 @@ export default function JobPostingManager() {
 
                                     <div className="space-y-2">
                                         <label className="text-[10px] font-black text-secondary-400 uppercase tracking-widest">Description *</label>
-                                        <textarea
-                                            required
-                                            minLength={10}
-                                            className="w-full bg-secondary-50 border-none rounded-2xl p-4 font-medium h-32 focus:ring-2 focus:ring-primary-500"
-                                            value={formData.description}
-                                            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                                            placeholder="Detailed job responsibilities (min 10 chars)..."
-                                        />
+                                        <div className="bg-white rounded-2xl overflow-hidden border border-secondary-100 focus-within:ring-2 focus-within:ring-primary-500">
+                                            <RichTextEditor
+                                                value={formData.description}
+                                                onChange={(val) => setFormData({ ...formData, description: val })}
+                                                placeholder="Detailed job responsibilities (min 10 chars)..."
+                                                className="min-h-[150px]"
+                                            />
+                                        </div>
                                     </div>
                                     <div className="space-y-2">
                                         <label className="text-[10px] font-black text-secondary-400 uppercase tracking-widest">Requirements</label>
-                                        <textarea
-                                            className="w-full bg-secondary-50 border-none rounded-2xl p-4 font-medium h-24 focus:ring-2 focus:ring-primary-500"
-                                            value={formData.requirements}
-                                            onChange={(e) => setFormData({ ...formData, requirements: e.target.value })}
-                                            placeholder="Skills, qualifications, experience..."
-                                        />
+                                        <div className="bg-white rounded-2xl overflow-hidden border border-secondary-100 focus-within:ring-2 focus-within:ring-primary-500">
+                                            <RichTextEditor
+                                                value={formData.requirements}
+                                                onChange={(val) => setFormData({ ...formData, requirements: val })}
+                                                placeholder="Skills, qualifications, experience..."
+                                                className="min-h-[100px]"
+                                            />
+                                        </div>
                                     </div>
                                 </div>
                             </div>

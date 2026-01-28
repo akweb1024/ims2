@@ -426,7 +426,7 @@ export const PATCH = authorizedRoute(
     ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'TEAM_LEADER'],
     async (req: NextRequest, user) => {
         try {
-            const { id, status, managerComment, managerRating, approvedTaskIds, rejectedTaskIds } = await req.json();
+            const { id, status, managerComment, managerRating, approvedTaskIds, rejectedTaskIds, evaluation } = await req.json();
 
             const existing = await prisma.workReport.findUnique({
                 where: { id },
@@ -484,7 +484,8 @@ export const PATCH = authorizedRoute(
                     managerComment,
                     pointsEarned: finalPointsEarned,
                     tasksSnapshot: updatedTasksSnapshot,
-                    ...(managerRating && { managerRating: parseInt(managerRating) })
+                    ...(managerRating && { managerRating: parseInt(managerRating) }),
+                    evaluation
                 }
             });
 

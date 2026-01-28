@@ -19,6 +19,16 @@ const TeamAttendanceView: React.FC<TeamAttendanceViewProps> = ({ filters, setFil
         return new Date(dateStr).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
     };
 
+    const calculateDuration = (checkIn: string | null, checkOut: string | null) => {
+        if (!checkIn || !checkOut) return '--';
+        const start = new Date(checkIn).getTime();
+        const end = new Date(checkOut).getTime();
+        const diffMinutes = Math.floor((end - start) / 60000);
+        const hours = Math.floor(diffMinutes / 60);
+        const minutes = diffMinutes % 60;
+        return `${hours}h ${minutes}m`;
+    };
+
     const nextMonth = () => {
         let m = filters.month + 1;
         let y = filters.year;
@@ -66,6 +76,7 @@ const TeamAttendanceView: React.FC<TeamAttendanceViewProps> = ({ filters, setFil
                             <th className="px-8 py-6 text-left">Date</th>
                             <th className="px-8 py-6 text-center">Check-In</th>
                             <th className="px-8 py-6 text-center">Check-Out</th>
+                            <th className="px-8 py-6 text-center">Working Hrs</th>
                             <th className="px-8 py-6 text-center">Late/OT</th>
                             <th className="px-8 py-6 text-center">Status</th>
                             <th className="px-8 py-6 text-right">Location</th>
@@ -102,6 +113,9 @@ const TeamAttendanceView: React.FC<TeamAttendanceViewProps> = ({ filters, setFil
                                 <td className="px-8 py-5 text-center text-xs font-black text-secondary-900">
                                     {formatTime(log.checkOut)}
                                 </td>
+                                <td className="px-8 py-5 text-center text-xs font-bold text-secondary-600">
+                                    {calculateDuration(log.checkIn, log.checkOut)}
+                                </td>
                                 <td className="px-8 py-5 text-center">
                                     <div className="flex flex-col gap-0.5">
                                         {log.lateMinutes > 0 && (
@@ -117,8 +131,8 @@ const TeamAttendanceView: React.FC<TeamAttendanceViewProps> = ({ filters, setFil
                                 </td>
                                 <td className="px-8 py-5 text-center">
                                     <span className={`px-2 py-0.5 text-[9px] font-black rounded uppercase ${log.status === 'PRESENT' ? 'bg-emerald-50 text-emerald-700' :
-                                            log.status === 'LEAVE' ? 'bg-indigo-50 text-indigo-700' :
-                                                'bg-rose-50 text-rose-700'
+                                        log.status === 'LEAVE' ? 'bg-indigo-50 text-indigo-700' :
+                                            'bg-rose-50 text-rose-700'
                                         }`}>
                                         {log.status}
                                     </span>

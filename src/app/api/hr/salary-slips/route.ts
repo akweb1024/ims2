@@ -85,9 +85,9 @@ export const POST = authorizedRoute(
         try {
             const body = await req.json();
 
-            // Handle Bulk Generation
-            if (body.action === 'BULK_GENERATE') {
-                const { month, year } = body;
+            // Unified Generation Logic (Bulk or Single)
+            if (body.action === 'GENERATE' || body.action === 'BULK_GENERATE') {
+                const { month, year, employeeId } = body;
                 const m = parseInt(month);
                 const y = parseInt(year);
 
@@ -98,9 +98,26 @@ export const POST = authorizedRoute(
                     }
                 };
 
+                // Filter by specific employee if requested
+                if (employeeId) {
+                    where.id = employeeId;
+                }
+
                 if (['MANAGER', 'TEAM_LEADER'].includes(user.role)) {
                     const subIds = await getDownlineUserIds(user.id, user.companyId || undefined);
-                    where.userId = { in: subIds };
+                    // If creating for specific employee, ensure they are in downline
+                    if (employeeId) {
+                        const targetStats = await prisma.employeeProfile.findUnique({
+                            where: { id: employeeId },
+                            select: { userId: true }
+                        });
+                        if (!targetStats || !subIds.includes(targetStats.userId)) {
+                            return createErrorResponse('Forbidden: Not in your team', 403);
+                        }
+                        where.id = employeeId;
+                    } else {
+                        where.userId = { in: subIds };
+                    }
                 }
 
                 const employees = await prisma.employeeProfile.findMany({
@@ -110,15 +127,23 @@ export const POST = authorizedRoute(
                     }
                 });
 
+                if (employees.length === 0) {
+                    return NextResponse.json({ message: 'No eligible employees found for payroll generation.', count: 0 });
+                }
+
                 const statutoryConfig = await PayrollCalculator.getStatutoryConfig(user.companyId!);
 
                 let generatedCount = 0;
                 for (const emp of employees) {
                     try {
                         await prisma.$transaction(async (tx) => {
+                            // Check if already exists
                             const existing = await tx.salarySlip.findFirst({
                                 where: { employeeId: emp.id, month: m, year: y }
                             });
+
+                            // If generating single, we might want to overwrite or warn? 
+                            // For now, let's skip if exists, similar to bulk.
                             if (existing) return;
 
                             const struct = emp.salaryStructure;
@@ -256,7 +281,7 @@ export const POST = authorizedRoute(
                     }
                 }
 
-                return NextResponse.json({ message: `Automated Statutory Payroll run complete for ${generatedCount} staff.`, count: generatedCount });
+                return NextResponse.json({ message: `Payroll generation complete for ${generatedCount} employee(s).`, count: generatedCount });
             }
 
             // Single Creation

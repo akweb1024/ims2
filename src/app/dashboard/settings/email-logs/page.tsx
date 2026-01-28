@@ -6,6 +6,8 @@ import FormattedDate from '@/components/common/FormattedDate';
 import EmailLogFilters from './EmailLogFilters';
 import Link from 'next/link';
 
+export const dynamic = 'force-dynamic';
+
 export default async function EmailLogsPage({ searchParams }: { searchParams: Promise<{ [key: string]: string | string[] | undefined }> }) {
     const user = await getAuthenticatedUser();
 

@@ -6,8 +6,9 @@ import {
     Calendar, Star, MoreVertical,
     CheckCircle2, XCircle, Clock,
     Sparkles, Filter, Search,
-    ArrowRight
+    ArrowRight, MessageSquare
 } from 'lucide-react';
+import InterviewFeedbackModal from './InterviewFeedbackModal';
 import { useJobApplications, useJobPostings, useApplicationMutations, useInterviewMutations } from '@/hooks/useRecruitment';
 import { useEmployees } from '@/hooks/useHR';
 
@@ -19,8 +20,11 @@ export default function ApplicantPipeline() {
     const { scheduleInterview } = useInterviewMutations();
 
     const [draggedAppId, setDraggedAppId] = useState<string | null>(null);
+    const [dragOverStage, setDragOverStage] = useState<string | null>(null);
     const [showInterviewModal, setShowInterviewModal] = useState(false);
     const [selectedAppForInterview, setSelectedAppForInterview] = useState<any>(null);
+    const [showFeedbackModal, setShowFeedbackModal] = useState(false);
+    const [feedbackInterview, setFeedbackInterview] = useState<any>(null);
     const [interviewData, setInterviewData] = useState({
         interviewerId: '',
         scheduledAt: '',
@@ -43,10 +47,31 @@ export default function ApplicantPipeline() {
 
     const stages = ['APPLIED', 'SCREENING', 'INTERVIEW', 'OFFER', 'HIRED', 'REJECTED'];
 
+    const handleDragStart = (e: React.DragEvent, appId: string) => {
+        setDraggedAppId(appId);
+        e.dataTransfer.setData('applicationId', appId);
+        e.dataTransfer.effectAllowed = 'move';
+        // Add ghost image styling if needed, or rely on browser default
+    };
+
+    const handleDragOver = (e: React.DragEvent, stage: string) => {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+        if (dragOverStage !== stage) setDragOverStage(stage);
+    };
+
     const handleDrop = async (e: React.DragEvent, newStatus: string) => {
         e.preventDefault();
-        if (draggedAppId && newStatus) {
-            await updateStatus.mutateAsync({ id: draggedAppId, status: newStatus });
+        setDragOverStage(null);
+        const appId = draggedAppId || e.dataTransfer.getData('applicationId');
+
+        if (appId && newStatus) {
+            try {
+                await updateStatus.mutateAsync({ id: appId, status: newStatus });
+                // Toast or feedback could be added here
+            } catch (err) {
+                console.error("Failed to update status", err);
+            }
             setDraggedAppId(null);
         }
     };
@@ -134,8 +159,9 @@ export default function ApplicantPipeline() {
                         return (
                             <div
                                 key={stage}
-                                className="w-80 flex flex-col gap-4"
-                                onDragOver={(e) => e.preventDefault()}
+                                className={`w-80 flex flex-col gap-4 transition-colors rounded-xl p-2 ${dragOverStage === stage ? 'bg-primary-50/50 ring-2 ring-primary-200' : ''}`}
+                                onDragOver={(e) => handleDragOver(e, stage)}
+                                onDragLeave={() => setDragOverStage(null)}
                                 onDrop={(e) => handleDrop(e, stage)}
                             >
                                 {/* Column Header */}
@@ -153,12 +179,12 @@ export default function ApplicantPipeline() {
                                 </div>
 
                                 {/* Cards Container */}
-                                <div className="flex flex-col gap-3 h-full pb-10">
+                                <div className="flex flex-col gap-3 h-full pb-10 min-h-[100px]">
                                     {stageApps.map((app) => (
                                         <div
                                             key={app.id}
                                             draggable
-                                            onDragStart={() => setDraggedAppId(app.id)}
+                                            onDragStart={(e) => handleDragStart(e, app.id)}
                                             className="group bg-white rounded-xl p-4 shadow-sm border border-gray-100 hover:shadow-lg hover:border-purple-200 cursor-move transition-all active:scale-95 relative overflow-hidden"
                                         >
                                             {/* AI Match Strip */}
@@ -211,6 +237,15 @@ export default function ApplicantPipeline() {
                                                         Schedule <ArrowRight size={10} />
                                                     </button>
                                                 )}
+
+                                                {stage === 'INTERVIEW' && app.interviews?.[0] && (
+                                                    <button
+                                                        onClick={() => { setFeedbackInterview(app.interviews[0]); setShowFeedbackModal(true); }}
+                                                        className="flex items-center gap-1 text-[10px] font-bold text-amber-600 uppercase hover:bg-amber-50 px-2 py-1 rounded transition-colors ml-2"
+                                                    >
+                                                        <MessageSquare size={10} /> Feedback
+                                                    </button>
+                                                )}
                                             </div>
                                         </div>
                                     ))}
@@ -228,6 +263,14 @@ export default function ApplicantPipeline() {
                     })}
                 </div>
             </div>
+
+            {/* Feedback Modal */}
+            {showFeedbackModal && feedbackInterview && (
+                <InterviewFeedbackModal
+                    interview={feedbackInterview}
+                    onClose={() => { setShowFeedbackModal(false); setFeedbackInterview(null); }}
+                />
+            )}
 
             {/* Schedule Interview Modal */}
             {showInterviewModal && selectedAppForInterview && (

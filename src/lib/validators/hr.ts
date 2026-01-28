@@ -16,7 +16,16 @@ export const UserRole = z.enum([
     "FINANCE_ADMIN",
     "CUSTOMER",
     "AGENCY",
-    "EDITOR"
+    "EDITOR",
+    "HR",
+    "IT_MANAGER",
+    "IT_ADMIN",
+    "JOURNAL_MANAGER",
+    "PLAGIARISM_CHECKER",
+    "QUALITY_CHECKER",
+    "EDITOR_IN_CHIEF",
+    "SECTION_EDITOR",
+    "REVIEWER"
 ]);
 
 export const EmployeeType = z.enum([

@@ -56,7 +56,11 @@ export const GET = authorizedRoute(
             const applications = await prisma.jobApplication.findMany({
                 where,
                 include: {
-                    jobPosting: { select: { title: true, companyId: true } }
+                    jobPosting: { select: { title: true, companyId: true } },
+                    interviews: {
+                        orderBy: { scheduledAt: 'desc' },
+                        take: 1
+                    }
                 },
                 orderBy: { createdAt: 'desc' }
             });

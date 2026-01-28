@@ -6,7 +6,7 @@ import FormattedDate from '@/components/common/FormattedDate';
 
 interface WorkReportValidatorProps {
     reports: any[];
-    onApprove: (reportId: string, approvedTaskIds: string[], rejectedTaskIds: string[], managerComment: string, managerRating: number) => Promise<void>;
+    onApprove: (reportId: string, approvedTaskIds: string[], rejectedTaskIds: string[], managerComment: string, managerRating: number, evaluation?: any) => Promise<void>;
     onAddComment: (reportId: string, content: string) => Promise<void>;
 }
 
@@ -20,6 +20,12 @@ export default function WorkReportValidator({ reports, onApprove, onAddComment }
     const [rejectedTaskIds, setRejectedTaskIds] = useState<string[]>([]);
     const [managerComment, setManagerComment] = useState('');
     const [managerRating, setManagerRating] = useState(5);
+    const [evaluation, setEvaluation] = useState({
+        discipline: 5,
+        workQuality: 5,
+        efficiency: 5,
+        instructionCompliance: 5
+    });
     const [commentText, setCommentText] = useState('');
     const [submitting, setSubmitting] = useState(false);
 
@@ -32,6 +38,12 @@ export default function WorkReportValidator({ reports, onApprove, onAddComment }
         setRejectedTaskIds([]);
         setManagerComment('');
         setManagerRating(report.selfRating || 5);
+        setEvaluation(report.evaluation || {
+            discipline: 5,
+            workQuality: 5,
+            efficiency: 5,
+            instructionCompliance: 5
+        });
         setShowValidationModal(true);
     };
 
@@ -69,7 +81,8 @@ export default function WorkReportValidator({ reports, onApprove, onAddComment }
                 approvedTaskIds,
                 rejectedTaskIds,
                 managerComment,
-                managerRating
+                managerRating,
+                evaluation
             );
             setShowValidationModal(false);
             setSelectedReport(null);
@@ -446,12 +459,43 @@ export default function WorkReportValidator({ reports, onApprove, onAddComment }
                                 </div>
                             )}
 
-                            {/* Manager Feedback */}
                             <div className="space-y-4">
-                                <h4 className="font-bold text-lg text-secondary-900">Manager Feedback</h4>
+                                <h4 className="font-bold text-lg text-secondary-900 border-b border-secondary-100 pb-2">Evaluation Metrics</h4>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    {Object.entries(evaluation).map(([key, val]) => (
+                                        <div key={key} className="bg-secondary-50 p-3 rounded-lg">
+                                            <div className="flex justify-between items-center mb-1">
+                                                <label className="text-xs font-bold text-secondary-600 uppercase tracking-wider">
+                                                    {key.replace(/([A-Z])/g, ' $1').trim()}
+                                                </label>
+                                                <span className={`text-xs font-black px-2 py-0.5 rounded ${Number(val) >= 4 ? 'bg-success-100 text-success-700' : Number(val) >= 3 ? 'bg-indigo-100 text-indigo-700' : 'bg-rose-100 text-rose-700'}`}>
+                                                    {val}/5
+                                                </span>
+                                            </div>
+                                            <input
+                                                type="range"
+                                                min="1"
+                                                max="5"
+                                                step="0.5"
+                                                value={val as number}
+                                                onChange={(e) => setEvaluation({ ...evaluation, [key]: Number(e.target.value) })}
+                                                className="w-full h-2 bg-secondary-200 rounded-lg appearance-none cursor-pointer accent-primary-600"
+                                            />
+                                            <div className="flex justify-between text-[10px] text-secondary-400 font-bold uppercase mt-1">
+                                                <span>Needs Improvement</span>
+                                                <span>Outstanding</span>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Manager Feedback */}
+                            <div className="space-y-4 pt-4 border-t border-secondary-100">
+                                <h4 className="font-bold text-lg text-secondary-900">Final Verdict & Feedback</h4>
 
                                 <div>
-                                    <label className="label">Rating (1-10)</label>
+                                    <label className="label">Overall Rating (1-10)</label>
                                     <input
                                         type="range"
                                         min="1"
