@@ -5,7 +5,7 @@ import { sendEmail } from '@/lib/email';
 import { prisma } from '@/lib/prisma';
 
 export const POST = authorizedRoute(
-    ['SUPER_ADMIN', 'ADMIN', 'HR_MANAGER'],
+    ['SUPER_ADMIN', 'ADMIN', 'HR_MANAGER', 'HR'],
     async (req: NextRequest, user) => {
         try {
             const body = await req.json();

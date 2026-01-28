@@ -4,7 +4,7 @@ import { authorizedRoute } from '@/lib/middleware-auth';
 import { createErrorResponse } from '@/lib/api-utils';
 
 export const GET = authorizedRoute(
-    ['SUPER_ADMIN', 'ADMIN', 'HR_MANAGER', 'MANAGER'],
+    ['SUPER_ADMIN', 'ADMIN', 'HR_MANAGER', 'HR', 'MANAGER'],
     async (req: NextRequest, user) => {
         try {
             const { searchParams } = new URL(req.url);
@@ -36,7 +36,7 @@ export const GET = authorizedRoute(
 );
 
 export const POST = authorizedRoute(
-    ['SUPER_ADMIN', 'ADMIN', 'HR_MANAGER', 'MANAGER'],
+    ['SUPER_ADMIN', 'ADMIN', 'HR_MANAGER', 'HR', 'MANAGER'],
     async (req: NextRequest, user) => {
         try {
             const body = await req.json();
@@ -74,7 +74,7 @@ export const POST = authorizedRoute(
 );
 
 export const PATCH = authorizedRoute(
-    ['SUPER_ADMIN', 'ADMIN', 'HR_MANAGER', 'MANAGER'],
+    ['SUPER_ADMIN', 'ADMIN', 'HR_MANAGER', 'HR', 'MANAGER'],
     async (req: NextRequest, user) => {
         try {
             const body = await req.json();

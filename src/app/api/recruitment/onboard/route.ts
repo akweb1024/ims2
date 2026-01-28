@@ -16,7 +16,7 @@ const hydrateTemplate = (content: string, vars: Record<string, string>) => {
 };
 
 export const POST = authorizedRoute(
-    ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'HR_MANAGER'],
+    ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'HR_MANAGER', 'HR'],
     async (req: NextRequest, user) => {
         try {
             const { applicationId, role, designation, companyId, baseSalary } = await req.json();

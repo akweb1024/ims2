@@ -6,7 +6,7 @@ import { createErrorResponse } from '@/lib/api-utils';
 import { getDownlineUserIds } from '@/lib/hierarchy';
 
 export const GET = authorizedRoute(
-    ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'TEAM_LEADER', 'HR_MANAGER'],
+    ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'TEAM_LEADER', 'HR_MANAGER', 'HR'],
     async (req: NextRequest, user) => {
         try {
             const url = new URL(req.url);

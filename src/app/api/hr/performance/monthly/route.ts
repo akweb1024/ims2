@@ -233,7 +233,7 @@ async function calculateEmployeePerformance(employeeId: string, month: number, y
     };
 }
 
-export const POST = authorizedRoute(['SUPER_ADMIN', 'ADMIN', 'HR_MANAGER'], async (req: NextRequest, user: any) => {
+export const POST = authorizedRoute(['SUPER_ADMIN', 'ADMIN', 'HR_MANAGER', 'HR'], async (req: NextRequest, user: any) => {
     try {
         const { month, year, employeeId, companyId } = await req.json();
 
@@ -315,7 +315,7 @@ export const POST = authorizedRoute(['SUPER_ADMIN', 'ADMIN', 'HR_MANAGER'], asyn
 });
 
 // GET: Retrieve performance snapshots
-export const GET = authorizedRoute(['SUPER_ADMIN', 'ADMIN', 'HR_MANAGER', 'MANAGER'], async (req: NextRequest, user: any) => {
+export const GET = authorizedRoute(['SUPER_ADMIN', 'ADMIN', 'HR_MANAGER', 'HR', 'MANAGER'], async (req: NextRequest, user: any) => {
     try {
         const { searchParams } = new URL(req.url);
         const month = searchParams.get('month');

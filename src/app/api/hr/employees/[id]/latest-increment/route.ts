@@ -4,7 +4,7 @@ import { authorizedRoute } from '@/lib/middleware-auth';
 import { createErrorResponse } from '@/lib/api-utils';
 
 export const GET = authorizedRoute(
-    ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'HR_MANAGER', 'FINANCE_ADMIN'],
+    ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'HR_MANAGER', 'HR', 'FINANCE_ADMIN'],
     async (req: NextRequest, user) => {
         try {
             // Extract ID from URL (last segment)

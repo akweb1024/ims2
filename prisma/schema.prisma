@@ -3476,6 +3476,7 @@ enum UserRole {
   REVIEWER
   IT_MANAGER
   IT_ADMIN
+  HR
 }
 
 enum CustomerType {

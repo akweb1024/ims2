@@ -4,7 +4,7 @@ import { authorizedRoute } from '@/lib/middleware-auth';
 import { logger } from '@/lib/logger';
 
 export const GET = authorizedRoute(
-    ['SUPER_ADMIN', 'ADMIN', 'HR_MANAGER', 'FINANCE_ADMIN'],
+    ['SUPER_ADMIN', 'ADMIN', 'HR_MANAGER', 'HR', 'FINANCE_ADMIN'],
     async (req: NextRequest, user) => {
         try {
             const companyId = user.companyId;

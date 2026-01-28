@@ -14,7 +14,7 @@ export async function POST(
         }
 
         const userRole = user.role;
-        const isApprover = ['HR_MANAGER', 'ADMIN', 'SUPER_ADMIN'].includes(userRole);
+        const isApprover = ['HR_MANAGER', 'HR', 'ADMIN', 'SUPER_ADMIN'].includes(userRole);
         const isManager = userRole === 'MANAGER' || userRole === 'TEAM_LEADER';
 
         if (!isApprover && !isManager) {

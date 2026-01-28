@@ -4,7 +4,7 @@ import { authorizedRoute } from '@/lib/middleware-auth';
 import { createErrorResponse } from '@/lib/api-utils';
 
 export const GET = authorizedRoute(
-    ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'HR_MANAGER'],
+    ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'HR_MANAGER', 'HR'],
     async (req: NextRequest, user) => {
         try {
             const companyId = user.companyId;

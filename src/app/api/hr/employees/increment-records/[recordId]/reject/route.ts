@@ -9,7 +9,7 @@ export async function POST(
     try {
         const { recordId } = await context.params;
         const user = await getAuthenticatedUser();
-        if (!user || !['HR_MANAGER', 'ADMIN', 'SUPER_ADMIN'].includes(user.role)) {
+        if (!user || !['HR_MANAGER', 'HR', 'ADMIN', 'SUPER_ADMIN'].includes(user.role)) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 

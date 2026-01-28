@@ -320,6 +320,7 @@ export default function EmployeeForm({
                             <option value="TEAM_LEADER">Team Leader</option>
                             <option value="MANAGER">Manager</option>
                             <option value="ADMIN">Admin</option>
+                            <option value="HR">HR</option>
                             <option value="HR_MANAGER">HR Manager</option>
                             <option value="FINANCE_ADMIN">Finance Admin</option>
                             <option value="EDITOR">Editor</option>
