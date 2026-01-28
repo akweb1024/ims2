@@ -104,7 +104,18 @@ async function calculateEmployeePerformance(employeeId: string, month: number, y
         : 0;
 
     const tasksCompleted = workReports.reduce((sum, r) => sum + (r.tasksCompleted || 0), 0);
-    const totalRevenueGenerated = workReports.reduce((sum, r) => sum + (r.revenueGenerated || 0), 0);
+
+    // Calculate Verified Revenue from Claims
+    const approvedClaims = await prisma.revenueClaim.findMany({
+        where: {
+            employeeId,
+            status: 'APPROVED',
+            revenueTransaction: {
+                paymentDate: { gte: startDate, lte: endDate }
+            }
+        }
+    });
+    const totalRevenueGenerated = approvedClaims.reduce((sum, c) => sum + c.claimAmount, 0);
 
     // Communication Score (based on work report metrics)
     const totalCalls = workReports.reduce((sum, r) => sum + (r.followUpsCompleted || 0), 0);

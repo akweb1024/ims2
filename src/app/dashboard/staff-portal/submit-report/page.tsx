@@ -44,7 +44,8 @@ export default function SubmitReportPage() {
         tax: '',
         originalAmount: '',
         currency: 'INR',
-        inrAmount: ''
+        inrAmount: '',
+        revenueType: 'NEW'
     });
 
     // Form State - Simplified to narrative only
@@ -389,7 +390,8 @@ export default function SubmitReportPage() {
                     tax: '',
                     originalAmount: '',
                     currency: 'INR',
-                    inrAmount: ''
+                    inrAmount: '',
+                    revenueType: 'NEW'
                 });
                 setShowRevenueModal(false);
             } else {
@@ -1088,6 +1090,18 @@ export default function SubmitReportPage() {
                                             <option value="CHEQUE">Cheque Payment</option>
                                             <option value="DD">Demand Draft (DD)</option>
                                             <option value="OTHER">Other Method</option>
+                                        </select>
+                                    </div>
+                                    <div className="col-span-1">
+                                        <label className="text-[10px] font-black text-secondary-400 uppercase tracking-widest block mb-1">Revenue Type</label>
+                                        <select
+                                            className="w-full px-4 py-3 rounded-xl border border-secondary-200 focus:ring-2 focus:ring-primary-500 transition-all outline-none"
+                                            value={revenueFormData.revenueType || 'NEW'}
+                                            onChange={(e) => setRevenueFormData({ ...revenueFormData, revenueType: e.target.value })}
+                                            title="Revenue Type"
+                                        >
+                                            <option value="NEW">New Business</option>
+                                            <option value="RENEWAL">Renewal</option>
                                         </select>
                                     </div>
 

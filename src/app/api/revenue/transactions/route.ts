@@ -115,7 +115,8 @@ export const POST = authorizedRoute(['ADMIN', 'SUPER_ADMIN', 'MANAGER', 'TEAM_LE
             notes,
             customerProfileId,
             institutionId,
-            invoiceId
+            invoiceId,
+            revenueType
         } = body;
 
         // Validate required fields
@@ -159,7 +160,8 @@ export const POST = authorizedRoute(['ADMIN', 'SUPER_ADMIN', 'MANAGER', 'TEAM_LE
                 customerProfileId: customerProfileId || null,
                 institutionId: institutionId || null,
                 invoiceId: invoiceId || null,
-                createdBy: user.id
+                createdBy: user.id,
+                revenueType: revenueType || 'NEW'
             }
         });
 
@@ -222,6 +224,12 @@ export const PUT = authorizedRoute(['ADMIN', 'SUPER_ADMIN', 'MANAGER', 'FINANCE_
             if (verificationStatus === 'VERIFIED') {
                 data.verifiedAt = new Date();
                 data.approvedByManagerId = user.id; // Usually user.id is User ID, need Employee Profile ID if possible
+
+                // Auto-approve linked claims
+                await prisma.revenueClaim.updateMany({
+                    where: { revenueTransactionId: id },
+                    data: { status: 'APPROVED' }
+                });
             }
         }
 
