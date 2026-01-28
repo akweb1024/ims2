@@ -476,11 +476,21 @@ function NewIncrementContent() {
                                             onChange={(e) => setForm({ ...form, fiscalYear: e.target.value })}
                                         >
                                             <option value="">Select FY</option>
-                                            <option value="22-23">FY 2022-23</option>
-                                            <option value="23-24">FY 2023-24</option>
-                                            <option value="24-25">FY 2024-25</option>
-                                            <option value="25-26">FY 2025-26</option>
-                                            <option value="26-27">FY 2026-27</option>
+                                            {(() => {
+                                                const currentYear = new Date().getFullYear();
+                                                const startYear = 2022;
+                                                const endYear = currentYear + 5;
+                                                const years = [];
+                                                for (let year = startYear; year <= endYear; year++) {
+                                                    const fy = `${String(year).slice(-2)}-${String(year + 1).slice(-2)}`;
+                                                    years.push(
+                                                        <option key={fy} value={fy}>
+                                                            FY {year}-{String(year + 1).slice(-2)}
+                                                        </option>
+                                                    );
+                                                }
+                                                return years;
+                                            })()}
                                         </select>
                                     </div>
 

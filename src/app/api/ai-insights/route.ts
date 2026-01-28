@@ -215,11 +215,22 @@ export async function GET(req: NextRequest) {
                     teamCount: employees.length
                 },
                 insights: insights.slice(0, 5),
-                teamAnalysis: metrics.map(m => ({
-                    role: m.role,
-                    headcount: 1, // Simplified for this view
-                    avgRating: (m.avgCompliance * 5).toFixed(1),
-                    avgAttendance: m.reportCount
+                teamAnalysis: Object.entries(
+                    metrics.reduce((acc: any, curr) => {
+                        const role = curr.role || 'Unspecified';
+                        if (!acc[role]) {
+                            acc[role] = { headcount: 0, totalRating: 0, totalAttendance: 0 };
+                        }
+                        acc[role].headcount += 1;
+                        acc[role].totalRating += (curr.avgCompliance * 5);
+                        acc[role].totalAttendance += curr.reportCount;
+                        return acc;
+                    }, {})
+                ).map(([role, data]: [string, any]) => ({
+                    role,
+                    headcount: data.headcount,
+                    avgRating: (data.totalRating / data.headcount).toFixed(1),
+                    avgAttendance: Math.round(data.totalAttendance / data.headcount)
                 }))
             });
         }

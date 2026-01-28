@@ -17,6 +17,11 @@ const updateIncrementSchema = z.object({
     effectiveDate: z.string().optional(),
     newMonthlyTarget: z.number().min(0).optional(),
     newYearlyTarget: z.number().min(0).optional(),
+    fiscalYear: z.string().optional(),
+    q1Target: z.number().min(0).optional(),
+    q2Target: z.number().min(0).optional(),
+    q3Target: z.number().min(0).optional(),
+    q4Target: z.number().min(0).optional(),
 });
 
 // GET: Get increment details
@@ -151,6 +156,11 @@ export const PATCH = authorizedRoute(
             if (typeof data.newMonthlyTarget === 'number') updateData.newMonthlyTarget = data.newMonthlyTarget;
             if (typeof data.newYearlyTarget === 'number') updateData.newYearlyTarget = data.newYearlyTarget;
             if (data.effectiveDate) updateData.effectiveDate = new Date(data.effectiveDate);
+            if (data.fiscalYear) updateData.fiscalYear = data.fiscalYear;
+            if (typeof data.q1Target === 'number') updateData.q1Target = data.q1Target;
+            if (typeof data.q2Target === 'number') updateData.q2Target = data.q2Target;
+            if (typeof data.q3Target === 'number') updateData.q3Target = data.q3Target;
+            if (typeof data.q4Target === 'number') updateData.q4Target = data.q4Target;
 
             const updated = await prisma.salaryIncrementRecord.update({
                 where: { id },
