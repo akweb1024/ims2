@@ -126,6 +126,12 @@ const LeaveLedgerRow = ({ row, onSave }: { row: any, onSave: (data: any) => Prom
                 />
             </td>
             <td className="px-6 py-4">
+                <div className="flex flex-col items-center">
+                    <span className="text-[10px] font-black text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-100 mb-1" title="Late Arrivals">L: {row.lateArrivalCount || 0}</span>
+                    <span className="text-[10px] font-black text-rose-600 bg-rose-50 px-1.5 py-0.5 rounded border border-rose-100" title="Short Leaves">S: {row.shortLeaveCount || 0}</span>
+                </div>
+            </td>
+            <td className="px-6 py-4">
                 <input
                     type="number"
                     step="0.5"
@@ -1083,6 +1089,28 @@ const HRManagementContent = () => {
                                 <div className="flex gap-2">
                                     <button
                                         onClick={async () => {
+                                            if (!confirm('Auto-credit 1.5 leaves to all active employees for this month?')) return;
+                                            try {
+                                                const res = await fetch('/api/hr/leave-ledger/auto-credit', {
+                                                    method: 'POST',
+                                                    headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+                                                });
+                                                if (res.ok) {
+                                                    toast.success('Leaves auto-credited successfully!');
+                                                    window.location.reload();
+                                                } else {
+                                                    toast.error('Failed to auto-credit leaves');
+                                                }
+                                            } catch (err) {
+                                                toast.error('Network error');
+                                            }
+                                        }}
+                                        className="btn bg-indigo-50 text-indigo-700 border-indigo-100 hover:bg-indigo-100 py-2 px-4 text-xs font-bold flex items-center gap-2"
+                                    >
+                                        <span>⚡</span> Auto-Credit
+                                    </button>
+                                    <button
+                                        onClick={async () => {
                                             const res = await fetch(`/api/hr/leave-ledger/export?month=${ledgerFilter.month}&year=${ledgerFilter.year}`, {
                                                 headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
                                             });
@@ -1156,6 +1184,7 @@ const HRManagementContent = () => {
                                         <th className="px-6 py-5 text-center">Last Bal</th>
                                         <th className="px-6 py-5 text-center">Allotted</th>
                                         <th className="px-6 py-5 text-center">Taken</th>
+                                        <th className="px-6 py-5 text-center">L/S Counts</th>
                                         <th className="px-6 py-5 text-center">Late Deds</th>
                                         <th className="px-6 py-5 text-center">Short Deds</th>
                                         <th className="px-6 py-5 text-center">Neg Leave</th>

@@ -55,6 +55,8 @@ export const GET = authorizedRoute(
                     openingBalance: ledger?.openingBalance || 0,
                     autoCredit: ledger?.autoCredit || 1.5, // Default to 1.5
                     takenLeaves: ledger?.takenLeaves || 0,
+                    lateArrivalCount: ledger?.lateArrivalCount || 0,
+                    shortLeaveCount: ledger?.shortLeaveCount || 0,
                     lateDeductions: ledger?.lateDeductions || 0,
                     shortLeaveDeductions: ledger?.shortLeaveDeductions || 0,
                     closingBalance: ledger?.closingBalance || 0,
