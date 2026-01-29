@@ -55,13 +55,15 @@ export default function EmployeeIDCard({ employee }: { employee: any }) {
                 <div
                     ref={cardRef}
                     style={{ '--bg-url': 'url("/patterns/map-grid.svg")' } as React.CSSProperties}
-                    className="w-[350px] h-[550px] bg-white rounded-3xl shadow-2xl relative overflow-hidden border border-secondary-200 [background-image:var(--bg-url)] [background-size:cover]"
+                    className="w-[350px] h-[580px] bg-white rounded-3xl shadow-2xl relative overflow-hidden border border-secondary-200 [background-image:var(--bg-url)] [background-size:cover]"
                 >
                     {/* Header */}
                     <div className="h-32 bg-primary-600 relative overflow-hidden flex items-center justify-center">
                         <div className="absolute inset-0 bg-gradient-to-br from-primary-500 to-primary-700 opacity-90"></div>
-                        <div className="relative z-10 text-center">
-                            <h2 className="text-2xl font-black text-white uppercase tracking-widest">{employee.user.companies?.[0]?.name || 'STM Journals'}</h2>
+                        <div className="relative z-10 text-center w-full px-4">
+                            <h2 className="text-xl font-black text-white uppercase tracking-widest truncate">
+                                {employee.user.company?.name || employee.user.companies?.[0]?.name || 'STM Journals'}
+                            </h2>
                             <p className="text-[10px] text-primary-100 uppercase tracking-widest font-bold">Identity Card</p>
                         </div>
                         {/* Decorative Circles */}
@@ -92,7 +94,7 @@ export default function EmployeeIDCard({ employee }: { employee: any }) {
                     </div>
 
                     <div className="text-center mt-4 px-6 space-y-1">
-                        <h3 className="text-2xl font-bold text-secondary-900">{employee.user.name || employee.user.email.split('@')[0]}</h3>
+                        <h3 className="text-2xl font-bold text-secondary-900 leading-tight">{employee.user.name || employee.user.email.split('@')[0]}</h3>
                         <p className="text-sm font-bold text-primary-600 uppercase tracking-wider">{employee.designatRef?.name || employee.designation || 'Specialist'}</p>
                         <div className="flex justify-center gap-2 mt-2">
                             <span className="px-2 py-1 bg-secondary-100 rounded text-[10px] font-mono text-secondary-600">ID: {employee.employeeId || 'N/A'}</span>
@@ -100,36 +102,36 @@ export default function EmployeeIDCard({ employee }: { employee: any }) {
                         </div>
                     </div>
 
-                    <div className="mt-8 px-8 space-y-4">
+                    <div className="mt-6 px-8 space-y-3">
                         <div className="flex items-start gap-4 text-xs text-secondary-600 border-b border-secondary-100 pb-2">
-                            <span className="font-bold w-16 uppercase text-[10px] text-secondary-400">Email</span>
-                            <span className="flex-1 truncate">{employee.user.email}</span>
+                            <span className="font-bold w-20 uppercase text-[10px] text-secondary-400">Department</span>
+                            <span className="flex-1 truncate font-medium">{employee.user.department?.name || 'N/A'}</span>
                         </div>
                         <div className="flex items-start gap-4 text-xs text-secondary-600 border-b border-secondary-100 pb-2">
-                            <span className="font-bold w-16 uppercase text-[10px] text-secondary-400">Phone</span>
-                            <span className="flex-1">{employee.phoneNumber || '--'}</span>
+                            <span className="font-bold w-20 uppercase text-[10px] text-secondary-400">Join Date</span>
+                            <span className="flex-1 font-medium">{employee.dateOfJoining ? new Date(employee.dateOfJoining).toLocaleDateString() : '--'}</span>
                         </div>
                         <div className="flex items-start gap-4 text-xs text-secondary-600 border-b border-secondary-100 pb-2">
-                            <span className="font-bold w-16 uppercase text-[10px] text-secondary-400">DOB</span>
-                            <span className="flex-1">{employee.dateOfBirth ? new Date(employee.dateOfBirth).toLocaleDateString() : '--'}</span>
+                            <span className="font-bold w-20 uppercase text-[10px] text-secondary-400">Exp.</span>
+                            <span className="flex-1 font-medium">{employee.calculatedTotalExperience || '0 years'}</span>
                         </div>
-                        <div className="flex items-start gap-4 text-xs text-secondary-600">
-                            <span className="font-bold w-16 uppercase text-[10px] text-secondary-400">Address</span>
-                            <span className="flex-1 line-clamp-2">{employee.address || 'Address not provided'}</span>
+                        <div className="flex items-start gap-4 text-xs text-secondary-600 border-b border-secondary-100 pb-2">
+                            <span className="font-bold w-20 uppercase text-[10px] text-secondary-400">Mobile</span>
+                            <span className="flex-1 font-medium">{employee.phoneNumber || '--'}</span>
                         </div>
                     </div>
 
                     {/* Footer / QR */}
                     <div className="absolute bottom-6 left-0 right-0 text-center">
-                        <div className="w-16 h-16 bg-white mx-auto p-1 rounded shadow-sm">
+                        <div className="w-14 h-14 bg-white mx-auto p-1 rounded shadow-sm">
                             {/* Simple simulated QR */}
                             <div
                                 className="w-full h-full bg-secondary-900 [background-size:cover] [background-image:var(--qr-url)]"
-                                style={{ '--qr-url': `url("https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${employee.employeeId || 'STM'}")` } as React.CSSProperties}
+                                style={{ '--qr-url': `url("https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${employee.employeeId || employee.user.email}")` } as React.CSSProperties}
                                 title="Employee ID QR Code"
                             />
                         </div>
-                        <p className="text-[9px] text-secondary-400 mt-2 font-mono uppercase tracking-widest">{employee.user.companies?.[0]?.website || 'stmjournals.com'}</p>
+                        <p className="text-[8px] text-secondary-400 mt-2 font-mono uppercase tracking-widest">{employee.user.company?.website || 'stmjournals.com'}</p>
                     </div>
                 </div>
             </div>
