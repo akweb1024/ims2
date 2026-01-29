@@ -5,6 +5,8 @@ import { useEffect, useState } from "react";
 import FinancialsSection from "./FinancialsSection";
 import EmployeeStatsSection from "./EmployeeStatsSection";
 import SalaryAnalysisSection from "./SalaryAnalysisSection";
+import ExecutiveSummary from "./ExecutiveSummary";
+import CompanyPerformanceGrid from "./CompanyPerformanceGrid";
 import { Card } from "@/components/ui/Card";
 import { Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -51,19 +53,29 @@ export default function SuperAdminView() {
 
     return (
         <div className="space-y-8 p-8">
-            <h1 className="text-3xl font-black text-secondary-900">Organization Overview</h1>
+            {/* Dashboard Header */}
+            <div className="mb-8">
+                <h1 className="text-3xl font-black text-secondary-900 mb-2">Executive Overview</h1>
+                <p className="text-secondary-500 text-sm">Strategic insights across {data?.executive?.activeCompanies} companies.</p>
+            </div>
 
-            {/* Financial Overview */}
-            <FinancialsSection data={data.financials} />
+            {/* 1. Executive Summary Cards (MD Level) */}
+            {data?.executive && (
+                <section className="mb-10">
+                    <ExecutiveSummary data={data.executive} />
+                </section>
+            )}
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                {/* Employee Breakdown */}
-                <EmployeeStatsSection data={data.demographics} />
+            {/* 2. Company Performance Grid */}
+            <section className="mb-10">
+                <CompanyPerformanceGrid financials={data?.financials || []} employees={data?.demographics || []} />
+            </section>
 
-                {/* Salary Info */}
-                <div className="col-span-1">
-                    <p className="text-gray-500 mb-4">Detailed salary analysis by department and management hierarchy.</p>
-                    {/* We can put a summary here, but SalaryAnalysisSection is full width usually. Let's make it full width below. */}
+            {/* 3. Deep Dive Analytics */}
+            <div className="space-y-10 border-t border-secondary-200 pt-10">
+                <div className="flex items-center gap-4 mb-4">
+                    <h2 className="text-2xl font-bold text-secondary-900">Detailed Analytics</h2>
+                    <span className="h-px flex-1 bg-secondary-200"></span>
                 </div>
             </div>
 

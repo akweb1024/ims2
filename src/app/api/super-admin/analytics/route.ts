@@ -150,7 +150,27 @@ export async function GET(req: NextRequest) {
             .map(([name, total]) => ({ name, total }))
             .sort((a, b) => b.total - a.total);
 
+        // 5. Executive Summary Calculations (MD View)
+        const totalGroupRevenue = financialData.reduce((acc, curr) => acc + curr.totalRevenue, 0);
+        const totalGroupHeadcount = Object.values(companyEmployeeStats).reduce((acc: number, curr: any) => acc + curr.total, 0);
+
+        // Burn Rate uses the summed salary data
+        // Note: This is Base/CTC purely. Actual burn might include overheads.
+        const totalMonthlyBurn = Object.values(salaryByManager).reduce((acc, curr) => acc + curr, 0) / 12;
+
+        // Net Profit Estimate (Very rough: Revenue - Annualized Burn)
+        // In reality, Revenue is total collected, Burn is annual commitment. 
+        // A better monthly comparison would be (Total Revenue / 12) - Monthly Burn
+        const estimatedNetProfit = totalGroupRevenue - (totalMonthlyBurn * 12);
+
         return NextResponse.json({
+            executive: {
+                totalRevenue: totalGroupRevenue,
+                totalHeadcount: totalGroupHeadcount,
+                monthlyBurnRate: totalMonthlyBurn,
+                netProfitEstimate: estimatedNetProfit,
+                activeCompanies: companies.length
+            },
             financials: financialData,
             demographics: employeeDemographics,
             salary: {
