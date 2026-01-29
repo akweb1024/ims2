@@ -61,6 +61,8 @@ export const createEmployeeSchema = z.object({
     password: z.string().min(6, "Password must be at least 6 characters"),
     role: UserRole.default("EXECUTIVE"),
     designation: z.string().min(1, "Designation is required"),
+    designationJustification: z.string().optional(),
+    taskTemplateLink: z.string().optional(),
     department: z.string().optional(),
     departmentId: z.string().optional(),
     dateOfJoining: z.coerce.date(),
@@ -132,6 +134,8 @@ export const updateEmployeeSchema = z.object({
     contractUrl: z.preprocess(emptyToNull, z.string().nullable().optional()),
     jobDescription: z.preprocess(emptyToNull, z.string().nullable().optional()),
     kra: z.preprocess(emptyToNull, z.string().nullable().optional()),
+    designationJustification: z.preprocess(emptyToNull, z.string().nullable().optional()),
+    taskTemplateLink: z.preprocess(emptyToNull, z.string().nullable().optional()),
     designationId: z.preprocess(emptyToNull, z.string().uuid().nullable().optional()).or(z.literal(null)).optional(),
 
     // Skills & Expertise

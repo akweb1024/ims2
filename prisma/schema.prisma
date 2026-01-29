@@ -903,6 +903,8 @@ model EmployeeProfile {
   grade                    String?
   lastIncrementDate        DateTime?
   lastIncrementPercentage  Float?
+  designationJustification String?
+  taskTemplateLink         String?
   lastPromotionDate        DateTime?
   nextReviewDate           DateTime?
   qualification            String?

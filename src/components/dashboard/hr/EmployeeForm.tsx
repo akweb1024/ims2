@@ -30,6 +30,8 @@ const initialFormState = {
     offerLetterUrl: '',
     contractUrl: '',
     jobDescription: '',
+    designationJustification: '',
+    taskTemplateLink: '',
     kra: '',
     totalExperienceYears: 0,
     totalExperienceMonths: 0,
@@ -274,6 +276,55 @@ export default function EmployeeForm({
                     <Briefcase className="w-5 h-5 text-indigo-500" />
                     Work & Role
                 </h2>
+
+                {/* Designation & Role Justification */}
+                <div className="mb-6 p-4 bg-indigo-50/50 rounded-xl border border-indigo-100">
+                    <h3 className="text-sm font-bold text-indigo-900 mb-3 uppercase tracking-wider">Role Definition</h3>
+                    <div className="grid grid-cols-1 gap-4">
+                        <div>
+                            <label className="label-premium">Designation Justification</label>
+                            <textarea
+                                className="input-premium h-20"
+                                placeholder="Explain why this designation aligns with the employee's responsibilities..."
+                                value={empForm.designationJustification || ''}
+                                onChange={e => setEmpForm({ ...empForm, designationJustification: e.target.value })}
+                            />
+                            <p className="text-[10px] text-secondary-500 mt-1">Clarify the scope and authority level of this role.</p>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label className="label-premium">KRA / KPI Redefinition</label>
+                                <textarea
+                                    className="input-premium h-24"
+                                    placeholder="Define Key Result Areas and Performance Indicators..."
+                                    value={empForm.kra || ''}
+                                    onChange={e => setEmpForm({ ...empForm, kra: e.target.value })}
+                                />
+                            </div>
+                            <div>
+                                <label className="label-premium">Job Description (JD)</label>
+                                <textarea
+                                    className="input-premium h-24"
+                                    placeholder="Detailed job responsibilities and expectations..."
+                                    value={empForm.jobDescription || ''}
+                                    onChange={e => setEmpForm({ ...empForm, jobDescription: e.target.value })}
+                                />
+                            </div>
+                        </div>
+                        <div>
+                            <label className="label-premium">Link Task Templates (KPIs)</label>
+                            <input
+                                type="text"
+                                className="input-premium"
+                                placeholder="https://tasks.company.com/templates/engineer-l2"
+                                value={empForm.taskTemplateLink || ''}
+                                onChange={e => setEmpForm({ ...empForm, taskTemplateLink: e.target.value })}
+                            />
+                            <p className="text-[10px] text-secondary-500 mt-1">URL or ID of the standard task template for this role.</p>
+                        </div>
+                    </div>
+                </div>
+
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <div>
                         <label className="label-premium">Employee ID</label>
