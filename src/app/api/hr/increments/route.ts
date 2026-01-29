@@ -28,6 +28,13 @@ const incrementSchema = z.object({
     // Targets
     newMonthlyTarget: z.number().min(0).optional(),
     newYearlyTarget: z.number().min(0).optional(),
+
+    // Sec-10 Exemp / Perks
+    newHealthCare: z.number().min(0).optional(),
+    newTravelling: z.number().min(0).optional(),
+    newMobile: z.number().min(0).optional(),
+    newInternet: z.number().min(0).optional(),
+    newBooksAndPeriodicals: z.number().min(0).optional(),
 });
 
 // GET: List all increments (with filtering)
@@ -110,7 +117,8 @@ export const POST = authorizedRoute(
             const employee = await prisma.employeeProfile.findUnique({
                 where: { id: data.employeeProfileId },
                 include: {
-                    user: true
+                    user: true,
+                    salaryStructure: true
                 }
             });
 
@@ -181,6 +189,18 @@ export const POST = authorizedRoute(
                     newMonthlyTarget: data.newMonthlyTarget || employee.monthlyTarget || 0,
                     currentYearlyTarget: employee.yearlyTarget || 0,
                     newYearlyTarget: data.newYearlyTarget || employee.yearlyTarget || 0,
+
+                    // Sec-10 Exemp / Perks
+                    oldHealthCare: employee.salaryStructure?.healthCare || 0,
+                    newHealthCare: data.newHealthCare !== undefined ? data.newHealthCare : (employee.salaryStructure?.healthCare || 0),
+                    oldTravelling: employee.salaryStructure?.travelling || 0,
+                    newTravelling: data.newTravelling !== undefined ? data.newTravelling : (employee.salaryStructure?.travelling || 0),
+                    oldMobile: employee.salaryStructure?.mobile || 0,
+                    newMobile: data.newMobile !== undefined ? data.newMobile : (employee.salaryStructure?.mobile || 0),
+                    oldInternet: employee.salaryStructure?.internet || 0,
+                    newInternet: data.newInternet !== undefined ? data.newInternet : (employee.salaryStructure?.internet || 0),
+                    oldBooksAndPeriodicals: employee.salaryStructure?.booksAndPeriodicals || 0,
+                    newBooksAndPeriodicals: data.newBooksAndPeriodicals !== undefined ? data.newBooksAndPeriodicals : (employee.salaryStructure?.booksAndPeriodicals || 0),
 
                     // Set as draft
                     status: 'DRAFT',

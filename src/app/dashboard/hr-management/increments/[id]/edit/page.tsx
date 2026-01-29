@@ -38,7 +38,12 @@ export default function EditIncrementPage() {
         q1Target: 0,
         q2Target: 0,
         q3Target: 0,
-        q4Target: 0
+        q4Target: 0,
+        newHealthCare: 0,
+        newTravelling: 0,
+        newMobile: 0,
+        newInternet: 0,
+        newBooksAndPeriodicals: 0
     });
 
     const [selectedEmployee, setSelectedEmployee] = useState<any>(null);
@@ -80,7 +85,12 @@ export default function EditIncrementPage() {
                     q1Target: data.q1Target || 0,
                     q2Target: data.q2Target || 0,
                     q3Target: data.q3Target || 0,
-                    q4Target: data.q4Target || 0
+                    q4Target: data.q4Target || 0,
+                    newHealthCare: data.newHealthCare || 0,
+                    newTravelling: data.newTravelling || 0,
+                    newMobile: data.newMobile || 0,
+                    newInternet: data.newInternet || 0,
+                    newBooksAndPeriodicals: data.newBooksAndPeriodicals || 0
                 });
             } else {
                 alert('Increment not found');
@@ -359,6 +369,77 @@ export default function EditIncrementPage() {
                                     <p className="text-xs text-purple-600 mt-1">
                                         Example: &quot;{form.newIncentivePercentage || 0}% of additional earnings after reaching variable cap of ₹{form.newVariableUpperCap || 0}&quot;
                                     </p>
+                                </div>
+                            </div>
+
+                            {/* Sec-10 Exemp / Perks */}
+                            <div className="p-4 bg-success-50 rounded-xl border border-success-200 mt-6">
+                                <h3 className="font-bold text-success-900 mb-3 uppercase tracking-wider text-xs flex items-center gap-2">
+                                    <TrendingUp size={16} /> Sec-10 Exemp / Perks
+                                </h3>
+
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                    <div className="form-control">
+                                        <label className="label-premium">Health Care</label>
+                                        <input
+                                            type="number"
+                                            min="0"
+                                            step="any"
+                                            className="input-premium"
+                                            value={form.newHealthCare}
+                                            onChange={(e) => setForm({ ...form, newHealthCare: parseFloat(e.target.value) || 0 })}
+                                        />
+                                    </div>
+                                    <div className="form-control">
+                                        <label className="label-premium">Travelling</label>
+                                        <input
+                                            type="number"
+                                            min="0"
+                                            step="any"
+                                            className="input-premium"
+                                            value={form.newTravelling}
+                                            onChange={(e) => setForm({ ...form, newTravelling: parseFloat(e.target.value) || 0 })}
+                                        />
+                                    </div>
+                                    <div className="form-control">
+                                        <label className="label-premium">Mobile</label>
+                                        <input
+                                            type="number"
+                                            min="0"
+                                            step="any"
+                                            className="input-premium"
+                                            value={form.newMobile}
+                                            onChange={(e) => setForm({ ...form, newMobile: parseFloat(e.target.value) || 0 })}
+                                        />
+                                    </div>
+                                    <div className="form-control">
+                                        <label className="label-premium">Internet</label>
+                                        <input
+                                            type="number"
+                                            min="0"
+                                            step="any"
+                                            className="input-premium"
+                                            value={form.newInternet}
+                                            onChange={(e) => setForm({ ...form, newInternet: parseFloat(e.target.value) || 0 })}
+                                        />
+                                    </div>
+                                    <div className="form-control">
+                                        <label className="label-premium">Books & Periodicals</label>
+                                        <input
+                                            type="number"
+                                            min="0"
+                                            step="any"
+                                            className="input-premium"
+                                            value={form.newBooksAndPeriodicals}
+                                            onChange={(e) => setForm({ ...form, newBooksAndPeriodicals: parseFloat(e.target.value) || 0 })}
+                                        />
+                                    </div>
+                                    <div className="p-4 bg-success-600/10 rounded-2xl flex items-center justify-between border border-success-200 self-center">
+                                        <span className="text-[10px] font-black text-success-700 uppercase tracking-widest leading-none">Total Perks</span>
+                                        <span className="text-xl font-black text-success-800 leading-none">
+                                            ₹{((form.newHealthCare || 0) + (form.newTravelling || 0) + (form.newMobile || 0) + (form.newInternet || 0) + (form.newBooksAndPeriodicals || 0)).toLocaleString()}
+                                        </span>
+                                    </div>
                                 </div>
                             </div>
 

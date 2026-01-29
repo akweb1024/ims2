@@ -1029,6 +1029,16 @@ model SalaryIncrementRecord {
   incentiveDefinition    String?
   incrementAmount        Float
   percentage             Float
+  oldHealthCare          Float?
+  newHealthCare          Float?
+  oldTravelling          Float?
+  newTravelling          Float?
+  oldMobile              Float?
+  newMobile              Float?
+  oldInternet            Float?
+  newInternet            Float?
+  oldBooksAndPeriodicals Float?
+  newBooksAndPeriodicals Float?
   type                   String          @default("INCREMENT")
   previousDesignation    String?
   newDesignation         String?

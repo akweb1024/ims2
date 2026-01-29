@@ -72,10 +72,30 @@ export const POST = authorizedRoute(
                             lastIncrementPercentage: increment.percentage,
                             monthlyTarget: increment.newMonthlyTarget || 0,
                             yearlyTarget: (increment as any).newYearlyTarget || 0,
-                            ...(increment.newKRA && { kra: increment.newKRA }),
                             ...(increment.newKPI && { metrics: increment.newKPI as any })
                         } as any
                     });
+
+                    // Update SalaryStructure with new perks
+                    await tx.salaryStructure.upsert({
+                        where: { employeeId: increment.employeeProfileId },
+                        create: {
+                            employeeId: increment.employeeProfileId,
+                            healthCare: increment.newHealthCare || 0,
+                            travelling: increment.newTravelling || 0,
+                            mobile: increment.newMobile || 0,
+                            internet: increment.newInternet || 0,
+                            booksAndPeriodicals: increment.newBooksAndPeriodicals || 0,
+                        },
+                        update: {
+                            healthCare: increment.newHealthCare || 0,
+                            travelling: increment.newTravelling || 0,
+                            mobile: increment.newMobile || 0,
+                            internet: increment.newInternet || 0,
+                            booksAndPeriodicals: increment.newBooksAndPeriodicals || 0,
+                        }
+                    });
+
                     updateData.status = 'APPROVED';
                 } else {
                     updateData.status = 'REJECTED';

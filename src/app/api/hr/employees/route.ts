@@ -82,7 +82,8 @@ export const GET = authorizedRoute(
                             level: true,
                             code: true
                         }
-                    }
+                    },
+                    salaryStructure: true
                 }
             });
 
