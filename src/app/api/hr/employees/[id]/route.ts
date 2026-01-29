@@ -44,6 +44,7 @@ export const GET = authorizedRoute(
                             }
                         } as any
                     },
+                    salaryStructure: true,
                     incrementHistory: {
                         orderBy: { date: 'desc' }
                     },
