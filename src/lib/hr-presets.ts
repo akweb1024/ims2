@@ -229,5 +229,116 @@ export const HR_PRESETS = [
 
 <p>I, <strong>{{name}}</strong>, have read and understood the terms above.</p>
         `
+    },
+    {
+        title: 'Trainee / Internship Offer',
+        type: 'CONTRACT',
+        content: `
+<div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+    <div style="text-align: right; margin-bottom: 20px;">
+        <strong>PERSONAL AND CONFIDENTIAL</strong><br>
+        Date: {{date}}
+    </div>
+
+    <p>To,<br>
+    <strong>{{name}}</strong><br>
+    {{address}}</p>
+
+    <p><strong>Subject: Offer Letter – Trainee</strong></p>
+
+    <p>Dear {{name}},</p>
+
+    <p>Welcome to <strong>{{companyName}}</strong>. We are pleased to offer you a position of <strong>Trainee ({{designation}})</strong>. This training position is for a Period of Three Months, beginning from the date of joining.</p>
+
+    <p>You will be on training/probation during this period and your continued participation in the training position will be dependent upon successful completion of courses and learning objectives as per the training plan. If you successfully complete the training program, you may be offered a permanent position as {{designation}}.</p>
+
+    <p><strong>Stipend:</strong> Your starting Stipend will be <strong>{{salary}}</strong> per month. Upon successful completion of courses and training objectives, your training Stipend will be finalized based on your performance.</p>
+
+    <h3>Terms of Training:</h3>
+    <ul>
+        <li>You intend to successfully complete the training program and stay in the target position for a period of time equal to, or greater than the length of the training program.</li>
+        <li>Lack of success at any stage of the training program will be reason for removal from the position.</li>
+        <li>You will take responsibility for gaining the skills required for the target position and participate in ongoing planning and evaluation.</li>
+    </ul>
+
+    <p>You can terminate your training by giving 10 working days prior notice. During probation, the company can terminate your training without notice or assigning any reasons.</p>
+
+    <p>Please indicate your acceptance by signing a copy of this letter.</p>
+
+    <div style="margin-top: 50px; display: flex; justify-content: space-between;">
+        <div>
+            <p>_________________________</p>
+            <p><strong>Authorized Signatory</strong></p>
+        </div>
+        <div style="text-align: right;">
+            <p>_________________________</p>
+            <p><strong>Candidate Signature</strong></p>
+        </div>
+    </div>
+</div>
+        `
+    },
+    {
+        title: 'Undertaking cum Indemnity (Salary Reversal)',
+        type: 'POLICY',
+        content: `
+<div style="font-family: Times New Roman, serif; padding: 40px; line-height: 1.5;">
+    <h2 style="text-align: center; text-decoration: underline;">UNDERTAKING cum INDEMNITY</h2>
+    
+    <p>This Undertaking cum Indemnity executed by <strong>{{companyName}}</strong>, a company having its registered office at {{companyAddress}} (hereinafter referred to as “The Company”) IN FAVOUR OF <strong>{{bankName}}</strong>.</p>
+
+    <p><strong>WHEREAS:</strong></p>
+    <ol>
+        <li>Pursuant to the Corporate Salary Arrangement, the employees of the Company maintain various savings bank accounts with the Bank wherein the salaries and other dues are being credited by the Bank on instructions of the Company.</li>
+        <li>The Company may inadvertently/erroneously instruct the Bank to credit into any of the accounts of employees an amount not legally due & payable.</li>
+        <li>The company in such event may request the Bank to mark hold and reverse the credit.</li>
+    </ol>
+
+    <p><strong>NOW in Consideration of the premises:</strong></p>
+    <p>The company hereby irrevocably and unconditionally undertakes and agrees to indemnify the Bank from and against all loss, damages, actions, suits, proceedings, claims, and expenses which the Bank may incur by reason of marking hold funds or reversing credit at the request of the company.</p>
+    
+    <p>I, <strong>{{name}}</strong> ({{designation}}), hereby authorize the company and the bank to act upon such instructions for reversal of erroneous credits if any.</p>
+
+    <div style="margin-top: 40px; border-top: 1px solid #000; padding-top: 10px;">
+        <p><strong>Dated:</strong> {{date}}</p>
+        <p><strong>Employee Name:</strong> {{name}}</p>
+        <p><strong>Employee ID:</strong> {{employeeId}}</p>
+    </div>
+</div>
+        `
+    },
+    {
+        title: 'Formal Relieving Letter',
+        type: 'RELIEVING_LETTER',
+        content: `
+<div style="font-family: Arial, sans-serif; padding: 30px;">
+    <div style="text-align: center; margin-bottom: 40px;">
+        <h1 style="margin: 0;">{{companyName}}</h1>
+        <p style="margin: 0; color: #666;">{{companyAddress}}</p>
+    </div>
+
+    <div style="display: flex; justify-content: space-between; margin-bottom: 30px;">
+        <div>Date: {{date}}</div>
+        <div>Ref: {{companyName}}/REL/{{year}}</div>
+    </div>
+
+    <h2 style="text-align: center; text-decoration: underline;">TO WHOMSOEVER IT MAY CONCERN</h2>
+
+    <p style="margin-top: 30px;">This is to certify that <strong>{{name}}</strong> was employed with <strong>{{companyName}}</strong> from <strong>{{joiningDate}}</strong> to <strong>{{relievingDate}}</strong>.</p>
+
+    <p>He/She held the designation of <strong>{{designation}}</strong> at the time of leaving. During his/her tenure with us, we found him/her to be sincere, hardworking, and result-oriented.</p>
+
+    <p>He/She has been relieved from his/her duties effective close of business hours on <strong>{{relievingDate}}</strong>. His/her conduct during the period of employment was good.</p>
+
+    <p>We wish <strong>{{name}}</strong> all the best for future endeavors.</p>
+
+    <div style="margin-top: 60px;">
+        <p>For <strong>{{companyName}}</strong>,</p>
+        <br><br>
+        <p><strong>Authorized Signatory</strong></p>
+        <p>HR Department</p>
+    </div>
+</div>
+        `
     }
 ];

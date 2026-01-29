@@ -21,7 +21,7 @@ export const GET = authorizedRoute(
             } else if (employeeId) {
                 where.employeeId = employeeId;
             } else if (user.companyId) {
-                where.employee = { companyId: user.companyId };
+                where.employee = { user: { companyId: user.companyId } };
             }
 
             const documents = await prisma.digitalDocument.findMany({
@@ -60,18 +60,34 @@ export const POST = authorizedRoute(
 
             if (!template || !employee) return createErrorResponse('Template or Employee not found', 404);
 
-            // Simple placeholder replacement
+            const company = user.companyId ? await prisma.company.findUnique({ where: { id: user.companyId } }) : null;
+
+            // Comprehensive placeholder replacement
             let resolvedContent = template.content;
-            const placeholders = {
+            const placeholders: any = {
                 '{{name}}': employee.user.name || employee.user.email,
                 '{{email}}': employee.user.email,
                 '{{designation}}': employee.designation || 'Staff',
                 '{{date}}': new Date().toLocaleDateString(),
+                '{{year}}': new Date().getFullYear().toString(),
+                '{{employeeId}}': employee.employeeId || 'N/A',
+                '{{joiningDate}}': employee.dateOfJoining ? new Date(employee.dateOfJoining).toLocaleDateString() : 'N/A',
+                '{{salary}}': employee.baseSalary ? `INR ${employee.baseSalary.toLocaleString()}` : 'N/A',
+                '{{address}}': employee.address || 'N/A',
+                '{{phone}}': employee.phoneNumber || 'N/A',
+                '{{panNumber}}': employee.panNumber || 'N/A',
+                '{{aadharNumber}}': employee.aadharNumber || 'N/A',
+                '{{bankName}}': employee.bankName || 'N/A',
+                '{{accountNumber}}': employee.accountNumber || 'N/A',
+                '{{ifscCode}}': employee.ifscCode || 'N/A',
+                '{{companyName}}': company?.name || 'The Company',
+                '{{companyAddress}}': company?.address || 'N/A',
+                '{{companyReg}}': company?.registrationNumber || 'N/A',
                 ...customFields
             };
 
             Object.entries(placeholders).forEach(([key, val]) => {
-                resolvedContent = resolvedContent.replace(new RegExp(key, 'g'), String(val));
+                resolvedContent = resolvedContent.replace(new RegExp(key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'), String(val));
             });
 
             const digitalDoc = await prisma.digitalDocument.create({

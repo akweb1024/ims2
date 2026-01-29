@@ -97,16 +97,21 @@ export default function DocumentManager({ employees }: { employees: any[] }) {
                         </button>
                     </div>
 
-                    {!isCreating && templates.length === 0 && (
+                    {!isCreating && (
                         <div className="mb-6 p-4 bg-primary-50 rounded-xl border border-primary-100">
-                            <h4 className="font-bold text-primary-800 mb-2">🚀 Quick Start</h4>
-                            <p className="text-xs text-primary-600 mb-4">You don&apos;t have any templates yet. Select a standard preset to get started:</p>
-                            <div className="grid grid-cols-2 gap-2">
+                            <div className="flex justify-between items-center mb-4">
+                                <div>
+                                    <h4 className="font-bold text-primary-800">🚀 Quick Start Presets</h4>
+                                    <p className="text-[10px] text-primary-600">Select a standard preset to create a new template</p>
+                                </div>
+                                {templates.length > 0 && <span className="badge badge-primary">{templates.length} Active Templates</span>}
+                            </div>
+                            <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
                                 {HR_PRESETS.map((p, idx) => (
                                     <button
                                         key={idx}
                                         onClick={() => loadPreset(p)}
-                                        className="text-left p-2 rounded-lg bg-white border border-primary-200 hover:bg-primary-100 transition-colors text-xs font-bold text-primary-700 flex items-center gap-2"
+                                        className="text-left p-2 rounded-lg bg-white border border-primary-200 hover:bg-primary-100 transition-colors text-[10px] font-bold text-primary-700 flex items-center gap-2"
                                     >
                                         <Copy size={12} /> {p.title}
                                     </button>
@@ -116,7 +121,23 @@ export default function DocumentManager({ employees }: { employees: any[] }) {
                     )}
 
                     {isCreating ? (
-                        <div className="space-y-4 bg-secondary-50 p-4 rounded-xl">
+                        <div className="space-y-4 bg-secondary-50 p-6 rounded-2xl border-2 border-primary-100">
+                            <div className="flex justify-between items-center bg-white p-3 rounded-xl border border-secondary-100 mb-4">
+                                <span className="text-[10px] font-black text-secondary-400 uppercase tracking-widest">New template configuration</span>
+                                <div className="flex gap-2">
+                                    <select
+                                        className="select select-xs bg-secondary-50 font-bold border-none"
+                                        onChange={(e) => {
+                                            const preset = HR_PRESETS.find(p => p.title === e.target.value);
+                                            if (preset) loadPreset(preset);
+                                        }}
+                                        defaultValue=""
+                                    >
+                                        <option value="" disabled>Load from Preset...</option>
+                                        {HR_PRESETS.map((p, idx) => <option key={idx} value={p.title}>{p.title}</option>)}
+                                    </select>
+                                </div>
+                            </div>
                             <input
                                 className="input w-full"
                                 placeholder="Template Title"
@@ -149,8 +170,11 @@ export default function DocumentManager({ employees }: { employees: any[] }) {
                                 <span className="p-1 bg-white border rounded">{'{{designation}}'}</span>
                                 <span className="p-1 bg-white border rounded">{'{{salary}}'}</span>
                                 <span className="p-1 bg-white border rounded">{'{{joiningDate}}'}</span>
+                                <span className="p-1 bg-white border rounded">{'{{employeeId}}'}</span>
                                 <span className="p-1 bg-white border rounded">{'{{companyName}}'}</span>
                                 <span className="p-1 bg-white border rounded">{'{{address}}'}</span>
+                                <span className="p-1 bg-white border rounded">{'{{phone}}'}</span>
+                                <span className="p-1 bg-white border rounded">{'{{panNumber}}'}</span>
                                 <span className="p-1 bg-white border rounded">{'{{date}}'}</span>
                             </div>
                             <button onClick={saveTemplate} className="btn btn-primary w-full">Save Template</button>

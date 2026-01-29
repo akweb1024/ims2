@@ -56,8 +56,7 @@ export const POST = authorizedRoute(
                     meetingLink,
                     location,
                     status: 'SCHEDULED',
-                    level: level || 1,
-                    roundName: roundName || 'HR Round'
+                    level: level || 1
                 }
             });
 
@@ -88,8 +87,7 @@ export const PATCH = authorizedRoute(
                 data: {
                     status,
                     feedback,
-                    rating,
-                    screenerData
+                    rating
                 }
             });
 

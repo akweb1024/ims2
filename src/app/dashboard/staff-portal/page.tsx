@@ -15,7 +15,8 @@ import EmployeeDocuments from '@/components/dashboard/staff/EmployeeDocuments';
 import EmployeeKPIView from '@/components/dashboard/staff/EmployeeKPIView';
 import AttendanceCalendar from '@/components/dashboard/staff/AttendanceCalendar';
 import DailyTaskTracker from '@/components/dashboard/DailyTaskTracker';
-import { Lock, AlertOctagon, FileText, Calendar as CalendarIcon, Wallet, TrendingUp, Users, PieChart, Clipboard, Zap, Briefcase } from 'lucide-react';
+import EmployeeTransactions from '@/components/dashboard/staff/EmployeeTransactions';
+import { Lock, AlertOctagon, FileText, Calendar as CalendarIcon, Wallet, TrendingUp, Users, PieChart, Clipboard, Zap, Briefcase, IndianRupee } from 'lucide-react';
 
 // Manager Center Views
 import TeamMembersView from '@/components/dashboard/manager/TeamMembersView';
@@ -183,6 +184,7 @@ export default function StaffPortalPage() {
         { id: 'salary', name: 'Salary', icon: '💵' },
         { id: 'documents', name: 'Documents', icon: '📁' },
         { id: 'onboarding', name: 'Onboarding', icon: '🎓' },
+        { id: 'transactions', name: 'Transactions', icon: '💰' },
         { id: 'it-services', name: 'IT Services', icon: '🛠️' },
         { id: 'id-card', name: 'ID Card', icon: '🪪' },
     ];
@@ -317,6 +319,7 @@ export default function StaffPortalPage() {
                 <div className="bg-white rounded-2xl shadow-sm border border-secondary-100 min-h-[500px] relative">
                     {activeTab === 'onboarding' && <EmployeeOnboarding />}
                     {activeTab === 'documents' && <EmployeeDocuments data={documents} fullProfile={fullProfile} />}
+                    {activeTab === 'transactions' && <EmployeeTransactions />}
 
                     {activeTab === 'profile' && fullProfile && (
                         <div className="max-w-5xl mx-auto space-y-8 p-4 md:p-8">

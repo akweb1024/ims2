@@ -6,7 +6,7 @@ import { getAuthenticatedUser } from '@/lib/auth-legacy';
 export async function GET(req: NextRequest) {
     try {
         const user = await getAuthenticatedUser();
-        if (!user || !['SUPER_ADMIN', 'ADMIN', 'FINANCE_ADMIN', 'MANAGER'].includes(user.role)) {
+        if (!user || !['SUPER_ADMIN', 'ADMIN', 'FINANCE_ADMIN', 'MANAGER', 'EMPLOYEE'].includes(user.role)) {
             return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
         }
 
