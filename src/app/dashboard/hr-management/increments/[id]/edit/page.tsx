@@ -250,7 +250,7 @@ export default function EditIncrementPage() {
                                     type="number"
                                     required
                                     min="0"
-                                    step="100"
+                                    step="any"
                                     className="input-premium"
                                     value={form.newFixedSalary}
                                     onChange={(e) => setForm({ ...form, newFixedSalary: parseFloat(e.target.value) || 0 })}
@@ -267,7 +267,7 @@ export default function EditIncrementPage() {
                                         <input
                                             type="number"
                                             min="0"
-                                            step="100"
+                                            step="any"
                                             className="input-premium"
                                             value={form.newVariableSalary}
                                             onChange={(e) => setForm({ ...form, newVariableSalary: parseFloat(e.target.value) || 0 })}
@@ -279,7 +279,7 @@ export default function EditIncrementPage() {
                                         <input
                                             type="number"
                                             min="0"
-                                            step="100"
+                                            step="any"
                                             className="input-premium"
                                             placeholder="e.g., 5000 per target"
                                             value={form.newVariablePerTarget}
@@ -293,7 +293,7 @@ export default function EditIncrementPage() {
                                         <input
                                             type="number"
                                             min="0"
-                                            step="100"
+                                            step="any"
                                             className="input-premium"
                                             placeholder="e.g., 50000 max"
                                             value={form.newVariableUpperCap}
@@ -326,7 +326,7 @@ export default function EditIncrementPage() {
                                         <input
                                             type="number"
                                             min="0"
-                                            step="100"
+                                            step="any"
                                             className="input-premium"
                                             value={form.newIncentive}
                                             onChange={(e) => setForm({ ...form, newIncentive: parseFloat(e.target.value) || 0 })}

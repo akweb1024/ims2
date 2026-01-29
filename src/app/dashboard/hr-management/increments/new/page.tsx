@@ -250,7 +250,7 @@ function NewIncrementContent() {
                                     type="number"
                                     required
                                     min="0"
-                                    step="100"
+                                    step="any"
                                     title="New Fixed Salary"
                                     placeholder="0"
                                     className="input-premium"
@@ -269,7 +269,7 @@ function NewIncrementContent() {
                                         <input
                                             type="number"
                                             min="0"
-                                            step="100"
+                                            step="any"
                                             className="input-premium"
                                             value={form.newVariableSalary}
                                             onChange={(e) => setForm({ ...form, newVariableSalary: parseFloat(e.target.value) || 0 })}
@@ -281,7 +281,7 @@ function NewIncrementContent() {
                                         <input
                                             type="number"
                                             min="0"
-                                            step="100"
+                                            step="any"
                                             className="input-premium"
                                             placeholder="e.g., 5000 per target"
                                             value={form.newVariablePerTarget}
@@ -295,7 +295,7 @@ function NewIncrementContent() {
                                         <input
                                             type="number"
                                             min="0"
-                                            step="100"
+                                            step="any"
                                             className="input-premium"
                                             placeholder="e.g., 50000 max"
                                             value={form.newVariableUpperCap}
@@ -328,7 +328,7 @@ function NewIncrementContent() {
                                         <input
                                             type="number"
                                             min="0"
-                                            step="100"
+                                            step="any"
                                             className="input-premium"
                                             value={form.newIncentive}
                                             onChange={(e) => setForm({ ...form, newIncentive: parseFloat(e.target.value) || 0 })}
