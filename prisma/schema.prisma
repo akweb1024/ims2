@@ -300,6 +300,7 @@ model CustomerProfile {
   subscriptions       Subscription[]
   supportTickets      SupportTicket[]
   assignedExecutives  User[]               @relation("CustomerToExecutives")
+  agencyInstitutions  Institution[]        @relation("AgencyInstitutions")
 
   @@index([customerType])
   @@index([primaryEmail])
@@ -399,6 +400,8 @@ model Institution {
   customers           CustomerProfile[]
   assignedTo          User?                @relation("InstitutionOwner", fields: [assignedToUserId], references: [id])
   company             Company?             @relation(fields: [companyId], references: [id])
+  agencyId            String?
+  agency              CustomerProfile?     @relation("AgencyInstitutions", fields: [agencyId], references: [id])
   revenueTransactions RevenueTransaction[]
   subscriptions       Subscription[]
 
@@ -1596,6 +1599,8 @@ model JobApplication {
   applicantEmail String
   applicantPhone String?
   resumeUrl      String?
+  aiMatchScore   Int                    @default(0)
+  aiTags         String[]               @default([])
   status         String                 @default("APPLIED")
   offerLetterUrl String?
   contractUrl    String?

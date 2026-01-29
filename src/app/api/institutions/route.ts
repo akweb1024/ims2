@@ -91,6 +91,13 @@ export async function GET(req: NextRequest) {
                             customerProfile: { select: { name: true } }
                         }
                     },
+                    agency: {
+                        select: {
+                            id: true,
+                            name: true,
+                            organizationName: true
+                        }
+                    },
                     _count: {
                         select: {
                             customers: true,
@@ -151,7 +158,8 @@ export async function POST(req: NextRequest) {
             ipRange,
             notes,
             logo,
-            assignedToUserId
+            assignedToUserId,
+            agencyId
         } = body;
 
         const institution = await prisma.institution.create({
@@ -180,6 +188,7 @@ export async function POST(req: NextRequest) {
                 notes,
                 logo,
                 assignedToUserId: assignedToUserId || null, // Add ownership to executive
+                agencyId: agencyId || null,
                 companyId: user.companyId
             }
         });

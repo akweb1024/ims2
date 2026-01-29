@@ -23,6 +23,7 @@ export default function InstitutionsPage() {
 
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
     const [executives, setExecutives] = useState<any[]>([]);
+    const [agencies, setAgencies] = useState<any[]>([]);
     const [showBulkModal, setShowBulkModal] = useState(false);
     const [assignTargetId, setAssignTargetId] = useState('');
     const [actionLoading, setActionLoading] = useState(false);
@@ -57,7 +58,8 @@ export default function InstitutionsPage() {
         notes: '',
         domain: '',
         logo: '',
-        assignedToUserId: ''
+        assignedToUserId: '',
+        agencyId: ''
     });
 
     useEffect(() => {
@@ -76,6 +78,14 @@ export default function InstitutionsPage() {
                     })
                     .catch(err => console.error('Failed to fetch staff', err));
             }
+
+            // Fetch agencies
+            fetch('/api/agencies?limit=1000', {
+                headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+            })
+                .then(res => res.json())
+                .then(data => setAgencies(Array.isArray(data) ? data : (data.data || [])))
+                .catch(err => console.error('Failed to fetch agencies', err));
         }
     }, []);
 
@@ -186,7 +196,8 @@ export default function InstitutionsPage() {
             notes: institution.notes || '',
             domain: institution.domain || '',
             logo: institution.logo || '',
-            assignedToUserId: institution.assignedToUserId || ''
+            assignedToUserId: institution.assignedToUserId || '',
+            agencyId: institution.agencyId || ''
         });
         setErrorMessage('');
         setSuccessMessage('');
@@ -208,6 +219,39 @@ export default function InstitutionsPage() {
             }
         } catch (error) {
             console.error('Error deleting institution:', error);
+        }
+    };
+
+    const handleBulkDelete = async () => {
+        if (selectedIds.size === 0) return;
+        if (!confirm(`Are you sure you want to delete ${selectedIds.size} selected institutions? This action cannot be undone.`)) return;
+
+        setActionLoading(true);
+        try {
+            const token = localStorage.getItem('token');
+            const res = await fetch('/api/institutions/bulk-delete', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    ids: Array.from(selectedIds)
+                })
+            });
+
+            if (res.ok) {
+                alert('Institutions deleted successfully');
+                setSelectedIds(new Set());
+                fetchInstitutions(pagination.page);
+            } else {
+                const data = await res.json();
+                alert(data.error || 'Failed to delete institutions');
+            }
+        } catch (error) {
+            alert('An error occurred');
+        } finally {
+            setActionLoading(false);
         }
     };
 
@@ -237,7 +281,8 @@ export default function InstitutionsPage() {
             notes: '',
             domain: '',
             logo: '',
-            assignedToUserId: ''
+            assignedToUserId: '',
+            agencyId: ''
         });
     };
 
@@ -365,6 +410,15 @@ export default function InstitutionsPage() {
                             >
                                 Assign to Executive
                             </button>
+                            {['SUPER_ADMIN', 'ADMIN'].includes(userRole) && (
+                                <button
+                                    onClick={handleBulkDelete}
+                                    disabled={actionLoading}
+                                    className="btn bg-red-600 text-white hover:bg-red-700 text-sm"
+                                >
+                                    {actionLoading ? 'Deleting...' : 'Bulk Delete'}
+                                </button>
+                            )}
                         </div>
                     </div>
                 )}
@@ -524,6 +578,16 @@ export default function InstitutionsPage() {
                                         <p className="text-[10px] text-secondary-400 font-bold uppercase tracking-wider">Assigned To</p>
                                         <p className="text-sm font-medium text-secondary-700">
                                             {institution.assignedTo.customerProfile?.name || institution.assignedTo.email}
+                                        </p>
+                                    </div>
+                                )}
+
+                                {/* Agency Info */}
+                                {institution.agency && (
+                                    <div className="mb-4 pl-14">
+                                        <p className="text-[10px] text-primary-500 font-bold uppercase tracking-wider">Managed By Agency</p>
+                                        <p className="text-sm font-medium text-secondary-700">
+                                            {institution.agency.name} {institution.agency.organizationName && `(${institution.agency.organizationName})`}
                                         </p>
                                     </div>
                                 )}
@@ -906,6 +970,30 @@ export default function InstitutionsPage() {
                                                     value={formData.pincode}
                                                     onChange={(e) => setFormData({ ...formData, pincode: e.target.value })}
                                                 />
+                                            </div>
+                                            <div>
+                                                <label className="label">Accreditation</label>
+                                                <input
+                                                    type="text"
+                                                    className="input"
+                                                    value={formData.accreditation}
+                                                    onChange={(e) => setFormData({ ...formData, accreditation: e.target.value })}
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="label">Associated Agency (Distributor)</label>
+                                                <select
+                                                    className="input"
+                                                    value={formData.agencyId}
+                                                    onChange={(e) => setFormData({ ...formData, agencyId: e.target.value })}
+                                                >
+                                                    <option value="">-- Direct (No Agency) --</option>
+                                                    {agencies.map(agency => (
+                                                        <option key={agency.id} value={agency.id}>
+                                                            {agency.name} {agency.organizationName ? `(${agency.organizationName})` : ''}
+                                                        </option>
+                                                    ))}
+                                                </select>
                                             </div>
                                         </div>
                                     </div>

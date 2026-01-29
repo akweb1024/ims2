@@ -19,6 +19,11 @@ export const POST = authorizedRoute(
                 return createErrorResponse('Missing required fields', 400);
             }
 
+            // Simulate AI Matching (Mock Logic)
+            const aiMatchScore = Math.floor(Math.random() * (98 - 60 + 1) + 60); // Random score between 60-98
+            const potentialTags = ['Strong Tech', 'Culture Fit', 'Senior Level', 'Remote', 'Leadership Potential', 'Fast Learner'];
+            const aiTags = potentialTags.sort(() => 0.5 - Math.random()).slice(0, 2);
+
             const application = await prisma.jobApplication.create({
                 data: {
                     jobPostingId: jobId,
@@ -26,7 +31,9 @@ export const POST = authorizedRoute(
                     applicantEmail: candidateEmail,
                     applicantPhone: candidatePhone,
                     resumeUrl,
-                    status: 'APPLIED'
+                    status: 'APPLIED',
+                    aiMatchScore,
+                    aiTags
                 }
             });
 

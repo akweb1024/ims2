@@ -36,15 +36,11 @@ export default function ApplicantPipeline() {
 
     const { data: employees } = useEmployees();
 
-    // Augment applications with Mock AI Data
+    // Use real applications from API
     const applications = useMemo(() => {
         if (!rawApplications) return [];
-        return rawApplications.map(app => ({
-            ...app,
-            // Simulate AI Score if not present (deterministic based on name length for stability)
-            aiMatchScore: app.aiMatchScore || Math.floor(60 + (app.applicantName.length * 2) % 35),
-            aiTags: app.aiTags || (app.applicantName.length % 2 === 0 ? ['Strong Tech', 'Culture Fit'] : ['Senior Level', 'Remote'])
-        })).sort((a, b) => b.aiMatchScore - a.aiMatchScore); // AI Rank Sorting
+        // Sort by AI Match Score (High to Low)
+        return [...rawApplications].sort((a, b) => (b.aiMatchScore || 0) - (a.aiMatchScore || 0));
     }, [rawApplications]);
 
     const stages = ['APPLIED', 'SCREENING', 'INTERVIEW', 'OFFER', 'HIRED', 'REJECTED'];

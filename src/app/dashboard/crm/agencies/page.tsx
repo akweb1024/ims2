@@ -10,6 +10,8 @@ export default function AgencyListPage() {
     const [agencies, setAgencies] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState('');
+    const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+    const [actionLoading, setActionLoading] = useState(false);
 
     const fetchAgencies = useCallback(async () => {
         try {
@@ -25,6 +27,7 @@ export default function AgencyListPage() {
             console.error('Error fetching agencies:', error);
         } finally {
             setLoading(false);
+            setSelectedIds(new Set()); // Clear selection on fetch
         }
     }, [search]);
 
@@ -52,8 +55,60 @@ export default function AgencyListPage() {
         }
     };
 
+    const handleBulkDelete = async () => {
+        if (selectedIds.size === 0) return;
+        if (!confirm(`Are you sure you want to delete ${selectedIds.size} selected agencies? This action cannot be undone.`)) return;
+
+        setActionLoading(true);
+        try {
+            const token = localStorage.getItem('token');
+            const res = await fetch('/api/agencies/bulk-delete', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    ids: Array.from(selectedIds)
+                })
+            });
+
+            if (res.ok) {
+                alert('Agencies deleted successfully');
+                setSelectedIds(new Set());
+                fetchAgencies();
+            } else {
+                const data = await res.json();
+                alert(data.error || 'Failed to delete agencies');
+            }
+        } catch (error) {
+            alert('An error occurred');
+        } finally {
+            setActionLoading(false);
+        }
+    };
+
+    const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.checked) {
+            const allIds = agencies.map(a => a.id);
+            setSelectedIds(new Set(allIds));
+        } else {
+            setSelectedIds(new Set());
+        }
+    };
+
+    const handleSelect = (id: string) => {
+        const newSelected = new Set(selectedIds);
+        if (newSelected.has(id)) {
+            newSelected.delete(id);
+        } else {
+            newSelected.add(id);
+        }
+        setSelectedIds(newSelected);
+    };
+
     return (
-        <DashboardLayout userRole="ADMIN"> {/* Adjusted to ADMIN or appropriate role */}
+        <DashboardLayout userRole="ADMIN">
             <div className="space-y-6">
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                     <div>
@@ -67,6 +122,33 @@ export default function AgencyListPage() {
                         Add New Agency
                     </Link>
                 </div>
+
+                {/* Bulk Action Bar */}
+                {selectedIds.size > 0 && (
+                    <div className="bg-primary-50 border border-primary-200 p-4 rounded-xl flex items-center justify-between animate-fadeIn">
+                        <div className="flex items-center space-x-3">
+                            <span className="bg-primary-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold">
+                                {selectedIds.size}
+                            </span>
+                            <span className="font-medium text-primary-900">Agencies Selected</span>
+                        </div>
+                        <div className="flex space-x-3">
+                            <button
+                                onClick={() => setSelectedIds(new Set())}
+                                className="btn btn-secondary bg-white text-secondary-600 text-sm"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleBulkDelete}
+                                disabled={actionLoading}
+                                className="btn bg-red-600 text-white hover:bg-red-700 text-sm"
+                            >
+                                {actionLoading ? 'Deleting...' : 'Bulk Delete'}
+                            </button>
+                        </div>
+                    </div>
+                )}
 
                 {/* Search & Filter */}
                 <div className="card-premium p-4">
@@ -84,6 +166,18 @@ export default function AgencyListPage() {
                             onChange={(e) => setSearch(e.target.value)}
                         />
                     </div>
+                    <div className="mt-4 flex items-center gap-2">
+                        <input
+                            type="checkbox"
+                            id="selectAll"
+                            className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                            onChange={handleSelectAll}
+                            checked={agencies.length > 0 && selectedIds.size === agencies.length}
+                        />
+                        <label htmlFor="selectAll" className="text-sm text-secondary-600 font-medium cursor-pointer">
+                            Select All
+                        </label>
+                    </div>
                 </div>
 
                 {/* List */}
@@ -96,24 +190,32 @@ export default function AgencyListPage() {
                         </div>
                     ) : (
                         agencies.map((agency) => (
-                            <div key={agency.id} className="card-premium p-6 hover:shadow-lg transition-all flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                                <div>
-                                    <div className="flex items-center gap-3">
-                                        <h3 className="text-lg font-bold text-secondary-900">{agency.name}</h3>
-                                        {agency.organizationName && (
-                                            <span className="badge badge-secondary">{agency.organizationName}</span>
+                            <div key={agency.id} className={`card-premium p-6 hover:shadow-lg transition-all flex flex-col md:flex-row justify-between items-start md:items-center gap-4 ${selectedIds.has(agency.id) ? 'ring-2 ring-primary-500 bg-primary-50/10' : ''}`}>
+                                <div className="flex items-start gap-4 flex-1">
+                                    <input
+                                        type="checkbox"
+                                        className="rounded border-gray-300 text-primary-600 focus:ring-primary-500 mt-1"
+                                        checked={selectedIds.has(agency.id)}
+                                        onChange={() => handleSelect(agency.id)}
+                                    />
+                                    <div>
+                                        <div className="flex items-center gap-3">
+                                            <h3 className="text-lg font-bold text-secondary-900">{agency.name}</h3>
+                                            {agency.organizationName && (
+                                                <span className="badge badge-secondary">{agency.organizationName}</span>
+                                            )}
+                                        </div>
+                                        <div className="text-sm text-secondary-500 mt-1 space-x-4">
+                                            <span>{agency.primaryEmail}</span>
+                                            <span>{agency.primaryPhone}</span>
+                                        </div>
+                                        {agency.agencyDetails && (
+                                            <div className="text-xs text-secondary-400 mt-2 flex items-center gap-4">
+                                                <span>Discount: {agency.agencyDetails.discountRate}%</span>
+                                                <span>Territory: {agency.agencyDetails.territory || 'N/A'}</span>
+                                            </div>
                                         )}
                                     </div>
-                                    <div className="text-sm text-secondary-500 mt-1 space-x-4">
-                                        <span>{agency.primaryEmail}</span>
-                                        <span>{agency.primaryPhone}</span>
-                                    </div>
-                                    {agency.agencyDetails && (
-                                        <div className="text-xs text-secondary-400 mt-2 flex items-center gap-4">
-                                            <span>Discount: {agency.agencyDetails.discountRate}%</span>
-                                            <span>Territory: {agency.agencyDetails.territory || 'N/A'}</span>
-                                        </div>
-                                    )}
                                 </div>
 
                                 <div className="flex items-center gap-3 self-end md:self-center">

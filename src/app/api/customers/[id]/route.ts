@@ -75,6 +75,17 @@ export async function GET(
                         checklist: true
                     },
                     orderBy: { date: 'desc' }
+                },
+                agencyInstitutions: {
+                    select: {
+                        id: true,
+                        name: true,
+                        code: true,
+                        type: true,
+                        city: true,
+                        state: true,
+                        isActive: true
+                    }
                 }
             } as any
         });

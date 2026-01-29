@@ -52,6 +52,7 @@ export default function AgencyDetailPage({ params }: { params: Promise<{ id: str
         { id: 'overview', name: 'Overview', icon: '📋' },
         { id: 'performance', name: 'Performance', icon: '📈' },
         { id: 'subscriptions', name: 'Subscriptions', icon: '📚' },
+        { id: 'institutions', name: 'Assigned Institutions', icon: '🏫' },
         { id: 'communication', name: 'Communication', icon: '💬' },
         { id: 'billing', name: 'Invoices & Billing', icon: '💰' },
     ];
@@ -400,6 +401,38 @@ export default function AgencyDetailPage({ params }: { params: Promise<{ id: str
                                                     </p>
                                                 </div>
                                             </div>
+                                        </div>
+                                    ))
+                                )}
+                            </div>
+                        )}
+
+                        {/* INSTITUTIONS TAB */}
+                        {activeTab === 'institutions' && (
+                            <div className="space-y-4">
+                                {(customer.agencyInstitutions || []).length === 0 ? (
+                                    <div className="card-premium text-center py-12">
+                                        <p className="text-secondary-500">No institutions assigned to this agency yet.</p>
+                                    </div>
+                                ) : (
+                                    (customer.agencyInstitutions || []).map((inst: any) => (
+                                        <div key={inst.id} className="card-premium flex justify-between items-center hover:shadow-md transition-shadow">
+                                            <div>
+                                                <div className="flex items-center gap-2">
+                                                    <h4 className="font-bold text-secondary-900">{inst.name}</h4>
+                                                    {!inst.isActive && <span className="badge badge-warning text-[10px]">Inactive</span>}
+                                                </div>
+                                                <p className="text-sm text-secondary-500">{inst.city}, {inst.state}</p>
+                                                <span className="text-[10px] font-mono bg-secondary-100 px-1.5 py-0.5 rounded text-secondary-600 mt-1 inline-block">
+                                                    {inst.code} • {inst.type}
+                                                </span>
+                                            </div>
+                                            <Link
+                                                href={`/dashboard/institutions`}
+                                                className="text-primary-600 font-bold text-sm hover:underline"
+                                            >
+                                                View in List →
+                                            </Link>
                                         </div>
                                     ))
                                 )}
