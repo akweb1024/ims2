@@ -6,9 +6,11 @@ import {
     Calendar, Star, MoreVertical,
     CheckCircle2, XCircle, Clock,
     Sparkles, Filter, Search,
-    ArrowRight, MessageSquare
+    ArrowRight, MessageSquare, Plus
 } from 'lucide-react';
 import InterviewFeedbackModal from './InterviewFeedbackModal';
+import CandidateProfileModal from './CandidateProfileModal';
+import AddCandidateModal from './AddCandidateModal';
 import { useJobApplications, useJobPostings, useApplicationMutations, useInterviewMutations } from '@/hooks/useRecruitment';
 import { useEmployees } from '@/hooks/useHR';
 
@@ -16,7 +18,7 @@ export default function ApplicantPipeline() {
     const [selectedJobId, setSelectedJobId] = useState('');
     const { data: jobs } = useJobPostings({ status: 'OPEN' });
     const { data: rawApplications, isLoading } = useJobApplications(selectedJobId || undefined);
-    const { updateStatus } = useApplicationMutations();
+    const { updateStatus, createApplication } = useApplicationMutations();
     const { scheduleInterview } = useInterviewMutations();
 
     const [draggedAppId, setDraggedAppId] = useState<string | null>(null);
@@ -25,6 +27,10 @@ export default function ApplicantPipeline() {
     const [selectedAppForInterview, setSelectedAppForInterview] = useState<any>(null);
     const [showFeedbackModal, setShowFeedbackModal] = useState(false);
     const [feedbackInterview, setFeedbackInterview] = useState<any>(null);
+
+    // New Features State
+    const [showAddCandidateModal, setShowAddCandidateModal] = useState(false);
+    const [selectedAppForProfile, setSelectedAppForProfile] = useState<any>(null);
     const [interviewData, setInterviewData] = useState({
         interviewerId: '',
         scheduledAt: '',
@@ -82,6 +88,14 @@ export default function ApplicantPipeline() {
         });
         setShowInterviewModal(false);
         setInterviewData({ interviewerId: '', scheduledAt: '', type: 'VIRTUAL', meetingLink: '', roundName: 'HR Round', level: 1 });
+    };
+
+    const handleCreateApplication = async (data: any) => {
+        try {
+            await createApplication.mutateAsync(data);
+        } catch (err) {
+            console.error("Failed to create application", err);
+        }
     };
 
     const getMatchColor = (score: number) => {
@@ -152,7 +166,13 @@ export default function ApplicantPipeline() {
             <div className="flex-1 overflow-x-auto pb-4 scrollbar-thin scrollbar-thumb-gray-200 scrollbar-track-transparent">
                 <div className="flex gap-6 min-w-max h-full px-1">
                     {stages.map((stage) => {
-                        const stageApps = applications?.filter(a => (a.status || 'APPLIED').toUpperCase() === stage) || [];
+                        const stageApps = applications?.filter(a => {
+                            const s = (a.status || 'APPLIED').toUpperCase();
+                            if (stage === 'SCREENING') {
+                                return s === 'SCREENING' || s === 'EXAM_PENDING' || s === 'EXAM_COMPLETED';
+                            }
+                            return s === stage;
+                        }) || [];
 
                         return (
                             <div
@@ -183,6 +203,7 @@ export default function ApplicantPipeline() {
                                             key={app.id}
                                             draggable
                                             onDragStart={(e) => handleDragStart(e, app.id)}
+                                            onClick={() => setSelectedAppForProfile(app)}
                                             className="group bg-white rounded-xl p-4 shadow-sm border border-gray-100 hover:shadow-lg hover:border-purple-200 cursor-move transition-all active:scale-95 relative overflow-hidden"
                                         >
                                             {/* AI Match Strip */}
@@ -201,7 +222,14 @@ export default function ApplicantPipeline() {
                                             )}
 
                                             <div className="flex justify-between items-start mb-1">
-                                                <h5 className="font-bold text-gray-900 line-clamp-1">{app.applicantName}</h5>
+                                                <h5 className="font-bold text-gray-900 line-clamp-1">
+                                                    {app.applicantName}
+                                                    {(app.status || '').toUpperCase() !== stage && (
+                                                        <span className="text-[9px] font-bold bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded ml-2 align-middle uppercase">
+                                                            {(app.status || '').replace(/_/g, ' ')}
+                                                        </span>
+                                                    )}
+                                                </h5>
                                             </div>
                                             <p className="text-xs text-secondary-500 mb-3 line-clamp-1 font-medium">{app.jobPosting?.title || 'Unknown Role'}</p>
 
@@ -216,20 +244,20 @@ export default function ApplicantPipeline() {
 
                                             {/* Actions Footer */}
                                             <div className="pt-3 border-t border-gray-50 flex justify-between items-center relative z-10">
-                                                <div className="flex gap-1">
+                                                <div className="flex gap-1" onClick={(e) => e.stopPropagation()}>
                                                     {app.resumeUrl && (
-                                                        <a href={app.resumeUrl} target="_blank" className="p-1.5 rounded-lg text-gray-400 hover:bg-purple-50 hover:text-purple-600 transition-colors" title="Resume">
+                                                        <a href={app.resumeUrl} target="_blank" className="p-1.5 rounded-lg text-gray-400 hover:bg-purple-50 hover:text-purple-600 transition-colors" title="Resume" onClick={(e) => e.stopPropagation()}>
                                                             <FileText size={14} />
                                                         </a>
                                                     )}
-                                                    <a href={`mailto:${app.applicantEmail}`} className="p-1.5 rounded-lg text-gray-400 hover:bg-purple-50 hover:text-purple-600 transition-colors" title="Email">
+                                                    <a href={`mailto:${app.applicantEmail}`} className="p-1.5 rounded-lg text-gray-400 hover:bg-purple-50 hover:text-purple-600 transition-colors" title="Email" onClick={(e) => e.stopPropagation()}>
                                                         <Mail size={14} />
                                                     </a>
                                                 </div>
 
                                                 {stage !== 'REJECTED' && stage !== 'HIRED' && (
                                                     <button
-                                                        onClick={() => { setSelectedAppForInterview(app); setShowInterviewModal(true); }}
+                                                        onClick={(e) => { e.stopPropagation(); setSelectedAppForInterview(app); setShowInterviewModal(true); }}
                                                         className="flex items-center gap-1 text-[10px] font-bold text-purple-600 uppercase hover:bg-purple-50 px-2 py-1 rounded transition-colors"
                                                     >
                                                         Schedule <ArrowRight size={10} />
@@ -238,7 +266,7 @@ export default function ApplicantPipeline() {
 
                                                 {stage === 'INTERVIEW' && app.interviews?.[0] && (
                                                     <button
-                                                        onClick={() => { setFeedbackInterview(app.interviews[0]); setShowFeedbackModal(true); }}
+                                                        onClick={(e) => { e.stopPropagation(); setFeedbackInterview(app.interviews[0]); setShowFeedbackModal(true); }}
                                                         className="flex items-center gap-1 text-[10px] font-bold text-amber-600 uppercase hover:bg-amber-50 px-2 py-1 rounded transition-colors ml-2"
                                                     >
                                                         <MessageSquare size={10} /> Feedback
@@ -355,6 +383,28 @@ export default function ApplicantPipeline() {
                         </div>
                     </div>
                 </div>
+            )}
+            {/* Candidate Profile Modal */}
+            {selectedAppForProfile && (
+                <CandidateProfileModal
+                    application={selectedAppForProfile}
+                    onClose={() => setSelectedAppForProfile(null)}
+                    onSchedule={(app) => {
+                        setSelectedAppForProfile(null); // Close profile modal
+                        setSelectedAppForInterview(app); // Set app for interview modal
+                        setShowInterviewModal(true); // Open interview modal
+                    }}
+                    onUpdateApplication={updateStatus.mutateAsync}
+                />
+            )}
+
+            {/* Add Candidate Modal */}
+            {showAddCandidateModal && (
+                <AddCandidateModal
+                    jobs={jobs || []}
+                    onClose={() => setShowAddCandidateModal(false)}
+                    onSubmit={handleCreateApplication}
+                />
             )}
         </div>
     );

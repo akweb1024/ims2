@@ -72,7 +72,9 @@ export const POST = authorizedRoute(
                             lastIncrementPercentage: increment.percentage,
                             monthlyTarget: increment.newMonthlyTarget || 0,
                             yearlyTarget: (increment as any).newYearlyTarget || 0,
-                            ...(increment.newKPI && { metrics: increment.newKPI as any })
+                            jobDescription: increment.newJobDescription || undefined,
+                            kra: increment.newKRA || undefined,
+                            metrics: increment.newKPI || undefined,
                         } as any
                     });
 

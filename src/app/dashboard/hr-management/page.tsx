@@ -10,8 +10,8 @@ import DocumentManager from '@/components/dashboard/DocumentManager';
 import EmployeeList from '@/components/dashboard/hr/EmployeeList';
 
 import HolidayManager from '@/components/dashboard/hr/HolidayManager';
-import RecruitmentBoard from '@/components/dashboard/hr/RecruitmentBoard';
-import JobPostingModal from '@/components/dashboard/hr/JobPostingModal';
+
+
 import PerformanceReviewModal from '@/components/dashboard/hr/PerformanceReviewModal';
 import AttendanceModal from '@/components/dashboard/hr/AttendanceModal';
 import AttendanceManager from '@/components/dashboard/hr/AttendanceManager';
@@ -39,7 +39,7 @@ import { Briefcase, Info, Target, TrendingUp, Award, GraduationCap, Edit, Trash2
 import { toast } from 'react-hot-toast';
 import {
     useEmployees, useHolidays, useDesignations, useJobs, useApplications,
-    useCreateEmployee, useUpdateEmployee, useCreateJob, useUpdateJob,
+    useCreateEmployee, useUpdateEmployee,
     useWorkReportMutations, usePerformanceReviewMutation, useAttendanceMutations,
     useDeleteEmployee, useLeaveRequests, useSalarySlips, useAttendance,
     useWorkReports, useProductivity, useDocuments, useLeaveRequestMutations,
@@ -325,8 +325,7 @@ const HRManagementContent = () => {
 
     // Mutations
 
-    const createJobMutation = useCreateJob();
-    const updateJobMutation = useUpdateJob();
+
     const { updateStatus: updateStatusMutation, updateReport, addComment: addReportComment } = useWorkReportMutations();
     const performanceReviewMutation = usePerformanceReviewMutation();
     const { correct: attendanceCorrectionMutation } = useAttendanceMutations();
@@ -348,19 +347,7 @@ const HRManagementContent = () => {
 
     // ...
 
-    const handleJobSubmit = async (data: any) => {
-        try {
-            if (selectedJob) {
-                await updateJobMutation.mutateAsync({ ...data, id: selectedJob.id });
-            } else {
-                await createJobMutation.mutateAsync(data);
-            }
-            setShowJobModal(false);
-        } catch (err: any) {
-            console.error(err);
-            alert(err.message || 'Failed to save job');
-        }
-    };
+
 
     // Keep handleDeactivateEmp with manual fetch for now or add mutation later
 
@@ -378,18 +365,7 @@ const HRManagementContent = () => {
 
     const [attendanceForm, setAttendanceForm] = useState({ id: '', checkIn: '', checkOut: '', status: 'PRESENT' });
 
-    // Job Posting
-    const [showJobModal, setShowJobModal] = useState(false);
-    const [selectedJob, setSelectedJob] = useState<any>(null);
-    const [jobForm, setJobForm] = useState({
-        title: '',
-        description: '',
-        requirements: '',
-        location: '',
-        salaryRange: '',
-        type: 'FULL_TIME',
-        status: 'OPEN'
-    });
+
 
     // Work Reports Analysis
     // const [workReports, setWorkReports] = useState<any[]>([]); // Replaced by useWorkReports hook
@@ -549,33 +525,7 @@ const HRManagementContent = () => {
         }
     };
 
-    const handleCreateJob = () => {
-        setSelectedJob(null);
-        setJobForm({
-            title: '',
-            description: '',
-            requirements: '',
-            location: '',
-            salaryRange: '',
-            type: 'FULL_TIME',
-            status: 'OPEN'
-        });
-        setShowJobModal(true);
-    };
 
-    const handleEditJob = (job: any) => {
-        setSelectedJob(job);
-        setJobForm({
-            title: job.title,
-            description: job.description,
-            requirements: job.requirements || '',
-            location: job.location || '',
-            salaryRange: job.salaryRange || '',
-            type: job.type,
-            status: job.status
-        });
-        setShowJobModal(true);
-    };
 
 
 
@@ -1475,14 +1425,7 @@ const HRManagementContent = () => {
                         </div>
                     </div>
                 )}
-                {activeTab === 'recruitment' && (
-                    <RecruitmentBoard
-                        jobs={jobs}
-                        applications={applications}
-                        onCreateJob={handleCreateJob}
-                        onEditJob={handleEditJob}
-                    />
-                )}
+
                 {activeTab === 'map' && (
                     <div className="space-y-6">
                         <div className="flex justify-between items-center">
@@ -1755,12 +1698,7 @@ const HRManagementContent = () => {
                     onSave={handleAttendanceUpdate}
                 />
 
-                <JobPostingModal
-                    isOpen={showJobModal}
-                    onClose={() => setShowJobModal(false)}
-                    job={selectedJob}
-                    onSave={handleJobSubmit}
-                />
+
             </div>
         </DashboardLayout >
     );

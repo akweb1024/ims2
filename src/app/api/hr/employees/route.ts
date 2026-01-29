@@ -6,7 +6,7 @@ import { createErrorResponse } from '@/lib/api-utils';
 import { getDownlineUserIds } from '@/lib/hierarchy';
 
 export const GET = authorizedRoute(
-    ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'TEAM_LEADER'], // Added TEAM_LEADER
+    ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'TEAM_LEADER', 'HR_MANAGER', 'HR'], // Added HR Roles
     async (req: NextRequest, user) => {
         try {
             if (!user.companyId && user.role !== 'SUPER_ADMIN') {
@@ -83,6 +83,7 @@ export const GET = authorizedRoute(
                             code: true
                         }
                     },
+                    companyDesignations: true,
                     salaryStructure: true
                 }
             });
@@ -212,7 +213,7 @@ export const PATCH = authorizedRoute(
                 userId, createdAt, updatedAt, user: _userRel, incrementHistory, hrComments, workReports, attendance,
                 documents, designatRef, leaveRequests, onboardingProgress, leaveLedgers, digitalDocuments,
                 goals, incentives, kpis, performance, performanceInsights, salaryAdvances, salarySlips,
-                salaryStructure, shiftRosters, taxDeclarations, workPlans,
+                salaryStructure, shiftRosters, taxDeclarations, workPlans, companyDesignations,
                 ...rest
             } = validUpdates as any;
 
@@ -262,6 +263,38 @@ export const PATCH = authorizedRoute(
                 data: updateData
             });
 
+            // 4. Update Company Designations if provided
+            if (companyDesignations && Array.isArray(companyDesignations)) {
+                for (const cd of companyDesignations) {
+                    if (cd.companyId && cd.designation) {
+                        try {
+                            await prisma.employeeCompanyDesignation.upsert({
+                                where: {
+                                    employeeId_companyId: {
+                                        employeeId: id,
+                                        companyId: cd.companyId
+                                    }
+                                },
+                                update: {
+                                    designation: cd.designation,
+                                    designationId: cd.designationId || null,
+                                    isPrimary: cd.isPrimary || false
+                                },
+                                create: {
+                                    employeeId: id,
+                                    companyId: cd.companyId,
+                                    designation: cd.designation,
+                                    designationId: cd.designationId || null,
+                                    isPrimary: cd.isPrimary || false
+                                }
+                            });
+                        } catch (err) {
+                            console.error(`Failed to update designation for company ${cd.companyId}`, err);
+                        }
+                    }
+                }
+            }
+
             return NextResponse.json(updated);
         } catch (error) {
             return createErrorResponse(error);
@@ -281,7 +314,7 @@ export const POST = authorizedRoute(
                 return createErrorResponse(result.error);
             }
             const {
-                email, name, password, role, companyId, companyIds, allowedModules, departmentId,
+                email, name, password, role, companyId, companyIds, allowedModules, departmentId, companyDesignations,
                 ...rest
             } = result.data as any;
 
@@ -392,6 +425,38 @@ export const POST = authorizedRoute(
                         ...profileData
                     }
                 });
+            }
+
+            // Save Company Designations for new employee
+            if (companyDesignations && Array.isArray(companyDesignations) && profile) {
+                for (const cd of companyDesignations) {
+                    if (cd.companyId && cd.designation) {
+                        try {
+                            await prisma.employeeCompanyDesignation.upsert({
+                                where: {
+                                    employeeId_companyId: {
+                                        employeeId: profile.id,
+                                        companyId: cd.companyId
+                                    }
+                                },
+                                update: {
+                                    designation: cd.designation,
+                                    designationId: cd.designationId || null,
+                                    isPrimary: cd.isPrimary || false
+                                },
+                                create: {
+                                    employeeId: profile.id,
+                                    companyId: cd.companyId,
+                                    designation: cd.designation,
+                                    designationId: cd.designationId || null,
+                                    isPrimary: cd.isPrimary || false
+                                }
+                            });
+                        } catch (err) {
+                            console.error(`Failed to create designation for company ${cd.companyId}`, err);
+                        }
+                    }
+                }
             }
 
             return NextResponse.json({ user: targetUser, profile });

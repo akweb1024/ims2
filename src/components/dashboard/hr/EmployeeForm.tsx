@@ -60,7 +60,7 @@ const initialFormState = {
     employeeId: '',
     manualLeaveAdjustment: 0,
     initialLeaveBalance: 0,
-    companyDesignations: [] as Array<{ companyId: string; designation: string; isPrimary: boolean }>,
+    companyDesignations: [] as Array<{ companyId: string; designation: string; isPrimary: boolean; designationId?: string }>,
     targets: {
         revenue: '',
         publication: '',
@@ -520,6 +520,7 @@ export default function EmployeeForm({
                                                                 newDesignations.push({
                                                                     companyId,
                                                                     designation: desName,
+                                                                    designationId: selectedDes ? selectedDes.id : undefined,
                                                                     isPrimary: companyId === empForm.companyId
                                                                 });
                                                             }

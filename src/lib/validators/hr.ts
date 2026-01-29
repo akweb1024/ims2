@@ -84,6 +84,13 @@ export const createEmployeeSchema = z.object({
     skills: z.array(z.string()).optional(),
     expertise: z.array(z.string()).optional(),
     allowedModules: z.array(z.string()).default(["CORE"]),
+    companyDesignations: z.array(z.object({
+        companyId: z.string(),
+        designation: z.string(),
+        designationId: z.string().optional(),
+        isPrimary: z.boolean().default(false),
+        id: z.string().optional()
+    })).optional(),
 });
 
 // For updates, all fields are optional and handle empty strings
@@ -155,6 +162,13 @@ export const updateEmployeeSchema = z.object({
     companyId: z.preprocess(emptyToNull, z.string().nullable().optional()),
     companyIds: z.array(z.string()).optional(),
     allowedModules: z.array(z.string()).optional(),
+    companyDesignations: z.array(z.object({
+        companyId: z.string(),
+        designation: z.string(),
+        designationId: z.string().optional(),
+        isPrimary: z.boolean().default(false),
+        id: z.string().optional()
+    })).optional(),
 
     metrics: z.any().optional(),
 }).passthrough(); // Allow extra fields to pass through

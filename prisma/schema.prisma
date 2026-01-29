@@ -840,6 +840,7 @@ model Designation {
   updatedAt           DateTime               @updatedAt
   employees           EmployeeProfile[]
   taskTemplates       EmployeeTaskTemplate[]
+  companyDesignations EmployeeCompanyDesignation[]
   companies           Company[]              @relation("CompanyToDesignation")
   departments         Department[]           @relation("DepartmentToDesignation")
 }
@@ -962,11 +963,13 @@ model EmployeeCompanyDesignation {
   designation String
   isActive    Boolean         @default(true)
   isPrimary   Boolean         @default(false)
-  assignedAt  DateTime        @default(now())
-  createdAt   DateTime        @default(now())
-  updatedAt   DateTime        @updatedAt
-  company     Company         @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  employee    EmployeeProfile @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  assignedAt    DateTime        @default(now())
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+  company       Company         @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  employee      EmployeeProfile @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  designationId String?
+  designatRef   Designation?    @relation(fields: [designationId], references: [id])
 
   @@unique([employeeId, companyId])
   @@index([employeeId])
@@ -1045,6 +1048,8 @@ model SalaryIncrementRecord {
   type                   String          @default("INCREMENT")
   previousDesignation    String?
   newDesignation         String?
+  oldJobDescription      String?
+  newJobDescription      String?
   reason                 String?
   status                 String          @default("DRAFT")
   isDraft                Boolean         @default(true)
@@ -1604,6 +1609,8 @@ model JobApplication {
   status         String                 @default("APPLIED")
   offerLetterUrl String?
   contractUrl    String?
+  notes          String?
+  rating         Int?
   createdAt      DateTime               @default(now())
   updatedAt      DateTime               @updatedAt
   departmentId   String?

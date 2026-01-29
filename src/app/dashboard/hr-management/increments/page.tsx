@@ -31,16 +31,29 @@ async function getIncrements() {
             redirect('/login');
         }
 
+        // IMPROVED: Strict RBAC Check
+        const authorizedRoles = ['SUPER_ADMIN', 'ADMIN', 'HR', 'HR_MANAGER', 'MANAGER'];
+        if (!authorizedRoles.includes(user.role)) {
+            // Unauthorized users redirected to main dashboard
+            redirect('/dashboard');
+        }
+
         const where: any = {};
 
         // Managers can only see their team's increments
         if (user.role === 'MANAGER') {
-            const managedUsers = await prisma.user.findMany({
+            // Fetch users managed by this manager
+            // First get the users directly reported
+            const directReports = await prisma.user.findMany({
                 where: { managerId: user.id },
                 select: { id: true }
             });
 
-            const managedUserIds = managedUsers.map(u => u.id);
+            // Then get the employee profiles for those users
+            // Also include their own profile so they can see their own increments if needed (optional, typically managers don't set own increments)
+            // But usually this view is for managing OTHERS.
+
+            const managedUserIds = directReports.map(u => u.id);
 
             const managedProfiles = await prisma.employeeProfile.findMany({
                 where: { userId: { in: managedUserIds } },
@@ -51,6 +64,7 @@ async function getIncrements() {
                 in: managedProfiles.map(p => p.id)
             };
         }
+        // HR/ADMIN/SUPER_ADMIN see all (scoped by company if needed, usually filtered by context middleware/helper, but here we assume full access for these roles for now or rely on existing patterns)
 
         const increments = await prisma.salaryIncrementRecord.findMany({
             where,

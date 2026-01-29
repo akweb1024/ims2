@@ -27,6 +27,7 @@ const updateIncrementSchema = z.object({
     newMobile: z.number().min(0).optional(),
     newInternet: z.number().min(0).optional(),
     newBooksAndPeriodicals: z.number().min(0).optional(),
+    newJobDescription: z.string().optional(),
 });
 
 // GET: Get increment details
@@ -158,6 +159,7 @@ export const PATCH = authorizedRoute(
             if (data.performanceNotes) updateData.performanceNotes = data.performanceNotes;
             if (data.newKRA) updateData.newKRA = data.newKRA;
             if (data.newKPI) updateData.newKPI = data.newKPI;
+            if (data.newJobDescription) updateData.newJobDescription = data.newJobDescription;
             if (typeof data.newMonthlyTarget === 'number') updateData.newMonthlyTarget = data.newMonthlyTarget;
             if (typeof data.newYearlyTarget === 'number') updateData.newYearlyTarget = data.newYearlyTarget;
             if (data.effectiveDate) updateData.effectiveDate = new Date(data.effectiveDate);

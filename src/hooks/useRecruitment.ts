@@ -52,7 +52,36 @@ export function useApplicationMutations() {
         }
     });
 
-    return { updateStatus };
+    const createApplication = useMutation({
+        mutationFn: (data: any) => {
+            // Need to convert data to FormData if we were sending files real-time, 
+            // but API expects FormData currently or we can adjust API to JSON. 
+            // The existing API route expects FormData.
+            const formData = new FormData();
+            formData.append('jobId', data.jobId);
+            formData.append('name', data.name);
+            formData.append('email', data.email);
+            if (data.phone) formData.append('phone', data.phone);
+            if (data.resumeUrl) formData.append('resumeUrl', data.resumeUrl);
+
+            return fetch('/api/recruitment/applications', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                },
+                body: formData
+            }).then(async res => {
+                if (!res.ok) throw new Error((await res.json()).error);
+                return res.json();
+            });
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['job-applications'] });
+            queryClient.invalidateQueries({ queryKey: ['job-postings'] });
+        }
+    });
+
+    return { updateStatus, createApplication };
 }
 
 export function useInterviews(applicationId?: string) {
