@@ -379,10 +379,9 @@ export default function EmployeeForm({
                         >
                             <option value="">No Manager (Top Level)</option>
                             {managers
-                                .filter(m => !empForm.companyId || m.user.companyId === empForm.companyId)
                                 .map(m => (
                                     <option key={m.id} value={m.user.id}>
-                                        {m.user.name || m.user.email} ({m.designatRef?.name || m.designation || m.user.role})
+                                        {m.user.name || m.user.email} - {m.user.company?.name || 'No Company'} ({m.designatRef?.name || m.designation || m.user.role})
                                     </option>
                                 ))}
                         </select>
