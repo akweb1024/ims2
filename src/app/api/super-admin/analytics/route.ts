@@ -1,4 +1,3 @@
-
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getAuthenticatedUser } from '@/lib/auth';
@@ -13,91 +12,118 @@ export async function GET(req: NextRequest) {
             return NextResponse.json({ error: 'Unauthorized Access' }, { status: 403 });
         }
 
+        const { searchParams } = new URL(req.url);
+        const period = parseInt(searchParams.get('period') || '12');
+
         // 2. Fetch All Companies
         const companies = await prisma.company.findMany({
-            select: { id: true, name: true, logoUrl: true }
+            select: { id: true, name: true, logoUrl: true, createdAt: true }
         });
 
-        // 3. Financial Overview (Aggregated from Paid Invoices)
-        // Note: Using Invoice table as a proxy for Revenue
+        // 3. Financial Overview with Monthly Trends
+        const startDate = new Date(Date.now() - period * 30 * 24 * 60 * 60 * 1000);
+
         const revenueByCompany = await prisma.invoice.groupBy({
-            by: ['companyId'],
+            by: ['companyId', 'createdAt'],
             where: {
-                status: 'PAID'
+                status: 'PAID',
+                createdAt: { gte: startDate }
             },
-            _sum: {
-                total: true
+            _sum: { total: true }
+        });
+
+        // Calculate monthly revenue trends
+        const monthlyRevenueTrend: Record<string, Record<string, number>> = {};
+        revenueByCompany.forEach(r => {
+            const comp = companies.find(c => c.id === r.companyId);
+            if (!comp) return;
+
+            const monthKey = new Date(r.createdAt).toISOString().slice(0, 7);
+            if (!monthlyRevenueTrend[comp.name]) {
+                monthlyRevenueTrend[comp.name] = {};
             }
+            monthlyRevenueTrend[comp.name][monthKey] = (monthlyRevenueTrend[comp.name][monthKey] || 0) + (r._sum.total || 0);
         });
 
         const financialData = companies.map(comp => {
-            const rev = revenueByCompany.find(r => r.companyId === comp.id);
+            const rev = revenueByCompany.filter(r => r.companyId === comp.id);
+            const totalRevenue = rev.reduce((acc, r) => acc + (r._sum.total || 0), 0);
+
+            // Calculate growth (compare last month vs previous)
+            const lastMonthKey = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 7);
+            const prevMonthKey = new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString().slice(0, 7);
+            const lastMonthRev = monthlyRevenueTrend[comp.name]?.[lastMonthKey] || 0;
+            const prevMonthRev = monthlyRevenueTrend[comp.name]?.[prevMonthKey] || 0;
+            const growthRate = prevMonthRev > 0 ? ((lastMonthRev - prevMonthRev) / prevMonthRev * 100).toFixed(1) : '0';
+
             return {
                 companyId: comp.id,
                 companyName: comp.name,
-                totalRevenue: rev?._sum.total || 0,
-                // Mock target for "In/Out" status, or assume 0 is "Out"
-                status: (rev?._sum.total || 0) > 0 ? 'In Revenue' : 'Pre-Revenue'
+                totalRevenue,
+                status: totalRevenue > 0 ? 'In Revenue' : 'Pre-Revenue',
+                lastMonthRevenue: lastMonthRev,
+                growthRate: parseFloat(growthRate as string),
+                monthlyTrend: monthlyRevenueTrend[comp.name] || {}
             };
         });
 
-        // 4. Employee Demographics
-        const employeeStats = await prisma.employeeProfile.groupBy({
-            by: ['userId', 'employeeType'], // grouped by userId effectively counts distinct profiles if 1:1, but employeeType is on profile.
-            // Wait, groupBy on relations is not direct.
-            // We need to group by company, but company is on User, not direct on Profile usually, 
-            // BUT, verify schema: `user User @relation...`. User has `companyId`.
-            // Prisma groupBy doesn't support deep relation grouping easily.
-            // Better to fetch all profiles with select { employeeType, user: { companyId } } and aggregate in JS for flexibility
-            // OR use raw query. JS aggregation is safer for portable logic with moderate data size.
-        });
-
-        // Optimized Approach: Fetch lightweight data
+        // 4. Employee Demographics & Trends
         const allProfiles = await prisma.employeeProfile.findMany({
-            select: {
-                employeeType: true,
-                salaryStructure: {
-                    select: {
-                        ctc: true
-                    }
-                },
+            include: {
                 user: {
                     select: {
                         companyId: true,
                         managerId: true,
                         departmentId: true,
-                        name: true, // For manager name resolution
+                        name: true,
+                        isActive: true,
+                        createdAt: true,
                         department: { select: { name: true } }
                     }
-                }
-            },
-            where: {
-                user: {
-                    isActive: true
                 }
             }
         });
 
-        // Aggregate Employees
+        // Calculate company stats
         const companyEmployeeStats: Record<string, any> = {};
-
-        // Aggregate Salaries
         const salaryByDept: Record<string, number> = {};
         const salaryByManager: Record<string, number> = {};
-
-        // Helper to resolve manager names
         const managerNames: Record<string, string> = {};
+        const monthlyHeadcountTrend: Record<string, Record<string, number>> = {};
+
+        // Get all active users for headcount
+        const allUsers = await prisma.user.findMany({
+            where: { isActive: true },
+            select: { id: true, companyId: true, createdAt: true, name: true }
+        });
+
+        // Calculate monthly headcount
+        allUsers.forEach(u => {
+            if (!u.companyId) return;
+            const comp = companies.find(c => c.id === u.companyId);
+            if (!comp) return;
+
+            const monthKey = u.createdAt.toISOString().slice(0, 7);
+            if (!monthlyHeadcountTrend[comp.name]) {
+                monthlyHeadcountTrend[comp.name] = {};
+            }
+            monthlyHeadcountTrend[comp.name][monthKey] = (monthlyHeadcountTrend[comp.name][monthKey] || 0) + 1;
+        });
 
         allProfiles.forEach(p => {
             const compId = p.user.companyId;
             if (!compId) return;
+            const comp = companies.find(c => c.id === compId);
+            if (!comp) return;
 
             // Init Company Stats
             if (!companyEmployeeStats[compId]) {
                 companyEmployeeStats[compId] = {
                     companyId: compId,
                     total: 0,
-                    types: {}
+                    types: {},
+                    avgSalary: 0,
+                    totalSalary: 0
                 };
             }
 
@@ -106,62 +132,123 @@ export async function GET(req: NextRequest) {
             companyEmployeeStats[compId].types[type] = (companyEmployeeStats[compId].types[type] || 0) + 1;
             companyEmployeeStats[compId].total++;
 
-            // Salary Analysis
-            const ctc = p.salaryStructure?.ctc || 0;
+            // Salary Analysis (using fixedSalary + variableSalary as monthly)
+            const monthlySalary = (p.fixedSalary || 0) + (p.variableSalary || 0);
+            companyEmployeeStats[compId].totalSalary += monthlySalary;
 
             // By Dept
             const deptName = p.user.department?.name || 'Unassigned';
-            salaryByDept[deptName] = (salaryByDept[deptName] || 0) + ctc;
+            salaryByDept[deptName] = (salaryByDept[deptName] || 0) + monthlySalary;
 
             // By Manager
             if (p.user.managerId) {
-                salaryByManager[p.user.managerId] = (salaryByManager[p.user.managerId] || 0) + ctc;
-                // We don't have manager name directly attached to the profile's user.managerId
-                // We need to look it up.
+                salaryByManager[p.user.managerId] = (salaryByManager[p.user.managerId] || 0) + monthlySalary;
             }
         });
 
-        // Resolve Manager Names (need a separate query or smarter look up)
-        // Let's fetch all users who are managers
+        // Calculate avg salary per company
+        Object.keys(companyEmployeeStats).forEach(compId => {
+            const stats = companyEmployeeStats[compId];
+            stats.avgSalary = stats.total > 0 ? stats.totalSalary / stats.total : 0;
+        });
+
+        // Resolve Manager Names
         const managerIds = Object.keys(salaryByManager);
         const managers = await prisma.user.findMany({
             where: { id: { in: managerIds } },
-            select: { id: true, name: true }
+            select: { id: true, name: true, companyId: true }
         });
-        managers.forEach(m => managerNames[m.id] = m.name || 'Unknown Manager');
-
-        const managerSalaryAnalysis = managers.map(m => ({
-            managerId: m.id,
-            managerName: m.name,
-            totalExpenditure: salaryByManager[m.id] || 0
-        })).sort((a, b) => b.totalExpenditure - a.totalExpenditure).slice(0, 10); // Top 10
-
-        // Format Employee Stats for Frontend
-        const employeeDemographics = companies.map(c => {
-            const stats = companyEmployeeStats[c.id] || { total: 0, types: {} };
-            return {
-                companyName: c.name,
-                total: stats.total,
-                breakdown: stats.types
-            };
+        managers.forEach(m => {
+            managerNames[m.id] = m.name || 'Unknown Manager';
         });
 
-        const departmentSalaryAnalysis = Object.entries(salaryByDept)
-            .map(([name, total]) => ({ name, total }))
-            .sort((a, b) => b.total - a.total);
+        const managerSalaryAnalysis = managers
+            .map(m => ({
+                managerId: m.id,
+                managerName: m.name,
+                companyId: m.companyId,
+                totalExpenditure: salaryByManager[m.id] || 0
+            }))
+            .sort((a, b) => b.totalExpenditure - a.totalExpenditure)
+            .slice(0, 10);
 
         // 5. Executive Summary Calculations (MD View)
         const totalGroupRevenue = financialData.reduce((acc, curr) => acc + curr.totalRevenue, 0);
         const totalGroupHeadcount = Object.values(companyEmployeeStats).reduce((acc: number, curr: any) => acc + curr.total, 0);
-
-        // Burn Rate uses the summed salary data
-        // Note: This is Base/CTC purely. Actual burn might include overheads.
-        const totalMonthlyBurn = Object.values(salaryByManager).reduce((acc, curr) => acc + curr, 0) / 12;
-
-        // Net Profit Estimate (Very rough: Revenue - Annualized Burn)
-        // In reality, Revenue is total collected, Burn is annual commitment. 
-        // A better monthly comparison would be (Total Revenue / 12) - Monthly Burn
+        const totalMonthlyBurn = Object.values(salaryByManager).reduce((acc, curr) => acc + curr, 0);
         const estimatedNetProfit = totalGroupRevenue - (totalMonthlyBurn * 12);
+
+        // Calculate overall growth
+        const totalLastMonth = financialData.reduce((acc, c) => acc + c.lastMonthRevenue, 0);
+        const overallGrowth = totalLastMonth > 0 ? ((totalGroupRevenue - totalLastMonth) / totalLastMonth * 100).toFixed(1) : '0';
+
+        // 6. Pending Approvals for MD
+        const pendingIncrements = await prisma.salaryIncrementRecord.count({
+            where: { status: { not: 'APPROVED' }, isDraft: false }
+        });
+
+        const pendingLeaveApplications = await prisma.leaveRequest.count({
+            where: { status: 'PENDING' }
+        });
+
+        const pendingInvoices = await prisma.invoice.count({
+            where: { status: 'UNPAID' }
+        });
+
+        // 7. Alerts & Insights
+        const alerts = [];
+
+        // Low revenue companies
+        const lowRevenueCompanies = financialData.filter(c => c.totalRevenue < 100000);
+        if (lowRevenueCompanies.length > 0) {
+            alerts.push({
+                type: 'warning',
+                title: 'Low Revenue Alert',
+                message: `${lowRevenueCompanies.length} company(ies) generating less than ₹1L revenue`,
+                companies: lowRevenueCompanies.map(c => c.companyName)
+            });
+        }
+
+        // High burn rate companies
+        const highBurnCompanies = companies.map(c => {
+            const empStats = companyEmployeeStats[c.id];
+            const avgSalary = empStats?.avgSalary || 0;
+            return { name: c.name, avgSalary };
+        }).filter(c => c.avgSalary > 100000);
+
+        if (highBurnCompanies.length > 0) {
+            alerts.push({
+                type: 'info',
+                title: 'High Salary Benchmarks',
+                message: `${highBurnCompanies.length} company(ies) have avg monthly salary > ₹1L`,
+                companies: highBurnCompanies.map(c => c.name)
+            });
+        }
+
+        // 8. Quick Stats
+        const avgRevenuePerCompany = financialData.length > 0 ? totalGroupRevenue / financialData.length : 0;
+        const avgHeadcountPerCompany = companies.length > 0 ? totalGroupHeadcount / companies.length : 0;
+
+        // Employee type breakdown
+        const employeeTypeBreakdown: Record<string, number> = {};
+        Object.values(companyEmployeeStats).forEach((stats: any) => {
+            Object.entries(stats.types).forEach(([type, count]) => {
+                employeeTypeBreakdown[type] = (employeeTypeBreakdown[type] || 0) + (count as number);
+            });
+        });
+
+        // 9. Department-wise performance
+        const departmentPerformance = Object.entries(salaryByDept)
+            .map(([name, total]) => ({ name, totalSalary: total, employeeCount: 0 }))
+            .sort((a, b) => b.totalSalary - a.totalSalary);
+
+        // 10. Monthly burn trend (last 6 months)
+        const burnTrend: Record<string, number> = {};
+        const now = new Date();
+        for (let i = 5; i >= 0; i--) {
+            const monthKey = new Date(now.getFullYear(), now.getMonth() - i, 1).toISOString().slice(0, 7);
+            burnTrend[monthKey] = totalMonthlyBurn; // Simplified - same burn each month
+        }
 
         return NextResponse.json({
             executive: {
@@ -169,14 +256,43 @@ export async function GET(req: NextRequest) {
                 totalHeadcount: totalGroupHeadcount,
                 monthlyBurnRate: totalMonthlyBurn,
                 netProfitEstimate: estimatedNetProfit,
-                activeCompanies: companies.length
+                activeCompanies: companies.length,
+                overallGrowth: parseFloat(overallGrowth as string),
+                avgRevenuePerCompany,
+                avgHeadcountPerCompany,
+                employeeTypeBreakdown
             },
             financials: financialData,
-            demographics: employeeDemographics,
+            demographics: employeeTypeBreakdown,
+            companyStats: companies.map(c => {
+                const stats = companyEmployeeStats[c.id] || { total: 0, types: {}, avgSalary: 0, totalSalary: 0 };
+                return {
+                    companyId: c.id,
+                    companyName: c.name,
+                    total: stats.total,
+                    breakdown: stats.types,
+                    avgSalary: stats.avgSalary,
+                    totalSalary: stats.totalSalary,
+                    monthlyHeadcount: monthlyHeadcountTrend[c.name] || {}
+                };
+            }),
             salary: {
                 byManager: managerSalaryAnalysis,
-                byDepartment: departmentSalaryAnalysis
-            }
+                byDepartment: departmentPerformance,
+                totalMonthly: totalMonthlyBurn,
+                burnTrend
+            },
+            trends: {
+                revenue: monthlyRevenueTrend,
+                headcount: monthlyHeadcountTrend
+            },
+            approvals: {
+                pendingIncrements,
+                pendingLeaveApplications,
+                pendingInvoices,
+                total: pendingIncrements + pendingLeaveApplications + pendingInvoices
+            },
+            alerts
         });
 
     } catch (error: any) {
