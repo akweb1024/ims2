@@ -41,6 +41,20 @@ export async function POST(
                 where: { id: record.employeeProfileId },
                 data: {
                     baseSalary: record.newSalary,
+                    fixedSalary: record.newFixedSalary,
+                    variableSalary: record.newVariableSalary,
+                    incentiveSalary: record.newIncentive,
+
+                    // Update Detailed Structure & Flags
+                    hasVariable: record.optInVariable,
+                    variablePerTarget: record.newVariablePerTarget,
+                    variableUpperCap: record.newVariableUpperCap,
+                    variableDefinition: record.variableDefinition,
+
+                    hasIncentive: record.optInIncentive,
+                    incentivePercentage: record.newIncentivePercentage,
+                    incentiveDefinition: record.incentiveDefinition,
+
                     designation: record.newDesignation || undefined,
                     lastIncrementDate: record.type === 'INCREMENT' ? record.effectiveDate : undefined,
                     lastIncrementPercentage: record.type === 'INCREMENT' ? record.percentage : undefined,

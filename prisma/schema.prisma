@@ -878,7 +878,20 @@ model EmployeeProfile {
   baseSalary               Float?
   fixedSalary              Float?
   variableSalary           Float?
+  
+  // Variable Pay Details
+  hasVariable              Boolean                      @default(false)
+  variablePerTarget        Float?
+  variableUpperCap         Float?
+  variableDefinition       String?
+
   incentiveSalary          Float?
+  
+  // Incentive Details
+  hasIncentive             Boolean                      @default(false)
+  incentivePercentage      Float?
+  incentiveDefinition      String?
+
   monthlyTarget            Float?                       @default(0)
   yearlyTarget             Float?                       @default(0)
   skills                   String[]
@@ -1037,6 +1050,16 @@ model SalaryIncrementRecord {
   incentiveDefinition    String?
   incrementAmount        Float
   percentage             Float
+  
+  // Opt-in Flags
+  optInVariable          Boolean         @default(false)
+  optInIncentive         Boolean         @default(false)
+
+  // Old Detailed Structure (for history/comparison)
+  oldVariablePerTarget   Float?
+  oldVariableUpperCap    Float?
+  oldIncentivePercentage Float?
+
   oldHealthCare          Float?
   newHealthCare          Float?
   oldTravelling          Float?

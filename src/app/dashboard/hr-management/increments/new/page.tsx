@@ -43,7 +43,9 @@ function NewIncrementContent() {
         newTravelling: 0,
         newMobile: 0,
         newInternet: 0,
-        newBooksAndPeriodicals: 0
+        newBooksAndPeriodicals: 0,
+        optInVariable: false,
+        optInIncentive: false
     });
 
     const [selectedEmployee, setSelectedEmployee] = useState<any>(null);
@@ -92,6 +94,8 @@ function NewIncrementContent() {
             newMobile: employee?.salaryStructure?.mobile || 0,
             newInternet: employee?.salaryStructure?.internet || 0,
             newBooksAndPeriodicals: employee?.salaryStructure?.booksAndPeriodicals || 0,
+            optInVariable: (employee?.variableSalary || 0) > 0 || employee?.hasVariable || false,
+            optInIncentive: (employee?.incentiveSalary || 0) > 0 || employee?.hasIncentive || false,
         });
     };
 
@@ -270,108 +274,138 @@ function NewIncrementContent() {
                             </div>
 
                             {/* Variable Salary with Details */}
-                            <div className="mb-6 p-4 bg-blue-50 rounded-xl border border-blue-200">
-                                <h3 className="font-bold text-blue-900 mb-3">Variable Salary Component</h3>
-
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                                    <div>
-                                        <label className="label-premium">Variable Amount</label>
+                            <div className={`mb-6 p-4 rounded-xl border transition-all ${form.optInVariable ? 'bg-blue-50 border-blue-200' : 'bg-gray-50 border-gray-200'}`}>
+                                <div className="flex items-center justify-between mb-3">
+                                    <h3 className={`font-bold ${form.optInVariable ? 'text-blue-900' : 'text-gray-500'}`}>Variable Salary Component</h3>
+                                    <label className="flex items-center cursor-pointer gap-2">
                                         <input
-                                            type="number"
-                                            min="0"
-                                            step="any"
-                                            className="input-premium"
-                                            value={form.newVariableSalary}
-                                            onChange={(e) => setForm({ ...form, newVariableSalary: parseFloat(e.target.value) || 0 })}
+                                            type="checkbox"
+                                            className="toggle toggle-primary toggle-sm"
+                                            checked={form.optInVariable}
+                                            onChange={(e) => setForm({ ...form, optInVariable: e.target.checked, newVariableSalary: e.target.checked ? form.newVariableSalary : 0 })}
                                         />
-                                    </div>
-
-                                    <div>
-                                        <label className="label-premium">Per Target Amount</label>
-                                        <input
-                                            type="number"
-                                            min="0"
-                                            step="any"
-                                            className="input-premium"
-                                            placeholder="e.g., 5000 per target"
-                                            value={form.newVariablePerTarget}
-                                            onChange={(e) => setForm({ ...form, newVariablePerTarget: parseFloat(e.target.value) || 0 })}
-                                        />
-                                        <p className="text-xs text-blue-600 mt-1">Fixed amount earned per target achieved</p>
-                                    </div>
-
-                                    <div>
-                                        <label className="label-premium">Upper Cap</label>
-                                        <input
-                                            type="number"
-                                            min="0"
-                                            step="any"
-                                            className="input-premium"
-                                            placeholder="e.g., 50000 max"
-                                            value={form.newVariableUpperCap}
-                                            onChange={(e) => setForm({ ...form, newVariableUpperCap: parseFloat(e.target.value) || 0 })}
-                                        />
-                                        <p className="text-xs text-blue-600 mt-1">Maximum variable salary limit</p>
-                                    </div>
+                                        <span className="text-sm font-semibold text-secondary-700">Include Variable Pay</span>
+                                    </label>
                                 </div>
 
-                                <div>
-                                    <label className="label-premium">Variable Salary Definition</label>
-                                    <RichTextEditor
-                                        value={form.variableDefinition}
-                                        onChange={(value) => setForm({ ...form, variableDefinition: value })}
-                                        placeholder="Define how variable salary is calculated, targets, and conditions..."
-                                    />
-                                    <p className="text-xs text-blue-600 mt-1">
-                                        Example: &quot;₹{form.newVariablePerTarget || 0} per target achieved, maximum ₹{form.newVariableUpperCap || 0}&quot;
-                                    </p>
-                                </div>
+                                {form.optInVariable && (
+                                    <>
+                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                                            <div>
+                                                <label className="label-premium">Variable Amount</label>
+                                                <input
+                                                    type="number"
+                                                    min="0"
+                                                    step="any"
+                                                    className="input-premium"
+                                                    value={form.newVariableSalary}
+                                                    onChange={(e) => setForm({ ...form, newVariableSalary: parseFloat(e.target.value) || 0 })}
+                                                />
+                                            </div>
+
+                                            <div>
+                                                <label className="label-premium">Per Target Amount</label>
+                                                <input
+                                                    type="number"
+                                                    min="0"
+                                                    step="any"
+                                                    className="input-premium"
+                                                    placeholder="e.g., 5000 per target"
+                                                    value={form.newVariablePerTarget}
+                                                    onChange={(e) => setForm({ ...form, newVariablePerTarget: parseFloat(e.target.value) || 0 })}
+                                                />
+                                                <p className="text-xs text-blue-600 mt-1">Fixed amount earned per target achieved</p>
+                                            </div>
+
+                                            <div>
+                                                <label className="label-premium">Upper Cap</label>
+                                                <input
+                                                    type="number"
+                                                    min="0"
+                                                    step="any"
+                                                    className="input-premium"
+                                                    placeholder="e.g., 50000 max"
+                                                    value={form.newVariableUpperCap}
+                                                    onChange={(e) => setForm({ ...form, newVariableUpperCap: parseFloat(e.target.value) || 0 })}
+                                                />
+                                                <p className="text-xs text-blue-600 mt-1">Maximum variable salary limit</p>
+                                            </div>
+                                        </div>
+
+                                        <div>
+                                            <label className="label-premium">Variable Salary Definition</label>
+                                            <RichTextEditor
+                                                value={form.variableDefinition}
+                                                onChange={(value) => setForm({ ...form, variableDefinition: value })}
+                                                placeholder="Define how variable salary is calculated, targets, and conditions..."
+                                            />
+                                            <p className="text-xs text-blue-600 mt-1">
+                                                Example: &quot;₹{form.newVariablePerTarget || 0} per target achieved, maximum ₹{form.newVariableUpperCap || 0}&quot;
+                                            </p>
+                                        </div>
+                                    </>
+                                )}
                             </div>
 
                             {/* Incentive with Details */}
-                            <div className="p-4 bg-purple-50 rounded-xl border border-purple-200">
-                                <h3 className="font-bold text-purple-900 mb-3">Incentive Component</h3>
-
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                                    <div>
-                                        <label className="label-premium">Incentive Amount</label>
+                            <div className={`p-4 rounded-xl border transition-all ${form.optInIncentive ? 'bg-purple-50 border-purple-200' : 'bg-gray-50 border-gray-200'}`}>
+                                <div className="flex items-center justify-between mb-3">
+                                    <h3 className={`font-bold ${form.optInIncentive ? 'text-purple-900' : 'text-gray-500'}`}>Incentive Component</h3>
+                                    <label className="flex items-center cursor-pointer gap-2">
                                         <input
-                                            type="number"
-                                            min="0"
-                                            step="any"
-                                            className="input-premium"
-                                            value={form.newIncentive}
-                                            onChange={(e) => setForm({ ...form, newIncentive: parseFloat(e.target.value) || 0 })}
+                                            type="checkbox"
+                                            className="toggle toggle-secondary toggle-sm"
+                                            checked={form.optInIncentive}
+                                            onChange={(e) => setForm({ ...form, optInIncentive: e.target.checked, newIncentive: e.target.checked ? form.newIncentive : 0 })}
                                         />
-                                    </div>
-
-                                    <div>
-                                        <label className="label-premium">Incentive Percentage (%)</label>
-                                        <input
-                                            type="number"
-                                            min="0"
-                                            max="100"
-                                            step="0.1"
-                                            className="input-premium"
-                                            placeholder="e.g., 10% after cap"
-                                            value={form.newIncentivePercentage}
-                                            onChange={(e) => setForm({ ...form, newIncentivePercentage: parseFloat(e.target.value) || 0 })}
-                                        />
-                                        <p className="text-xs text-purple-600 mt-1">% earned after reaching variable upper cap</p>
-                                    </div>
+                                        <span className="text-sm font-semibold text-secondary-700">Include Incentive</span>
+                                    </label>
                                 </div>
 
-                                <div>
-                                    <label className="label-premium">Incentive Definition</label>
-                                    <RichTextEditor
-                                        value={form.incentiveDefinition}
-                                        onChange={(value) => setForm({ ...form, incentiveDefinition: value })}
-                                        placeholder="Define how incentive is calculated, conditions, and when it applies..."
-                                    />
-                                    <p className="text-xs text-purple-600 mt-1">
-                                        Example: &quot;{form.newIncentivePercentage || 0}% of additional earnings after reaching variable cap of ₹{form.newVariableUpperCap || 0}&quot;
-                                    </p>
-                                </div>
+                                {form.optInIncentive && (
+                                    <>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                                            <div>
+                                                <label className="label-premium">Incentive Amount</label>
+                                                <input
+                                                    type="number"
+                                                    min="0"
+                                                    step="any"
+                                                    className="input-premium"
+                                                    value={form.newIncentive}
+                                                    onChange={(e) => setForm({ ...form, newIncentive: parseFloat(e.target.value) || 0 })}
+                                                />
+                                            </div>
+
+                                            <div>
+                                                <label className="label-premium">Incentive Percentage (%)</label>
+                                                <input
+                                                    type="number"
+                                                    min="0"
+                                                    max="100"
+                                                    step="0.1"
+                                                    className="input-premium"
+                                                    placeholder="e.g., 10% after cap"
+                                                    value={form.newIncentivePercentage}
+                                                    onChange={(e) => setForm({ ...form, newIncentivePercentage: parseFloat(e.target.value) || 0 })}
+                                                />
+                                                <p className="text-xs text-purple-600 mt-1">% earned after reaching variable upper cap</p>
+                                            </div>
+                                        </div>
+
+                                        <div>
+                                            <label className="label-premium">Incentive Definition</label>
+                                            <RichTextEditor
+                                                value={form.incentiveDefinition}
+                                                onChange={(value) => setForm({ ...form, incentiveDefinition: value })}
+                                                placeholder="Define how incentive is calculated, conditions, and when it applies..."
+                                            />
+                                            <p className="text-xs text-purple-600 mt-1">
+                                                Example: &quot;{form.newIncentivePercentage || 0}% of additional earnings after reaching variable cap of ₹{form.newVariableUpperCap || 0}&quot;
+                                            </p>
+                                        </div>
+                                    </>
+                                )}
                             </div>
 
                             {/* Sec-10 Exemp / Perks */}

@@ -133,7 +133,7 @@ export async function GET(req: NextRequest) {
             companyEmployeeStats[compId].total++;
 
             // Salary Analysis (using fixedSalary + variableSalary as monthly)
-            const monthlySalary = (p.fixedSalary || 0) + (p.variableSalary || 0);
+            const monthlySalary = (p.fixedSalary || 0) + (p.variableSalary || 0) + (p.incentiveSalary || 0);
             companyEmployeeStats[compId].totalSalary += monthlySalary;
 
             // By Dept

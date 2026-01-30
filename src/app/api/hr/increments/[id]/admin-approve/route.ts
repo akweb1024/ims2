@@ -67,6 +67,17 @@ export const POST = authorizedRoute(
                             fixedSalary: increment.newFixedSalary,
                             variableSalary: increment.newVariableSalary,
                             incentiveSalary: increment.newIncentive,
+
+                            // Update Detailed Structure & Flags
+                            hasVariable: increment.optInVariable,
+                            variablePerTarget: increment.newVariablePerTarget,
+                            variableUpperCap: increment.newVariableUpperCap,
+                            variableDefinition: increment.variableDefinition,
+
+                            hasIncentive: increment.optInIncentive,
+                            incentivePercentage: increment.newIncentivePercentage,
+                            incentiveDefinition: increment.incentiveDefinition,
+
                             designation: increment.newDesignation || increment.previousDesignation,
                             lastIncrementDate: increment.effectiveDate,
                             lastIncrementPercentage: increment.percentage,

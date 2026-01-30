@@ -14,6 +14,18 @@ const incrementSchema = z.object({
     newVariableSalary: z.number().min(0).optional(),
     newIncentive: z.number().min(0).optional(),
 
+    // Detailed Structure
+    newVariablePerTarget: z.number().optional(),
+    newVariableUpperCap: z.number().optional(),
+    variableDefinition: z.string().optional(),
+
+    newIncentivePercentage: z.number().optional(),
+    incentiveDefinition: z.string().optional(),
+
+    // Opt-in Flags
+    optInVariable: z.boolean().optional(),
+    optInIncentive: z.boolean().optional(),
+
     // Designation change
     newDesignation: z.string().optional(),
 
@@ -163,11 +175,25 @@ export const POST = authorizedRoute(
                     oldVariableSalary,
                     oldIncentive,
 
+                    // Old detailed structure
+                    oldVariablePerTarget: employee.variablePerTarget,
+                    oldVariableUpperCap: employee.variableUpperCap,
+                    oldIncentivePercentage: employee.incentivePercentage,
+
                     // New salary
                     newSalary,
                     newFixedSalary: data.newFixedSalary,
                     newVariableSalary: data.newVariableSalary || 0,
                     newIncentive: data.newIncentive || 0,
+
+                    // New detailed structure & Opt-ins
+                    optInVariable: data.optInVariable || false,
+                    optInIncentive: data.optInIncentive || false,
+                    newVariablePerTarget: data.newVariablePerTarget,
+                    newVariableUpperCap: data.newVariableUpperCap,
+                    variableDefinition: data.variableDefinition,
+                    newIncentivePercentage: data.newIncentivePercentage,
+                    incentiveDefinition: data.incentiveDefinition,
 
                     incrementAmount,
                     percentage,
