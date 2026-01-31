@@ -7,9 +7,10 @@ import FormattedDate from '@/components/common/FormattedDate';
 interface AttendanceCalendarProps {
     attendance: any[];
     workReports: any[];
+    onDateClick?: (date: Date, attendanceRecord?: any) => void;
 }
 
-export default function AttendanceCalendar({ attendance, workReports }: AttendanceCalendarProps) {
+export default function AttendanceCalendar({ attendance, workReports, onDateClick }: AttendanceCalendarProps) {
     const [currentMonth, setCurrentMonth] = useState(new Date());
 
     const daysInMonth = (year: number, month: number) => new Date(year, month + 1, 0).getDate();
@@ -131,10 +132,12 @@ export default function AttendanceCalendar({ attendance, workReports }: Attendan
                         return (
                             <div
                                 key={idx}
+                                onClick={() => onDateClick && onDateClick(date, att)}
                                 className={`
                                     relative p-2 rounded-2xl border aspect-square flex flex-col justify-between transition-all group hover:shadow-md
                                     ${isToday ? 'border-primary-500 bg-primary-50/30 ring-2 ring-primary-100' : 'border-secondary-50'}
                                     ${isWeekend && !att ? 'bg-secondary-50/30' : ''}
+                                    ${onDateClick ? 'cursor-pointer hover:border-primary-400 hover:bg-primary-50' : ''}
                                 `}
                             >
                                 <div className="flex justify-between items-start">

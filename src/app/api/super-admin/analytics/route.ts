@@ -45,6 +45,30 @@ export async function GET(req: NextRequest) {
             monthlyRevenueTrend[comp.name][monthKey] = (monthlyRevenueTrend[comp.name][monthKey] || 0) + (r._sum.total || 0);
         });
 
+        // 3.5 Fetch Pending Increments for Projection
+        const activeIncrements = await prisma.salaryIncrementRecord.findMany({
+            where: {
+                status: { in: ['PENDING', 'APPROVED'] },
+                isDraft: false
+            },
+            include: { employeeProfile: { select: { user: { select: { companyId: true } } } } }
+        });
+
+
+        const incrementsByCompany: Record<string, number> = {};
+        activeIncrements.forEach(record => {
+            const inc = record as any;
+            const compId = inc.employeeProfile?.user?.companyId;
+            if (compId) {
+                // Calculate impact using correct schema fields
+                const current = (inc.oldFixed || 0) + (inc.oldVariableRate || 0) * (inc.oldVariableUnit || 0);
+                const passedNew = (inc.newFixed || 0) + (inc.newVariableRate || 0) * (inc.newVariableUnit || 0);
+                const diff = Math.max(0, passedNew - current);
+                incrementsByCompany[compId] = (incrementsByCompany[compId] || 0) + diff;
+            }
+        });
+
+
         const financialData = companies.map(comp => {
             const rev = revenueByCompany.filter(r => r.companyId === comp.id);
             const totalRevenue = rev.reduce((acc, r) => acc + (r._sum.total || 0), 0);
@@ -122,10 +146,16 @@ export async function GET(req: NextRequest) {
             if (!companyEmployeeStats[compId]) {
                 companyEmployeeStats[compId] = {
                     companyId: compId,
+                    companyName: comp.name,
                     total: 0,
                     types: {},
                     avgSalary: 0,
-                    totalSalary: 0
+                    totalSalary: 0,
+                    monthlyBurn: 0,
+                    totalRevenue: 0,
+                    projectedSalary: 0,
+                    netProfit: 0,
+                    profitMargin: 0
                 };
             }
 
@@ -135,10 +165,11 @@ export async function GET(req: NextRequest) {
             companyEmployeeStats[compId].total++;
 
             // Salary Analysis (using standardized fields)
-            const fixed = p.salaryFixed || 0;
-            const variable = p.salaryVariable || 0;
-            const incentive = p.salaryIncentive || 0;
-            const baseTarget = (p as any).baseTarget || 0; // Cast for new field
+            const pAny = p as any;
+            const fixed = pAny.salaryFixed || 0;
+            const variable = pAny.salaryVariable || 0;
+            const incentive = pAny.salaryIncentive || 0;
+            const baseTarget = pAny.baseTarget || 0;
 
             const monthlySalary = fixed + variable + incentive;
 
@@ -151,7 +182,6 @@ export async function GET(req: NextRequest) {
             globalBreakdown.fixedTarget += baseTarget;
 
             // Reimbursements (Safe cast)
-            const pAny = p as any;
             const reimbursements =
                 (pAny.healthCare || 0) +
                 (pAny.travelling || 0) +
@@ -171,10 +201,22 @@ export async function GET(req: NextRequest) {
             }
         });
 
-        // Calculate avg salary per company
+        // Finalize Company Stats with P&L
         Object.keys(companyEmployeeStats).forEach(compId => {
             const stats = companyEmployeeStats[compId];
+            const compRevenue = financialData.find(f => f.companyId === compId)?.totalRevenue || 0;
+
             stats.avgSalary = stats.total > 0 ? stats.totalSalary / stats.total : 0;
+            stats.monthlyBurn = stats.totalSalary;
+            stats.totalRevenue = compRevenue;
+
+            // Projected impact
+            const pendingImpact = incrementsByCompany[compId] || 0;
+            stats.projectedSalary = stats.totalSalary + pendingImpact;
+
+            const annualizedCost = stats.totalSalary * 12;
+            stats.netProfit = compRevenue - annualizedCost;
+            stats.profitMargin = compRevenue > 0 ? (stats.netProfit / compRevenue) * 100 : -100;
         });
 
         // Resolve Manager Names
@@ -272,7 +314,7 @@ export async function GET(req: NextRequest) {
         const now = new Date();
         for (let i = 5; i >= 0; i--) {
             const monthKey = new Date(now.getFullYear(), now.getMonth() - i, 1).toISOString().slice(0, 7);
-            burnTrend[monthKey] = totalMonthlyBurn; // Simplified - same burn each month
+            burnTrend[monthKey] = totalMonthlyBurn;
         }
 
         return NextResponse.json({
@@ -290,7 +332,17 @@ export async function GET(req: NextRequest) {
             financials: financialData,
             demographics: employeeTypeBreakdown,
             companyStats: companies.map(c => {
-                const stats = companyEmployeeStats[c.id] || { total: 0, types: {}, avgSalary: 0, totalSalary: 0 };
+                const stats = companyEmployeeStats[c.id] || {
+                    total: 0,
+                    types: {},
+                    avgSalary: 0,
+                    totalSalary: 0,
+                    monthlyBurn: 0,
+                    totalRevenue: 0,
+                    projectedSalary: 0,
+                    netProfit: 0,
+                    profitMargin: 0
+                };
                 return {
                     companyId: c.id,
                     companyName: c.name,
@@ -298,7 +350,14 @@ export async function GET(req: NextRequest) {
                     breakdown: stats.types,
                     avgSalary: stats.avgSalary,
                     totalSalary: stats.totalSalary,
-                    monthlyHeadcount: monthlyHeadcountTrend[c.name] || {}
+                    monthlyHeadcount: monthlyHeadcountTrend[c.name] || {},
+
+                    // Comparison Metrics
+                    totalRevenue: stats.totalRevenue,
+                    monthlyBurn: stats.monthlyBurn,
+                    projectedSalary: stats.projectedSalary,
+                    netProfit: stats.netProfit,
+                    profitMargin: stats.profitMargin
                 };
             }),
             salary: {

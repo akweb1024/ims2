@@ -27,18 +27,41 @@ export const GET = authorizedRoute(
 
             // ...
 
+            const targetUserId = searchParams.get('targetUserId');
+
             if (user.companyId) {
                 where.companyId = user.companyId;
             }
 
             if (showAll && ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'TEAM_LEADER'].includes(user.role)) {
-                // Admin/Managers see their company/team
-                if (['MANAGER', 'TEAM_LEADER'].includes(user.role)) {
+                // Admin/Managers can request data for specific user or their hierarchy
+                if (targetUserId) {
+                    // Start of Permissions Check
+                    // 1. If Manager/TL, ensure target is in downline
+                    if (['MANAGER', 'TEAM_LEADER'].includes(user.role)) {
+                        const subIds = await getDownlineUserIds(user.id, user.companyId || undefined);
+                        if (!subIds.includes(targetUserId) && targetUserId !== user.id) {
+                            return createErrorResponse('Forbidden: Target user not in your hierarchy', 403);
+                        }
+                    }
+                    // 2. If Admin, ensure target is in same company (handled by where.companyId)
+                    // (where.companyId is already set above)
+
+                    // Fetch profile for targetUserId
+                    const profile = await prisma.employeeProfile.findUnique({
+                        where: { userId: targetUserId }
+                    });
+
+                    if (!profile) return NextResponse.json([]); // Or 404
+                    where.employeeId = profile.id;
+                }
+                else if (['MANAGER', 'TEAM_LEADER'].includes(user.role)) {
+                    // Original logic for "My Team"
                     const subIds = await getDownlineUserIds(user.id, user.companyId || undefined);
-                    // Include self if needed? Usually "All" means Team + Me in dashboard context
                     const allowedIds = [...subIds, user.id];
                     where.employee = { userId: { in: allowedIds } };
                 }
+                // Else (Admin + No Target) => Fetch All for Company (default behavior)
             } else {
                 const profile = await prisma.employeeProfile.findUnique({
                     where: { userId: user.id }
