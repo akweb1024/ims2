@@ -214,11 +214,11 @@ export default function IncrementDetailPage() {
                                 <div className="space-y-2">
                                     <div className="flex justify-between">
                                         <span className="text-secondary-600">Fixed:</span>
-                                        <span className="font-bold">₹{(increment.oldFixedSalary || 0).toLocaleString()}</span>
+                                        <span className="font-bold">₹{(increment.oldFixed || 0).toLocaleString()}</span>
                                     </div>
                                     <div className="flex justify-between">
                                         <span className="text-secondary-600">Variable:</span>
-                                        <span className="font-bold">₹{(increment.oldVariableSalary || 0).toLocaleString()}</span>
+                                        <span className="font-bold">₹{(increment.oldVariable || 0).toLocaleString()}</span>
                                     </div>
                                     <div className="flex justify-between">
                                         <span className="text-secondary-600">Incentive:</span>
@@ -237,11 +237,11 @@ export default function IncrementDetailPage() {
                                 <div className="space-y-2">
                                     <div className="flex justify-between">
                                         <span className="text-secondary-700">Fixed:</span>
-                                        <span className="font-bold text-primary-700">₹{(increment.newFixedSalary || 0).toLocaleString()}</span>
+                                        <span className="font-bold text-primary-700">₹{(increment.newFixed || 0).toLocaleString()}</span>
                                     </div>
                                     <div className="flex justify-between">
                                         <span className="text-secondary-700">Variable:</span>
-                                        <span className="font-bold text-primary-700">₹{(increment.newVariableSalary || 0).toLocaleString()}</span>
+                                        <span className="font-bold text-primary-700">₹{(increment.newVariable || 0).toLocaleString()}</span>
                                     </div>
                                     <div className="flex justify-between">
                                         <span className="text-secondary-700">Incentive:</span>
@@ -307,23 +307,23 @@ export default function IncrementDetailPage() {
                                     <div className="flex justify-between mb-2">
                                         <span className="text-xs font-bold text-secondary-600">Fixed Salary</span>
                                         <div className="flex gap-4">
-                                            <span className="text-xs text-secondary-500">Old: ₹{(increment.oldFixedSalary || 0).toLocaleString()}</span>
-                                            <span className="text-xs font-bold text-primary-600">New: ₹{(increment.newFixedSalary || 0).toLocaleString()}</span>
+                                            <span className="text-xs text-secondary-500">Old: ₹{(increment.oldFixed || 0).toLocaleString()}</span>
+                                            <span className="text-xs font-bold text-primary-600">New: ₹{(increment.newFixed || 0).toLocaleString()}</span>
                                         </div>
                                     </div>
                                     <div className="relative h-8 bg-secondary-100 rounded-lg overflow-hidden">
                                         <div
                                             className="absolute top-0 left-0 h-full bg-secondary-300 transition-all"
-                                            style={{ width: `${(increment.oldFixedSalary / increment.newSalary) * 100}%` }}
+                                            style={{ width: `${(increment.oldFixed / increment.newSalary) * 100}%` }}
                                         />
                                         <div
                                             className="absolute top-0 left-0 h-full bg-primary-500 transition-all"
-                                            style={{ width: `${(increment.newFixedSalary / increment.newSalary) * 100}%` }}
+                                            style={{ width: `${(increment.newFixed / increment.newSalary) * 100}%` }}
                                         />
                                         <div className="absolute inset-0 flex items-center justify-center">
                                             <span className="text-xs font-bold text-white drop-shadow">
-                                                {increment.oldFixedSalary > 0
-                                                    ? `${((increment.newFixedSalary - increment.oldFixedSalary) / increment.oldFixedSalary * 100).toFixed(1)}%`
+                                                {increment.oldFixed > 0
+                                                    ? `${((increment.newFixed - increment.oldFixed) / increment.oldFixed * 100).toFixed(1)}%`
                                                     : 'New'}
                                             </span>
                                         </div>
@@ -335,23 +335,23 @@ export default function IncrementDetailPage() {
                                     <div className="flex justify-between mb-2">
                                         <span className="text-xs font-bold text-secondary-600">Variable Salary</span>
                                         <div className="flex gap-4">
-                                            <span className="text-xs text-secondary-500">Old: ₹{(increment.oldVariableSalary || 0).toLocaleString()}</span>
-                                            <span className="text-xs font-bold text-blue-600">New: ₹{(increment.newVariableSalary || 0).toLocaleString()}</span>
+                                            <span className="text-xs text-secondary-500">Old: ₹{(increment.oldVariable || 0).toLocaleString()}</span>
+                                            <span className="text-xs font-bold text-blue-600">New: ₹{(increment.newVariable || 0).toLocaleString()}</span>
                                         </div>
                                     </div>
                                     <div className="relative h-8 bg-secondary-100 rounded-lg overflow-hidden">
                                         <div
                                             className="absolute top-0 left-0 h-full bg-secondary-300 transition-all"
-                                            style={{ width: `${(increment.oldVariableSalary / increment.newSalary) * 100}%` }}
+                                            style={{ width: `${(increment.oldVariable / increment.newSalary) * 100}%` }}
                                         />
                                         <div
                                             className="absolute top-0 left-0 h-full bg-blue-500 transition-all"
-                                            style={{ width: `${(increment.newVariableSalary / increment.newSalary) * 100}%` }}
+                                            style={{ width: `${(increment.newVariable / increment.newSalary) * 100}%` }}
                                         />
                                         <div className="absolute inset-0 flex items-center justify-center">
                                             <span className="text-xs font-bold text-white drop-shadow">
-                                                {increment.oldVariableSalary > 0
-                                                    ? `${((increment.newVariableSalary - increment.oldVariableSalary) / increment.oldVariableSalary * 100).toFixed(1)}%`
+                                                {increment.oldVariable > 0
+                                                    ? `${((increment.newVariable - increment.oldVariable) / increment.oldVariable * 100).toFixed(1)}%`
                                                     : 'New'}
                                             </span>
                                         </div>
@@ -399,7 +399,7 @@ export default function IncrementDetailPage() {
                                         <div className="flex-1">
                                             <div className="flex justify-between text-xs">
                                                 <span>Fixed</span>
-                                                <span className="font-bold">{increment.oldSalary > 0 ? ((increment.oldFixedSalary / increment.oldSalary) * 100).toFixed(1) : 0}%</span>
+                                                <span className="font-bold">{increment.oldSalary > 0 ? ((increment.oldFixed / increment.oldSalary) * 100).toFixed(1) : 0}%</span>
                                             </div>
                                         </div>
                                     </div>
@@ -408,7 +408,7 @@ export default function IncrementDetailPage() {
                                         <div className="flex-1">
                                             <div className="flex justify-between text-xs">
                                                 <span>Variable</span>
-                                                <span className="font-bold">{increment.oldSalary > 0 ? ((increment.oldVariableSalary / increment.oldSalary) * 100).toFixed(1) : 0}%</span>
+                                                <span className="font-bold">{increment.oldSalary > 0 ? ((increment.oldVariable / increment.oldSalary) * 100).toFixed(1) : 0}%</span>
                                             </div>
                                         </div>
                                     </div>
@@ -433,7 +433,7 @@ export default function IncrementDetailPage() {
                                         <div className="flex-1">
                                             <div className="flex justify-between text-xs">
                                                 <span>Fixed</span>
-                                                <span className="font-bold">{((increment.newFixedSalary / increment.newSalary) * 100).toFixed(1)}%</span>
+                                                <span className="font-bold">{((increment.newFixed / increment.newSalary) * 100).toFixed(1)}%</span>
                                             </div>
                                         </div>
                                     </div>
@@ -442,7 +442,7 @@ export default function IncrementDetailPage() {
                                         <div className="flex-1">
                                             <div className="flex justify-between text-xs">
                                                 <span>Variable</span>
-                                                <span className="font-bold">{((increment.newVariableSalary / increment.newSalary) * 100).toFixed(1)}%</span>
+                                                <span className="font-bold">{((increment.newVariable / increment.newSalary) * 100).toFixed(1)}%</span>
                                             </div>
                                         </div>
                                     </div>

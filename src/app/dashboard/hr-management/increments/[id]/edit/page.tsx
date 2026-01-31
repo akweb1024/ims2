@@ -65,11 +65,11 @@ export default function EditIncrementPage() {
 
                 setForm({
                     employeeProfileId: data.employeeProfileId,
-                    newFixedSalary: data.newFixedSalary || 0,
-                    newVariableSalary: data.newVariableSalary || 0,
+                    newFixedSalary: data.newFixed ?? data.newFixedSalary ?? 0,
+                    newVariableSalary: data.newVariable ?? data.newVariableSalary ?? 0,
                     newVariablePerTarget: data.newVariablePerTarget || 0,
                     newVariableUpperCap: data.newVariableUpperCap || 0,
-                    newIncentive: data.newIncentive || 0,
+                    newIncentive: data.newIncentive ?? data.newIncentiveSalary ?? 0,
                     newIncentivePercentage: data.newIncentivePercentage || 0,
                     newDesignation: data.newDesignation || '',
                     reason: data.reason || '',
@@ -93,7 +93,7 @@ export default function EditIncrementPage() {
                     newMobile: data.newMobile || 0,
                     newInternet: data.newInternet || 0,
                     newBooksAndPeriodicals: data.newBooksAndPeriodicals || 0,
-                    optInVariable: data.optInVariable || (data.newVariableSalary > 0) || false,
+                    optInVariable: data.optInVariable || (data.newVariable > 0) || (data.newVariableSalary > 0) || false,
                     optInIncentive: data.optInIncentive || (data.newIncentive > 0) || false
                 });
             } else {
