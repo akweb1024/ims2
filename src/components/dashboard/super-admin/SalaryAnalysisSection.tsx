@@ -136,7 +136,8 @@ export default function SalaryAnalysisSection({ data }: { data: SalaryData }) {
                                 <Tooltip formatter={(value: any) => formatCurrency(value)} />
                                 <Bar dataKey="fixed" name="Fixed Salary" stackId="a" fill="#3b82f6" radius={[4, 0, 0, 4]} />
                                 <Bar dataKey="variable" name="Variable Pay" stackId="a" fill="#f59e0b" />
-                                <Bar dataKey="incentive" name="Incentives" stackId="a" fill="#10b981" radius={[0, 4, 4, 0]} />
+                                <Bar dataKey="incentive" name="Incentives" stackId="a" fill="#10b981" />
+                                <Bar dataKey="reimbursements" name="Reimbursements" stackId="a" fill="#8b5cf6" radius={[0, 4, 4, 0]} />
                             </BarChart>
                         </ResponsiveContainer>
                     </CardContent>

@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
+import TransactionTable from '@/components/dashboard/finance/TransactionTable';
 import {
     AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
     BarChart, Bar, Legend, PieChart, Pie, Cell
@@ -37,27 +38,63 @@ export default function FinancePage() {
         inrAmount: ''
     });
 
-    const fetchData = useCallback(async () => {
-        setLoading(true);
+    const [tableLoading, setTableLoading] = useState(false);
+    const [filters, setFilters] = useState({ type: '', category: '', date: '' });
+    const [searchQuery, setSearchQuery] = useState('');
+
+    const fetchAnalytics = useCallback(async () => {
         try {
             const token = localStorage.getItem('token');
-            const [analyticsRes, recordsRes] = await Promise.all([
-                fetch('/api/finance/analytics', {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                }),
-                fetch('/api/finance', {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                })
-            ]);
-
-            if (analyticsRes.ok) setAnalytics(await analyticsRes.json());
-            if (recordsRes.ok) setRecords(await recordsRes.json());
+            const res = await fetch('/api/finance/analytics', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (res.ok) setAnalytics(await res.json());
         } catch (error) {
-            console.error('Fetch error:', error);
-        } finally {
-            setLoading(false);
+            console.error('Analytics Fetch Error:', error);
         }
     }, []);
+
+    const fetchTransactions = useCallback(async () => {
+        setTableLoading(true);
+        try {
+            const token = localStorage.getItem('token');
+            const queryParams = new URLSearchParams();
+            if (filters.type) queryParams.append('type', filters.type);
+            if (filters.category) queryParams.append('category', filters.category);
+            if (searchQuery) queryParams.append('search', searchQuery);
+
+            const res = await fetch(`/api/finance?${queryParams.toString()}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (res.ok) setRecords(await res.json());
+        } catch (error) {
+            console.error('Transactions Fetch Error:', error);
+        } finally {
+            setTableLoading(false);
+        }
+    }, [filters, searchQuery]);
+
+    const fetchData = useCallback(async () => {
+        setLoading(true);
+        await Promise.all([fetchAnalytics(), fetchTransactions()]);
+        setLoading(false);
+    }, [fetchAnalytics, fetchTransactions]);
+
+    useEffect(() => {
+        fetchAnalytics();
+    }, [fetchAnalytics]);
+
+    useEffect(() => {
+        fetchTransactions();
+    }, [fetchTransactions]);
+
+    const handleSearch = (query: string) => {
+        setSearchQuery(query);
+    };
+
+    const handleFilter = (field: string, value: string) => {
+        setFilters(prev => ({ ...prev, [field]: value }));
+    };
 
     useEffect(() => {
         fetchData();
@@ -343,64 +380,15 @@ export default function FinancePage() {
                 </div>
 
                 {/* Recent Transactions Table */}
-                <div className="bg-white rounded-2xl border border-secondary-100 shadow-sm overflow-hidden">
-                    <div className="p-6 border-b border-secondary-100 flex justify-between items-center">
-                        <h3 className="text-lg font-bold text-secondary-900">Recent Transactions</h3>
-                    </div>
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-left">
-                            <thead className="bg-secondary-50 text-secondary-500 uppercase text-[10px] font-black tracking-widest">
-                                <tr>
-                                    <th className="px-6 py-4">Date</th>
-                                    <th className="px-6 py-4">Type</th>
-                                    <th className="px-6 py-4">Category</th>
-                                    <th className="px-6 py-4">Amount</th>
-                                    <th className="px-6 py-4">Status</th>
-                                    <th className="px-6 py-4 text-right">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-secondary-100">
-                                {records.slice(0, 10).map((rec) => (
-                                    <tr key={rec.id} className="hover:bg-secondary-50 transition-colors">
-                                        <td className="px-6 py-4 text-xs font-semibold text-secondary-700">
-                                            {new Date(rec.date).toLocaleDateString()}
-                                        </td>
-                                        <td className="px-6 py-4">
-                                            <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${rec.type === 'REVENUE' ? 'bg-success-50 text-success-700' : 'bg-danger-50 text-danger-700'}`}>
-                                                {rec.type}
-                                            </span>
-                                        </td>
-                                        <td className="px-6 py-4 text-xs text-secondary-600 uppercase font-black tracking-tighter">
-                                            {rec.category}
-                                        </td>
-                                        <td className={`px-6 py-4 text-sm font-bold ${rec.type === 'REVENUE' ? 'text-success-600' : 'text-secondary-900'}`}>
-                                            ₹{rec.amount.toLocaleString()}
-                                        </td>
-                                        <td className="px-6 py-4">
-                                            <span className="text-[10px] font-bold text-secondary-400 capitalize">{rec.status}</span>
-                                        </td>
-                                        <td className="px-6 py-4 text-right">
-                                            <div className="flex items-center justify-end gap-2">
-                                                <button
-                                                    onClick={() => { setIsEditing(rec); setFormData({ ...rec, date: rec.date.split('T')[0] }); setShowAddModal(true); }}
-                                                    className="p-1.5 hover:bg-secondary-100 rounded-lg text-secondary-400 hover:text-primary-600"
-                                                >
-                                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
-                                                </button>
-                                                <button
-                                                    onClick={() => handleDelete(rec.id)}
-                                                    className="p-1.5 hover:bg-danger-50 rounded-lg text-secondary-400 hover:text-danger-600"
-                                                >
-                                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-4v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
-                                                </button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
+                <TransactionTable
+                    transactions={records}
+                    loading={tableLoading} // Use separate loading state for table
+                    onEdit={(rec) => { setIsEditing(rec); setFormData({ ...rec, date: rec.date.split('T')[0] }); setShowAddModal(true); }}
+                    onDelete={handleDelete}
+                    onSearch={handleSearch}
+                    onFilter={handleFilter}
+                    filters={filters}
+                />
             </div>
 
             {/* Add/Edit Modal */}

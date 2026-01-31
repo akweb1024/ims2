@@ -59,6 +59,14 @@ export default function IncrementPlanningView() {
                     newVariable: editRecord.newVariable,
                     newIncentive: editRecord.newIncentive,
 
+                    newMonthlyTarget: editRecord.newMonthlyTarget,
+                    newYearlyTarget: editRecord.newYearlyTarget,
+
+                    newHealthCare: editRecord.newHealthCare,
+                    newTravelling: editRecord.newTravelling,
+                    newMobile: editRecord.newMobile,
+                    newInternet: editRecord.newInternet,
+
                     reason: editRecord.reason,
                     type: editRecord.type,
                     effectiveDate: editRecord.effectiveDate
@@ -264,6 +272,14 @@ export default function IncrementPlanningView() {
                                                     newVariable: emp.pendingRecommendation.newVariable,
                                                     newIncentive: emp.pendingRecommendation.newIncentive,
 
+                                                    newMonthlyTarget: emp.pendingRecommendation.newMonthlyTarget,
+                                                    newYearlyTarget: emp.pendingRecommendation.newYearlyTarget,
+
+                                                    newHealthCare: emp.pendingRecommendation.newHealthCare,
+                                                    newTravelling: emp.pendingRecommendation.newTravelling,
+                                                    newMobile: emp.pendingRecommendation.newMobile,
+                                                    newInternet: emp.pendingRecommendation.newInternet,
+
                                                     reason: emp.pendingRecommendation.reason || '',
                                                     type: emp.pendingRecommendation.type,
                                                     effectiveDate: emp.pendingRecommendation.effectiveDate?.split('T')[0]
@@ -325,7 +341,13 @@ export default function IncrementPlanningView() {
                                                 ₹{(
                                                     (parseFloat(editRecord.newFixed) || 0) +
                                                     (parseFloat(editRecord.newVariable) || 0) +
-                                                    (parseFloat(editRecord.newIncentive) || 0)
+                                                    (parseFloat(editRecord.newFixed) || 0) +
+                                                    (parseFloat(editRecord.newVariable) || 0) +
+                                                    (parseFloat(editRecord.newIncentive) || 0) +
+                                                    (parseFloat(editRecord.newHealthCare) || 0) +
+                                                    (parseFloat(editRecord.newTravelling) || 0) +
+                                                    (parseFloat(editRecord.newMobile) || 0) +
+                                                    (parseFloat(editRecord.newInternet) || 0)
                                                 ).toLocaleString()}
                                             </span>
                                         </div>
@@ -380,6 +402,72 @@ export default function IncrementPlanningView() {
                                                 <div className="absolute opacity-0 group-hover:opacity-100 bottom-full left-0 mb-2 p-2 bg-secondary-800 text-white text-[10px] rounded shadow-lg w-32 pointer-events-none transition-opacity z-10">
                                                     Sales/Target based incentives.
                                                 </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-3 mt-4">
+                                        <div>
+                                            <label className="text-[9px] font-bold text-secondary-400 uppercase block mb-1">Monthly Target</label>
+                                            <input
+                                                type="number"
+                                                className="input-premium pl-2 text-sm font-bold w-full"
+                                                placeholder="Monthly Target"
+                                                value={editRecord.newMonthlyTarget || ''}
+                                                onChange={(e) => setEditRecord({ ...editRecord, newMonthlyTarget: e.target.value })}
+                                                title="Monthly Target"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="text-[9px] font-bold text-secondary-400 uppercase block mb-1">Yearly Target</label>
+                                            <input
+                                                type="number"
+                                                className="input-premium pl-2 text-sm font-bold w-full"
+                                                placeholder="Yearly Target"
+                                                value={editRecord.newYearlyTarget || ''}
+                                                onChange={(e) => setEditRecord({ ...editRecord, newYearlyTarget: e.target.value })}
+                                                title="Yearly Target"
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div className="mt-4 border-t border-dashed border-secondary-200 pt-4">
+                                        <label className="text-[10px] font-black text-secondary-400 uppercase tracking-widest mb-3 block">Reimbursements & Allowances (Annual)</label>
+                                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                                            <div>
+                                                <label className="text-[9px] font-bold text-secondary-400 uppercase block mb-1">Health Care</label>
+                                                <input
+                                                    type="number"
+                                                    className="input-premium pl-2 text-xs font-bold w-full"
+                                                    value={editRecord.newHealthCare || ''}
+                                                    onChange={(e) => setEditRecord({ ...editRecord, newHealthCare: e.target.value })}
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="text-[9px] font-bold text-secondary-400 uppercase block mb-1">Travelling</label>
+                                                <input
+                                                    type="number"
+                                                    className="input-premium pl-2 text-xs font-bold w-full"
+                                                    value={editRecord.newTravelling || ''}
+                                                    onChange={(e) => setEditRecord({ ...editRecord, newTravelling: e.target.value })}
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="text-[9px] font-bold text-secondary-400 uppercase block mb-1">Mobile</label>
+                                                <input
+                                                    type="number"
+                                                    className="input-premium pl-2 text-xs font-bold w-full"
+                                                    value={editRecord.newMobile || ''}
+                                                    onChange={(e) => setEditRecord({ ...editRecord, newMobile: e.target.value })}
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="text-[9px] font-bold text-secondary-400 uppercase block mb-1">Internet</label>
+                                                <input
+                                                    type="number"
+                                                    className="input-premium pl-2 text-xs font-bold w-full"
+                                                    value={editRecord.newInternet || ''}
+                                                    onChange={(e) => setEditRecord({ ...editRecord, newInternet: e.target.value })}
+                                                />
                                             </div>
                                         </div>
                                     </div>

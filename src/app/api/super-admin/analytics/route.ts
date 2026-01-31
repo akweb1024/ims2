@@ -147,6 +147,17 @@ export async function GET(req: NextRequest) {
             globalBreakdown.variable += variable;
             globalBreakdown.incentive += incentive;
 
+            // Reimbursements (Safe cast)
+            const pAny = p as any;
+            const reimbursements =
+                (pAny.healthCare || 0) +
+                (pAny.travelling || 0) +
+                (pAny.mobile || 0) +
+                (pAny.internet || 0) +
+                (pAny.booksAndPeriodicals || 0);
+
+            (globalBreakdown as any).reimbursements = ((globalBreakdown as any).reimbursements || 0) + reimbursements;
+
             // By Dept
             const deptName = p.user.department?.name || 'Unassigned';
             salaryByDept[deptName] = (salaryByDept[deptName] || 0) + monthlySalary;

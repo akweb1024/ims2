@@ -128,9 +128,10 @@ export default function DashboardLayout({ children, userRole: propUserRole = 'CU
         }
     };
 
-    const handleLogout = () => {
+    const handleLogout = async () => {
         localStorage.clear();
-        signOut({ callbackUrl: '/login' });
+        await signOut({ redirect: false });
+        router.push('/login');
     };
 
     const handleRevertAdmin = async () => {

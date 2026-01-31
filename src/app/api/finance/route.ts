@@ -14,12 +14,26 @@ export const GET = authorizedRoute(
             const startDate = searchParams.get('startDate');
             const endDate = searchParams.get('endDate');
 
+            const search = searchParams.get('search');
+
             const where: any = {
                 companyId: user.companyId || undefined
             };
 
             if (type) where.type = type;
             if (category) where.category = category;
+
+            if (search) {
+                where.OR = [
+                    { description: { contains: search, mode: 'insensitive' } },
+                    { customerName: { contains: search, mode: 'insensitive' } },
+                    { customerEmail: { contains: search, mode: 'insensitive' } },
+                    { referenceId: { contains: search, mode: 'insensitive' } },
+                    // If your schema stores 'referenceNumber' in JSON or mapped field, ensure it is searchable.
+                    // Assuming existing schema structure for now.
+                ];
+            }
+
             if (startDate || endDate) {
                 where.date = {};
                 if (startDate) where.date.gte = new Date(startDate);
