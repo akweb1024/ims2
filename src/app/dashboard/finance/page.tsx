@@ -201,7 +201,7 @@ export default function FinancePage() {
                             onClick={() => { setIsEditing(null); setShowAddModal(true); }}
                             className="px-4 py-2 text-sm font-semibold text-white bg-primary-600 rounded-xl hover:bg-primary-700 transition-all shadow-md flex items-center gap-2"
                         >
-                            <span>➕</span> Record New Revenue
+                            <span>➕</span> Record New Transaction
                         </button>
                     </div>
                 </div>
@@ -408,14 +408,34 @@ export default function FinancePage() {
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-secondary-900/60 backdrop-blur-sm">
                     <div className="bg-white rounded-3xl w-full max-w-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
                         <form onSubmit={handleSubmit}>
-                            <div className="p-6 border-b border-secondary-100 flex justify-between items-center bg-indigo-50">
-                                <h3 className="text-xl font-black text-indigo-900">{isEditing ? 'Edit Record' : 'Record New Revenue'}</h3>
+                            <div className={`p-6 border-b border-secondary-100 flex justify-between items-center ${formData.type === 'REVENUE' ? 'bg-emerald-50' : 'bg-rose-50'}`}>
+                                <h3 className={`text-xl font-black ${formData.type === 'REVENUE' ? 'text-emerald-900' : 'text-rose-900'}`}>
+                                    {isEditing ? 'Edit Transaction' : 'Record New Transaction'}
+                                </h3>
                                 <button type="button" onClick={() => setShowAddModal(false)} className="text-secondary-400 hover:text-secondary-600" title="Close Modal">
                                     ✕
                                 </button>
                             </div>
 
                             <div className="p-6 grid grid-cols-2 gap-4 max-h-[70vh] overflow-y-auto">
+                                {/* Transaction Type Toggle */}
+                                <div className="col-span-2 flex p-1 bg-secondary-100 rounded-xl mb-2">
+                                    <button
+                                        type="button"
+                                        onClick={() => setFormData({ ...formData, type: 'REVENUE', category: 'SALE' })}
+                                        className={`flex-1 py-2 text-sm font-bold rounded-lg transition-all ${formData.type === 'REVENUE' ? 'bg-white text-emerald-600 shadow-sm' : 'text-secondary-500 hover:text-secondary-700'}`}
+                                    >
+                                        ⬇️ Income (Revenue)
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setFormData({ ...formData, type: 'EXPENSE', category: 'RENT' })}
+                                        className={`flex-1 py-2 text-sm font-bold rounded-lg transition-all ${formData.type === 'EXPENSE' ? 'bg-white text-rose-600 shadow-sm' : 'text-secondary-500 hover:text-secondary-700'}`}
+                                    >
+                                        ⬆️ Expense (Cost)
+                                    </button>
+                                </div>
+
                                 {/* Amount & Payment Method */}
                                 <div className="col-span-1">
                                     <label className="text-[10px] font-black text-secondary-400 uppercase tracking-widest block mb-1">Amount (₹)</label>
@@ -448,42 +468,43 @@ export default function FinancePage() {
 
                                 {/* Date & Reference */}
                                 <div className="col-span-1">
-                                    <label className="text-[10px] font-black text-secondary-400 uppercase tracking-widest block mb-1">Payment Date</label>
+                                    <label className="text-[10px] font-black text-secondary-400 uppercase tracking-widest block mb-1">Transaction Date</label>
                                     <input
                                         type="date"
                                         required
                                         className="w-full px-4 py-3 rounded-xl border border-secondary-200 focus:ring-2 focus:ring-primary-500 transition-all outline-none"
                                         value={formData.date}
                                         onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                                        title="Payment Date"
+                                        title="Transaction Date"
                                     />
                                 </div>
                                 <div className="col-span-1">
-                                    <label className="text-[10px] font-black text-secondary-400 uppercase tracking-widest block mb-1">Reference # (Cheque/UTR/DD) *</label>
+                                    <label className="text-[10px] font-black text-secondary-400 uppercase tracking-widest block mb-1">Reference # (Cheque/UTR) {formData.type === 'REVENUE' ? '*' : ''}</label>
                                     <input
                                         type="text"
-                                        required
+                                        required={formData.type === 'REVENUE'}
                                         className="w-full px-4 py-3 rounded-xl border border-secondary-200 focus:ring-2 focus:ring-primary-500 transition-all outline-none font-mono"
-                                        placeholder="UTR123456789"
+                                        placeholder={formData.type === 'REVENUE' ? 'Required for Revenue' : 'Optional for Expense'}
                                         value={formData.referenceNumber}
                                         onChange={(e) => setFormData({ ...formData, referenceNumber: e.target.value })}
                                     />
                                 </div>
 
-                                {/* Customer Information Section */}
+                                {/* Customer/Vendor Info (Contextual) */}
                                 <div className="col-span-2 grid grid-cols-3 gap-3 p-4 bg-secondary-50 rounded-2xl border border-secondary-200">
                                     <div className="col-span-3 pb-2 border-b border-secondary-200">
-                                        <span className="text-xs font-black text-secondary-500 uppercase">Customer Information</span>
+                                        <span className="text-xs font-black text-secondary-500 uppercase">
+                                            {formData.type === 'REVENUE' ? 'Customer Information' : 'Vendor / Recipient Information'}
+                                        </span>
                                     </div>
                                     <div className="col-span-2">
-                                        <label className="text-[10px] font-black text-secondary-400 uppercase tracking-widest block mb-1">Customer Name</label>
+                                        <label className="text-[10px] font-black text-secondary-400 uppercase tracking-widest block mb-1">{formData.type === 'REVENUE' ? 'Customer Name' : 'Vendor/Payee Name'}</label>
                                         <input
                                             type="text"
                                             className="w-full px-3 py-2 rounded-lg border border-secondary-200 focus:ring-2 focus:ring-primary-500 outline-none text-sm"
                                             value={formData.customerName}
                                             onChange={(e) => setFormData({ ...formData, customerName: e.target.value })}
-                                            placeholder="Customer Name"
-                                            title="Customer Name"
+                                            placeholder={formData.type === 'REVENUE' ? 'Customer Name' : 'Vendor Name'}
                                         />
                                     </div>
                                     <div className="col-span-1">
@@ -494,7 +515,6 @@ export default function FinancePage() {
                                             value={formData.bankName}
                                             onChange={(e) => setFormData({ ...formData, bankName: e.target.value })}
                                             placeholder="Bank Name"
-                                            title="Bank Name (if Cheque/DD)"
                                         />
                                     </div>
                                     <div className="col-span-1">
@@ -504,8 +524,7 @@ export default function FinancePage() {
                                             className="w-full px-3 py-2 rounded-lg border border-secondary-200 focus:ring-2 focus:ring-primary-500 outline-none text-sm"
                                             value={formData.customerEmail}
                                             onChange={(e) => setFormData({ ...formData, customerEmail: e.target.value })}
-                                            placeholder="Customer Email"
-                                            title="Customer Email"
+                                            placeholder="Email Address"
                                         />
                                     </div>
                                     <div className="col-span-1">
@@ -515,8 +534,7 @@ export default function FinancePage() {
                                             className="w-full px-3 py-2 rounded-lg border border-secondary-200 focus:ring-2 focus:ring-primary-500 outline-none text-sm"
                                             value={formData.customerPhone}
                                             onChange={(e) => setFormData({ ...formData, customerPhone: e.target.value })}
-                                            placeholder="Customer Phone"
-                                            title="Customer Phone"
+                                            placeholder="Phone Number"
                                         />
                                     </div>
                                 </div>
@@ -535,7 +553,6 @@ export default function FinancePage() {
                                             value={formData.tax}
                                             onChange={(e) => setFormData({ ...formData, tax: e.target.value })}
                                             placeholder="18"
-                                            title="Tax Percentage"
                                         />
                                     </div>
                                     <div className="col-span-1">
@@ -544,7 +561,6 @@ export default function FinancePage() {
                                             className="w-full px-3 py-2 rounded-lg border border-amber-200 focus:ring-2 focus:ring-amber-500 outline-none text-sm"
                                             value={formData.currency}
                                             onChange={(e) => setFormData({ ...formData, currency: e.target.value })}
-                                            title="Currency"
                                         >
                                             <option value="INR">INR (₹)</option>
                                             <option value="USD">USD ($)</option>
@@ -563,7 +579,6 @@ export default function FinancePage() {
                                             value={formData.originalAmount}
                                             onChange={(e) => setFormData({ ...formData, originalAmount: e.target.value })}
                                             placeholder="1000"
-                                            title="Original Amount (Foreign Currency)"
                                         />
                                     </div>
                                     <div className="col-span-1">
@@ -575,12 +590,11 @@ export default function FinancePage() {
                                             value={formData.inrAmount}
                                             onChange={(e) => setFormData({ ...formData, inrAmount: e.target.value })}
                                             placeholder="85000"
-                                            title="Converted INR Amount"
                                         />
                                     </div>
                                 </div>
 
-                                {/* Category (for Finance compatibility) */}
+                                {/* Dynamic Category */}
                                 <div className="col-span-2">
                                     <label className="text-[10px] font-black text-secondary-400 uppercase tracking-widest block mb-1">Category</label>
                                     <select
@@ -588,9 +602,25 @@ export default function FinancePage() {
                                         value={formData.category}
                                         onChange={(e) => setFormData({ ...formData, category: e.target.value })}
                                     >
-                                        <option value="SALE">Product Sale</option>
-                                        <option value="SUBSCRIPTION">Subscription</option>
-                                        <option value="OTHER">Other</option>
+                                        {formData.type === 'REVENUE' ? (
+                                            <>
+                                                <option value="SALE">Product Sale</option>
+                                                <option value="SUBSCRIPTION">Subscription</option>
+                                                <option value="SERVICE">Service Revenue</option>
+                                                <option value="OTHER">Other Income</option>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <option value="RENT">Office Rent</option>
+                                                <option value="SALARIES">Salaries & Wages</option>
+                                                <option value="SOFTWARE">Software & Tools</option>
+                                                <option value="OFFICE_SUPPLIES">Office Supplies</option>
+                                                <option value="MARKETING">Marketing & Ads</option>
+                                                <option value="UTILITIES">Utilities (Internet/Electricity)</option>
+                                                <option value="TRAVEL">Travel & Logistics</option>
+                                                <option value="OTHER">Other Expense</option>
+                                            </>
+                                        )}
                                     </select>
                                 </div>
 
@@ -603,14 +633,15 @@ export default function FinancePage() {
                                         value={formData.description}
                                         onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                                         placeholder="Notes or description"
-                                        title="Description"
                                     ></textarea>
                                 </div>
                             </div>
 
                             <div className="p-6 bg-secondary-50 border-t border-secondary-100 flex justify-end gap-3">
                                 <button type="button" onClick={() => setShowAddModal(false)} className="px-6 py-3 text-sm font-bold text-secondary-500 hover:bg-secondary-100 rounded-xl transition-all">Cancel</button>
-                                <button type="submit" className="px-8 py-3 text-sm font-bold text-white bg-primary-600 hover:bg-primary-700 rounded-xl transition-all shadow-lg">{isEditing ? 'Save Changes' : 'Save Transaction'}</button>
+                                <button type="submit" className={`px-8 py-3 text-sm font-bold text-white rounded-xl transition-all shadow-lg ${formData.type === 'REVENUE' ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-rose-600 hover:bg-rose-700'}`}>
+                                    {isEditing ? 'Save Changes' : `Record ${formData.type === 'REVENUE' ? 'Revenue' : 'Expense'}`}
+                                </button>
                             </div>
                         </form>
                     </div>

@@ -292,7 +292,13 @@ export async function GET(req: NextRequest) {
                 byDepartment: departmentPerformance,
                 totalMonthly: totalMonthlyBurn,
                 breakdown: globalBreakdown,
-                burnTrend
+                burnTrend,
+                financials: {
+                    revenue: totalGroupRevenue,
+                    cost: totalMonthlyBurn * 12, // Annualized cost for comparison
+                    profit: totalGroupRevenue - (totalMonthlyBurn * 12),
+                    profitMargin: totalGroupRevenue > 0 ? ((totalGroupRevenue - (totalMonthlyBurn * 12)) / totalGroupRevenue) * 100 : -100
+                }
             },
             trends: {
                 revenue: monthlyRevenueTrend,
