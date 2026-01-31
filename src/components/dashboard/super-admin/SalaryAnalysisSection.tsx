@@ -76,7 +76,7 @@ export default function SalaryAnalysisSection({ data }: { data: SalaryData }) {
                                 <CartesianGrid strokeDasharray="3 3" horizontal={false} />
                                 <XAxis type="number" tickFormatter={(val) => `₹${(val / 100000).toFixed(1)}L`} />
                                 <YAxis type="category" dataKey="name" hide />
-                                <Tooltip formatter={(value: number) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumSignificantDigits: 3 }).format(value)} />
+                                <Tooltip formatter={(value: any) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumSignificantDigits: 3 }).format(value)} />
                                 <Bar dataKey="fixed" name="Fixed Salary" stackId="a" fill="#3b82f6" radius={[4, 0, 0, 4]} />
                                 <Bar dataKey="variable" name="Variable Pay" stackId="a" fill="#f59e0b" />
                                 <Bar dataKey="incentive" name="Incentives" stackId="a" fill="#10b981" radius={[0, 4, 4, 0]} />
