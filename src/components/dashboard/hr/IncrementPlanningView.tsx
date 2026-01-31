@@ -62,6 +62,10 @@ export default function IncrementPlanningView() {
                     newMonthlyTarget: editRecord.newMonthlyTarget,
                     newYearlyTarget: editRecord.newYearlyTarget,
 
+                    newBaseTarget: editRecord.newBaseTarget,
+                    newVariableRate: editRecord.newVariableRate,
+                    newVariableUnit: editRecord.newVariableUnit,
+
                     newHealthCare: editRecord.newHealthCare,
                     newTravelling: editRecord.newTravelling,
                     newMobile: editRecord.newMobile,
@@ -275,6 +279,10 @@ export default function IncrementPlanningView() {
                                                     newMonthlyTarget: emp.pendingRecommendation.newMonthlyTarget,
                                                     newYearlyTarget: emp.pendingRecommendation.newYearlyTarget,
 
+                                                    newBaseTarget: emp.pendingRecommendation.newBaseTarget,
+                                                    newVariableRate: emp.pendingRecommendation.newVariableRate,
+                                                    newVariableUnit: emp.pendingRecommendation.newVariableUnit,
+
                                                     newHealthCare: emp.pendingRecommendation.newHealthCare,
                                                     newTravelling: emp.pendingRecommendation.newTravelling,
                                                     newMobile: emp.pendingRecommendation.newMobile,
@@ -427,6 +435,55 @@ export default function IncrementPlanningView() {
                                                 onChange={(e) => setEditRecord({ ...editRecord, newYearlyTarget: e.target.value })}
                                                 title="Yearly Target"
                                             />
+                                        </div>
+                                    </div>
+
+                                    {/* Advanced Variable Config */}
+                                    <div className="bg-secondary-50 p-3 rounded-xl mt-4 border border-dashed border-secondary-200">
+                                        <label className="text-[10px] font-black text-secondary-400 uppercase tracking-widest mb-3 block">Variable & Incentive Rules</label>
+                                        <div className="grid grid-cols-3 gap-3">
+                                            <div>
+                                                <label className="text-[9px] font-bold text-secondary-400 uppercase block mb-1">Base Quota (Target)</label>
+                                                <div className="relative">
+                                                    <span className="absolute left-2 top-1/2 -translate-y-1/2 font-bold text-secondary-300 text-xs">₹</span>
+                                                    <input
+                                                        type="number"
+                                                        className="input-premium pl-5 text-xs font-bold w-full"
+                                                        placeholder="0"
+                                                        value={editRecord.newBaseTarget || ''}
+                                                        onChange={(e) => setEditRecord({ ...editRecord, newBaseTarget: e.target.value })}
+                                                        title="Base Target for Fixed Salary"
+                                                    />
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <label className="text-[9px] font-bold text-secondary-400 uppercase block mb-1">Var. Rate </label>
+                                                <div className="relative">
+                                                    <span className="absolute left-2 top-1/2 -translate-y-1/2 font-bold text-secondary-300 text-xs">₹</span>
+                                                    <input
+                                                        type="number"
+                                                        className="input-premium pl-5 text-xs font-bold w-full"
+                                                        placeholder="Rate"
+                                                        value={editRecord.newVariableRate || ''}
+                                                        onChange={(e) => setEditRecord({ ...editRecord, newVariableRate: e.target.value })}
+                                                        title="Amount earned per unit"
+                                                    />
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <label className="text-[9px] font-bold text-secondary-400 uppercase block mb-1">Var. Unit</label>
+                                                <div className="relative">
+                                                    <span className="absolute left-2 top-1/2 -translate-y-1/2 font-bold text-secondary-300 text-xs">₹</span>
+                                                    <input
+                                                        type="number"
+                                                        className="input-premium pl-5 text-xs font-bold w-full"
+                                                        placeholder="Unit"
+                                                        value={editRecord.newVariableUnit || ''}
+                                                        onChange={(e) => setEditRecord({ ...editRecord, newVariableUnit: e.target.value })}
+                                                        title="Revenue Unit (e.g. 100k)"
+                                                    />
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
 

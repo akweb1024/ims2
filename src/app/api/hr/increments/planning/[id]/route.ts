@@ -18,6 +18,7 @@ export const PUT = authorizedRoute(
             const {
                 newFixed, newVariable, newIncentive,
                 newMonthlyTarget, newYearlyTarget,
+                newBaseTarget, newVariableRate, newVariableUnit, // New Fields
                 newHealthCare, newTravelling, newMobile, newInternet,
                 effectiveDate, reason, type, newSalary
             } = body;
@@ -56,6 +57,11 @@ export const PUT = authorizedRoute(
             const parsedIncentive = parseFloat(newIncentive) || 0;
             const parsedMonthlyTarget = parseFloat(newMonthlyTarget) || 0;
             const parsedYearlyTarget = parseFloat(newYearlyTarget) || 0;
+
+            const parsedBaseTarget = parseFloat(newBaseTarget) || 0;
+            const parsedVariableRate = parseFloat(newVariableRate) || 0;
+            const parsedVariableUnit = parseFloat(newVariableUnit) || 0;
+
             const parsedHealthCare = parseFloat(newHealthCare) || 0;
             const parsedTravelling = parseFloat(newTravelling) || 0;
             const parsedMobile = parseFloat(newMobile) || 0;
@@ -77,6 +83,10 @@ export const PUT = authorizedRoute(
 
                     newMonthlyTarget: parsedMonthlyTarget,
                     newYearlyTarget: parsedYearlyTarget,
+
+                    newBaseTarget: parsedBaseTarget,
+                    newVariableRate: parsedVariableRate,
+                    newVariableUnit: parsedVariableUnit,
 
                     newHealthCare: parsedHealthCare,
                     newTravelling: parsedTravelling,

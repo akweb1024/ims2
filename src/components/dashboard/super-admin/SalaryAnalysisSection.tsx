@@ -7,7 +7,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 interface SalaryData {
     byManager: Array<{ managerId: string; managerName: string; totalExpenditure: number }>;
     byDepartment: Array<{ name: string; total: number }>;
-    breakdown?: { fixed: number; variable: number; incentive: number };
+    breakdown?: { fixed: number; variable: number; incentive: number; fixedTarget?: number; reimbursements?: number };
     financials?: {
         revenue: number;
         cost: number;
@@ -133,7 +133,22 @@ export default function SalaryAnalysisSection({ data }: { data: SalaryData }) {
                                 <CartesianGrid strokeDasharray="3 3" horizontal={false} />
                                 <XAxis type="number" tickFormatter={(val) => `₹${(val / 100000).toFixed(1)}L`} />
                                 <YAxis type="category" dataKey="name" hide />
-                                <Tooltip formatter={(value: any) => formatCurrency(value)} />
+                                <Tooltip
+                                    formatter={(value: any, name: any, props: any) => {
+                                        if (name === 'Fixed Salary' && props.payload.fixedTarget) {
+                                            return [
+                                                <div key="ft">
+                                                    {new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(value)}
+                                                    <div className="text-[10px] text-gray-200 mt-1">
+                                                        (Quotas: {new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumSignificantDigits: 3 }).format(props.payload.fixedTarget)})
+                                                    </div>
+                                                </div>,
+                                                name
+                                            ];
+                                        }
+                                        return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(value);
+                                    }}
+                                />
                                 <Bar dataKey="fixed" name="Fixed Salary" stackId="a" fill="#3b82f6" radius={[4, 0, 0, 4]} />
                                 <Bar dataKey="variable" name="Variable Pay" stackId="a" fill="#f59e0b" />
                                 <Bar dataKey="incentive" name="Incentives" stackId="a" fill="#10b981" />

@@ -898,7 +898,12 @@ model EmployeeProfile {
 
   // Salary Breakdown (New)
   salaryFixed            Float?   @default(0)
+  baseTarget             Float?   @default(0)  // Quota for fixed salary
+  
   salaryVariable         Float?   @default(0)
+  variableRate           Float?   @default(0)  // e.g. 5000 per Unit
+  variableUnit           Float?   @default(0)  // e.g. 100000
+  
   salaryIncentive        Float?   @default(0)
 
   skills                   String[]
@@ -1051,6 +1056,17 @@ model SalaryIncrementRecord {
   newFixed               Float    @default(0)
   newVariable            Float    @default(0)
   newIncentive           Float    @default(0)
+  
+  // Base Target Changes
+  oldBaseTarget          Float?   @default(0)
+  newBaseTarget          Float?   @default(0)
+  
+  // Variable Config Changes
+  oldVariableRate        Float?   @default(0)
+  newVariableRate        Float?   @default(0)
+  oldVariableUnit        Float?   @default(0)
+  newVariableUnit        Float?   @default(0)
+
   currentMonthlyTarget   Float?          @default(0)
   newMonthlyTarget       Float?          @default(0)
   currentYearlyTarget    Float?          @default(0)

@@ -110,7 +110,7 @@ export async function GET(req: NextRequest) {
             monthlyHeadcountTrend[comp.name][monthKey] = (monthlyHeadcountTrend[comp.name][monthKey] || 0) + 1;
         });
 
-        const globalBreakdown = { fixed: 0, variable: 0, incentive: 0 };
+        const globalBreakdown = { fixed: 0, variable: 0, incentive: 0, fixedTarget: 0 };
 
         allProfiles.forEach(p => {
             const compId = p.user.companyId;
@@ -138,6 +138,8 @@ export async function GET(req: NextRequest) {
             const fixed = p.salaryFixed || 0;
             const variable = p.salaryVariable || 0;
             const incentive = p.salaryIncentive || 0;
+            const baseTarget = (p as any).baseTarget || 0; // Cast for new field
+
             const monthlySalary = fixed + variable + incentive;
 
             companyEmployeeStats[compId].totalSalary += monthlySalary;
@@ -146,6 +148,7 @@ export async function GET(req: NextRequest) {
             globalBreakdown.fixed += fixed;
             globalBreakdown.variable += variable;
             globalBreakdown.incentive += incentive;
+            globalBreakdown.fixedTarget += baseTarget;
 
             // Reimbursements (Safe cast)
             const pAny = p as any;
