@@ -109,7 +109,7 @@ export const POST = authorizedRoute(
 
 // Sign document
 export const PATCH = authorizedRoute(
-    ['EMPLOYEE'],
+    ['EMPLOYEE', 'MANAGER', 'ADMIN', 'SUPER_ADMIN'],
     async (req: NextRequest, user) => {
         try {
             const body = await req.json();
