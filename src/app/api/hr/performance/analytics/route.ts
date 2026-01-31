@@ -1,62 +1,63 @@
+
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { authorizedRoute } from '@/lib/middleware-auth';
 import { createErrorResponse } from '@/lib/api-utils';
 
 export const GET = authorizedRoute(
-    ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'MANAGER'],
+    ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'HR'],
     async (req: NextRequest, user) => {
         try {
             const { searchParams } = new URL(req.url);
-            const period = searchParams.get('period') || 'CURRENT'; // e.g. "JAN-2024"
+            const employeeId = searchParams.get('employeeId');
 
-            const companyId = user.companyId;
-            if (!companyId) return createErrorResponse('Company ID required', 400);
+            const where: any = {};
 
-            // 1. Get all employees
-            const employees = await prisma.employeeProfile.findMany({
-                where: { user: { companyId, isActive: true } },
-                include: {
-                    user: { select: { name: true, email: true } },
-                    kpis: { where: { period } },
-                    workReports: {
-                        where: {
-                            // Filter reports for the period if possible, 
-                            // for now just take last 30 days for generic stats
-                            date: { gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) }
-                        }
-                    }
+            // Filter by Employee
+            if (employeeId) {
+                where.employeeId = employeeId;
+            } else if (user.role === 'MANAGER' || user.role === 'TEAM_LEADER') {
+                // If no specific employee requested, limit to items evaluated by this manager?
+                // Or strictly require an employeeId for the detailed view.
+                // For the "My Team" view, we might want aggregate stats, but let's stick to simple "Per Employee" analytics for now.
+                if (!employeeId) {
+                    return NextResponse.json({
+                        error: 'Employee ID required for detailed analysis. Use separate endpoint for Team Summary.'
+                    }, { status: 400 });
+                }
+            }
+
+            // Fetch all evaluations for the scope
+            const evaluations = await prisma.performanceEvaluation.findMany({
+                where,
+                orderBy: { createdAt: 'asc' }, // Chronological for valid trend
+                select: {
+                    period: true,
+                    periodType: true,
+                    rating: true,
+                    scores: true,
+                    createdAt: true
                 }
             });
 
-            const stats = employees.map(emp => {
-                const totalTarget = emp.kpis.reduce((acc, k) => acc + k.target, 0);
-                const totalCurrent = emp.kpis.reduce((acc, k) => acc + k.current, 0);
-                const avgAchievement = totalTarget > 0 ? (totalCurrent / totalTarget) * 100 : 0;
+            // Process for chart consumption
+            // Format: { period: "JAN 2025", rating: 4.5, ... }
+            const trendData = evaluations.map(ev => ({
+                period: ev.period,
+                rating: ev.rating || 0,
+                date: ev.createdAt
+            }));
 
-                const productivityScore = emp.workReports.reduce((acc, r) => {
-                    return acc + (r.tasksCompleted || 0) + (r.ticketsResolved || 0);
-                }, 0);
-
-                return {
-                    id: emp.id,
-                    name: emp.user.name || emp.user.email,
-                    kpiAchievement: Number(avgAchievement.toFixed(1)),
-                    productivityScore,
-                    kpiCount: emp.kpis.length,
-                    activeKpis: emp.kpis
-                };
-            });
-
-            // Calculate Benchmarks
-            const companyAvgAchievement = stats.length > 0 ? stats.reduce((acc, s) => acc + s.kpiAchievement, 0) / stats.length : 0;
+            // Calculate Average Rating
+            const totalRating = evaluations.reduce((sum, ev) => sum + (ev.rating || 0), 0);
+            const averageRating = evaluations.length > 0 ? (totalRating / evaluations.length).toFixed(1) : 0;
 
             return NextResponse.json({
-                period,
-                companyAvgAchievement: Number(companyAvgAchievement.toFixed(1)),
-                employeeStats: stats,
-                topAchievers: [...stats].sort((a, b) => b.kpiAchievement - a.kpiAchievement).slice(0, 5)
+                trendData,
+                averageRating,
+                totalEvaluations: evaluations.length
             });
+
         } catch (error) {
             return createErrorResponse(error);
         }

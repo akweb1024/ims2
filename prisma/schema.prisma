@@ -213,6 +213,7 @@ model User {
   workshopEnrollments      WorkshopEnrollment[]
   assignedToCustomers      CustomerProfile[]           @relation("CustomerToExecutives")
   companies                Company[]                   @relation("UserCompanies")
+  evaluationsConducted     PerformanceEvaluation[]     @relation("EvaluatorUser")
 
   @@index([email])
   @@index([role])
@@ -975,6 +976,7 @@ model EmployeeProfile {
   taxDeclarations          TaxDeclaration[]
   workPlans                WorkPlan[]
   workReports              WorkReport[]
+  evaluations              PerformanceEvaluation[]      @relation("EvaluatedEmployee")
 }
 
 model EmployeeCompanyDesignation {
@@ -3018,6 +3020,28 @@ model ManuscriptDraft {
   @@index([authorId])
   @@index([journalId])
   @@index([isSubmitted])
+}
+
+model PerformanceEvaluation {
+  id          String   @id @default(uuid())
+  employeeId  String
+  evaluatorId String
+  period      String   // "JAN-2025", "Q1-2025"
+  periodType  String   // "MONTHLY", "QUARTERLY"
+  scores      Json     // KPI ID -> Score/Achieved Value
+  feedback    String?
+  rating      Float?   // Overall rating 1-5 or 1-10
+  status      String   @default("DRAFT") // DRAFT, SUBMITTED, APPROVED
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  employee    EmployeeProfile @relation("EvaluatedEmployee", fields: [employeeId], references: [id], onDelete: Cascade)
+  evaluator   User            @relation("EvaluatorUser", fields: [evaluatorId], references: [id])
+
+  @@unique([employeeId, period])
+  @@index([employeeId])
+  @@index([evaluatorId])
+  @@index([period])
 }
 
 model ManuscriptRevision {
