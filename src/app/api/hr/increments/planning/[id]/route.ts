@@ -15,7 +15,7 @@ export const PUT = authorizedRoute(
             }
 
             const body = await req.json();
-            const { newSalary, effectiveDate, reason, type } = body;
+            const { newFixed, newVariable, newIncentive, effectiveDate, reason, type } = body;
 
             // 1. Fetch current record to get oldSalary
             const record = await prisma.salaryIncrementRecord.findUnique({
@@ -44,8 +44,12 @@ export const PUT = authorizedRoute(
                 return createErrorResponse('Forbidden', 403);
             }
 
+            const fixed = parseFloat(newFixed) || 0;
+            const variable = parseFloat(newVariable) || 0;
+            const incentive = parseFloat(newIncentive) || 0;
+            const updatedNewSalary = fixed + variable + incentive;
+
             const oldSalary = record.oldSalary;
-            const updatedNewSalary = parseFloat(newSalary);
             const incrementAmount = updatedNewSalary - oldSalary;
             const percentage = oldSalary > 0 ? (incrementAmount / oldSalary) * 100 : 0;
 
@@ -53,6 +57,12 @@ export const PUT = authorizedRoute(
                 where: { id },
                 data: {
                     newSalary: updatedNewSalary,
+
+                    // New Components
+                    newFixed: fixed,
+                    newVariable: variable,
+                    newIncentive: incentive,
+
                     incrementAmount,
                     percentage: parseFloat(percentage.toFixed(2)),
                     effectiveDate: effectiveDate ? new Date(effectiveDate) : undefined,

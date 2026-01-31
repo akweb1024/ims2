@@ -23,7 +23,7 @@ export async function getDownlineUserIds(rootUserId: string, companyId?: string)
         select: { id: true, managerId: true }
     });
 
-    const downlineIds = new Set<string>();
+    const downlineIds = new Set<string>([rootUserId]);
     const queue = [rootUserId];
 
     // Build Adjacency List for O(1) lookups if optimized, but filter is O(N) per node.

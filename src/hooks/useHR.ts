@@ -41,10 +41,10 @@ const fetchJson = async (url: string, method: string = 'GET', body?: any) => {
 
 // --- Hooks ---
 
-export const useEmployees = () => {
+export const useEmployees = (all: boolean = false) => {
     return useQuery<Employee[]>({
-        queryKey: ['employees'],
-        queryFn: () => fetchJson('/api/hr/employees'),
+        queryKey: ['employees', { all }],
+        queryFn: () => fetchJson(`/api/hr/employees${all ? '?all=true' : ''}`),
         staleTime: 60 * 1000,
     });
 };

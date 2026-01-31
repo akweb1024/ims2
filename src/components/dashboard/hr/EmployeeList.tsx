@@ -27,6 +27,11 @@ export default function EmployeeList({
     managers
 }: EmployeeListProps) {
     const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
+    const [visibleSalaries, setVisibleSalaries] = useState<Record<string, boolean>>({});
+
+    const toggleSalary = (id: string) => {
+        setVisibleSalaries(prev => ({ ...prev, [id]: !prev[id] }));
+    };
 
     // Filters
     const [search, setSearch] = useState('');
@@ -155,6 +160,7 @@ export default function EmployeeList({
                             ) : filteredEmployees.map(emp => {
                                 const latestSnapshot = emp.performanceSnapshots?.[0];
                                 const monthScore = latestSnapshot?.overallScore || 0;
+                                const isSalaryVisible = visibleSalaries[emp.id];
 
                                 return (
                                     <tr key={emp.id} className="hover:bg-primary-50/10 transition-colors group">
@@ -195,9 +201,31 @@ export default function EmployeeList({
                                         </td>
                                         <td className="px-6 py-4 text-right">
                                             <div className="flex flex-col items-end gap-1">
-                                                <div className="flex items-center gap-1 text-sm font-black text-secondary-900">
-                                                    <span className="text-secondary-400 font-normal">₹</span>
-                                                    {parseFloat(emp.baseSalary || 0).toLocaleString()}
+                                                <div className="flex items-center gap-2 justify-end">
+                                                    {isSalaryVisible ? (
+                                                        <div className="flex items-center gap-1 text-sm font-black text-secondary-900">
+                                                            <span className="text-secondary-400 font-normal">₹</span>
+                                                            {parseFloat(emp.baseSalary || 0).toLocaleString()}
+                                                        </div>
+                                                    ) : (
+                                                        <div className="text-sm font-black text-secondary-300 tracking-widest">
+                                                            ******
+                                                        </div>
+                                                    )}
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            toggleSalary(emp.id);
+                                                        }}
+                                                        className="p-1 hover:bg-secondary-100 rounded text-secondary-400 hover:text-primary-600 transition-colors"
+                                                        title={isSalaryVisible ? "Hide Salary" : "Show Salary"}
+                                                    >
+                                                        {isSalaryVisible ? (
+                                                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} /></svg>
+                                                        ) : (
+                                                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} /><path d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} /></svg>
+                                                        )}
+                                                    </button>
                                                 </div>
                                                 <p className="text-[10px] text-secondary-400 font-bold uppercase tracking-wide">Annual</p>
                                             </div>
@@ -246,12 +274,13 @@ export default function EmployeeList({
                             })}
                         </tbody>
                     </table>
-                </div>
+                </div >
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                     {filteredEmployees.map(emp => {
                         const latestSnapshot = emp.performanceSnapshots?.[0];
                         const monthScore = latestSnapshot?.overallScore || 0;
+                        const isSalaryVisible = visibleSalaries[emp.id];
 
                         return (
                             <div key={emp.id} className="card-premium p-6 hover:shadow-xl hover:-translate-y-1 transition-all group relative border border-secondary-100 bg-white">
@@ -299,7 +328,26 @@ export default function EmployeeList({
                                     </div>
                                     <div className="text-center">
                                         <p className="text-[9px] text-secondary-400 font-bold uppercase tracking-wider">Salary</p>
-                                        <p className="text-xs font-bold text-secondary-900">₹{(parseFloat(emp.baseSalary || 0) / 100000).toFixed(1)}L</p>
+                                        <div className="flex items-center justify-center gap-2 mt-0.5">
+                                            {isSalaryVisible ? (
+                                                <p className="text-xs font-bold text-secondary-900">₹{(parseFloat(emp.baseSalary || 0) / 100000).toFixed(1)}L</p>
+                                            ) : (
+                                                <p className="text-xs font-bold text-secondary-300 tracking-widest">******</p>
+                                            )}
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    toggleSalary(emp.id);
+                                                }}
+                                                className="hover:text-primary-600 text-secondary-400"
+                                            >
+                                                {isSalaryVisible ? (
+                                                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} /></svg>
+                                                ) : (
+                                                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} /><path d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} /></svg>
+                                                )}
+                                            </button>
+                                        </div>
                                     </div>
                                     <div className="text-center border-l border-secondary-200">
                                         <p className="text-[9px] text-secondary-400 font-bold uppercase tracking-wider">Score</p>

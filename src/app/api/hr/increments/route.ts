@@ -154,9 +154,9 @@ export const POST = authorizedRoute(
 
             // Calculate old salary structure
             const oldSalary = employee.baseSalary || 0;
-            const oldFixedSalary = employee.fixedSalary || oldSalary;
-            const oldVariableSalary = employee.variableSalary || 0;
-            const oldIncentive = employee.incentiveSalary || 0;
+            const oldFixed = employee.salaryFixed || oldSalary;
+            const oldVariable = employee.salaryVariable || 0;
+            const oldIncentive = employee.salaryIncentive || 0;
 
             // Calculate new total salary
             const newSalary = data.newFixedSalary + (data.newVariableSalary || 0) + (data.newIncentive || 0);
@@ -171,8 +171,8 @@ export const POST = authorizedRoute(
 
                     // Old salary
                     oldSalary,
-                    oldFixedSalary,
-                    oldVariableSalary,
+                    oldFixed,
+                    oldVariable,
                     oldIncentive,
 
                     // Old detailed structure
@@ -182,8 +182,8 @@ export const POST = authorizedRoute(
 
                     // New salary
                     newSalary,
-                    newFixedSalary: data.newFixedSalary,
-                    newVariableSalary: data.newVariableSalary || 0,
+                    newFixed: data.newFixedSalary,
+                    newVariable: data.newVariableSalary || 0,
                     newIncentive: data.newIncentive || 0,
 
                     // New detailed structure & Opt-ins

@@ -135,17 +135,17 @@ export const PATCH = authorizedRoute(
             let updateData: any = {};
 
             if (data.newFixedSalary !== undefined || data.newVariableSalary !== undefined || data.newIncentive !== undefined) {
-                const newFixedSalary = data.newFixedSalary ?? increment.newFixedSalary ?? 0;
-                const newVariableSalary = data.newVariableSalary ?? increment.newVariableSalary ?? 0;
+                const newFixed = data.newFixedSalary ?? increment.newFixed ?? 0;
+                const newVariable = data.newVariableSalary ?? increment.newVariable ?? 0;
                 const newIncentive = data.newIncentive ?? increment.newIncentive ?? 0;
 
-                const newSalary = newFixedSalary + newVariableSalary + newIncentive;
+                const newSalary = newFixed + newVariable + newIncentive;
                 const incrementAmount = newSalary - increment.oldSalary;
                 const percentage = increment.oldSalary > 0 ? (incrementAmount / increment.oldSalary) * 100 : 0;
 
                 updateData = {
-                    newFixedSalary,
-                    newVariableSalary,
+                    newFixed,
+                    newVariable,
                     newIncentive,
                     newSalary,
                     incrementAmount,

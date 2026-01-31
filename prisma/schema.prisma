@@ -894,6 +894,12 @@ model EmployeeProfile {
 
   monthlyTarget            Float?                       @default(0)
   yearlyTarget             Float?                       @default(0)
+
+  // Salary Breakdown (New)
+  salaryFixed            Float?   @default(0)
+  salaryVariable         Float?   @default(0)
+  salaryIncentive        Float?   @default(0)
+
   skills                   String[]
   expertise                String[]
   bankName                 String?
@@ -1032,16 +1038,17 @@ model SalaryIncrementRecord {
   date                   DateTime        @default(now())
   effectiveDate          DateTime        @default(now())
   oldSalary              Float
-  oldFixedSalary         Float?
-  oldVariableSalary      Float?
-  oldIncentive           Float?
+  
+  // New Standardized Breakdown
+  oldFixed               Float    @default(0)
+  oldVariable            Float    @default(0)
+  oldIncentive           Float    @default(0)
+  
   newSalary              Float
-  newFixedSalary         Float?
-  newVariableSalary      Float?
-  newVariablePerTarget   Float?
-  newVariableUpperCap    Float?
-  newIncentive           Float?
-  newIncentivePercentage Float?
+  
+  newFixed               Float    @default(0)
+  newVariable            Float    @default(0)
+  newIncentive           Float    @default(0)
   currentMonthlyTarget   Float?          @default(0)
   newMonthlyTarget       Float?          @default(0)
   currentYearlyTarget    Float?          @default(0)
@@ -1057,8 +1064,11 @@ model SalaryIncrementRecord {
 
   // Old Detailed Structure (for history/comparison)
   oldVariablePerTarget   Float?
+  newVariablePerTarget   Float?
   oldVariableUpperCap    Float?
+  newVariableUpperCap    Float?
   oldIncentivePercentage Float?
+  newIncentivePercentage Float?
 
   oldHealthCare          Float?
   newHealthCare          Float?

@@ -47,6 +47,12 @@ export const GET = authorizedRoute(
                             id: true,
                             designation: true,
                             baseSalary: true,
+
+                            // New Fields
+                            salaryFixed: true,
+                            salaryVariable: true,
+                            salaryIncentive: true,
+
                             lastIncrementDate: true,
                             incrementHistory: {
                                 orderBy: { date: 'desc' },
@@ -124,6 +130,12 @@ export const GET = authorizedRoute(
                     pendingRecommendation: pending ? {
                         id: pending.id,
                         newSalary: pending.newSalary,
+
+                        // Breakdown
+                        newFixed: pending.newFixed,
+                        newVariable: pending.newVariable,
+                        newIncentive: pending.newIncentive,
+
                         incrementAmount: pending.incrementAmount,
                         percentage: pending.percentage,
                         reason: pending.reason,

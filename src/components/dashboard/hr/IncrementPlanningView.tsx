@@ -54,6 +54,11 @@ export default function IncrementPlanningView() {
                 },
                 body: JSON.stringify({
                     newSalary: editRecord.newSalary,
+
+                    newFixed: editRecord.newFixed,
+                    newVariable: editRecord.newVariable,
+                    newIncentive: editRecord.newIncentive,
+
                     reason: editRecord.reason,
                     type: editRecord.type,
                     effectiveDate: editRecord.effectiveDate
@@ -254,6 +259,11 @@ export default function IncrementPlanningView() {
                                                 onClick={() => setEditRecord({
                                                     id: emp.pendingRecommendation.id,
                                                     newSalary: emp.pendingRecommendation.newSalary,
+
+                                                    newFixed: emp.pendingRecommendation.newFixed,
+                                                    newVariable: emp.pendingRecommendation.newVariable,
+                                                    newIncentive: emp.pendingRecommendation.newIncentive,
+
                                                     reason: emp.pendingRecommendation.reason || '',
                                                     type: emp.pendingRecommendation.type,
                                                     effectiveDate: emp.pendingRecommendation.effectiveDate?.split('T')[0]
@@ -307,17 +317,71 @@ export default function IncrementPlanningView() {
                             </div>
                             <div className="p-8 space-y-5">
                                 <div>
-                                    <label className="text-[10px] font-black text-secondary-400 uppercase tracking-widest mb-2 block">Proposed Annual Salary</label>
-                                    <div className="relative">
-                                        <span className="absolute left-4 top-1/2 -translate-y-1/2 font-bold text-secondary-400">₹</span>
-                                        <input
-                                            type="number"
-                                            className="input-premium pl-8 text-lg font-black tracking-tight"
-                                            value={editRecord.newSalary}
-                                            onChange={(e) => setEditRecord({ ...editRecord, newSalary: e.target.value })}
-                                            required
-                                            title="New Salary Amount"
-                                        />
+                                    <div className="flex justify-between items-end mb-2">
+                                        <label className="text-[10px] font-black text-secondary-400 uppercase tracking-widest">Proposed Annual Structure</label>
+                                        <div className="text-right">
+                                            <span className="text-[10px] text-secondary-400 font-bold mr-1">TOTAL CTC</span>
+                                            <span className="font-mono font-black text-primary-600">
+                                                ₹{(
+                                                    (parseFloat(editRecord.newFixed) || 0) +
+                                                    (parseFloat(editRecord.newVariable) || 0) +
+                                                    (parseFloat(editRecord.newIncentive) || 0)
+                                                ).toLocaleString()}
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <div className="grid grid-cols-3 gap-3">
+                                        <div>
+                                            <label className="text-[9px] font-bold text-secondary-400 uppercase block mb-1">Fixed Component</label>
+                                            <div className="relative group">
+                                                <span className="absolute left-2 top-1/2 -translate-y-1/2 font-bold text-secondary-300 text-xs">₹</span>
+                                                <input
+                                                    type="number"
+                                                    className="input-premium pl-5 text-sm font-bold w-full"
+                                                    placeholder="Fixed"
+                                                    value={editRecord.newFixed || ''}
+                                                    onChange={(e) => setEditRecord({ ...editRecord, newFixed: e.target.value })}
+                                                    title="Base Salary (Fixed)"
+                                                />
+                                                <div className="absolute opacity-0 group-hover:opacity-100 bottom-full left-0 mb-2 p-2 bg-secondary-800 text-white text-[10px] rounded shadow-lg w-32 pointer-events-none transition-opacity z-10">
+                                                    Guaranteed monthly payout excluding variables.
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <label className="text-[9px] font-bold text-secondary-400 uppercase block mb-1">Variable Pay</label>
+                                            <div className="relative group">
+                                                <span className="absolute left-2 top-1/2 -translate-y-1/2 font-bold text-secondary-300 text-xs">₹</span>
+                                                <input
+                                                    type="number"
+                                                    className="input-premium pl-5 text-sm font-bold w-full"
+                                                    placeholder="Variable"
+                                                    value={editRecord.newVariable || ''}
+                                                    onChange={(e) => setEditRecord({ ...editRecord, newVariable: e.target.value })}
+                                                    title="Variable Pay"
+                                                />
+                                                <div className="absolute opacity-0 group-hover:opacity-100 bottom-full left-0 mb-2 p-2 bg-secondary-800 text-white text-[10px] rounded shadow-lg w-32 pointer-events-none transition-opacity z-10">
+                                                    Performance linked pay (PLI/Bonus).
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <label className="text-[9px] font-bold text-secondary-400 uppercase block mb-1">Incentives</label>
+                                            <div className="relative group">
+                                                <span className="absolute left-2 top-1/2 -translate-y-1/2 font-bold text-secondary-300 text-xs">₹</span>
+                                                <input
+                                                    type="number"
+                                                    className="input-premium pl-5 text-sm font-bold w-full"
+                                                    placeholder="Incentive"
+                                                    value={editRecord.newIncentive || ''}
+                                                    onChange={(e) => setEditRecord({ ...editRecord, newIncentive: e.target.value })}
+                                                    title="Targets/Incentives"
+                                                />
+                                                <div className="absolute opacity-0 group-hover:opacity-100 bottom-full left-0 mb-2 p-2 bg-secondary-800 text-white text-[10px] rounded shadow-lg w-32 pointer-events-none transition-opacity z-10">
+                                                    Sales/Target based incentives.
+                                                </div>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                                 <div className="grid grid-cols-2 gap-4">

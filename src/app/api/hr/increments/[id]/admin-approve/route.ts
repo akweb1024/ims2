@@ -64,9 +64,9 @@ export const POST = authorizedRoute(
                         where: { id: increment.employeeProfileId },
                         data: {
                             baseSalary: increment.newSalary,
-                            fixedSalary: increment.newFixedSalary,
-                            variableSalary: increment.newVariableSalary,
-                            incentiveSalary: increment.newIncentive,
+                            salaryFixed: increment.newFixed,
+                            salaryVariable: increment.newVariable,
+                            salaryIncentive: increment.newIncentive,
 
                             // Update Detailed Structure & Flags
                             hasVariable: increment.optInVariable,

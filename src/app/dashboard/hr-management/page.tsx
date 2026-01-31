@@ -268,7 +268,8 @@ const HRManagementContent = () => {
     const router = useRouter();
 
     // React Query Hooks - Basic
-    const { data: employees = [], isLoading: loadingEmployees } = useEmployees();
+    const [showAllEmployees, setShowAllEmployees] = useState(false);
+    const { data: employees = [], isLoading: loadingEmployees } = useEmployees(showAllEmployees);
     const { data: designations = [] } = useDesignations();
     const { data: jobs = [] } = useJobs(true);
     const { data: applications = [] } = useApplications();
@@ -551,7 +552,23 @@ const HRManagementContent = () => {
                         <h1 className="text-3xl font-bold text-secondary-900">HR Command Center</h1>
                         <p className="text-secondary-600">Enterprise-grade workforce management & monitoring.</p>
                     </div>
-                    <div className="flex gap-4">
+                    <div className="flex gap-4 items-center">
+                        {/* Show All Employees Toggle for Admins */}
+                        {['SUPER_ADMIN', 'ADMIN'].includes(userRole) && (
+                            <div className="flex items-center gap-2 bg-white px-3 py-2 rounded-xl border border-secondary-200 shadow-sm mr-2">
+                                <label className="relative inline-flex items-center cursor-pointer">
+                                    <input
+                                        type="checkbox"
+                                        className="sr-only peer"
+                                        checked={showAllEmployees}
+                                        onChange={(e) => setShowAllEmployees(e.target.checked)}
+                                    />
+                                    <div className="w-9 h-5 bg-secondary-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary-600"></div>
+                                    <span className="ml-2 text-xs font-bold text-secondary-700 select-none">Global View</span>
+                                </label>
+                            </div>
+                        )}
+
                         <button
                             onClick={() => window.location.href = '/dashboard/hr-management/designations'}
                             className="btn btn-secondary shadow-xl flex items-center gap-2"

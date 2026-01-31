@@ -21,7 +21,11 @@ export async function GET(req: NextRequest) {
         };
 
         if (user.role !== 'SUPER_ADMIN') {
-            where.companyId = user.companyId;
+            where.OR = [
+                { companyId: user.companyId },
+                { invoice: { companyId: user.companyId } },
+                { invoice: { subscription: { companyId: user.companyId } } }
+            ];
         }
 
         if (startDate || endDate) {

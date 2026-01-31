@@ -7,6 +7,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 interface SalaryData {
     byManager: Array<{ managerId: string; managerName: string; totalExpenditure: number }>;
     byDepartment: Array<{ name: string; total: number }>;
+    breakdown?: { fixed: number; variable: number; incentive: number };
 }
 
 export default function SalaryAnalysisSection({ data }: { data: SalaryData }) {
@@ -61,6 +62,26 @@ export default function SalaryAnalysisSection({ data }: { data: SalaryData }) {
                                 </div>
                             ))}
                         </div>
+                    </CardContent>
+                </Card>
+
+                {/* Component Breakdown (New) */}
+                <Card className="lg:col-span-2">
+                    <CardHeader>
+                        <CardTitle>Salary Structure Distribution (Global)</CardTitle>
+                    </CardHeader>
+                    <CardContent className="h-[300px] flex items-center justify-center">
+                        <ResponsiveContainer width="100%" height="100%">
+                            <BarChart data={[data.breakdown]} layout="vertical" margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                                <CartesianGrid strokeDasharray="3 3" horizontal={false} />
+                                <XAxis type="number" tickFormatter={(val) => `₹${(val / 100000).toFixed(1)}L`} />
+                                <YAxis type="category" dataKey="name" hide />
+                                <Tooltip formatter={(value: number) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumSignificantDigits: 3 }).format(value)} />
+                                <Bar dataKey="fixed" name="Fixed Salary" stackId="a" fill="#3b82f6" radius={[4, 0, 0, 4]} />
+                                <Bar dataKey="variable" name="Variable Pay" stackId="a" fill="#f59e0b" />
+                                <Bar dataKey="incentive" name="Incentives" stackId="a" fill="#10b981" radius={[0, 4, 4, 0]} />
+                            </BarChart>
+                        </ResponsiveContainer>
                     </CardContent>
                 </Card>
             </div>

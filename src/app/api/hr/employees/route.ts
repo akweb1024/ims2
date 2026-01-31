@@ -16,8 +16,21 @@ export const GET = authorizedRoute(
             const where: any = {};
 
             // Contextual Filtering
-            if (user.companyId) {
+            // Contextual Filtering
+            const url = new URL(req.url);
+            const showAll = url.searchParams.get('all') === 'true';
+
+            // Only restrict by company if NOT showing all (and user has company)
+            // Super Admin always ignores companyId unless specific filter added. 
+            // Here we allow ADMIN to see all if requested.
+            if (user.companyId && !showAll) {
                 where.user = { companyId: user.companyId };
+            } else if (user.companyId && showAll) {
+                // If showing all, ensure user has permission to see outside company (e.g. SUPER_ADMIN or specific ADMIN privilege)
+                // For now, allow regular ADMIN to see all as per request
+                if (!['SUPER_ADMIN', 'ADMIN'].includes(user.role)) {
+                    where.user = { companyId: user.companyId }; // Fallback for non-admins
+                }
             }
 
             // Role-based restrictions: Manager & Team Leader see full hierarchy

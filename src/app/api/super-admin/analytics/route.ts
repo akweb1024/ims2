@@ -110,6 +110,8 @@ export async function GET(req: NextRequest) {
             monthlyHeadcountTrend[comp.name][monthKey] = (monthlyHeadcountTrend[comp.name][monthKey] || 0) + 1;
         });
 
+        const globalBreakdown = { fixed: 0, variable: 0, incentive: 0 };
+
         allProfiles.forEach(p => {
             const compId = p.user.companyId;
             if (!compId) return;
@@ -132,9 +134,18 @@ export async function GET(req: NextRequest) {
             companyEmployeeStats[compId].types[type] = (companyEmployeeStats[compId].types[type] || 0) + 1;
             companyEmployeeStats[compId].total++;
 
-            // Salary Analysis (using fixedSalary + variableSalary as monthly)
-            const monthlySalary = (p.fixedSalary || 0) + (p.variableSalary || 0) + (p.incentiveSalary || 0);
+            // Salary Analysis (using standardized fields)
+            const fixed = p.salaryFixed || 0;
+            const variable = p.salaryVariable || 0;
+            const incentive = p.salaryIncentive || 0;
+            const monthlySalary = fixed + variable + incentive;
+
             companyEmployeeStats[compId].totalSalary += monthlySalary;
+
+            // Global Breakdown
+            globalBreakdown.fixed += fixed;
+            globalBreakdown.variable += variable;
+            globalBreakdown.incentive += incentive;
 
             // By Dept
             const deptName = p.user.department?.name || 'Unassigned';
@@ -280,6 +291,7 @@ export async function GET(req: NextRequest) {
                 byManager: managerSalaryAnalysis,
                 byDepartment: departmentPerformance,
                 totalMonthly: totalMonthlyBurn,
+                breakdown: globalBreakdown,
                 burnTrend
             },
             trends: {

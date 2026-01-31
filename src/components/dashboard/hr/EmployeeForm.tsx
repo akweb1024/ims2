@@ -656,6 +656,58 @@ export default function EmployeeForm({
                 </div>
             </div>
 
+            {/* Performance Targets Section */}
+            <div className="card-premium p-8">
+                <h2 className="text-lg font-black text-secondary-900 mb-6 flex items-center gap-2">
+                    <Target className="w-5 h-5 text-rose-500" />
+                    Performance Targets
+                </h2>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div>
+                        <label className="label-premium">Revenue Target</label>
+                        <input
+                            type="text"
+                            className="input-premium"
+                            placeholder="e.g. 5,00,000"
+                            value={empForm.targets?.revenue || ''}
+                            onChange={e => setEmpForm({
+                                ...empForm,
+                                targets: { ...empForm.targets, revenue: e.target.value }
+                            })}
+                        />
+                        <p className="text-[10px] text-secondary-400 mt-1 font-bold italic">Monthly revenue goal if applicable.</p>
+                    </div>
+                    <div>
+                        <label className="label-premium">Publication Target</label>
+                        <input
+                            type="text"
+                            className="input-premium"
+                            placeholder="e.g. 2 Papers"
+                            value={empForm.targets?.publication || ''}
+                            onChange={e => setEmpForm({
+                                ...empForm,
+                                targets: { ...empForm.targets, publication: e.target.value }
+                            })}
+                        />
+                        <p className="text-[10px] text-secondary-400 mt-1 font-bold italic">Research/Publication goals.</p>
+                    </div>
+                    <div>
+                        <label className="label-premium">Development Target</label>
+                        <input
+                            type="text"
+                            className="input-premium"
+                            placeholder="e.g. 1 Module"
+                            value={empForm.targets?.development || ''}
+                            onChange={e => setEmpForm({
+                                ...empForm,
+                                targets: { ...empForm.targets, development: e.target.value }
+                            })}
+                        />
+                        <p className="text-[10px] text-secondary-400 mt-1 font-bold italic">Dev/Tech deliverables.</p>
+                    </div>
+                </div>
+            </div>
+
             {/* Financials Section */}
             <div className="card-premium p-8">
                 <h2 className="text-lg font-black text-secondary-900 mb-6 flex items-center gap-2">
