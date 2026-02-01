@@ -429,13 +429,43 @@ export default function EmployeeForm({
                             onChange={e => setEmpForm({ ...empForm, managerId: e.target.value })}
                         >
                             <option value="">No Manager (Top Level)</option>
-                            {managers
-                                .map(m => (
-                                    <option key={m.id} value={m.user.id}>
-                                        {m.user.name || m.user.email} - {m.user.company?.name || 'No Company'} ({m.designatRef?.name || m.designation || m.user.role})
-                                    </option>
-                                ))}
+
+                            {/* Group managers by company for better organization */}
+                            {companies.map(company => {
+                                const companyManagers = managers.filter(m =>
+                                    m.user.company?.id === company.id ||
+                                    m.user.companies?.some((c: any) => c.id === company.id)
+                                );
+
+                                if (companyManagers.length === 0) return null;
+
+                                return (
+                                    <optgroup key={company.id} label={`📍 ${company.name}`}>
+                                        {companyManagers.map(m => (
+                                            <option key={m.id} value={m.user.id}>
+                                                {m.user.name || m.user.email} ({m.designatRef?.name || m.designation || m.user.role})
+                                            </option>
+                                        ))}
+                                    </optgroup>
+                                );
+                            })}
+
+                            {/* Show managers without company assignment */}
+                            {managers.filter(m => !m.user.company && (!m.user.companies || m.user.companies.length === 0)).length > 0 && (
+                                <optgroup label="📍 No Company Assigned">
+                                    {managers
+                                        .filter(m => !m.user.company && (!m.user.companies || m.user.companies.length === 0))
+                                        .map(m => (
+                                            <option key={m.id} value={m.user.id}>
+                                                {m.user.name || m.user.email} ({m.designatRef?.name || m.designation || m.user.role})
+                                            </option>
+                                        ))}
+                                </optgroup>
+                            )}
                         </select>
+                        <p className="text-[10px] text-secondary-500 mt-1 font-bold">
+                            ✨ All managers from all companies are shown. Grouped by company for easy selection.
+                        </p>
                     </div>
                     <div className="md:col-span-2">
                         <label className="label-premium">Designation</label>
