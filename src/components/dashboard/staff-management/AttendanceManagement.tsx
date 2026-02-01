@@ -57,6 +57,10 @@ export default function AttendanceManagement({ filters }: AttendanceManagementPr
                 if (filters.teamId !== 'all') params.append('departmentId', filters.teamId);
                 if (filters.employeeId !== 'all') params.append('employeeId', filters.employeeId);
                 if (filters.status !== 'all') params.append('status', filters.status);
+                if (filters.search) {
+                    params.append('search', filters.search);
+                    params.append('searchType', filters.searchType || 'all');
+                }
 
                 const res = await fetch(`/api/staff-management/attendance?${params.toString()}`);
                 if (res.ok) {

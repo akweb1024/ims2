@@ -57,7 +57,7 @@ export const PUT = authorizedRoute(
         try {
             const { id } = params;
             const body = await req.json();
-            const { name, email, phone, departmentId, designationId, dateOfJoining, status } = body;
+            const { name, email, phone, departmentId, designationId, dateOfJoining, status, managerId } = body;
 
             // Update user and employee profile
             await prisma.$transaction(async (tx) => {
@@ -67,6 +67,7 @@ export const PUT = authorizedRoute(
                         name,
                         email,
                         departmentId: departmentId || null,
+                        managerId: managerId || null,
                         isActive: status === 'ACTIVE'
                     }
                 });

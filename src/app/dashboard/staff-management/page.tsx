@@ -34,6 +34,8 @@ function StaffManagementContent() {
     const [activeTab, setActiveTab] = useState(initialTab);
     const [userRole, setUserRole] = useState('CUSTOMER');
     const [filters, setFilters] = useState({
+        search: '',
+        searchType: 'all',
         companyId: 'all',
         teamId: 'all',
         employeeId: 'all',

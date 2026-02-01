@@ -26,7 +26,8 @@ export default function EmployeeManagement({ filters }: EmployeeManagementProps)
         designationId: '',
         companyId: '',
         dateOfJoining: '',
-        status: 'ACTIVE'
+        status: 'ACTIVE',
+        managerId: ''
     });
 
     // Fetch employees
@@ -39,6 +40,10 @@ export default function EmployeeManagement({ filters }: EmployeeManagementProps)
                 if (filters.teamId !== 'all') params.append('departmentId', filters.teamId);
                 if (filters.employeeId !== 'all') params.append('id', filters.employeeId);
                 if (filters.status !== 'all') params.append('status', filters.status);
+                if (filters.search) {
+                    params.append('search', filters.search);
+                    params.append('searchType', filters.searchType || 'all');
+                }
 
                 const res = await fetch(`/api/staff-management/employees?${params.toString()}`);
                 if (res.ok) {
@@ -129,7 +134,8 @@ export default function EmployeeManagement({ filters }: EmployeeManagementProps)
             designationId: employee.designationId || '',
             companyId: employee.companyId || '',
             dateOfJoining: employee.dateOfJoining?.split('T')[0] || '',
-            status: employee.status
+            status: employee.status,
+            managerId: employee.manager?.id || ''
         });
         setShowModal(true);
     };
@@ -213,7 +219,8 @@ export default function EmployeeManagement({ filters }: EmployeeManagementProps)
                                 designationId: '',
                                 companyId: '',
                                 dateOfJoining: '',
-                                status: 'ACTIVE'
+                                status: 'ACTIVE',
+                                managerId: ''
                             });
                             setShowModal(true);
                         }}
@@ -237,7 +244,9 @@ export default function EmployeeManagement({ filters }: EmployeeManagementProps)
                                 <tr>
                                     <th className="px-6 py-3 text-left text-xs font-semibold text-secondary-500 uppercase tracking-wider">Employee</th>
                                     <th className="px-6 py-3 text-left text-xs font-semibold text-secondary-500 uppercase tracking-wider">Department</th>
+                                    <th className="px-6 py-3 text-left text-xs font-semibold text-secondary-500 uppercase tracking-wider">Company</th>
                                     <th className="px-6 py-3 text-left text-xs font-semibold text-secondary-500 uppercase tracking-wider">Designation</th>
+                                    <th className="px-6 py-3 text-left text-xs font-semibold text-secondary-500 uppercase tracking-wider">Manager</th>
                                     <th className="px-6 py-3 text-left text-xs font-semibold text-secondary-500 uppercase tracking-wider">Join Date</th>
                                     <th className="px-6 py-3 text-left text-xs font-semibold text-secondary-500 uppercase tracking-wider">Status</th>
                                     <th className="px-6 py-3 text-right text-xs font-semibold text-secondary-500 uppercase tracking-wider">Actions</th>
@@ -261,7 +270,13 @@ export default function EmployeeManagement({ filters }: EmployeeManagementProps)
                                             {employee.department?.name || '-'}
                                         </td>
                                         <td className="px-6 py-4 text-sm text-secondary-600">
+                                            {employee.companyName || '-'}
+                                        </td>
+                                        <td className="px-6 py-4 text-sm text-secondary-600">
                                             {employee.designation?.title || '-'}
+                                        </td>
+                                        <td className="px-6 py-4 text-sm text-secondary-600">
+                                            {employee.manager?.name || '-'}
                                         </td>
                                         <td className="px-6 py-4 text-sm text-secondary-600">
                                             {employee.dateOfJoining ? new Date(employee.dateOfJoining).toLocaleDateString() : '-'}
@@ -331,10 +346,16 @@ export default function EmployeeManagement({ filters }: EmployeeManagementProps)
                             </div>
                             <div className="mt-4 space-y-2">
                                 <p className="text-sm text-secondary-600">
+                                    <span className="font-medium">Company:</span> {employee.companyName || '-'}
+                                </p>
+                                <p className="text-sm text-secondary-600">
                                     <span className="font-medium">Department:</span> {employee.department?.name || '-'}
                                 </p>
                                 <p className="text-sm text-secondary-600">
                                     <span className="font-medium">Designation:</span> {employee.designation?.title || '-'}
+                                </p>
+                                <p className="text-sm text-secondary-600">
+                                    <span className="font-medium">Manager:</span> {employee.manager?.name || '-'}
                                 </p>
                                 <p className="text-sm text-secondary-600">
                                     <span className="font-medium">Join Date:</span> {employee.dateOfJoining ? new Date(employee.dateOfJoining).toLocaleDateString() : '-'}
@@ -464,6 +485,21 @@ export default function EmployeeManagement({ filters }: EmployeeManagementProps)
                                     onChange={(e) => setFormData({ ...formData, dateOfJoining: e.target.value })}
                                     className="w-full rounded-lg border border-secondary-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
                                 />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-secondary-700 mb-1">Reporting Manager</label>
+                                <select
+                                    value={formData.managerId}
+                                    onChange={(e) => setFormData({ ...formData, managerId: e.target.value })}
+                                    className="w-full rounded-lg border border-secondary-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                                >
+                                    <option value="">Select Manager</option>
+                                    {employees
+                                        .filter(emp => !editingEmployee || emp.id !== editingEmployee.id)
+                                        .map(emp => (
+                                            <option key={emp.id} value={emp.id}>{emp.name}</option>
+                                        ))}
+                                </select>
                             </div>
                             <div className="flex gap-3 pt-4">
                                 <button

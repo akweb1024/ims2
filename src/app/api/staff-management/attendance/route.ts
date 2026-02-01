@@ -35,15 +35,54 @@ export const GET = authorizedRoute(
             const status = searchParams.get('status');
             if (status && status !== 'all') {
                 if (status === 'ACTIVE') {
-                    where.employee = { ...where.employee, user: { isActive: true } };
+                    where.employee = { ...where.employee, user: { ...where.employee?.user, isActive: true } };
                 } else if (status === 'INACTIVE') {
-                    where.employee = { ...where.employee, user: { isActive: false } };
+                    where.employee = { ...where.employee, user: { ...where.employee?.user, isActive: false } };
                 }
-                // For ON_LEAVE / TERMINATED, we might match specific stats or just rely on isActive=false
-                // For now, mapping broadly if needed, or ignoring. 
-                // Given StaffFilters options, ON_LEAVE usually implies Active but on leave.
-                // But User model only has isActive. 
-                // If status is 'TERMINATED', it is likely inactive.
+            }
+
+            const search = searchParams.get('search');
+            const searchType = searchParams.get('searchType') || 'all';
+
+            if (search) {
+                // Determine the filter based on searchType
+                let employeeFilter: any = {};
+
+                if (searchType === 'all') {
+                    employeeFilter = {
+                        OR: [
+                            { user: { name: { contains: search, mode: 'insensitive' } } },
+                            { user: { email: { contains: search, mode: 'insensitive' } } },
+                            { phoneNumber: { contains: search, mode: 'insensitive' } },
+                            { employeeId: { contains: search, mode: 'insensitive' } }
+                        ]
+                    };
+                } else if (searchType === 'name') {
+                    employeeFilter = { user: { name: { contains: search, mode: 'insensitive' } } };
+                } else if (searchType === 'email') {
+                    employeeFilter = { user: { email: { contains: search, mode: 'insensitive' } } };
+                } else if (searchType === 'phone') {
+                    employeeFilter = { phoneNumber: { contains: search, mode: 'insensitive' } };
+                } else if (searchType === 'id') {
+                    employeeFilter = { employeeId: { contains: search, mode: 'insensitive' } };
+                }
+
+                // Merge with existing employee filter
+                where.employee = {
+                    ...where.employee,
+                    ...employeeFilter,
+                    // Ensure user filter is merged properly if both exist (e.g. status + name search)
+                    // If employeeFilter has user, and where.employee has user, we need to merge them.
+                    // But OR clause makes it tricky if we rely on simple spread.
+                    // For 'all' OR, it works as AND (other filters) AND (OR conditions).
+                    // For specific 'name'/'email', it works as AND.
+                    // BUT: 'user' inside employeeFilter vs 'user' inside where.employee (from status)
+                };
+
+                // Deep merge helper for 'user' if needed
+                if (where.employee.user && employeeFilter.user) {
+                    where.employee.user = { ...where.employee.user, ...employeeFilter.user };
+                }
             }
 
             const attendance = await prisma.attendance.findMany({

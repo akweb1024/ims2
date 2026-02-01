@@ -42,10 +42,44 @@ export const GET = authorizedRoute(
                 where.isActive = status === 'ACTIVE';
             }
 
+            const search = searchParams.get('search');
+            const searchType = searchParams.get('searchType') || 'all';
+
+            if (search) {
+                if (searchType === 'all') {
+                    where.OR = [
+                        { name: { contains: search, mode: 'insensitive' } },
+                        { email: { contains: search, mode: 'insensitive' } },
+                        { employeeProfile: { phoneNumber: { contains: search, mode: 'insensitive' } } },
+                        { employeeProfile: { employeeId: { contains: search, mode: 'insensitive' } } }
+                    ];
+                } else if (searchType === 'name') {
+                    where.name = { contains: search, mode: 'insensitive' };
+                } else if (searchType === 'email') {
+                    where.email = { contains: search, mode: 'insensitive' };
+                } else if (searchType === 'phone') {
+                    where.employeeProfile = { ...where.employeeProfile, phoneNumber: { contains: search, mode: 'insensitive' } };
+                } else if (searchType === 'id') {
+                    where.employeeProfile = { ...where.employeeProfile, employeeId: { contains: search, mode: 'insensitive' } };
+                }
+            }
+
             const employees = await prisma.user.findMany({
                 where,
                 include: {
                     department: {
+                        select: {
+                            id: true,
+                            name: true
+                        }
+                    },
+                    manager: {
+                        select: {
+                            id: true,
+                            name: true
+                        }
+                    },
+                    company: {
                         select: {
                             id: true,
                             name: true
@@ -69,11 +103,13 @@ export const GET = authorizedRoute(
                 email: emp.email,
                 phone: emp.employeeProfile?.phoneNumber || '',
                 companyId: emp.companyId,
+                companyName: emp.company?.name || '-',
                 departmentId: emp.departmentId,
                 designationId: emp.employeeProfile?.designationId,
                 dateOfJoining: emp.employeeProfile?.dateOfJoining,
                 status: emp.isActive ? 'ACTIVE' : 'INACTIVE',
                 department: emp.department,
+                manager: emp.manager ? { name: emp.manager.name, id: emp.manager.id } : null,
                 designation: emp.employeeProfile?.designatRef ? {
                     title: emp.employeeProfile.designatRef.name,
                     ...emp.employeeProfile.designatRef
@@ -94,7 +130,7 @@ export const POST = authorizedRoute(
     async (req: NextRequest, currentUser) => {
         try {
             const body = await req.json();
-            const { name, email, phone, companyId, departmentId, designationId, dateOfJoining, status } = body;
+            const { name, email, phone, companyId, departmentId, designationId, dateOfJoining, status, managerId } = body;
 
             // Validate required fields
             if (!name || !email) {
@@ -117,10 +153,11 @@ export const POST = authorizedRoute(
                     data: {
                         name,
                         email,
-                        password: 'temp123', // Temporary password, should be changed on first login
+                        password: 'temp123', // Temporary password
                         role: 'EMPLOYEE' as any,
                         companyId: companyId || currentUser.companyId,
                         departmentId: departmentId || null,
+                        managerId: managerId || null,
                         isActive: status === 'ACTIVE',
                         allowedModules: ['CORE']
                     }
