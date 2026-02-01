@@ -22,7 +22,6 @@ export const authorizedRoute = (allowedRoles: string[] = [], handler: ProtectedR
             }
 
             if (allowedRoles.length > 0 && !allowedRoles.includes(user.role)) {
-                console.log(`⛔ Permission Denied: User role ${user.role} not in [${allowedRoles}]`);
                 return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
             }
 

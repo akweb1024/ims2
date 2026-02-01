@@ -319,8 +319,6 @@ export default function EmployeeProfilePage() {
         // Remove email (can't be updated)
         delete cleanData.email;
 
-        console.log('📤 Sending employee update:', { id: employee.id, ...cleanData });
-
         try {
             const token = localStorage.getItem('token');
             const res = await fetch('/api/hr/employees', {
@@ -332,7 +330,6 @@ export default function EmployeeProfilePage() {
             const responseData = await res.json();
 
             if (res.ok) {
-                console.log('✅ Employee updated successfully');
                 alert('Employee profile updated successfully!');
                 setShowEmpModal(false);
                 fetchEmployeeDetails(); // Refresh profile

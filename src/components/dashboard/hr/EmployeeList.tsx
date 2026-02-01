@@ -26,6 +26,7 @@ export default function EmployeeList({
     onViewProfile,
     managers
 }: EmployeeListProps) {
+    // View mode state
     const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
     const [visibleSalaries, setVisibleSalaries] = useState<Record<string, boolean>>({});
 
@@ -33,107 +34,28 @@ export default function EmployeeList({
         setVisibleSalaries(prev => ({ ...prev, [id]: !prev[id] }));
     };
 
-    // Filters
-    const [search, setSearch] = useState('');
-    const [roleFilter, setRoleFilter] = useState('ALL');
-    const [statusFilter, setStatusFilter] = useState('ALL');
-    const [designationFilter, setDesignationFilter] = useState('ALL');
-
-    const uniqueDesignations = useMemo(() => {
-        const desigs = new Set(employees.map(e => e.designatRef?.name || e.designation).filter(Boolean));
-        return Array.from(desigs);
-    }, [employees]);
-
-    const filteredEmployees = useMemo(() => {
-        return employees.filter(emp => {
-            const matchesSearch =
-                emp.user.email.toLowerCase().includes(search.toLowerCase()) ||
-                emp.user.name?.toLowerCase().includes(search.toLowerCase()) ||
-                emp.designation?.toLowerCase().includes(search.toLowerCase()) ||
-                emp.designatRef?.name?.toLowerCase().includes(search.toLowerCase());
-
-            const matchesRole = roleFilter === 'ALL' || emp.user.role === roleFilter;
-            const matchesStatus = statusFilter === 'ALL' || (statusFilter === 'ACTIVE' ? emp.user.isActive : !emp.user.isActive);
-            const matchesDesignation = designationFilter === 'ALL' || (emp.designatRef?.name || emp.designation) === designationFilter;
-
-            return matchesSearch && matchesRole && matchesStatus && matchesDesignation;
-        });
-    }, [employees, search, roleFilter, statusFilter, designationFilter]);
-
     return (
         <div className="space-y-6">
-            {/* Filter Bar */}
-            <div className="card-premium p-4 flex flex-col md:flex-row gap-4 justify-between items-center bg-white shadow-sm border border-secondary-200">
-                <div className="relative w-full md:w-96">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-secondary-400" size={18} />
-                    <input
-                        type="text"
-                        placeholder="Search employees..."
-                        className="input pl-10 h-10 text-sm"
-                        value={search}
-                        onChange={(e) => setSearch(e.target.value)}
-                        title="Search Employees"
-                    />
-                </div>
+            <div className="flex justify-between items-center bg-white p-3 rounded-xl border border-secondary-200 shadow-sm">
+                <p className="text-secondary-500 font-bold text-xs uppercase tracking-widest pl-2">
+                    Showing {employees.length} Employees
+                </p>
 
-                <div className="flex flex-wrap gap-2 w-full md:w-auto">
-                    <select
-                        className="input h-10 w-auto text-xs font-bold uppercase"
-                        value={roleFilter}
-                        onChange={(e) => setRoleFilter(e.target.value)}
-                        title="Filter by Role"
+                <div className="bg-secondary-100 p-1 rounded-lg flex gap-1 items-center">
+                    <button
+                        onClick={() => setViewMode('list')}
+                        className={`p-1.5 rounded-md transition-colors ${viewMode === 'list' ? 'bg-white shadow-sm text-primary-600' : 'text-secondary-400 hover:text-secondary-600'}`}
+                        title="List View"
                     >
-                        <option value="ALL">All Roles</option>
-                        <option value="EXECUTIVE">Executive</option>
-                        <option value="MANAGER">Manager</option>
-                        <option value="ADMIN">Admin</option>
-                        <option value="HR_MANAGER">HR Manager</option>
-                        <option value="EDITOR">Editor</option>
-                        <option value="JOURNAL_MANAGER">Journal Manager</option>
-                        <option value="EDITOR_IN_CHIEF">Editor-in-Chief</option>
-                        <option value="PLAGIARISM_CHECKER">Plagiarism Checker</option>
-                        <option value="QUALITY_CHECKER">Quality Checker</option>
-                    </select>
-
-                    <select
-                        className="input h-10 w-auto text-xs font-bold uppercase"
-                        value={designationFilter}
-                        onChange={(e) => setDesignationFilter(e.target.value)}
-                        title="Filter by Designation"
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} /></svg>
+                    </button>
+                    <button
+                        onClick={() => setViewMode('grid')}
+                        className={`p-1.5 rounded-md transition-colors ${viewMode === 'grid' ? 'bg-white shadow-sm text-primary-600' : 'text-secondary-400 hover:text-secondary-600'}`}
+                        title="Grid View"
                     >
-                        <option value="ALL">All Designations</option>
-                        {uniqueDesignations.map(d => (
-                            <option key={d as string} value={d as string}>{d as string}</option>
-                        ))}
-                    </select>
-
-                    <select
-                        className="input h-10 w-auto text-xs font-bold uppercase"
-                        value={statusFilter}
-                        onChange={(e) => setStatusFilter(e.target.value)}
-                        title="Filter by Status"
-                    >
-                        <option value="ALL">All Status</option>
-                        <option value="ACTIVE">Active</option>
-                        <option value="INACTIVE">Inactive</option>
-                    </select>
-
-                    <div className="bg-secondary-100 p-1 rounded-lg flex gap-1 items-center">
-                        <button
-                            onClick={() => setViewMode('list')}
-                            className={`p-1.5 rounded-md transition-colors ${viewMode === 'list' ? 'bg-white shadow-sm text-primary-600' : 'text-secondary-400 hover:text-secondary-600'}`}
-                            title="List View"
-                        >
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} /></svg>
-                        </button>
-                        <button
-                            onClick={() => setViewMode('grid')}
-                            className={`p-1.5 rounded-md transition-colors ${viewMode === 'grid' ? 'bg-white shadow-sm text-primary-600' : 'text-secondary-400 hover:text-secondary-600'}`}
-                            title="Grid View"
-                        >
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} /></svg>
-                        </button>
-                    </div>
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} /></svg>
+                    </button>
                 </div>
             </div>
 
@@ -155,9 +77,9 @@ export default function EmployeeList({
                         <tbody className="divide-y divide-secondary-50">
                             {loading ? (
                                 <tr><td colSpan={8} className="text-center py-20 text-secondary-400 font-bold animate-pulse italic">Scanning workforce assets...</td></tr>
-                            ) : filteredEmployees.length === 0 ? (
+                            ) : employees.length === 0 ? (
                                 <tr><td colSpan={8} className="text-center py-20 text-secondary-400 font-medium">No employees found matching criteria.</td></tr>
-                            ) : filteredEmployees.map(emp => {
+                            ) : employees.map(emp => {
                                 const latestSnapshot = emp.performanceSnapshots?.[0];
                                 const monthScore = latestSnapshot?.overallScore || 0;
                                 const isSalaryVisible = visibleSalaries[emp.id];
@@ -167,29 +89,28 @@ export default function EmployeeList({
                                         <td className="px-6 py-4">
                                             <div className="flex items-center gap-3 cursor-pointer" onClick={() => onViewProfile(emp.id)}>
                                                 <div className="w-10 h-10 bg-gradient-to-br from-secondary-100 to-secondary-200 rounded-xl flex items-center justify-center font-black text-secondary-600 shadow-sm group-hover:from-primary-100 group-hover:to-primary-200 group-hover:text-primary-600 transition-all">
-                                                    {emp.user.name?.[0] || emp.user.email[0].toUpperCase()}
+                                                    {emp.name?.[0] || emp.email[0].toUpperCase()}
                                                 </div>
                                                 <div>
-                                                    <p className="font-bold text-secondary-900 group-hover:text-primary-700 transition-colors text-sm">{emp.user.name || emp.user.email.split('@')[0]}</p>
-                                                    <p className="text-[10px] text-secondary-400 font-medium">{emp.user.email}</p>
+                                                    <p className="font-bold text-secondary-900 group-hover:text-primary-700 transition-colors text-sm">{emp.name || emp.email.split('@')[0]}</p>
+                                                    <p className="text-[10px] text-secondary-400 font-medium">{emp.email}</p>
                                                     <div className="flex gap-2 items-center mt-0.5">
-                                                        <span className={`w-2 h-2 rounded-full ${emp.user.isActive ? 'bg-emerald-500' : 'bg-red-500'}`}></span>
-                                                        <span className="text-[10px] text-secondary-400 font-medium uppercase tracking-wide">{emp.user.isActive ? 'Active' : 'Inactive'}</span>
+                                                        <span className={`w-2 h-2 rounded-full ${emp.status === 'ACTIVE' ? 'bg-emerald-500' : 'bg-red-500'}`}></span>
+                                                        <span className="text-[10px] text-secondary-400 font-medium uppercase tracking-wide">{emp.status}</span>
                                                     </div>
                                                 </div>
                                             </div>
                                         </td>
                                         <td className="px-6 py-4">
                                             <div className="flex flex-col gap-1">
-                                                <p className="text-sm font-bold text-secondary-900">{emp.designatRef?.name || emp.designation || 'No Designation'}</p>
-                                                <span className="w-fit px-2 py-0.5 bg-secondary-100 text-secondary-700 text-[9px] font-black rounded uppercase tracking-wider">{emp.user.role.replace('_', ' ')}</span>
+                                                <p className="text-sm font-bold text-secondary-900">{emp.designation?.title || 'No Designation'}</p>
                                             </div>
                                         </td>
                                         <td className="px-6 py-4">
-                                            <p className="text-sm font-bold text-secondary-900">{emp.user.company?.name || 'N/A'}</p>
+                                            <p className="text-sm font-bold text-secondary-900">{emp.companyName || 'N/A'}</p>
                                         </td>
                                         <td className="px-6 py-4">
-                                            <p className="text-sm font-bold text-secondary-900">{emp.user.department?.name || 'N/A'}</p>
+                                            <p className="text-sm font-bold text-secondary-900">{emp.department?.name || 'N/A'}</p>
                                         </td>
                                         <td className="px-6 py-4">
                                             <p className="text-sm font-bold text-secondary-900">
@@ -277,7 +198,7 @@ export default function EmployeeList({
                 </div >
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                    {filteredEmployees.map(emp => {
+                    {employees.map(emp => {
                         const latestSnapshot = emp.performanceSnapshots?.[0];
                         const monthScore = latestSnapshot?.overallScore || 0;
                         const isSalaryVisible = visibleSalaries[emp.id];
@@ -298,13 +219,13 @@ export default function EmployeeList({
                                         {emp.profilePicture ? (
                                             <Image src={emp.profilePicture} alt="Profile" width={80} height={80} className="w-full h-full object-cover rounded-2xl" />
                                         ) : (
-                                            (emp.user.name?.[0] || emp.user.email[0]).toUpperCase()
+                                            (emp.name?.[0] || emp.email[0]).toUpperCase()
                                         )}
                                     </div>
-                                    <h3 className="font-bold text-lg text-secondary-900 truncate w-full px-4" title={emp.user.email}>{emp.user.name || emp.user.email.split('@')[0]}</h3>
-                                    <p className="text-xs text-secondary-500 font-bold uppercase tracking-wider mb-2">{emp.designatRef?.name || emp.designation || 'No Designation'}</p>
-                                    <span className={`inline-block text-[9px] font-black px-2 py-0.5 rounded-full uppercase tracking-widest ${emp.user.isActive ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' : 'bg-rose-50 text-rose-700 border border-rose-100'}`}>
-                                        {emp.user.isActive ? 'Active Staff' : 'Inactive'}
+                                    <h3 className="font-bold text-lg text-secondary-900 truncate w-full px-4" title={emp.email}>{emp.name || emp.email.split('@')[0]}</h3>
+                                    <p className="text-xs text-secondary-500 font-bold uppercase tracking-wider mb-2">{emp.designation?.title || 'No Designation'}</p>
+                                    <span className={`inline-block text-[9px] font-black px-2 py-0.5 rounded-full uppercase tracking-widest ${emp.status === 'ACTIVE' ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' : 'bg-rose-50 text-rose-700 border border-rose-100'}`}>
+                                        {emp.status}
                                     </span>
                                     {emp.skills && emp.skills.length > 0 && (
                                         <div className="flex flex-wrap justify-center gap-1 mt-3 px-4 h-6 overflow-hidden">
@@ -320,11 +241,11 @@ export default function EmployeeList({
                                 <div className="grid grid-cols-2 gap-3 border-t border-dashed border-secondary-200 pt-4 bg-secondary-50/50 -mx-6 -mb-6 p-4 rounded-b-2xl">
                                     <div className="text-center">
                                         <p className="text-[9px] text-secondary-400 font-bold uppercase tracking-wider">Company</p>
-                                        <p className="text-xs font-bold text-secondary-900 truncate px-2">{emp.user.company?.name || 'N/A'}</p>
+                                        <p className="text-xs font-bold text-secondary-900 truncate px-2">{emp.companyName || 'N/A'}</p>
                                     </div>
                                     <div className="text-center border-l border-secondary-200">
                                         <p className="text-[9px] text-secondary-400 font-bold uppercase tracking-wider">Department</p>
-                                        <p className="text-xs font-bold text-secondary-900 truncate px-2">{emp.user.department?.name || 'N/A'}</p>
+                                        <p className="text-xs font-bold text-secondary-900 truncate px-2">{emp.department?.name || 'N/A'}</p>
                                     </div>
                                     <div className="text-center">
                                         <p className="text-[9px] text-secondary-400 font-bold uppercase tracking-wider">Salary</p>

@@ -7,6 +7,8 @@ interface EmployeeManagementProps {
     filters: any;
 }
 
+import EmployeeProfileView from './EmployeeProfileView';
+
 export default function EmployeeManagement({ filters }: EmployeeManagementProps) {
     const [employees, setEmployees] = useState<any[]>([]);
     const [companies, setCompanies] = useState<any[]>([]);
@@ -15,6 +17,7 @@ export default function EmployeeManagement({ filters }: EmployeeManagementProps)
     const [loading, setLoading] = useState(true);
     const [showModal, setShowModal] = useState(false);
     const [editingEmployee, setEditingEmployee] = useState<any>(null);
+    const [viewingProfileId, setViewingProfileId] = useState<string | null>(null);
     const [viewMode, setViewMode] = useState<'grid' | 'table'>('table');
 
     // Form state
@@ -299,6 +302,12 @@ export default function EmployeeManagement({ filters }: EmployeeManagementProps)
                                         </td>
                                         <td className="px-6 py-4 text-right">
                                             <button
+                                                onClick={() => setViewingProfileId(employee.id)}
+                                                className="text-blue-600 hover:text-blue-800 mr-3"
+                                            >
+                                                View
+                                            </button>
+                                            <button
                                                 onClick={() => handleEdit(employee)}
                                                 className="text-primary-600 hover:text-primary-800 mr-3"
                                             >
@@ -362,6 +371,12 @@ export default function EmployeeManagement({ filters }: EmployeeManagementProps)
                                 </p>
                             </div>
                             <div className="mt-4 flex gap-2">
+                                <button
+                                    onClick={() => setViewingProfileId(employee.id)}
+                                    className="flex-1 px-3 py-2 bg-blue-50 text-blue-700 rounded-lg text-sm font-medium hover:bg-blue-100 transition-colors"
+                                >
+                                    View
+                                </button>
                                 <button
                                     onClick={() => handleEdit(employee)}
                                     className="flex-1 px-3 py-2 bg-primary-50 text-primary-700 rounded-lg text-sm font-medium hover:bg-primary-100 transition-colors"
@@ -522,6 +537,13 @@ export default function EmployeeManagement({ filters }: EmployeeManagementProps)
                         </form>
                     </div>
                 </div>
+            )}
+            {/* Profile View Modal */}
+            {viewingProfileId && (
+                <EmployeeProfileView
+                    employeeId={viewingProfileId}
+                    onClose={() => setViewingProfileId(null)}
+                />
             )}
         </div>
     );

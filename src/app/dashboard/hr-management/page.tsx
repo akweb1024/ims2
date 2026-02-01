@@ -8,6 +8,8 @@ import FormattedDate from '@/components/common/FormattedDate';
 
 import DocumentManager from '@/components/dashboard/DocumentManager';
 import EmployeeList from '@/components/dashboard/hr/EmployeeList';
+import StaffFilters from '@/components/dashboard/staff-management/StaffFilters';
+import EmployeeProfileView from '@/components/dashboard/staff-management/EmployeeProfileView';
 
 import HolidayManager from '@/components/dashboard/hr/HolidayManager';
 
@@ -269,11 +271,6 @@ const HRManagementContent = () => {
 
     // React Query Hooks - Basic
     const [showAllEmployees, setShowAllEmployees] = useState(false);
-    const { data: employees = [], isLoading: loadingEmployees } = useEmployees(showAllEmployees);
-    const { data: designations = [] } = useDesignations();
-    const { data: jobs = [] } = useJobs(true);
-    const { data: applications = [] } = useApplications();
-    const { data: holidays = [] } = useHolidays();
 
     // State for filtering
     const [userRole, setUserRole] = useState('CUSTOMER');
@@ -288,10 +285,71 @@ const HRManagementContent = () => {
     const [filters, setFilters] = useState({
         staffSearch: '',
         status: 'ALL',
-        date: '',
-        category: 'ALL',
-        employeeId: 'ALL'
+        department: 'ALL'
     });
+
+    // New State for Staff Filters & Enhanced Filtering
+    const [staffFilters, setStaffFilters] = useState({
+        search: '',
+        searchType: 'all',
+        companyId: 'all',
+        teamId: 'all',
+        employeeId: 'all',
+        dateRange: {
+            start: new Date(new Date().setDate(new Date().getDate() - 30)).toISOString().split('T')[0],
+            end: new Date().toISOString().split('T')[0]
+        },
+        status: 'ACTIVE'
+    });
+
+    const [filteredEmployees, setFilteredEmployees] = useState<any[]>([]);
+    const [loadingFilteredEmployees, setLoadingFilteredEmployees] = useState(false);
+    const [viewingProfileId, setViewingProfileId] = useState<string | null>(null);
+
+    // Initial Fetch for HR Management (Replaces useEmployees for the list view)
+    useEffect(() => {
+        if (activeTab !== 'employees') return;
+
+        const fetchEmployees = async () => {
+            setLoadingFilteredEmployees(true);
+            try {
+                const params = new URLSearchParams();
+                if (staffFilters.companyId !== 'all') params.append('companyId', staffFilters.companyId);
+                if (staffFilters.teamId !== 'all') params.append('departmentId', staffFilters.teamId);
+                // HR usually wants to see all employees, so we might not want to filter by ID initially unless selected
+                if (staffFilters.employeeId !== 'all') params.append('id', staffFilters.employeeId);
+                if (staffFilters.status !== 'all') params.append('status', staffFilters.status);
+
+                if (staffFilters.search) {
+                    params.append('search', staffFilters.search);
+                    params.append('searchType', staffFilters.searchType || 'all');
+                }
+
+                // If global view is toggled, maybe ignore company restriction? 
+                // For now, let's assume the API handles user role restrictions.
+
+                const res = await fetch(`/api/staff-management/employees?${params.toString()}`);
+                if (res.ok) {
+                    const data = await res.json();
+                    setFilteredEmployees(data);
+                }
+            } catch (err) {
+                console.error('Error fetching employees:', err);
+                toast.error('Failed to load employee data');
+            } finally {
+                setLoadingFilteredEmployees(false);
+            }
+        };
+
+        fetchEmployees();
+    }, [activeTab, staffFilters, showAllEmployees]);
+
+    // Legacy hooks (kept for other tabs if needed, but employees tab now uses the above)
+    const { data: employees = [], isLoading: loadingEmployees } = useEmployees(showAllEmployees);
+    const { data: designations = [] } = useDesignations();
+    const { data: jobs = [] } = useJobs(true);
+    const { data: applications = [] } = useApplications();
+    const { data: holidays = [] } = useHolidays();
     const [ledgerSearch, setLedgerSearch] = useState('');
 
     useEffect(() => {
@@ -630,28 +688,32 @@ const HRManagementContent = () => {
             <div className="mt-8 transition-all duration-300">
 
                 {activeTab === 'employees' && (
-                    <EmployeeList
-                        employees={employees}
-                        loading={loadingEmployees}
-                        onEdit={(emp) => {
-                            router.push(`/dashboard/hr-management/employees/${emp.id}/edit`);
-                        }}
-                        managers={employees.filter(e => ['MANAGER', 'TEAM_LEADER', 'ADMIN', 'SUPER_ADMIN', 'JOURNAL_MANAGER', 'EDITOR_IN_CHIEF'].includes(e.user?.role || ''))}
-                        onDelete={handleDeactivateEmp}
-                        onPay={(emp) => {
-                            const amount = prompt("Salary Amount:");
-                            if (amount) fetch('/api/hr/salary-slips', {
-                                method: 'POST',
-                                headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}`, 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ employeeId: emp.id, month: new Date().getMonth() + 1, year: new Date().getFullYear(), amountPaid: amount, status: 'PAID' })
-                            }).then(r => r.ok && alert('Paid!'));
-                        }}
-                        onReview={(emp) => {
-                            setSelectedEmp(emp);
-                            setShowReviewModal(true);
-                        }}
-                        onViewProfile={(id) => window.location.href = `/dashboard/hr-management/employees/${id}`}
-                    />
+                    <div className="space-y-6">
+                        <StaffFilters filters={staffFilters} setFilters={setStaffFilters} />
+
+                        <EmployeeList
+                            employees={filteredEmployees} // Use the new filtered data
+                            loading={loadingFilteredEmployees}
+                            onEdit={(emp) => {
+                                router.push(`/dashboard/hr-management/employees/${emp.id}/edit`);
+                            }}
+                            managers={employees.filter(e => ['MANAGER', 'TEAM_LEADER', 'ADMIN', 'SUPER_ADMIN', 'JOURNAL_MANAGER', 'EDITOR_IN_CHIEF'].includes(e.user?.role || ''))}
+                            onDelete={handleDeactivateEmp}
+                            onPay={(emp) => {
+                                const amount = prompt("Salary Amount:");
+                                if (amount) fetch('/api/hr/salary-slips', {
+                                    method: 'POST',
+                                    headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}`, 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ employeeId: emp.id, month: new Date().getMonth() + 1, year: new Date().getFullYear(), amountPaid: amount, status: 'PAID' })
+                                }).then(r => r.ok && alert('Paid!'));
+                            }}
+                            onReview={(emp) => {
+                                setSelectedEmp(emp);
+                                setShowReviewModal(true);
+                            }}
+                            onViewProfile={(id) => setViewingProfileId(id)}
+                        />
+                    </div>
                 )}
 
                 {activeTab === 'documents' && (
@@ -1715,7 +1777,12 @@ const HRManagementContent = () => {
                     onSave={handleAttendanceUpdate}
                 />
 
-
+                {viewingProfileId && (
+                    <EmployeeProfileView
+                        employeeId={viewingProfileId}
+                        onClose={() => setViewingProfileId(null)}
+                    />
+                )}
             </div>
         </DashboardLayout >
     );

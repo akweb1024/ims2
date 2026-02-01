@@ -87,7 +87,14 @@ export const GET = authorizedRoute(
                     },
                     employeeProfile: {
                         include: {
-                            designatRef: true
+                            designatRef: true,
+                            performanceSnapshots: {
+                                orderBy: [
+                                    { year: 'desc' },
+                                    { month: 'desc' }
+                                ],
+                                take: 1
+                            }
                         }
                     }
                 },
@@ -97,24 +104,45 @@ export const GET = authorizedRoute(
             });
 
             // Transform data to match component expectations
-            const transformedEmployees = employees.map((emp: any) => ({
-                id: emp.id,
-                name: emp.name,
-                email: emp.email,
-                phone: emp.employeeProfile?.phoneNumber || '',
-                companyId: emp.companyId,
-                companyName: emp.company?.name || '-',
-                departmentId: emp.departmentId,
-                designationId: emp.employeeProfile?.designationId,
-                dateOfJoining: emp.employeeProfile?.dateOfJoining,
-                status: emp.isActive ? 'ACTIVE' : 'INACTIVE',
-                department: emp.department,
-                manager: emp.manager ? { name: emp.manager.name, id: emp.manager.id } : null,
-                designation: emp.employeeProfile?.designatRef ? {
-                    title: emp.employeeProfile.designatRef.name,
-                    ...emp.employeeProfile.designatRef
-                } : null
-            }));
+            const transformedEmployees = employees.map((emp: any) => {
+                const profile = emp.employeeProfile;
+
+                // Calculate total experience string
+                let experienceStr = '';
+                if (profile) {
+                    const years = (profile.totalExperienceYears || 0) + (profile.relevantExperienceYears || 0);
+                    const months = (profile.totalExperienceMonths || 0) + (profile.relevantExperienceMonths || 0);
+                    const totalYears = years + Math.floor(months / 12);
+                    const remainingMonths = months % 12;
+                    if (totalYears > 0) experienceStr += `${totalYears} Y `;
+                    if (remainingMonths > 0) experienceStr += `${remainingMonths} M`;
+                }
+
+                return {
+                    id: emp.id,
+                    name: emp.name,
+                    email: emp.email,
+                    phone: profile?.phoneNumber || '',
+                    companyId: emp.companyId,
+                    companyName: emp.company?.name || '-',
+                    departmentId: emp.departmentId,
+                    designationId: profile?.designationId,
+                    dateOfJoining: profile?.dateOfJoining,
+                    status: emp.isActive ? 'ACTIVE' : 'INACTIVE',
+                    department: emp.department,
+                    manager: emp.manager ? { name: emp.manager.name, id: emp.manager.id } : null,
+                    designation: profile?.designatRef ? {
+                        title: profile.designatRef.name,
+                        ...profile.designatRef
+                    } : null,
+                    // HR Specific Fields
+                    baseSalary: profile?.baseSalary || 0,
+                    skills: profile?.skills || [],
+                    performanceSnapshots: profile?.performanceSnapshots || [],
+                    calculatedTotalExperience: experienceStr.trim(),
+                    profilePicture: profile?.profilePicture
+                };
+            });
 
             return NextResponse.json(transformedEmployees);
         } catch (error) {
