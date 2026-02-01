@@ -1,61 +1,135 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { prisma } from '@/lib/prisma';
+import { authorizedRoute } from '@/lib/middleware-auth';
+import { createErrorResponse } from '@/lib/api-utils';
 
-// Mock work reports - replace with actual database queries
-const mockWorkReports = [
-    {
-        id: '1',
-        employeeId: '1',
-        employeeName: 'John Doe',
-        employeeEmail: 'john@company.com',
-        department: 'Engineering',
-        date: new Date().toISOString().split('T')[0],
-        tasks: [
-            { id: '1', description: 'Completed module X implementation', hours: 4, status: 'COMPLETED' },
-            { id: '2', description: 'Code review for team member', hours: 2, status: 'COMPLETED' },
-            { id: '3', description: 'Attended team meeting', hours: 1, status: 'COMPLETED' }
-        ],
-        totalHours: 7,
-        status: 'PENDING',
-        managerComment: null,
-        submittedAt: new Date().toISOString()
-    },
-    {
-        id: '2',
-        employeeId: '2',
-        employeeName: 'Jane Smith',
-        employeeEmail: 'jane@company.com',
-        department: 'Marketing',
-        date: new Date().toISOString().split('T')[0],
-        tasks: [
-            { id: '4', description: 'Created social media content', hours: 3, status: 'COMPLETED' },
-            { id: '5', description: 'Email campaign setup', hours: 2, status: 'COMPLETED' },
-            { id: '6', description: 'Analytics report', hours: 2, status: 'COMPLETED' }
-        ],
-        totalHours: 7,
-        status: 'APPROVED',
-        managerComment: 'Great work!',
-        submittedAt: new Date().toISOString()
-    }
-];
+export const GET = authorizedRoute(
+    ['SUPER_ADMIN', 'ADMIN', 'HR_MANAGER', 'MANAGER'],
+    async (req: NextRequest, user) => {
+        try {
+            const { searchParams } = new URL(req.url);
+            const date = searchParams.get('date');
+            const companyId = searchParams.get('companyId');
+            const departmentId = searchParams.get('departmentId');
+            const employeeId = searchParams.get('employeeId');
+            const status = searchParams.get('status');
 
-export async function GET(request: NextRequest) {
-    try {
-        const { searchParams } = new URL(request.url);
-        const date = searchParams.get('date');
-        const companyId = searchParams.get('companyId');
-        const departmentId = searchParams.get('departmentId');
-        const employeeId = searchParams.get('employeeId');
+            const where: any = {};
 
-        // Return mock data - in production, query from database
-        let reports = mockWorkReports;
+            if (date) {
+                const targetDate = new Date(date);
+                targetDate.setHours(0, 0, 0, 0);
+                const nextDay = new Date(targetDate);
+                nextDay.setDate(nextDay.getDate() + 1);
 
-        if (date) {
-            reports = reports.filter(r => r.date === date);
+                where.date = {
+                    gte: targetDate,
+                    lt: nextDay
+                };
+            }
+
+            if (companyId && companyId !== 'all') {
+                where.companyId = companyId;
+            }
+
+            if (departmentId && departmentId !== 'all') {
+                where.employee = { departmentId };
+            }
+
+            if (employeeId && employeeId !== 'all') {
+                where.employeeId = employeeId;
+            }
+
+            if (status && status !== 'all') {
+                where.status = status;
+            }
+
+            const workReports = await prisma.workReport.findMany({
+                where,
+                include: {
+                    employee: {
+                        include: {
+                            user: {
+                                select: {
+                                    name: true,
+                                    email: true,
+                                    department: {
+                                        select: {
+                                            name: true
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    comments: {
+                        include: {
+                            author: {
+                                select: {
+                                    name: true,
+                                    email: true
+                                }
+                            }
+                        },
+                        orderBy: { createdAt: 'desc' }
+                    }
+                },
+                orderBy: { date: 'desc' }
+            });
+
+            // Transform data to match frontend expectations
+            const formattedReports = workReports.map((report: any) => {
+                // Parse tasks from tasksSnapshot if available
+                let tasks = [];
+                if (report.tasksSnapshot && typeof report.tasksSnapshot === 'object') {
+                    const snapshot = report.tasksSnapshot as any;
+                    if (Array.isArray(snapshot.tasks)) {
+                        tasks = snapshot.tasks;
+                    }
+                }
+
+                // If no tasks in snapshot, create a summary task from the report
+                if (tasks.length === 0 && report.content) {
+                    tasks = [{
+                        id: '1',
+                        description: report.title,
+                        hours: report.hoursSpent || 0,
+                        status: 'COMPLETED'
+                    }];
+                }
+
+                return {
+                    id: report.id,
+                    employeeId: report.employeeId,
+                    employeeName: report.employee.user.name,
+                    employeeEmail: report.employee.user.email,
+                    department: report.employee.user.department?.name || 'N/A',
+                    date: report.date.toISOString().split('T')[0],
+                    title: report.title,
+                    content: report.content,
+                    tasks,
+                    totalHours: report.hoursSpent || 0,
+                    status: report.status,
+                    managerComment: report.managerComment,
+                    managerRating: report.managerRating,
+                    selfRating: report.selfRating,
+                    submittedAt: report.createdAt.toISOString(),
+                    category: report.category,
+                    keyOutcome: report.keyOutcome,
+                    metrics: report.metrics,
+                    pointsEarned: report.pointsEarned,
+                    // Performance metrics
+                    tasksCompleted: report.tasksCompleted,
+                    chatsHandled: report.chatsHandled,
+                    followUpsCompleted: report.followUpsCompleted,
+                    ticketsResolved: report.ticketsResolved,
+                    revenueGenerated: report.revenueGenerated
+                };
+            });
+
+            return NextResponse.json(formattedReports);
+        } catch (error) {
+            return createErrorResponse(error);
         }
-
-        return NextResponse.json(reports);
-    } catch (error) {
-        console.error('Error fetching work reports:', error);
-        return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
     }
-}
+);

@@ -34,8 +34,6 @@ interface LeaveBalance {
 export default function BalanceLeave({ filters }: BalanceLeaveProps) {
     const [leaveBalances, setLeaveBalances] = useState<LeaveBalance[]>([]);
     const [loading, setLoading] = useState(true);
-    const [editingBalance, setEditingBalance] = useState<LeaveBalance | null>(null);
-    const [showEditModal, setShowEditModal] = useState(false);
 
     useEffect(() => {
         const fetchLeaveBalances = async () => {
@@ -62,40 +60,6 @@ export default function BalanceLeave({ filters }: BalanceLeaveProps) {
         fetchLeaveBalances();
     }, [filters]);
 
-    const handleUpdateBalance = async (e: React.FormEvent<HTMLFormElement>) => {
-        e.preventDefault();
-        if (!editingBalance) return;
-
-        const formData = new FormData(e.currentTarget);
-        const data = {
-            annual: parseFloat(formData.get('annual') as string) || 0,
-            sick: parseFloat(formData.get('sick') as string) || 0,
-            casual: parseFloat(formData.get('casual') as string) || 0,
-            compensatory: parseFloat(formData.get('compensatory') as string) || 0,
-        };
-
-        try {
-            const res = await fetch(`/api/staff-management/leaves/balance/${editingBalance.employeeId}`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(data)
-            });
-
-            if (res.ok) {
-                toast.success('Leave balance updated successfully');
-                setShowEditModal(false);
-                setEditingBalance(null);
-                // Refresh data
-                window.location.reload();
-            } else {
-                toast.error('Failed to update leave balance');
-            }
-        } catch (err) {
-            console.error('Error updating leave balance:', err);
-            toast.error('An error occurred');
-        }
-    };
-
     const getAvailable = (total: number, used: number) => Math.max(0, total - used);
 
     return (
@@ -104,7 +68,12 @@ export default function BalanceLeave({ filters }: BalanceLeaveProps) {
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div>
                     <h2 className="text-lg font-semibold text-secondary-900">Leave Balance Management</h2>
-                    <p className="text-sm text-secondary-500">Manage and track employee leave balances</p>
+                    <p className="text-sm text-secondary-500">Track employee leave balances - Auto-credited monthly</p>
+                </div>
+                <div className="flex items-center gap-2 px-4 py-2 bg-blue-50 border border-blue-200 rounded-lg">
+                    <span className="text-sm text-blue-700">
+                        ℹ️ Leave balances are automatically credited on the 1st of each month
+                    </span>
                 </div>
             </div>
 
@@ -174,7 +143,6 @@ export default function BalanceLeave({ filters }: BalanceLeaveProps) {
                                         <th className="px-6 py-3 text-center text-xs font-semibold text-secondary-500 uppercase tracking-wider">Casual</th>
                                         <th className="px-6 py-3 text-center text-xs font-semibold text-secondary-500 uppercase tracking-wider">Compensatory</th>
                                         <th className="px-6 py-3 text-center text-xs font-semibold text-secondary-500 uppercase tracking-wider">Total Available</th>
-                                        <th className="px-6 py-3 text-right text-xs font-semibold text-secondary-500 uppercase tracking-wider">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-secondary-200">
@@ -235,17 +203,6 @@ export default function BalanceLeave({ filters }: BalanceLeaveProps) {
                                                         {totalAvailable}
                                                     </span>
                                                 </td>
-                                                <td className="px-6 py-4 text-right">
-                                                    <button
-                                                        onClick={() => {
-                                                            setEditingBalance(balance);
-                                                            setShowEditModal(true);
-                                                        }}
-                                                        className="text-primary-600 hover:text-primary-800 text-sm"
-                                                    >
-                                                        Edit
-                                                    </button>
-                                                </td>
                                             </tr>
                                         );
                                     })}
@@ -257,88 +214,6 @@ export default function BalanceLeave({ filters }: BalanceLeaveProps) {
                                 <p className="text-secondary-500">No leave balances found</p>
                             </div>
                         )}
-                    </div>
-                )
-            }
-
-            {/* Edit Modal */}
-            {
-                showEditModal && editingBalance && (
-                    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-                        <div className="bg-white rounded-xl shadow-xl w-full max-w-md">
-                            <div className="p-6 border-b border-secondary-200">
-                                <h3 className="text-lg font-semibold text-secondary-900">Update Leave Balance</h3>
-                                <p className="text-sm text-secondary-500">{editingBalance.employeeName}</p>
-                            </div>
-                            <form onSubmit={handleUpdateBalance} className="p-6 space-y-4">
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div>
-                                        <label className="block text-sm font-medium text-secondary-700 mb-1">Annual Leave</label>
-                                        <input
-                                            type="number"
-                                            name="annual"
-                                            defaultValue={editingBalance.annual}
-                                            min="0"
-                                            step="0.5"
-                                            className="w-full rounded-lg border border-secondary-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-medium text-secondary-700 mb-1">Sick Leave</label>
-                                        <input
-                                            type="number"
-                                            name="sick"
-                                            defaultValue={editingBalance.sick}
-                                            min="0"
-                                            step="0.5"
-                                            className="w-full rounded-lg border border-secondary-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
-                                        />
-                                    </div>
-                                </div>
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div>
-                                        <label className="block text-sm font-medium text-secondary-700 mb-1">Casual Leave</label>
-                                        <input
-                                            type="number"
-                                            name="casual"
-                                            defaultValue={editingBalance.casual}
-                                            min="0"
-                                            step="0.5"
-                                            className="w-full rounded-lg border border-secondary-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-medium text-secondary-700 mb-1">Compensatory</label>
-                                        <input
-                                            type="number"
-                                            name="compensatory"
-                                            defaultValue={editingBalance.compensatory}
-                                            min="0"
-                                            step="0.5"
-                                            className="w-full rounded-lg border border-secondary-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
-                                        />
-                                    </div>
-                                </div>
-                                <div className="flex gap-3 pt-4">
-                                    <button
-                                        type="button"
-                                        onClick={() => {
-                                            setShowEditModal(false);
-                                            setEditingBalance(null);
-                                        }}
-                                        className="flex-1 px-4 py-2 bg-secondary-100 text-secondary-700 rounded-lg text-sm font-medium hover:bg-secondary-200 transition-colors"
-                                    >
-                                        Cancel
-                                    </button>
-                                    <button
-                                        type="submit"
-                                        className="flex-1 px-4 py-2 bg-primary-600 text-white rounded-lg text-sm font-medium hover:bg-primary-700 transition-colors"
-                                    >
-                                        Update
-                                    </button>
-                                </div>
-                            </form>
-                        </div>
                     </div>
                 )
             }

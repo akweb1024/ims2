@@ -9,6 +9,7 @@ interface AttendanceManagementProps {
 
 export default function AttendanceManagement({ filters }: AttendanceManagementProps) {
     const [attendance, setAttendance] = useState<any[]>([]);
+    const [employees, setEmployees] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
     const [viewMode, setViewMode] = useState<'calendar' | 'list'>('list');
@@ -22,6 +23,26 @@ export default function AttendanceManagement({ filters }: AttendanceManagementPr
         checkOut: '',
         status: 'PRESENT'
     });
+
+    // Fetch employees for dropdown
+    useEffect(() => {
+        const fetchEmployees = async () => {
+            try {
+                const params = new URLSearchParams();
+                if (filters.companyId !== 'all') params.append('companyId', filters.companyId);
+
+                const res = await fetch(`/api/staff-management/employees?${params.toString()}`);
+                if (res.ok) {
+                    const data = await res.json();
+                    setEmployees(data);
+                }
+            } catch (err) {
+                console.error('Error fetching employees:', err);
+            }
+        };
+
+        fetchEmployees();
+    }, [filters.companyId]);
 
     useEffect(() => {
         const fetchAttendance = async () => {
@@ -228,9 +249,9 @@ export default function AttendanceManagement({ filters }: AttendanceManagementPr
                                                 value={record.status}
                                                 onChange={(e) => handleStatusUpdate(record.id, e.target.value)}
                                                 className={`px-2 py-1 text-xs font-semibold rounded-full border-0 cursor-pointer ${record.status === 'PRESENT' ? 'bg-green-100 text-green-700' :
-                                                        record.status === 'ABSENT' ? 'bg-red-100 text-red-700' :
-                                                            record.status === 'ON_LEAVE' ? 'bg-yellow-100 text-yellow-700' :
-                                                                'bg-orange-100 text-orange-700'
+                                                    record.status === 'ABSENT' ? 'bg-red-100 text-red-700' :
+                                                        record.status === 'ON_LEAVE' ? 'bg-yellow-100 text-yellow-700' :
+                                                            'bg-orange-100 text-orange-700'
                                                     }`}
                                             >
                                                 <option value="PRESENT">Present</option>
@@ -286,6 +307,11 @@ export default function AttendanceManagement({ filters }: AttendanceManagementPr
                                     className="w-full rounded-lg border border-secondary-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
                                 >
                                     <option value="">Select Employee</option>
+                                    {employees.map((emp) => (
+                                        <option key={emp.id} value={emp.id}>
+                                            {emp.user?.name || emp.name} - {emp.employeeCode || emp.id}
+                                        </option>
+                                    ))}
                                 </select>
                             </div>
                             <div>

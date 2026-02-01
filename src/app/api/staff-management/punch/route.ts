@@ -1,55 +1,88 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { prisma } from '@/lib/prisma';
+import { authorizedRoute } from '@/lib/middleware-auth';
+import { createErrorResponse } from '@/lib/api-utils';
 
-// Mock punch records - replace with actual database queries
-const mockPunchRecords = [
-    {
-        id: '1',
-        employeeId: '1',
-        employeeName: 'John Doe',
-        employeeEmail: 'john@company.com',
-        department: 'Engineering',
-        date: new Date().toISOString().split('T')[0],
-        punchIn: new Date().toISOString(),
-        punchOut: null,
-        punchInLocation: 'Office HQ',
-        punchOutLocation: null,
-        status: 'PENDING',
-        workingHours: null
-    },
-    {
-        id: '2',
-        employeeId: '2',
-        employeeName: 'Jane Smith',
-        employeeEmail: 'jane@company.com',
-        department: 'Marketing',
-        date: new Date().toISOString().split('T')[0],
-        punchIn: new Date().toISOString(),
-        punchOut: new Date().toISOString(),
-        punchInLocation: 'Office HQ',
-        punchOutLocation: 'Office HQ',
-        status: 'COMPLETED',
-        workingHours: 8.5
-    }
-];
+export const GET = authorizedRoute(
+    ['SUPER_ADMIN', 'ADMIN', 'HR_MANAGER', 'MANAGER'],
+    async (req: NextRequest, user) => {
+        try {
+            const { searchParams } = new URL(req.url);
+            const date = searchParams.get('date');
+            const companyId = searchParams.get('companyId');
+            const departmentId = searchParams.get('departmentId');
+            const employeeId = searchParams.get('employeeId');
 
-export async function GET(request: NextRequest) {
-    try {
-        const { searchParams } = new URL(request.url);
-        const date = searchParams.get('date');
-        const companyId = searchParams.get('companyId');
-        const departmentId = searchParams.get('departmentId');
-        const employeeId = searchParams.get('employeeId');
+            const targetDate = date ? new Date(date) : new Date();
+            targetDate.setHours(0, 0, 0, 0);
 
-        // Return mock data - in production, query from database
-        let records = mockPunchRecords;
+            const where: any = {
+                date: targetDate
+            };
 
-        if (date) {
-            records = records.filter(r => r.date === date);
+            if (companyId && companyId !== 'all') {
+                where.companyId = companyId;
+            }
+
+            if (departmentId && departmentId !== 'all') {
+                where.employee = { departmentId };
+            }
+
+            if (employeeId && employeeId !== 'all') {
+                where.employeeId = employeeId;
+            }
+
+            const punchRecords = await prisma.attendance.findMany({
+                where,
+                include: {
+                    employee: {
+                        include: {
+                            user: {
+                                select: {
+                                    name: true,
+                                    email: true,
+                                    department: {
+                                        select: {
+                                            name: true
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    shift: true
+                },
+                orderBy: { date: 'desc' }
+            });
+
+            // Transform data to match frontend expectations
+            const formattedRecords = punchRecords.map((record: any) => {
+                const workingHours = record.checkIn && record.checkOut
+                    ? (new Date(record.checkOut).getTime() - new Date(record.checkIn).getTime()) / (1000 * 60 * 60)
+                    : null;
+
+                return {
+                    id: record.id,
+                    employeeId: record.employeeId,
+                    employeeName: record.employee.user.name,
+                    employeeEmail: record.employee.user.email,
+                    department: record.employee.user.department?.name || 'N/A',
+                    date: record.date.toISOString().split('T')[0],
+                    punchIn: record.checkIn?.toISOString() || null,
+                    punchOut: record.checkOut?.toISOString() || null,
+                    punchInLocation: record.locationName || 'N/A',
+                    punchOutLocation: record.checkOut ? (record.locationName || 'N/A') : null,
+                    status: record.checkOut ? 'COMPLETED' : 'PENDING',
+                    workingHours: workingHours ? Number(workingHours.toFixed(2)) : null,
+                    workFrom: record.workFrom,
+                    lateMinutes: record.lateMinutes,
+                    otMinutes: record.otMinutes
+                };
+            });
+
+            return NextResponse.json(formattedRecords);
+        } catch (error) {
+            return createErrorResponse(error);
         }
-
-        return NextResponse.json(records);
-    } catch (error) {
-        console.error('Error fetching punch records:', error);
-        return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
     }
-}
+);

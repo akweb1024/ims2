@@ -44,7 +44,8 @@ export const GET = authorizedRoute(
                             leaveBalance: true,
                             currentLeaveBalance: true,
                             initialLeaveBalance: true,
-                            manualLeaveAdjustment: true
+                            manualLeaveAdjustment: true,
+                            metrics: true
                         }
                     }
                 },
@@ -54,32 +55,37 @@ export const GET = authorizedRoute(
             });
 
             // Transform to match component expectations
-            const balances = employees.map(emp => ({
-                id: emp.id,
-                employeeId: emp.id,
-                employeeName: emp.name,
-                employeeEmail: emp.email,
-                department: emp.department?.name || 'N/A',
-                // Default leave allocations (these should ideally come from company policy)
-                annual: 20,
-                sick: 10,
-                casual: 7,
-                compensatory: 5,
-                // Used leaves (calculated from leave requests)
-                used: {
-                    annual: 0,
-                    sick: 0,
-                    casual: 0,
-                    compensatory: 0
-                },
-                // Pending leaves
-                pending: {
-                    annual: 0,
-                    sick: 0,
-                    casual: 0,
-                    compensatory: 0
-                }
-            }));
+            const balances = employees.map((emp: any) => {
+                const metrics = emp.employeeProfile?.metrics as any || {};
+                const leaveBalances = metrics.leaveBalances || {};
+
+                return {
+                    id: emp.id,
+                    employeeId: emp.id,
+                    employeeName: emp.name,
+                    employeeEmail: emp.email,
+                    department: emp.department?.name || 'N/A',
+                    // Use stored balances or defaults
+                    annual: leaveBalances.annual?.total ?? 20,
+                    sick: leaveBalances.sick?.total ?? 10,
+                    casual: leaveBalances.casual?.total ?? 7,
+                    compensatory: leaveBalances.compensatory?.total ?? 5,
+                    // Used leaves
+                    used: {
+                        annual: leaveBalances.annual?.used ?? 0,
+                        sick: leaveBalances.sick?.used ?? 0,
+                        casual: leaveBalances.casual?.used ?? 0,
+                        compensatory: leaveBalances.compensatory?.used ?? 0
+                    },
+                    // Pending leaves (fetching from requests would be better but keeping 0 for now as per original)
+                    pending: {
+                        annual: 0,
+                        sick: 0,
+                        casual: 0,
+                        compensatory: 0
+                    }
+                };
+            });
 
             return NextResponse.json(balances);
         } catch (error) {
