@@ -276,7 +276,70 @@ export const PATCH = authorizedRoute(
                 data: updateData
             });
 
-            // 4. Update Company Designations if provided
+            // 4. Sync SalaryStructure if salary fields were updated
+            if (validUpdates.baseSalary || validUpdates.salaryFixed || validUpdates.salaryVariable || validUpdates.salaryIncentive) {
+                const newSalary = validUpdates.baseSalary || updated.baseSalary || 0;
+                const basicSalary = newSalary * 0.4; // 40% basic
+                const hra = newSalary * 0.3; // 30% HRA
+                const specialAllowance = newSalary * 0.2; // 20% special allowance
+                const conveyance = newSalary * 0.05; // 5% conveyance
+                const medical = newSalary * 0.05; // 5% medical
+
+                const grossSalary = basicSalary + hra + specialAllowance + conveyance + medical;
+
+                // Employee deductions
+                const pfEmployee = basicSalary * 0.12;
+                const esicEmployee = grossSalary <= 21000 ? grossSalary * 0.0075 : 0;
+                const totalDeductions = pfEmployee + esicEmployee;
+
+                // Employer contributions
+                const pfEmployer = basicSalary * 0.12;
+                const esicEmployer = grossSalary <= 21000 ? grossSalary * 0.0325 : 0;
+                const gratuity = basicSalary * 0.0481;
+
+                const netSalary = grossSalary - totalDeductions;
+                const ctc = grossSalary + pfEmployer + esicEmployer + gratuity;
+
+                await prisma.salaryStructure.upsert({
+                    where: { employeeId: id },
+                    update: {
+                        basicSalary,
+                        hra,
+                        conveyance,
+                        medical,
+                        specialAllowance,
+                        grossSalary,
+                        pfEmployee,
+                        esicEmployee,
+                        totalDeductions,
+                        pfEmployer,
+                        esicEmployer,
+                        gratuity,
+                        netSalary,
+                        ctc,
+                        effectiveFrom: new Date()
+                    },
+                    create: {
+                        employeeId: id,
+                        basicSalary,
+                        hra,
+                        conveyance,
+                        medical,
+                        specialAllowance,
+                        grossSalary,
+                        pfEmployee,
+                        esicEmployee,
+                        totalDeductions,
+                        pfEmployer,
+                        esicEmployer,
+                        gratuity,
+                        netSalary,
+                        ctc
+                    }
+                });
+            }
+
+            // 5. Update Company Designations if provided
             if (companyDesignations && Array.isArray(companyDesignations)) {
                 for (const cd of companyDesignations) {
                     if (cd.companyId && cd.designation) {

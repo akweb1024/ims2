@@ -21,6 +21,24 @@ export const GET = authorizedRoute(
             const where: any = {};
 
             if (employeeId) {
+                // Resolve ID to EmployeeProfile ID (handle both User ID and Profile ID)
+                let resolvedEmployeeId = employeeId;
+                const profile = await prisma.employeeProfile.findFirst({
+                    where: {
+                        OR: [
+                            { id: employeeId },
+                            { userId: employeeId }
+                        ]
+                    },
+                    select: { id: true, userId: true }
+                });
+
+                if (profile) {
+                    resolvedEmployeeId = profile.id;
+                } else {
+                    return createErrorResponse('Employee not found', 404);
+                }
+
                 // Manager/Team Leader/Admin viewing specific employee
                 if (!['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'TEAM_LEADER'].includes(user.role)) {
                     return createErrorResponse('Forbidden', 403);
@@ -30,14 +48,13 @@ export const GET = authorizedRoute(
                 if (['MANAGER', 'TEAM_LEADER'].includes(user.role)) {
                     const subIds = await getDownlineUserIds(user.id, user.companyId || undefined);
                     const allowedUserIds = [...subIds, user.id]; // Can see self too
-                    const targetEmp = await prisma.employeeProfile.findUnique({ where: { id: employeeId }, select: { userId: true } });
 
-                    if (!targetEmp || !allowedUserIds.includes(targetEmp.userId)) {
+                    if (!allowedUserIds.includes(profile.userId)) {
                         return createErrorResponse('Forbidden: Not in your team', 403);
                     }
                 }
 
-                where.employeeId = employeeId;
+                where.employeeId = resolvedEmployeeId;
                 if (user.companyId) {
                     where.employee = { user: { companyId: user.companyId } };
                 }

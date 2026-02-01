@@ -20,6 +20,18 @@ export const GET = authorizedRoute(
             if (employeeId === 'self') {
                 const myProfile = await prisma.employeeProfile.findUnique({ where: { userId: user.id } });
                 if (myProfile) targetEmployeeId = myProfile.id;
+            } else if (employeeId && employeeId !== 'all') {
+                // Resolve ID to EmployeeProfile ID (handle both User ID and Profile ID)
+                const profile = await prisma.employeeProfile.findFirst({
+                    where: {
+                        OR: [
+                            { id: employeeId },
+                            { userId: employeeId }
+                        ]
+                    },
+                    select: { id: true }
+                });
+                if (profile) targetEmployeeId = profile.id;
             }
 
             const where: any = {};
