@@ -51,8 +51,8 @@ export const GET = authorizedRoute(
                     where.employeeId = targetEmployeeId;
                 }
             } else if (['MANAGER', 'TEAM_LEADER'].includes(user.role)) {
-                const subIds = await getDownlineUserIds(user.id, user.companyId || undefined);
-                // Can see own + downline
+                const subIds = await getDownlineUserIds(user.id, null); // Cross-company
+                // Can see own + downline (across all companies)
                 // subIds usually doesn't include SELF, let's explicit allow SELF or DOWNLINE
                 const allowedUserIds = [...subIds, user.id];
 

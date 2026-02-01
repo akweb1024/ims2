@@ -37,9 +37,9 @@ export const GET = authorizedRoute(
                 // Admin/Managers can request data for specific user or their hierarchy
                 if (targetUserId) {
                     // Start of Permissions Check
-                    // 1. If Manager/TL, ensure target is in downline
+                    // 1. If Manager/TL, ensure target is in downline (cross-company)
                     if (['MANAGER', 'TEAM_LEADER'].includes(user.role)) {
-                        const subIds = await getDownlineUserIds(user.id, user.companyId || undefined);
+                        const subIds = await getDownlineUserIds(user.id, null); // Cross-company
                         if (!subIds.includes(targetUserId) && targetUserId !== user.id) {
                             return createErrorResponse('Forbidden: Target user not in your hierarchy', 403);
                         }
@@ -56,8 +56,8 @@ export const GET = authorizedRoute(
                     where.employeeId = profile.id;
                 }
                 else if (['MANAGER', 'TEAM_LEADER'].includes(user.role)) {
-                    // Original logic for "My Team"
-                    const subIds = await getDownlineUserIds(user.id, user.companyId || undefined);
+                    // Original logic for "My Team" (cross-company)
+                    const subIds = await getDownlineUserIds(user.id, null); // Cross-company
                     const allowedIds = [...subIds, user.id];
                     where.employee = { userId: { in: allowedIds } };
                 }
@@ -294,9 +294,9 @@ export const PATCH = authorizedRoute(
 
             if (!existing) return createErrorResponse('Attendance record not found', 404);
 
-            // Access Control: Manager/TL can only correct their own team
+            // Access Control: Manager/TL can only correct their own team (cross-company)
             if (['MANAGER', 'TEAM_LEADER'].includes(user.role)) {
-                const subIds = await getDownlineUserIds(user.id, user.companyId || undefined);
+                const subIds = await getDownlineUserIds(user.id, null); // Cross-company
                 if (!subIds.includes(existing.employee.userId)) {
                     return createErrorResponse('Forbidden: Not in your team', 403);
                 }

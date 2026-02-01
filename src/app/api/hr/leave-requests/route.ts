@@ -44,9 +44,9 @@ export const GET = authorizedRoute(
                     return createErrorResponse('Forbidden', 403);
                 }
 
-                // For Manager/Team Leader, verify target is in hierarchy
+                // For Manager/Team Leader, verify target is in hierarchy (cross-company)
                 if (['MANAGER', 'TEAM_LEADER'].includes(user.role)) {
-                    const subIds = await getDownlineUserIds(user.id, user.companyId || undefined);
+                    const subIds = await getDownlineUserIds(user.id, null); // Cross-company
                     const allowedUserIds = [...subIds, user.id]; // Can see self too
 
                     if (!allowedUserIds.includes(profile.userId)) {
@@ -61,8 +61,8 @@ export const GET = authorizedRoute(
             } else if (showAll && ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'TEAM_LEADER'].includes(user.role)) {
 
                 if (['MANAGER', 'TEAM_LEADER'].includes(user.role)) {
-                    const subIds = await getDownlineUserIds(user.id, user.companyId || undefined);
-                    // Usually "All" for a manager means "My Team"
+                    const subIds = await getDownlineUserIds(user.id, null); // Cross-company
+                    // Usually "All" for a manager means "My Team" (across all companies)
                     where.employee = { userId: { in: subIds } };
                 } else {
                     // Admin sees all in company

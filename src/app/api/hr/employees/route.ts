@@ -33,9 +33,11 @@ export const GET = authorizedRoute(
                 }
             }
 
-            // Role-based restrictions: Manager & Team Leader see full hierarchy
+            // Role-based restrictions: Manager & Team Leader see full hierarchy (cross-company)
             if (['MANAGER', 'TEAM_LEADER'].includes(user.role)) {
-                const subIds = await getDownlineUserIds(user.id, user.companyId || undefined);
+                // Pass null to enable cross-company management
+                // Managers can now see all employees who report to them, regardless of company
+                const subIds = await getDownlineUserIds(user.id, null);
                 where.user = {
                     ...where.user,
                     id: { in: subIds }
