@@ -11,9 +11,10 @@ interface StaffOverviewProps {
         approvedLeaves: number;
     };
     filters: any;
+    onAction: (action: string) => void;
 }
 
-export default function StaffOverview({ staffData, filters }: StaffOverviewProps) {
+export default function StaffOverview({ staffData, filters, onAction }: StaffOverviewProps) {
     const stats = [
         {
             name: 'Total Employees',
@@ -93,8 +94,8 @@ export default function StaffOverview({ staffData, filters }: StaffOverviewProps
                         </div>
                         <div className="mt-4 flex items-center">
                             <span className={`text-sm font-medium ${stat.changeType === 'positive' ? 'text-green-600' :
-                                    stat.changeType === 'negative' ? 'text-red-600' :
-                                        'text-secondary-500'
+                                stat.changeType === 'negative' ? 'text-red-600' :
+                                    'text-secondary-500'
                                 }`}>
                                 {stat.change}
                             </span>
@@ -107,19 +108,31 @@ export default function StaffOverview({ staffData, filters }: StaffOverviewProps
             <div className="bg-white rounded-xl shadow-sm border border-secondary-200 p-6">
                 <h2 className="text-lg font-semibold text-secondary-900 mb-4">Quick Actions</h2>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <button className="flex flex-col items-center p-4 rounded-lg bg-primary-50 hover:bg-primary-100 transition-colors">
+                    <button
+                        onClick={() => onAction('add_employee')}
+                        className="flex flex-col items-center p-4 rounded-lg bg-primary-50 hover:bg-primary-100 transition-colors"
+                    >
                         <span className="text-3xl mb-2">👤</span>
                         <span className="text-sm font-medium text-primary-700">Add Employee</span>
                     </button>
-                    <button className="flex flex-col items-center p-4 rounded-lg bg-green-50 hover:bg-green-100 transition-colors">
+                    <button
+                        onClick={() => onAction('view_attendance')}
+                        className="flex flex-col items-center p-4 rounded-lg bg-green-50 hover:bg-green-100 transition-colors"
+                    >
                         <span className="text-3xl mb-2">🕒</span>
                         <span className="text-sm font-medium text-green-700">View Attendance</span>
                     </button>
-                    <button className="flex flex-col items-center p-4 rounded-lg bg-yellow-50 hover:bg-yellow-100 transition-colors">
+                    <button
+                        onClick={() => onAction('approve_leave')}
+                        className="flex flex-col items-center p-4 rounded-lg bg-yellow-50 hover:bg-yellow-100 transition-colors"
+                    >
                         <span className="text-3xl mb-2">🏖️</span>
                         <span className="text-sm font-medium text-yellow-700">Approve Leave</span>
                     </button>
-                    <button className="flex flex-col items-center p-4 rounded-lg bg-purple-50 hover:bg-purple-100 transition-colors">
+                    <button
+                        onClick={() => onAction('generate_salary')}
+                        className="flex flex-col items-center p-4 rounded-lg bg-purple-50 hover:bg-purple-100 transition-colors"
+                    >
                         <span className="text-3xl mb-2">💰</span>
                         <span className="text-sm font-medium text-purple-700">Generate Salary</span>
                     </button>

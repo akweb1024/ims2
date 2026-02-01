@@ -113,12 +113,7 @@ export default function PunchInOut({ filters }: PunchInOutProps) {
                         onChange={(e) => setSelectedDate(e.target.value)}
                         className="rounded-lg border border-secondary-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
                     />
-                    <button
-                        onClick={() => setShowManualEntry(true)}
-                        className="px-4 py-2 bg-primary-600 text-white rounded-lg text-sm font-medium hover:bg-primary-700 transition-colors"
-                    >
-                        + Manual Entry
-                    </button>
+                    {/* Button Removed: Use Attendance Tab for Manual Entry */}
                 </div>
             </div>
 
@@ -228,9 +223,9 @@ export default function PunchInOut({ filters }: PunchInOutProps) {
                                         </td>
                                         <td className="px-6 py-4">
                                             <span className={`px-2 py-1 text-xs font-semibold rounded-full ${record.status === 'COMPLETED' ? 'bg-green-100 text-green-700' :
-                                                    record.status === 'PENDING' ? 'bg-yellow-100 text-yellow-700' :
-                                                        record.status === 'LATE' ? 'bg-red-100 text-red-700' :
-                                                            'bg-gray-100 text-gray-700'
+                                                record.status === 'PENDING' ? 'bg-yellow-100 text-yellow-700' :
+                                                    record.status === 'LATE' ? 'bg-red-100 text-red-700' :
+                                                        'bg-gray-100 text-gray-700'
                                                 }`}>
                                                 {record.status}
                                             </span>
@@ -256,74 +251,12 @@ export default function PunchInOut({ filters }: PunchInOutProps) {
                 </div>
             )}
 
-            {/* Manual Entry Modal */}
-            {showManualEntry && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-                    <div className="bg-white rounded-xl shadow-xl w-full max-w-md">
-                        <div className="p-6 border-b border-secondary-200">
-                            <h3 className="text-lg font-semibold text-secondary-900">Manual Punch Entry</h3>
-                        </div>
-                        <form onSubmit={handleManualEntry} className="p-6 space-y-4">
-                            <div>
-                                <label className="block text-sm font-medium text-secondary-700 mb-1">Employee</label>
-                                <select
-                                    required
-                                    value={manualEntry.employeeId}
-                                    onChange={(e) => setManualEntry({ ...manualEntry, employeeId: e.target.value })}
-                                    className="w-full rounded-lg border border-secondary-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
-                                >
-                                    <option value="">Select Employee</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-secondary-700 mb-1">Date</label>
-                                <input
-                                    type="date"
-                                    required
-                                    value={manualEntry.date}
-                                    onChange={(e) => setManualEntry({ ...manualEntry, date: e.target.value })}
-                                    className="w-full rounded-lg border border-secondary-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
-                                />
-                            </div>
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label className="block text-sm font-medium text-secondary-700 mb-1">Punch In Time</label>
-                                    <input
-                                        type="time"
-                                        value={manualEntry.punchIn}
-                                        onChange={(e) => setManualEntry({ ...manualEntry, punchIn: e.target.value })}
-                                        className="w-full rounded-lg border border-secondary-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-secondary-700 mb-1">Punch Out Time</label>
-                                    <input
-                                        type="time"
-                                        value={manualEntry.punchOut}
-                                        onChange={(e) => setManualEntry({ ...manualEntry, punchOut: e.target.value })}
-                                        className="w-full rounded-lg border border-secondary-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
-                                    />
-                                </div>
-                            </div>
-                            <div className="flex gap-3 pt-4">
-                                <button
-                                    type="button"
-                                    onClick={() => setShowManualEntry(false)}
-                                    className="flex-1 px-4 py-2 bg-secondary-100 text-secondary-700 rounded-lg text-sm font-medium hover:bg-secondary-200 transition-colors"
-                                >
-                                    Cancel
-                                </button>
-                                <button
-                                    type="submit"
-                                    className="flex-1 px-4 py-2 bg-primary-600 text-white rounded-lg text-sm font-medium hover:bg-primary-700 transition-colors"
-                                >
-                                    Save Entry
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            )}
+            {/* Manual Entry Modal Removed - Consolidated in AttendanceManagement */}
+            <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mt-6">
+                <p className="text-blue-700 text-sm">
+                    ℹ️ Manual punch entries has been consolidated. Please use the <strong>Attendance</strong> tab to add or edit attendance records manually.
+                </p>
+            </div>
         </div>
     );
 }

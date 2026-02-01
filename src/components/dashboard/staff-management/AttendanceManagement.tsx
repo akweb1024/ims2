@@ -21,7 +21,10 @@ export default function AttendanceManagement({ filters }: AttendanceManagementPr
         date: selectedDate,
         checkIn: '',
         checkOut: '',
-        status: 'PRESENT'
+        status: 'PRESENT',
+        workMode: 'OFFICE',
+        shift: 'GENERAL',
+        remarks: ''
     });
 
     // Fetch employees for dropdown
@@ -53,6 +56,7 @@ export default function AttendanceManagement({ filters }: AttendanceManagementPr
                 if (filters.companyId !== 'all') params.append('companyId', filters.companyId);
                 if (filters.teamId !== 'all') params.append('departmentId', filters.teamId);
                 if (filters.employeeId !== 'all') params.append('employeeId', filters.employeeId);
+                if (filters.status !== 'all') params.append('status', filters.status);
 
                 const res = await fetch(`/api/staff-management/attendance?${params.toString()}`);
                 if (res.ok) {
@@ -223,11 +227,11 @@ export default function AttendanceManagement({ filters }: AttendanceManagementPr
                                         <td className="px-6 py-4">
                                             <div className="flex items-center">
                                                 <div className="w-8 h-8 rounded-full bg-primary-100 flex items-center justify-center text-primary-600 font-semibold text-sm">
-                                                    {record.employee?.name?.charAt(0).toUpperCase()}
+                                                    {record.employee?.user?.name?.charAt(0).toUpperCase()}
                                                 </div>
                                                 <div className="ml-2">
-                                                    <p className="text-sm font-medium text-secondary-900">{record.employee?.name}</p>
-                                                    <p className="text-xs text-secondary-500">{record.employee?.email}</p>
+                                                    <p className="text-sm font-medium text-secondary-900">{record.employee?.user?.name}</p>
+                                                    <p className="text-xs text-secondary-500">{record.employee?.user?.email}</p>
                                                 </div>
                                             </div>
                                         </td>
@@ -266,9 +270,12 @@ export default function AttendanceManagement({ filters }: AttendanceManagementPr
                                                     setManualEntry({
                                                         employeeId: record.employeeId,
                                                         date: selectedDate,
-                                                        checkIn: record.checkIn || '',
-                                                        checkOut: record.checkOut || '',
-                                                        status: record.status
+                                                        checkIn: record.checkIn ? new Date(record.checkIn).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) : '',
+                                                        checkOut: record.checkOut ? new Date(record.checkOut).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) : '',
+                                                        status: record.status,
+                                                        workMode: record.workFrom || 'OFFICE',
+                                                        shift: 'GENERAL', // Defaulting as shift might be object
+                                                        remarks: record.remarks || ''
                                                     });
                                                     setShowManualEntry(true);
                                                 }}
@@ -293,7 +300,7 @@ export default function AttendanceManagement({ filters }: AttendanceManagementPr
             {/* Manual Entry Modal */}
             {showManualEntry && (
                 <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-                    <div className="bg-white rounded-xl shadow-xl w-full max-w-md">
+                    <div className="bg-white rounded-xl shadow-xl w-full max-w-lg">
                         <div className="p-6 border-b border-secondary-200">
                             <h3 className="text-lg font-semibold text-secondary-900">Manual Attendance Entry</h3>
                         </div>
@@ -344,18 +351,54 @@ export default function AttendanceManagement({ filters }: AttendanceManagementPr
                                     />
                                 </div>
                             </div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-secondary-700 mb-1">Status</label>
+                                    <select
+                                        value={manualEntry.status}
+                                        onChange={(e) => setManualEntry({ ...manualEntry, status: e.target.value })}
+                                        className="w-full rounded-lg border border-secondary-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                                    >
+                                        <option value="PRESENT">Present</option>
+                                        <option value="ABSENT">Absent</option>
+                                        <option value="ON_LEAVE">On Leave</option>
+                                        <option value="HALF_DAY">Half Day</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-secondary-700 mb-1">Work Mode</label>
+                                    <select
+                                        value={manualEntry.workMode}
+                                        onChange={(e) => setManualEntry({ ...manualEntry, workMode: e.target.value })}
+                                        className="w-full rounded-lg border border-secondary-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                                    >
+                                        <option value="OFFICE">Office</option>
+                                        <option value="REMOTE">Remote</option>
+                                        <option value="HYBRID">Hybrid</option>
+                                    </select>
+                                </div>
+                            </div>
                             <div>
-                                <label className="block text-sm font-medium text-secondary-700 mb-1">Status</label>
+                                <label className="block text-sm font-medium text-secondary-700 mb-1">Shift</label>
                                 <select
-                                    value={manualEntry.status}
-                                    onChange={(e) => setManualEntry({ ...manualEntry, status: e.target.value })}
+                                    value={manualEntry.shift}
+                                    onChange={(e) => setManualEntry({ ...manualEntry, shift: e.target.value })}
                                     className="w-full rounded-lg border border-secondary-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
                                 >
-                                    <option value="PRESENT">Present</option>
-                                    <option value="ABSENT">Absent</option>
-                                    <option value="ON_LEAVE">On Leave</option>
-                                    <option value="HALF_DAY">Half Day</option>
+                                    <option value="GENERAL">General Shift (9:30 - 18:30)</option>
+                                    <option value="SHIFT_A">Shift A (Morning)</option>
+                                    <option value="SHIFT_B">Shift B (Evening)</option>
                                 </select>
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-secondary-700 mb-1">Remarks / Reason</label>
+                                <textarea
+                                    value={manualEntry.remarks}
+                                    onChange={(e) => setManualEntry({ ...manualEntry, remarks: e.target.value })}
+                                    className="w-full rounded-lg border border-secondary-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                                    rows={3}
+                                    placeholder="Enter reason for manual adjustment..."
+                                />
                             </div>
                             <div className="flex gap-3 pt-4">
                                 <button
@@ -369,7 +412,7 @@ export default function AttendanceManagement({ filters }: AttendanceManagementPr
                                     type="submit"
                                     className="flex-1 px-4 py-2 bg-primary-600 text-white rounded-lg text-sm font-medium hover:bg-primary-700 transition-colors"
                                 >
-                                    Save Entry
+                                    Save Record
                                 </button>
                             </div>
                         </form>

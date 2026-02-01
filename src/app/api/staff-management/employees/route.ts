@@ -51,7 +51,11 @@ export const GET = authorizedRoute(
                             name: true
                         }
                     },
-                    employeeProfile: true
+                    employeeProfile: {
+                        include: {
+                            designatRef: true
+                        }
+                    }
                 },
                 orderBy: {
                     name: 'asc'
@@ -70,9 +74,9 @@ export const GET = authorizedRoute(
                 dateOfJoining: emp.employeeProfile?.dateOfJoining,
                 status: emp.isActive ? 'ACTIVE' : 'INACTIVE',
                 department: emp.department,
-                designation: emp.employeeProfile?.designation ? {
-                    title: emp.employeeProfile.designation.name,
-                    ...emp.employeeProfile.designation
+                designation: emp.employeeProfile?.designatRef ? {
+                    title: emp.employeeProfile.designatRef.name,
+                    ...emp.employeeProfile.designatRef
                 } : null
             }));
 

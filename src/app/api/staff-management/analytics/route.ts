@@ -78,10 +78,112 @@ export const GET = authorizedRoute(
                 }
             });
 
-            // Get performance trends (last 6 months)
+            // --- AGGREGATION FOR CHARTS ---
             const sixMonthsAgo = new Date();
             sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
 
+            // 1. Attendance Trends (Last 6 Months)
+            const attendanceRecords = await prisma.attendance.findMany({
+                where: {
+                    companyId,
+                    date: { gte: sixMonthsAgo }
+                },
+                select: {
+                    date: true,
+                    status: true
+                }
+            });
+
+            // Aggregate attendance by month
+            const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+            const attendanceMap = new Map<string, { present: number; absent: number }>();
+
+            attendanceRecords.forEach(record => {
+                const monthIndex = record.date.getMonth();
+                const monthName = monthNames[monthIndex];
+                if (!attendanceMap.has(monthName)) {
+                    attendanceMap.set(monthName, { present: 0, absent: 0 });
+                }
+                const entry = attendanceMap.get(monthName)!;
+                if (record.status === 'PRESENT') entry.present++;
+                else entry.absent++;
+            });
+
+            const attendanceChartData = Array.from(attendanceMap.entries()).map(([month, stats]) => ({
+                month,
+                present: stats.present,
+                absent: stats.absent
+            }));
+
+            // 2. Leave Breakdown
+            const leaveBreakdown = await prisma.leaveRequest.groupBy({
+                by: ['type'],
+                where: {
+                    companyId,
+                    status: 'APPROVED',
+                    startDate: { gte: new Date(new Date().getFullYear(), 0, 1) } // Current year
+                },
+                _count: { _all: true }
+            });
+
+            const leaveChartData = leaveBreakdown.map(item => ({
+                type: item.type,
+                days: item._count._all // Approximate days as count of requests (should ideally sum duration)
+            }));
+
+            // 3. Salary by Department
+            const usersWithSalary = await prisma.user.findMany({
+                where: {
+                    companyId,
+                    isActive: true,
+                    departmentId: { not: null },
+                    employeeProfile: { isNot: null }
+                },
+                include: {
+                    department: { select: { name: true } },
+                    employeeProfile: { select: { fixedSalary: true } }
+                }
+            });
+
+            const salaryMap = new Map<string, number>();
+            usersWithSalary.forEach(user => {
+                const deptName = user.department?.name || 'Unassigned';
+                const salary = user.employeeProfile?.fixedSalary || 0;
+                salaryMap.set(deptName, (salaryMap.get(deptName) || 0) + salary);
+            });
+
+            const salaryChartData = Array.from(salaryMap.entries()).map(([department, amount]) => ({
+                department,
+                amount
+            }));
+
+            // 4. Performance Distribution (Latest Snapshot)
+            // Use averageManagerRating (1-5 scale)
+            const performanceData = await prisma.monthlyPerformanceSnapshot.findMany({
+                where: {
+                    companyId,
+                    month: new Date().getMonth() === 0 ? 12 : new Date().getMonth(), // Previous month
+                    year: new Date().getMonth() === 0 ? new Date().getFullYear() - 1 : new Date().getFullYear()
+                },
+                select: { averageManagerRating: true }
+            });
+
+            const performanceMap = new Map<string, number>();
+            performanceData.forEach(p => {
+                const rating = Math.round(p.averageManagerRating || 0);
+                const key = `${rating} Stars`; // e.g., "4 Stars"
+                performanceMap.set(key, (performanceMap.get(key) || 0) + 1);
+            });
+            // Ensure 1-5 keys exist
+            for (let i = 1; i <= 5; i++) {
+                if (!performanceMap.has(`${i} Stars`)) performanceMap.set(`${i} Stars`, 0);
+            }
+            // Sort by stars descending
+            const performanceChartData = Array.from(performanceMap.entries())
+                .sort((a, b) => b[0].localeCompare(a[0]))
+                .map(([rating, count]) => ({ rating, count }));
+
+            // 5. Historical Trends (Preserve existing logic roughly)
             const performanceTrends = await prisma.monthlyPerformanceSnapshot.groupBy({
                 by: ['month', 'year'],
                 where: {
@@ -121,7 +223,13 @@ export const GET = authorizedRoute(
                     averageScore: trend._avg.overallScore || 0,
                     attendanceScore: trend._avg.attendanceScore || 0,
                     taskCompletion: trend._avg.taskCompletionRate || 0
-                }))
+                })),
+                charts: {
+                    attendance: attendanceChartData.length > 0 ? attendanceChartData : [{ month: 'No Data', present: 0, absent: 0 }],
+                    leave: leaveChartData,
+                    salary: salaryChartData,
+                    performance: performanceChartData
+                }
             });
         } catch (error) {
             logger.error('Error fetching staff analytics:', error);

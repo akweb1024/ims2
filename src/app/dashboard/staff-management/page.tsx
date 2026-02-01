@@ -115,6 +115,26 @@ function StaffManagementContent() {
         );
     }
 
+    // Handle Quick Actions
+    const handleQuickAction = (action: string) => {
+        switch (action) {
+            case 'add_employee':
+                setActiveTab('employees');
+                break;
+            case 'view_attendance':
+                setActiveTab('attendance');
+                break;
+            case 'approve_leave':
+                setActiveTab('leave');
+                break;
+            case 'generate_salary':
+                setActiveTab('salary');
+                break;
+            default:
+                break;
+        }
+    };
+
     return (
         <DashboardLayout userRole={userRole}>
             <div className="space-y-6">
@@ -158,7 +178,7 @@ function StaffManagementContent() {
                 {/* Tab Content */}
                 <div className="min-h-[500px]">
                     {activeTab === 'overview' && (
-                        <StaffOverview staffData={staffData} filters={filters} />
+                        <StaffOverview staffData={staffData} filters={filters} onAction={handleQuickAction} />
                     )}
                     {activeTab === 'employees' && (
                         <EmployeeManagement filters={filters} />

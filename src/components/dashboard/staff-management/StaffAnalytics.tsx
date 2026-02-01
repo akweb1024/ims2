@@ -37,33 +37,38 @@ export default function StaffAnalytics({ filters }: StaffAnalyticsProps) {
         fetchAnalytics();
     }, [filters]);
 
-    // Mock chart data (would use a charting library like recharts in production)
+    // Real chart data from API
     const AttendanceChart = () => {
-        const data = [
-            { month: 'Jan', present: 95, absent: 5 },
-            { month: 'Feb', present: 92, absent: 8 },
-            { month: 'Mar', present: 88, absent: 12 },
-            { month: 'Apr', present: 90, absent: 10 },
-            { month: 'May', present: 94, absent: 6 },
-            { month: 'Jun', present: 96, absent: 4 }
-        ];
+        const data = analyticsData?.charts?.attendance || [];
 
         return (
             <div className="space-y-4">
-                <div className="flex items-end justify-between h-64 px-4">
-                    {data.map((item, index) => (
-                        <div key={index} className="flex flex-col items-center w-16">
-                            <div className="flex gap-1 items-end h-48">
-                                <div
-                                    className="w-6 bg-green-500 rounded-t"
-                                    style={{ height: `${item.present}%` }}
-                                ></div>
-                                <div
-                                    className="w-6 bg-red-500 rounded-t"
-                                    style={{ height: `${item.absent}%` }}
-                                ></div>
+                <div className="flex items-end justify-between h-64 px-4 overflow-x-auto">
+                    {data.map((item: any, index: number) => (
+                        <div key={index} className="flex flex-col items-center w-16 mx-2 min-w-[3rem]">
+                            <div className="flex gap-1 items-end h-48 w-full justify-center">
+                                {/* Calculate percentage based on total (present + absent), default 100 if 0 */}
+                                {(() => {
+                                    const total = (item.present || 0) + (item.absent || 0);
+                                    const presentH = total > 0 ? (item.present / total) * 100 : 0;
+                                    const absentH = total > 0 ? (item.absent / total) * 100 : 0;
+                                    return (
+                                        <>
+                                            <div
+                                                className="w-4 bg-green-500 rounded-t transition-all duration-500"
+                                                style={{ height: `${presentH}%` }}
+                                                title={`Present: ${item.present}`}
+                                            ></div>
+                                            <div
+                                                className="w-4 bg-red-500 rounded-t transition-all duration-500"
+                                                style={{ height: `${absentH}%` }}
+                                                title={`Absent: ${item.absent}`}
+                                            ></div>
+                                        </>
+                                    );
+                                })()}
                             </div>
-                            <span className="text-xs text-secondary-500 mt-2">{item.month}</span>
+                            <span className="text-xs text-secondary-500 mt-2 truncate max-w-full">{item.month}</span>
                         </div>
                     ))}
                 </div>
@@ -82,26 +87,22 @@ export default function StaffAnalytics({ filters }: StaffAnalyticsProps) {
     };
 
     const LeaveChart = () => {
-        const data = [
-            { type: 'Annual', days: 120 },
-            { type: 'Sick', days: 45 },
-            { type: 'Casual', days: 30 },
-            { type: 'Compensatory', days: 15 }
-        ];
+        const data = analyticsData?.charts?.leave || [];
+        const maxDays = Math.max(...data.map((d: any) => d.days), 1); // Avoid div by 0
 
-        const maxDays = Math.max(...data.map((d) => d.days));
+        if (data.length === 0) return <div className="text-center py-8 text-secondary-500">No leave data available</div>;
 
         return (
             <div className="space-y-4">
-                {data.map((item, index) => (
+                {data.map((item: any, index: number) => (
                     <div key={index} className="space-y-2">
                         <div className="flex justify-between text-sm">
-                            <span className="text-secondary-600">{item.type}</span>
+                            <span className="text-secondary-600 capitalize">{item.type.toLowerCase()}</span>
                             <span className="font-medium text-secondary-900">{item.days} days</span>
                         </div>
                         <div className="h-4 bg-secondary-100 rounded-full overflow-hidden">
                             <div
-                                className="h-full bg-blue-500 rounded-full"
+                                className="h-full bg-blue-500 rounded-full transition-all duration-500"
                                 style={{ width: `${(item.days / maxDays) * 100}%` }}
                             ></div>
                         </div>
@@ -112,24 +113,19 @@ export default function StaffAnalytics({ filters }: StaffAnalyticsProps) {
     };
 
     const SalaryChart = () => {
-        const data = [
-            { department: 'Engineering', amount: 450000 },
-            { department: 'Sales', amount: 320000 },
-            { department: 'Marketing', amount: 280000 },
-            { department: 'HR', amount: 150000 },
-            { department: 'Finance', amount: 180000 }
-        ];
+        const data = analyticsData?.charts?.salary || [];
+        const maxAmount = Math.max(...data.map((d: any) => d.amount), 1);
 
-        const maxAmount = Math.max(...data.map((d) => d.amount));
+        if (data.length === 0) return <div className="text-center py-8 text-secondary-500">No salary data available</div>;
 
         return (
             <div className="space-y-4">
-                {data.map((item, index) => (
+                {data.map((item: any, index: number) => (
                     <div key={index} className="flex items-center gap-4">
-                        <div className="w-32 text-sm text-secondary-600 truncate">{item.department}</div>
+                        <div className="w-32 text-sm text-secondary-600 truncate" title={item.department}>{item.department}</div>
                         <div className="flex-1 h-6 bg-secondary-100 rounded-full overflow-hidden">
                             <div
-                                className="h-full bg-emerald-500 rounded-full flex items-center justify-end pr-2"
+                                className="h-full bg-emerald-500 rounded-full flex items-center justify-end pr-2 transition-all duration-500"
                                 style={{ width: `${(item.amount / maxAmount) * 100}%` }}
                             >
                                 <span className="text-xs text-white font-medium">₹{(item.amount / 1000).toFixed(0)}K</span>
@@ -142,24 +138,19 @@ export default function StaffAnalytics({ filters }: StaffAnalyticsProps) {
     };
 
     const PerformanceChart = () => {
-        const data = [
-            { rating: '5 Stars', count: 25 },
-            { rating: '4 Stars', count: 45 },
-            { rating: '3 Stars', count: 20 },
-            { rating: '2 Stars', count: 5 },
-            { rating: '1 Star', count: 2 }
-        ];
+        const data = analyticsData?.charts?.performance || [];
+        const total = data.reduce((sum: number, d: any) => sum + d.count, 0) || 1;
 
-        const total = data.reduce((sum, d) => sum + d.count, 0);
+        if (data.length === 0) return <div className="text-center py-8 text-secondary-500">No performance reviews available</div>;
 
         return (
             <div className="space-y-4">
-                {data.map((item, index) => (
+                {data.map((item: any, index: number) => (
                     <div key={index} className="flex items-center gap-4">
                         <div className="w-24 text-sm text-secondary-600">{item.rating}</div>
                         <div className="flex-1 h-4 bg-secondary-100 rounded-full overflow-hidden">
                             <div
-                                className="h-full bg-yellow-500 rounded-full"
+                                className="h-full bg-yellow-500 rounded-full transition-all duration-500"
                                 style={{ width: `${(item.count / total) * 100}%` }}
                             ></div>
                         </div>

@@ -32,6 +32,20 @@ export const GET = authorizedRoute(
                 where.employeeId = employeeId;
             }
 
+            const status = searchParams.get('status');
+            if (status && status !== 'all') {
+                if (status === 'ACTIVE') {
+                    where.employee = { ...where.employee, user: { isActive: true } };
+                } else if (status === 'INACTIVE') {
+                    where.employee = { ...where.employee, user: { isActive: false } };
+                }
+                // For ON_LEAVE / TERMINATED, we might match specific stats or just rely on isActive=false
+                // For now, mapping broadly if needed, or ignoring. 
+                // Given StaffFilters options, ON_LEAVE usually implies Active but on leave.
+                // But User model only has isActive. 
+                // If status is 'TERMINATED', it is likely inactive.
+            }
+
             const attendance = await prisma.attendance.findMany({
                 where,
                 include: {
