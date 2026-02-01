@@ -16,8 +16,13 @@ export const GET = authorizedRoute(
                 return createErrorResponse('Employee ID is required', 400);
             }
 
-            const employee = await prisma.employeeProfile.findUnique({
-                where: { id },
+            const employee = await prisma.employeeProfile.findFirst({
+                where: {
+                    OR: [
+                        { id },
+                        { userId: id }
+                    ]
+                },
                 include: {
                     user: {
                         select: {
