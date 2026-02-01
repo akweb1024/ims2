@@ -12,6 +12,8 @@ function UsersContent() {
     const searchParams = useSearchParams();
     const [users, setUsers] = useState<any[]>([]);
     const [companies, setCompanies] = useState<any[]>([]);
+    const [departments, setDepartments] = useState<any[]>([]);
+    const [designations, setDesignations] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [userRole, setUserRole] = useState('CUSTOMER');
     const [showNewModal, setShowNewModal] = useState(false);
@@ -33,6 +35,9 @@ function UsersContent() {
             if (user.role === 'SUPER_ADMIN') {
                 fetchCompanies();
             }
+            // Fetch departments and designations for all users
+            fetchDepartments();
+            fetchDesignations();
         }
     }, []);
 
@@ -78,6 +83,36 @@ function UsersContent() {
             }
         } catch (err) {
             console.error('Failed to fetch companies', err);
+        }
+    };
+
+    const fetchDepartments = async () => {
+        try {
+            const token = localStorage.getItem('token');
+            const res = await fetch('/api/departments', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (res.ok) {
+                const result = await res.json();
+                setDepartments(result.data || result || []);
+            }
+        } catch (err) {
+            console.error('Failed to fetch departments', err);
+        }
+    };
+
+    const fetchDesignations = async () => {
+        try {
+            const token = localStorage.getItem('token');
+            const res = await fetch('/api/hr/designations', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (res.ok) {
+                const result = await res.json();
+                setDesignations(result.data || result || []);
+            }
+        } catch (err) {
+            console.error('Failed to fetch designations', err);
         }
     };
 
@@ -325,7 +360,7 @@ function UsersContent() {
                             onClick={() => setShowNewModal(true)}
                             className="btn btn-primary px-6"
                         >
-                            + Invite Staff
+                            + Add New Employee
                         </button>
                     </div>
                 </div>
@@ -490,25 +525,36 @@ function UsersContent() {
             {/* Invite Modal */}
             {showNewModal && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-secondary-900/50 backdrop-blur-sm p-4">
-                    <div className="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl">
-                        <h2 className="text-2xl font-bold text-secondary-900 mb-6 font-primary">Invite Staff Member</h2>
+                    <div className="bg-white rounded-3xl p-8 max-w-2xl w-full shadow-2xl max-h-[90vh] overflow-y-auto">
+                        <h2 className="text-2xl font-bold text-secondary-900 mb-6 font-primary">Add New Employee</h2>
                         <form onSubmit={handleCreateUser} className="space-y-4">
-                            <div>
-                                <label className="label">Full Name</label>
-                                <input name="name" type="text" className="input" required placeholder="John Doe" title="Full Name" />
-                            </div>
-                            <div>
-                                <label className="label">Work Email</label>
-                                <input name="email" type="email" className="input" required placeholder="staff@stm.com" title="Work Email" />
-                            </div>
-                            <div>
-                                <label className="label">Temporary Password</label>
-                                <input name="password" type="password" className="input" required placeholder="••••••••" title="Temporary Password" />
+                            {/* Basic Information */}
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="label">Full Name *</label>
+                                    <input name="name" type="text" className="input" required placeholder="John Doe" title="Full Name" />
+                                </div>
+                                <div>
+                                    <label className="label">Work Email *</label>
+                                    <input name="email" type="email" className="input" required placeholder="staff@stm.com" title="Work Email" />
+                                </div>
                             </div>
 
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="label">Temporary Password *</label>
+                                    <input name="password" type="password" className="input" required placeholder="••••••••" title="Temporary Password" />
+                                </div>
+                                <div>
+                                    <label className="label">Phone Number</label>
+                                    <input name="phone" type="tel" className="input" placeholder="+91 9876543210" title="Phone Number" />
+                                </div>
+                            </div>
+
+                            {/* Company & Role */}
                             {userRole === 'SUPER_ADMIN' && (
                                 <div>
-                                    <label className="label">Assign to Company</label>
+                                    <label className="label">Assign to Company *</label>
                                     <select name="companyId" className="input" required title="Select Company">
                                         <option value="">Select a company...</option>
                                         {companies.map(c => (
@@ -518,18 +564,46 @@ function UsersContent() {
                                 </div>
                             )}
 
-                            <div>
-                                <label className="label">System Role</label>
-                                <select name="role" className="input" required title="System Role">
-                                    <option value="EXECUTIVE">Executive</option>
-                                    <option value="TEAM_LEADER">Team Leader</option>
-                                    <option value="MANAGER">Manager</option>
-                                    <option value="ADMIN">Admin</option>
-                                    <option value="FINANCE_ADMIN">Finance Admin</option>
-                                    <option value="SUPER_ADMIN">Super Admin</option>
-                                </select>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="label">Department</label>
+                                    <select name="departmentId" className="input" title="Select Department">
+                                        <option value="">Select a department...</option>
+                                        {departments.map(d => (
+                                            <option key={d.id} value={d.id}>{d.name}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="label">Designation</label>
+                                    <select name="designationId" className="input" title="Select Designation">
+                                        <option value="">Select a designation...</option>
+                                        {designations.map(d => (
+                                            <option key={d.id} value={d.id}>{d.name}</option>
+                                        ))}
+                                    </select>
+                                </div>
                             </div>
-                            <div className="flex justify-end space-x-3 mt-8">
+
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="label">System Role *</label>
+                                    <select name="role" className="input" required title="System Role">
+                                        <option value="EXECUTIVE">Executive</option>
+                                        <option value="TEAM_LEADER">Team Leader</option>
+                                        <option value="MANAGER">Manager</option>
+                                        <option value="ADMIN">Admin</option>
+                                        <option value="FINANCE_ADMIN">Finance Admin</option>
+                                        <option value="SUPER_ADMIN">Super Admin</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="label">Date of Joining</label>
+                                    <input name="dateOfJoining" type="date" className="input" title="Date of Joining" />
+                                </div>
+                            </div>
+
+                            <div className="flex justify-end space-x-3 mt-8 pt-4 border-t border-secondary-200">
                                 <button
                                     type="button"
                                     onClick={() => setShowNewModal(false)}
@@ -542,7 +616,7 @@ function UsersContent() {
                                     disabled={actionLoading}
                                     className="btn btn-primary px-8"
                                 >
-                                    {actionLoading ? 'Creating...' : 'Invite Staff'}
+                                    {actionLoading ? 'Creating...' : 'Add Employee'}
                                 </button>
                             </div>
                         </form>

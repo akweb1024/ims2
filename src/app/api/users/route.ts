@@ -121,7 +121,7 @@ export const POST = authorizedRoute(
     async (req: NextRequest, user) => {
         try {
             const body = await req.json();
-            const { email, name, password, role, managerId, companyId, companyIds, departmentId } = body;
+            const { email, name, password, role, managerId, companyId, companyIds, departmentId, phone, designationId, dateOfJoining } = body;
 
             if (!email || !password || !role) {
                 return createErrorResponse('Missing required fields', 400);
@@ -137,25 +137,47 @@ export const POST = authorizedRoute(
             // Determine company context
             const targetCompanyId = companyId || user.companyId;
 
-            const newUser = await prisma.user.create({
-                data: {
-                    email,
-                    name,
-                    password: hashedPassword,
-                    role,
-                    isActive: true,
-                    companyId: targetCompanyId,
-                    departmentId, // Add departmentId
-                    managerId: managerId || (['MANAGER', 'TEAM_LEADER'].includes(user.role) ? user.id : undefined),
-                    companies: companyIds ? {
-                        connect: companyIds.map((id: string) => ({ id }))
-                    } : (targetCompanyId ? {
-                        connect: [{ id: targetCompanyId }]
-                    } : undefined),
-                    employeeProfile: !['CUSTOMER', 'AGENCY'].includes(role) ? {
-                        create: {}
-                    } : undefined
+            // Staff roles that should have employee profiles
+            const staffRoles = ['EMPLOYEE', 'EXECUTIVE', 'TEAM_LEADER', 'MANAGER', 'ADMIN', 'HR_MANAGER', 'FINANCE_ADMIN'];
+            const shouldCreateEmployeeProfile = staffRoles.includes(role);
+
+            // Use transaction to ensure atomicity
+            const newUser = await prisma.$transaction(async (tx) => {
+                const createdUser = await tx.user.create({
+                    data: {
+                        email,
+                        name,
+                        password: hashedPassword,
+                        role: role as any,
+                        isActive: true,
+                        companyId: targetCompanyId,
+                        departmentId,
+                        managerId: managerId || (['MANAGER', 'TEAM_LEADER'].includes(user.role) ? user.id : undefined),
+                        companies: companyIds ? {
+                            connect: companyIds.map((id: string) => ({ id }))
+                        } : (targetCompanyId ? {
+                            connect: [{ id: targetCompanyId }]
+                        } : undefined)
+                    }
+                });
+
+                // Create employee profile for staff roles
+                if (shouldCreateEmployeeProfile) {
+                    await tx.employeeProfile.create({
+                        data: {
+                            userId: createdUser.id,
+                            employeeId: `EMP${Date.now()}`, // Generate unique employee ID
+                            phoneNumber: phone || null,
+                            designationId: designationId || null,
+                            dateOfJoining: dateOfJoining ? new Date(dateOfJoining) : new Date(),
+                            leaveBalance: 20, // Default annual leave
+                            currentLeaveBalance: 20,
+                            initialLeaveBalance: 20
+                        }
+                    });
                 }
+
+                return createdUser;
             });
 
             await prisma.auditLog.create({

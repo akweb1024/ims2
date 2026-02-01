@@ -56,8 +56,25 @@ export const GET = authorizedRoute(
             const approved = increments.filter(i => i.status === 'APPROVED');
             const pending = increments.filter(i => i.status === 'MANAGER_APPROVED' || i.status === 'DRAFT');
 
+            // Calculate perks impact separately
+            const calculatePerksChange = (inc: any) => {
+                const oldPerks = (inc.oldHealthCare || 0) + (inc.oldTravelling || 0) +
+                    (inc.oldMobile || 0) + (inc.oldInternet || 0) +
+                    (inc.oldBooksAndPeriodicals || 0);
+                const newPerks = (inc.newHealthCare || 0) + (inc.newTravelling || 0) +
+                    (inc.newMobile || 0) + (inc.newInternet || 0) +
+                    (inc.newBooksAndPeriodicals || 0);
+                return newPerks - oldPerks;
+            };
+
             const totalApprovedImpact = approved.reduce((sum, i) => sum + (i.incrementAmount || 0), 0);
+            const totalApprovedPerksImpact = approved.reduce((sum, i) => sum + calculatePerksChange(i), 0);
+            const totalApprovedBudgetImpact = totalApprovedImpact + totalApprovedPerksImpact;
+
             const totalPendingImpact = pending.reduce((sum, i) => sum + (i.incrementAmount || 0), 0);
+            const totalPendingPerksImpact = pending.reduce((sum, i) => sum + calculatePerksChange(i), 0);
+            const totalPendingBudgetImpact = totalPendingImpact + totalPendingPerksImpact;
+
             const averagePercentage = approved.length > 0
                 ? approved.reduce((sum, i) => sum + (i.percentage || 0), 0) / approved.length
                 : 0;
@@ -158,7 +175,11 @@ export const GET = authorizedRoute(
             return NextResponse.json({
                 stats: {
                     totalApprovedImpact,
+                    totalApprovedPerksImpact,
+                    totalApprovedBudgetImpact,
                     totalPendingImpact,
+                    totalPendingPerksImpact,
+                    totalPendingBudgetImpact,
                     approvedCount: approved.length,
                     pendingCount: pending.length,
                     averagePercentage,

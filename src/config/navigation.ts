@@ -73,6 +73,37 @@ export const ALL_MODULES: NavModule[] = [
         ]
     },
     {
+        id: 'STAFF_MANAGEMENT',
+        name: 'Staff Management',
+        icon: '👥',
+        categories: [
+            {
+                title: 'Staff Operations',
+                items: [
+                    { name: 'Staff Dashboard', href: '/dashboard/staff-management', icon: '📊', roles: ['SUPER_ADMIN', 'ADMIN', 'HR_MANAGER'] },
+                    { name: 'Employees', href: '/dashboard/staff-management?tab=employees', icon: '👥', roles: ['SUPER_ADMIN', 'ADMIN', 'HR_MANAGER'] },
+                    { name: 'Attendance', href: '/dashboard/staff-management?tab=attendance', icon: '🕒', roles: ['SUPER_ADMIN', 'ADMIN', 'HR_MANAGER'] },
+                    { name: 'Punch In/Out', href: '/dashboard/staff-management?tab=punch', icon: '⏱️', roles: ['SUPER_ADMIN', 'ADMIN', 'HR_MANAGER'] },
+                ]
+            },
+            {
+                title: 'Leave & Salary',
+                items: [
+                    { name: 'Leave Management', href: '/dashboard/staff-management?tab=leave', icon: '🏖️', roles: ['SUPER_ADMIN', 'ADMIN', 'HR_MANAGER'] },
+                    { name: 'Balance Leave', href: '/dashboard/staff-management?tab=balance-leave', icon: '📋', roles: ['SUPER_ADMIN', 'ADMIN', 'HR_MANAGER'] },
+                    { name: 'Salary Management', href: '/dashboard/staff-management?tab=salary', icon: '💰', roles: ['SUPER_ADMIN', 'ADMIN', 'HR_MANAGER'] },
+                    { name: 'Work Reports', href: '/dashboard/staff-management?tab=work-reports', icon: '📝', roles: ['SUPER_ADMIN', 'ADMIN', 'HR_MANAGER'] },
+                ]
+            },
+            {
+                title: 'Analytics',
+                items: [
+                    { name: 'Staff Analytics', href: '/dashboard/staff-management?tab=analytics', icon: '📈', roles: ['SUPER_ADMIN', 'ADMIN', 'HR_MANAGER'] },
+                ]
+            }
+        ]
+    },
+    {
         id: 'FINANCE',
         name: 'Finance & Accounts',
         icon: '💰',

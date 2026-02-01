@@ -9,6 +9,7 @@ import WorkforceAnalytics from '@/components/dashboard/company/WorkforceAnalytic
 export default function CompanyPage() {
     const [company, setCompany] = useState<any>(null);
     const [departments, setDepartments] = useState<any[]>([]);
+    const [designations, setDesignations] = useState<any[]>([]);
     const [users, setUsers] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [userRole, setUserRole] = useState('CUSTOMER');
@@ -108,7 +109,23 @@ export default function CompanyPage() {
         }
 
         fetchData();
+        fetchDesignations();
     }, [companyIdParam, tabParam, fetchData]);
+
+    const fetchDesignations = async () => {
+        try {
+            const token = localStorage.getItem('token');
+            const res = await fetch('/api/hr/designations', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (res.ok) {
+                const result = await res.json();
+                setDesignations(result.data || result || []);
+            }
+        } catch (err) {
+            console.error('Failed to fetch designations', err);
+        }
+    };
 
     const handleUpdateCompany = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
@@ -463,7 +480,7 @@ export default function CompanyPage() {
                                             onClick={() => setShowUserModal(true)}
                                             className="btn btn-primary"
                                         >
-                                            + Invite Member
+                                            + Add New Employee
                                         </button>
                                     )}
                                 </div>
@@ -661,8 +678,13 @@ export default function CompanyPage() {
             {showUserModal && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-secondary-900/50 backdrop-blur-sm p-4">
                     <div className="bg-white rounded-3xl p-8 max-w-lg w-full shadow-2xl">
-                        <h2 className="text-2xl font-bold text-secondary-900 mb-6 font-primary">Invite Staff Member</h2>
+                        <h2 className="text-2xl font-bold text-secondary-900 mb-6 font-primary">Add New Employee</h2>
                         <form onSubmit={handleCreateUser} className="space-y-4">
+                            <div>
+                                <label className="label">Full Name *</label>
+                                <input name="name" type="text" className="input" required placeholder="John Doe" />
+                            </div>
+
                             <div>
                                 <label className="label">Work Email *</label>
                                 <input name="email" type="email" className="input" required placeholder="staff@company.com" />
@@ -693,6 +715,26 @@ export default function CompanyPage() {
                                 </select>
                             </div>
 
+                            <div>
+                                <label className="label">Designation (Optional)</label>
+                                <select name="designationId" className="input">
+                                    <option value="">Select a designation...</option>
+                                    {designations.map(d => (
+                                        <option key={d.id} value={d.id}>{d.name}</option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            <div>
+                                <label className="label">Phone Number</label>
+                                <input name="phone" type="tel" className="input" placeholder="+91 9876543210" />
+                            </div>
+
+                            <div>
+                                <label className="label">Date of Joining</label>
+                                <input name="dateOfJoining" type="date" className="input" />
+                            </div>
+
                             <div className="flex justify-end space-x-3 mt-8">
                                 <button
                                     type="button"
@@ -706,7 +748,7 @@ export default function CompanyPage() {
                                     disabled={actionLoading}
                                     className="btn btn-primary px-8"
                                 >
-                                    {actionLoading ? 'Inviting...' : 'Send Invite'}
+                                    {actionLoading ? 'Creating...' : 'Add Employee'}
                                 </button>
                             </div>
                         </form>

@@ -52,17 +52,17 @@ export default function IncrementAnalyticsDashboard({ data }: IncrementAnalytics
     );
 
     const currentStats = [
-        { title: "Total Budget Impact", value: formatCurrency(stats.totalApprovedImpact), sub: `${stats.approvedCount} approved increments`, trend: `+${stats.averagePercentage.toFixed(1)}% Avg.`, icon: DollarSign, color: "primary" },
-        { title: "Target Equity Growth", value: formatCurrency(stats.targetGrowth), sub: "Incremental revenue target", trend: "+12.4% vs prev.", icon: Target, color: "indigo" },
-        { title: "Pending Cycle Impact", value: formatCurrency(stats.totalPendingImpact), sub: `${stats.pendingCount} approvals required`, trend: "Needs Review", icon: Activity, color: "orange" },
-        { title: "Effective ROI Multiplier", value: `${stats.roiMultiplier.toFixed(1)}x`, sub: "Revenue vs Payroll cost", trend: "+0.4x improve", icon: TrendingUp, color: "success" }
+        { title: "Total Budget Impact", value: formatCurrency(stats.totalApprovedBudgetImpact), sub: `${stats.approvedCount} approved increments`, trend: `+${stats.averagePercentage.toFixed(1)}% Avg.`, icon: DollarSign, color: "primary" },
+        { title: "Perks Impact", value: formatCurrency(stats.totalApprovedPerksImpact), sub: "Sec-10 Exemp changes", trend: stats.totalApprovedPerksImpact >= 0 ? "+Perks Added" : "Perks Reduced", icon: TrendingUp, color: "success" },
+        { title: "Pending Cycle Impact", value: formatCurrency(stats.totalPendingBudgetImpact), sub: `${stats.pendingCount} approvals required`, trend: "Needs Review", icon: Activity, color: "orange" },
+        { title: "Effective ROI Multiplier", value: `${stats.roiMultiplier.toFixed(1)}x`, sub: "Revenue vs Payroll cost", trend: "+0.4x improve", icon: TrendingUp, color: "indigo" }
     ];
 
     const forecastStats = forecast ? [
         { title: "Projected Budget (FY)", value: formatCurrency(forecast.projectedBudget), sub: "Based on current run rate", trend: "Artificial Intelligence", icon: BarChart3, color: "purple" },
         { title: "Confidence Score", value: `${(forecast.confidenceScore * 100).toFixed(0)}%`, sub: "Algorithm reliability", trend: "High Confidence", icon: Target, color: "emerald" },
         { title: "Future Liabilities", value: formatCurrency(forecast.projectedBudget * 0.12), sub: "Estimated statutory overhead", trend: "+12% projected", icon: TrendingDown, color: "rose" },
-        { title: "Recruitment Budget", value: formatCurrency(stats.totalApprovedImpact * 0.3), sub: "30% of increment budget", trend: "Allocation", icon: Users, color: "blue" }
+        { title: "Recruitment Budget", value: formatCurrency(stats.totalApprovedBudgetImpact * 0.3), sub: "30% of increment budget", trend: "Allocation", icon: Users, color: "blue" }
     ] : [];
 
     const displayStats = view === 'FORECAST' ? forecastStats : currentStats;

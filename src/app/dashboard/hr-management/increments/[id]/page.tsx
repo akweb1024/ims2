@@ -480,6 +480,127 @@ export default function IncrementDetailPage() {
                         </div>
                     </div>
 
+                    {/* Sec-10 Exemp / Perks Comparison */}
+                    {(increment.oldHealthCare || increment.newHealthCare || increment.oldTravelling || increment.newTravelling ||
+                        increment.oldMobile || increment.newMobile || increment.oldInternet || increment.newInternet ||
+                        increment.oldBooksAndPeriodicals || increment.newBooksAndPeriodicals) && (
+                            <div className="card-premium p-6">
+                                <h2 className="text-lg font-black text-secondary-900 mb-6 flex items-center gap-2">
+                                    <TrendingUp className="text-success-500" size={20} />
+                                    Sec-10 Exemp / Perks Breakdown
+                                </h2>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    {/* Old Perks */}
+                                    <div className="p-4 bg-secondary-50 rounded-xl">
+                                        <p className="text-sm font-bold text-secondary-600 mb-3">Current Perks</p>
+                                        <div className="space-y-2">
+                                            <div className="flex justify-between">
+                                                <span className="text-secondary-600">Health Care:</span>
+                                                <span className="font-bold">₹{(increment.oldHealthCare || 0).toLocaleString()}</span>
+                                            </div>
+                                            <div className="flex justify-between">
+                                                <span className="text-secondary-600">Travelling:</span>
+                                                <span className="font-bold">₹{(increment.oldTravelling || 0).toLocaleString()}</span>
+                                            </div>
+                                            <div className="flex justify-between">
+                                                <span className="text-secondary-600">Mobile:</span>
+                                                <span className="font-bold">₹{(increment.oldMobile || 0).toLocaleString()}</span>
+                                            </div>
+                                            <div className="flex justify-between">
+                                                <span className="text-secondary-600">Internet:</span>
+                                                <span className="font-bold">₹{(increment.oldInternet || 0).toLocaleString()}</span>
+                                            </div>
+                                            <div className="flex justify-between">
+                                                <span className="text-secondary-600">Books & Periodicals:</span>
+                                                <span className="font-bold">₹{(increment.oldBooksAndPeriodicals || 0).toLocaleString()}</span>
+                                            </div>
+                                            <div className="pt-2 border-t border-secondary-200 flex justify-between">
+                                                <span className="font-bold text-secondary-900">Total Perks:</span>
+                                                <span className="font-black text-lg text-secondary-900">
+                                                    ₹{((increment.oldHealthCare || 0) + (increment.oldTravelling || 0) +
+                                                        (increment.oldMobile || 0) + (increment.oldInternet || 0) +
+                                                        (increment.oldBooksAndPeriodicals || 0)).toLocaleString()}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* New Perks */}
+                                    <div className="p-4 bg-gradient-to-br from-success-50 to-green-50 rounded-xl border-2 border-success-200">
+                                        <p className="text-sm font-bold text-success-700 mb-3">Proposed Perks</p>
+                                        <div className="space-y-2">
+                                            <div className="flex justify-between">
+                                                <span className="text-secondary-700">Health Care:</span>
+                                                <span className="font-bold text-success-700">₹{(increment.newHealthCare || 0).toLocaleString()}</span>
+                                            </div>
+                                            <div className="flex justify-between">
+                                                <span className="text-secondary-700">Travelling:</span>
+                                                <span className="font-bold text-success-700">₹{(increment.newTravelling || 0).toLocaleString()}</span>
+                                            </div>
+                                            <div className="flex justify-between">
+                                                <span className="text-secondary-700">Mobile:</span>
+                                                <span className="font-bold text-success-700">₹{(increment.newMobile || 0).toLocaleString()}</span>
+                                            </div>
+                                            <div className="flex justify-between">
+                                                <span className="text-secondary-700">Internet:</span>
+                                                <span className="font-bold text-success-700">₹{(increment.newInternet || 0).toLocaleString()}</span>
+                                            </div>
+                                            <div className="flex justify-between">
+                                                <span className="text-secondary-700">Books & Periodicals:</span>
+                                                <span className="font-bold text-success-700">₹{(increment.newBooksAndPeriodicals || 0).toLocaleString()}</span>
+                                            </div>
+                                            <div className="pt-2 border-t border-success-300 flex justify-between">
+                                                <span className="font-bold text-success-900">Total Perks:</span>
+                                                <span className="font-black text-lg text-success-600">
+                                                    ₹{((increment.newHealthCare || 0) + (increment.newTravelling || 0) +
+                                                        (increment.newMobile || 0) + (increment.newInternet || 0) +
+                                                        (increment.newBooksAndPeriodicals || 0)).toLocaleString()}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Perks Change Summary */}
+                                {(() => {
+                                    const oldTotal = (increment.oldHealthCare || 0) + (increment.oldTravelling || 0) +
+                                        (increment.oldMobile || 0) + (increment.oldInternet || 0) +
+                                        (increment.oldBooksAndPeriodicals || 0);
+                                    const newTotal = (increment.newHealthCare || 0) + (increment.newTravelling || 0) +
+                                        (increment.newMobile || 0) + (increment.newInternet || 0) +
+                                        (increment.newBooksAndPeriodicals || 0);
+                                    const perksChange = newTotal - oldTotal;
+                                    const perksChangePercent = oldTotal > 0 ? (perksChange / oldTotal) * 100 : 0;
+
+                                    return perksChange !== 0 && (
+                                        <div className="mt-6 p-4 bg-gradient-to-r from-success-50 to-green-50 rounded-xl border border-success-200">
+                                            <div className="grid grid-cols-3 gap-4 text-center">
+                                                <div>
+                                                    <p className="text-xs text-secondary-600 font-bold uppercase mb-1">Perks Change</p>
+                                                    <p className={`text-2xl font-black ${perksChange >= 0 ? 'text-success-600' : 'text-danger-600'}`}>
+                                                        {perksChange >= 0 ? '+' : ''}₹{perksChange.toLocaleString()}
+                                                    </p>
+                                                </div>
+                                                <div>
+                                                    <p className="text-xs text-secondary-600 font-bold uppercase mb-1">Change %</p>
+                                                    <p className={`text-2xl font-black ${perksChange >= 0 ? 'text-success-600' : 'text-danger-600'}`}>
+                                                        {perksChange >= 0 ? '+' : ''}{perksChangePercent.toFixed(2)}%
+                                                    </p>
+                                                </div>
+                                                <div>
+                                                    <p className="text-xs text-secondary-600 font-bold uppercase mb-1">Annual Impact</p>
+                                                    <p className={`text-2xl font-black ${perksChange >= 0 ? 'text-success-600' : 'text-danger-600'}`}>
+                                                        {perksChange >= 0 ? '+' : ''}₹{(perksChange * 12).toLocaleString()}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    );
+                                })()}
+                            </div>
+                        )}
+
                     {/* Justification */}
                     {(increment.reason || increment.performanceNotes) && (
                         <div className="card-premium p-6">
