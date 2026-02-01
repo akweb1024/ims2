@@ -17,9 +17,12 @@ interface SalaryRecord {
     year: number;
     basicSalary: number;
     hra: number;
-    allowances: number;
-    deductions: number;
-    tax: number;
+    allowances?: number;
+    otherAllowances?: number;
+    deductions?: number;
+    totalDeductions?: number;
+    tax?: number;
+    tds?: number;
     netSalary: number;
     status: string;
     paymentDate: string | null;
@@ -105,7 +108,7 @@ export default function SalaryManagement({ filters }: SalaryManagementProps) {
     };
 
     const summary = {
-        totalNetSalary: salaryRecords.reduce((sum, s) => sum + s.netSalary, 0),
+        totalNetSalary: salaryRecords.reduce((sum, s) => sum + (s.netSalary || 0), 0),
         pending: salaryRecords.filter(s => s.status === 'PENDING').length,
         paid: salaryRecords.filter(s => s.status === 'PAID').length,
         totalEmployees: salaryRecords.length
@@ -211,24 +214,24 @@ export default function SalaryManagement({ filters }: SalaryManagementProps) {
                                             </div>
                                         </td>
                                         <td className="px-6 py-4 text-sm text-secondary-600 font-medium">
-                                            ₹{record.basicSalary.toLocaleString()}
+                                            ₹{(record.basicSalary || 0).toLocaleString()}
                                         </td>
                                         <td className="px-6 py-4 text-sm text-secondary-600">
-                                            ₹{record.hra.toLocaleString()}
+                                            ₹{(record.hra || 0).toLocaleString()}
                                         </td>
                                         <td className="px-6 py-4 text-sm text-secondary-600">
-                                            ₹{record.allowances.toLocaleString()}
+                                            ₹{(record.allowances || record.otherAllowances || 0).toLocaleString()}
                                         </td>
                                         <td className="px-6 py-4 text-sm text-secondary-600">
-                                            ₹{record.deductions.toLocaleString()}
+                                            ₹{(record.deductions || record.totalDeductions || 0).toLocaleString()}
                                         </td>
                                         <td className="px-6 py-4 text-sm text-secondary-900 font-bold">
-                                            ₹{record.netSalary.toLocaleString()}
+                                            ₹{(record.netSalary || 0).toLocaleString()}
                                         </td>
                                         <td className="px-6 py-4">
                                             <span className={`px-2 py-1 text-xs font-semibold rounded-full ${record.status === 'PAID' ? 'bg-green-100 text-green-700' :
-                                                    record.status === 'PENDING' ? 'bg-yellow-100 text-yellow-700' :
-                                                        'bg-gray-100 text-gray-700'
+                                                record.status === 'PENDING' ? 'bg-yellow-100 text-yellow-700' :
+                                                    'bg-gray-100 text-gray-700'
                                                 }`}>
                                                 {record.status}
                                             </span>
@@ -330,27 +333,27 @@ export default function SalaryManagement({ filters }: SalaryManagementProps) {
                             <div className="space-y-2">
                                 <div className="flex justify-between">
                                     <span className="text-secondary-600">Basic Salary</span>
-                                    <span className="font-medium">₹{selectedSalary.basicSalary.toLocaleString()}</span>
+                                    <span className="font-medium">₹{(selectedSalary.basicSalary || 0).toLocaleString()}</span>
                                 </div>
                                 <div className="flex justify-between">
                                     <span className="text-secondary-600">HRA</span>
-                                    <span className="font-medium">₹{selectedSalary.hra.toLocaleString()}</span>
+                                    <span className="font-medium">₹{(selectedSalary.hra || 0).toLocaleString()}</span>
                                 </div>
                                 <div className="flex justify-between">
                                     <span className="text-secondary-600">Allowances</span>
-                                    <span className="font-medium">₹{selectedSalary.allowances.toLocaleString()}</span>
+                                    <span className="font-medium">₹{(selectedSalary.allowances || selectedSalary.otherAllowances || 0).toLocaleString()}</span>
                                 </div>
                                 <div className="flex justify-between text-red-600">
                                     <span>Deductions</span>
-                                    <span>-₹{selectedSalary.deductions.toLocaleString()}</span>
+                                    <span>-₹{(selectedSalary.deductions || selectedSalary.totalDeductions || 0).toLocaleString()}</span>
                                 </div>
                                 <div className="flex justify-between text-red-600">
                                     <span>Tax</span>
-                                    <span>-₹{selectedSalary.tax.toLocaleString()}</span>
+                                    <span>-₹{(selectedSalary.tax || selectedSalary.tds || 0).toLocaleString()}</span>
                                 </div>
                                 <div className="flex justify-between border-t border-secondary-200 pt-2 mt-2">
                                     <span className="font-bold text-secondary-900">Net Salary</span>
-                                    <span className="font-bold text-green-600">₹{selectedSalary.netSalary.toLocaleString()}</span>
+                                    <span className="font-bold text-green-600">₹{(selectedSalary.netSalary || 0).toLocaleString()}</span>
                                 </div>
                             </div>
                         </div>
