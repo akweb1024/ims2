@@ -18,6 +18,9 @@ export interface PayrollInput {
     mobile?: number;
     internet?: number;
     booksAndPeriodicals?: number;
+    salaryFixed?: number;
+    salaryVariable?: number;
+    salaryIncentive?: number;
 }
 
 export interface StatutorySettings {
@@ -62,6 +65,9 @@ export interface PayrollBreakdown {
         booksAndPeriodicals: number;
         total: number;
     };
+    salaryFixed: number;
+    salaryVariable: number;
+    salaryIncentive: number;
     arrears: number;
     expenses: number;
     netPayable: number;
@@ -92,7 +98,8 @@ export class PayrollCalculator {
         const {
             basicSalary, hra, conveyance, medical, specialAllowance, otherAllowances,
             statutoryBonus, gratuity, lwpDays, daysInMonth, expenses,
-            healthCare, travelling, mobile, internet, booksAndPeriodicals
+            healthCare, travelling, mobile, internet, booksAndPeriodicals,
+            salaryFixed, salaryVariable, salaryIncentive
         } = input;
 
         const bonusVal = statutoryBonus || 0;
@@ -199,6 +206,9 @@ export class PayrollCalculator {
             },
             arrears,
             expenses: expensesVal,
+            salaryFixed: salaryFixed || 0,
+            salaryVariable: salaryVariable || 0,
+            salaryIncentive: salaryIncentive || 0,
             netPayable,
             costToCompany: ctc
         };

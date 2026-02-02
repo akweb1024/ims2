@@ -110,7 +110,10 @@ export async function POST(
                     mobile: record.newMobile || 0,
                     internet: record.newInternet || 0,
                     booksAndPeriodicals: record.newBooksAndPeriodicals || 0,
-                    effectiveFrom: record.effectiveDate
+                    effectiveFrom: record.effectiveDate,
+                    salaryFixed: record.newFixed || 0,
+                    salaryVariable: record.newVariable || 0,
+                    salaryIncentive: record.newIncentive || 0,
                 },
                 create: {
                     employeeId: record.employeeProfileId,
@@ -133,7 +136,10 @@ export async function POST(
                     mobile: record.newMobile || 0,
                     internet: record.newInternet || 0,
                     booksAndPeriodicals: record.newBooksAndPeriodicals || 0,
-                    effectiveFrom: record.effectiveDate
+                    effectiveFrom: record.effectiveDate,
+                    salaryFixed: record.newFixed || 0,
+                    salaryVariable: record.newVariable || 0,
+                    salaryIncentive: record.newIncentive || 0
                 }
             });
 

@@ -1302,12 +1302,16 @@ model SalarySlip {
   mobile              Float           @default(0)
   internet            Float           @default(0)
   booksAndPeriodicals Float           @default(0)
+  salaryFixed         Float           @default(0)
+  salaryVariable      Float           @default(0)
+  salaryIncentive     Float           @default(0)
   isFinalSettlement   Boolean         @default(false)
   notes               String?
   advanceEmi          AdvanceEMI?
   arrearRecords       ArrearRecord[]
-  company             Company?        @relation(fields: [companyId], references: [id])
-  employee            EmployeeProfile @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  company             Company?          @relation(fields: [companyId], references: [id])
+  employee            EmployeeProfile   @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  linkedIncentives    EmployeeIncentive[]
 
   @@index([companyId])
 }
@@ -1452,6 +1456,9 @@ model SalaryStructure {
   mobile              Float           @default(0)
   internet            Float           @default(0)
   booksAndPeriodicals Float           @default(0)
+  salaryFixed         Float           @default(0)
+  salaryVariable      Float           @default(0)
+  salaryIncentive     Float           @default(0)
   ctc                 Float           @default(0)
   effectiveFrom       DateTime        @default(now())
   createdAt           DateTime        @default(now())
@@ -2659,9 +2666,11 @@ model EmployeeIncentive {
   reason            String
   date              DateTime        @default(now())
   status            String          @default("PENDING")
+  salarySlipId      String?
   createdAt         DateTime        @default(now())
   updatedAt         DateTime        @updatedAt
   employeeProfile   EmployeeProfile @relation(fields: [employeeProfileId], references: [id], onDelete: Cascade)
+  salarySlip        SalarySlip?     @relation(fields: [salarySlipId], references: [id])
 }
 
 model CompanyPotential {

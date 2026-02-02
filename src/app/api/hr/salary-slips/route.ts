@@ -186,7 +186,6 @@ export const POST = authorizedRoute(
                                     leaveBalance: displayBalance
                                 }
                             });
-
                             const daysInMonth = new Date(y, m, 0).getDate();
 
                             const breakdown = PayrollCalculator.calculate({
@@ -203,19 +202,40 @@ export const POST = authorizedRoute(
                                 mobile: (struct as any).mobile || 0,
                                 internet: (struct as any).internet || 0,
                                 booksAndPeriodicals: (struct as any).booksAndPeriodicals || 0,
+                                salaryFixed: struct.salaryFixed || 0,
+                                salaryVariable: struct.salaryVariable || 0,
+                                salaryIncentive: 0,
                                 lwpDays: overheadDays,
                                 daysInMonth
                             }, statutoryConfig);
 
+                            // 2b. Fetch and sum APPROVED incentives for this month/year
+                            const incentives = await tx.employeeIncentive.findMany({
+                                where: {
+                                    employeeProfileId: emp.id,
+                                    status: 'APPROVED',
+                                    date: {
+                                        gte: new Date(y, m - 1, 1),
+                                        lt: new Date(y, m, 1)
+                                    },
+                                    salarySlipId: null
+                                }
+                            });
+                            const incentiveSum = incentives.reduce((sum, inc) => sum + inc.amount, 0);
+
+                            // Re-adjust netPayable and CTC to include incentiveSum
+                            const finalNetPayable = breakdown.netPayable + incentiveSum;
+                            const finalCTC = breakdown.costToCompany + incentiveSum;
+
                             const advanceDeduction = activeEmi ? activeEmi.amount : 0;
-                            const finalPayable = Math.max(0, breakdown.netPayable - advanceDeduction);
+                            const amountPaidData = Math.max(0, finalNetPayable - advanceDeduction);
 
                             const slip = await tx.salarySlip.create({
                                 data: {
                                     employeeId: emp.id,
                                     month: m,
                                     year: y,
-                                    amountPaid: parseFloat(finalPayable.toFixed(2)),
+                                    amountPaid: parseFloat(amountPaidData.toFixed(2)),
                                     advanceDeduction,
                                     lwpDeduction: breakdown.deductions.lwpDeduction,
                                     basicSalary: breakdown.earnings.basic,
@@ -234,7 +254,7 @@ export const POST = authorizedRoute(
                                     pfEmployer: breakdown.employerContribution.pfEmployer,
                                     esicEmployer: breakdown.employerContribution.esicEmployer,
                                     gratuity: breakdown.employerContribution.gratuity,
-                                    ctc: breakdown.costToCompany,
+                                    ctc: finalCTC,
                                     arrears: breakdown.arrears || 0,
                                     expenses: 0,
                                     healthCare: breakdown.perks.healthCare,
@@ -242,11 +262,22 @@ export const POST = authorizedRoute(
                                     mobile: breakdown.perks.mobile,
                                     internet: breakdown.perks.internet,
                                     booksAndPeriodicals: breakdown.perks.booksAndPeriodicals,
-                                    netPayable: breakdown.netPayable - advanceDeduction,
+                                    salaryFixed: breakdown.salaryFixed,
+                                    salaryVariable: breakdown.salaryVariable,
+                                    salaryIncentive: incentiveSum,
+                                    netPayable: amountPaidData,
                                     status: 'GENERATED',
                                     companyId: user.companyId
                                 } as any
                             });
+
+                            // 2c. Link incentives to the slip
+                            if (incentives.length > 0) {
+                                await tx.employeeIncentive.updateMany({
+                                    where: { id: { in: incentives.map(i => i.id) } },
+                                    data: { salarySlipId: slip.id, status: 'PAID' }
+                                });
+                            }
 
                             if (activeEmi) {
                                 await tx.advanceEMI.update({
