@@ -177,7 +177,6 @@ export default function StaffPortalPage() {
                         longitude: pos.coords.longitude
                     };
                 } catch (e) {
-                    console.log("Location denied or error");
                 }
             }
 

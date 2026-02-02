@@ -16,7 +16,6 @@ const getTransporter = () => {
 
     // 1. Try AWS SES if keys are present (v3 with SESv2 client for Nodemailer 7+)
     if (process.env.AWS_ACCESS_KEY_ID && process.env.AWS_SECRET_ACCESS_KEY) {
-        console.log('📧 configuring AWS SES transport (v2 client)...');
         const ses = new SESv2Client({
             region: process.env.AWS_REGION || 'us-east-1',
             credentials: {
@@ -31,7 +30,6 @@ const getTransporter = () => {
     }
 
     // 2. Fallback to Standard SMTP
-    console.log('📧 configuring SMTP transport...');
     transporterInstance = nodemailer.createTransport({
         host: process.env.EMAIL_HOST || 'smtp.ethereal.email',
         port: parseInt(process.env.EMAIL_PORT || '587'),
@@ -51,12 +49,6 @@ export async function sendEmail({ to, subject, text, html }: EmailOptions) {
     const hasSmtp = !!(process.env.EMAIL_USER && process.env.EMAIL_PASS);
 
     if (!hasAws && !hasSmtp) {
-        console.log('-------------------------------------------');
-        console.log('📧 MOCK EMAIL SENT (No credentials provided)');
-        console.log(`To: ${to}`);
-        console.log(`Subject: ${subject}`);
-        console.log('Text content truncated...');
-        console.log('-------------------------------------------');
 
         // Log Mock Email
         try {
@@ -86,7 +78,6 @@ export async function sendEmail({ to, subject, text, html }: EmailOptions) {
             html,
         });
 
-        console.log('📧 Email sent successfully:', info.messageId);
 
         // Log Success
         await prisma.systemEmailLog.create({

@@ -35,7 +35,6 @@ export default function AddCandidateModal({ jobs, onClose, onSubmit }: AddCandid
             if (uploadMode === 'FILE' && formData.resumeFile) {
                 // In a real app, upload to S3 here and get URL
                 // For now, create a fake local URL or just use a placeholder
-                console.log("Mock uploading file:", formData.resumeFile.name);
                 finalResumeUrl = `https://internal-storage.mock/${formData.resumeFile.name.replace(/\s+/g, '-')}`;
             }
 

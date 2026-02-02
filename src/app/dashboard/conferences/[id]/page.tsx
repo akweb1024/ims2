@@ -160,10 +160,8 @@ export default function ConferenceDetailPage() {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
 
-            console.log('Publish Response:', res.status);
             if (res.ok) {
                 const result = await res.json();
-                console.log('Publish Result:', result);
                 if (result.success) {
                     fetchConference();
                     alert('Conference published successfully!');

@@ -14,12 +14,6 @@ export async function sendWhatsApp({ to, message, mediaUrl }: WhatsAppMessage) {
     const WHATSAPP_PROVIDER = process.env.WHATSAPP_PROVIDER || 'mock'; // 'twilio', 'meta', 'mock'
 
     if (WHATSAPP_PROVIDER === 'mock') {
-        console.log('-------------------------------------------');
-        console.log('📱 MOCK WHATSAPP SENT');
-        console.log(`To: ${to}`);
-        console.log(`Message: ${message}`);
-        if (mediaUrl) console.log(`Media: ${mediaUrl}`);
-        console.log('-------------------------------------------');
         return { success: true, message: 'Mock WhatsApp logged' };
     }
 

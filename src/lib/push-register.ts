@@ -3,7 +3,6 @@ export async function registerPush() {
 
     try {
         const registration = await navigator.serviceWorker.register('/sw.js');
-        console.log('Service Worker registered');
 
         const subscription = await registration.pushManager.getSubscription();
         if (subscription) return subscription;

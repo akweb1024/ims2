@@ -149,10 +149,8 @@ export default function CourseBuilderPage() {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
 
-            console.log('Course Publish Response:', res.status);
             if (res.ok) {
                 const result = await res.json();
-                console.log('Course Publish Result:', result);
                 fetchCourse();
                 alert('Course published successfully!');
             } else {

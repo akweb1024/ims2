@@ -167,10 +167,6 @@ export default function SubmitReportPage() {
                             setCurrentPoints(data.totalPoints);
                         }
 
-                        console.log('✅ Synced with Daily Task Tracker:', {
-                            tasksCompleted: completedIds.length,
-                            pointsEarned: data.totalPoints
-                        });
                     }
                 })
                 .catch(err => console.error("Error syncing with Daily Task Tracker", err));
@@ -184,7 +180,6 @@ export default function SubmitReportPage() {
                 .then(reports => {
                     if (Array.isArray(reports) && reports.length > 0) {
                         const report = reports[0];
-                        console.log('📝 Found existing report for today:', report);
                         setExistingReport(report);
                         setIsEditMode(true);
 
@@ -408,7 +403,6 @@ export default function SubmitReportPage() {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        console.log('🚀 Submit Report Triggered');
 
         // Validate all completed tasks
         const invalidTasks = completedTaskIds.filter(taskId => {
@@ -433,7 +427,6 @@ export default function SubmitReportPage() {
         setLoading(true);
         try {
             const token = localStorage.getItem('token');
-            console.log('📦 Preparing payload...');
 
             const payload: any = {
                 ...commonData,
@@ -460,7 +453,6 @@ export default function SubmitReportPage() {
                 payload.id = existingReport.id;
             }
 
-            console.log(`📡 Sending request to /api/hr/work-reports (${isEditMode ? 'PUT' : 'POST'})...`, payload);
 
             const res = await fetch('/api/hr/work-reports', {
                 method: isEditMode ? 'PUT' : 'POST',
@@ -472,7 +464,6 @@ export default function SubmitReportPage() {
             });
 
             if (res.ok) {
-                console.log(`✅ Report ${isEditMode ? 'updated' : 'submitted'} successfully`);
                 setSavedReport(true);
                 setTimeout(() => router.push('/dashboard/staff-portal'), 2000);
             } else {
