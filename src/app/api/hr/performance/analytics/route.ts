@@ -10,67 +10,75 @@ export const GET = authorizedRoute(
         try {
             const { searchParams } = new URL(req.url);
             const employeeId = searchParams.get('employeeId');
+            const scope = searchParams.get('scope') || 'INDIVIDUAL'; // INDIVIDUAL, TEAM, COMPANY
+            const year = parseInt(searchParams.get('year') || new Date().getFullYear().toString());
 
-            const where: any = {};
+            let targetEmployeeIds: string[] = [];
 
-            // Filter by Employee
-            if (employeeId) {
-                where.employeeId = employeeId;
-            } else if (user.role === 'MANAGER' || user.role === 'TEAM_LEADER') {
-                // If no specific employee requested, limit to items evaluated by this manager?
-                // Or strictly require an employeeId for the detailed view.
-                // For the "My Team" view, we might want aggregate stats, but let's stick to simple "Per Employee" analytics for now.
-                if (!employeeId) {
-                    return NextResponse.json({
-                        error: 'Employee ID required for detailed analysis. Use separate endpoint for Team Summary.'
-                    }, { status: 400 });
+            if (scope === 'INDIVIDUAL') {
+                if (!employeeId) return createErrorResponse('Employee ID required for INDIVIDUAL scope', 400);
+                targetEmployeeIds = [employeeId];
+            } else if (scope === 'TEAM') {
+                // Fetch direct reports via User relation
+                const directReports = await prisma.user.findMany({
+                    where: { managerId: user.id },
+                    select: { employeeProfile: { select: { id: true } } }
+                });
+
+                targetEmployeeIds = directReports
+                    .map(u => u.employeeProfile?.id)
+                    .filter(id => id !== undefined && id !== null) as string[];
+            } else if (scope === 'COMPANY') {
+                if (!['SUPER_ADMIN', 'ADMIN', 'HR'].includes(user.role)) {
+                    return createErrorResponse('Unauthorized for COMPANY scope', 403);
                 }
+                const allEmployees = await prisma.employeeProfile.findMany({ select: { id: true } });
+                targetEmployeeIds = allEmployees.map(e => e.id);
             }
 
-            // Fetch all evaluations for the scope
-            const evaluations = await prisma.performanceEvaluation.findMany({
-                where,
-                orderBy: { createdAt: 'asc' }, // Chronological for valid trend
-                select: {
-                    period: true,
-                    periodType: true,
-                    rating: true,
-                    scores: true,
-                    createdAt: true
-                }
+            // Fetch Snapshots
+            const snapshots = await prisma.monthlyPerformanceSnapshot.findMany({
+                where: {
+                    employeeId: { in: targetEmployeeIds },
+                    year: year
+                },
+                orderBy: { month: 'asc' }
             });
 
-            // Process for chart consumption
-            // Format: { period: "JAN 2025", rating: 4.5, ... }
-            const trendData = evaluations.map(ev => ({
-                period: ev.period,
-                rating: ev.rating || 0,
-                date: ev.createdAt
-            }));
+            // Aggregate Data by Month
+            const monthlyData = Array.from({ length: 12 }, (_, i) => {
+                const month = i + 1;
+                const monthSnapshots = snapshots.filter(s => s.month === month);
 
-            // Calculate Average Rating
-            const totalRating = evaluations.reduce((sum, ev) => sum + (ev.rating || 0), 0);
-            const averageRating = evaluations.length > 0 ? (totalRating / evaluations.length).toFixed(1) : 0;
+                const totalTarget = monthSnapshots.reduce((sum, s) => sum + s.revenueTarget, 0);
+                const totalRevenue = monthSnapshots.reduce((sum, s) => sum + s.totalRevenueGenerated, 0);
+                const avgAchievement = monthSnapshots.length > 0
+                    ? monthSnapshots.reduce((sum, s) => sum + s.revenueAchievement, 0) / monthSnapshots.length
+                    : 0;
 
-            // Fetch active goals for target vs actual analysis
-            const goals = await prisma.employeeGoal.findMany({
-                where: { employeeId: employeeId || undefined },
-                orderBy: { endDate: 'desc' },
-                take: 5
+                return {
+                    month,
+                    monthName: new Date(year, month - 1).toLocaleString('default', { month: 'short' }),
+                    revenueTarget: totalTarget,
+                    totalRevenueGenerated: totalRevenue,
+                    revenueAchievement: avgAchievement, // Average achievement %
+                    snapshotCount: monthSnapshots.length
+                };
             });
 
-            const goalsData = goals.map((g: any) => ({
-                title: g.title,
-                current: g.currentValue,
-                target: g.targetValue,
-                percentage: (g.currentValue / g.targetValue) * 100
-            }));
+            // Calculate Totals for Summary Cards
+            const totalYearTarget = monthlyData.reduce((sum, m) => sum + m.revenueTarget, 0);
+            const totalYearRevenue = monthlyData.reduce((sum, m) => sum + m.totalRevenueGenerated, 0);
+            const overallAchievement = totalYearTarget > 0 ? (totalYearRevenue / totalYearTarget) * 100 : 0;
 
             return NextResponse.json({
-                trendData,
-                goalsData,
-                averageRating,
-                totalEvaluations: evaluations.length
+                trendData: monthlyData,
+                summary: {
+                    totalTarget: totalYearTarget,
+                    totalRevenue: totalYearRevenue,
+                    overallAchievement,
+                    employeeCount: targetEmployeeIds.length
+                }
             });
 
         } catch (error) {

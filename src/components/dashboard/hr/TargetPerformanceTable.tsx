@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Play, Calendar, Target, TrendingUp, Save, ChevronRight, ChevronDown } from 'lucide-react';
 import { FormattedNumber } from '@/components/common/FormattedNumber';
+import PerformanceVsTargetChart from '@/components/dashboard/hr/PerformanceVsTargetChart';
 
 interface TargetPerformanceTableProps {
     employeeId: string;
@@ -243,6 +244,11 @@ export default function TargetPerformanceTable({ employeeId, monthlyTarget, year
                         </select>
                     </div>
                 </div>
+
+                {/* Performance Chart */}
+                {snapshots.length > 0 && (
+                    <PerformanceVsTargetChart data={snapshots} scope="INDIVIDUAL" />
+                )}
 
                 <div className="card-premium overflow-hidden p-0">
                     {loading ? (
