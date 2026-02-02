@@ -1203,6 +1203,7 @@ model WorkReport {
   companyId           String?
   kraMatchRatio       Float?
   metrics             Json?
+  evaluation          Json?
   pointsEarned        Int                  @default(0)
   tasksSnapshot       Json?
   revenueClaims       RevenueClaim[]
