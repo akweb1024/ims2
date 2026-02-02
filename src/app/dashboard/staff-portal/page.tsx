@@ -12,7 +12,7 @@ import EmployeeKPIView from '@/components/dashboard/staff/EmployeeKPIView';
 import AttendanceCalendar from '@/components/dashboard/staff/AttendanceCalendar';
 import DailyTaskTracker from '@/components/dashboard/DailyTaskTracker';
 import EmployeeTransactions from '@/components/dashboard/staff/EmployeeTransactions';
-import { Lock, AlertOctagon, Calendar as CalendarIcon, Zap } from 'lucide-react';
+import { Lock, AlertOctagon, Calendar as CalendarIcon, Zap, ArrowLeft } from 'lucide-react';
 
 // New Modular Components
 import StaffProfileView from '@/components/dashboard/staff-portal/StaffProfileView';
@@ -53,8 +53,8 @@ export default function StaffPortalPage() {
         status: 'PENDING'
     });
     const [activeSubTab, setActiveSubTab] = useState('members');
-    const [elapsedTime, setElapsedTime] = useState('00h 00m');
-    const [remainingTime, setRemainingTime] = useState('08h 30m');
+    const [elapsedTime, setElapsedTime] = useState('00h 00m 00s');
+    const [remainingTime, setRemainingTime] = useState('08h 30m 00s');
 
     const todayAttendance = attendance.find(a => {
         const d = new Date(a.date);
@@ -130,7 +130,7 @@ export default function StaffPortalPage() {
     // Timer Logic
     useEffect(() => {
         if (todayAttendance?.checkIn && !todayAttendance?.checkOut) {
-            const interval = setInterval(() => {
+            const calculateTime = () => {
                 const now = new Date();
                 const checkIn = new Date(todayAttendance.checkIn);
                 const diffMs = now.getTime() - checkIn.getTime();
@@ -138,7 +138,8 @@ export default function StaffPortalPage() {
                 // Calculate Working Hours
                 const hours = Math.floor(diffMs / (1000 * 60 * 60));
                 const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
-                setElapsedTime(`${hours}h ${minutes}m`);
+                const seconds = Math.floor((diffMs % (1000 * 60)) / 1000);
+                setElapsedTime(`${hours}h ${minutes}m ${seconds}s`);
 
                 // Calculate Remaining (Target: 8h 30m = 8.5 * 60 * 60 * 1000 ms)
                 const targetMs = 8.5 * 60 * 60 * 1000;
@@ -147,19 +148,15 @@ export default function StaffPortalPage() {
                 if (remainingMs > 0) {
                     const rHours = Math.floor(remainingMs / (1000 * 60 * 60));
                     const rMinutes = Math.floor((remainingMs % (1000 * 60 * 60)) / (1000 * 60));
-                    setRemainingTime(`${rHours}h ${rMinutes}m`);
+                    const rSeconds = Math.floor((remainingMs % (1000 * 60)) / 1000);
+                    setRemainingTime(`${rHours}h ${rMinutes}m ${rSeconds}s`);
                 } else {
                     setRemainingTime('Overtime');
                 }
-            }, 60000); // Update every minute
+            };
 
-            // Initial call
-            const now = new Date();
-            const checkIn = new Date(todayAttendance.checkIn);
-            const diffMs = now.getTime() - checkIn.getTime();
-            const hours = Math.floor(diffMs / (1000 * 60 * 60));
-            const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
-            setElapsedTime(`${hours}h ${minutes}m`);
+            calculateTime();
+            const interval = setInterval(calculateTime, 1000); // Update every second
 
             return () => clearInterval(interval);
         }
@@ -211,8 +208,6 @@ export default function StaffPortalPage() {
             setCheckingIn(false);
         }
     };
-
-
 
     const baseTabs = [
         { id: 'overview', name: 'Overview', icon: '🏠' },
@@ -306,7 +301,7 @@ export default function StaffPortalPage() {
                             <button
                                 onClick={() => handleAttendance('check-out')}
                                 disabled={checkingIn}
-                                className="btn bg-danger-600 text-white hover:bg-danger-700 px-8 py-3 rounded-2xl shadow-lg shadow-danger-200 opacity-100 transition-all flex items-center gap-2 hover:scale-105"
+                                className="btn bg-secondary-900 text-white hover:bg-black px-8 py-3 rounded-2xl shadow-xl shadow-secondary-200 opacity-100 transition-all flex items-center gap-2 hover:scale-105 animate-pulse"
                             >
                                 {checkingIn ? '...' : 'Check Out'} 🚪
                             </button>
