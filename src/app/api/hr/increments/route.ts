@@ -153,10 +153,14 @@ export const POST = authorizedRoute(
             }
 
             // Calculate old salary structure
+            // Calculate old salary structure (Prioritize new fields > legacy split > base derivation)
             const oldSalary = employee.baseSalary || 0;
-            const oldFixed = employee.salaryFixed || oldSalary;
-            const oldVariable = employee.salaryVariable || 0;
-            const oldIncentive = employee.salaryIncentive || 0;
+
+            const oldVariable = employee.salaryVariable ?? employee.variableSalary ?? 0;
+            const oldIncentive = employee.salaryIncentive ?? employee.incentiveSalary ?? 0;
+
+            // For fixed, if we have explicit fixed fields, use them. Otherwise, if we only have base, assume base is Total and subtract specific variable components if known.
+            const oldFixed = employee.salaryFixed ?? employee.fixedSalary ?? (oldSalary - oldVariable - oldIncentive);
 
             // Calculate new total salary
             const newSalary = data.newFixedSalary + (data.newVariableSalary || 0) + (data.newIncentive || 0);

@@ -46,8 +46,8 @@ export async function POST(request: NextRequest) {
             const resetUrl = `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/reset-password?token=${token}`;
 
             console.log('Password reset requested for:', email);
-            console.log('Reset URL:', resetUrl);
-            console.log('Token expires at:', expiresAt);
+            // console.log('Reset URL:', resetUrl);
+            // console.log('Token expires at:', expiresAt);
 
             // In production, you would send an email here:
             /*

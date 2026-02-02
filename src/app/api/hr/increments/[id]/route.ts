@@ -28,6 +28,13 @@ const updateIncrementSchema = z.object({
     newInternet: z.number().min(0).optional(),
     newBooksAndPeriodicals: z.number().min(0).optional(),
     newJobDescription: z.string().optional(),
+    newVariablePerTarget: z.number().min(0).optional(),
+    newVariableUpperCap: z.number().min(0).optional(),
+    newIncentivePercentage: z.number().min(0).optional(),
+    variableDefinition: z.string().optional(),
+    incentiveDefinition: z.string().optional(),
+    optInVariable: z.boolean().optional(),
+    optInIncentive: z.boolean().optional(),
 });
 
 // GET: Get increment details
@@ -175,6 +182,15 @@ export const PATCH = authorizedRoute(
             if (typeof data.newMobile === 'number') updateData.newMobile = data.newMobile;
             if (typeof data.newInternet === 'number') updateData.newInternet = data.newInternet;
             if (typeof data.newBooksAndPeriodicals === 'number') updateData.newBooksAndPeriodicals = data.newBooksAndPeriodicals;
+
+            // Update Variable/Incentive Details
+            if (typeof data.newVariablePerTarget === 'number') updateData.newVariablePerTarget = data.newVariablePerTarget;
+            if (typeof data.newVariableUpperCap === 'number') updateData.newVariableUpperCap = data.newVariableUpperCap;
+            if (typeof data.newIncentivePercentage === 'number') updateData.newIncentivePercentage = data.newIncentivePercentage;
+            if (data.variableDefinition !== undefined) updateData.variableDefinition = data.variableDefinition;
+            if (data.incentiveDefinition !== undefined) updateData.incentiveDefinition = data.incentiveDefinition;
+            if (data.optInVariable !== undefined) updateData.optInVariable = data.optInVariable;
+            if (data.optInIncentive !== undefined) updateData.optInIncentive = data.optInIncentive;
 
             const updated = await prisma.$transaction(async (tx) => {
                 const inc = await tx.salaryIncrementRecord.update({

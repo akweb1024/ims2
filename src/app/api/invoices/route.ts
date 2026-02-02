@@ -115,7 +115,7 @@ export async function POST(req: NextRequest) {
         const body = await req.json();
         const { customerProfileId, dueDate, lineItems, description, taxRate = 0 } = body;
 
-        console.log("Receiving Invoice Creation Request:", body);
+        // console.log("Receiving Invoice Creation Request:", body);
 
         if (!customerProfileId || !lineItems || lineItems.length === 0) {
             return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });

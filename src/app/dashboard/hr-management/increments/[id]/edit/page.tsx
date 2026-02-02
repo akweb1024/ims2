@@ -231,15 +231,15 @@ export default function EditIncrementPage() {
                                     <div className="grid grid-cols-4 gap-4 text-sm">
                                         <div>
                                             <p className="text-secondary-500">Fixed</p>
-                                            <p className="font-bold">₹{(selectedEmployee.fixedSalary || selectedEmployee.baseSalary || 0).toLocaleString()}</p>
+                                            <p className="font-bold">₹{(selectedEmployee.salaryFixed ?? selectedEmployee.fixedSalary ?? ((selectedEmployee.baseSalary || 0) - (selectedEmployee.variableSalary || 0) - (selectedEmployee.salaryIncentive ?? selectedEmployee.incentiveSalary ?? 0))).toLocaleString()}</p>
                                         </div>
                                         <div>
                                             <p className="text-secondary-500">Variable</p>
-                                            <p className="font-bold">₹{(selectedEmployee.variableSalary || 0).toLocaleString()}</p>
+                                            <p className="font-bold">₹{(selectedEmployee.salaryVariable ?? selectedEmployee.variableSalary ?? 0).toLocaleString()}</p>
                                         </div>
                                         <div>
                                             <p className="text-secondary-500">Incentive</p>
-                                            <p className="font-bold">₹{(selectedEmployee.incentiveSalary || 0).toLocaleString()}</p>
+                                            <p className="font-bold">₹{(selectedEmployee.salaryIncentive ?? selectedEmployee.incentiveSalary ?? 0).toLocaleString()}</p>
                                         </div>
                                         <div>
                                             <p className="text-secondary-500">Total</p>
