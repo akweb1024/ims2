@@ -77,13 +77,18 @@ function NewIncrementContent() {
 
     const handleEmployeeChange = (employeeId: string) => {
         const employee = employees.find(e => e.id === employeeId);
+
+        const oldVariable = employee?.salaryVariable ?? employee?.variableSalary ?? 0;
+        const oldIncentive = employee?.salaryIncentive ?? employee?.incentiveSalary ?? 0;
+        const oldFixed = employee?.salaryFixed ?? employee?.fixedSalary ?? ((employee?.baseSalary || 0) - oldVariable - oldIncentive);
+
         setSelectedEmployee(employee);
         setForm({
             ...form,
             employeeProfileId: employeeId,
-            newFixedSalary: employee?.fixedSalary || employee?.baseSalary || 0,
-            newVariableSalary: employee?.variableSalary || 0,
-            newIncentive: employee?.incentiveSalary || 0,
+            newFixedSalary: oldFixed,
+            newVariableSalary: oldVariable,
+            newIncentive: oldIncentive,
             currentMonthlyTarget: employee?.monthlyTarget || 0,
             newMonthlyTarget: employee?.monthlyTarget || 0,
             currentYearlyTarget: employee?.yearlyTarget || 0,
@@ -94,8 +99,8 @@ function NewIncrementContent() {
             newMobile: employee?.salaryStructure?.mobile || 0,
             newInternet: employee?.salaryStructure?.internet || 0,
             newBooksAndPeriodicals: employee?.salaryStructure?.booksAndPeriodicals || 0,
-            optInVariable: (employee?.variableSalary || 0) > 0 || employee?.hasVariable || false,
-            optInIncentive: (employee?.incentiveSalary || 0) > 0 || employee?.hasIncentive || false,
+            optInVariable: oldVariable > 0 || employee?.hasVariable || false,
+            optInIncentive: oldIncentive > 0 || employee?.hasIncentive || false,
         });
     };
 
@@ -225,29 +230,35 @@ function NewIncrementContent() {
                                 </div>
                             </div>
 
-                            {selectedEmployee && (
-                                <div className="mt-4 p-4 bg-secondary-50 rounded-xl">
-                                    <p className="text-sm font-bold text-secondary-900 mb-2">Current Salary Breakdown:</p>
-                                    <div className="grid grid-cols-4 gap-4 text-sm">
-                                        <div>
-                                            <p className="text-secondary-500">Fixed</p>
-                                            <p className="font-bold">₹{(selectedEmployee.fixedSalary || selectedEmployee.baseSalary || 0).toLocaleString()}</p>
-                                        </div>
-                                        <div>
-                                            <p className="text-secondary-500">Variable</p>
-                                            <p className="font-bold">₹{(selectedEmployee.variableSalary || 0).toLocaleString()}</p>
-                                        </div>
-                                        <div>
-                                            <p className="text-secondary-500">Incentive</p>
-                                            <p className="font-bold">₹{(selectedEmployee.incentiveSalary || 0).toLocaleString()}</p>
-                                        </div>
-                                        <div>
-                                            <p className="text-secondary-500">Total</p>
-                                            <p className="font-bold text-primary-600">₹{(selectedEmployee.baseSalary || 0).toLocaleString()}</p>
+                            {selectedEmployee && (() => {
+                                const oldVar = selectedEmployee.salaryVariable ?? selectedEmployee.variableSalary ?? 0;
+                                const oldInc = selectedEmployee.salaryIncentive ?? selectedEmployee.incentiveSalary ?? 0;
+                                const oldFix = selectedEmployee.salaryFixed ?? selectedEmployee.fixedSalary ?? ((selectedEmployee.baseSalary || 0) - oldVar - oldInc);
+
+                                return (
+                                    <div className="mt-4 p-4 bg-secondary-50 rounded-xl">
+                                        <p className="text-sm font-bold text-secondary-900 mb-2">Current Salary Breakdown:</p>
+                                        <div className="grid grid-cols-4 gap-4 text-sm">
+                                            <div>
+                                                <p className="text-secondary-500">Fixed</p>
+                                                <p className="font-bold">₹{oldFix.toLocaleString()}</p>
+                                            </div>
+                                            <div>
+                                                <p className="text-secondary-500">Variable</p>
+                                                <p className="font-bold">₹{oldVar.toLocaleString()}</p>
+                                            </div>
+                                            <div>
+                                                <p className="text-secondary-500">Incentive</p>
+                                                <p className="font-bold">₹{oldInc.toLocaleString()}</p>
+                                            </div>
+                                            <div>
+                                                <p className="text-secondary-500">Total CTC</p>
+                                                <p className="font-bold text-primary-600">₹{(selectedEmployee.baseSalary || 0).toLocaleString()}</p>
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
-                            )}
+                                );
+                            })()}
                         </div>
 
                         {/* New Salary Structure */}

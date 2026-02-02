@@ -225,29 +225,35 @@ export default function EditIncrementPage() {
                                 </div>
                             </div>
 
-                            {selectedEmployee && (
-                                <div className="mt-4 p-4 bg-secondary-50 rounded-xl">
-                                    <p className="text-sm font-bold text-secondary-900 mb-2">Current Salary Breakdown:</p>
-                                    <div className="grid grid-cols-4 gap-4 text-sm">
-                                        <div>
-                                            <p className="text-secondary-500">Fixed</p>
-                                            <p className="font-bold">₹{(selectedEmployee.salaryFixed ?? selectedEmployee.fixedSalary ?? ((selectedEmployee.baseSalary || 0) - (selectedEmployee.variableSalary || 0) - (selectedEmployee.salaryIncentive ?? selectedEmployee.incentiveSalary ?? 0))).toLocaleString()}</p>
-                                        </div>
-                                        <div>
-                                            <p className="text-secondary-500">Variable</p>
-                                            <p className="font-bold">₹{(selectedEmployee.salaryVariable ?? selectedEmployee.variableSalary ?? 0).toLocaleString()}</p>
-                                        </div>
-                                        <div>
-                                            <p className="text-secondary-500">Incentive</p>
-                                            <p className="font-bold">₹{(selectedEmployee.salaryIncentive ?? selectedEmployee.incentiveSalary ?? 0).toLocaleString()}</p>
-                                        </div>
-                                        <div>
-                                            <p className="text-secondary-500">Total</p>
-                                            <p className="font-bold text-primary-600">₹{(selectedEmployee.baseSalary || 0).toLocaleString()}</p>
+                            {selectedEmployee && (() => {
+                                const oldVar = selectedEmployee.salaryVariable ?? selectedEmployee.variableSalary ?? 0;
+                                const oldInc = selectedEmployee.salaryIncentive ?? selectedEmployee.incentiveSalary ?? 0;
+                                const oldFix = selectedEmployee.salaryFixed ?? selectedEmployee.fixedSalary ?? ((selectedEmployee.baseSalary || 0) - oldVar - oldInc);
+
+                                return (
+                                    <div className="mt-4 p-4 bg-secondary-50 rounded-xl">
+                                        <p className="text-sm font-bold text-secondary-900 mb-2">Current (Old) Salary Breakdown:</p>
+                                        <div className="grid grid-cols-4 gap-4 text-sm">
+                                            <div>
+                                                <p className="text-secondary-500">Fixed</p>
+                                                <p className="font-bold">₹{oldFix.toLocaleString()}</p>
+                                            </div>
+                                            <div>
+                                                <p className="text-secondary-500">Variable</p>
+                                                <p className="font-bold">₹{oldVar.toLocaleString()}</p>
+                                            </div>
+                                            <div>
+                                                <p className="text-secondary-500">Incentive</p>
+                                                <p className="font-bold">₹{oldInc.toLocaleString()}</p>
+                                            </div>
+                                            <div>
+                                                <p className="text-secondary-500">Total CTC</p>
+                                                <p className="font-bold text-primary-600">₹{(selectedEmployee.baseSalary || 0).toLocaleString()}</p>
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
-                            )}
+                                );
+                            })()}
                         </div>
 
                         {/* New Salary Structure */}

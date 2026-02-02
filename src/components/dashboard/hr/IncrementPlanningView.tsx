@@ -339,16 +339,35 @@ export default function IncrementPlanningView() {
                                     <XCircle size={24} />
                                 </button>
                             </div>
+
+                            {/* Current vs Proposed Visualizer */}
+                            <div className="px-8 pt-4">
+                                <div className="p-3 bg-secondary-900 rounded-2xl text-white flex justify-between items-center">
+                                    <div className="flex-1 border-r border-white/10 px-2">
+                                        <p className="text-[9px] font-black text-secondary-400 uppercase tracking-widest leading-none mb-1">Current Fixed</p>
+                                        <p className="font-mono text-sm font-bold">₹{(filteredItems.find((i: any) => i.pendingRecommendation?.id === editRecord.id)?.currentFixed || 0).toLocaleString()}</p>
+                                    </div>
+                                    <div className="flex-1 border-r border-white/10 px-4">
+                                        <p className="text-[9px] font-black text-secondary-400 uppercase tracking-widest leading-none mb-1">Proposed Fixed</p>
+                                        <p className="font-mono text-sm font-bold text-success-400">₹{(parseFloat(editRecord.newFixed) || 0).toLocaleString()}</p>
+                                    </div>
+                                    <div className="flex-1 px-2 text-right">
+                                        <p className="text-[9px] font-black text-secondary-400 uppercase tracking-widest leading-none mb-1">Incr.</p>
+                                        <p className="font-mono text-sm font-black text-primary-400">
+                                            +{(((parseFloat(editRecord.newFixed) || 0) / (filteredItems.find((i: any) => i.pendingRecommendation?.id === editRecord.id)?.currentFixed || 1) - 1) * 100).toFixed(1)}%
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+
                             <div className="p-8 space-y-5">
                                 <div>
                                     <div className="flex justify-between items-end mb-2">
-                                        <label className="text-[10px] font-black text-secondary-400 uppercase tracking-widest">Proposed Annual Structure</label>
+                                        <label className="text-[10px] font-black text-secondary-400 uppercase tracking-widest">Proposed Structure</label>
                                         <div className="text-right">
                                             <span className="text-[10px] text-secondary-400 font-bold mr-1">TOTAL CTC</span>
                                             <span className="font-mono font-black text-primary-600">
                                                 ₹{(
-                                                    (parseFloat(editRecord.newFixed) || 0) +
-                                                    (parseFloat(editRecord.newVariable) || 0) +
                                                     (parseFloat(editRecord.newFixed) || 0) +
                                                     (parseFloat(editRecord.newVariable) || 0) +
                                                     (parseFloat(editRecord.newIncentive) || 0) +

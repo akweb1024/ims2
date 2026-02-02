@@ -47,6 +47,9 @@ export const GET = authorizedRoute(
                             id: true,
                             designation: true,
                             baseSalary: true,
+                            fixedSalary: true,
+                            variableSalary: true,
+                            incentiveSalary: true,
 
                             // New Fields
                             salaryFixed: true,
@@ -122,6 +125,9 @@ export const GET = authorizedRoute(
                     department: emp.department?.name || 'Unassigned',
                     designation: profile.designation,
                     currentSalary: profile.baseSalary || 0,
+                    currentFixed: profile.salaryFixed ?? profile.fixedSalary ?? 0,
+                    currentVariable: profile.salaryVariable ?? profile.variableSalary ?? 0,
+                    currentIncentive: profile.salaryIncentive ?? profile.incentiveSalary ?? 0,
                     lastIncrementDate: profile.lastIncrementDate,
                     performance: {
                         avgRating: avgRating.toFixed(1),
