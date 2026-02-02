@@ -2,17 +2,20 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
-import { TrendingUp, Award, AlertCircle, Calendar, Play, Download, Filter } from 'lucide-react';
+import { TrendingUp, Award, AlertCircle, Calendar, Play, Download, Filter, Target, BarChart } from 'lucide-react';
 
-export default function MonthlyPerformancePage() {
+export default function PerformanceDashboard() {
     const [user, setUser] = useState<any>(null);
     const [loading, setLoading] = useState(false);
     const [calculating, setCalculating] = useState(false);
     const [snapshots, setSnapshots] = useState<any[]>([]);
 
+    const [viewMode, setViewMode] = useState<'MONTHLY' | 'QUARTERLY' | 'YEARLY'>('MONTHLY');
+
     const [filters, setFilters] = useState({
         month: new Date().getMonth() + 1,
         year: new Date().getFullYear(),
+        quarter: Math.ceil((new Date().getMonth() + 1) / 3),
         departmentId: '',
         employeeId: ''
     });
@@ -22,12 +25,26 @@ export default function MonthlyPerformancePage() {
         try {
             const token = localStorage.getItem('token');
             const params = new URLSearchParams();
-            if (filters.month) params.append('month', filters.month.toString());
+
+            // Common Filters
             if (filters.year) params.append('year', filters.year.toString());
             if (filters.departmentId) params.append('departmentId', filters.departmentId);
             if (filters.employeeId) params.append('employeeId', filters.employeeId);
 
-            const res = await fetch(`/api/hr/performance/monthly?${params.toString()}`, {
+            let endpoint = '';
+
+            if (viewMode === 'MONTHLY') {
+                endpoint = '/api/hr/performance/monthly';
+                if (filters.month) params.append('month', filters.month.toString());
+            } else {
+                endpoint = '/api/hr/performance/aggregate';
+                params.append('period', viewMode);
+                if (viewMode === 'QUARTERLY' && filters.quarter) {
+                    params.append('quarter', filters.quarter.toString());
+                }
+            }
+
+            const res = await fetch(`${endpoint}?${params.toString()}`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
 
@@ -40,7 +57,7 @@ export default function MonthlyPerformancePage() {
         } finally {
             setLoading(false);
         }
-    }, [filters.month, filters.year, filters.departmentId, filters.employeeId]);
+    }, [viewMode, filters]);
 
     useEffect(() => {
         const userData = localStorage.getItem('user');
@@ -51,6 +68,11 @@ export default function MonthlyPerformancePage() {
     }, [fetchSnapshots]);
 
     const handleCalculate = async () => {
+        if (viewMode !== 'MONTHLY') {
+            alert('Calculation can only be triggered for Monthly view. Aggregates are computed automatically.');
+            return;
+        }
+
         if (!confirm(`Calculate performance for ${filters.month}/${filters.year} for all employees?`)) return;
 
         setCalculating(true);
@@ -90,10 +112,11 @@ export default function MonthlyPerformancePage() {
         return 'text-danger-600 bg-danger-50';
     };
 
-    const getTrendIcon = (trend: string) => {
-        if (trend === 'IMPROVING') return '📈';
-        if (trend === 'DECLINING') return '📉';
-        return '➡️';
+    const getAchievementColor = (percentage: number) => {
+        if (percentage >= 100) return 'text-success-600';
+        if (percentage >= 80) return 'text-primary-600';
+        if (percentage >= 50) return 'text-warning-600';
+        return 'text-danger-600';
     };
 
     return (
@@ -102,46 +125,81 @@ export default function MonthlyPerformancePage() {
                 {/* Header */}
                 <div className="flex justify-between items-start">
                     <div>
-                        <h1 className="text-3xl font-black text-secondary-900">Monthly Performance Analytics</h1>
-                        <p className="text-secondary-500">Comprehensive employee performance tracking and insights</p>
+                        <h1 className="text-3xl font-black text-secondary-900">Performance Validation</h1>
+                        <p className="text-secondary-500">Validate actual performance against targets (Monthly / Quarterly / Yearly)</p>
                     </div>
-                    <button
-                        onClick={handleCalculate}
-                        disabled={calculating}
-                        className="btn btn-primary flex items-center gap-2"
-                    >
-                        <Play size={18} />
-                        {calculating ? 'Calculating...' : 'Calculate Performance'}
-                    </button>
+                    {viewMode === 'MONTHLY' && (
+                        <button
+                            onClick={handleCalculate}
+                            disabled={calculating}
+                            className="btn btn-primary flex items-center gap-2"
+                        >
+                            <Play size={18} />
+                            {calculating ? 'Calculating...' : 'Calculate Performance'}
+                        </button>
+                    )}
+                </div>
+
+                {/* Tabs */}
+                <div className="flex border-b border-secondary-200">
+                    {['MONTHLY', 'QUARTERLY', 'YEARLY'].map((mode) => (
+                        <button
+                            key={mode}
+                            onClick={() => setViewMode(mode as any)}
+                            className={`px-6 py-3 font-bold text-sm transition-colors border-b-2 ${viewMode === mode
+                                ? 'border-primary-600 text-primary-600'
+                                : 'border-transparent text-secondary-500 hover:text-secondary-700'
+                                }`}
+                        >
+                            {mode.charAt(0) + mode.slice(1).toLowerCase()}
+                        </button>
+                    ))}
                 </div>
 
                 {/* Filters */}
                 <div className="card-premium p-6">
                     <div className="flex items-center gap-2 mb-4">
                         <Filter size={20} className="text-primary-600" />
-                        <h3 className="font-bold text-lg">Filters</h3>
+                        <h3 className="font-bold text-lg">Filters ({viewMode})</h3>
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                        <div>
-                            <label className="label">Month</label>
-                            <select
-                                className="input"
-                                title="Select Month"
-                                value={filters.month}
-                                onChange={e => setFilters({ ...filters, month: parseInt(e.target.value) })}
-                            >
-                                {Array.from({ length: 12 }, (_, i) => i + 1).map(m => (
-                                    <option key={m} value={m}>
-                                        {new Date(2024, m - 1).toLocaleString('default', { month: 'long' })}
-                                    </option>
-                                ))}
-                            </select>
-                        </div>
+                        {viewMode === 'MONTHLY' && (
+                            <div>
+                                <label className="label">Month</label>
+                                <select
+                                    className="input"
+                                    value={filters.month}
+                                    onChange={e => setFilters({ ...filters, month: parseInt(e.target.value) })}
+                                >
+                                    {Array.from({ length: 12 }, (_, i) => i + 1).map(m => (
+                                        <option key={m} value={m}>
+                                            {new Date(2024, m - 1).toLocaleString('default', { month: 'long' })}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                        )}
+
+                        {viewMode === 'QUARTERLY' && (
+                            <div>
+                                <label className="label">Quarter</label>
+                                <select
+                                    className="input"
+                                    value={filters.quarter}
+                                    onChange={e => setFilters({ ...filters, quarter: parseInt(e.target.value) })}
+                                >
+                                    <option value={1}>Q1 (Jan - Mar)</option>
+                                    <option value={2}>Q2 (Apr - Jun)</option>
+                                    <option value={3}>Q3 (Jul - Sep)</option>
+                                    <option value={4}>Q4 (Oct - Dec)</option>
+                                </select>
+                            </div>
+                        )}
+
                         <div>
                             <label className="label">Year</label>
                             <select
                                 className="input"
-                                title="Select Year"
                                 value={filters.year}
                                 onChange={e => setFilters({ ...filters, year: parseInt(e.target.value) })}
                             >
@@ -150,6 +208,7 @@ export default function MonthlyPerformancePage() {
                                 ))}
                             </select>
                         </div>
+
                         <div className="md:col-span-2 flex items-end gap-2">
                             <button
                                 onClick={fetchSnapshots}
@@ -161,34 +220,6 @@ export default function MonthlyPerformancePage() {
                     </div>
                 </div>
 
-                {/* Summary Stats */}
-                {snapshots.length > 0 && (
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                        <div className="card-premium p-6 border-t-4 border-success-500">
-                            <p className="text-xs font-bold text-secondary-400 uppercase mb-2">Top Performers</p>
-                            <p className="text-3xl font-black text-success-600">
-                                {snapshots.filter(s => s.isTopPerformer).length}
-                            </p>
-                        </div>
-                        <div className="card-premium p-6 border-t-4 border-warning-500">
-                            <p className="text-xs font-bold text-secondary-400 uppercase mb-2">Need Attention</p>
-                            <p className="text-3xl font-black text-warning-600">
-                                {snapshots.filter(s => s.needsAttention).length}
-                            </p>
-                        </div>
-                        <div className="card-premium p-6 border-t-4 border-primary-500">
-                            <p className="text-xs font-bold text-secondary-400 uppercase mb-2">Avg Score</p>
-                            <p className="text-3xl font-black text-primary-600">
-                                {(snapshots.reduce((sum, s) => sum + s.overallScore, 0) / snapshots.length).toFixed(1)}
-                            </p>
-                        </div>
-                        <div className="card-premium p-6 border-t-4 border-indigo-500">
-                            <p className="text-xs font-bold text-secondary-400 uppercase mb-2">Total Employees</p>
-                            <p className="text-3xl font-black text-indigo-600">{snapshots.length}</p>
-                        </div>
-                    </div>
-                )}
-
                 {/* Performance List */}
                 {loading ? (
                     <div className="flex justify-center py-20">
@@ -197,9 +228,11 @@ export default function MonthlyPerformancePage() {
                 ) : snapshots.length === 0 ? (
                     <div className="card-premium p-12 text-center">
                         <Calendar size={48} className="mx-auto text-secondary-300 mb-4" />
-                        <h3 className="text-xl font-bold text-secondary-900 mb-2">No Performance Data</h3>
+                        <h3 className="text-xl font-bold text-secondary-900 mb-2">No Data Found</h3>
                         <p className="text-secondary-500 mb-4">
-                            Click &quot;Calculate Performance&quot; to generate monthly analytics
+                            {viewMode === 'MONTHLY'
+                                ? 'Click "Calculate Performance" to generate data.'
+                                : 'No aggregated data found for this period.'}
                         </p>
                     </div>
                 ) : (
@@ -209,64 +242,59 @@ export default function MonthlyPerformancePage() {
                                 <thead className="bg-secondary-50">
                                     <tr>
                                         <th className="px-6 py-4 text-left text-xs font-bold text-secondary-500 uppercase">Employee</th>
-                                        <th className="px-6 py-4 text-left text-xs font-bold text-secondary-500 uppercase">Department</th>
-                                        <th className="px-6 py-4 text-center text-xs font-bold text-secondary-500 uppercase">Score</th>
-                                        <th className="px-6 py-4 text-center text-xs font-bold text-secondary-500 uppercase">Grade</th>
-                                        <th className="px-6 py-4 text-center text-xs font-bold text-secondary-500 uppercase">Attendance</th>
-                                        <th className="px-6 py-4 text-center text-xs font-bold text-secondary-500 uppercase">Points</th>
-                                        <th className="px-6 py-4 text-center text-xs font-bold text-secondary-500 uppercase">Reports</th>
+                                        <th className="px-6 py-4 text-center text-xs font-bold text-secondary-500 uppercase">
+                                            {viewMode === 'MONTHLY' ? 'Month' : viewMode === 'QUARTERLY' ? 'Quarter' : 'Year'}
+                                        </th>
+                                        <th className="px-6 py-4 text-center text-xs font-bold text-secondary-500 uppercase">Revenue Target</th>
+                                        <th className="px-6 py-4 text-center text-xs font-bold text-secondary-500 uppercase">Revenue Actual</th>
+                                        <th className="px-6 py-4 text-center text-xs font-bold text-secondary-500 uppercase">Achievement</th>
+                                        <th className="px-6 py-4 text-center text-xs font-bold text-secondary-500 uppercase">Score / Grade</th>
                                         <th className="px-6 py-4 text-center text-xs font-bold text-secondary-500 uppercase">Trend</th>
-                                        <th className="px-6 py-4 text-center text-xs font-bold text-secondary-500 uppercase">Status</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-secondary-100">
-                                    {snapshots.map(snapshot => (
-                                        <tr key={snapshot.id} className="hover:bg-secondary-50">
+                                    {snapshots.map((snapshot, index) => (
+                                        <tr key={snapshot.id || index} className="hover:bg-secondary-50">
                                             <td className="px-6 py-4">
                                                 <div>
                                                     <p className="font-bold text-secondary-900">{snapshot.employee.user.name || snapshot.employee.user.email}</p>
                                                     <p className="text-xs text-secondary-500">{snapshot.employee.user.role}</p>
+                                                    <p className="text-xs text-secondary-400">{snapshot.department?.name}</p>
                                                 </div>
                                             </td>
-                                            <td className="px-6 py-4">
-                                                <span className="text-sm text-secondary-700">{snapshot.department?.name || '-'}</span>
+                                            <td className="px-6 py-4 text-center text-sm font-semibold text-secondary-700">
+                                                {viewMode === 'MONTHLY' && new Date(snapshot.year, snapshot.month - 1).toLocaleString('default', { month: 'short', year: 'numeric' })}
+                                                {viewMode === 'QUARTERLY' && `Q${snapshot.quarter} ${snapshot.year}`}
+                                                {viewMode === 'YEARLY' && snapshot.year}
                                             </td>
                                             <td className="px-6 py-4 text-center">
-                                                <div className="text-2xl font-black text-primary-600">{snapshot.overallScore.toFixed(1)}</div>
+                                                <div className="text-sm font-bold text-secondary-500">₹{(snapshot.revenueTarget || 0).toLocaleString()}</div>
                                             </td>
                                             <td className="px-6 py-4 text-center">
-                                                <span className={`px-3 py-1 rounded-full text-sm font-black ${getGradeColor(snapshot.performanceGrade)}`}>
-                                                    {snapshot.performanceGrade}
-                                                </span>
+                                                <div className="text-sm font-bold text-secondary-900">₹{snapshot.totalRevenueGenerated.toLocaleString()}</div>
                                             </td>
                                             <td className="px-6 py-4 text-center">
-                                                <div className="text-sm font-bold text-secondary-900">{snapshot.attendanceScore.toFixed(0)}%</div>
-                                                <div className="text-xs text-secondary-500">{snapshot.daysPresent}/{snapshot.totalWorkingDays} days</div>
-                                            </td>
-                                            <td className="px-6 py-4 text-center">
-                                                <div className="flex items-center justify-center gap-1">
-                                                    <Award size={16} className="text-warning-500" />
-                                                    <span className="font-bold text-secondary-900">{snapshot.totalPointsEarned}</span>
+                                                <div className={`text-lg font-black ${getAchievementColor(snapshot.revenueAchievement)}`}>
+                                                    {snapshot.revenueAchievement.toFixed(1)}%
                                                 </div>
                                             </td>
                                             <td className="px-6 py-4 text-center">
-                                                <div className="text-sm font-bold text-secondary-900">{snapshot.reportSubmissionRate.toFixed(0)}%</div>
-                                                <div className="text-xs text-secondary-500">{snapshot.reportsSubmitted}/{snapshot.reportsExpected}</div>
-                                            </td>
-                                            <td className="px-6 py-4 text-center">
-                                                <div className="flex items-center justify-center gap-1">
-                                                    <span className="text-xl">{getTrendIcon(snapshot.trend)}</span>
-                                                    <span className="text-xs font-bold text-secondary-600">{snapshot.trend}</span>
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-4 text-center">
-                                                {snapshot.isTopPerformer && (
-                                                    <span className="badge bg-success-100 text-success-700 text-xs">⭐ Top</span>
-                                                )}
-                                                {snapshot.needsAttention && (
-                                                    <span className="badge bg-warning-100 text-warning-700 text-xs flex items-center gap-1">
-                                                        <AlertCircle size={12} /> Alert
+                                                <div className="flex flex-col items-center gap-1">
+                                                    <span className="text-xl font-black text-secondary-900">{snapshot.overallScore.toFixed(1)}</span>
+                                                    <span className={`px-2 py-0.5 rounded text-xs font-bold ${getGradeColor(snapshot.performanceGrade)}`}>
+                                                        {snapshot.performanceGrade}
                                                     </span>
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-4 text-center">
+                                                {viewMode === 'MONTHLY' && snapshot.trend && (
+                                                    <div className="flex items-center justify-center gap-1">
+                                                        <span>{snapshot.trend === 'IMPROVING' ? '📈' : snapshot.trend === 'DECLINING' ? '📉' : '➡️'}</span>
+                                                        <span className="text-xs text-secondary-500">{snapshot.trend}</span>
+                                                    </div>
+                                                )}
+                                                {viewMode !== 'MONTHLY' && (
+                                                    <span className="text-xs text-secondary-400">-</span>
                                                 )}
                                             </td>
                                         </tr>

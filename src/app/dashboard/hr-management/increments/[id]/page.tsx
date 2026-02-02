@@ -704,20 +704,30 @@ export default function IncrementDetailPage() {
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div className="p-4 bg-secondary-50 rounded-xl border border-secondary-100">
                                     <p className="text-sm font-bold text-secondary-600 mb-2 uppercase">Previous KPI Metrics</p>
-                                    {increment.oldKPI ? (
-                                        <pre className="bg-white/50 p-4 rounded-lg overflow-x-auto text-[10px] sm:text-xs">
-                                            {JSON.stringify(increment.oldKPI, null, 2)}
-                                        </pre>
+                                    {increment.oldKPI && Object.keys(increment.oldKPI).length > 0 ? (
+                                        <ul className="space-y-2">
+                                            {Object.entries(increment.oldKPI).map(([key, value]) => (
+                                                <li key={key} className="flex justify-between items-center text-sm border-b border-secondary-200 pb-1 last:border-0">
+                                                    <span className="font-semibold text-secondary-700 capitalize">{key.replace(/_/g, ' ')}</span>
+                                                    <span className="font-black text-secondary-900">{String(value)}</span>
+                                                </li>
+                                            ))}
+                                        </ul>
                                     ) : (
                                         <p className="text-secondary-400 italic text-sm">No previous KPIs defined.</p>
                                     )}
                                 </div>
                                 <div className="p-4 bg-purple-50 rounded-xl border border-purple-100">
                                     <p className="text-sm font-bold text-purple-700 mb-2 uppercase">New KPI Metrics (Proposed)</p>
-                                    {increment.newKPI ? (
-                                        <pre className="bg-white/50 p-4 rounded-lg overflow-x-auto text-[10px] sm:text-xs">
-                                            {JSON.stringify(increment.newKPI, null, 2)}
-                                        </pre>
+                                    {increment.newKPI && Object.keys(increment.newKPI).length > 0 ? (
+                                        <ul className="space-y-2">
+                                            {Object.entries(increment.newKPI).map(([key, value]) => (
+                                                <li key={key} className="flex justify-between items-center text-sm border-b border-purple-200 pb-1 last:border-0">
+                                                    <span className="font-semibold text-purple-800 capitalize">{key.replace(/_/g, ' ')}</span>
+                                                    <span className="font-black text-purple-900">{String(value)}</span>
+                                                </li>
+                                            ))}
+                                        </ul>
                                     ) : (
                                         <p className="text-secondary-400 italic text-sm">No KPI changes proposed.</p>
                                     )}

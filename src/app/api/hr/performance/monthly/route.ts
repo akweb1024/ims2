@@ -204,10 +204,12 @@ async function calculateEmployeePerformance(employeeId: string, month: number, y
         averageSelfRating,
         averageManagerRating,
 
-        // Revenue
+        // Revenue & Targets
         totalRevenueGenerated,
-        revenueTarget: 0, // Can be fetched from employee targets
-        revenueAchievement: 0,
+        revenueTarget: employee.monthlyTarget || 0,
+        revenueAchievement: (employee.monthlyTarget && employee.monthlyTarget > 0)
+            ? (totalRevenueGenerated / employee.monthlyTarget) * 100
+            : 0,
 
         // Commitment
         deadlinesMet: 0, // Can be enhanced
