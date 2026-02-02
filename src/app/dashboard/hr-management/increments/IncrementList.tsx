@@ -191,6 +191,7 @@ export default function IncrementList({ initialIncrements }: { initialIncrements
                             <thead className="bg-secondary-50">
                                 <tr>
                                     <th className="px-6 py-4 text-left text-xs font-bold text-secondary-600 uppercase">Employee</th>
+                                    <th className="px-6 py-4 text-left text-xs font-bold text-secondary-600 uppercase text-center">FY</th>
                                     <th className="px-6 py-4 text-left text-xs font-bold text-secondary-600 uppercase">Old Salary</th>
                                     <th className="px-6 py-4 text-left text-xs font-bold text-secondary-600 uppercase">New Salary</th>
                                     <th className="px-6 py-4 text-left text-xs font-bold text-secondary-600 uppercase">Increment</th>
@@ -211,6 +212,11 @@ export default function IncrementList({ initialIncrements }: { initialIncrements
                                                     {increment.employeeProfile?.user?.email}
                                                 </p>
                                             </div>
+                                        </td>
+                                        <td className="px-6 py-4 text-center">
+                                            <span className="px-2 py-0.5 bg-amber-50 text-amber-700 rounded text-xs font-black">
+                                                {increment.fiscalYear || '-'}
+                                            </span>
                                         </td>
                                         <td className="px-6 py-4">
                                             <p className="font-medium text-secondary-900">

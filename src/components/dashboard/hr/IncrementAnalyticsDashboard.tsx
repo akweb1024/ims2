@@ -73,7 +73,14 @@ export default function IncrementAnalyticsDashboard({ data }: IncrementAnalytics
             {/* Header Context */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                    <h2 className="text-3xl font-black text-secondary-900 tracking-tight">Salary Increment 360° Analysis</h2>
+                    <div className="flex items-center gap-3">
+                        <h2 className="text-3xl font-black text-secondary-900 tracking-tight">Salary Increment 360° Analysis</h2>
+                        {fiscalYear && (
+                            <span className="px-3 py-1 bg-amber-100 text-amber-700 rounded-xl text-sm font-black ring-1 ring-amber-200">
+                                FY {fiscalYear}
+                            </span>
+                        )}
+                    </div>
                     <p className="text-secondary-600 mt-1 font-medium italic">
                         {view === 'FORECAST' ? 'Predictive modeling of future salary expenditures.' : 'Strategic visualization of organizational budget impact and growth targets.'}
                     </p>

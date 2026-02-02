@@ -178,12 +178,19 @@ export default function IncrementDetailPage() {
                         {getStatusBadge(increment.status)}
                     </div>
 
-                    {/* Employee Info */}
+                    {/* Employee & Record Info */}
                     <div className="card-premium p-6">
-                        <h2 className="text-lg font-black text-secondary-900 mb-4 flex items-center gap-2">
-                            <User className="text-primary-500" size={20} />
-                            Employee Information
-                        </h2>
+                        <div className="flex justify-between items-center mb-4">
+                            <h2 className="text-lg font-black text-secondary-900 flex items-center gap-2">
+                                <User className="text-primary-500" size={20} />
+                                Employee Information
+                            </h2>
+                            {increment.fiscalYear && (
+                                <div className="px-3 py-1 bg-amber-50 border border-amber-200 rounded-lg text-amber-700 text-xs font-black uppercase tracking-widest">
+                                    FY {increment.fiscalYear}
+                                </div>
+                            )}
+                        </div>
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                             <div>
                                 <p className="text-xs text-secondary-500 font-bold uppercase">Name</p>
@@ -721,12 +728,22 @@ export default function IncrementDetailPage() {
                                     <p className="text-sm font-bold text-purple-700 mb-2 uppercase">New KPI Metrics (Proposed)</p>
                                     {increment.newKPI && Object.keys(increment.newKPI).length > 0 ? (
                                         <ul className="space-y-2">
-                                            {Object.entries(increment.newKPI).map(([key, value]) => (
-                                                <li key={key} className="flex justify-between items-center text-sm border-b border-purple-200 pb-1 last:border-0">
-                                                    <span className="font-semibold text-purple-800 capitalize">{key.replace(/_/g, ' ')}</span>
-                                                    <span className="font-black text-purple-900">{String(value)}</span>
-                                                </li>
-                                            ))}
+                                            {Object.entries(increment.newKPI).map(([key, value]: [string, any]) => {
+                                                // Handle Special Case for linkedTaskTemplates or arrays of objects
+                                                let displayValue = String(value);
+                                                if (Array.isArray(value)) {
+                                                    displayValue = value.map(v => v.name || v.title || JSON.stringify(v)).join(', ');
+                                                } else if (typeof value === 'object' && value !== null) {
+                                                    displayValue = value.name || value.title || JSON.stringify(value);
+                                                }
+
+                                                return (
+                                                    <li key={key} className="flex justify-between items-center text-sm border-b border-purple-200 pb-1 last:border-0">
+                                                        <span className="font-semibold text-purple-800 capitalize">{key.replace(/_/g, ' ')}</span>
+                                                        <span className="font-black text-purple-900 text-right ml-4">{displayValue}</span>
+                                                    </li>
+                                                );
+                                            })}
                                         </ul>
                                     ) : (
                                         <p className="text-secondary-400 italic text-sm">No KPI changes proposed.</p>
