@@ -10,7 +10,7 @@ interface EmployeeDocumentsProps {
 }
 
 export default function EmployeeDocuments({ data, fullProfile }: EmployeeDocumentsProps) {
-    const { data: digitalDocs, isLoading: digitalLoading } = useDigitalDocuments();
+    const { data: digitalDocs, isLoading: digitalLoading } = useDigitalDocuments(fullProfile?.id, { enabled: !!fullProfile?.id });
     const { sign } = useDigitalDocumentMutations();
     const [viewingDoc, setViewingDoc] = useState<any>(null);
     const [isSigning, setIsSigning] = useState(false);

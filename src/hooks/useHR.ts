@@ -200,10 +200,11 @@ export const useDocumentTemplates = () => {
     });
 };
 
-export const useDigitalDocuments = (employeeId?: string) => {
+export const useDigitalDocuments = (employeeId?: string, options: { enabled?: boolean } = {}) => {
     return useQuery<any[]>({
         queryKey: ['digital-documents', employeeId],
         queryFn: () => fetchJson(`/api/hr/digital-documents${employeeId ? `?employeeId=${employeeId}` : ''}`),
+        enabled: options.enabled !== undefined ? options.enabled : true
     });
 };
 
