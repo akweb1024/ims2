@@ -767,13 +767,13 @@ export default function IncrementDetailPage() {
 
                     {/* Action Buttons */}
                     <div className="flex justify-end gap-4">
-                        {increment.status === 'DRAFT' && (isManager || isAdmin) && (
+                        {((increment.status === 'DRAFT' && (isManager || isAdmin)) || (increment.status === 'APPROVED' && currentUser?.role === 'SUPER_ADMIN')) && (
                             <Link
                                 href={`/dashboard/hr-management/increments/${increment.id}/edit`}
                                 className="btn btn-outline"
                             >
                                 <Edit size={20} />
-                                Edit Draft
+                                {increment.status === 'APPROVED' ? 'Edit Increment' : 'Edit Draft'}
                             </Link>
                         )}
 

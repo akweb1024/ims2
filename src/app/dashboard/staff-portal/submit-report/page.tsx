@@ -851,7 +851,7 @@ export default function SubmitReportPage() {
                                     <button
                                         type="button"
                                         onClick={() => setShowRevenueModal(true)}
-                                        className="px-4 py-2 text-sm font-bold text-white bg-success-600 hover:bg-success-700 rounded-xl transition-all shadow-md flex items-center gap-2"
+                                        className="px-4 py-2 text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl transition-all shadow-md flex items-center gap-2"
                                     >
                                         <PlusCircle size={16} /> Record New Revenue
                                     </button>

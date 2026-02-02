@@ -96,7 +96,7 @@ export default function SalaryStructureManager() {
         }
     };
 
-    const calculateStructureFromGross = (gross: number, bonusOverride = 0) => {
+    const calculateStructureFromGross = (gross: number, bonusOverride = 0, perkOverrides?: any) => {
         // Standard Indian breakdown: 40-50% Basic, 50% of Basic as HRA, etc.
         const basic = Math.round(gross * 0.4);
         const hra = Math.round(basic * 0.5);
@@ -127,7 +127,8 @@ export default function SalaryStructureManager() {
             esicEmployee: esic,
             esicEmployer: Math.ceil(gross * 0.0325),
             professionalTax: gross > 10000 ? 200 : 0,
-            gratuity: Math.round(basic * (15 / 26) * (1 / 12)) // Approx monthly provision
+            gratuity: Math.round(basic * (15 / 26) * (1 / 12)), // Approx monthly provision
+            ...(perkOverrides || {})
         });
     };
 
@@ -161,7 +162,15 @@ export default function SalaryStructureManager() {
                         amount = Math.round(amount / 12);
                     }
 
-                    calculateStructureFromGross(amount, data.newIncentive ? data.newIncentive / 12 : 0);
+                    const perkOverrides = {
+                        healthCare: data.newHealthCare || 0,
+                        travelling: data.newTravelling || 0,
+                        mobile: data.newMobile || 0,
+                        internet: data.newInternet || 0,
+                        booksAndPeriodicals: data.newBooksAndPeriodicals || 0
+                    };
+
+                    calculateStructureFromGross(amount, data.newIncentive ? data.newIncentive / 12 : 0, perkOverrides);
                 }
             } else {
                 alert('No approved increment record found for this employee.');

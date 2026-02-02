@@ -53,6 +53,16 @@ export default function StaffPortalPage() {
         status: 'PENDING'
     });
     const [activeSubTab, setActiveSubTab] = useState('members');
+    const [elapsedTime, setElapsedTime] = useState('00h 00m');
+    const [remainingTime, setRemainingTime] = useState('08h 30m');
+
+    const todayAttendance = attendance.find(a => {
+        const d = new Date(a.date);
+        const today = new Date();
+        return d.getDate() === today.getDate() &&
+            d.getMonth() === today.getMonth() &&
+            d.getFullYear() === today.getFullYear();
+    });
 
     useEffect(() => {
         const userData = localStorage.getItem('user');
@@ -117,6 +127,44 @@ export default function StaffPortalPage() {
         }
     };
 
+    // Timer Logic
+    useEffect(() => {
+        if (todayAttendance?.checkIn && !todayAttendance?.checkOut) {
+            const interval = setInterval(() => {
+                const now = new Date();
+                const checkIn = new Date(todayAttendance.checkIn);
+                const diffMs = now.getTime() - checkIn.getTime();
+
+                // Calculate Working Hours
+                const hours = Math.floor(diffMs / (1000 * 60 * 60));
+                const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+                setElapsedTime(`${hours}h ${minutes}m`);
+
+                // Calculate Remaining (Target: 8h 30m = 8.5 * 60 * 60 * 1000 ms)
+                const targetMs = 8.5 * 60 * 60 * 1000;
+                const remainingMs = targetMs - diffMs;
+
+                if (remainingMs > 0) {
+                    const rHours = Math.floor(remainingMs / (1000 * 60 * 60));
+                    const rMinutes = Math.floor((remainingMs % (1000 * 60 * 60)) / (1000 * 60));
+                    setRemainingTime(`${rHours}h ${rMinutes}m`);
+                } else {
+                    setRemainingTime('Overtime');
+                }
+            }, 60000); // Update every minute
+
+            // Initial call
+            const now = new Date();
+            const checkIn = new Date(todayAttendance.checkIn);
+            const diffMs = now.getTime() - checkIn.getTime();
+            const hours = Math.floor(diffMs / (1000 * 60 * 60));
+            const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+            setElapsedTime(`${hours}h ${minutes}m`);
+
+            return () => clearInterval(interval);
+        }
+    }, [todayAttendance]);
+
     const handleAttendance = async (action: 'check-in' | 'check-out') => {
         setCheckingIn(true);
         try {
@@ -164,13 +212,7 @@ export default function StaffPortalPage() {
         }
     };
 
-    const todayAttendance = attendance.find(a => {
-        const d = new Date(a.date);
-        const today = new Date();
-        return d.getDate() === today.getDate() &&
-            d.getMonth() === today.getMonth() &&
-            d.getFullYear() === today.getFullYear();
-    });
+
 
     const baseTabs = [
         { id: 'overview', name: 'Overview', icon: '🏠' },
@@ -221,6 +263,19 @@ export default function StaffPortalPage() {
                     </div>
 
                     <div className="mt-6 md:mt-0 flex flex-col items-end gap-3 relative z-10">
+                        {todayAttendance?.checkIn && !todayAttendance.checkOut && (
+                            <div className="flex gap-4 mb-2">
+                                <div className="text-right">
+                                    <p className="text-[10px] font-black text-secondary-400 uppercase tracking-widest">Working</p>
+                                    <p className="font-black text-secondary-900 text-lg">{elapsedTime}</p>
+                                </div>
+                                <div className="text-right">
+                                    <p className="text-[10px] font-black text-secondary-400 uppercase tracking-widest">Remaining</p>
+                                    <p className={`font-black text-lg ${remainingTime === 'Overtime' ? 'text-success-600' : 'text-primary-600'}`}>{remainingTime}</p>
+                                </div>
+                            </div>
+                        )}
+
                         {!todayAttendance?.checkIn && (
                             <div className="flex gap-2 p-1 bg-secondary-100 rounded-xl mb-1">
                                 <button
@@ -251,7 +306,7 @@ export default function StaffPortalPage() {
                             <button
                                 onClick={() => handleAttendance('check-out')}
                                 disabled={checkingIn}
-                                className="btn bg-danger-600 text-white hover:bg-danger-700 px-8 py-3 rounded-2xl shadow-lg hover:shadow-danger-200 transition-all flex items-center gap-2"
+                                className="btn bg-danger-600 text-white hover:bg-danger-700 px-8 py-3 rounded-2xl shadow-lg shadow-danger-200 opacity-100 transition-all flex items-center gap-2 hover:scale-105"
                             >
                                 {checkingIn ? '...' : 'Check Out'} 🚪
                             </button>

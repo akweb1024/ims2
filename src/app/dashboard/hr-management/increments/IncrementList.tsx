@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import {
     DollarSign, TrendingUp, Clock, CheckCircle, XCircle,
@@ -12,6 +12,14 @@ import FormattedDate from '@/components/common/FormattedDate';
 export default function IncrementList({ initialIncrements }: { initialIncrements: any[] }) {
     const router = useRouter();
     const [increments, setIncrements] = useState(initialIncrements);
+    const [currentUser, setCurrentUser] = useState<any>(null);
+
+    useEffect(() => {
+        const userData = localStorage.getItem('user');
+        if (userData) {
+            setCurrentUser(JSON.parse(userData));
+        }
+    }, []);
     const [statusFilter, setStatusFilter] = useState('ALL');
     const [searchQuery, setSearchQuery] = useState('');
 
@@ -240,24 +248,24 @@ export default function IncrementList({ initialIncrements }: { initialIncrements
                                                     <Eye size={18} className="text-primary-600" />
                                                 </Link>
 
-                                                {increment.status === 'DRAFT' && (
-                                                    <>
-                                                        <Link
-                                                            href={`/dashboard/hr-management/increments/${increment.id}/edit`}
-                                                            className="p-2 hover:bg-blue-100 rounded-lg transition-colors"
-                                                            title="Edit"
-                                                        >
-                                                            <Edit size={18} className="text-blue-600" />
-                                                        </Link>
+                                                {(increment.status === 'DRAFT' || (currentUser?.role === 'SUPER_ADMIN' && increment.status === 'APPROVED')) && (
+                                                    <Link
+                                                        href={`/dashboard/hr-management/increments/${increment.id}/edit`}
+                                                        className="p-2 hover:bg-blue-100 rounded-lg transition-colors"
+                                                        title="Edit"
+                                                    >
+                                                        <Edit size={18} className="text-blue-600" />
+                                                    </Link>
+                                                )}
 
-                                                        <button
-                                                            onClick={() => handleDelete(increment.id)}
-                                                            className="p-2 hover:bg-danger-100 rounded-lg transition-colors"
-                                                            title="Delete"
-                                                        >
-                                                            <Trash2 size={18} className="text-danger-600" />
-                                                        </button>
-                                                    </>
+                                                {increment.status === 'DRAFT' && (
+                                                    <button
+                                                        onClick={() => handleDelete(increment.id)}
+                                                        className="p-2 hover:bg-danger-100 rounded-lg transition-colors"
+                                                        title="Delete"
+                                                    >
+                                                        <Trash2 size={18} className="text-danger-600" />
+                                                    </button>
                                                 )}
                                             </div>
                                         </td>
