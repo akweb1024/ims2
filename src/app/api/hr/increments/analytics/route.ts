@@ -1,231 +1,157 @@
+
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { authorizedRoute } from '@/lib/middleware-auth';
 import { logger } from '@/lib/logger';
 
 export const GET = authorizedRoute(
-    ['SUPER_ADMIN', 'ADMIN', 'HR_MANAGER', 'HR', 'FINANCE_ADMIN'],
+    ['SUPER_ADMIN', 'ADMIN', 'HR_MANAGER', 'HR', 'FINANCE_ADMIN', 'MANAGER'],
     async (req: NextRequest, user) => {
         try {
-            const companyId = user.companyId;
             const { searchParams } = new URL(req.url);
-            const fiscalYearParam = searchParams.get('fiscalYear'); // e.g., "2024-25"
+            const fiscalYearParam = searchParams.get('fiscalYear'); // e.g., "24-25"
+            const scope = searchParams.get('scope') || 'COMPANY'; // COMPANY, TEAM, INDIVIDUAL
+            const statusParam = searchParams.get('status') || 'APPROVED'; // APPROVED, RECOMMENDED, ALL
+            const employeeId = searchParams.get('employeeId');
 
-            // Determine fiscal year range
+            // 1. Fiscal Year Logic
             let fiscalYearStart: Date | undefined;
             let fiscalYearEnd: Date | undefined;
 
             if (fiscalYearParam) {
-                const [startYear, endYear] = fiscalYearParam.split('-').map(y => parseInt(y));
-                fiscalYearStart = new Date(`20${startYear}-04-01`); // April 1st
-                fiscalYearEnd = new Date(`20${endYear}-03-31T23:59:59`); // March 31st
+                // Handle "24-25" or "2024-25"
+                const parts = fiscalYearParam.split('-');
+                let startYear = parseInt(parts[0]);
+                let endYear = parseInt(parts[1]);
+
+                if (startYear < 100) startYear += 2000;
+                if (endYear < 100) endYear += 2000;
+
+                fiscalYearStart = new Date(`${startYear}-04-01`); // April 1st
+                fiscalYearEnd = new Date(`${endYear}-03-31T23:59:59`); // March 31st
             }
 
-            // Fetch all increment records for the company (filtered by FY if provided)
+            // 2. Scope Filter Construction
+            const where: any = {};
+
+            if (scope === 'INDIVIDUAL') {
+                if (employeeId) {
+                    where.employeeId = employeeId;
+                } else {
+                    // Fallback to self if no employeeId provided (for non-admins)
+                    const profile = await prisma.employeeProfile.findUnique({ where: { userId: user.id } });
+                    if (profile) where.employeeId = profile.id;
+                }
+            } else if (scope === 'TEAM') {
+                // Get Direct Reports
+                const reports = await prisma.user.findMany({
+                    where: { managerId: user.id },
+                    select: { employeeProfile: { select: { id: true } } }
+                });
+                const reportIds = reports.map(r => r.employeeProfile?.id).filter(Boolean);
+                where.employeeId = { in: reportIds };
+            } else {
+                // COMPANY scope - ensure proper authorization
+                if (!['SUPER_ADMIN', 'ADMIN', 'HR', 'HR_MANAGER', 'FINANCE_ADMIN'].includes(user.role)) {
+                    return NextResponse.json({ error: 'Unauthorized for Company scope' }, { status: 403 });
+                }
+                where.employeeProfile = { user: { companyId: user.companyId } };
+            }
+
+            // 3. Status Filter Logic
+            // Statuses: DRAFT, MANAGER_APPROVED, HR_APPROVED, APPROVED, REJECTED
+            const statusFilter: any = {};
+            if (statusParam === 'APPROVED') {
+                statusFilter.in = ['APPROVED'];
+            } else if (statusParam === 'RECOMMENDED') {
+                statusFilter.in = ['MANAGER_APPROVED', 'HR_APPROVED'];
+            } else if (statusParam === 'ALL') {
+                statusFilter.in = ['APPROVED', 'MANAGER_APPROVED', 'HR_APPROVED'];
+            }
+
+            if (statusFilter.in) {
+                where.status = statusFilter;
+            }
+
+            // 4. Date Filter
+            if (fiscalYearStart && fiscalYearEnd) {
+                where.effectiveDate = {
+                    gte: fiscalYearStart,
+                    lte: fiscalYearEnd
+                };
+            }
+
+            // Fetch Records
             const increments = await prisma.salaryIncrementRecord.findMany({
-                where: {
-                    employeeProfile: {
-                        user: {
-                            companyId: companyId
-                        }
-                    },
-                    ...(fiscalYearStart && fiscalYearEnd ? {
-                        effectiveDate: {
-                            gte: fiscalYearStart,
-                            lte: fiscalYearEnd
-                        }
-                    } : {})
-                },
+                where,
                 include: {
                     employeeProfile: {
                         include: {
                             user: {
-                                include: {
-                                    department: true
-                                }
+                                include: { department: true }
                             }
                         }
                     }
                 },
-                orderBy: {
-                    effectiveDate: 'desc'
-                }
+                orderBy: { effectiveDate: 'asc' }
             });
 
-            // 1. Stats Calculation
-            const approved = increments.filter(i => i.status === 'APPROVED');
-            const pending = increments.filter(i => i.status === 'MANAGER_APPROVED' || i.status === 'DRAFT');
-
-            // Calculate perks impact separately
-            const calculatePerksChange = (inc: any) => {
-                const oldPerks = (inc.oldHealthCare || 0) + (inc.oldTravelling || 0) +
-                    (inc.oldMobile || 0) + (inc.oldInternet || 0) +
-                    (inc.oldBooksAndPeriodicals || 0);
-                const newPerks = (inc.newHealthCare || 0) + (inc.newTravelling || 0) +
-                    (inc.newMobile || 0) + (inc.newInternet || 0) +
-                    (inc.newBooksAndPeriodicals || 0);
-                return newPerks - oldPerks;
-            };
-
-            const totalApprovedImpact = approved.reduce((sum, i) => sum + (i.incrementAmount || 0), 0);
-            const totalApprovedPerksImpact = approved.reduce((sum, i) => sum + calculatePerksChange(i), 0);
-            const totalApprovedBudgetImpact = totalApprovedImpact + totalApprovedPerksImpact;
-
-            const totalPendingImpact = pending.reduce((sum, i) => sum + (i.incrementAmount || 0), 0);
-            const totalPendingPerksImpact = pending.reduce((sum, i) => sum + calculatePerksChange(i), 0);
-            const totalPendingBudgetImpact = totalPendingImpact + totalPendingPerksImpact;
-
-            const averagePercentage = approved.length > 0
-                ? approved.reduce((sum, i) => sum + (i.percentage || 0), 0) / approved.length
+            // 5. Data Processing / Aggregation
+            const totalImpact = increments.reduce((sum, i) => sum + (i.incrementAmount || 0), 0);
+            const avgPercentage = increments.length > 0
+                ? increments.reduce((sum, i) => sum + (i.percentage || 0), 0) / increments.length
                 : 0;
 
-            const targetGrowth = approved.reduce((sum, i) => sum + (Math.max(0, (i.newMonthlyTarget || 0) - (i.currentMonthlyTarget || 0))), 0);
+            // Trend Data (Monthly Aggregation)
+            const trendMap = new Map();
+            increments.forEach(inc => {
+                const d = new Date(inc.effectiveDate);
+                const key = `${d.getFullYear()}-${d.getMonth()}`; // Unique year-month key
+                const label = d.toLocaleString('default', { month: 'short', year: '2-digit' });
 
-            // 2. Trend Calculation (Last 6 months)
-            const last6Months = Array.from({ length: 6 }).map((_, i) => {
-                const d = new Date();
-                d.setMonth(d.getMonth() - (5 - i));
-                return {
-                    month: d.toLocaleString('default', { month: 'short' }),
-                    year: d.getFullYear(),
+                const current = trendMap.get(key) || {
+                    date: d,
+                    label,
                     amount: 0,
-                    count: 0
+                    count: 0,
+                    avgPerc: 0,
+                    totalPerc: 0
                 };
+
+                current.amount += (inc.incrementAmount || 0);
+                current.count += 1;
+                current.totalPerc += (inc.percentage || 0);
+                trendMap.set(key, current);
             });
 
-            approved.forEach(inc => {
-                const date = new Date(inc.effectiveDate);
-                const monthStr = date.toLocaleString('default', { month: 'short' });
-                const year = date.getFullYear();
+            // Convert to Array & Calc Averages
+            const trendData = Array.from(trendMap.values())
+                .sort((a, b) => a.date.getTime() - b.date.getTime())
+                .map((t: any) => ({
+                    month: t.label,
+                    amount: t.amount,
+                    count: t.count,
+                    percentage: t.count > 0 ? parseFloat((t.totalPerc / t.count).toFixed(2)) : 0
+                }));
 
-                const monthData = last6Months.find(m => m.month === monthStr && m.year === year);
-                if (monthData) {
-                    monthData.amount += (inc.incrementAmount || 0);
-                    monthData.count += 1;
-                }
-            });
-
-            // 3. Departmental Analysis
+            // Department Distribution
             const deptMap = new Map();
-            approved.forEach(inc => {
-                const deptName = inc.employeeProfile?.user?.department?.name || 'Unassigned';
-                const data = deptMap.get(deptName) || { name: deptName, impact: 0, count: 0, avgPercentage: 0, totalPerc: 0 };
-                data.impact += (inc.incrementAmount || 0);
-                data.count += 1;
-                data.totalPerc += (inc.percentage || 0);
-                deptMap.set(deptName, data);
+            increments.forEach(inc => {
+                const dept = inc.employeeProfile?.user?.department?.name || 'Unassigned';
+                deptMap.set(dept, (deptMap.get(dept) || 0) + (inc.incrementAmount || 0));
             });
 
-            const departments = Array.from(deptMap.values()).map((d: any) => ({
-                ...d,
-                avgPercentage: d.totalPerc / d.count
-            })).sort((a, b) => b.impact - a.impact);
-
-            // 4. Distribution Calculation
-            const distribution = [
-                { range: '0-5%', count: 0 },
-                { range: '5-10%', count: 0 },
-                { range: '10-15%', count: 0 },
-                { range: '15-20%', count: 0 },
-                { range: '20%+', count: 0 }
-            ];
-
-            approved.forEach(inc => {
-                const p = inc.percentage || 0;
-                if (p < 5) distribution[0].count++;
-                else if (p < 10) distribution[1].count++;
-                else if (p < 15) distribution[2].count++;
-                else if (p < 20) distribution[3].count++;
-                else distribution[4].count++;
-            });
-
-            // 5. ROI Calculation (Ratio of revenue target growth to increment cost)
-            const roiMultiplier = totalApprovedImpact > 0 ? targetGrowth / totalApprovedImpact : 0;
-
-            // 6. Quarterly Breakdown (if FY is selected)
-            let quarterlyBreakdown = null;
-            if (fiscalYearStart && fiscalYearEnd) {
-                const quarters = [
-                    { name: 'Q1', start: new Date(fiscalYearStart), end: new Date(fiscalYearStart.getFullYear(), fiscalYearStart.getMonth() + 3, 0) },
-                    { name: 'Q2', start: new Date(fiscalYearStart.getFullYear(), fiscalYearStart.getMonth() + 3, 1), end: new Date(fiscalYearStart.getFullYear(), fiscalYearStart.getMonth() + 6, 0) },
-                    { name: 'Q3', start: new Date(fiscalYearStart.getFullYear(), fiscalYearStart.getMonth() + 6, 1), end: new Date(fiscalYearStart.getFullYear(), fiscalYearStart.getMonth() + 9, 0) },
-                    { name: 'Q4', start: new Date(fiscalYearStart.getFullYear(), fiscalYearStart.getMonth() + 9, 1), end: new Date(fiscalYearEnd) }
-                ];
-
-                quarterlyBreakdown = quarters.map(q => {
-                    const qIncrements = approved.filter(inc => {
-                        const date = new Date(inc.effectiveDate);
-                        return date >= q.start && date <= q.end;
-                    });
-
-                    const qImpact = qIncrements.reduce((sum, i) => sum + (i.incrementAmount || 0), 0);
-                    const qCount = qIncrements.length;
-                    const qTargetGrowth = qIncrements.reduce((sum, i) => sum + (Math.max(0, (i.newMonthlyTarget || 0) - (i.currentMonthlyTarget || 0))), 0);
-
-                    return {
-                        quarter: q.name,
-                        impact: qImpact,
-                        count: qCount,
-                        targetGrowth: qTargetGrowth,
-                        avgPercentage: qCount > 0 ? qIncrements.reduce((sum, i) => sum + (i.percentage || 0), 0) / qCount : 0
-                    };
-                });
-            }
+            const departmentData = Array.from(deptMap.entries()).map(([name, value]) => ({ name, value }));
 
             return NextResponse.json({
-                stats: {
-                    totalApprovedImpact,
-                    totalApprovedPerksImpact,
-                    totalApprovedBudgetImpact,
-                    totalPendingImpact,
-                    totalPendingPerksImpact,
-                    totalPendingBudgetImpact,
-                    approvedCount: approved.length,
-                    pendingCount: pending.length,
-                    averagePercentage,
-                    targetGrowth,
-                    roiMultiplier,
-                    breakdown: approved.reduce((acc, inc) => {
-                        acc.fixed += (inc.newFixed || 0) - (inc.oldFixed || 0);
-                        acc.variable += (inc.newVariable || 0) - (inc.oldVariable || 0);
-                        acc.incentive += (inc.newIncentive || 0) - (inc.oldIncentive || 0);
-                        acc.perks += calculatePerksChange(inc);
-                        return acc;
-                    }, { fixed: 0, variable: 0, incentive: 0, perks: 0 })
+                summary: {
+                    totalImpact,
+                    count: increments.length,
+                    avgPercentage: parseFloat(avgPercentage.toFixed(2))
                 },
-                trends: last6Months,
-                departments,
-                distribution,
-                quarterlyBreakdown,
-                fiscalYear: fiscalYearParam,
-                topAdjustments: approved.slice(0, 5).map(inc => ({
-                    employee: {
-                        name: inc.employeeProfile?.user?.name || 'Unknown'
-                    },
-                    department: inc.employeeProfile?.user?.department?.name || 'Unassigned',
-                    amount: inc.incrementAmount,
-                    percentage: inc.percentage,
-                    effectiveDate: inc.effectiveDate
-                })),
-                forecast: {
-                    projectedBudget: totalApprovedImpact * (1 + (averagePercentage / 100)),
-                    confidenceScore: 0.85,
-                    trends: Array.from({ length: 6 }).map((_, i) => {
-                        const d = new Date();
-                        d.setMonth(d.getMonth() + i + 1);
-                        // Simple projection: Last month average * (1 + avgGrowth) ^ monthIndex
-                        const avgMonthly = approved.length > 0 ? totalApprovedImpact / approved.length : 0;
-                        // Use a baseline + growth curve for demo purpose if data is sparse
-                        const baseline = (totalApprovedImpact / 12) || 50000;
-                        const growth = 1 + ((averagePercentage || 5) / 100);
-                        return {
-                            month: d.toLocaleString('default', { month: 'short' }),
-                            year: d.getFullYear(),
-                            amount: Math.round(baseline * Math.pow(growth, i)),
-                            isProjection: true
-                        };
-                    })
-                }
+                trendData,
+                departmentData,
+                raw: increments.length // Debug info
             });
 
         } catch (error) {
