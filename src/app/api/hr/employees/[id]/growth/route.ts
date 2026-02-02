@@ -10,10 +10,15 @@ export const GET = authorizedRoute(
             const { id } = await params;
             const employeeId = id;
 
-            // 1. Get the User ID associated with this Employee Profile
-            const employeeProfile = await prisma.employeeProfile.findUnique({
-                where: { id: employeeId },
-                select: { userId: true, user: true }
+            // 1. Resolve Employee Profile to get User ID
+            const employeeProfile = await prisma.employeeProfile.findFirst({
+                where: {
+                    OR: [
+                        { id: employeeId },
+                        { userId: employeeId }
+                    ]
+                },
+                select: { id: true, userId: true }
             });
 
             if (!employeeProfile || !employeeProfile.userId) {
@@ -21,7 +26,7 @@ export const GET = authorizedRoute(
                     courses: [],
                     conferences: [],
                     papers: [],
-                    quizzes: []
+                    recentQuizzes: []
                 });
             }
 

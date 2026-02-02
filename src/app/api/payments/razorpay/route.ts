@@ -20,13 +20,14 @@ export async function GET(req: NextRequest) {
             razorpayPaymentId: { not: null }
         };
 
-        if (user.role !== 'SUPER_ADMIN') {
-            where.OR = [
-                { companyId: user.companyId },
-                { invoice: { companyId: user.companyId } },
-                { invoice: { subscription: { companyId: user.companyId } } }
-            ];
-        }
+        // Open Ledger Policy: Allow all authorized users to see all transactions
+        // if (user.role !== 'SUPER_ADMIN') {
+        //     where.OR = [
+        //         { companyId: user.companyId },
+        //         { invoice: { companyId: user.companyId } },
+        //         { invoice: { subscription: { companyId: user.companyId } } }
+        //     ];
+        // }
 
         if (startDate || endDate) {
             where.paymentDate = {};
@@ -146,7 +147,7 @@ export async function GET(req: NextRequest) {
                     SUM(CASE WHEN status = 'captured' THEN amount ELSE 0 END) as captured
                 FROM "Payment"
                 WHERE "razorpayPaymentId" IS NOT NULL
-                ${user.role !== 'SUPER_ADMIN' ? Prisma.sql`AND "companyId" = ${user.companyId}` : Prisma.empty}
+                ${/* user.role !== 'SUPER_ADMIN' ? Prisma.sql`AND "companyId" = ${user.companyId}` : Prisma.empty */ Prisma.empty}
                 GROUP BY period
                 ORDER BY period DESC
             `,
@@ -158,7 +159,7 @@ export async function GET(req: NextRequest) {
                     SUM(CASE WHEN status = 'captured' THEN amount ELSE 0 END) as captured
                 FROM "Payment"
                 WHERE "razorpayPaymentId" IS NOT NULL
-                ${user.role !== 'SUPER_ADMIN' ? Prisma.sql`AND "companyId" = ${user.companyId}` : Prisma.empty}
+                ${/* user.role !== 'SUPER_ADMIN' ? Prisma.sql`AND "companyId" = ${user.companyId}` : Prisma.empty */ Prisma.empty}
                 GROUP BY period
                 ORDER BY period DESC
             `
@@ -247,7 +248,7 @@ export async function GET(req: NextRequest) {
                 SUM(CASE WHEN status = 'failed' THEN amount ELSE 0 END)::numeric as failed_revenue
             FROM "Payment"
             WHERE "razorpayPaymentId" IS NOT NULL
-            ${user.role !== 'SUPER_ADMIN' ? Prisma.sql`AND "companyId" = ${user.companyId}` : Prisma.empty}
+            ${/* user.role !== 'SUPER_ADMIN' ? Prisma.sql`AND "companyId" = ${user.companyId}` : Prisma.empty */ Prisma.empty}
             GROUP BY date
             ORDER BY date DESC
             LIMIT 60

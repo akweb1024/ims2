@@ -667,7 +667,7 @@ export default function EmployeeProfilePage() {
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-secondary-100">
-                                            {employee.incrementHistory && employee.incrementHistory.length > 0 ? (
+                                            {employee.incrementHistory && Array.isArray(employee.incrementHistory) && employee.incrementHistory.length > 0 ? (
                                                 employee.incrementHistory.map((rec: any) => (
                                                     <tr key={rec.id} className="hover:bg-secondary-50">
                                                         <td className="px-6 py-4 text-sm font-medium">

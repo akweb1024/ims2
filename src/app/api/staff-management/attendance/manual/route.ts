@@ -61,34 +61,54 @@ export const POST = authorizedRoute(
                 }
             }
 
+            // Standardize employeeId (could be User ID or Profile ID)
+            const profile = await prisma.employeeProfile.findFirst({
+                where: {
+                    OR: [
+                        { id: employeeId },
+                        { userId: employeeId }
+                    ]
+                },
+                select: { id: true }
+            });
+
+            if (!profile) {
+                return NextResponse.json(
+                    { error: 'Employee profile not found' },
+                    { status: 404 }
+                );
+            }
+
+            const targetProfileId = profile.id;
+
             // Upsert Attendance Record
             const attendance = await prisma.attendance.upsert({
                 where: {
                     employeeId_date: {
-                        employeeId,
+                        employeeId: targetProfileId,
                         date: recordDate
                     }
                 },
                 update: {
                     checkIn: checkInTime,
                     checkOut: checkOutTime,
-                    status: status || 'PRESENT',
+                    status: (status || 'PRESENT') as any,
                     remarks: remarks,
-                    workFrom: workMode || 'OFFICE',
+                    workFrom: (workMode || 'OFFICE') as any,
                     lateMinutes: lateMinutes,
                     companyId: user.companyId
-                },
+                } as any,
                 create: {
-                    employeeId,
+                    employeeId: targetProfileId,
                     date: recordDate,
                     checkIn: checkInTime,
                     checkOut: checkOutTime,
-                    status: status || 'PRESENT',
+                    status: (status || 'PRESENT') as any,
                     remarks: remarks,
-                    workFrom: workMode || 'OFFICE',
+                    workFrom: (workMode || 'OFFICE') as any,
                     lateMinutes: lateMinutes,
                     companyId: user.companyId
-                }
+                } as any
             });
 
             return NextResponse.json(attendance);
