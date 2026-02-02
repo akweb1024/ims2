@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { getAuthenticatedUser } from '@/lib/auth-legacy';
 import { InvoiceStatus } from '@/types';
 import { FinanceService } from '@/lib/services/finance';
+import { logger } from '@/lib/logger';
 
 // ... imports
 
@@ -100,8 +101,8 @@ export async function GET(req: NextRequest) {
         });
 
     } catch (error: any) {
-        console.error('Invoices API Error:', error);
-        return NextResponse.json({ error: 'Internal Server Error', details: error.message }, { status: 500 });
+        logger.error('Invoices API Error', error);
+        return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
     }
 }
 
@@ -161,7 +162,7 @@ export async function POST(req: NextRequest) {
                 await FinanceService.postInvoiceJournal((decoded as any).companyId, newInvoice.id);
             }
         } catch (financeError) {
-            console.error('Failed to post invoice journal:', financeError);
+            logger.error('Failed to post invoice journal', financeError, { invoiceId: newInvoice.id });
             // Non-blocking error
         }
         // --------------------------
@@ -169,8 +170,8 @@ export async function POST(req: NextRequest) {
         return NextResponse.json(newInvoice);
 
     } catch (error: any) {
-        console.error('Create Invoice Error:', error);
-        return NextResponse.json({ error: 'Internal Server Error', details: error.message }, { status: 500 });
+        logger.error('Create Invoice Error', error);
+        return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
     }
 }
 

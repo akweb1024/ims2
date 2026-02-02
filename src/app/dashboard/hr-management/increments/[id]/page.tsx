@@ -6,8 +6,8 @@ import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import FormattedDate from '@/components/common/FormattedDate';
 import SafeHTML from '@/components/common/SafeHTML';
 import {
-    DollarSign, TrendingUp, User, Calendar, CheckCircle, XCircle,
-    Clock, AlertCircle, ArrowLeft, ThumbsUp, ThumbsDown, Edit
+    DollarSign, TrendingUp, TrendingDown, User, Calendar, CheckCircle, XCircle,
+    Clock, AlertCircle, ArrowLeft, ThumbsUp, ThumbsDown, Edit, Activity
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -284,18 +284,88 @@ export default function IncrementDetailPage() {
 
                         {increment.newDesignation && increment.newDesignation !== increment.previousDesignation && (
                             <div className="mt-4 p-4 bg-indigo-50 rounded-xl border border-indigo-200">
-                                <p className="text-sm font-bold text-indigo-900 mb-2">Designation Change</p>
+                                <p className="text-sm font-bold text-indigo-900 mb-2 font-black uppercase tracking-wider flex items-center gap-2">
+                                    <TrendingUp size={16} />
+                                    Designation Upgrade
+                                </p>
                                 <div className="flex items-center gap-3">
                                     <span className="px-3 py-1 bg-secondary-200 rounded-lg font-bold text-secondary-700">
                                         {increment.previousDesignation}
                                     </span>
-                                    <TrendingUp className="text-indigo-600" />
+                                    <div className="w-8 h-px bg-indigo-300"></div>
                                     <span className="px-3 py-1 bg-indigo-200 rounded-lg font-bold text-indigo-700">
                                         {increment.newDesignation}
                                     </span>
                                 </div>
                             </div>
                         )}
+
+                        {/* Detailed Component Analysis Table */}
+                        <div className="mt-8">
+                            <h3 className="text-sm font-black text-secondary-900 mb-4 uppercase tracking-widest flex items-center gap-2">
+                                <Activity className="text-primary-500" size={16} />
+                                Detailed Component Analysis
+                            </h3>
+                            <div className="overflow-hidden border border-secondary-100 rounded-2xl shadow-sm">
+                                <table className="w-full text-sm">
+                                    <thead className="bg-secondary-50">
+                                        <tr>
+                                            <th className="px-4 py-3 text-left font-black text-secondary-500 uppercase tracking-tighter">Component</th>
+                                            <th className="px-4 py-3 text-right font-black text-secondary-500 uppercase tracking-tighter">Current</th>
+                                            <th className="px-4 py-3 text-right font-black text-secondary-500 uppercase tracking-tighter">Proposed</th>
+                                            <th className="px-4 py-3 text-right font-black text-secondary-500 uppercase tracking-tighter">Change</th>
+                                            <th className="px-4 py-3 text-right font-black text-secondary-500 uppercase tracking-tighter">% Change</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-secondary-100">
+                                        {[
+                                            { label: 'Fixed Salary', old: increment.oldFixed || 0, new: increment.newFixed || 0 },
+                                            { label: 'Variable Pay', old: increment.oldVariable || 0, new: increment.newVariable || 0 },
+                                            { label: 'Incentives', old: increment.oldIncentive || 0, new: increment.newIncentive || 0 },
+                                            {
+                                                label: 'Sec-10 Perks',
+                                                old: (increment.oldHealthCare || 0) + (increment.oldTravelling || 0) + (increment.oldMobile || 0) + (increment.oldInternet || 0) + (increment.oldBooksAndPeriodicals || 0),
+                                                new: (increment.newHealthCare || 0) + (increment.newTravelling || 0) + (increment.newMobile || 0) + (increment.newInternet || 0) + (increment.newBooksAndPeriodicals || 0)
+                                            }
+                                        ].map((row, idx) => {
+                                            const diff = row.new - row.old;
+                                            const pct = row.old > 0 ? (diff / row.old) * 100 : (diff > 0 ? 100 : 0);
+                                            return (
+                                                <tr key={idx} className="hover:bg-secondary-50 transition-colors">
+                                                    <td className="px-4 py-3 font-bold text-secondary-700">{row.label}</td>
+                                                    <td className="px-4 py-3 text-right text-secondary-600">₹{row.old.toLocaleString()}</td>
+                                                    <td className="px-4 py-3 text-right font-black text-secondary-900">₹{row.new.toLocaleString()}</td>
+                                                    <td className={`px-4 py-3 text-right font-black ${diff >= 0 ? 'text-success-600' : 'text-danger-600'}`}>
+                                                        {diff >= 0 ? '+' : ''}₹{diff.toLocaleString()}
+                                                    </td>
+                                                    <td className={`px-4 py-3 text-right font-black ${diff >= 0 ? 'text-success-600' : 'text-danger-600'}`}>
+                                                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] ${diff >= 0 ? 'bg-success-100' : 'bg-danger-100'}`}>
+                                                            {diff >= 0 ? <TrendingUp size={10} /> : <TrendingDown size={10} />}
+                                                            {pct.toFixed(1)}%
+                                                        </span>
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })}
+                                        {/* Total Row */}
+                                        <tr className="bg-secondary-50/50">
+                                            <td className="px-4 py-4 font-black text-secondary-900">Gross Total</td>
+                                            <td className="px-4 py-4 text-right font-bold text-secondary-600">₹{increment.oldSalary.toLocaleString()}</td>
+                                            <td className="px-4 py-4 text-right font-black text-primary-600 text-lg">₹{increment.newSalary.toLocaleString()}</td>
+                                            <td className="px-4 py-4 text-right font-black text-success-600">
+                                                +₹{increment.incrementAmount.toLocaleString()}
+                                            </td>
+                                            <td className="px-4 py-4 text-right font-black text-success-600">
+                                                <span className="inline-flex items-center gap-1 px-2 py-1 bg-success-600 text-white rounded-lg text-xs">
+                                                    <TrendingUp size={12} />
+                                                    {increment.percentage.toFixed(2)}%
+                                                </span>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
                     </div>
 
                     {/* Visual Salary Comparison Analytics */}

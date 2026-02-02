@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { hashPassword } from '@/lib/auth-legacy';
+import { logger } from '@/lib/logger';
 
 export async function POST(request: NextRequest) {
     try {
@@ -75,7 +76,7 @@ export async function POST(request: NextRequest) {
             where: { userId: resetToken.userId },
         });
 
-        console.log('Password reset successful for user:', resetToken.user.email);
+        logger.info('Password reset successful', { userId: resetToken.userId });
 
         // TODO: Send confirmation email
         /*
@@ -95,7 +96,7 @@ export async function POST(request: NextRequest) {
         });
 
     } catch (error) {
-        console.error('Reset password error:', error);
+        logger.error('Reset password error', error);
         return NextResponse.json(
             { error: 'An error occurred while resetting your password' },
             { status: 500 }

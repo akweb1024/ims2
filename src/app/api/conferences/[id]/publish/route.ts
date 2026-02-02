@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { authorizedRoute } from '@/lib/middleware-auth';
 import { createErrorResponse } from '@/lib/api-utils';
+import { logger } from '@/lib/logger';
 
 export const POST = authorizedRoute(
     ['SUPER_ADMIN', 'ADMIN', 'MANAGER'],
@@ -48,14 +49,14 @@ export const POST = authorizedRoute(
             }
 
             if (errors.length > 0) {
-                console.log('Publish validation failed for:', id, errors);
+                logger.warn('Publish validation failed for conference', { conferenceId: id, errors });
                 return NextResponse.json({
                     success: false,
                     errors
                 }, { status: 400 });
             }
 
-            console.log('Publishing conference:', id);
+            logger.info('Publishing conference', { conferenceId: id });
             // Publish the conference
             const updated = await prisma.conference.update({
                 where: { id },
@@ -71,7 +72,7 @@ export const POST = authorizedRoute(
                 message: 'Conference published successfully'
             });
         } catch (error) {
-            console.error('API Publish Error:', error);
+            logger.error('API Publish Error for Conference', error, { conferenceId: (await params).id });
             return createErrorResponse(error);
         }
     }

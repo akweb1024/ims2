@@ -79,6 +79,7 @@ export const POST = authorizedRoute(
                             incentiveDefinition: increment.incentiveDefinition,
 
                             designation: increment.newDesignation || increment.previousDesignation,
+                            designationJustification: increment.reason || undefined,
                             lastIncrementDate: increment.effectiveDate,
                             lastIncrementPercentage: increment.percentage,
                             monthlyTarget: increment.newMonthlyTarget || 0,

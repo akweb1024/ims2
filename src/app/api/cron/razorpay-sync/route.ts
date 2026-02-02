@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { razorpay } from '@/lib/razorpay';
 import { getAuthenticatedUser } from '@/lib/auth-legacy';
+import { logger } from '@/lib/logger';
 
 export async function GET(req: Request) {
     const { searchParams } = new URL(req.url);
@@ -28,7 +29,7 @@ export async function GET(req: Request) {
         // If force is true, we could potentially go further back, but let's stick to overlap for now
         const from = lastSync ? Math.floor(lastSync.lastSyncAt.getTime() / 1000) - 600 : undefined;
 
-        console.log(`Starting Razorpay sync from: ${from || 'beginning'} (Triggered by: ${authUser?.email || 'System'})`);
+        logger.info('Starting Cron Razorpay sync', { from: from || 'beginning', triggeredBy: authUser?.email || 'System' });
 
         let payments: any;
         try {
@@ -37,7 +38,7 @@ export async function GET(req: Request) {
                 count: 100,
             });
         } catch (err: any) {
-            console.error('Razorpay API failure:', err);
+            logger.error('Razorpay API failure in Cron', err);
             return NextResponse.json({ error: `Razorpay API Error: ${err.message}` }, { status: 500 });
         }
 
@@ -104,7 +105,7 @@ export async function GET(req: Request) {
                     });
                     syncedCount++;
                 } catch (paymentErr) {
-                    console.error(`Failed to sync payment ${rpPayment.id}:`, paymentErr);
+                    logger.error(`Failed to sync payment in Cron`, paymentErr, { paymentId: rpPayment.id });
                 }
             }
         }
@@ -117,7 +118,7 @@ export async function GET(req: Request) {
             },
         });
 
-        console.log(`Razorpay sync completed. Synced ${syncedCount} new payments. Skipped ${skippedCount} existing.`);
+        logger.info('Cron Razorpay sync completed', { syncedCount, skippedCount });
 
         return NextResponse.json({
             success: true,
@@ -126,7 +127,7 @@ export async function GET(req: Request) {
             nextSyncScheduled: new Date(Date.now() + 3600000)
         });
     } catch (error: any) {
-        console.error('Automated Razorpay Sync Error:', error);
+        logger.error('Automated Razorpay Sync Error', error);
         await prisma.razorpaySync.create({
             data: {
                 lastSyncAt: new Date(),

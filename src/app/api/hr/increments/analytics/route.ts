@@ -184,7 +184,14 @@ export const GET = authorizedRoute(
                     pendingCount: pending.length,
                     averagePercentage,
                     targetGrowth,
-                    roiMultiplier
+                    roiMultiplier,
+                    breakdown: approved.reduce((acc, inc) => {
+                        acc.fixed += (inc.newFixed || 0) - (inc.oldFixed || 0);
+                        acc.variable += (inc.newVariable || 0) - (inc.oldVariable || 0);
+                        acc.incentive += (inc.newIncentive || 0) - (inc.oldIncentive || 0);
+                        acc.perks += calculatePerksChange(inc);
+                        return acc;
+                    }, { fixed: 0, variable: 0, incentive: 0, perks: 0 })
                 },
                 trends: last6Months,
                 departments,

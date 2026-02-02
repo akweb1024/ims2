@@ -4,6 +4,7 @@ import { createEmployeeSchema, updateEmployeeSchema } from '@/lib/validators/hr'
 import { authorizedRoute } from '@/lib/middleware-auth';
 import { createErrorResponse } from '@/lib/api-utils';
 import { getDownlineUserIds } from '@/lib/hierarchy';
+import { logger } from '@/lib/logger';
 
 export const GET = authorizedRoute(
     ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'TEAM_LEADER', 'HR_MANAGER', 'HR'], // Added HR Roles
@@ -157,13 +158,12 @@ export const PATCH = authorizedRoute(
             if (!id) return createErrorResponse('Employee ID is required', 400);
 
             // Log incoming data for debugging
-            console.log('📝 Update Employee Request:', { id, dataKeys: Object.keys(data) });
+            logger.debug('Update Employee Request', { id, dataKeys: Object.keys(data) });
 
             // Validate payload
             const result = updateEmployeeSchema.safeParse(data);
             if (!result.success) {
-                console.error('❌ Validation Error:', JSON.stringify(result.error.format(), null, 2));
-                console.error('📦 Received Data:', JSON.stringify(data, null, 2));
+                logger.error('Validation Error for Employee Update', result.error.format(), { id, data });
                 return createErrorResponse(result.error);
             }
             const validUpdates = result.data;
@@ -367,7 +367,7 @@ export const PATCH = authorizedRoute(
                                 }
                             });
                         } catch (err) {
-                            console.error(`Failed to update designation for company ${cd.companyId}`, err);
+                            logger.error(`Failed to update designation for company`, err, { employeeId: id, companyId: cd.companyId });
                         }
                     }
                 }
@@ -531,7 +531,7 @@ export const POST = authorizedRoute(
                                 }
                             });
                         } catch (err) {
-                            console.error(`Failed to create designation for company ${cd.companyId}`, err);
+                            logger.error(`Failed to create designation for company`, err, { companyId: cd.companyId });
                         }
                     }
                 }

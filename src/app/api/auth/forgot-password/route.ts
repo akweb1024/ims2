@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import crypto from 'crypto';
+import { logger } from '@/lib/logger';
 
 export async function POST(request: NextRequest) {
     try {
@@ -45,9 +46,7 @@ export async function POST(request: NextRequest) {
             // For now, log the token (in production, this should send an email)
             const resetUrl = `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/reset-password?token=${token}`;
 
-            console.log('Password reset requested for:', email);
-            // console.log('Reset URL:', resetUrl);
-            // console.log('Token expires at:', expiresAt);
+            logger.info('Password reset requested', { userId: user.id });
 
             // In production, you would send an email here:
             /*
@@ -71,7 +70,7 @@ export async function POST(request: NextRequest) {
         });
 
     } catch (error) {
-        console.error('Forgot password error:', error);
+        logger.error('Forgot password error', error);
         return NextResponse.json(
             { error: 'An error occurred while processing your request' },
             { status: 500 }

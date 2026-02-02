@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { authorizedRoute } from '@/lib/middleware-auth';
 import { createErrorResponse } from '@/lib/api-utils';
+import { logger } from '@/lib/logger';
 
 export const POST = authorizedRoute(
     ['SUPER_ADMIN', 'ADMIN', 'MANAGER'],
@@ -32,11 +33,11 @@ export const POST = authorizedRoute(
 
             const hasLessons = course.modules.some(m => m.lessons.length > 0);
             if (!hasLessons) {
-                console.log('Publish validation failed for course:', id, 'No lessons found');
+                logger.warn('Publish validation failed for course: No lessons found', { courseId: id });
                 return createErrorResponse('Cannot publish: Modules must have at least one lesson', 400);
             }
 
-            console.log('Publishing course:', id);
+            logger.info('Publishing course', { courseId: id });
             // Publish the course
             const updated = await prisma.course.update({
                 where: { id },
@@ -50,7 +51,7 @@ export const POST = authorizedRoute(
             });
 
         } catch (error) {
-            console.error('API Course Publish Error:', error);
+            logger.error('API Course Publish Error', error, { courseId: (await params).id });
             return createErrorResponse(error);
         }
     }

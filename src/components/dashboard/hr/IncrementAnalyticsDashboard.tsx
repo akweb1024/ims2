@@ -161,6 +161,43 @@ export default function IncrementAnalyticsDashboard({ data }: IncrementAnalytics
                     </div>
                 </div>
 
+                {/* Budget Impact Breakdown */}
+                <div className="card-premium p-6">
+                    <div className="flex items-center justify-between mb-8">
+                        <div>
+                            <h3 className="text-lg font-black text-secondary-900 flex items-center gap-2">
+                                <DollarSign className="text-indigo-500" size={20} />
+                                Budget Impact Breakdown
+                            </h3>
+                            <p className="text-xs text-secondary-500 font-bold uppercase mt-1">Impact by salary component</p>
+                        </div>
+                    </div>
+                    <div className="h-[350px] w-full">
+                        <ResponsiveContainer width="100%" height="100%">
+                            <BarChart data={[
+                                { name: 'Fixed', amount: stats.breakdown?.fixed || 0 },
+                                { name: 'Variable', amount: stats.breakdown?.variable || 0 },
+                                { name: 'Incentive', amount: stats.breakdown?.incentive || 0 },
+                                { name: 'Perks', amount: stats.breakdown?.perks || 0 }
+                            ]}>
+                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 12, fontWeight: 700 }} />
+                                <YAxis axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 12, fontWeight: 700 }} tickFormatter={(value) => `₹${(value / 1000).toFixed(0)}k`} />
+                                <Tooltip
+                                    cursor={{ fill: '#f8fafc' }}
+                                    contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 25px -5px rgba(0,0,0,0.1)', padding: '12px' }}
+                                    formatter={(value: any) => [formatCurrency(value), 'Impact']}
+                                />
+                                <Bar dataKey="amount" radius={[8, 8, 0, 0]} barSize={40}>
+                                    {['#4f46e5', '#10b981', '#f59e0b', '#ef4444'].map((color, index) => (
+                                        <Cell key={`cell-${index}`} fill={color} />
+                                    ))}
+                                </Bar>
+                            </BarChart>
+                        </ResponsiveContainer>
+                    </div>
+                </div>
+
                 {/* Departmental Growth Contribution */}
                 <div className="card-premium p-6">
                     <div className="flex items-center justify-between mb-8">

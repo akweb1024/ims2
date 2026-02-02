@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { verifyToken } from '@/lib/auth-legacy';
+import { logger } from '@/lib/logger';
 
 export async function POST(request: NextRequest) {
     try {
@@ -88,7 +89,6 @@ export async function POST(request: NextRequest) {
         const result = await prisma.$transaction(async (tx: any) => {
             try {
                 // Create Subscription
-                console.log('Creating subscription...');
                 const subscriptionData: any = {
                     customerProfileId,
                     companyId: (decoded as any).companyId,
@@ -119,7 +119,6 @@ export async function POST(request: NextRequest) {
                 });
 
                 // Create Invoice
-                console.log('Creating invoice...');
                 const invoiceNumber = `INV-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
                 const invoice = await tx.invoice.create({
                     data: {
@@ -136,7 +135,6 @@ export async function POST(request: NextRequest) {
                 });
 
                 // Log Audit
-                console.log('Logging audit...');
                 await tx.auditLog.create({
                     data: {
                         userId: decoded.id,
@@ -149,7 +147,7 @@ export async function POST(request: NextRequest) {
 
                 return { subscription, invoice };
             } catch (err: any) {
-                console.error('Transaction Error:', err);
+                logger.error('Subscription Transaction Error', err);
                 throw err;
             }
         });
@@ -161,12 +159,10 @@ export async function POST(request: NextRequest) {
         });
 
     } catch (error: any) {
-        console.error('Create Subscription Error:', error);
+        logger.error('Create Subscription Error', error);
         return NextResponse.json({
             error: 'Internal Server Error',
-            message: error.message,
-            stack: error.stack,
-            details: error
+            message: error.message
         }, { status: 500 });
     }
 }

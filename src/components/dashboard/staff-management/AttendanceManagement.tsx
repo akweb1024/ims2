@@ -148,7 +148,19 @@ export default function AttendanceManagement({ filters }: AttendanceManagementPr
                         className="rounded-lg border border-secondary-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
                     />
                     <button
-                        onClick={() => setShowManualEntry(true)}
+                        onClick={() => {
+                            setManualEntry({
+                                employeeId: '',
+                                date: selectedDate,
+                                checkIn: '',
+                                checkOut: '',
+                                status: 'PRESENT',
+                                workMode: 'OFFICE',
+                                shift: 'GENERAL',
+                                remarks: ''
+                            });
+                            setShowManualEntry(true);
+                        }}
                         className="px-4 py-2 bg-primary-600 text-white rounded-lg text-sm font-medium hover:bg-primary-700 transition-colors"
                     >
                         + Manual Entry
@@ -272,7 +284,7 @@ export default function AttendanceManagement({ filters }: AttendanceManagementPr
                                             <button
                                                 onClick={() => {
                                                     setManualEntry({
-                                                        employeeId: record.employeeId,
+                                                        employeeId: record.employee?.userId || record.employeeId,
                                                         date: selectedDate,
                                                         checkIn: record.checkIn ? new Date(record.checkIn).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) : '',
                                                         checkOut: record.checkOut ? new Date(record.checkOut).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) : '',

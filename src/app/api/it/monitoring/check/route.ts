@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { createErrorResponse } from '@/lib/api-utils';
+import { logger } from '@/lib/logger';
 
 export const dynamic = 'force-dynamic';
 
@@ -96,11 +97,11 @@ export async function POST(req: NextRequest) {
 
             if (previousStatus !== statusStr && isDown) {
                 if (monitor.notifyEmail) {
-                    console.log(`[EMAIL ALERT] ${monitor.name} is DOWN. Reason: ${result.reason}`);
+                    logger.warn(`Email alert: Website is DOWN`, { monitorName: monitor.name, reason: result.reason });
                     // Call email service here
                 }
                 if (monitor.notifyWhatsapp) {
-                    console.log(`[WHATSAPP ALERT] ${monitor.name} is DOWN. Reason: ${result.reason}`);
+                    logger.warn(`WhatsApp alert: Website is DOWN`, { monitorName: monitor.name, reason: result.reason });
                     // Call whatsapp service here
                 }
             }

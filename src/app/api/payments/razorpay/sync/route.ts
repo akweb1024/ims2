@@ -4,6 +4,7 @@ import { razorpay } from '@/lib/razorpay';
 import Razorpay from 'razorpay';
 import { getAuthenticatedUser } from '@/lib/auth-legacy';
 import { FinanceService } from '@/lib/services/finance';
+import { logger } from '@/lib/logger';
 
 export async function POST() {
     try {
@@ -66,7 +67,7 @@ export async function POST() {
             return NextResponse.json({ error: 'No Razorpay credentials found' }, { status: 404 });
         }
 
-        console.log(`Starting Multi-Account Sync for ${accountsToSync.length} accounts`);
+        logger.info(`Starting Multi-Account Sync`, { accountCount: accountsToSync.length });
 
         // 2. Loop through each account and sync
         for (const account of accountsToSync) {
@@ -145,14 +146,14 @@ export async function POST() {
                             try {
                                 await FinanceService.postPaymentJournal(savedPayment.companyId, savedPayment.id);
                             } catch (finErr) {
-                                console.error(`Failed to post journal for payment ${savedPayment.id}:`, finErr);
+                                logger.error(`Failed to post journal for payment`, finErr, { paymentId: savedPayment.id });
                             }
                         }
                     }
                 }
 
             } catch (err: any) {
-                console.error(`Error syncing account ${account.alias}:`, err.message);
+                logger.error(`Error syncing account`, err, { alias: account.alias });
                 // Continue to next account even if one fails
             }
         }
@@ -168,7 +169,7 @@ export async function POST() {
         return NextResponse.json({ success: true, syncedCount: totalSynced });
 
     } catch (error: any) {
-        console.error('Razorpay Sync Fatal Error:', error);
+        logger.error('Razorpay Sync Fatal Error', error);
         await prisma.razorpaySync.create({
             data: {
                 lastSyncAt: new Date(),

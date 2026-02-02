@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getAuthenticatedUser } from '@/lib/auth-legacy';
+import { logger } from '@/lib/logger';
 
 export async function GET(
     req: NextRequest,
@@ -60,7 +61,7 @@ export async function GET(
         return NextResponse.json(subscription);
 
     } catch (error: any) {
-        console.error('Subscription Detail API Error:', error);
+        logger.error('Subscription Detail API Error', error, { subscriptionId: (await params).id });
         return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
     }
 }
@@ -117,7 +118,7 @@ export async function PATCH(
                         dueDate: new Date(new Date().getTime() + 15 * 24 * 60 * 60 * 1000)
                     }
                 });
-                console.log(`Auto-generated invoice ${invoiceNumber} for subscription ${id}`);
+                logger.info(`Auto-generated invoice for subscription`, { invoiceNumber, subscriptionId: id });
             }
 
             return sub;
@@ -196,7 +197,7 @@ export async function PATCH(
         return NextResponse.json(updatedSubscription);
 
     } catch (error: any) {
-        console.error('Subscription Update API Error:', error);
+        logger.error('Subscription Update API Error', error, { subscriptionId: (await params).id });
         return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
     }
 }

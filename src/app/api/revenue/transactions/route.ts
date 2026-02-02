@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { authorizedRoute } from '@/lib/middleware-auth';
+import { logger } from '@/lib/logger';
 
 // Helper to generate transaction number
 async function generateTransactionNumber(companyId: string) {
@@ -197,16 +198,16 @@ export const POST = authorizedRoute(['ADMIN', 'SUPER_ADMIN', 'MANAGER', 'TEAM_LE
                     createdByUserId: user.id
                 }
             });
-            console.log('✅ Auto-synced FinancialRecord for:', transactionNumber);
+            logger.info('Auto-synced FinancialRecord for transaction', { transactionNumber });
         } catch (syncError) {
-            console.error('❌ Failed to sync FinancialRecord:', syncError);
+            logger.error('Failed to sync FinancialRecord', syncError, { transactionNumber });
             // Don't fail the request, just log
         }
 
         return NextResponse.json(transaction);
     } catch (error: any) {
-        console.error('Error creating transaction:', error);
-        return NextResponse.json({ error: error.message }, { status: 500 });
+        logger.error('Error creating transaction', error);
+        return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
     }
 });
 

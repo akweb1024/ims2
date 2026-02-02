@@ -211,6 +211,12 @@ export default function IncrementList({ initialIncrements }: { initialIncrements
                                                 <p className="text-xs text-secondary-500">
                                                     {increment.employeeProfile?.user?.email}
                                                 </p>
+                                                {increment.newDesignation && increment.newDesignation !== increment.previousDesignation && (
+                                                    <span className="inline-flex items-center gap-1 mt-1 px-1.5 py-0.5 bg-indigo-50 text-indigo-700 rounded text-[10px] font-black uppercase tracking-wider border border-indigo-100">
+                                                        <TrendingUp size={10} />
+                                                        PROMOTION
+                                                    </span>
+                                                )}
                                             </div>
                                         </td>
                                         <td className="px-6 py-4 text-center">

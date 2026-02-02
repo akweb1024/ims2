@@ -3,10 +3,11 @@ import { prisma } from '@/lib/prisma';
 import { getAuthenticatedUser } from '@/lib/auth-legacy';
 import { createErrorResponse } from '@/lib/api-utils';
 import { startOfMonth, endOfMonth, subMonths } from 'date-fns';
+import { logger } from '@/lib/logger';
 
 export async function GET(req: NextRequest) {
     try {
-        console.log('[Performance API] Starting request...');
+        logger.debug('Performance API request started');
         const user = await getAuthenticatedUser();
         if (!user) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -23,8 +24,6 @@ export async function GET(req: NextRequest) {
         const now = new Date();
         const startDate = startOfMonth(subMonths(now, months - 1));
         const endDate = endOfMonth(now);
-
-        console.log(`[Performance API] Fetching members for company ${companyId}...`);
         // 1. Get all users in the company
         const members = await prisma.user.findMany({
             where: { companyId },
@@ -34,10 +33,8 @@ export async function GET(req: NextRequest) {
         });
 
         const memberIds = new Set(members.map(m => m.id));
-        console.log(`[Performance API] Found ${members.length} members.`);
 
         // 2. Optimized Data Fetching (Use companyId instead of 'in' list to avoid parameter limits)
-        console.log('[Performance API] Fetching bulk data...');
         const [allTasksInCompany, allTimeEntriesInCompany] = await Promise.all([
             // Get all completed tasks for this company in range
             (prisma as any).iTTask.findMany({
@@ -57,7 +54,6 @@ export async function GET(req: NextRequest) {
                 select: { userId: true, hours: true, isBillable: true }
             })
         ]);
-        console.log(`[Performance API] Fetched ${allTasksInCompany.length} company tasks and ${allTimeEntriesInCompany.length} company time entries.`);
 
         // 3. Process data in memory
         const performanceData = members.map(member => {
@@ -89,7 +85,6 @@ export async function GET(req: NextRequest) {
         const activeMembers = performanceData.filter(m => m.stats.totalHours > 0 || m.stats.completedTasks > 0);
 
         // 4. Get Overall Company IT Trends
-        console.log('[Performance API] Calculating trends...');
         const monthlyTrends = [];
         for (let i = 0; i < months; i++) {
             const mStart = startOfMonth(subMonths(now, i));
@@ -155,19 +150,16 @@ export async function GET(req: NextRequest) {
                 revenue: stat._sum.itRevenueEarned || 0
             };
         }).sort((a: any, b: any) => b.count - a.count);
-
-        console.log('[Performance API] Done.');
         return NextResponse.json({
             members: activeMembers.sort((a, b) => b.stats.completedTasks - a.stats.completedTasks),
             trends: monthlyTrends.reverse(),
             servicePopularity: popularity
         });
     } catch (error: any) {
-        console.error('Performance Analytics Error:', error);
+        logger.error('Performance Analytics Error', error);
         return NextResponse.json({
             error: 'Failed to fetch performance analytics',
-            details: error.message,
-            stack: error.stack
+            details: error.message
         }, { status: 500 });
     }
 }

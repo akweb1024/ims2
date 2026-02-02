@@ -111,6 +111,12 @@ export const POST = authorizedRoute(
                 } as any
             });
 
+            logger.info('Manual attendance record updated/created', {
+                attendanceId: attendance.id,
+                employeeId: targetProfileId,
+                date
+            });
+
             return NextResponse.json(attendance);
 
         } catch (error) {

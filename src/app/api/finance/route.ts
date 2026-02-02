@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { authorizedRoute } from '@/lib/middleware-auth';
 import { createErrorResponse } from '@/lib/api-utils';
+import { logger } from '@/lib/logger';
 
 // GET all financial records for the company
 export const GET = authorizedRoute(
@@ -123,9 +124,9 @@ export const POST = authorizedRoute(
                             referenceNumber: referenceNumber || referenceId || null
                         }
                     });
-                    console.log('✅ Auto-synced RevenueTransaction:', trn);
+                    logger.info('Auto-synced RevenueTransaction', { trn });
                 } catch (syncError) {
-                    console.error('❌ Failed to sync RevenueTransaction:', syncError);
+                    logger.error('Failed to sync RevenueTransaction', syncError);
                     // We don't fail the main request, but log the error
                 }
             }
