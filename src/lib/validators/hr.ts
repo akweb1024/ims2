@@ -161,6 +161,11 @@ export const updateEmployeeSchema = z.object({
     // Leave corrections
     manualLeaveAdjustment: z.preprocess(emptyToUndefined, z.coerce.number().optional()),
 
+    // Performance Targets
+    monthlyTarget: z.preprocess(emptyToUndefined, z.coerce.number().min(0).optional()),
+    yearlyTarget: z.preprocess(emptyToUndefined, z.coerce.number().min(0).optional()),
+    baseTarget: z.preprocess(emptyToUndefined, z.coerce.number().min(0).optional()),
+
     // ID field for updates
     id: z.preprocess(emptyToUndefined, z.string().uuid().optional()),
     companyId: z.preprocess(emptyToNull, z.string().nullable().optional()),

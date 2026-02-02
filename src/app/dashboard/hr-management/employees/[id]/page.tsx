@@ -13,6 +13,7 @@ import {
     Building, ChevronRight, Star, Target, PieChart as PieIcon
 } from 'lucide-react';
 import ExpenseImpactAnalytics from '@/components/dashboard/hr/ExpenseImpactAnalytics';
+import TargetPerformanceTable from '@/components/dashboard/hr/TargetPerformanceTable';
 import RichTextEditor from '@/components/common/RichTextEditor';
 import SafeHTML from '@/components/common/SafeHTML';
 
@@ -919,7 +920,14 @@ export default function EmployeeProfilePage() {
                         {/* Performance Tab */}
                         {activeTab === 'performance' && (
                             <div className="space-y-6">
-                                <h3 className="font-bold text-lg text-secondary-900">Performance Reviews & Notes</h3>
+                                <TargetPerformanceTable
+                                    employeeId={employee.id}
+                                    monthlyTarget={employee.monthlyTarget}
+                                    yearlyTarget={employee.yearlyTarget}
+                                    onUpdateTargets={fetchEmployeeDetails}
+                                />
+
+                                <h3 className="font-bold text-lg text-secondary-900 mt-8">Performance Reviews & Notes</h3>
                                 {employee.hrComments?.map((comment: any) => (
                                     <div key={comment.id} className="card-premium p-4 border-l-4 border-warning-400">
                                         <p className="text-sm text-secondary-800 mb-2">{comment.content}</p>
@@ -929,6 +937,11 @@ export default function EmployeeProfilePage() {
                                         </div>
                                     </div>
                                 ))}
+                                {(!employee.hrComments || employee.hrComments.length === 0) && (
+                                    <div className="text-center p-8 text-secondary-400 bg-secondary-50 rounded-xl border-dashed border-2 border-secondary-200">
+                                        No performance reviews or notes added yet.
+                                    </div>
+                                )}
                             </div>
                         )}
 
