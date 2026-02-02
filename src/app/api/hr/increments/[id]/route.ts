@@ -35,6 +35,9 @@ const updateIncrementSchema = z.object({
     incentiveDefinition: z.string().optional(),
     optInVariable: z.boolean().optional(),
     optInIncentive: z.boolean().optional(),
+    newBaseTarget: z.number().min(0).optional(),
+    newVariableRate: z.number().min(0).optional(),
+    newVariableUnit: z.number().min(0).optional(),
 });
 
 // GET: Get increment details
@@ -191,6 +194,9 @@ export const PATCH = authorizedRoute(
             if (data.incentiveDefinition !== undefined) updateData.incentiveDefinition = data.incentiveDefinition;
             if (data.optInVariable !== undefined) updateData.optInVariable = data.optInVariable;
             if (data.optInIncentive !== undefined) updateData.optInIncentive = data.optInIncentive;
+            if (typeof data.newBaseTarget === 'number') updateData.newBaseTarget = data.newBaseTarget;
+            if (typeof data.newVariableRate === 'number') updateData.newVariableRate = data.newVariableRate;
+            if (typeof data.newVariableUnit === 'number') updateData.newVariableUnit = data.newVariableUnit;
 
             const updated = await prisma.$transaction(async (tx) => {
                 const inc = await tx.salaryIncrementRecord.update({

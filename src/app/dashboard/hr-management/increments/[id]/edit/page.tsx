@@ -45,7 +45,10 @@ export default function EditIncrementPage() {
         newInternet: 0,
         newBooksAndPeriodicals: 0,
         optInVariable: false,
-        optInIncentive: false
+        optInIncentive: false,
+        newBaseTarget: 0,
+        newVariableRate: 0,
+        newVariableUnit: 0
     });
 
     const [selectedEmployee, setSelectedEmployee] = useState<any>(null);
@@ -93,7 +96,10 @@ export default function EditIncrementPage() {
                     newMobile: data.newMobile || 0,
                     newInternet: data.newInternet || 0,
                     newBooksAndPeriodicals: data.newBooksAndPeriodicals || 0,
-                    optInVariable: data.optInVariable || (data.newVariable > 0) || (data.newVariableSalary > 0) || false,
+                    newBaseTarget: data.newBaseTarget || 0,
+                    newVariableRate: data.newVariableRate || 0,
+                    newVariableUnit: data.newVariableUnit || 0,
+                    optInVariable: data.optInVariable || (data.newVariable > 0) || (data.newVariableSalary > 0) || (data.newVariableRate > 0) || false,
                     optInIncentive: data.optInIncentive || (data.newIncentive > 0) || false
                 });
             } else {
@@ -333,6 +339,50 @@ export default function EditIncrementPage() {
                                                     onChange={(e) => setForm({ ...form, newVariableUpperCap: parseFloat(e.target.value) || 0 })}
                                                 />
                                                 <p className="text-xs text-blue-600 mt-1">Maximum variable salary limit</p>
+                                            </div>
+                                        </div>
+
+                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                                            <div>
+                                                <label className="label-premium">Variable Rate</label>
+                                                <input
+                                                    type="number"
+                                                    min="0"
+                                                    step="any"
+                                                    className="input-premium"
+                                                    placeholder="e.g. 5000"
+                                                    value={form.newVariableRate}
+                                                    onChange={(e) => setForm({ ...form, newVariableRate: parseFloat(e.target.value) || 0 })}
+                                                />
+                                                <p className="text-xs text-blue-600 mt-1">Amt/Rate per Unit</p>
+                                            </div>
+
+                                            <div>
+                                                <label className="label-premium">Variable Unit</label>
+                                                <input
+                                                    type="number"
+                                                    min="0"
+                                                    step="any"
+                                                    className="input-premium"
+                                                    placeholder="e.g. 100000"
+                                                    value={form.newVariableUnit}
+                                                    onChange={(e) => setForm({ ...form, newVariableUnit: parseFloat(e.target.value) || 0 })}
+                                                />
+                                                <p className="text-xs text-blue-600 mt-1">Unit for Calculation</p>
+                                            </div>
+
+                                            <div>
+                                                <label className="label-premium">Quota (Base Target)</label>
+                                                <input
+                                                    type="number"
+                                                    min="0"
+                                                    step="any"
+                                                    className="input-premium"
+                                                    placeholder="e.g. 500000"
+                                                    value={form.newBaseTarget}
+                                                    onChange={(e) => setForm({ ...form, newBaseTarget: parseFloat(e.target.value) || 0 })}
+                                                />
+                                                <p className="text-xs text-blue-600 mt-1">Quota for Fixed Salary</p>
                                             </div>
                                         </div>
 

@@ -47,6 +47,9 @@ const incrementSchema = z.object({
     newMobile: z.number().min(0).optional(),
     newInternet: z.number().min(0).optional(),
     newBooksAndPeriodicals: z.number().min(0).optional(),
+    newBaseTarget: z.number().optional(),
+    newVariableRate: z.number().optional(),
+    newVariableUnit: z.number().optional(),
 });
 
 // GET: List all increments (with filtering)
@@ -182,6 +185,9 @@ export const POST = authorizedRoute(
                     // Old detailed structure
                     oldVariablePerTarget: employee.variablePerTarget,
                     oldVariableUpperCap: employee.variableUpperCap,
+                    oldVariableRate: employee.variableRate,
+                    oldVariableUnit: employee.variableUnit,
+                    oldBaseTarget: employee.baseTarget,
                     oldIncentivePercentage: employee.incentivePercentage,
 
                     // New salary
@@ -195,6 +201,9 @@ export const POST = authorizedRoute(
                     optInIncentive: data.optInIncentive || false,
                     newVariablePerTarget: data.newVariablePerTarget,
                     newVariableUpperCap: data.newVariableUpperCap,
+                    newVariableRate: data.newVariableRate,
+                    newVariableUnit: data.newVariableUnit,
+                    newBaseTarget: data.newBaseTarget,
                     variableDefinition: data.variableDefinition,
                     newIncentivePercentage: data.newIncentivePercentage,
                     incentiveDefinition: data.incentiveDefinition,
