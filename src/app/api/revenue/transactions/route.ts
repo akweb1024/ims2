@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { authorizedRoute } from '@/lib/middleware-auth';
 import { logger } from '@/lib/logger';
+import { processExpenseAllocations } from '@/lib/allocation';
 
 // Helper to generate transaction number
 async function generateTransactionNumber(companyId: string) {
@@ -231,6 +232,14 @@ export const PUT = authorizedRoute(['ADMIN', 'SUPER_ADMIN', 'MANAGER', 'FINANCE_
                     where: { revenueTransactionId: id },
                     data: { status: 'APPROVED' }
                 });
+
+                // Trigger Departmental Expense Allocations
+                try {
+                    await processExpenseAllocations(id);
+                } catch (allocError) {
+                    logger.error('Failed to process allocations during approval', allocError, { id });
+                    // We don't fail the approval if allocations fail, but we log it
+                }
             }
         }
 

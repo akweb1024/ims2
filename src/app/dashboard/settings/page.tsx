@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 
-type Tab = 'General' | 'Security' | 'Billing' | 'Notifications';
+type Tab = 'General' | 'Security' | 'Billing' | 'Notifications' | 'Allocations';
 
 export default function SettingsPage() {
     const [userRole, setUserRole] = useState('CUSTOMER');
@@ -21,6 +21,10 @@ export default function SettingsPage() {
         defaultCurrency: 'INR',
         maintenanceMode: false
     });
+
+    const [departments, setDepartments] = useState<any[]>([]);
+    const [allocationRules, setAllocationRules] = useState<any[]>([]);
+    const [savingAllocations, setSavingAllocations] = useState(false);
 
     const fetchUserSettings = useCallback(async () => {
         try {
@@ -53,6 +57,29 @@ export default function SettingsPage() {
         }
     }, []);
 
+    const fetchAllocationData = useCallback(async () => {
+        try {
+            const token = localStorage.getItem('token');
+            // Fetch Departments
+            const depRes = await fetch('/api/hr/departments', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (depRes.ok) {
+                setDepartments(await depRes.json());
+            }
+
+            // Fetch Existing Rules
+            const ruleRes = await fetch('/api/settings/expense-allocations', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (ruleRes.ok) {
+                setAllocationRules(await ruleRes.json());
+            }
+        } catch (err) {
+            console.error('Fetch allocation data error:', err);
+        }
+    }, []);
+
     useEffect(() => {
         const userData = localStorage.getItem('user');
         if (userData) {
@@ -61,7 +88,10 @@ export default function SettingsPage() {
         }
         fetchUserSettings();
         fetchSystemSettings();
-    }, [fetchUserSettings, fetchSystemSettings]);
+        if (activeTab === 'Allocations') {
+            fetchAllocationData();
+        }
+    }, [fetchUserSettings, fetchSystemSettings, fetchAllocationData, activeTab]);
 
     const handleUpdateUserPref = async (updates: any) => {
         try {
@@ -121,7 +151,7 @@ export default function SettingsPage() {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                     <div className="md:col-span-1">
                         <nav className="space-y-1">
-                            {['General', 'Security', 'Billing', 'Notifications'].map((tab) => (
+                            {['General', 'Security', 'Billing', 'Notifications', ...(userRole === 'SUPER_ADMIN' || userRole === 'ADMIN' || userRole === 'FINANCE_ADMIN' ? ['Allocations'] : [])].map((tab) => (
                                 <button
                                     key={tab}
                                     onClick={() => setActiveTab(tab as Tab)}
@@ -279,6 +309,76 @@ export default function SettingsPage() {
                                     </div>
                                     <div className="pt-4">
                                         <button type="button" className="btn btn-primary px-8">Save Invoicing Settings</button>
+                                    </div>
+                                </div>
+                            </section>
+                        )}
+
+                        {activeTab === 'Allocations' && (
+                            <section className="card-premium">
+                                <h3 className="text-lg font-bold text-secondary-900 mb-2 border-b border-secondary-100 pb-4">Departmental Expense Allocation</h3>
+                                <p className="text-sm text-secondary-500 mb-6"> Configure what percentage of employee-generated revenue is dynamically allocated as departmental expenses.</p>
+
+                                <div className="space-y-4">
+                                    {departments.map((dept) => {
+                                        const rule = allocationRules.find(r => r.departmentId === dept.id);
+                                        return (
+                                            <div key={dept.id} className="flex items-center justify-between p-4 bg-secondary-50 rounded-2xl border border-secondary-100">
+                                                <div>
+                                                    <p className="font-bold text-secondary-900">{dept.name}</p>
+                                                    <p className="text-[10px] uppercase font-black text-secondary-400 tracking-wider">Department ID: {dept.id.split('-')[0]}</p>
+                                                </div>
+                                                <div className="flex items-center gap-3">
+                                                    <input
+                                                        type="number"
+                                                        className="w-24 text-right px-3 py-2 border rounded-xl font-bold bg-white"
+                                                        placeholder="0"
+                                                        min="0"
+                                                        max="100"
+                                                        value={rule?.percentage || 0}
+                                                        onChange={(e) => {
+                                                            const val = parseFloat(e.target.value) || 0;
+                                                            setAllocationRules(prev => {
+                                                                const filtered = prev.filter(r => r.departmentId !== dept.id);
+                                                                return [...filtered, { departmentId: dept.id, percentage: val }];
+                                                            });
+                                                        }}
+                                                    />
+                                                    <span className="font-bold text-secondary-400">%</span>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+
+                                    {departments.length === 0 && <p className="text-center text-secondary-400 italic py-8">No departments found.</p>}
+
+                                    <div className="pt-6">
+                                        <button
+                                            onClick={async () => {
+                                                setSavingAllocations(true);
+                                                try {
+                                                    const token = localStorage.getItem('token');
+                                                    const res = await fetch('/api/settings/expense-allocations', {
+                                                        method: 'POST',
+                                                        headers: {
+                                                            'Authorization': `Bearer ${token}`,
+                                                            'Content-Type': 'application/json'
+                                                        },
+                                                        body: JSON.stringify({ rules: allocationRules })
+                                                    });
+                                                    if (res.ok) alert('Allocation rules saved successfully!');
+                                                } catch (err) {
+                                                    console.error(err);
+                                                    alert('Failed to save rules');
+                                                } finally {
+                                                    setSavingAllocations(false);
+                                                }
+                                            }}
+                                            disabled={savingAllocations || departments.length === 0}
+                                            className="btn btn-primary px-10"
+                                        >
+                                            {savingAllocations ? 'Saving...' : 'Save Allocation Rules'}
+                                        </button>
                                     </div>
                                 </div>
                             </section>

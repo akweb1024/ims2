@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -6,6 +5,7 @@ import {
     LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
     BarChart, Bar, Legend
 } from 'recharts';
+import { Target } from 'lucide-react';
 
 interface AnalysisProps {
     employeeId: string;
@@ -64,7 +64,7 @@ export default function PerformanceAnalysis({ employeeId }: AnalysisProps) {
                                 axisLine={false}
                                 tickLine={false}
                                 tick={{ fill: '#6B7280', fontSize: 12 }}
-                                domain={[0, 10]} // Assuming 1-10 rating
+                                domain={[0, 10]}
                             />
                             <Tooltip
                                 contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
@@ -78,6 +78,40 @@ export default function PerformanceAnalysis({ employeeId }: AnalysisProps) {
                                 activeDot={{ r: 6 }}
                             />
                         </LineChart>
+                    </ResponsiveContainer>
+                </div>
+            </div>
+
+            {/* Target vs Actual Tracking */}
+            <div className="bg-white rounded-xl border border-secondary-100 p-4">
+                <h4 className="text-sm font-semibold text-secondary-700 mb-4 flex items-center gap-2">
+                    <Target size={16} className="text-indigo-500" />
+                    Target Achievement Tracking
+                </h4>
+                <div className="h-64 w-full">
+                    <ResponsiveContainer width="100%" height="100%">
+                        <BarChart data={data.goalsData || []} margin={{ bottom: 20 }}>
+                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
+                            <XAxis
+                                dataKey="title"
+                                axisLine={false}
+                                tickLine={false}
+                                tick={{ fill: '#6B7280', fontSize: 10, fontWeight: 600 }}
+                                angle={-15}
+                                textAnchor="end"
+                            />
+                            <YAxis
+                                axisLine={false}
+                                tickLine={false}
+                                tick={{ fill: '#6B7280', fontSize: 12 }}
+                            />
+                            <Tooltip
+                                contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                            />
+                            <Legend verticalAlign="top" height={36} />
+                            <Bar dataKey="current" name="Actual Progress" fill="#4F46E5" radius={[4, 4, 0, 0]} barSize={20} />
+                            <Bar dataKey="target" name="Goal Target" fill="#E0E7FF" radius={[4, 4, 0, 0]} barSize={20} />
+                        </BarChart>
                     </ResponsiveContainer>
                 </div>
             </div>

@@ -5,7 +5,8 @@ import FocusableModal from "@/components/ui/FocusableModal";
 import { useEffect, useState } from "react";
 import { Badge } from "@/components/ui/Badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
-import { Loader2, Mail, Phone, MapPin, Building, Briefcase } from "lucide-react";
+import { Loader2, Mail, Phone, MapPin, Building, Briefcase, DollarSign, Target, PieChart as PieIcon } from "lucide-react";
+import ExpenseImpactAnalytics from "@/components/dashboard/hr/ExpenseImpactAnalytics";
 
 interface Employee360Props {
     employeeId: string;
@@ -90,10 +91,81 @@ export default function Employee360Modal({ employeeId, isOpen, onClose }: Employ
                         {/* Financial History (If available) */}
                         {/* Keeping it simple for now, can perform more queries if needed */}
 
-                        {/* Performance Snapshot */}
-                        <div className="pt-4 border-t">
-                            <h3 className="text-lg font-semibold mb-3">Performance & History</h3>
-                            <p className="text-sm text-gray-500">Increment history and performance reviews would appear here.</p>
+                        {/* Financial & Performance Suite */}
+                        <div className="pt-6 border-t">
+                            <h3 className="text-lg font-bold text-secondary-900 mb-4 flex items-center gap-2">
+                                <DollarSign size={20} className="text-primary-600" />
+                                Financial & Performance Suite
+                            </h3>
+                            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                                <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                                    <p className="text-[10px] font-black text-slate-400 uppercase mb-1">Fixed Salary</p>
+                                    <p className="text-xl font-black text-slate-900">₹{employee.salaryStructure?.salaryFixed?.toLocaleString() || '0'}</p>
+                                </div>
+                                <div className="p-4 bg-blue-50/50 rounded-2xl border border-blue-100">
+                                    <p className="text-[10px] font-black text-blue-400 uppercase mb-1">Variable Pay</p>
+                                    <p className="text-xl font-black text-blue-700">₹{employee.salaryStructure?.salaryVariable?.toLocaleString() || '0'}</p>
+                                </div>
+                                <div className="p-4 bg-amber-50/50 rounded-2xl border border-amber-100">
+                                    <p className="text-[10px] font-black text-amber-500 uppercase mb-1">Incentives</p>
+                                    <p className="text-xl font-black text-amber-700">₹{employee.salaryStructure?.salaryIncentive?.toLocaleString() || '0'}</p>
+                                </div>
+                                <div className="p-4 bg-emerald-50/50 rounded-2xl border border-emerald-100">
+                                    <p className="text-[10px] font-black text-emerald-500 uppercase mb-1">Perks/Exemp</p>
+                                    <p className="text-xl font-black text-emerald-700">₹{(
+                                        (employee.salaryStructure?.healthCare || 0) +
+                                        (employee.salaryStructure?.travelling || 0) +
+                                        (employee.salaryStructure?.mobile || 0) +
+                                        (employee.salaryStructure?.internet || 0) +
+                                        (employee.salaryStructure?.booksAndPeriodicals || 0)
+                                    ).toLocaleString()}</p>
+                                </div>
+                            </div>
+
+                            {/* Performance Targets Snapshot */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <Card className="bg-gradient-to-br from-indigo-50 to-white border-indigo-100">
+                                    <CardHeader className="pb-2">
+                                        <CardTitle className="text-sm font-bold text-indigo-700 flex items-center gap-2">
+                                            <Target size={16} /> Latest Goal Progress
+                                        </CardTitle>
+                                    </CardHeader>
+                                    <CardContent>
+                                        {employee.goals && employee.goals.length > 0 ? (
+                                            <div className="space-y-4">
+                                                <div>
+                                                    <div className="flex justify-between items-end mb-1">
+                                                        <p className="text-sm font-bold text-slate-800 truncate max-w-[200px]">{employee.goals[0].title}</p>
+                                                        <p className="text-xs font-black text-indigo-600">
+                                                            {Math.min(100, Math.round((employee.goals[0].currentValue / employee.goals[0].targetValue) * 100))}%
+                                                        </p>
+                                                    </div>
+                                                    <div className="w-full bg-indigo-100 rounded-full h-2 overflow-hidden">
+                                                        <div
+                                                            className="bg-indigo-600 h-full transition-all duration-500"
+                                                            style={{ width: `${Math.min(100, (employee.goals[0].currentValue / employee.goals[0].targetValue) * 100)}%` }}
+                                                        />
+                                                    </div>
+                                                    <p className="text-[10px] text-slate-500 mt-1 font-medium">
+                                                        {employee.goals[0].currentValue} / {employee.goals[0].targetValue} {employee.goals[0].unit}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <p className="text-xs text-slate-400 italic">No active targets found.</p>
+                                        )}
+                                    </CardContent>
+                                </Card>
+                            </div>
+
+                            {/* Expense Allocation Impact */}
+                            <div className="mt-8 border-t pt-6">
+                                <h3 className="text-lg font-bold text-secondary-900 mb-4 flex items-center gap-2">
+                                    <PieIcon size={20} className="text-primary-600" />
+                                    Departmental Expense Impact
+                                </h3>
+                                <ExpenseImpactAnalytics employeeId={employeeId} />
+                            </div>
                         </div>
                     </div>
                 ) : (

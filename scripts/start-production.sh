@@ -84,7 +84,23 @@ if [ "$RUN_SEED" = "true" ]; then
 fi
 
 # Start the application
+# Start the application
 echo "🎯 Starting application..."
 print_status "Application is running on port ${PORT:-3000}"
 
-exec node server.js
+# Check if standalone build exists
+if [ -d ".next/standalone" ]; then
+    echo "📦 Preparing standalone build..."
+    # Copy public folder
+    cp -r public .next/standalone/ || true
+    # Copy static assets
+    mkdir -p .next/standalone/.next/static
+    cp -r .next/static .next/standalone/.next/ || true
+    
+    # Run standalone server
+    exec node .next/standalone/server.js
+else
+    # Fallback to next start
+    echo "⚠️ Standalone build not found, falling back to 'next start'..."
+    exec npm start
+fi

@@ -41,6 +41,7 @@ export default function CommunicationForm({ customerId, previousFollowUpId, onSu
             subject: formData.get('subject'),
             notes: formData.get('notes'),
             outcome: formData.get('outcome'),
+            category: formData.get('category') || null,
             nextFollowUpDate: formData.get('nextFollowUpDate') || null,
             checklist: {
                 checkedItems,
@@ -159,6 +160,32 @@ export default function CommunicationForm({ customerId, previousFollowUpId, onSu
                 <div>
                     <label className="label">Next Follow-up Date</label>
                     <input type="date" name="nextFollowUpDate" className="input" />
+                </div>
+
+                <div>
+                    <label className="label">Expense Category (Optional)</label>
+                    <select name="category" className="input">
+                        <option value="">Select category...</option>
+                        <option value="BANK_CHARGES">BANK CHARGES</option>
+                        <option value="DESIGNING_EXPENSES">DESIGNING EXPENSES</option>
+                        <option value="DIRECTOR_REMUNERATION">DIRECTOR&apos;S REMUNERATION</option>
+                        <option value="EDITING_PUBLICATIONS_EXPENSES">EDITING & PUBLICATIONS EXPENSES</option>
+                        <option value="INTERNET_WEBSITE_EXPENSES">INTERNET & WEBSITE EXPENSES</option>
+                        <option value="LEGAL_PROFESSIONAL_EXPENSES">LEGAL & PROFESSIONAL EXPENSES</option>
+                        <option value="MISC_EXPENSES">MISC. EXPENSES</option>
+                        <option value="POWER_FUEL_EXPENSES">POWER & FUEL EXPENSES</option>
+                        <option value="PRINTING_STATIONERY_EXPENSES">PRINTING & STATIONERY EXPENSES</option>
+                        <option value="RENT_EXPENSES">RENT EXPENSES</option>
+                        <option value="REPAIR_MAINTENANCE">REPAIR & MAINTENANCE</option>
+                        <option value="ROUND_OFF">ROUND OFF</option>
+                        <option value="SALARY_EXPENSES">SALARY EXPENSES</option>
+                        <option value="SOFTWARE_EXPENSES">SOFTWARE EXPENSES</option>
+                        <option value="STAFF_WELFARE">STAFF WELFARE</option>
+                        <option value="TELEPHONE_INTERNET_EXPENSES">TELEPHONE & INTERNET EXPENSES</option>
+                        <option value="CLUB_ACTIVITIES">CLUB ACTIVITIES</option>
+                        <option value="OFFICE_EXPENSES">OFFICE EXPENSES</option>
+                        <option value="OTHER">Other Expense</option>
+                    </select>
                 </div>
 
                 {/* Conversation Checklist */}

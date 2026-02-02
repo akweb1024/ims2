@@ -52,8 +52,23 @@ export const GET = authorizedRoute(
             const totalRating = evaluations.reduce((sum, ev) => sum + (ev.rating || 0), 0);
             const averageRating = evaluations.length > 0 ? (totalRating / evaluations.length).toFixed(1) : 0;
 
+            // Fetch active goals for target vs actual analysis
+            const goals = await prisma.employeeGoal.findMany({
+                where: { employeeId: employeeId || undefined },
+                orderBy: { endDate: 'desc' },
+                take: 5
+            });
+
+            const goalsData = goals.map((g: any) => ({
+                title: g.title,
+                current: g.currentValue,
+                target: g.targetValue,
+                percentage: (g.currentValue / g.targetValue) * 100
+            }));
+
             return NextResponse.json({
                 trendData,
+                goalsData,
                 averageRating,
                 totalEvaluations: evaluations.length
             });

@@ -24,6 +24,7 @@ export async function POST(req: NextRequest) {
             duration,
             recordingUrl,
             referenceId,
+            category,
             previousFollowUpId,
             checklist // New: checklist data with predictions
         } = body;
@@ -53,6 +54,7 @@ export async function POST(req: NextRequest) {
                 recordingUrl,
                 referenceId,
                 nextFollowUpDate: nextFollowUpDate ? new Date(nextFollowUpDate) : null,
+                category: category || null,
                 date: new Date(),
                 companyId: decoded.companyId || null
             }

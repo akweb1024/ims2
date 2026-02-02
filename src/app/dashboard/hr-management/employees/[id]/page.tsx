@@ -9,8 +9,10 @@ import FormattedDate from '@/components/common/FormattedDate';
 import {
     User, Mail, Phone, MapPin, Briefcase, DollarSign,
     Calendar, FileText, Award, TrendingUp, Clock,
-    Shield, ArrowLeft, Edit, Save, Plus, Trash2
+    Shield, ArrowLeft, Edit, Save, Plus, Trash2,
+    Building, ChevronRight, Star, Target, PieChart as PieIcon
 } from 'lucide-react';
+import ExpenseImpactAnalytics from '@/components/dashboard/hr/ExpenseImpactAnalytics';
 import RichTextEditor from '@/components/common/RichTextEditor';
 import SafeHTML from '@/components/common/SafeHTML';
 
@@ -540,6 +542,50 @@ export default function EmployeeProfilePage() {
                                         </div>
                                     </div>
                                 )}
+
+                                {/* Compensation Overview Card */}
+                                <div className="card-premium p-6 md:col-span-2 bg-gradient-to-br from-white to-secondary-50/50">
+                                    <h3 className="font-bold text-lg mb-6 flex items-center gap-2">
+                                        <DollarSign className="text-primary-600" size={20} />
+                                        Compensation Structure
+                                    </h3>
+                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                        <div className="p-4 bg-white rounded-2xl border border-secondary-100 shadow-sm">
+                                            <p className="text-[10px] font-black text-secondary-400 uppercase tracking-wider mb-1">Fixed Salary</p>
+                                            <p className="text-xl font-black text-secondary-900">₹{employee.salaryStructure?.salaryFixed?.toLocaleString() || '0'}</p>
+                                            <p className="text-[10px] text-secondary-500 font-bold">Monthly Base</p>
+                                        </div>
+                                        <div className="p-4 bg-white rounded-2xl border border-secondary-100 shadow-sm">
+                                            <p className="text-[10px] font-black text-secondary-400 uppercase tracking-wider mb-1">Variable Pay</p>
+                                            <p className="text-xl font-black text-primary-600">₹{employee.salaryStructure?.salaryVariable?.toLocaleString() || '0'}</p>
+                                            <p className="text-[10px] text-secondary-500 font-bold">Performance Linked</p>
+                                        </div>
+                                        <div className="p-4 bg-white rounded-2xl border border-secondary-100 shadow-sm">
+                                            <p className="text-[10px] font-black text-secondary-400 uppercase tracking-wider mb-1">Incentives</p>
+                                            <p className="text-xl font-black text-warning-600">₹{employee.salaryStructure?.salaryIncentive?.toLocaleString() || '0'}</p>
+                                            <p className="text-[10px] text-secondary-500 font-bold">Target Bonuses</p>
+                                        </div>
+                                        <div className="p-4 bg-white rounded-2xl border border-secondary-100 shadow-sm">
+                                            <p className="text-[10px] font-black text-secondary-400 uppercase tracking-wider mb-1">Perks/Exemp</p>
+                                            <p className="text-xl font-black text-success-600">₹{(
+                                                (employee.salaryStructure?.healthCare || 0) +
+                                                (employee.salaryStructure?.travelling || 0) +
+                                                (employee.salaryStructure?.mobile || 0) +
+                                                (employee.salaryStructure?.internet || 0) +
+                                                (employee.salaryStructure?.booksAndPeriodicals || 0)
+                                            ).toLocaleString()}</p>
+                                            <p className="text-[10px] text-secondary-500 font-bold">Sec-10 Benefits</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="card-premium p-6 md:col-span-2">
+                                    <h3 className="font-bold text-lg mb-6 flex items-center gap-2">
+                                        <PieIcon className="text-primary-600" size={20} />
+                                        Departmental Expense Impact
+                                    </h3>
+                                    <ExpenseImpactAnalytics employeeId={params.id as string} />
+                                </div>
 
                                 <div className="card-premium p-6 md:col-span-2">
                                     <h3 className="font-bold text-lg mb-4 flex items-center gap-2">
