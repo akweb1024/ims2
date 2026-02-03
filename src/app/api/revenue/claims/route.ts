@@ -45,15 +45,69 @@ export const GET = authorizedRoute(['ADMIN', 'SUPER_ADMIN', 'MANAGER', 'TEAM_LEA
 export const POST = authorizedRoute(['ADMIN', 'MANAGER', 'TEAM_LEADER', 'HR', 'EMPLOYEE', 'FINANCE_ADMIN'], async (req: NextRequest, user) => {
     try {
         const body = await req.json();
-        const { revenueTransactionId, employeeId, workReportId, claimAmount, claimReason } = body;
+        const { revenueTransactionId: providedTxId, paymentId, employeeId, workReportId, claimAmount, claimReason } = body;
+        let revenueTransactionId = providedTxId;
 
-        // Verify transaction exists and belongs to company
+        // Logic to handle claiming via Payment ID
+        if (!revenueTransactionId && paymentId) {
+            // Check if payment exists
+            const payment = await prisma.payment.findUnique({
+                where: { id: paymentId },
+                include: { revenueTransactions: true }
+            });
+
+            if (!payment) {
+                return NextResponse.json({ error: 'Payment not found' }, { status: 404 });
+            }
+
+            // If transaction exists, use it
+            if (payment.revenueTransactions && payment.revenueTransactions.length > 0) {
+                revenueTransactionId = payment.revenueTransactions[0].id;
+            } else {
+                // Determine companyId: Payment -> User -> Fallback
+                let companyId = payment.companyId;
+                if (!companyId) {
+                    // Try to infer from authenticated user if they belong to the same context (risky if admin looking at global)
+                    // But typically claims are made by users in their own company.
+                    companyId = user.companyId || null;
+                }
+
+                if (!companyId) {
+                    return NextResponse.json({ error: 'Cannot determine company context for this payment' }, { status: 400 });
+                }
+
+                // Create new RevenueTransaction from Payment
+                const newTx = await prisma.revenueTransaction.create({
+                    data: {
+                        companyId: companyId as string,
+                        transactionNumber: payment.razorpayPaymentId || `PAY-${payment.id.substring(0, 8)}`,
+                        amount: payment.amount,
+                        currency: payment.currency,
+                        paymentMethod: payment.paymentMethod || 'ONLINE',
+                        paymentDate: payment.paymentDate,
+                        paymentId: payment.id,
+                        description: payment.notes || 'Razorpay Payment',
+                        status: 'PENDING', // Default to PENDING for claims
+                        verificationStatus: 'UNVERIFIED'
+                    }
+                });
+                revenueTransactionId = newTx.id;
+            }
+        }
+
+        if (!revenueTransactionId) {
+            return NextResponse.json({ error: 'Transaction ID or Payment ID required' }, { status: 400 });
+        }
+
+        // Verify transaction exists and belongs to company (or user has access)
         const transaction = await prisma.revenueTransaction.findUnique({
             where: { id: revenueTransactionId }
         });
 
-        if (!transaction || transaction.companyId !== user.companyId) {
-            return NextResponse.json({ error: 'Transaction not found' }, { status: 404 });
+        // Loose check: User should be able to claim if they are in the same company.
+        // Or if super admin.
+        if (!transaction || (user.role !== 'SUPER_ADMIN' && transaction.companyId !== user.companyId)) {
+            return NextResponse.json({ error: 'Transaction not found or access denied' }, { status: 404 });
         }
 
         // Check if employee already claimed this transaction

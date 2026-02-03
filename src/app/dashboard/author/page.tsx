@@ -5,6 +5,8 @@ import { Plus } from 'lucide-react';
 import AuthorStats from './AuthorStats';
 import AuthorDashboardSkeleton from './AuthorDashboardSkeleton';
 
+export const dynamic = 'force-dynamic';
+
 export default async function AuthorDashboard() {
     return (
         <DashboardLayout>

@@ -100,6 +100,42 @@ export default function RazorpayTrackerPage() {
         return true;
     }) || [];
 
+    const handleClaim = async (paymentId: string) => {
+        const reason = prompt("Enter reason for claim (optional):") || 'Razorpay Manual Claim';
+        if (reason === null) return; // Cancelled
+
+        setLoading(true);
+        try {
+            const token = localStorage.getItem('token');
+            const res = await fetch('/api/revenue/claims', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    paymentId,
+                    claimAmount: selectedPayment?.amount, // Assuming full amount claim
+                    claimReason: reason
+                })
+            });
+
+            if (res.ok) {
+                alert('Claim submitted successfully!');
+                fetchData(); // Refresh list to show claimed status
+                setSelectedPayment(null);
+            } else {
+                const err = await res.json();
+                alert(`Claim failed: ${err.error}`);
+            }
+        } catch (error) {
+            console.error(error);
+            alert('Error submitting claim');
+        } finally {
+            setLoading(false);
+        }
+    };
+
     return (
         <DashboardLayout userRole={userRole}>
             <div className="space-y-6 animate-fade-in pb-20">
@@ -261,6 +297,14 @@ export default function RazorpayTrackerPage() {
                                             <stop offset="5%" stopColor="#2563eb" stopOpacity={0.4} />
                                             <stop offset="95%" stopColor="#2563eb" stopOpacity={0} />
                                         </linearGradient>
+                                        <linearGradient id="colorCaptured" x1="0" y1="0" x2="0" y2="1">
+                                            <stop offset="5%" stopColor="#10b981" stopOpacity={0.4} />
+                                            <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+                                        </linearGradient>
+                                        <linearGradient id="colorFailed" x1="0" y1="0" x2="0" y2="1">
+                                            <stop offset="5%" stopColor="#ef4444" stopOpacity={0.4} />
+                                            <stop offset="95%" stopColor="#ef4444" stopOpacity={0} />
+                                        </linearGradient>
                                     </defs>
                                     <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
                                     <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8', fontWeight: 700 }} />
@@ -269,8 +313,9 @@ export default function RazorpayTrackerPage() {
                                         contentStyle={{ borderRadius: '24px', border: 'none', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.1)', fontWeight: 800, fontSize: '12px' }}
                                         formatter={(value: any, name: any) => [`₹${value.toLocaleString()}`, name ? name.toUpperCase() : '']}
                                     />
-                                    <Area type="monotone" dataKey="revenue" name="Projection" stroke="#2563eb" strokeWidth={4} fill="url(#colorRevenue)" fillOpacity={1} />
-                                    <Area type="monotone" dataKey="captured" name="Captured" stroke="#10b981" strokeWidth={4} fillOpacity={0} />
+                                    <Area type="monotone" dataKey="revenue" name="Total Volume" stroke="#2563eb" strokeWidth={3} fill="url(#colorRevenue)" fillOpacity={1} />
+                                    <Area type="monotone" dataKey="captured" name="Captured" stroke="#10b981" strokeWidth={3} fill="url(#colorCaptured)" fillOpacity={1} />
+                                    <Area type="monotone" dataKey="failed" name="Failed" stroke="#ef4444" strokeWidth={3} fill="url(#colorFailed)" fillOpacity={1} />
                                 </AreaChart>
                             </ResponsiveContainer>
                         </div>
@@ -346,69 +391,93 @@ export default function RazorpayTrackerPage() {
                                         <th className="px-8 py-5 text-right">Value (INR)</th>
                                         <th className="px-8 py-5 text-center">Protocol</th>
                                         <th className="px-8 py-5 text-left">Status</th>
-                                        <th className="px-8 py-5 text-center">Audit</th>
+                                        <th className="px-8 py-5 text-center">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-secondary-100 bg-white">
-                                    {filteredPayments.map((payment: any) => (
-                                        <tr key={payment.id} className="hover:bg-primary-50/20 transition-all group cursor-default">
-                                            <td className="px-8 py-6">
-                                                <div className="font-mono text-xs font-black text-secondary-900 group-hover:text-primary-600 transition-colors">
-                                                    #{payment.razorpayPaymentId || payment.id.substring(0, 12)}
-                                                </div>
-                                                {payment.international && (
-                                                    <span className="inline-flex mt-2 px-2.5 py-1 bg-purple-100 text-purple-700 text-[8px] font-black rounded-lg uppercase tracking-widest">
-                                                        <Globe size={10} className="mr-1.5" />International
-                                                    </span>
-                                                )}
-                                            </td>
-                                            <td className="px-8 py-6">
-                                                <div className="text-sm font-black text-secondary-900 truncate max-w-[200px]" title={payment.name}>
-                                                    {payment.name || 'Anonymous Customer'}
-                                                </div>
-                                                <div className="text-[10px] text-secondary-500 font-bold mt-1 uppercase tracking-tighter truncate max-w-[200px]">{payment.description || 'Service Subscription'}</div>
-                                            </td>
-                                            <td className="px-8 py-6">
-                                                <div className="text-xs font-black text-secondary-700 uppercase tracking-tighter">
-                                                    {new Date(payment.created_at * 1000).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
-                                                </div>
-                                                <div className="text-[10px] text-secondary-400 font-bold mt-1">
-                                                    {new Date(payment.created_at * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true })}
-                                                </div>
-                                            </td>
-                                            <td className="px-8 py-6 text-right">
-                                                <div className="font-mono text-sm font-black text-secondary-900">
-                                                    {formatCurrency(payment.amount, payment.currency)}
-                                                </div>
-                                                {payment.currency !== 'INR' && (
-                                                    <div className="text-[10px] text-primary-500 font-bold mt-1 uppercase tracking-tighter">
-                                                        ≈ ₹{Math.round(payment.base_amount || payment.amount).toLocaleString()}
+                                    {filteredPayments.map((payment: any) => {
+                                        const isClaimed = payment.claims && payment.claims.some((c: any) => c.status !== 'REJECTED');
+                                        const claimedBy = isClaimed ? payment.claims.find((c: any) => c.status !== 'REJECTED')?.employeeName : null;
+
+                                        return (
+                                            <tr key={payment.id} className="hover:bg-primary-50/20 transition-all group cursor-default">
+                                                <td className="px-8 py-6">
+                                                    <div className="font-mono text-xs font-black text-secondary-900 group-hover:text-primary-600 transition-colors">
+                                                        #{payment.razorpayPaymentId || payment.id.substring(0, 12)}
                                                     </div>
-                                                )}
-                                            </td>
-                                            <td className="px-8 py-6 text-center">
-                                                <span className="px-3 py-1 bg-secondary-100 text-secondary-600 text-[10px] font-black rounded-lg uppercase tracking-widest">
-                                                    {payment.method}
-                                                </span>
-                                            </td>
-                                            <td className="px-8 py-6">
-                                                <div className="flex items-center gap-2">
-                                                    <div className={`w-2 h-2 rounded-full ${payment.status === 'captured' ? 'bg-green-500' : payment.status === 'failed' ? 'bg-red-500' : 'bg-yellow-500'}`}></div>
-                                                    <span className={`text-[10px] font-black uppercase tracking-widest ${payment.status === 'captured' ? 'text-green-700' : payment.status === 'failed' ? 'text-red-700' : 'text-yellow-700'}`}>
-                                                        {payment.status}
+                                                    {payment.international && (
+                                                        <span className="inline-flex mt-2 px-2.5 py-1 bg-purple-100 text-purple-700 text-[8px] font-black rounded-lg uppercase tracking-widest">
+                                                            <Globe size={10} className="mr-1.5" />International
+                                                        </span>
+                                                    )}
+                                                </td>
+                                                <td className="px-8 py-6">
+                                                    <div className="text-sm font-black text-secondary-900 truncate max-w-[200px]" title={payment.name}>
+                                                        {payment.name || 'Anonymous Customer'}
+                                                    </div>
+                                                    <div className="text-[10px] text-secondary-500 font-bold mt-1 uppercase tracking-tighter truncate max-w-[200px]">{payment.description || 'Service Subscription'}</div>
+                                                </td>
+                                                <td className="px-8 py-6">
+                                                    <div className="text-xs font-black text-secondary-700 uppercase tracking-tighter">
+                                                        {new Date(payment.created_at * 1000).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
+                                                    </div>
+                                                    <div className="text-[10px] text-secondary-400 font-bold mt-1">
+                                                        {new Date(payment.created_at * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true })}
+                                                    </div>
+                                                </td>
+                                                <td className="px-8 py-6 text-right">
+                                                    <div className="font-mono text-sm font-black text-secondary-900">
+                                                        {formatCurrency(payment.amount, payment.currency)}
+                                                    </div>
+                                                    {payment.currency !== 'INR' && (
+                                                        <div className="text-[10px] text-primary-500 font-bold mt-1 uppercase tracking-tighter">
+                                                            ≈ ₹{Math.round(payment.base_amount || payment.amount).toLocaleString()}
+                                                        </div>
+                                                    )}
+                                                </td>
+                                                <td className="px-8 py-6 text-center">
+                                                    <span className="px-3 py-1 bg-secondary-100 text-secondary-600 text-[10px] font-black rounded-lg uppercase tracking-widest">
+                                                        {payment.method}
                                                     </span>
-                                                </div>
-                                            </td>
-                                            <td className="px-8 py-6 text-center">
-                                                <button
-                                                    onClick={() => setSelectedPayment(payment)}
-                                                    className="p-2.5 bg-secondary-50 hover:bg-secondary-900 group/btn rounded-xl transition-all"
-                                                >
-                                                    <Search size={16} className="text-secondary-400 group-hover/btn:text-white transition-colors" />
-                                                </button>
-                                            </td>
-                                        </tr>
-                                    ))}
+                                                </td>
+                                                <td className="px-8 py-6">
+                                                    <div className="flex items-center gap-2">
+                                                        <div className={`w-2 h-2 rounded-full ${payment.status === 'captured' ? 'bg-green-500' : payment.status === 'failed' ? 'bg-red-500' : 'bg-yellow-500'}`}></div>
+                                                        <span className={`text-[10px] font-black uppercase tracking-widest ${payment.status === 'captured' ? 'text-green-700' : payment.status === 'failed' ? 'text-red-700' : 'text-yellow-700'}`}>
+                                                            {payment.status}
+                                                        </span>
+                                                    </div>
+                                                    {isClaimed && (
+                                                        <div className="mt-1 text-[9px] font-bold text-primary-600 uppercase tracking-tight">
+                                                            Claimed by {claimedBy}
+                                                        </div>
+                                                    )}
+                                                </td>
+                                                <td className="px-8 py-6 text-center">
+                                                    <div className="flex items-center justify-center gap-2">
+                                                        <button
+                                                            onClick={() => setSelectedPayment(payment)}
+                                                            className="p-2.5 bg-secondary-50 hover:bg-secondary-900 group/btn rounded-xl transition-all"
+                                                        >
+                                                            <Search size={16} className="text-secondary-400 group-hover/btn:text-white transition-colors" />
+                                                        </button>
+                                                        {payment.status === 'captured' && !isClaimed && (
+                                                            <button
+                                                                onClick={() => {
+                                                                    if (confirm('Do you want to claim this transaction as your sale?')) {
+                                                                        handleClaim(payment.id);
+                                                                    }
+                                                                }}
+                                                                className="px-3 py-1.5 bg-primary-50 text-primary-600 hover:bg-primary-600 hover:text-white rounded-lg text-[10px] font-black uppercase tracking-wider transition-all"
+                                                            >
+                                                                Claim
+                                                            </button>
+                                                        )}
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        );
+                                    })}
                                     {filteredPayments.length === 0 && (
                                         <tr>
                                             <td colSpan={7} className="px-8 py-32 text-center bg-secondary-50/20">
@@ -539,12 +608,26 @@ export default function RazorpayTrackerPage() {
                                     </div>
                                 </div>
                             )}
-                            <button
-                                onClick={() => setSelectedPayment(null)}
-                                className="col-span-2 btn h-16 bg-secondary-900 text-white rounded-[24px] font-black uppercase tracking-[0.2em] text-xs shadow-2xl hover:bg-black transition-all active:scale-95 mt-4"
-                            >
-                                Dismiss Auditor
-                            </button>
+                            <div className="col-span-2 flex gap-4 mt-4">
+                                <button
+                                    onClick={() => setSelectedPayment(null)}
+                                    className="flex-1 btn h-16 bg-secondary-100 text-secondary-900 rounded-[24px] font-black uppercase tracking-[0.2em] text-xs shadow-none hover:bg-secondary-200 transition-all active:scale-95"
+                                >
+                                    Dismiss Auditor
+                                </button>
+                                {selectedPayment.status === 'captured' && (!selectedPayment.claims || !selectedPayment.claims.some((c: any) => c.status !== 'REJECTED')) && (
+                                    <button
+                                        onClick={() => {
+                                            if (confirm('Do you want to claim this transaction?')) {
+                                                handleClaim(selectedPayment.id);
+                                            }
+                                        }}
+                                        className="flex-1 btn h-16 bg-primary-600 text-white rounded-[24px] font-black uppercase tracking-[0.2em] text-xs shadow-xl hover:bg-primary-700 transition-all active:scale-95"
+                                    >
+                                        Claim Now
+                                    </button>
+                                )}
+                            </div>
                         </div>
                     </div>
                 </div>

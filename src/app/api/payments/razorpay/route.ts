@@ -54,6 +54,19 @@ export async function GET(req: NextRequest) {
                                 include: { customerProfile: { select: { name: true, primaryEmail: true } } }
                             }
                         }
+                    },
+                    revenueTransactions: {
+                        include: {
+                            claims: {
+                                include: {
+                                    employee: {
+                                        select: {
+                                            user: { select: { name: true } }
+                                        }
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
             }),
@@ -64,7 +77,7 @@ export async function GET(req: NextRequest) {
         ]);
 
         // Transform payments to match Razorpay structure
-        const transformedPayments = payments.map(p => {
+        const transformedPayments = (payments as any[]).map(p => {
             // Parse metadata if stored as JSON
             let metadata: any = {};
             try {
@@ -133,7 +146,14 @@ export async function GET(req: NextRequest) {
 
                 // Relations
                 company: p.company,
-                invoice: p.invoice
+                invoice: p.invoice,
+                revenueTransaction: p.revenueTransactions?.[0] || null,
+                claims: p.revenueTransactions?.[0]?.claims.map((c: any) => ({
+                    id: c.id,
+                    status: c.status,
+                    employeeName: c.employee?.user?.name,
+                    claimDate: c.claimDate
+                })) || []
             };
         });
 
@@ -144,7 +164,8 @@ export async function GET(req: NextRequest) {
                     TO_CHAR("paymentDate", 'YYYY-MM') as period,
                     SUM(amount) as total,
                     COUNT(*)::integer as count,
-                    SUM(CASE WHEN status = 'captured' THEN amount ELSE 0 END) as captured
+                    SUM(CASE WHEN status = 'captured' THEN amount ELSE 0 END) as captured,
+                    SUM(CASE WHEN status = 'failed' THEN amount ELSE 0 END) as failed
                 FROM "Payment"
                 WHERE "razorpayPaymentId" IS NOT NULL
                 ${/* user.role !== 'SUPER_ADMIN' ? Prisma.sql`AND "companyId" = ${user.companyId}` : Prisma.empty */ Prisma.empty}
@@ -156,7 +177,8 @@ export async function GET(req: NextRequest) {
                     TO_CHAR("paymentDate", 'YYYY') as period,
                     SUM(amount) as total,
                     COUNT(*)::integer as count,
-                    SUM(CASE WHEN status = 'captured' THEN amount ELSE 0 END) as captured
+                    SUM(CASE WHEN status = 'captured' THEN amount ELSE 0 END) as captured,
+                    SUM(CASE WHEN status = 'failed' THEN amount ELSE 0 END) as failed
                 FROM "Payment"
                 WHERE "razorpayPaymentId" IS NOT NULL
                 ${/* user.role !== 'SUPER_ADMIN' ? Prisma.sql`AND "companyId" = ${user.companyId}` : Prisma.empty */ Prisma.empty}
@@ -178,6 +200,7 @@ export async function GET(req: NextRequest) {
             prisma.payment.aggregate({
                 where: {
                     ...where,
+                    status: 'captured',
                     paymentDate: { gte: startOfCurrentMonth }
                 },
                 _sum: { amount: true }
@@ -185,14 +208,15 @@ export async function GET(req: NextRequest) {
             prisma.payment.aggregate({
                 where: {
                     ...where,
+                    status: 'captured',
                     paymentDate: { gte: startOfLastMonth, lte: endOfLastMonth }
                 },
                 _sum: { amount: true }
             })
         ]);
 
-        const currentMonthRevenue = currentMonthStats._sum.amount || 0;
-        const lastMonthRevenue = lastMonthStats._sum.amount || 0;
+        const currentMonthRevenue = (currentMonthStats._sum.amount || 0) / 100; // Convert paise to INR
+        const lastMonthRevenue = (lastMonthStats._sum.amount || 0) / 100; // Convert paise to INR
         const momGrowth = lastMonthRevenue === 0 ? 100 : ((currentMonthRevenue - lastMonthRevenue) / lastMonthRevenue) * 100;
 
         // Currency Rates (Should be fetched from an API in production)
@@ -221,8 +245,17 @@ export async function GET(req: NextRequest) {
         payments.forEach(p => {
             if (p.status === 'failed') return;
             const curr = (p.currency || 'INR').toUpperCase();
-            const rate = exchangeRates[curr] || 1;
-            const inrValue = p.amount * rate;
+
+            let inrValue = 0;
+            if (curr === 'INR') {
+                inrValue = p.amount / 100; // Razorpay uses paise for INR
+            } else {
+                // For other currencies, amount might be in smallest unit too (e.g. cents)
+                // Assuming standard 100 smallest unit for main currencies in list (USD, EUR, GBP etc)
+                const rate = exchangeRates[curr] || 1;
+                inrValue = (p.amount / 100) * rate;
+            }
+
             totalRevenueINR += inrValue;
 
             const existing = currencyMap.get(curr) || { amount: 0, count: 0 };
@@ -243,7 +276,7 @@ export async function GET(req: NextRequest) {
         const dailyRevenueRaw: any[] = await prisma.$queryRaw`
             SELECT 
                 "paymentDate"::date as date,
-                SUM(CASE WHEN status != 'failed' THEN amount ELSE 0 END)::numeric as total_revenue,
+                SUM(amount)::numeric as total_revenue,
                 SUM(CASE WHEN status = 'captured' THEN amount ELSE 0 END)::numeric as captured_revenue,
                 SUM(CASE WHEN status = 'failed' THEN amount ELSE 0 END)::numeric as failed_revenue
             FROM "Payment"
@@ -265,11 +298,26 @@ export async function GET(req: NextRequest) {
 
             return {
                 date: dateStr,
-                revenue: Number(curr.total_revenue) || 0,
-                captured: Number(curr.captured_revenue) || 0,
-                failed: Number(curr.failed_revenue) || 0
+                revenue: (Number(curr.total_revenue) || 0) / 100, // Total Volume
+                captured: (Number(curr.captured_revenue) || 0) / 100, // Realized Revenue
+                failed: (Number(curr.failed_revenue) || 0) / 100 // Failed
             };
         }).slice(0, 30);
+
+        // Process aggregates to INR (divide by 100)
+        const processedMonthlyAgg = monthlyAgg.map((m: any) => ({
+            ...m,
+            total: (Number(m.total) || 0) / 100,
+            captured: (Number(m.captured) || 0) / 100,
+            failed: (Number(m.failed) || 0) / 100
+        }));
+
+        const processedYearlyAgg = yearlyAgg.map((y: any) => ({
+            ...y,
+            total: (Number(y.total) || 0) / 100,
+            captured: (Number(y.captured) || 0) / 100,
+            failed: (Number(y.failed) || 0) / 100
+        }));
 
         return NextResponse.json({
             payments: transformedPayments,
@@ -282,8 +330,8 @@ export async function GET(req: NextRequest) {
                 lastMonthRevenue,
                 momGrowth: momGrowth.toFixed(1)
             },
-            monthlySummaries: monthlyAgg,
-            yearlySummaries: yearlyAgg,
+            monthlySummaries: processedMonthlyAgg,
+            yearlySummaries: processedYearlyAgg,
             lastSync,
             dailyRevenue: processedDaily
         });

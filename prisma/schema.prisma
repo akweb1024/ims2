@@ -147,6 +147,8 @@ model User {
   chatParticipants         ChatParticipant[]
   coAuthorInvitations      CoAuthorInvitation[]
   communications           CommunicationLog[]          @relation("UserCommunications")
+  assignedTasks            StageAssignment[]           @relation("TaskAssignee")
+  assignedByTasks          StageAssignment[]           @relation("TaskAssigner")
   committeeRoles           ConferenceCommitteeMember[]
   conferenceRegistrations  ConferenceRegistration[]
   mentoredCourses          Course[]                    @relation("CourseMentor")
@@ -2044,6 +2046,7 @@ model Article {
   qualityReport       QualityReport?
   reviews             Review[]
   reviewAssignments   ReviewAssignment[]
+  stageAssignments    StageAssignment[]
   certificates        ReviewCertificate[]
 
   @@index([manuscriptId])
@@ -3871,12 +3874,36 @@ enum ManuscriptStatus {
   PLAGIARISM_CHECK
   UNDER_REVIEW
   QUALITY_CHECK
+  COPYRIGHT_CHECK
+  FORMATTING
+  GALLEY_PROOF
   REVISION_REQUIRED
   REVISED_SUBMITTED
   ACCEPTED
   REJECTED
   PUBLISHED
   WITHDRAWN
+}
+
+model StageAssignment {
+  id           String           @id @default(uuid())
+  articleId    String
+  stage        ManuscriptStatus
+  assigneeId   String
+  assignedById String
+  status       String           @default("PENDING") // PENDING, IN_PROGRESS, COMPLETED
+  comments     String?
+  assignedAt   DateTime         @default(now())
+  completedAt  DateTime?
+  dueDate      DateTime?
+  
+  article      Article          @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  assignee     User             @relation("TaskAssignee", fields: [assigneeId], references: [id])
+  assignedBy   User             @relation("TaskAssigner", fields: [assignedById], references: [id])
+
+  @@index([articleId])
+  @@index([assigneeId])
+  @@index([stage])
 }
 
 enum PlagiarismStatus {

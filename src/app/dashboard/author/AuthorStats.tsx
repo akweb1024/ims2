@@ -1,15 +1,10 @@
 import { FileText, Clock, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
 
+import { getAuthorManuscripts } from './actions';
+
 async function getManuscriptsData() {
-    const res = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/manuscripts/author`, {
-        cache: 'no-store'
-    });
-
-    if (!res.ok) {
-        throw new Error('Failed to fetch manuscripts');
-    }
-
-    return res.json();
+    const manuscripts = await getAuthorManuscripts();
+    return manuscripts;
 }
 
 function getStatusColor(status: string) {

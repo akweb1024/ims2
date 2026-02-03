@@ -126,12 +126,18 @@ export default function JobDetailPage() {
 
                                 <div className="prose prose-slate max-w-none mb-10">
                                     <h3 className="text-sm font-bold uppercase tracking-widest text-secondary-900 mb-4">About the Role</h3>
-                                    <div className="text-secondary-600 leading-relaxed whitespace-pre-wrap">{job.description}</div>
+                                    <div
+                                        className="text-secondary-600 leading-relaxed prose prose-sm max-w-none text-justify"
+                                        dangerouslySetInnerHTML={{ __html: job.description }}
+                                    />
 
                                     {job.requirements && (
                                         <>
                                             <h3 className="text-sm font-bold uppercase tracking-widest text-secondary-900 mt-8 mb-4">Requirements</h3>
-                                            <div className="text-secondary-600 leading-relaxed whitespace-pre-wrap">{job.requirements}</div>
+                                            <div
+                                                className="text-secondary-600 leading-relaxed prose prose-sm max-w-none text-justify"
+                                                dangerouslySetInnerHTML={{ __html: job.requirements }}
+                                            />
                                         </>
                                     )}
                                 </div>
