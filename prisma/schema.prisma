@@ -87,6 +87,7 @@ model Company {
   users                       User[]                       @relation("UserCompanies")
   expenseAllocationRules      ExpenseAllocationRule[]
   expenseAllocations          EmployeeExpenseAllocation[]
+  teamMembers                 TeamMember[]
 }
 
 model Department {
@@ -218,11 +219,34 @@ model User {
   assignedToCustomers      CustomerProfile[]           @relation("CustomerToExecutives")
   companies                Company[]                   @relation("UserCompanies")
   evaluationsConducted     PerformanceEvaluation[]     @relation("EvaluatorUser")
+  managedTeamMembers       TeamMember[]                @relation("ManagerTeamMembers")
+  teamMemberships          TeamMember[]                @relation("UserTeamMemberships")
 
   @@index([email])
   @@index([role])
   @@index([companyId])
   @@index([departmentId])
+}
+
+model TeamMember {
+  id         String   @id @default(uuid())
+  managerId  String
+  userId     String
+  companyId  String
+  role       String?
+  assignedAt DateTime @default(now())
+  isActive   Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  manager User    @relation("ManagerTeamMembers", fields: [managerId], references: [id], onDelete: Cascade)
+  user    User    @relation("UserTeamMemberships", fields: [userId], references: [id], onDelete: Cascade)
+  company Company @relation(fields: [companyId], references: [id])
+
+  @@unique([managerId, userId, companyId])
+  @@index([managerId])
+  @@index([userId])
+  @@index([companyId])
 }
 
 model PasswordResetToken {
