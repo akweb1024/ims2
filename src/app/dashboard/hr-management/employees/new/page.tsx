@@ -32,7 +32,7 @@ export default function NewEmployeePage() {
                 if (desRes.ok) setDesignations(await desRes.json());
 
                 // Fetch Potential Managers
-                const managersRes = await fetch('/api/hr/employees', {
+                const managersRes = await fetch('/api/hr/employees?all=true', {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 if (managersRes.ok) {

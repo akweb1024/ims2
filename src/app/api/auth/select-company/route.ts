@@ -10,6 +10,7 @@ export const POST = authorizedRoute(
         try {
             const body = await req.json();
             const { companyId } = body;
+            const isAllCompany = companyId === 'ALL';
 
             if (!companyId) {
                 return createErrorResponse('Company ID is required', 400);
@@ -17,7 +18,11 @@ export const POST = authorizedRoute(
 
             // Verify access
             let hasAccess = false;
-            if (user.role === 'SUPER_ADMIN') {
+
+            if (isAllCompany) {
+                // Anyone with multiple companies or SUPER_ADMIN can see "ALL"
+                hasAccess = true;
+            } else if (user.role === 'SUPER_ADMIN') {
                 const company = await prisma.company.findUnique({ where: { id: companyId } });
                 if (company) hasAccess = true;
             } else {
@@ -34,10 +39,11 @@ export const POST = authorizedRoute(
                 return createErrorResponse('Forbidden: No access to this company', 403);
             }
 
-            // Update active company in User model (optional, but good for consistency)
+            // Update active company in User model
+            // For "ALL", we set companyId to null
             await prisma.user.update({
                 where: { id: user.id },
-                data: { companyId }
+                data: { companyId: isAllCompany ? null : companyId }
             });
 
             // Generate new token with updated companyId

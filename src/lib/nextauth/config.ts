@@ -30,7 +30,7 @@ export const authConfig = {
             }
 
             if (trigger === "update" && session) {
-                if (session.companyId) token.companyId = session.companyId;
+                if (session.companyId !== undefined) token.companyId = session.companyId;
                 if (session.role) token.role = session.role;
             }
 

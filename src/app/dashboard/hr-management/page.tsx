@@ -325,8 +325,10 @@ const HRManagementContent = () => {
                     params.append('searchType', staffFilters.searchType || 'all');
                 }
 
-                // If global view is toggled, maybe ignore company restriction? 
-                // For now, let's assume the API handles user role restrictions.
+                // Pass global view flag to API
+                if (showAllEmployees) {
+                    params.append('all', 'true');
+                }
 
                 const res = await fetch(`/api/staff-management/employees?${params.toString()}`);
                 if (res.ok) {

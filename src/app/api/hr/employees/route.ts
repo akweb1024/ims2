@@ -10,7 +10,7 @@ export const GET = authorizedRoute(
     ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'TEAM_LEADER', 'HR_MANAGER', 'HR'], // Added HR Roles
     async (req: NextRequest, user) => {
         try {
-            if (!user.companyId && user.role !== 'SUPER_ADMIN') {
+            if (!user.companyId && !['SUPER_ADMIN', 'ADMIN'].includes(user.role)) {
                 return createErrorResponse('Company association required', 403);
             }
 
@@ -26,12 +26,12 @@ export const GET = authorizedRoute(
             // Here we allow ADMIN to see all if requested.
             if (user.companyId && !showAll) {
                 where.user = { companyId: user.companyId };
-            } else if (user.companyId && showAll) {
-                // If showing all, ensure user has permission to see outside company (e.g. SUPER_ADMIN or specific ADMIN privilege)
-                // For now, allow regular ADMIN to see all as per request
+            } else if (showAll) {
+                // If showing all, ensure user has permission (SUPER_ADMIN or ADMIN)
                 if (!['SUPER_ADMIN', 'ADMIN'].includes(user.role)) {
-                    where.user = { companyId: user.companyId }; // Fallback for non-admins
+                    where.user = { companyId: user.companyId }; // Fallback for non-privileged roles
                 }
+                // If SUPER_ADMIN/ADMIN and showAll=true, where.user is left empty (sees all)
             }
 
             // Role-based restrictions: Manager & Team Leader see full hierarchy (cross-company)

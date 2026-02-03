@@ -197,7 +197,9 @@ export default function DashboardLayout({ children, userRole: propUserRole = 'CU
     const user = session?.user as any;
     const finalRole = user?.role || propUserRole;
 
-    const displayRole = mounted && user?.company?.name ? user.company.name : finalRole.replace('_', ' ');
+    const displayRole = mounted && user?.companyId
+        ? (user.company?.name || finalRole.replace('_', ' '))
+        : (mounted ? 'All Companies' : finalRole.replace('_', ' '));
     const displayEmail = mounted && user?.email ? user.email.split('@')[0] : 'User';
     const displayFullEmail = mounted && user?.email ? user.email : 'user@example.com';
 
@@ -208,7 +210,7 @@ export default function DashboardLayout({ children, userRole: propUserRole = 'CU
     const navigationModules = useMemo(() => {
         const userAllowedModules = user?.allowedModules || ['CORE'];
         return getNavigationModules(finalRole, userAllowedModules);
-    }, [finalRole, user]);
+    }, [finalRole, user?.allowedModules]);
 
     // Sync active module with current path
     useEffect(() => {

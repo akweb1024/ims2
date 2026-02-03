@@ -57,6 +57,14 @@ export const ALL_MODULES: NavModule[] = [
                     { name: 'Performance', href: '/dashboard/manager/team/performance', icon: '📊', roles: ['MANAGER', 'SUPER_ADMIN', 'ADMIN'] },
                     { name: 'Salary & Increments', href: '/dashboard/manager/team/salary', icon: '💰', roles: ['MANAGER', 'SUPER_ADMIN', 'ADMIN'] },
                 ]
+            },
+            {
+                title: 'Advanced Reports',
+                items: [
+                    { name: 'Increment Report', href: '/dashboard/reports/increments', icon: '📈', roles: ['MANAGER', 'SUPER_ADMIN', 'ADMIN'] },
+                    { name: 'Revenue Analysis', href: '/dashboard/reports/revenue', icon: '🏦', roles: ['MANAGER', 'SUPER_ADMIN', 'ADMIN', 'FINANCE_ADMIN'] },
+                    { name: 'Target Achievement', href: '/dashboard/reports/targets', icon: '🎯', roles: ['MANAGER', 'SUPER_ADMIN', 'ADMIN'] },
+                ]
             }
         ]
     },
@@ -368,9 +376,32 @@ export const ALL_MODULES: NavModule[] = [
 
 export function getNavigationModules(role: string, allowedModules: string[] = ['CORE']) {
     const isSuperAdmin = role === 'SUPER_ADMIN';
+    const isAdmin = role === 'ADMIN';
+    const isManager = role === 'MANAGER' || role === 'TEAM_LEADER';
+    const isFinance = role === 'FINANCE_ADMIN';
+
+    // Core list of modules that should be visible based on role, even if not explicitly in allowedModules
+    const defaultModulesByRole: Record<string, string[]> = {
+        'SUPER_ADMIN': ['*'],
+        'ADMIN': ['CORE', 'MANAGEMENT', 'HR', 'FINANCE', 'CRM', 'COMPANY', 'PUBLICATION', 'LMS', 'IT', 'WEB_MONITOR', 'QUALITY', 'STAFF_MANAGEMENT'],
+        'MANAGER': ['CORE', 'MANAGEMENT', 'CRM', 'HR', 'PUBLICATION', 'IT', 'QUALITY'],
+        'TEAM_LEADER': ['CORE', 'MANAGEMENT', 'CRM', 'HR', 'IT', 'QUALITY'],
+        'FINANCE_ADMIN': ['CORE', 'FINANCE', 'QUALITY', 'HR'],
+        'HR_MANAGER': ['CORE', 'HR', 'STAFF_MANAGEMENT', 'LMS', 'QUALITY'],
+        'EXECUTIVE': ['CORE', 'CRM', 'PUBLICATION', 'QUALITY', 'LOGISTIC'],
+    };
+
+    const defaultMods = defaultModulesByRole[role] || ['CORE'];
 
     return ALL_MODULES
-        .filter(mod => isSuperAdmin || allowedModules.includes(mod.id))
+        .filter(mod => {
+            if (isSuperAdmin) return true;
+            // If module is explicitly allowed in DB
+            if (allowedModules.includes(mod.id)) return true;
+            // If module is in default list for this role
+            if (defaultMods.includes('*') || defaultMods.includes(mod.id)) return true;
+            return false;
+        })
         .map(mod => ({
             ...mod,
             categories: mod.categories

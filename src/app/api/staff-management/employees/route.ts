@@ -21,11 +21,18 @@ export const GET = authorizedRoute(
             };
 
             // Filter by company
+            const showAll = searchParams.get('all') === 'true';
+
             if (companyId && companyId !== 'all') {
                 where.companyId = companyId;
-            } else if (user.companyId) {
+            } else if (user.companyId && !showAll) {
+                // Only restrict by user's company if NOT showAll
                 where.companyId = user.companyId;
+            } else if (!user.companyId && !showAll && user.role !== 'SUPER_ADMIN') {
+                // If no company in session and not super admin and not showAll, return nothing
+                return NextResponse.json([]);
             }
+            // If showAll=true or (user.companyId is null and user is SUPER_ADMIN), where.companyId is omitted (Global View)
 
             // Filter by department
             if (departmentId && departmentId !== 'all') {

@@ -205,6 +205,18 @@ export default function Header({
                                         <div className="border-t border-secondary-100 py-2">
                                             <p className="px-4 py-1 text-[10px] font-bold text-secondary-400 uppercase">Switch Company</p>
                                             <div className="max-h-40 overflow-y-auto">
+                                                {/* All Company Option */}
+                                                <button
+                                                    onClick={() => handleSwitchCompany('ALL')}
+                                                    className={`w-full text-left px-4 py-3 text-xs flex justify-between items-center transition-colors border-b border-secondary-50 ${!user?.companyId ? 'bg-primary-50 text-primary-700 font-bold' : 'text-secondary-600 hover:bg-secondary-50'}`}
+                                                >
+                                                    <div className="flex items-center">
+                                                        <span className="mr-2 text-primary-500 font-bold">🌐</span>
+                                                        <span>All Companies</span>
+                                                    </div>
+                                                    {!user?.companyId && <span className="text-primary-500 font-bold">✓</span>}
+                                                </button>
+
                                                 {availableCompanies.map((comp) => (
                                                     <button
                                                         key={comp.id}
