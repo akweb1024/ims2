@@ -464,7 +464,31 @@ export default function EmployeeProfilePage() {
                                         </div>
                                         <div className="grid grid-cols-2">
                                             <dt className="text-xs font-bold text-secondary-400 uppercase">Total Experience</dt>
-                                            <dd className="font-medium text-secondary-900">{employee.totalExperienceYears} Y {employee.totalExperienceMonths} M</dd>
+                                            <dd className="font-medium text-secondary-900">
+                                                {(() => {
+                                                    const doj = new Date(employee.dateOfJoining);
+                                                    const now = new Date();
+
+                                                    // Calculate tenure in months
+                                                    let tenureMonths = (now.getFullYear() - doj.getFullYear()) * 12 + (now.getMonth() - doj.getMonth());
+                                                    if (now.getDate() < doj.getDate()) {
+                                                        tenureMonths--;
+                                                    }
+
+                                                    // Initial experience from DB (assuming it's experience BEFORE joining or at time of entry)
+                                                    // If we assume the DB value is 'Previous Experience', we just add them.
+                                                    // If the DB value was 'Total Experience at DOJ', we also just add tenure.
+                                                    const initialYears = employee.totalExperienceYears || 0;
+                                                    const initialMonths = employee.totalExperienceMonths || 0;
+
+                                                    const totalMonths = (initialYears * 12) + initialMonths + Math.max(0, tenureMonths);
+
+                                                    const displayYears = Math.floor(totalMonths / 12);
+                                                    const displayMonths = totalMonths % 12;
+
+                                                    return `${displayYears} Y ${displayMonths} M`;
+                                                })()}
+                                            </dd>
                                         </div>
                                     </dl>
                                 </div>
