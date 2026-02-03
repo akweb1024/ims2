@@ -1,6 +1,12 @@
 export async function registerPush() {
     if (!('serviceWorker' in navigator)) return;
 
+    // Check if permission is already denied
+    if (Notification.permission === 'denied') {
+        console.warn('Push notifications are blocked by the user.');
+        return;
+    }
+
     try {
         const registration = await navigator.serviceWorker.register('/sw.js');
 

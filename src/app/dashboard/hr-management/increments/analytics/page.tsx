@@ -5,6 +5,8 @@ import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { TrendingUp, Users, Building, Filter, DollarSign, PieChart, CheckCircle, Clock } from 'lucide-react';
 import { FormattedNumber } from '@/components/common/FormattedNumber';
 import IncrementAnalyticsChart from '@/components/dashboard/hr/IncrementAnalyticsChart';
+import IncrementDistributionChart from '@/components/dashboard/hr/IncrementDistributionChart';
+import TopIncrementsTable from '@/components/dashboard/hr/TopIncrementsTable';
 
 export default function IncrementAnalyticsPage() {
     const [user, setUser] = useState<any>(null);
@@ -182,14 +184,16 @@ export default function IncrementAnalyticsPage() {
                             </div>
                         </div>
 
-                        {/* Chart Section */}
+
                         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                             <div className="lg:col-span-2 card-premium">
                                 <h3 className="font-bold text-lg text-secondary-900 mb-6 flex items-center gap-2">
                                     <TrendingUp size={20} className="text-primary-600" />
                                     Increment Impact Trend
                                 </h3>
-                                <IncrementAnalyticsChart data={analytics.trendData} />
+                                <div className="h-64">
+                                    <IncrementAnalyticsChart data={analytics.trendData} />
+                                </div>
                             </div>
 
                             {/* Department Dist (Only show for Company Scope) */}
@@ -199,7 +203,7 @@ export default function IncrementAnalyticsPage() {
                                         <PieChart size={20} className="text-primary-600" />
                                         Department Impact
                                     </h3>
-                                    <div className="space-y-4 max-h-[400px] overflow-y-auto pr-2">
+                                    <div className="space-y-4 max-h-[300px] overflow-y-auto pr-2">
                                         {analytics.departmentData.map((d: any, i: number) => (
                                             <div key={i} className="flex justify-between items-center text-sm">
                                                 <span className="text-secondary-600 font-medium">{d.name}</span>
@@ -221,6 +225,51 @@ export default function IncrementAnalyticsPage() {
                                 </div>
                             )}
                         </div>
+
+                        {/* Distribution and Top Performers */}
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                            {/* Distribution Chart */}
+                            <div className="card-premium">
+                                <h3 className="font-bold text-lg text-secondary-900 mb-6 flex items-center gap-2">
+                                    <PieChart size={20} className="text-primary-600" />
+                                    Increment Percentage Distribution
+                                </h3>
+                                <IncrementDistributionChart data={analytics.distributionData} />
+                            </div>
+
+                            {/* Top Increments */}
+                            <div className="card-premium">
+                                <h3 className="font-bold text-lg text-secondary-900 mb-6 flex items-center gap-2">
+                                    <Users size={20} className="text-primary-600" />
+                                    Top Increments
+                                </h3>
+                                <TopIncrementsTable data={analytics.topIncrements} />
+                            </div>
+                        </div>
+
+                        {/* Designation Impact (Horizontal Bars) - reusing Dept logic structure customized for designations */}
+                        {scope === 'COMPANY' && (
+                            <div className="card-premium">
+                                <h3 className="font-bold text-lg text-secondary-900 mb-6 flex items-center gap-2">
+                                    <Building size={20} className="text-primary-600" />
+                                    Impact by Designation
+                                </h3>
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                                    {analytics.designationData.map((d: any, i: number) => (
+                                        <div key={i} className="bg-secondary-50 p-4 rounded-lg border border-secondary-100">
+                                            <p className="text-xs text-secondary-500 font-bold uppercase truncate" title={d.name}>{d.name}</p>
+                                            <p className="text-lg font-black text-secondary-900 mt-1">₹<FormattedNumber value={d.value} compact /></p>
+                                            <div className="w-full h-1.5 bg-secondary-200 rounded-full mt-2 overflow-hidden">
+                                                <div
+                                                    className="h-full bg-indigo-500 rounded-full"
+                                                    style={{ width: `${(d.value / analytics.summary.totalImpact) * 100}%` }}
+                                                />
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
                     </>
                 ) : (
                     <div className="card-premium p-12 text-center text-secondary-400">
@@ -231,3 +280,4 @@ export default function IncrementAnalyticsPage() {
         </DashboardLayout>
     );
 }
+

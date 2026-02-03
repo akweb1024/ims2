@@ -2,6 +2,8 @@ import { auth } from '@/lib/nextauth';
 import { getUnifiedPerformance } from '@/lib/team-service';
 import { format } from 'date-fns';
 
+import PerformanceCharts from './PerformanceCharts';
+
 export default async function UnifiedPerformancePage({
     searchParams,
 }: {
@@ -43,36 +45,43 @@ export default async function UnifiedPerformancePage({
                             </div>
                         </div>
 
-                        <div className="p-6">
-                            <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-4">Recent KPIs</h4>
-                            <div className="overflow-x-auto">
-                                <table className="min-w-full divide-y divide-gray-100">
-                                    <thead>
-                                        <tr className="text-left text-xs text-gray-500">
-                                            <th className="pb-2">Title</th>
-                                            <th className="pb-2">Target</th>
-                                            <th className="pb-2">Current</th>
-                                            <th className="pb-2">Actions</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="divide-y divide-gray-50">
-                                        {user.kpis.map((kpi) => (
-                                            <tr key={kpi.id}>
-                                                <td className="py-2 text-sm text-gray-900">{kpi.title}</td>
-                                                <td className="py-2 text-sm text-gray-600">{kpi.target}</td>
-                                                <td className="py-2 text-sm text-gray-600">{kpi.current}</td>
-                                                <td className="py-2 text-xs text-primary-600">View Details</td>
+                        <div className="p-6 grid grid-cols-1 lg:grid-cols-2 gap-8">
+                            {/* Performance Trend Chart */}
+                            <div>
+                                <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-4">Performance Trend (Last 30 Reports)</h4>
+                                <PerformanceCharts data={user.reportHistory} />
+                            </div>
+
+                            {/* KPI List */}
+                            <div>
+                                <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-4">Current Period KPIs</h4>
+                                <div className="overflow-x-auto">
+                                    <table className="min-w-full divide-y divide-gray-100">
+                                        <thead>
+                                            <tr className="text-left text-xs text-gray-500">
+                                                <th className="pb-2">Title</th>
+                                                <th className="pb-2">Target</th>
+                                                <th className="pb-2">Current</th>
                                             </tr>
-                                        ))}
-                                        {user.kpis.length === 0 && (
-                                            <tr>
-                                                <td colSpan={4} className="py-4 text-center text-sm text-gray-400 italic">
-                                                    No active KPIs found for this period.
-                                                </td>
-                                            </tr>
-                                        )}
-                                    </tbody>
-                                </table>
+                                        </thead>
+                                        <tbody className="divide-y divide-gray-50">
+                                            {user.kpis.map((kpi) => (
+                                                <tr key={kpi.id}>
+                                                    <td className="py-2 text-sm text-gray-900">{kpi.title}</td>
+                                                    <td className="py-2 text-sm text-gray-600">{kpi.target}</td>
+                                                    <td className="py-2 text-sm text-gray-600">{kpi.current}</td>
+                                                </tr>
+                                            ))}
+                                            {user.kpis.length === 0 && (
+                                                <tr>
+                                                    <td colSpan={3} className="py-4 text-center text-sm text-gray-400 italic">
+                                                        No active KPIs found for this period.
+                                                    </td>
+                                                </tr>
+                                            )}
+                                        </tbody>
+                                    </table>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -86,3 +95,4 @@ export default async function UnifiedPerformancePage({
         </div>
     );
 }
+

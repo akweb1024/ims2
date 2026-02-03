@@ -143,6 +143,42 @@ export const GET = authorizedRoute(
 
             const departmentData = Array.from(deptMap.entries()).map(([name, value]) => ({ name, value }));
 
+            // 6. Distribution Buckets (Percentage)
+            const percBuckets = { '0-5%': 0, '5-10%': 0, '10-15%': 0, '15-20%': 0, '20%+': 0 };
+            increments.forEach(inc => {
+                const p = inc.percentage || 0;
+                if (p <= 5) percBuckets['0-5%']++;
+                else if (p <= 10) percBuckets['5-10%']++;
+                else if (p <= 15) percBuckets['10-15%']++;
+                else if (p <= 20) percBuckets['15-20%']++;
+                else percBuckets['20%+']++;
+            });
+            const distributionData = Object.entries(percBuckets).map(([name, value]) => ({ name, value }));
+
+            // 7. Top 5 Increments
+            const topIncrements = [...increments]
+                .sort((a, b) => (b.incrementAmount || 0) - (a.incrementAmount || 0))
+                .slice(0, 5)
+                .map(inc => ({
+                    id: inc.id,
+                    name: inc.employeeProfile?.user?.name || 'Unknown',
+                    designation: inc.employeeProfile?.designation || 'N/A',
+                    amount: inc.incrementAmount,
+                    percentage: inc.percentage,
+                    newSalary: inc.newSalary
+                }));
+
+            // 8. Designation Breakdown
+            const desigMap = new Map();
+            increments.forEach(inc => {
+                const d = inc.employeeProfile?.designation || 'Unknown';
+                desigMap.set(d, (desigMap.get(d) || 0) + (inc.incrementAmount || 0));
+            });
+            const designationData = Array.from(desigMap.entries())
+                .map(([name, value]) => ({ name, value }))
+                .sort((a, b: any) => b.value - a.value) // Sort by impact
+                .slice(0, 8); // Top 8 designations
+
             return NextResponse.json({
                 summary: {
                     totalImpact,
@@ -151,6 +187,9 @@ export const GET = authorizedRoute(
                 },
                 trendData,
                 departmentData,
+                distributionData,
+                topIncrements,
+                designationData,
                 raw: increments.length // Debug info
             });
 

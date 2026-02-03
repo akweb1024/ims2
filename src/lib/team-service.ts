@@ -1,5 +1,5 @@
 import { prisma } from '@/lib/prisma';
-import { getManagerTeamUserIds } from '@/lib/team-auth';
+import { getManagerTeamUserIds, verifyTeamMemberAccess } from '@/lib/team-auth';
 
 /**
  * Get unified attendance view across all team members
@@ -346,6 +346,19 @@ export async function getUnifiedPerformance(
                         },
                         orderBy: { date: 'desc' },
                         take: 10
+                    },
+                    workReports: {
+                        where: {
+                            status: 'APPROVED'
+                        },
+                        select: {
+                            id: true,
+                            date: true,
+                            managerRating: true,
+                            selfRating: true
+                        },
+                        orderBy: { date: 'asc' }, // Ascending for charts
+                        take: 30 // Last 30 approved reports
                     }
                 }
             }
@@ -368,7 +381,12 @@ export async function getUnifiedPerformance(
             createdAt: p.createdAt,
             reviewer: p.reviewer
         })) || [],
-        insights: u.employeeProfile?.performanceInsights || []
+        insights: u.employeeProfile?.performanceInsights || [],
+        reportHistory: u.employeeProfile?.workReports.map(r => ({
+            date: r.date,
+            rating: r.managerRating || r.selfRating || 0,
+            type: 'Daily Report'
+        })) || []
     }));
 }
 
@@ -412,6 +430,7 @@ export async function getUnifiedSalaries(
             },
             employeeProfile: {
                 select: {
+                    id: true,
                     employeeId: true,
                     designation: true,
                     baseSalary: true,
@@ -460,3 +479,63 @@ export async function getUnifiedSalaries(
         incrementHistory: u.employeeProfile?.incrementHistory || []
     }));
 }
+
+/**
+ * Get detailed profile of a team member for manager view
+ * 
+ * @param managerId - The manager's user ID
+ * @param targetUserId - The team member's user ID
+ */
+export async function getManagerTeamMemberProfile(managerId: string, targetUserId: string) {
+    const hasAccess = await verifyTeamMemberAccess(managerId, targetUserId);
+
+    if (!hasAccess) {
+        throw new Error('Forbidden: You do not have access to this user');
+    }
+
+    const user = await prisma.user.findUnique({
+        where: { id: targetUserId },
+        include: {
+            company: { select: { id: true, name: true } },
+            department: { select: { id: true, name: true } },
+            employeeProfile: {
+                include: {
+                    incrementHistory: { orderBy: { effectiveDate: 'desc' }, take: 5 },
+                    // Recent stats
+                    attendance: {
+                        take: 30,
+                        orderBy: { date: 'desc' }
+                    },
+                    leaveRequests: {
+                        take: 5,
+                        orderBy: { createdAt: 'desc' },
+                        where: { status: 'PENDING' }
+                    },
+                    workReports: {
+                        take: 5,
+                        orderBy: { date: 'desc' }
+                    },
+                    performance: {
+                        take: 3,
+                        orderBy: { createdAt: 'desc' }
+                    }
+                }
+            }
+        }
+    });
+
+    if (!user) return null;
+
+    return {
+        ...user,
+        companyName: user.company?.name || 'Unknown',
+        departmentName: user.department?.name || 'Unassigned',
+        // Flatten specific stats for easier consumption
+        recentAttendance: user.employeeProfile?.attendance || [],
+        pendingLeaves: user.employeeProfile?.leaveRequests || [],
+        recentReports: user.employeeProfile?.workReports || [],
+        recentReviews: user.employeeProfile?.performance || [],
+        incrementHistory: user.employeeProfile?.incrementHistory || []
+    };
+}
+
