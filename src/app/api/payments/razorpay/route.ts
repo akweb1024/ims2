@@ -196,7 +196,7 @@ export async function GET(req: NextRequest) {
         const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
         const endOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0);
 
-        const [currentMonthStats, lastMonthStats] = await Promise.all([
+        const [currentMonthStats, lastMonthStats, totalStats] = await Promise.all([
             prisma.payment.aggregate({
                 where: {
                     ...where,
@@ -212,11 +212,20 @@ export async function GET(req: NextRequest) {
                     paymentDate: { gte: startOfLastMonth, lte: endOfLastMonth }
                 },
                 _sum: { amount: true }
+            }),
+            prisma.payment.aggregate({
+                where: {
+                    ...where,
+                    status: 'captured'
+                },
+                _sum: { amount: true }
             })
         ]);
 
         const currentMonthRevenue = (currentMonthStats._sum.amount || 0) / 100; // Convert paise to INR
         const lastMonthRevenue = (lastMonthStats._sum.amount || 0) / 100; // Convert paise to INR
+        const totalRevenueINR = (totalStats?._sum?.amount || 0) / 100; // Global Revenue from DB aggregation
+
         const momGrowth = lastMonthRevenue === 0 ? 100 : ((currentMonthRevenue - lastMonthRevenue) / lastMonthRevenue) * 100;
 
         // Currency Rates (Should be fetched from an API in production)
@@ -234,9 +243,10 @@ export async function GET(req: NextRequest) {
             'CNY': 11.5
         };
 
-        // Get total revenue in INR
-        let totalRevenueINR = 0;
+        // Note: totalRevenueINR is now calculated via DB aggregate above for accuracy over full dataset
+        // Keeping this loop only for constructing the currencyMap if needed, but not for the global total.
         const currencyMap = new Map<string, { amount: number, count: number }>();
+
 
         // For KPI we use the full list or filtered list? 
         // Better to use a separate aggregate for KPIs if we want them to reflect total always
@@ -256,7 +266,7 @@ export async function GET(req: NextRequest) {
                 inrValue = (p.amount / 100) * rate;
             }
 
-            totalRevenueINR += inrValue;
+            // totalRevenueINR += inrValue; // Removed: Calculated via DB aggregate now
 
             const existing = currencyMap.get(curr) || { amount: 0, count: 0 };
             currencyMap.set(curr, {

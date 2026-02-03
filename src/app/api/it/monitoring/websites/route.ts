@@ -13,7 +13,8 @@ export const GET = authorizedRoute(
             }
 
             const monitors = await prisma.websiteMonitor.findMany({
-                where: user.companyId ? { companyId: user.companyId } : {},
+                // Modified to allow visibility to all users with module access, as requested
+                // where: user.companyId ? { companyId: user.companyId } : {},
                 orderBy: { createdAt: 'desc' },
                 include: {
                     logs: {

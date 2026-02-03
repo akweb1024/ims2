@@ -9,7 +9,18 @@ import {
     BarChart, Bar, Legend, PieChart, Pie, Cell
 } from 'recharts';
 
-const COLORS = ['#2563eb', '#16a34a', '#ea580c', '#d3324c', '#8b5cf6', '#06b6d4'];
+const COLORS = [
+    '#2563eb', // Blue
+    '#16a34a', // Green
+    '#ea580c', // Orange
+    '#d3324c', // Red
+    '#8b5cf6', // Violet
+    '#06b6d4', // Cyan
+    '#e11d48', // Rose
+    '#d97706', // Amber
+    '#4f46e5', // Indigo
+    '#059669', // Emerald
+];
 
 export default function FinancePage() {
     const [loading, setLoading] = useState(true);
@@ -355,24 +366,43 @@ export default function FinancePage() {
                     {/* Category Breakdown */}
                     <div className="bg-white p-6 rounded-2xl border border-secondary-100 shadow-sm min-h-[400px]">
                         <h3 className="text-lg font-bold text-secondary-900 mb-6">Expense Distribution</h3>
-                        <div className="h-[300px] flex items-center justify-center">
+                        <div className="h-[300px] w-full">
                             <ResponsiveContainer width="100%" height="100%">
                                 <PieChart>
                                     <Pie
-                                        data={analytics?.categories?.filter((c: any) => c.type === 'EXPENSE') || []}
-                                        cx="50%"
+                                        data={(() => {
+                                            const expenses = analytics?.categories?.filter((c: any) => c.type === 'EXPENSE') || [];
+                                            expenses.sort((a: any, b: any) => b.value - a.value);
+                                            if (expenses.length <= 6) return expenses;
+                                            const top = expenses.slice(0, 5);
+                                            const other = expenses.slice(5).reduce((acc: any, curr: any) => ({
+                                                name: 'Other Expenses',
+                                                value: (acc.value || 0) + curr.value,
+                                                type: 'EXPENSE'
+                                            }), { value: 0 });
+                                            return [...top, other];
+                                        })()}
+                                        cx="40%" // Shift pie to left to make room for legend
                                         cy="50%"
                                         innerRadius={60}
-                                        outerRadius={100}
+                                        outerRadius={80}
                                         paddingAngle={5}
                                         dataKey="value"
                                     >
                                         {analytics?.categories?.map((_: any, index: number) => (
-                                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} stroke="none" />
                                         ))}
                                     </Pie>
-                                    <Tooltip contentStyle={{ borderRadius: '12px' }} />
-                                    <Legend />
+                                    <Tooltip
+                                        formatter={(value: any) => `₹${Number(value).toLocaleString()}`}
+                                        contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
+                                    />
+                                    <Legend
+                                        layout="vertical"
+                                        verticalAlign="middle"
+                                        align="right"
+                                        wrapperStyle={{ paddingLeft: '20px', fontSize: '10px', fontWeight: 'bold' }}
+                                    />
                                 </PieChart>
                             </ResponsiveContainer>
                         </div>

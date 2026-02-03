@@ -129,9 +129,13 @@ export default function DashboardLayout({ children, userRole: propUserRole = 'CU
     };
 
     const handleLogout = async () => {
-        localStorage.clear();
-        await signOut({ redirect: false });
-        router.push('/login');
+        try {
+            localStorage.clear();
+            await signOut({ redirect: false });
+        } finally {
+            // Force full page reload to clear all client state
+            window.location.href = '/login';
+        }
     };
 
     const handleRevertAdmin = async () => {
@@ -163,11 +167,17 @@ export default function DashboardLayout({ children, userRole: propUserRole = 'CU
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ companyId })
         });
+
         if (res.ok) {
             const data = await res.json();
             if (data.token) localStorage.setItem('token', data.token);
+
+            // Trigger NextAuth session update
             await update({ companyId });
-            window.location.reload();
+
+            // Allow small buffer for cookie propagation before hard navigation
+            // Using window.location.href instead of reload() ensures a fresh navigation event
+            window.location.href = '/dashboard';
         }
     };
 

@@ -39,6 +39,35 @@ export default function EmployeeTransactions() {
         );
     }
 
+    const handleClaim = async (paymentId: string) => {
+        if (!confirm('Are you sure the payment is manually claimed by you? This will generate a revenue claim request.')) return;
+
+        try {
+            const token = localStorage.getItem('token');
+            const res = await fetch('/api/revenue/claims', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    paymentId: paymentId
+                })
+            });
+
+            if (res.ok) {
+                alert('Claim submitted successfully!');
+                fetchTransactions();
+            } else {
+                const err = await res.json();
+                alert(`Failed: ${err.error}`);
+            }
+        } catch (err) {
+            console.error(err);
+            alert('Network error');
+        }
+    };
+
     const filteredPayments = data?.payments?.filter((p: any) => {
         const matchesSearch =
             (p.name?.toLowerCase().includes(searchTerm.toLowerCase())) ||
@@ -77,7 +106,7 @@ export default function EmployeeTransactions() {
                     <p className="text-[10px] font-black text-secondary-400 uppercase tracking-widest mb-2">Current Month</p>
                     <h3 className="text-4xl font-black text-secondary-900 tracking-tighter">₹{data?.stats?.currentMonthRevenue?.toLocaleString()}</h3>
                     <div className="mt-4 flex items-center gap-2 text-[10px] font-bold text-success-600">
-                        <span>↗ {data?.stats?.momGrowth}% Growth</span>
+                        <span>↗ {data?.stats?.momGrowth?.toFixed(1) || 0}% Growth</span>
                     </div>
                 </div>
             </div>
@@ -126,12 +155,13 @@ export default function EmployeeTransactions() {
                                 <th className="px-8 py-5 text-left">Created At</th>
                                 <th className="px-8 py-5 text-right">Amount</th>
                                 <th className="px-8 py-5 text-center">Status</th>
+                                <th className="px-8 py-5 text-center">Action</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-secondary-100 bg-white">
                             {filteredPayments.length === 0 ? (
                                 <tr>
-                                    <td colSpan={5} className="px-8 py-32 text-center text-secondary-300">
+                                    <td colSpan={6} className="px-8 py-32 text-center text-secondary-300">
                                         <div className="flex flex-col items-center gap-4 opacity-50">
                                             <Search size={64} />
                                             <p className="font-black uppercase tracking-[0.3em]">No matching transactions</p>
@@ -182,6 +212,21 @@ export default function EmployeeTransactions() {
                                                     {p.status}
                                                 </span>
                                             </div>
+                                        </td>
+                                        <td className="px-8 py-6 text-center">
+                                            {p.status === 'captured' && !p.revenueTransaction && (
+                                                <button
+                                                    onClick={() => handleClaim(p.id)}
+                                                    className="btn hover:bg-primary-50 text-primary-600 px-3 py-1 rounded text-[10px] font-bold uppercase tracking-widest border border-primary-200 hover:border-primary-500 transition-all"
+                                                >
+                                                    Claim
+                                                </button>
+                                            )}
+                                            {p.revenueTransaction && (
+                                                <span className="text-[10px] font-bold text-secondary-400 uppercase tracking-widest flex items-center justify-center gap-1">
+                                                    <span className="w-1.5 h-1.5 rounded-full bg-secondary-400"></span> Claimed
+                                                </span>
+                                            )}
                                         </td>
                                     </tr>
                                 ))
