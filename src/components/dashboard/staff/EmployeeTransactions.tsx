@@ -106,7 +106,7 @@ export default function EmployeeTransactions() {
                     <p className="text-[10px] font-black text-secondary-400 uppercase tracking-widest mb-2">Current Month</p>
                     <h3 className="text-4xl font-black text-secondary-900 tracking-tighter">₹{data?.stats?.currentMonthRevenue?.toLocaleString()}</h3>
                     <div className="mt-4 flex items-center gap-2 text-[10px] font-bold text-success-600">
-                        <span>↗ {data?.stats?.momGrowth?.toFixed(1) || 0}% Growth</span>
+                        <span>↗ {typeof data?.stats?.momGrowth === 'number' ? data.stats.momGrowth.toFixed(1) : (data?.stats?.momGrowth || 0)}% Growth</span>
                     </div>
                 </div>
             </div>

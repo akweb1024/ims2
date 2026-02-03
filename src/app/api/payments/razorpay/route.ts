@@ -338,7 +338,7 @@ export async function GET(req: NextRequest) {
                 totalCount: total || 0,
                 currentMonthRevenue,
                 lastMonthRevenue,
-                momGrowth: momGrowth.toFixed(1)
+                momGrowth: parseFloat(momGrowth.toFixed(1))
             },
             monthlySummaries: processedMonthlyAgg,
             yearlySummaries: processedYearlyAgg,
