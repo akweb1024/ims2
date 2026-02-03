@@ -7,25 +7,44 @@ import {
     BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip
 } from 'recharts';
 
-export default function EmployeeKPIView() {
+interface EmployeeKPIViewProps {
+    snapshots?: any[];
+    reviews?: any[];
+}
+
+export default function EmployeeKPIView({ snapshots = [], reviews = [] }: EmployeeKPIViewProps) {
     const { data: kpis, isLoading } = useKPIs();
 
-    // Mock data for visualizations (since API might be limited)
-    const skillsData = [
-        { subject: 'Technical', A: 120, fullMark: 150 },
-        { subject: 'Leadership', A: 98, fullMark: 150 },
-        { subject: 'Comm.', A: 86, fullMark: 150 },
-        { subject: 'Delivery', A: 99, fullMark: 150 },
-        { subject: 'Punctuality', A: 85, fullMark: 150 },
-        { subject: 'Teamwork', A: 65, fullMark: 150 },
+    // Use latest snapshot for current metrics
+    const currentSnapshot = snapshots && snapshots.length > 0 ? snapshots[snapshots.length - 1] : null;
+
+    // Derived Data for Radar Chart
+    const skillsData = currentSnapshot ? [
+        { subject: 'Quality', A: (currentSnapshot.averageTaskQuality || 0) * 10, fullMark: 100 }, // Assuming 0-10 scale
+        { subject: 'Attendance', A: currentSnapshot.attendanceScore || 0, fullMark: 100 },
+        { subject: 'Reporting', A: currentSnapshot.reportSubmissionRate || 0, fullMark: 100 },
+        { subject: 'Completion', A: currentSnapshot.taskCompletionRate || 0, fullMark: 100 }, // Note: might be 0 if tasks not assigned
+        { subject: 'Communication', A: currentSnapshot.communicationScore || 0, fullMark: 100 },
+        { subject: 'Punctuality', A: Math.max(0, 100 - ((currentSnapshot.totalLateMinutes || 0) / 10)), fullMark: 100 }, // Rough calc
+    ] : [
+        // Fallback or empty state if no snapshot
+        { subject: 'Quality', A: 0, fullMark: 100 },
+        { subject: 'Attendance', A: 0, fullMark: 100 },
+        { subject: 'Reporting', A: 0, fullMark: 100 },
+        { subject: 'Completion', A: 0, fullMark: 100 },
+        { subject: 'Communication', A: 0, fullMark: 100 },
+        { subject: 'Punctuality', A: 0, fullMark: 100 },
     ];
 
-    const performanceHistory = [
-        { month: 'Q1', score: 8.5 },
-        { month: 'Q2', score: 8.8 },
-        { month: 'Q3', score: 9.2 },
-        { month: 'Q4', score: 9.5 },
-    ];
+    // Data for Trend Chart (Last 6 months)
+    const performanceHistory = snapshots?.slice(-6).map(s => ({
+        month: new Date(s.year, s.month - 1).toLocaleString('default', { month: 'short' }),
+        score: parseFloat(s.overallScore?.toFixed(1) || '0') / 10 // Map 0-100 to 0-10 for chart consistency or keep 100? Chart axis was 0-10 previously
+    })) || [];
+
+    // Overall Rating (Using Manager Rating or Overall Score)
+    // Previous mock was 9.2/10. Let's use overallScore (0-100) scaled to 0-10
+    const overallRating = currentSnapshot ? (currentSnapshot.overallScore / 10).toFixed(1) : '0.0';
 
     if (isLoading) return (
         <div className="flex items-center justify-center p-20 text-indigo-500">
@@ -40,22 +59,25 @@ export default function EmployeeKPIView() {
                 <div className="relative z-10 flex flex-col md:flex-row justify-between items-end gap-6">
                     <div>
                         <div className="flex items-center gap-2 mb-2">
-                            <span className="bg-white/20 backdrop-blur-md px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider">
-                                Top Performer
-                            </span>
+                            {Number(overallRating) >= 8 && (
+                                <span className="bg-white/20 backdrop-blur-md px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider">
+                                    Top Performer
+                                </span>
+                            )}
                             <span className="flex items-center gap-1 text-xs font-bold text-amber-300">
-                                <Award size={14} /> Only 15% of staff here
+                                <Award size={14} /> Performance Score
                             </span>
                         </div>
-                        <h1 className="text-4xl font-black mb-2">Excellent Performance</h1>
+                        <h1 className="text-4xl font-black mb-2">{Number(overallRating) >= 8 ? 'Excellent Performance' : Number(overallRating) >= 6 ? 'Good Performance' : 'Needs Improvement'}</h1>
                         <p className="text-indigo-100 max-w-xl">
-                            You are currently performing in the top percentile of your department.
-                            Keep up this velocity to be eligible for the upcoming evaluation cycle.
+                            {Number(overallRating) >= 8
+                                ? "You are currently performing in the top percentile. Keep up this velocity!"
+                                : "Focus on consistent reporting and task completion to improve your score."}
                         </p>
                     </div>
                     <div className="text-right">
                         <p className="text-xs uppercase tracking-widest opacity-80 font-bold">Overall Rating</p>
-                        <div className="text-5xl font-black mt-1">9.2<span className="text-2xl opacity-60">/10</span></div>
+                        <div className="text-5xl font-black mt-1">{overallRating}<span className="text-2xl opacity-60">/10</span></div>
                     </div>
                 </div>
                 {/* Decorative Elements */}
@@ -67,14 +89,14 @@ export default function EmployeeKPIView() {
                 {/* Skills Radar */}
                 <div className="bg-white rounded-[2rem] p-6 shadow-sm border border-gray-100 dark:border-gray-700">
                     <h3 className="font-bold text-lg text-gray-900 mb-6 flex items-center gap-2">
-                        <Zap className="text-amber-500" size={20} /> Skills Assessment
+                        <Zap className="text-amber-500" size={20} /> Metrics Analysis
                     </h3>
                     <div className="h-64 w-full">
                         <ResponsiveContainer width="100%" height="100%">
                             <RadarChart cx="50%" cy="50%" outerRadius="80%" data={skillsData}>
                                 <PolarGrid stroke="#e5e7eb" />
                                 <PolarAngleAxis dataKey="subject" tick={{ fill: '#6b7280', fontSize: 10, fontWeight: 700 }} />
-                                <PolarRadiusAxis angle={30} domain={[0, 150]} tick={false} axisLine={false} />
+                                <PolarRadiusAxis angle={30} domain={[0, 100]} tick={false} axisLine={false} />
                                 <Radar
                                     name="Me"
                                     dataKey="A"
@@ -87,7 +109,7 @@ export default function EmployeeKPIView() {
                         </ResponsiveContainer>
                     </div>
                     <p className="text-center text-xs text-gray-500 font-medium mt-2">
-                        Based on manager reviews & project outcomes
+                        Based on monthly performance snapshots
                     </p>
                 </div>
 
@@ -105,7 +127,7 @@ export default function EmployeeKPIView() {
                                     <div className="flex justify-between items-start mb-4">
                                         <div>
                                             <h4 className="font-bold text-gray-900 text-sm group-hover:text-indigo-600 transition-colors">{kpi.title}</h4>
-                                            <p className="text-xs text-gray-500 mt-1">Due: {new Date().toLocaleDateString()}</p>
+                                            <p className="text-xs text-gray-500 mt-1">Due: {kpi.period}</p>
                                         </div>
                                         <div className={`p-2 rounded-xl bg-gray-50 text-gray-600 ${percentage >= 100 ? 'bg-green-50 text-green-600' : ''}`}>
                                             <BarChart3 size={18} />
@@ -141,21 +163,27 @@ export default function EmployeeKPIView() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-8 border-t border-gray-100">
                 <div className="bg-white rounded-[2rem] p-8 shadow-sm border border-gray-100">
                     <h3 className="font-bold text-lg text-gray-900 mb-6 flex items-center gap-2">
-                        <TrendingUp className="text-green-500" size={20} /> Performance Trend
+                        <TrendingUp className="text-green-500" size={20} /> Performance Trend (Last 6 Months)
                     </h3>
                     <div className="h-60">
-                        <ResponsiveContainer width="100%" height="100%">
-                            <BarChart data={performanceHistory}>
-                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
-                                <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fill: '#9ca3af', fontSize: 12 }} />
-                                <YAxis domain={[0, 10]} axisLine={false} tickLine={false} tick={{ fill: '#9ca3af', fontSize: 12 }} />
-                                <RechartsTooltip
-                                    cursor={{ fill: '#f9fafb' }}
-                                    contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)' }}
-                                />
-                                <Bar dataKey="score" fill="#6366f1" radius={[6, 6, 0, 0]} barSize={40} />
-                            </BarChart>
-                        </ResponsiveContainer>
+                        {performanceHistory.length > 0 ? (
+                            <ResponsiveContainer width="100%" height="100%">
+                                <BarChart data={performanceHistory}>
+                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
+                                    <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fill: '#9ca3af', fontSize: 12 }} />
+                                    <YAxis domain={[0, 10]} axisLine={false} tickLine={false} tick={{ fill: '#9ca3af', fontSize: 12 }} />
+                                    <RechartsTooltip
+                                        cursor={{ fill: '#f9fafb' }}
+                                        contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)' }}
+                                    />
+                                    <Bar dataKey="score" fill="#6366f1" radius={[6, 6, 0, 0]} barSize={40} />
+                                </BarChart>
+                            </ResponsiveContainer>
+                        ) : (
+                            <div className="flex h-full items-center justify-center text-gray-400">
+                                No history available yet
+                            </div>
+                        )}
                     </div>
                 </div>
 
@@ -166,25 +194,19 @@ export default function EmployeeKPIView() {
                         </div>
                         <div>
                             <h3 className="font-bold text-lg text-emerald-900">Career Trajectory</h3>
-                            <p className="text-xs text-emerald-600 font-bold uppercase tracking-wider">Next Milestone</p>
+                            <p className="text-xs text-emerald-600 font-bold uppercase tracking-wider">Growth Path</p>
                         </div>
                     </div>
 
                     <div className="relative pl-6 space-y-8 before:absolute before:left-2 before:top-2 before:bottom-2 before:w-0.5 before:bg-emerald-200">
+                        {/* Static for now as dynamic career path is complex */}
                         <div className="relative">
                             <div className="absolute -left-[29px] top-1 h-3 w-3 bg-emerald-500 rounded-full ring-4 ring-emerald-100"></div>
-                            <h4 className="font-bold text-emerald-900">Senior Developer</h4>
-                            <p className="text-xs text-emerald-600 mt-1">Projected: Q3 2026</p>
+                            <h4 className="font-bold text-emerald-900">Current Role</h4>
+                            <p className="text-xs text-emerald-600 mt-1">Focus on excelling in current KRA</p>
                             <div className="mt-3 flex gap-2">
-                                <span className="bg-white px-2 py-1 rounded text-[10px] font-bold text-emerald-700 shadow-sm border border-emerald-100">Mentorship +2</span>
-                                <span className="bg-white px-2 py-1 rounded text-[10px] font-bold text-emerald-700 shadow-sm border border-emerald-100">System Design</span>
+                                <span className="bg-white px-2 py-1 rounded text-[10px] font-bold text-emerald-700 shadow-sm border border-emerald-100">Performance: {Number(overallRating) >= 8 ? 'High' : 'Normal'}</span>
                             </div>
-                        </div>
-
-                        <div className="relative opacity-50">
-                            <div className="absolute -left-[29px] top-1 h-3 w-3 bg-emerald-300 rounded-full"></div>
-                            <h4 className="font-bold text-emerald-800">Tech Lead</h4>
-                            <p className="text-xs text-emerald-600 mt-1">Projected: 2028</p>
                         </div>
                     </div>
                 </div>

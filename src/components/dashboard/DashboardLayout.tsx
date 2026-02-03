@@ -131,9 +131,11 @@ export default function DashboardLayout({ children, userRole: propUserRole = 'CU
     const handleLogout = async () => {
         try {
             localStorage.clear();
-            await signOut({ redirect: false });
-        } finally {
-            // Force full page reload to clear all client state
+            // Use NextAuth to sign out and redirect, ensuring the server cleans up the session
+            await signOut({ callbackUrl: '/login', redirect: true });
+        } catch (error) {
+            console.error("Logout failed", error);
+            // Fallback only if NextAuth method fails completely
             window.location.href = '/login';
         }
     };
@@ -162,22 +164,33 @@ export default function DashboardLayout({ children, userRole: propUserRole = 'CU
     };
 
     const handleSwitchCompany = async (companyId: string) => {
-        const res = await fetch('/api/auth/select-company', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ companyId })
-        });
+        try {
+            const res = await fetch('/api/auth/select-company', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ companyId })
+            });
 
-        if (res.ok) {
-            const data = await res.json();
-            if (data.token) localStorage.setItem('token', data.token);
+            if (res.ok) {
+                const data = await res.json();
+                if (data.token) localStorage.setItem('token', data.token);
 
-            // Trigger NextAuth session update
-            await update({ companyId });
+                // Trigger NextAuth session update
+                await update({ companyId });
 
-            // Allow small buffer for cookie propagation before hard navigation
-            // Using window.location.href instead of reload() ensures a fresh navigation event
-            window.location.href = '/dashboard';
+                // Clear client-side router cache to ensure fresh data
+                router.refresh();
+
+                // Allow small buffer for cookie propagation before hard navigation
+                // Using window.location.href instead of reload() ensures a fresh navigation event
+                setTimeout(() => {
+                    window.location.href = '/dashboard';
+                }, 100);
+            }
+        } catch (error) {
+            console.error("Switch company failed", error);
+            // Don't leave the user stuck if API fails
+            router.refresh();
         }
     };
 

@@ -41,6 +41,7 @@ export default function StaffPortalPage() {
     const [performance, setPerformance] = useState<any[]>([]);
     const [workPlans, setWorkPlans] = useState<any[]>([]);
     const [documents, setDocuments] = useState<any>(null);
+    const [snapshots, setSnapshots] = useState<any[]>([]); // Added for dynamic performance
     const [fullProfile, setFullProfile] = useState<any>(null);
     const [compliance, setCompliance] = useState<any>({ isCompliant: true, pendingDocuments: [], pendingModules: [] });
     const [loading, setLoading] = useState(true);
@@ -84,7 +85,7 @@ export default function StaffPortalPage() {
         setLoading(true);
         const token = localStorage.getItem('token');
         try {
-            const [attendanceRes, reportsRes, plansRes, slipsRes, leavesRes, perfRes, docsRes, profileRes, complRes] = await Promise.all([
+            const [attendanceRes, reportsRes, plansRes, slipsRes, leavesRes, perfRes, docsRes, profileRes, complRes, snapRes] = await Promise.all([
                 fetch('/api/hr/attendance', { headers: { 'Authorization': `Bearer ${token}` } }),
                 fetch('/api/hr/work-reports?employeeId=self', { headers: { 'Authorization': `Bearer ${token}` } }),
                 fetch('/api/hr/work-plans', { headers: { 'Authorization': `Bearer ${token}` } }),
@@ -93,7 +94,8 @@ export default function StaffPortalPage() {
                 fetch('/api/hr/performance', { headers: { 'Authorization': `Bearer ${token}` } }),
                 fetch('/api/hr/my-documents', { headers: { 'Authorization': `Bearer ${token}` } }),
                 fetch('/api/hr/profile/me', { headers: { 'Authorization': `Bearer ${token}` } }),
-                fetch('/api/hr/onboarding/compliance', { headers: { 'Authorization': `Bearer ${token}` } })
+                fetch('/api/hr/onboarding/compliance', { headers: { 'Authorization': `Bearer ${token}` } }),
+                fetch(`/api/hr/performance/monthly?employeeId=self&year=${new Date().getFullYear()}`, { headers: { 'Authorization': `Bearer ${token}` } }) // Fetch Snapshots
             ]);
 
             if (complRes.ok) {
@@ -120,6 +122,7 @@ export default function StaffPortalPage() {
             if (slipsRes.ok) setSalarySlips(await slipsRes.json());
             if (leavesRes.ok) setLeaves(await leavesRes.json());
             if (perfRes.ok) setPerformance(await perfRes.json());
+            if (snapRes.ok) setSnapshots(await snapRes.json());
         } catch (err) {
             console.error('Failed to fetch staff data', err);
         } finally {
@@ -442,7 +445,7 @@ export default function StaffPortalPage() {
 
                     {activeTab === 'performance' && (
                         <div className="p-8">
-                            <EmployeeKPIView />
+                            <EmployeeKPIView snapshots={snapshots} reviews={performance} />
                         </div>
                     )}
 
