@@ -1,3 +1,4 @@
+import { createPortal } from 'react-dom';
 import { useState, useEffect } from 'react';
 import { useEmployeeLeaveHistory, useUpdateLeaveLedger } from '@/hooks/useHR';
 import { toast } from 'react-hot-toast';
@@ -13,6 +14,16 @@ const EmployeeLeaveHistory = ({ employeeId, year, onClose, onUpdate }: Props) =>
     const { data: history = [], refetch, isLoading } = useEmployeeLeaveHistory(employeeId, year);
     const updateLedgerMutation = useUpdateLeaveLedger();
     const [editingMonth, setEditingMonth] = useState<number | null>(null);
+    const [mounted, setMounted] = useState(false);
+
+    useEffect(() => {
+        setMounted(true);
+        // Prevent body scroll when modal is open
+        document.body.style.overflow = 'hidden';
+        return () => {
+            document.body.style.overflow = 'unset';
+        };
+    }, []);
 
     // Helper row component for individual month editing
     const HistoryRow = ({ row }: { row: any }) => {
@@ -144,54 +155,74 @@ const EmployeeLeaveHistory = ({ employeeId, year, onClose, onUpdate }: Props) =>
         );
     };
 
-    return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-secondary-900/50 backdrop-blur-sm p-4">
-            <div className="bg-white w-full max-w-4xl rounded-2xl shadow-2xl flex flex-col max-h-[90vh]">
-                <div className="p-6 border-b border-secondary-100 flex justify-between items-center bg-secondary-50/50 rounded-t-2xl">
-                    <div>
-                        <h3 className="text-xl font-black text-secondary-900">Leave Ledger History</h3>
-                        <p className="text-sm text-secondary-500 font-medium">
-                            {history[0]?.name || 'Employee'} • {year}
-                        </p>
+    if (!mounted) return null;
+
+    return createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-900/80 backdrop-blur-md p-4 animate-in fade-in duration-200">
+            <div className="bg-white w-full max-w-5xl rounded-3xl shadow-2xl flex flex-col max-h-[85vh] overflow-hidden animate-in zoom-in-95 duration-200 ring-1 ring-white/20">
+                <div className="p-6 border-b border-indigo-100 flex justify-between items-center bg-gradient-to-r from-indigo-50 to-white">
+                    <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 rounded-2xl bg-indigo-600 text-white flex items-center justify-center shadow-lg shadow-indigo-200">
+                            <span className="text-2xl">📅</span>
+                        </div>
+                        <div>
+                            <h3 className="text-2xl font-black text-slate-800 tracking-tight">Leave Ledger History</h3>
+                            <div className="flex items-center gap-2 mt-1">
+                                <span className="px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700 text-xs font-bold uppercase tracking-wider">
+                                    {year}
+                                </span>
+                                <span className="text-sm text-slate-500 font-medium">
+                                    {history[0]?.name || 'Employee Ledger'}
+                                </span>
+                            </div>
+                        </div>
                     </div>
-                    <button onClick={onClose} className="w-8 h-8 rounded-full bg-white hover:bg-secondary-100 flex items-center justify-center text-secondary-500 font-bold transition-colors">
+                    <button
+                        onClick={onClose}
+                        className="w-10 h-10 rounded-full bg-white border border-indigo-50 hover:bg-rose-50 hover:border-rose-200 hover:text-rose-600 flex items-center justify-center text-slate-400 transition-all duration-200 shadow-sm"
+                    >
                         ✕
                     </button>
                 </div>
 
-                <div className="overflow-y-auto flex-1 p-6">
+                <div className="overflow-y-auto flex-1 p-0 scrollbar-thin scrollbar-thumb-indigo-200 scrollbar-track-transparent">
                     {isLoading ? (
-                        <div className="py-20 text-center text-secondary-400 font-bold animate-pulse">Loading ledger history...</div>
-                    ) : (
-                        <div className="border border-secondary-200 rounded-xl overflow-hidden shadow-sm">
-                            <table className="w-full text-left">
-                                <thead className="bg-secondary-50 border-b border-secondary-200">
-                                    <tr className="text-[10px] font-black uppercase text-secondary-400 tracking-wider">
-                                        <th className="p-3">Month</th>
-                                        <th className="p-3 text-center">Opening</th>
-                                        <th className="p-3 text-center">Credit</th>
-                                        <th className="p-3 text-center">Taken</th>
-                                        <th className="p-3 text-center">Deductions</th>
-                                        <th className="p-3 text-center">Closing</th>
-                                        <th className="p-3">Remarks</th>
-                                        <th className="p-3 text-right">Action</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {history.map(row => (
-                                        <HistoryRow key={row.month} row={row} />
-                                    ))}
-                                </tbody>
-                            </table>
+                        <div className="py-32 flex flex-col items-center justify-center gap-4 text-indigo-400/50 animate-pulse">
+                            <div className="w-16 h-16 rounded-full bg-indigo-50 flex items-center justify-center">⏳</div>
+                            <span className="font-bold text-sm tracking-widest uppercase">Syncing Ledger...</span>
                         </div>
+                    ) : (
+                        <table className="w-full text-left border-collapse">
+                            <thead className="bg-slate-50 border-b border-slate-200 sticky top-0 z-10 shadow-sm">
+                                <tr className="text-[11px] font-black uppercase text-slate-500 tracking-widest">
+                                    <th className="p-5 pl-8 w-1/12 bg-slate-50">Month</th>
+                                    <th className="p-5 text-center w-1/12 bg-slate-50">Opening</th>
+                                    <th className="p-5 text-center w-1/12 bg-slate-50">Credit</th>
+                                    <th className="p-5 text-center w-1/12 bg-slate-50">Taken</th>
+                                    <th className="p-5 text-center w-2/12 bg-slate-50">Deductions</th>
+                                    <th className="p-5 text-center w-1/12 bg-slate-50 text-indigo-600">Closing</th>
+                                    <th className="p-5 w-3/12 bg-slate-50">Remarks</th>
+                                    <th className="p-5 w-1/12 text-right bg-slate-50 pr-8">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-100 bg-white">
+                                {history.map((row, idx) => (
+                                    <HistoryRow key={row.month} row={row} />
+                                ))}
+                            </tbody>
+                        </table>
                     )}
                 </div>
 
-                <div className="p-4 bg-secondary-50/50 border-t border-secondary-100 text-[10px] text-center text-secondary-400 font-medium rounded-b-2xl">
-                    💡 Tip: Updating a past month (e.g., Jan) will automatically recalculate balances for all subsequent months (Feb-Dec).
+                <div className="p-4 bg-indigo-50/50 border-t border-indigo-100 text-center">
+                    <p className="text-xs text-indigo-500 font-medium flex items-center justify-center gap-2">
+                        <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-pulse"></span>
+                        <span>Making changes to past months triggers an automatic recursive recalculation for the entire year.</span>
+                    </p>
                 </div>
             </div>
-        </div>
+        </div>,
+        document.body
     );
 };
 
