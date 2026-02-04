@@ -5,7 +5,7 @@ import { logger } from '@/lib/logger';
 
 // POST /api/staff-management/leaves/monthly-credit - Trigger monthly leave credit
 export const POST = authorizedRoute(
-    ['SUPER_ADMIN', 'ADMIN'],
+    ['SUPER_ADMIN', 'ADMIN', 'HR_MANAGER', 'HR'],
     async (req: NextRequest, user) => {
         try {
             // Get all active employees with their profile

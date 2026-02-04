@@ -5,7 +5,7 @@ import { logger } from '@/lib/logger';
 
 // GET /api/staff-management/analytics - Get staff analytics
 export const GET = authorizedRoute(
-    ['SUPER_ADMIN', 'ADMIN', 'HR_MANAGER'],
+    ['SUPER_ADMIN', 'ADMIN', 'HR_MANAGER', 'HR'],
     async (req: NextRequest, user) => {
         try {
             const { searchParams } = new URL(req.url);
@@ -229,6 +229,28 @@ export const GET = authorizedRoute(
                     leave: leaveChartData,
                     salary: salaryChartData,
                     performance: performanceChartData
+                },
+                stats: {
+                    attendance: {
+                        average: attendanceChartData.length > 0 ? Math.round((attendanceChartData.reduce((sum, d) => sum + d.present, 0) / (attendanceChartData.reduce((sum, d) => sum + d.present + d.absent, 0) || 1)) * 100) : 0,
+                        late: attendanceRecords.filter(r => (r as any).lateMinutes > 0).length,
+                        early: 0 // Early departure not tracked in schema yet
+                    },
+                    leave: {
+                        total: leaveChartData.reduce((sum, d) => sum + d.days, 0),
+                        pending: pendingLeaves,
+                        available: totalEmployees * 25 // Approximate entitlement
+                    },
+                    salary: {
+                        total: usersWithSalary.reduce((sum, u) => sum + (u.employeeProfile?.fixedSalary || 0), 0),
+                        average: usersWithSalary.length > 0 ? Math.round(usersWithSalary.reduce((sum, u) => sum + (u.employeeProfile?.fixedSalary || 0), 0) / usersWithSalary.length) : 0,
+                        highest: Math.max(...usersWithSalary.map(u => u.employeeProfile?.fixedSalary || 0), 0)
+                    },
+                    performance: {
+                        average: performanceData.length > 0 ? (performanceData.reduce((sum, p) => sum + (p.averageManagerRating || 0), 0) / performanceData.length).toFixed(1) : "0.0",
+                        top: performanceData.filter(p => (p.averageManagerRating || 0) >= 4.5).length,
+                        improvement: performanceData.filter(p => (p.averageManagerRating || 0) < 3).length
+                    }
                 }
             });
         } catch (error) {

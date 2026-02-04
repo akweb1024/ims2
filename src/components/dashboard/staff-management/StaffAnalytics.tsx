@@ -215,15 +215,15 @@ export default function StaffAnalytics({ filters }: StaffAnalyticsProps) {
                             <div className="grid grid-cols-3 gap-4 mt-8">
                                 <div className="bg-green-50 rounded-lg p-4">
                                     <p className="text-sm text-green-600">Average Attendance</p>
-                                    <p className="text-2xl font-bold text-green-700">92%</p>
+                                    <p className="text-2xl font-bold text-green-700">{analyticsData?.stats?.attendance?.average || 0}%</p>
                                 </div>
                                 <div className="bg-red-50 rounded-lg p-4">
                                     <p className="text-sm text-red-600">Late Arrivals</p>
-                                    <p className="text-2xl font-bold text-red-700">15</p>
+                                    <p className="text-2xl font-bold text-red-700">{analyticsData?.stats?.attendance?.late || 0}</p>
                                 </div>
                                 <div className="bg-blue-50 rounded-lg p-4">
                                     <p className="text-sm text-blue-600">Early Departures</p>
-                                    <p className="text-2xl font-bold text-blue-700">8</p>
+                                    <p className="text-2xl font-bold text-blue-700">{analyticsData?.stats?.attendance?.early || 0}</p>
                                 </div>
                             </div>
                         </div>
@@ -237,15 +237,15 @@ export default function StaffAnalytics({ filters }: StaffAnalyticsProps) {
                             <div className="grid grid-cols-3 gap-4 mt-8">
                                 <div className="bg-blue-50 rounded-lg p-4">
                                     <p className="text-sm text-blue-600">Total Leave Taken</p>
-                                    <p className="text-2xl font-bold text-blue-700">210 days</p>
+                                    <p className="text-2xl font-bold text-blue-700">{analyticsData?.stats?.leave?.total || 0} days</p>
                                 </div>
                                 <div className="bg-yellow-50 rounded-lg p-4">
                                     <p className="text-sm text-yellow-600">Pending Requests</p>
-                                    <p className="text-2xl font-bold text-yellow-700">12</p>
+                                    <p className="text-2xl font-bold text-yellow-700">{analyticsData?.stats?.leave?.pending || 0}</p>
                                 </div>
                                 <div className="bg-green-50 rounded-lg p-4">
                                     <p className="text-sm text-green-600">Available Balance</p>
-                                    <p className="text-2xl font-bold text-green-700">890 days</p>
+                                    <p className="text-2xl font-bold text-green-700">{analyticsData?.stats?.leave?.available || 0} days</p>
                                 </div>
                             </div>
                         </div>
@@ -259,15 +259,15 @@ export default function StaffAnalytics({ filters }: StaffAnalyticsProps) {
                             <div className="grid grid-cols-3 gap-4 mt-8">
                                 <div className="bg-emerald-50 rounded-lg p-4">
                                     <p className="text-sm text-emerald-600">Total Monthly Salary</p>
-                                    <p className="text-2xl font-bold text-emerald-700">₹1.38M</p>
+                                    <p className="text-2xl font-bold text-emerald-700">₹{(analyticsData?.stats?.salary?.total / 1000).toFixed(1)}K</p>
                                 </div>
                                 <div className="bg-blue-50 rounded-lg p-4">
                                     <p className="text-sm text-blue-600">Average Salary</p>
-                                    <p className="text-2xl font-bold text-blue-700">₹57.5K</p>
+                                    <p className="text-2xl font-bold text-blue-700">₹{(analyticsData?.stats?.salary?.average / 1000).toFixed(1)}K</p>
                                 </div>
                                 <div className="bg-purple-50 rounded-lg p-4">
                                     <p className="text-sm text-purple-600">Highest Paid</p>
-                                    <p className="text-2xl font-bold text-purple-700">₹1.2L</p>
+                                    <p className="text-2xl font-bold text-purple-700">₹{(analyticsData?.stats?.salary?.highest / 1000).toFixed(1)}K</p>
                                 </div>
                             </div>
                         </div>
@@ -281,15 +281,15 @@ export default function StaffAnalytics({ filters }: StaffAnalyticsProps) {
                             <div className="grid grid-cols-3 gap-4 mt-8">
                                 <div className="bg-yellow-50 rounded-lg p-4">
                                     <p className="text-sm text-yellow-600">Average Rating</p>
-                                    <p className="text-2xl font-bold text-yellow-700">4.2/5</p>
+                                    <p className="text-2xl font-bold text-yellow-700">{analyticsData?.stats?.performance?.average || "0.0"}/5</p>
                                 </div>
                                 <div className="bg-green-50 rounded-lg p-4">
                                     <p className="text-sm text-green-600">Top Performers</p>
-                                    <p className="text-2xl font-bold text-green-700">25</p>
+                                    <p className="text-2xl font-bold text-green-700">{analyticsData?.stats?.performance?.top || 0}</p>
                                 </div>
                                 <div className="bg-red-50 rounded-lg p-4">
                                     <p className="text-sm text-red-600">Needs Improvement</p>
-                                    <p className="text-2xl font-bold text-red-700">7</p>
+                                    <p className="text-2xl font-bold text-red-700">{analyticsData?.stats?.performance?.improvement || 0}</p>
                                 </div>
                             </div>
                         </div>

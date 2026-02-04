@@ -5,7 +5,7 @@ import { logger } from '@/lib/logger';
 
 // GET /api/staff-management/employees/[id]/full-profile
 export const GET = authorizedRoute(
-    ['SUPER_ADMIN', 'ADMIN', 'HR_MANAGER'],
+    ['SUPER_ADMIN', 'ADMIN', 'HR_MANAGER', 'HR'],
     async (req: NextRequest, user, { params }: { params: { id: string } }) => {
         try {
             const { id } = params;

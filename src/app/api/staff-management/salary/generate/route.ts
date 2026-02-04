@@ -5,7 +5,7 @@ import { logger } from '@/lib/logger';
 
 // POST /api/staff-management/salary/generate - Generate monthly salary
 export const POST = authorizedRoute(
-    ['SUPER_ADMIN', 'ADMIN', 'HR_MANAGER'],
+    ['SUPER_ADMIN', 'ADMIN', 'HR_MANAGER', 'HR'],
     async (req: NextRequest, user) => {
         try {
             const body = await req.json();

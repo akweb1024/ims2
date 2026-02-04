@@ -5,12 +5,13 @@ import { logger } from '@/lib/logger';
 
 // GET /api/staff-management/leaves - List leave requests
 export const GET = authorizedRoute(
-    ['SUPER_ADMIN', 'ADMIN', 'HR_MANAGER'],
+    ['SUPER_ADMIN', 'ADMIN', 'HR_MANAGER', 'HR'],
     async (req: NextRequest, user) => {
         try {
             const { searchParams } = new URL(req.url);
             const companyId = searchParams.get('companyId');
             const employeeId = searchParams.get('employeeId');
+            const departmentId = searchParams.get('departmentId');
             const status = searchParams.get('status');
 
             const where: any = {};
@@ -26,6 +27,17 @@ export const GET = authorizedRoute(
                 where.employee = {
                     user: {
                         companyId: user.companyId
+                    }
+                };
+            }
+
+            // Filter by department
+            if (departmentId && departmentId !== 'all') {
+                where.employee = {
+                    ...where.employee,
+                    user: {
+                        ...where.employee?.user,
+                        departmentId
                     }
                 };
             }
@@ -75,7 +87,7 @@ export const GET = authorizedRoute(
 
 // PUT /api/staff-management/leaves/[id] - Approve/reject leave
 export const PUT = authorizedRoute(
-    ['SUPER_ADMIN', 'ADMIN', 'HR_MANAGER'],
+    ['SUPER_ADMIN', 'ADMIN', 'HR_MANAGER', 'HR'],
     async (req: NextRequest, user) => {
         try {
             const body = await req.json();

@@ -5,7 +5,7 @@ import { logger } from '@/lib/logger';
 
 // GET /api/staff-management/leaves/balance/[employeeId] - Get specific employee balance
 export const GET = authorizedRoute(
-    ['SUPER_ADMIN', 'ADMIN', 'HR_MANAGER'],
+    ['SUPER_ADMIN', 'ADMIN', 'HR_MANAGER', 'HR'],
     async (req: NextRequest, user, { params }: { params: { employeeId: string } }) => {
         try {
             const { employeeId } = params;
@@ -49,7 +49,7 @@ export const GET = authorizedRoute(
 
 // PUT /api/staff-management/leaves/balance/[employeeId] - Adjust leave balance
 export const PUT = authorizedRoute(
-    ['SUPER_ADMIN', 'ADMIN', 'HR_MANAGER'],
+    ['SUPER_ADMIN', 'ADMIN', 'HR_MANAGER', 'HR'],
     async (req: NextRequest, user, { params }: { params: { employeeId: string } }) => {
         try {
             const { employeeId } = params;

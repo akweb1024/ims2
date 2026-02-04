@@ -4,7 +4,7 @@ import { authorizedRoute } from '@/lib/middleware-auth';
 import { createErrorResponse } from '@/lib/api-utils';
 
 export const GET = authorizedRoute(
-    ['SUPER_ADMIN', 'ADMIN', 'HR_MANAGER', 'MANAGER'],
+    ['SUPER_ADMIN', 'ADMIN', 'HR_MANAGER', 'MANAGER', 'HR'],
     async (req: NextRequest, user) => {
         try {
             const { searchParams } = new URL(req.url);
@@ -33,7 +33,7 @@ export const GET = authorizedRoute(
             }
 
             if (departmentId && departmentId !== 'all') {
-                where.employee = { departmentId };
+                where.employee = { user: { departmentId } };
             }
 
             if (employeeId && employeeId !== 'all') {
@@ -81,10 +81,14 @@ export const GET = authorizedRoute(
             const formattedReports = workReports.map((report: any) => {
                 // Parse tasks from tasksSnapshot if available
                 let tasks = [];
-                if (report.tasksSnapshot && typeof report.tasksSnapshot === 'object') {
-                    const snapshot = report.tasksSnapshot as any;
-                    if (Array.isArray(snapshot.tasks)) {
-                        tasks = snapshot.tasks;
+                if (report.tasksSnapshot) {
+                    if (Array.isArray(report.tasksSnapshot)) {
+                        tasks = report.tasksSnapshot;
+                    } else if (typeof report.tasksSnapshot === 'object') {
+                        const snapshot = report.tasksSnapshot as any;
+                        if (Array.isArray(snapshot.tasks)) {
+                            tasks = snapshot.tasks;
+                        }
                     }
                 }
 

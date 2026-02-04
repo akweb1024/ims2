@@ -5,7 +5,7 @@ import { logger } from '@/lib/logger';
 
 // GET /api/staff-management/leaves/balance - Get all employee leave balances
 export const GET = authorizedRoute(
-    ['SUPER_ADMIN', 'ADMIN', 'HR_MANAGER'],
+    ['SUPER_ADMIN', 'ADMIN', 'HR_MANAGER', 'HR'],
     async (req: NextRequest, user) => {
         try {
             const { searchParams } = new URL(req.url);

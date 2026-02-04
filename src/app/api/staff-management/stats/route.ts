@@ -4,7 +4,7 @@ import { authorizedRoute } from '@/lib/middleware-auth';
 import { createErrorResponse } from '@/lib/api-utils';
 
 export const GET = authorizedRoute(
-    ['SUPER_ADMIN', 'ADMIN', 'HR_MANAGER'],
+    ['SUPER_ADMIN', 'ADMIN', 'HR_MANAGER', 'HR'],
     async (req: NextRequest, user) => {
         try {
             const { searchParams } = new URL(req.url);
@@ -19,7 +19,7 @@ export const GET = authorizedRoute(
             }
 
             if (teamId && teamId !== 'all') {
-                where.employee = { departmentId: teamId };
+                where.user = { departmentId: teamId };
             }
 
             // Get employee count

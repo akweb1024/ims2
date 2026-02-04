@@ -5,7 +5,7 @@ import { logger } from '@/lib/logger';
 
 // POST /api/staff-management/salary/[salaryId]/process - Process salary payment
 export const POST = authorizedRoute(
-    ['SUPER_ADMIN', 'ADMIN', 'HR_MANAGER'],
+    ['SUPER_ADMIN', 'ADMIN', 'HR_MANAGER', 'HR'],
     async (req: NextRequest, user, { params }: { params: { salaryId: string } }) => {
         try {
             const { salaryId } = params;

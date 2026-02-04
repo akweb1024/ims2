@@ -6,7 +6,7 @@ import { logger } from '@/lib/logger';
 // POST /api/staff-management/attendance/manual
 // Create or update a manual attendance record
 export const POST = authorizedRoute(
-    ['SUPER_ADMIN', 'ADMIN', 'HR_MANAGER'],
+    ['SUPER_ADMIN', 'ADMIN', 'HR_MANAGER', 'HR'],
     async (req: NextRequest, user) => {
         try {
             const body = await req.json();

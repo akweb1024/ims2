@@ -5,7 +5,7 @@ import { logger } from '@/lib/logger';
 
 // GET /api/staff-management/employees/[id] - Get specific employee
 export const GET = authorizedRoute(
-    ['SUPER_ADMIN', 'ADMIN', 'HR_MANAGER'],
+    ['SUPER_ADMIN', 'ADMIN', 'HR_MANAGER', 'HR'],
     async (req: NextRequest, user, { params }: { params: { id: string } }) => {
         try {
             const { id } = params;
@@ -52,7 +52,7 @@ export const GET = authorizedRoute(
 
 // PUT /api/staff-management/employees/[id] - Update employee
 export const PUT = authorizedRoute(
-    ['SUPER_ADMIN', 'ADMIN', 'HR_MANAGER'],
+    ['SUPER_ADMIN', 'ADMIN', 'HR_MANAGER', 'HR'],
     async (req: NextRequest, user, { params }: { params: { id: string } }) => {
         try {
             const { id } = params;
@@ -93,7 +93,7 @@ export const PUT = authorizedRoute(
 
 // PATCH /api/staff-management/employees/[id] - Update employee status
 export const PATCH = authorizedRoute(
-    ['SUPER_ADMIN', 'ADMIN', 'HR_MANAGER'],
+    ['SUPER_ADMIN', 'ADMIN', 'HR_MANAGER', 'HR'],
     async (req: NextRequest, user, { params }: { params: { id: string } }) => {
         try {
             const { id } = params;
@@ -117,7 +117,7 @@ export const PATCH = authorizedRoute(
 
 // DELETE /api/staff-management/employees/[id] - Delete employee (soft delete)
 export const DELETE = authorizedRoute(
-    ['SUPER_ADMIN', 'ADMIN', 'HR_MANAGER'],
+    ['SUPER_ADMIN', 'ADMIN', 'HR_MANAGER', 'HR'],
     async (req: NextRequest, user, { params }: { params: { id: string } }) => {
         try {
             const { id } = params;

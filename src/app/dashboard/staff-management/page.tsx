@@ -64,8 +64,8 @@ function StaffManagementContent() {
                 const parsedUser = JSON.parse(userData);
                 const role = parsedUser.role;
 
-                // Only allow SUPER_ADMIN, ADMIN, and HR_MANAGER
-                const allowedRoles = ['SUPER_ADMIN', 'ADMIN', 'HR_MANAGER'];
+                // Only allow SUPER_ADMIN, ADMIN, HR_MANAGER, and HR
+                const allowedRoles = ['SUPER_ADMIN', 'ADMIN', 'HR_MANAGER', 'HR'];
 
                 if (!allowedRoles.includes(role)) {
                     toast.error('Access denied. This module is for Super Admin, Admin, and HR only.');
