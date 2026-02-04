@@ -1138,6 +1138,10 @@ model SalaryIncrementRecord {
   monthlyTotalTarget     Float           @default(0)
   monthlyVariableSalary  Float           @default(0)
   monthlyVariableTarget  Float           @default(0)
+  monthlyTargets         Json?
+  monthlyVariableTargets Json?
+  monthlyFixedSalaries   Json?
+  monthlyVariableSalaries Json?
   employeeProfile        EmployeeProfile @relation(fields: [employeeProfileId], references: [id], onDelete: Cascade)
 
   @@index([employeeProfileId])

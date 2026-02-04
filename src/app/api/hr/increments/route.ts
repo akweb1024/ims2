@@ -50,6 +50,21 @@ const incrementSchema = z.object({
     newBaseTarget: z.number().optional(),
     newVariableRate: z.number().optional(),
     newVariableUnit: z.number().optional(),
+
+    // Detailed Revenue Targets
+    monthlyFixTarget: z.number().min(0).optional(),
+    monthlyVariableTarget: z.number().min(0).optional(),
+
+    // Fiscal Year and Quarterly Targets
+    fiscalYear: z.string().optional(),
+    q1Target: z.number().optional(),
+    monthlyTargets: z.record(z.string(), z.number()).optional(),
+    monthlyVariableTargets: z.record(z.string(), z.number()).optional(),
+    monthlyFixedSalaries: z.record(z.string(), z.number()).optional(),
+    monthlyVariableSalaries: z.record(z.string(), z.number()).optional(),
+    q2Target: z.number().optional(),
+    q3Target: z.number().optional(),
+    q4Target: z.number().optional(),
 });
 
 // GET: List all increments (with filtering)
@@ -120,136 +135,134 @@ export const POST = authorizedRoute(
     async (req: NextRequest, user) => {
         try {
             const body = await req.json();
+            const validatedData = incrementSchema.parse(body);
 
-            const result = incrementSchema.safeParse(body);
-            if (!result.success) {
-                return createErrorResponse(result.error);
-            }
-
-            const data = result.data;
-
-            // Get employee current salary
+            // Fetch basic employee info for defaults
             const employee = await prisma.employeeProfile.findUnique({
-                where: { id: data.employeeProfileId },
-                include: {
-                    user: true,
-                    salaryStructure: true
-                }
+                where: { id: validatedData.employeeProfileId },
+                include: { user: true, salaryStructure: true }
             });
 
-            if (!employee) {
-                return NextResponse.json(
-                    { error: 'Employee not found' },
-                    { status: 404 }
-                );
+            if (!employee) return createErrorResponse('Employee not found', 404);
+
+            // Managers Check
+            if (['MANAGER', 'TEAM_LEADER'].includes(user.role)) {
+                const { getDownlineUserIds } = await import('@/lib/hierarchy');
+                const subIds = await getDownlineUserIds(user.id, user.companyId || undefined);
+                const allowedUserIds = [...subIds];
+
+                if (!allowedUserIds.includes(employee.userId)) {
+                    return createErrorResponse('You are not authorized to create increment for this employee', 403);
+                }
             }
 
-            // Check if user is manager of this employee
-            const isManager = employee.user.managerId === user.id;
-            const isAdmin = ['SUPER_ADMIN', 'ADMIN', 'HR'].includes(user.role);
+            // Calculate Totals
+            const newFixed = validatedData.newFixedSalary || 0;
+            const newVariable = validatedData.newVariableSalary || 0;
+            const newIncentive = validatedData.newIncentive || 0;
+            const totalSalary = newFixed + newVariable + newIncentive;
 
-            if (!isManager && !isAdmin) {
-                return NextResponse.json(
-                    { error: 'You are not authorized to create increment for this employee' },
-                    { status: 403 }
-                );
-            }
+            // Monthly Breakdown
+            const monthlyFixSalary = newFixed; // Assuming input is monthly
+            const monthlyVariableSalary = newVariable;
+            const monthlyTotalSalary = monthlyFixSalary + monthlyVariableSalary;
 
-            // Calculate old salary structure
-            // Calculate old salary structure (Prioritize new fields > legacy split > base derivation)
-            const oldSalary = employee.baseSalary || 0;
-
-            const oldVariable = employee.salaryVariable ?? employee.variableSalary ?? 0;
-            const oldIncentive = employee.salaryIncentive ?? employee.incentiveSalary ?? 0;
-
-            // For fixed, if we have explicit fixed fields, use them. Otherwise, if we only have base, assume base is Total and subtract specific variable components if known.
-            const oldFixed = employee.salaryFixed ?? employee.fixedSalary ?? (oldSalary - oldVariable - oldIncentive);
-
-            // Calculate new total salary
-            const newSalary = data.newFixedSalary + (data.newVariableSalary || 0) + (data.newIncentive || 0);
-            const incrementAmount = newSalary - oldSalary;
-            const percentage = oldSalary > 0 ? (incrementAmount / oldSalary) * 100 : 0;
+            // Target Breakdown
+            const monthlyFixTarget = validatedData.monthlyFixTarget || 0;
+            const monthlyVariableTarget = validatedData.monthlyVariableTarget || 0;
+            const totalTargetVal = monthlyFixTarget + monthlyVariableTarget;
 
             // Create increment record
             const increment = await prisma.salaryIncrementRecord.create({
                 data: {
-                    employeeProfileId: data.employeeProfileId,
-                    effectiveDate: data.effectiveDate ? new Date(data.effectiveDate) : new Date(),
+                    employeeProfileId: validatedData.employeeProfileId,
+                    effectiveDate: validatedData.effectiveDate ? new Date(validatedData.effectiveDate) : new Date(),
 
-                    // Old salary
-                    oldSalary,
-                    oldFixed,
-                    oldVariable,
-                    oldIncentive,
+                    // Old values (snapshot)
+                    oldSalary: employee.baseSalary || 0,
+                    oldFixed: employee.salaryFixed || 0,
+                    oldVariable: employee.salaryVariable || 0,
+                    oldIncentive: employee.salaryIncentive || 0,
+                    oldBaseTarget: employee.baseTarget || 0,
+                    oldVariableRate: employee.variableRate || 0,
+                    oldVariableUnit: employee.variableUnit || 0,
 
-                    // Old detailed structure
-                    oldVariablePerTarget: employee.variablePerTarget,
-                    oldVariableUpperCap: employee.variableUpperCap,
-                    oldVariableRate: employee.variableRate,
-                    oldVariableUnit: employee.variableUnit,
-                    oldBaseTarget: employee.baseTarget,
-                    oldIncentivePercentage: employee.incentivePercentage,
+                    // New Salary Structure (High Level)
+                    newSalary: totalSalary,
+                    newFixed: newFixed,
+                    newVariable: newVariable,
+                    newIncentive: newIncentive,
+                    incrementAmount: totalSalary - (employee.baseSalary || 0),
+                    percentage: (employee.baseSalary || 0) > 0 ? ((totalSalary - (employee.baseSalary || 0)) / (employee.baseSalary || 0)) * 100 : 0,
 
-                    // New salary
-                    newSalary,
-                    newFixed: data.newFixedSalary,
-                    newVariable: data.newVariableSalary || 0,
-                    newIncentive: data.newIncentive || 0,
+                    // Detailed Salary Breakdown
+                    monthlyFixSalary: monthlyFixSalary,
+                    monthlyVariableSalary: monthlyVariableSalary,
+                    monthlyTotalSalary: monthlyTotalSalary,
 
-                    // New detailed structure & Opt-ins
-                    optInVariable: data.optInVariable || false,
-                    optInIncentive: data.optInIncentive || false,
-                    newVariablePerTarget: data.newVariablePerTarget,
-                    newVariableUpperCap: data.newVariableUpperCap,
-                    newVariableRate: data.newVariableRate,
-                    newVariableUnit: data.newVariableUnit,
-                    newBaseTarget: data.newBaseTarget,
-                    variableDefinition: data.variableDefinition,
-                    newIncentivePercentage: data.newIncentivePercentage,
-                    incentiveDefinition: data.incentiveDefinition,
+                    // Detailed Revenue Target Breakdown
+                    monthlyFixTarget: monthlyFixTarget,
+                    monthlyVariableTarget: monthlyVariableTarget,
+                    monthlyTotalTarget: totalTargetVal,
 
-                    incrementAmount,
-                    percentage,
 
-                    previousDesignation: employee.designation,
-                    newDesignation: data.newDesignation || employee.designation,
 
-                    reason: data.reason,
-                    performanceNotes: data.performanceNotes,
+                    // Other detailed structure fields
+                    newBaseTarget: validatedData.newBaseTarget,
+                    newVariableRate: validatedData.newVariableRate,
+                    newVariableUnit: validatedData.newVariableUnit,
+
+                    // Opt-ins & Details
+                    optInVariable: validatedData.optInVariable || false,
+                    optInIncentive: validatedData.optInIncentive || false,
+                    newVariablePerTarget: validatedData.newVariablePerTarget,
+                    newVariableUpperCap: validatedData.newVariableUpperCap,
+                    variableDefinition: validatedData.variableDefinition,
+                    newIncentivePercentage: validatedData.newIncentivePercentage,
+                    incentiveDefinition: validatedData.incentiveDefinition,
+
+                    // Perks
+                    oldHealthCare: employee.salaryStructure?.healthCare || 0,
+                    newHealthCare: validatedData.newHealthCare !== undefined ? validatedData.newHealthCare : (employee.salaryStructure?.healthCare || 0),
+                    oldTravelling: employee.salaryStructure?.travelling || 0,
+                    newTravelling: validatedData.newTravelling !== undefined ? validatedData.newTravelling : (employee.salaryStructure?.travelling || 0),
+                    oldMobile: employee.salaryStructure?.mobile || 0,
+                    newMobile: validatedData.newMobile !== undefined ? validatedData.newMobile : (employee.salaryStructure?.mobile || 0),
+                    oldInternet: employee.salaryStructure?.internet || 0,
+                    newInternet: validatedData.newInternet !== undefined ? validatedData.newInternet : (employee.salaryStructure?.internet || 0),
+                    oldBooksAndPeriodicals: employee.salaryStructure?.booksAndPeriodicals || 0,
+                    newBooksAndPeriodicals: validatedData.newBooksAndPeriodicals !== undefined ? validatedData.newBooksAndPeriodicals : (employee.salaryStructure?.booksAndPeriodicals || 0),
+
+                    // Meta
+                    newDesignation: validatedData.newDesignation || employee.designation,
+                    reason: validatedData.reason,
+                    performanceNotes: validatedData.performanceNotes,
 
                     // KRA/KPI History
                     oldKRA: employee.kra,
                     oldKPI: employee.metrics as any,
-                    newKRA: data.newKRA,
-                    newKPI: data.newKPI || null,
+                    newKRA: validatedData.newKRA,
+                    newKPI: validatedData.newKPI || null,
 
                     // Target Comparisons
                     currentMonthlyTarget: employee.monthlyTarget || 0,
-                    newMonthlyTarget: data.newMonthlyTarget || employee.monthlyTarget || 0,
+                    newMonthlyTarget: validatedData.newMonthlyTarget || totalTargetVal || employee.monthlyTarget || 0,
                     currentYearlyTarget: employee.yearlyTarget || 0,
-                    newYearlyTarget: data.newYearlyTarget || employee.yearlyTarget || 0,
+                    newYearlyTarget: validatedData.newYearlyTarget || (totalTargetVal * 12) || employee.yearlyTarget || 0,
 
-                    // Sec-10 Exemp / Perks
-                    oldHealthCare: employee.salaryStructure?.healthCare || 0,
-                    newHealthCare: data.newHealthCare !== undefined ? data.newHealthCare : (employee.salaryStructure?.healthCare || 0),
-                    oldTravelling: employee.salaryStructure?.travelling || 0,
-                    newTravelling: data.newTravelling !== undefined ? data.newTravelling : (employee.salaryStructure?.travelling || 0),
-                    oldMobile: employee.salaryStructure?.mobile || 0,
-                    newMobile: data.newMobile !== undefined ? data.newMobile : (employee.salaryStructure?.mobile || 0),
-                    oldInternet: employee.salaryStructure?.internet || 0,
-                    newInternet: data.newInternet !== undefined ? data.newInternet : (employee.salaryStructure?.internet || 0),
-                    oldBooksAndPeriodicals: employee.salaryStructure?.booksAndPeriodicals || 0,
-                    newBooksAndPeriodicals: data.newBooksAndPeriodicals !== undefined ? data.newBooksAndPeriodicals : (employee.salaryStructure?.booksAndPeriodicals || 0),
+                    fiscalYear: validatedData.fiscalYear ? String(validatedData.fiscalYear) : undefined,
+                    q1Target: validatedData.q1Target,
+                    q2Target: validatedData.q2Target,
+                    q3Target: validatedData.q3Target,
+                    q4Target: validatedData.q4Target,
+                    monthlyTargets: validatedData.monthlyTargets, // Save JSON (Fixed Targets)
+                    monthlyVariableTargets: validatedData.monthlyVariableTargets, // Save JSON (Variable Targets)
+                    monthlyFixedSalaries: validatedData.monthlyFixedSalaries, // Save JSON (Fixed Salaries)
+                    monthlyVariableSalaries: validatedData.monthlyVariableSalaries, // Save JSON (Variable Salaries)
 
-                    // Set as draft
                     status: 'DRAFT',
                     isDraft: true,
-
-                    // If created by manager, mark as recommended
-                    ...(isManager && {
-                        recommendedByUserId: user.id,
-                        managerApproved: false
-                    })
+                    recommendedByUserId: user.id
                 },
                 include: {
                     employeeProfile: {
@@ -267,8 +280,15 @@ export const POST = authorizedRoute(
             });
 
             return NextResponse.json(increment);
-        } catch (error) {
-            return createErrorResponse(error);
+            // This change is just to ensure I have a valid block to confirm no invalid checks remain.
+            // The previous replacement covered the logic flow, ensuring 'isManager' was removed.
+            // I will just re-verify the catch block is clean.
+        } catch (error: any) {
+            console.error('Increment create error:', error);
+            if (error instanceof z.ZodError) {
+                return createErrorResponse('Validation failed', 400, (error as any).errors);
+            }
+            return createErrorResponse('Internal Server Error', 500);
         }
     }
 );

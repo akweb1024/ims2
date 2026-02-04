@@ -48,7 +48,13 @@ function NewIncrementContent() {
         optInIncentive: false,
         newBaseTarget: 0,
         newVariableRate: 0,
-        newVariableUnit: 0
+        newVariableUnit: 0,
+        monthlyFixTarget: 0,
+        monthlyVariableTarget: 0,
+        monthlyTargets: {} as Record<string, number>, // Stores month-key (e.g., 'Apr', 'May') -> value (FIXED)
+        monthlyVariableTargets: {} as Record<string, number>, // Stores month-key (e.g., 'Apr', 'May') -> value (VARIABLE)
+        monthlyFixedSalaries: {} as Record<string, number>,
+        monthlyVariableSalaries: {} as Record<string, number>
     });
 
     const [selectedEmployee, setSelectedEmployee] = useState<any>(null);
@@ -107,6 +113,12 @@ function NewIncrementContent() {
             newVariableUnit: employee?.variableUnit || 0,
             optInVariable: oldVariable > 0 || employee?.hasVariable || (employee?.variableRate > 0) || false,
             optInIncentive: oldIncentive > 0 || employee?.hasIncentive || false,
+            monthlyFixTarget: employee?.monthlyFixTarget || 0,
+            monthlyVariableTarget: employee?.monthlyVariableTarget || 0,
+            monthlyTargets: employee?.monthlyTargets || {},
+            monthlyVariableTargets: employee?.monthlyVariableTargets || {},
+            monthlyFixedSalaries: employee?.monthlyFixedSalaries || {},
+            monthlyVariableSalaries: employee?.monthlyVariableSalaries || {},
         });
     };
 
@@ -122,6 +134,37 @@ function NewIncrementContent() {
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [urlEmployeeId, employees]);
+
+
+
+    // Auto-calculate Quarterly Targets when Monthly Targets change
+    useEffect(() => {
+        const getSum = (data: Record<string, number>, months: string[]) => {
+            return months.reduce((acc, month) => acc + (data[month] || 0), 0);
+        };
+
+        const q1Months = ['Apr', 'May', 'Jun'];
+        const q2Months = ['Jul', 'Aug', 'Sep'];
+        const q3Months = ['Oct', 'Nov', 'Dec'];
+        const q4Months = ['Jan', 'Feb', 'Mar'];
+
+        const fixQ1 = getSum(form.monthlyTargets, q1Months);
+        const varQ1 = getSum(form.monthlyVariableTargets, q1Months);
+        const fixQ2 = getSum(form.monthlyTargets, q2Months);
+        const varQ2 = getSum(form.monthlyVariableTargets, q2Months);
+        const fixQ3 = getSum(form.monthlyTargets, q3Months);
+        const varQ3 = getSum(form.monthlyVariableTargets, q3Months);
+        const fixQ4 = getSum(form.monthlyTargets, q4Months);
+        const varQ4 = getSum(form.monthlyVariableTargets, q4Months);
+
+        setForm(prev => ({
+            ...prev,
+            q1Target: fixQ1 + varQ1,
+            q2Target: fixQ2 + varQ2,
+            q3Target: fixQ3 + varQ3,
+            q4Target: fixQ4 + varQ4
+        }));
+    }, [form.monthlyTargets, form.monthlyVariableTargets]);
 
     const totalNewSalary = form.newFixedSalary + form.newVariableSalary + form.newIncentive;
     const oldSalary = selectedEmployee?.baseSalary || 0;
@@ -583,14 +626,33 @@ function NewIncrementContent() {
                                         onChange={(e) => setForm({ ...form, currentMonthlyTarget: parseFloat(e.target.value) || 0 })}
                                     />
                                 </div>
-                                <div>
-                                    <label className="label-premium">New Monthly Target (Proposed)</label>
-                                    <input
-                                        type="number"
-                                        className="input-premium"
-                                        value={form.newMonthlyTarget}
-                                        onChange={(e) => setForm({ ...form, newMonthlyTarget: parseFloat(e.target.value) || 0 })}
-                                    />
+                                <div className="space-y-4">
+                                    <div>
+                                        <label className="label-premium text-indigo-700">New Fixed Revenue Target (Retainer)</label>
+                                        <input
+                                            type="number"
+                                            className="input-premium border-indigo-200 bg-indigo-50/30"
+                                            placeholder="e.g. 200000"
+                                            value={form.monthlyFixTarget}
+                                            onChange={(e) => setForm({ ...form, monthlyFixTarget: parseFloat(e.target.value) || 0 })}
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="label-premium text-blue-700">New Variable Revenue Target (Sales)</label>
+                                        <input
+                                            type="number"
+                                            className="input-premium border-blue-200 bg-blue-50/30"
+                                            placeholder="e.g. 100000"
+                                            value={form.monthlyVariableTarget}
+                                            onChange={(e) => setForm({ ...form, monthlyVariableTarget: parseFloat(e.target.value) || 0 })}
+                                        />
+                                    </div>
+                                    <div className="pt-2 border-t border-gray-200 flex justify-between items-center">
+                                        <span className="text-sm font-bold text-gray-700">Total Monthly Target</span>
+                                        <span className="text-xl font-black text-indigo-600">
+                                            ₹{((form.monthlyFixTarget || 0) + (form.monthlyVariableTarget || 0)).toLocaleString()}
+                                        </span>
+                                    </div>
                                 </div>
                             </div>
 
@@ -602,14 +664,105 @@ function NewIncrementContent() {
                                 </div>
                                 <div>
                                     <p className="text-xs font-bold uppercase text-secondary-500">Target Increase (Monthly)</p>
-                                    <p className="text-lg font-black text-success-600">+₹{Math.max(0, form.newMonthlyTarget - form.currentMonthlyTarget).toLocaleString()}</p>
+                                    <p className="text-lg font-black text-success-600">+₹{Math.max(0, ((form.monthlyFixTarget || 0) + (form.monthlyVariableTarget || 0)) - form.currentMonthlyTarget).toLocaleString()}</p>
                                 </div>
                                 <div>
                                     <p className="text-xs font-bold uppercase text-secondary-500">Revenue Multiplier</p>
                                     <p className="text-lg font-black text-primary-600">
-                                        {incrementAmount > 0 && (form.newMonthlyTarget - form.currentMonthlyTarget) > 0 ? ((form.newMonthlyTarget - form.currentMonthlyTarget) / (incrementAmount / 12)).toFixed(1) : '0'}x
+                                        {incrementAmount > 0 && (((form.monthlyFixTarget || 0) + (form.monthlyVariableTarget || 0)) - form.currentMonthlyTarget) > 0 ? ((((form.monthlyFixTarget || 0) + (form.monthlyVariableTarget || 0)) - form.currentMonthlyTarget) / (incrementAmount / 12)).toFixed(1) : '0'}x
                                     </p>
                                     <p className="text-[10px] text-secondary-400">Target Incr. / Cost Incr.</p>
+                                </div>
+                            </div>
+
+                            {/* Monthly Breakdown (Revenue Target) */}
+                            <div className="mt-8 space-y-6">
+                                {/* FIXED Targets */}
+                                <div className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-100">
+                                    <h3 className="font-bold text-indigo-900 mb-4 flex items-center gap-2">
+                                        📅 Monthly Fixed Revenue Targets (Retainer)
+                                    </h3>
+
+                                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                                        {['Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec', 'Jan', 'Feb', 'Mar'].map((month) => (
+                                            <div key={`fix-${month}`}>
+                                                <label className="label-premium text-xs uppercase tracking-wide text-indigo-800">{month}</label>
+                                                <input
+                                                    type="number"
+                                                    min="0"
+                                                    className="input-premium h-9 text-right"
+                                                    placeholder="0"
+                                                    value={form.monthlyTargets[month] || ''}
+                                                    onChange={(e) => {
+                                                        const val = parseFloat(e.target.value) || 0;
+                                                        const updatedFixed = { ...form.monthlyTargets, [month]: val };
+
+                                                        // Auto-calc yearly total (Fixed + Variable)
+                                                        const sumFixed = Object.values(updatedFixed).reduce((a, b) => a + b, 0);
+                                                        const sumVariable = Object.values(form.monthlyVariableTargets).reduce((a, b) => a + b, 0);
+
+                                                        setForm({
+                                                            ...form,
+                                                            monthlyTargets: updatedFixed,
+                                                            newYearlyTarget: sumFixed + sumVariable,
+                                                            // Update average monthly fixed target for consistency
+                                                            monthlyFixTarget: parseFloat((sumFixed / 12).toFixed(2))
+                                                        });
+                                                    }}
+                                                />
+                                            </div>
+                                        ))}
+                                    </div>
+                                    <div className="mt-3 flex justify-end items-center gap-3">
+                                        <span className="text-sm font-bold text-indigo-600">Total Fixed:</span>
+                                        <span className="text-xl font-black text-indigo-900">
+                                            ₹{Object.values(form.monthlyTargets).reduce((a, b) => a + (b || 0), 0).toLocaleString()}
+                                        </span>
+                                    </div>
+                                </div>
+
+                                {/* VARIABLE Targets */}
+                                <div className="p-4 bg-gradient-to-r from-teal-50 to-emerald-50 rounded-xl border border-teal-100">
+                                    <h3 className="font-bold text-teal-900 mb-4 flex items-center gap-2">
+                                        📈 Monthly Variable Revenue Targets (Sales)
+                                    </h3>
+
+                                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                                        {['Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec', 'Jan', 'Feb', 'Mar'].map((month) => (
+                                            <div key={`var-${month}`}>
+                                                <label className="label-premium text-xs uppercase tracking-wide text-teal-800">{month}</label>
+                                                <input
+                                                    type="number"
+                                                    min="0"
+                                                    className="input-premium h-9 text-right border-teal-200 focus:ring-teal-500"
+                                                    placeholder="0"
+                                                    value={form.monthlyVariableTargets[month] || ''}
+                                                    onChange={(e) => {
+                                                        const val = parseFloat(e.target.value) || 0;
+                                                        const updatedVar = { ...form.monthlyVariableTargets, [month]: val };
+
+                                                        // Auto-calc yearly total (Fixed + Variable)
+                                                        const sumFixed = Object.values(form.monthlyTargets).reduce((a, b) => a + b, 0);
+                                                        const sumVariable = Object.values(updatedVar).reduce((a, b) => a + b, 0);
+
+                                                        setForm({
+                                                            ...form,
+                                                            monthlyVariableTargets: updatedVar,
+                                                            newYearlyTarget: sumFixed + sumVariable,
+                                                            // Update average monthly variable target
+                                                            monthlyVariableTarget: parseFloat((sumVariable / 12).toFixed(2))
+                                                        });
+                                                    }}
+                                                />
+                                            </div>
+                                        ))}
+                                    </div>
+                                    <div className="mt-3 flex justify-end items-center gap-3">
+                                        <span className="text-sm font-bold text-teal-600">Total Variable:</span>
+                                        <span className="text-xl font-black text-teal-900">
+                                            ₹{Object.values(form.monthlyVariableTargets).reduce((a, b) => a + (b || 0), 0).toLocaleString()}
+                                        </span>
+                                    </div>
                                 </div>
                             </div>
 
@@ -625,18 +778,120 @@ function NewIncrementContent() {
                                     />
                                 </div>
                                 <div>
-                                    <label className="label-premium">New Yearly Target (Proposed)</label>
+                                    <label className="label-premium">New Yearly Target (Auto-Sum)</label>
                                     <input
                                         type="number"
-                                        className="input-premium"
+                                        className="input-premium font-bold text-indigo-700"
                                         title="New Yearly Target"
                                         placeholder="0"
                                         value={form.newYearlyTarget}
+                                        readOnly
+                                        // Make readOnly to enforce sum? OR allow override? 
+                                        // Usually auto-sum is better. I'll make it readOnly or just onChange handler that might get overwritten.
+                                        // Let's keep it editable but overwritten by monthly inputs. 
                                         onChange={(e) => setForm({ ...form, newYearlyTarget: parseFloat(e.target.value) || 0 })}
                                     />
+                                    <p className="text-xs text-secondary-400 mt-1">Calculated from monthly breakdown</p>
                                 </div>
                             </div>
 
+                            {/* Monthly Salary Breakdown */}
+                            <div className="mt-8 space-y-6">
+                                {/* FIXED SALARY Grid */}
+                                <div className="p-4 bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl border border-purple-100">
+                                    <h3 className="font-bold text-purple-900 mb-4 flex items-center gap-2">
+                                        💸 Monthly Fixed Salary Breakdown
+                                    </h3>
+                                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                                        {['Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec', 'Jan', 'Feb', 'Mar'].map((month) => (
+                                            <div key={`sal-fix-${month}`}>
+                                                <label className="label-premium text-xs uppercase tracking-wide text-purple-800">{month}</label>
+                                                <input
+                                                    type="number"
+                                                    min="0"
+                                                    className="input-premium h-9 text-right border-purple-200 focus:ring-purple-500"
+                                                    placeholder="0"
+                                                    value={form.monthlyFixedSalaries[month] || ''}
+                                                    onChange={(e) => {
+                                                        const val = parseFloat(e.target.value) || 0;
+                                                        const updated = { ...form.monthlyFixedSalaries, [month]: val };
+
+                                                        // Calc Average
+                                                        const sum = Object.values(updated).reduce((a, b) => a + b, 0);
+                                                        const avg = parseFloat((sum / 12).toFixed(2));
+
+                                                        setForm({
+                                                            ...form,
+                                                            monthlyFixedSalaries: updated,
+                                                            newFixedSalary: avg
+                                                        });
+                                                    }}
+                                                />
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                {/* VARIABLE SALARY Grid */}
+                                <div className="p-4 bg-gradient-to-r from-orange-50 to-amber-50 rounded-xl border border-orange-100">
+                                    <h3 className="font-bold text-orange-900 mb-4 flex items-center gap-2">
+                                        📊 Monthly Variable Salary Breakdown
+                                    </h3>
+                                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                                        {['Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec', 'Jan', 'Feb', 'Mar'].map((month) => (
+                                            <div key={`sal-var-${month}`}>
+                                                <label className="label-premium text-xs uppercase tracking-wide text-orange-800">{month}</label>
+                                                <input
+                                                    type="number"
+                                                    min="0"
+                                                    className="input-premium h-9 text-right border-orange-200 focus:ring-orange-500"
+                                                    placeholder="0"
+                                                    value={form.monthlyVariableSalaries[month] || ''}
+                                                    onChange={(e) => {
+                                                        const val = parseFloat(e.target.value) || 0;
+                                                        const updated = { ...form.monthlyVariableSalaries, [month]: val };
+
+                                                        // Calc Average
+                                                        const sum = Object.values(updated).reduce((a, b) => a + b, 0);
+                                                        const avg = parseFloat((sum / 12).toFixed(2));
+
+                                                        setForm({
+                                                            ...form,
+                                                            monthlyVariableSalaries: updated,
+                                                            newVariableSalary: avg
+                                                        });
+                                                    }}
+                                                />
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+                                <div>
+                                    <label className="label-premium">New Fixed Salary (Avg/Monthly)</label>
+                                    <input
+                                        type="number"
+                                        className="input-premium font-bold text-purple-700"
+                                        value={form.newFixedSalary}
+                                        readOnly
+                                        title="Calculated Average from Monthly Grid"
+                                    />
+                                    <p className="text-xs text-secondary-400 mt-1">Calculated Average</p>
+                                </div>
+                                <div>
+                                    <label className="label-premium">New Variable Salary (Avg/Monthly)</label>
+                                    <input
+                                        type="number"
+                                        className="input-premium font-bold text-orange-700"
+                                        value={form.newVariableSalary}
+                                        readOnly
+                                        title="Calculated Average from Monthly Grid"
+                                    />
+                                    <p className="text-xs text-secondary-400 mt-1">Calculated Average</p>
+                                </div>
+                            </div>
                             {/* Fiscal Year & Quarterly Targets */}
                             <div className="mt-6 p-4 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-xl border border-indigo-200">
                                 <h3 className="font-bold text-indigo-900 mb-4 flex items-center gap-2">
@@ -670,49 +925,34 @@ function NewIncrementContent() {
                                         </select>
                                     </div>
 
-                                    <div>
-                                        <label className="label-premium">Q1 Target (Apr-Jun)</label>
-                                        <input
-                                            type="number"
-                                            className="input-premium"
-                                            placeholder="Q1"
-                                            value={form.q1Target}
-                                            onChange={(e) => setForm({ ...form, q1Target: parseFloat(e.target.value) || 0 })}
-                                        />
-                                    </div>
+                                    {[
+                                        { label: 'Q1 (Apr-Jun)', key: 'q1Target', months: ['Apr', 'May', 'Jun'] },
+                                        { label: 'Q2 (Jul-Sep)', key: 'q2Target', months: ['Jul', 'Aug', 'Sep'] },
+                                        { label: 'Q3 (Oct-Dec)', key: 'q3Target', months: ['Oct', 'Nov', 'Dec'] },
+                                        { label: 'Q4 (Jan-Mar)', key: 'q4Target', months: ['Jan', 'Feb', 'Mar'] }
+                                    ].map((q) => {
+                                        // Calc split for display
+                                        const fixSum = q.months.reduce((acc, m) => acc + (form.monthlyTargets[m] || 0), 0);
+                                        const varSum = q.months.reduce((acc, m) => acc + (form.monthlyVariableTargets[m] || 0), 0);
 
-                                    <div>
-                                        <label className="label-premium">Q2 Target (Jul-Sep)</label>
-                                        <input
-                                            type="number"
-                                            className="input-premium"
-                                            placeholder="Q2"
-                                            value={form.q2Target}
-                                            onChange={(e) => setForm({ ...form, q2Target: parseFloat(e.target.value) || 0 })}
-                                        />
-                                    </div>
-
-                                    <div>
-                                        <label className="label-premium">Q3 Target (Oct-Dec)</label>
-                                        <input
-                                            type="number"
-                                            className="input-premium"
-                                            placeholder="Q3"
-                                            value={form.q3Target}
-                                            onChange={(e) => setForm({ ...form, q3Target: parseFloat(e.target.value) || 0 })}
-                                        />
-                                    </div>
-
-                                    <div>
-                                        <label className="label-premium">Q4 Target (Jan-Mar)</label>
-                                        <input
-                                            type="number"
-                                            className="input-premium"
-                                            placeholder="Q4"
-                                            value={form.q4Target}
-                                            onChange={(e) => setForm({ ...form, q4Target: parseFloat(e.target.value) || 0 })}
-                                        />
-                                    </div>
+                                        return (
+                                            <div key={q.key}>
+                                                <label className="label-premium">{q.label}</label>
+                                                <input
+                                                    type="number"
+                                                    className="input-premium font-bold text-indigo-700 bg-indigo-50/50"
+                                                    placeholder="0"
+                                                    value={form[q.key as keyof typeof form] as number} // Auto-calculated via useEffect
+                                                    readOnly
+                                                    title={`Fixed: ${fixSum} + Variable: ${varSum}`}
+                                                />
+                                                <div className="flex justify-between text-[10px] mt-1 px-1 text-secondary-500">
+                                                    <span>Fix: <span className="font-semibold text-purple-600">{fixSum}</span></span>
+                                                    <span>Var: <span className="font-semibold text-orange-600">{varSum}</span></span>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
                                 </div>
 
                                 <div className="mt-4 p-3 bg-white/60 rounded-lg">
