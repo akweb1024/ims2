@@ -13,6 +13,7 @@ interface ExecutiveData {
     overallGrowth: number;
     avgRevenuePerCompany: number;
     avgHeadcountPerCompany: number;
+    revenuePerEmployee: number;
     employeeTypeBreakdown: Record<string, number>;
 }
 
@@ -95,6 +96,16 @@ export default function AdvancedKPIStats({ data }: { data: ExecutiveData }) {
             bg: "bg-amber-50",
             trend: 5,
             trendLabel: "growth"
+        },
+        {
+            label: "Revenue / Employee",
+            value: formatCurrency(data.revenuePerEmployee),
+            subtext: "Economic efficiency",
+            icon: TrendingUp,
+            color: "text-primary-600",
+            bg: "bg-primary-50",
+            trend: 12,
+            trendLabel: "efficiency"
         }
     ];
 

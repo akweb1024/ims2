@@ -55,7 +55,9 @@ export const GET = authorizedRoute(
                 if (!['SUPER_ADMIN', 'ADMIN', 'HR', 'HR_MANAGER', 'FINANCE_ADMIN'].includes(user.role)) {
                     return NextResponse.json({ error: 'Unauthorized for Company scope' }, { status: 403 });
                 }
-                where.employeeProfile = { user: { companyId: user.companyId } };
+                if (user.role !== 'SUPER_ADMIN' || user.companyId) {
+                    where.employeeProfile = { user: { companyId: user.companyId } };
+                }
             }
 
             // 3. Status Filter Logic
@@ -212,7 +214,9 @@ export const GET = authorizedRoute(
                     averagePercentage: avgPercentage,
                     totalApprovedPerksImpact: increments.reduce((sum, i) => sum + ((i.newHealthCare || 0) + (i.newTravelling || 0) + (i.newMobile || 0) + (i.newInternet || 0) + (i.newBooksAndPeriodicals || 0)), 0),
                     totalPendingBudgetImpact: 0, // Placeholder
-                    roiMultiplier: totalImpact > 0 ? (totalMonthlyTarget / (totalMonthlyFixSalary + totalMonthlyVariableSalary)) : 0,
+                    roiMultiplier: (totalImpact > 0 && (totalMonthlyFixSalary + totalMonthlyVariableSalary) > 0)
+                        ? (totalMonthlyTarget / (totalMonthlyFixSalary + totalMonthlyVariableSalary))
+                        : 0,
                     breakdown: {
                         fixed: totalMonthlyFixSalary,
                         variable: totalMonthlyVariableSalary,

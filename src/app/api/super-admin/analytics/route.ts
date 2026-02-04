@@ -17,7 +17,22 @@ export async function GET(req: NextRequest) {
 
         // 2. Fetch All Companies
         const companies = await prisma.company.findMany({
-            select: { id: true, name: true, logoUrl: true, createdAt: true }
+            select: { id: true, name: true, logoUrl: true, createdAt: true, _count: { select: { users: true } } }
+        });
+
+        // 2.5 Fetch System Settings & Audit Logs
+        const systemSettings = await prisma.systemSettings.findUnique({
+            where: { id: 'singleton' }
+        });
+
+        const auditLogs = await prisma.auditLog.findMany({
+            take: 15,
+            orderBy: { createdAt: 'desc' },
+            include: {
+                user: {
+                    select: { name: true, email: true, role: true }
+                }
+            }
         });
 
         // 3. Financial Overview with Monthly Trends
@@ -80,6 +95,9 @@ export async function GET(req: NextRequest) {
             const prevMonthRev = monthlyRevenueTrend[comp.name]?.[prevMonthKey] || 0;
             const growthRate = prevMonthRev > 0 ? ((lastMonthRev - prevMonthRev) / prevMonthRev * 100).toFixed(1) : '0';
 
+            const headCount = comp._count?.users || 0;
+            const revPerEmployee = headCount > 0 ? totalRevenue / headCount : 0;
+
             return {
                 companyId: comp.id,
                 companyName: comp.name,
@@ -87,7 +105,8 @@ export async function GET(req: NextRequest) {
                 status: totalRevenue > 0 ? 'In Revenue' : 'Pre-Revenue',
                 lastMonthRevenue: lastMonthRev,
                 growthRate: parseFloat(growthRate as string),
-                monthlyTrend: monthlyRevenueTrend[comp.name] || {}
+                monthlyTrend: monthlyRevenueTrend[comp.name] || {},
+                revPerEmployee: Math.round(revPerEmployee)
             };
         });
 
@@ -327,9 +346,14 @@ export async function GET(req: NextRequest) {
                 overallGrowth: parseFloat(overallGrowth as string),
                 avgRevenuePerCompany,
                 avgHeadcountPerCompany,
+                revenuePerEmployee: totalGroupHeadcount > 0 ? totalGroupRevenue / totalGroupHeadcount : 0,
                 employeeTypeBreakdown
             },
             financials: financialData,
+            system: {
+                settings: systemSettings,
+                auditLogs
+            },
             demographics: employeeTypeBreakdown,
             companyStats: companies.map(c => {
                 const stats = companyEmployeeStats[c.id] || {

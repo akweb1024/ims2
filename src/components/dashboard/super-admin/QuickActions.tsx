@@ -1,6 +1,7 @@
 
 "use client";
 
+import { useRouter } from "next/navigation";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/Card";
 import {
     Plus,
@@ -10,7 +11,8 @@ import {
     Building2,
     FileText,
     BarChart3,
-    Bell
+    Bell,
+    TrendingUp
 } from "lucide-react";
 
 interface QuickActionsProps {
@@ -57,6 +59,8 @@ const actions = [
 ];
 
 export default function QuickActions({ onExport }: QuickActionsProps) {
+    const router = useRouter();
+
     return (
         <Card>
             <CardHeader className="pb-3">
@@ -70,6 +74,7 @@ export default function QuickActions({ onExport }: QuickActionsProps) {
                     {actions.map((action, idx) => (
                         <button
                             key={idx}
+                            onClick={() => router.push(action.route)}
                             className={`flex items-center gap-3 p-3 rounded-lg transition-all duration-200 ${action.color} group`}
                         >
                             <action.icon size={20} />
@@ -78,13 +83,24 @@ export default function QuickActions({ onExport }: QuickActionsProps) {
                     ))}
                 </div>
 
-                <div className="mt-4 pt-4 border-t border-secondary-200">
+                <div className="mt-4 pt-4 border-t border-secondary-200 flex gap-3">
+                    <button
+                        onClick={() => router.push('/dashboard/super-admin/financials')}
+                        className="flex-1 p-4 bg-primary-50 rounded-2xl border border-primary-100 flex flex-col items-center gap-2 hover:bg-primary-100 transition-colors group"
+                    >
+                        <div className="p-3 bg-white rounded-xl shadow-sm text-primary-600 group-hover:scale-110 transition-transform">
+                            <TrendingUp size={24} />
+                        </div>
+                        <span className="text-[10px] font-black text-primary-700 uppercase tracking-widest">Financial Analytics</span>
+                    </button>
                     <button
                         onClick={onExport}
-                        className="w-full flex items-center justify-center gap-2 p-3 rounded-lg bg-secondary-100 hover:bg-secondary-200 text-secondary-700 transition-colors"
+                        className="flex-1 p-4 bg-secondary-50 rounded-2xl border border-secondary-100 flex flex-col items-center gap-2 hover:bg-secondary-100 transition-colors group"
                     >
-                        <Download size={18} />
-                        <span className="text-sm font-medium">Export Dashboard Data</span>
+                        <div className="p-3 bg-white rounded-xl shadow-sm text-secondary-600 group-hover:scale-110 transition-transform">
+                            <Download size={24} />
+                        </div>
+                        <span className="text-[10px] font-black text-secondary-700 uppercase tracking-widest">Export Dashboard Data</span>
                     </button>
                 </div>
             </CardContent>
