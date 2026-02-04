@@ -10,7 +10,8 @@ interface Props {
     onUpdate?: () => void; // Callback to refresh parent list
 }
 
-const EmployeeLeaveHistory = ({ employeeId, year, onClose, onUpdate }: Props) => {
+const EmployeeLeaveHistory = ({ employeeId, year: initialYear, onClose, onUpdate }: Props) => {
+    const [year, setYear] = useState(initialYear);
     const { data: history = [], refetch, isLoading } = useEmployeeLeaveHistory(employeeId, year);
     const updateLedgerMutation = useUpdateLeaveLedger();
     const [editingMonth, setEditingMonth] = useState<number | null>(null);
@@ -35,27 +36,41 @@ const EmployeeLeaveHistory = ({ employeeId, year, onClose, onUpdate }: Props) =>
             setEditData({ ...row });
         }, [row, isEditing]);
 
+        // Auto-calc preview
+        const opening = parseFloat(editData.openingBalance) || 0;
+        const auto = parseFloat(editData.autoCredit) || 0;
+        const taken = parseFloat(editData.takenLeaves) || 0;
+        const late = parseFloat(editData.lateDeductions) || 0;
+        // We calculate short deduction dynamically if balance < 0
+        const rawBalance = opening + auto - taken - late;
+        let calculatedShort = 0;
+        let calculatedClosing = 0;
+
+        if (rawBalance < 0) {
+            calculatedShort = Math.abs(rawBalance);
+            calculatedClosing = 0;
+        } else {
+            calculatedShort = 0; // Or keep manual? Based on backend logic we reset. 
+            // Ideally we'd allow manual 'short' too, but user said "negative will be deducted". 
+            // So we display the computed short deduction.
+            calculatedClosing = rawBalance;
+        }
+
         const handleSave = async () => {
             setIsSaving(true);
             try {
-                // Calculate correct closing balance before saving
-                const opening = parseFloat(editData.openingBalance) || 0;
-                const auto = parseFloat(editData.autoCredit) || 0;
-                const taken = parseFloat(editData.takenLeaves) || 0;
-                const late = parseFloat(editData.lateDeductions) || 0;
-                const short = parseFloat(editData.shortLeaveDeductions) || 0;
-                const calculatedClosing = Math.max(0, opening + auto - taken - late - short);
-
+                // Ensure we send the calculated short deduction
                 await updateLedgerMutation.mutateAsync({
                     ...editData,
-                    closingBalance: calculatedClosing, // Send correct calculated balance
+                    shortLeaveDeductions: calculatedShort,
+                    closingBalance: calculatedClosing,
                     employeeId: row.employeeId,
                     month: row.month,
                     year: row.year
                 });
                 toast.success(`Updated ${new Date(0, row.month - 1).toLocaleString('default', { month: 'short' })}`);
                 setEditingMonth(null);
-                await refetch(); // Refetch to see cascading updates
+                await refetch();
                 if (onUpdate) onUpdate();
             } catch (err) {
                 toast.error('Failed to update');
@@ -64,74 +79,70 @@ const EmployeeLeaveHistory = ({ employeeId, year, onClose, onUpdate }: Props) =>
             }
         };
 
-        // Auto-calc preview
-        const opening = parseFloat(editData.openingBalance) || 0;
-        const auto = parseFloat(editData.autoCredit) || 0;
-        const taken = parseFloat(editData.takenLeaves) || 0;
-        const late = parseFloat(editData.lateDeductions) || 0;
-        const short = parseFloat(editData.shortLeaveDeductions) || 0;
-        const calcClosing = Math.max(0, opening + auto - taken - late - short);
-
         return (
             <tr className={`border-b border-secondary-100 transition-colors ${isEditing ? 'bg-primary-50/50' : 'hover:bg-secondary-50/50'}`}>
-                <td className="p-3 font-bold text-secondary-500 text-xs uppercase">
+                <td className="p-4 pl-6 font-bold text-secondary-500 text-xs uppercase">
                     {new Date(0, row.month - 1).toLocaleString('default', { month: 'long' })}
                 </td>
-                <td className="p-3 text-center">
-                    {isEditing ? (
-                        <span className="text-secondary-400 font-mono text-xs" title="Opening balance is calculated from previous month closing">
-                            {row.openingBalance}
-                        </span>
-                    ) : (
-                        <span className="font-mono font-bold text-secondary-600 text-sm">{row.openingBalance}</span>
-                    )}
+                <td className="p-4 text-center border-r border-secondary-50">
+                    <span className="font-mono text-secondary-500 text-xs">{row.openingBalance}</span>
                 </td>
-                <td className="p-3 text-center">
+                <td className="p-4 text-center border-r border-secondary-50">
                     {isEditing ? (
                         <input
                             type="number" step="0.5"
-                            className="w-16 p-1 text-center text-xs border border-primary-200 rounded font-bold text-primary-700 bg-white"
+                            className="w-16 p-1 text-center text-xs border border-primary-200 rounded font-bold text-emerald-600 bg-white"
                             value={editData.autoCredit}
                             onChange={e => setEditData({ ...editData, autoCredit: parseFloat(e.target.value) || 0 })}
                         />
                     ) : (
-                        <span className="font-mono font-bold text-emerald-600 text-sm">+{row.autoCredit}</span>
+                        <span className="font-mono font-bold text-emerald-600 text-xs">+{row.autoCredit}</span>
                     )}
                 </td>
-                <td className="p-3 text-center bg-secondary-50/30">
-                    {isEditing ? (
-                        <input
-                            type="number" step="0.5"
-                            className="w-16 p-1 text-center text-xs border border-secondary-300 rounded font-bold text-secondary-900 bg-white"
-                            value={editData.takenLeaves}
-                            onChange={e => setEditData({ ...editData, takenLeaves: parseFloat(e.target.value) || 0 })}
-                        />
-                    ) : (
-                        <span className={`font-mono font-bold text-sm ${row.takenLeaves > 0 ? 'text-amber-600' : 'text-secondary-300'}`}>
-                            {row.takenLeaves}
+                {/* Breakdowns */}
+                <td className="p-4 border-r border-secondary-50">
+                    <div className="grid grid-cols-3 gap-2 text-center items-center">
+                        {/* Authorized (Taken) */}
+                        {isEditing ? (
+                            <input
+                                title="Authorized Leaves"
+                                type="number" step="0.5"
+                                className="w-full p-1 text-center text-xs border border-secondary-300 rounded text-secondary-900 bg-white"
+                                value={editData.takenLeaves}
+                                onChange={e => setEditData({ ...editData, takenLeaves: parseFloat(e.target.value) || 0 })}
+                            />
+                        ) : (
+                            <span className="text-secondary-700 font-bold text-xs">{row.takenLeaves}</span>
+                        )}
+
+                        {/* Unauthorized (Calculated Short) */}
+                        <span className={`text-xs font-bold ${isEditing ? (calculatedShort > 0 ? 'text-rose-600' : 'text-gray-300') : (row.shortLeaveDeductions > 0 ? 'text-rose-600' : 'text-gray-300')}`}>
+                            {isEditing ? (calculatedShort > 0 ? `-${calculatedShort.toFixed(1)}` : '-') : (row.shortLeaveDeductions > 0 ? `-${row.shortLeaveDeductions}` : '-')}
                         </span>
-                    )}
+
+                        {/* Late Deduction */}
+                        {isEditing ? (
+                            <input
+                                title="Late Deduction"
+                                type="number" step="0.1"
+                                className="w-full p-1 text-center text-xs border border-amber-200 rounded text-amber-700 bg-amber-50"
+                                value={editData.lateDeductions}
+                                onChange={e => setEditData({ ...editData, lateDeductions: parseFloat(e.target.value) || 0 })}
+                            />
+                        ) : (
+                            <span className={`text-xs ${row.lateDeductions > 0 ? 'text-amber-600 font-bold' : 'text-gray-300'}`}>
+                                {row.lateDeductions > 0 ? `-${row.lateDeductions}` : '-'}
+                            </span>
+                        )}
+                    </div>
                 </td>
-                <td className="p-3 text-center">
-                    {isEditing ? (
-                        <div className="flex gap-1 justify-center">
-                            <input title="Late Deductions" type="number" step="0.1" className="w-12 text-center text-xs border rounded bg-rose-50" value={editData.lateDeductions} onChange={e => setEditData({ ...editData, lateDeductions: parseFloat(e.target.value) || 0 })} />
-                            <input title="Short Leave Deductions" type="number" step="0.1" className="w-12 text-center text-xs border rounded bg-orange-50" value={editData.shortLeaveDeductions} onChange={e => setEditData({ ...editData, shortLeaveDeductions: parseFloat(e.target.value) || 0 })} />
-                        </div>
-                    ) : (
-                        <span className="text-xs text-secondary-400">
-                            {row.lateDeductions + row.shortLeaveDeductions > 0 ? `-${(row.lateDeductions + row.shortLeaveDeductions).toFixed(1)}` : '-'}
-                        </span>
-                    )}
+
+                <td className="p-4 text-center bg-indigo-50/30">
+                    <span className={`font-black text-sm ${isEditing ? 'text-indigo-600' : 'text-indigo-900'}`}>
+                        {isEditing ? calculatedClosing : row.closingBalance}
+                    </span>
                 </td>
-                <td className="p-3 text-center">
-                    {isEditing ? (
-                        <span className="font-black text-primary-700 text-sm">{calcClosing}</span>
-                    ) : (
-                        <span className="font-black text-secondary-900 text-sm">{row.closingBalance}</span>
-                    )}
-                </td>
-                <td className="p-3">
+                <td className="p-4">
                     {isEditing ? (
                         <input
                             type="text"
@@ -144,19 +155,20 @@ const EmployeeLeaveHistory = ({ employeeId, year, onClose, onUpdate }: Props) =>
                         <span className="text-xs text-secondary-500 italic truncate max-w-[150px] block">{row.remarks}</span>
                     )}
                 </td>
-                <td className="p-3 text-right">
+                <td className="p-4 text-right">
                     {isEditing ? (
                         <div className="flex gap-2 justify-end">
-                            <button disabled={isSaving} onClick={handleSave} className="text-xs bg-primary-600 text-white px-3 py-1 rounded font-bold hover:bg-primary-700">
+                            <button disabled={isSaving} onClick={handleSave} className="text-xs bg-indigo-600 text-white px-3 py-1 rounded font-bold hover:bg-indigo-700 shadow-sm">
                                 {isSaving ? '...' : 'Save'}
                             </button>
-                            <button disabled={isSaving} onClick={() => setEditingMonth(null)} className="text-xs bg-secondary-200 text-secondary-600 px-3 py-1 rounded font-bold hover:bg-secondary-300">
+                            <button disabled={isSaving} onClick={() => setEditingMonth(null)} className="text-xs bg-white border border-slate-200 text-slate-500 px-3 py-1 rounded font-bold hover:bg-slate-50">
                                 Cancel
                             </button>
                         </div>
                     ) : (
-                        <button onClick={() => setEditingMonth(row.month)} className="text-xs text-primary-600 hover:text-primary-800 font-bold underline">
-                            Edit
+                        <button onClick={() => setEditingMonth(row.month)} className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-indigo-50 text-indigo-600 transition-colors">
+                            <span className="sr-only">Edit</span>
+                            ✏️
                         </button>
                     )}
                 </td>
@@ -177,10 +189,22 @@ const EmployeeLeaveHistory = ({ employeeId, year, onClose, onUpdate }: Props) =>
                         <div>
                             <h3 className="text-2xl font-black text-slate-800 tracking-tight">Leave Ledger History</h3>
                             <div className="flex items-center gap-2 mt-1">
+                                <button
+                                    onClick={() => setYear(year - 1)}
+                                    className="p-1 rounded-full hover:bg-indigo-100 text-indigo-400 hover:text-indigo-700 transition-colors"
+                                >
+                                    ◀
+                                </button>
                                 <span className="px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700 text-xs font-bold uppercase tracking-wider">
                                     {year}
                                 </span>
-                                <span className="text-sm text-slate-500 font-medium">
+                                <button
+                                    onClick={() => setYear(year + 1)}
+                                    className="p-1 rounded-full hover:bg-indigo-100 text-indigo-400 hover:text-indigo-700 transition-colors"
+                                >
+                                    ▶
+                                </button>
+                                <span className="text-sm text-slate-500 font-medium ml-2">
                                     {history[0]?.name || 'Employee Ledger'}
                                 </span>
                             </div>
@@ -191,38 +215,74 @@ const EmployeeLeaveHistory = ({ employeeId, year, onClose, onUpdate }: Props) =>
                         className="w-10 h-10 rounded-full bg-white border border-indigo-50 hover:bg-rose-50 hover:border-rose-200 hover:text-rose-600 flex items-center justify-center text-slate-400 transition-all duration-200 shadow-sm"
                     >
                         ✕
+                        <span className="text-2xl font-light">×</span>
                     </button>
                 </div>
 
-                <div className="overflow-y-auto flex-1 p-0 scrollbar-thin scrollbar-thumb-indigo-200 scrollbar-track-transparent">
-                    {isLoading ? (
-                        <div className="py-32 flex flex-col items-center justify-center gap-4 text-indigo-400/50 animate-pulse">
-                            <div className="w-16 h-16 rounded-full bg-indigo-50 flex items-center justify-center">⏳</div>
-                            <span className="font-bold text-sm tracking-widest uppercase">Syncing Ledger...</span>
-                        </div>
-                    ) : (
-                        <table className="w-full text-left border-collapse">
-                            <thead className="bg-slate-50 border-b border-slate-200 sticky top-0 z-10 shadow-sm">
-                                <tr className="text-[11px] font-black uppercase text-slate-500 tracking-widest">
-                                    <th className="p-5 pl-8 w-1/12 bg-slate-50">Month</th>
-                                    <th className="p-5 text-center w-1/12 bg-slate-50">Opening</th>
-                                    <th className="p-5 text-center w-1/12 bg-slate-50">Credit</th>
-                                    <th className="p-5 text-center w-1/12 bg-slate-50">Taken</th>
-                                    <th className="p-5 text-center w-2/12 bg-slate-50">Deductions</th>
-                                    <th className="p-5 text-center w-1/12 bg-slate-50 text-indigo-600">Closing</th>
-                                    <th className="p-5 w-3/12 bg-slate-50">Remarks</th>
-                                    <th className="p-5 w-1/12 text-right bg-slate-50 pr-8">Action</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-slate-100 bg-white">
-                                {history.map((row, idx) => (
-                                    <HistoryRow key={row.month} row={row} />
-                                ))}
-                            </tbody>
-                        </table>
-                    )}
-                </div>
+                <div className="flex-1 overflow-auto p-0">
+                    <table className="w-full text-left border-collapse">
+                        <thead>
+                            <tr className="bg-slate-50/80 sticky top-0 z-10 backdrop-blur-sm border-b border-secondary-200 shadow-sm">
+                                <th className="p-4 pl-6 font-black text-secondary-400 text-xxs uppercase tracking-wider w-32">Month</th>
+                                <th className="p-4 text-center font-black text-secondary-400 text-xxs uppercase tracking-wider w-20 border-r border-secondary-100">Last Bal</th>
+                                <th className="p-4 text-center font-black text-secondary-400 text-xxs uppercase tracking-wider w-20 border-r border-secondary-100">Allotted</th>
+                                <th className="p-4 text-center font-black text-secondary-400 text-xxs uppercase tracking-wider border-r border-secondary-100">
+                                    <div className="flex flex-col">
+                                        <span>Taken</span>
+                                        <div className="flex justify-between text-[9px] text-secondary-400 mt-1 px-2">
+                                            <span>Auth</span>
+                                            <span>Unauth</span>
+                                            <span>Late</span>
+                                        </div>
+                                    </div>
+                                </th>
+                                <th className="p-4 text-center font-black text-indigo-400 text-xxs uppercase tracking-wider w-24 bg-indigo-50/30">New Bal</th>
+                                <th className="p-4 font-black text-secondary-400 text-xxs uppercase tracking-wider w-48">Remarks</th>
+                                <th className="p-4 text-right font-black text-secondary-400 text-xxs uppercase tracking-wider w-24 pr-6">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-secondary-50">
+                            {isLoading ? (
+                                <tr><td colSpan={7} className="p-8 text-center text-slate-400">Loading ledger...</td></tr>
+                            ) : (
+                                (() => {
+                                    const now = new Date();
+                                    const currentYear = now.getFullYear();
+                                    const currentMonth = now.getMonth() + 1;
 
+                                    const displayedHistory = history.filter((row: any) => {
+                                        // Show all for past years
+                                        if (row.year < currentYear) return true;
+                                        // Verify functionality for current year
+                                        if (row.year === currentYear) {
+                                            return row.month < currentMonth;
+                                        }
+                                        // Hide future years
+                                        return false;
+                                    });
+
+                                    if (displayedHistory.length === 0) {
+                                        return (
+                                            <tr>
+                                                <td colSpan={7} className="p-12 text-center">
+                                                    <div className="flex flex-col items-center justify-center text-slate-400">
+                                                        <span className="text-4xl mb-2">🍂</span>
+                                                        <span className="font-medium">No records found for this period</span>
+                                                        <span className="text-xs mt-1 text-slate-300">Future months are hidden until completed</span>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        );
+                                    }
+
+                                    return displayedHistory.map((row: any) => (
+                                        <HistoryRow key={`${row.year}-${row.month}`} row={row} />
+                                    ));
+                                })()
+                            )}
+                        </tbody>
+                    </table>
+                </div>
                 <div className="p-4 bg-indigo-50/50 border-t border-indigo-100 text-center">
                     <p className="text-xs text-indigo-500 font-medium flex items-center justify-center gap-2">
                         <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-pulse"></span>
