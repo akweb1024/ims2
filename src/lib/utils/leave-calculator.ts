@@ -88,7 +88,7 @@ export function calculateLeaveBalance(
     // Safety: don't show negative balance in some UI contexts, but we return the raw value
     return {
         totalDeductions,
-        displayBalance: Math.max(0, currentBalance),
+        displayBalance: currentBalance,
         rawBalance: currentBalance
     };
 }
