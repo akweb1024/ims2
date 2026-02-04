@@ -13,31 +13,54 @@ export const GET = authorizedRoute(
             twelveMonthsAgo.setMonth(now.getMonth() - 11);
             twelveMonthsAgo.setDate(1);
 
-            // 1. Fetch Actuals for last 12 months
-            const actuals = await prisma.financialRecord.findMany({
+            // 1. Fetch Expenses (FinancialRecord where type is EXPENSE)
+            const expenses = await prisma.financialRecord.findMany({
                 where: {
                     companyId: companyId || undefined,
+                    type: 'EXPENSE',
                     date: { gte: twelveMonthsAgo },
                     status: 'COMPLETED'
                 },
                 orderBy: { date: 'asc' }
             });
 
-            // 2. Fetch Revenue from Payments (if not already logged in FinancialRecord)
-            // Note: In a real system, we might want to sync these. 
-            // For this implementation, we aggregate both.
-            const payments = await prisma.payment.findMany({
+            // 2. Fetch Revenue (RevenueTransaction) for more granular control
+            // We want both Verified (Actual Revenue) and Pending (Forecast/Pipeline)
+            const revenues = await prisma.revenueTransaction.findMany({
                 where: {
                     companyId: companyId || undefined,
-                    paymentDate: { gte: twelveMonthsAgo },
-                    status: 'captured'
-                }
+                    paymentDate: { gte: twelveMonthsAgo }
+                },
+                orderBy: { paymentDate: 'asc' }
             });
 
-            // 3. Aggregate Monthly Data
-            const monthlyData: Record<string, { month: string, revenue: number, expense: number, counts: number }> = {};
+            // 3. Aggregate Key Metrics
+            const totalVerifiedRevenue = revenues
+                .filter(r => r.verificationStatus === 'VERIFIED')
+                .reduce((sum, r) => sum + r.amount, 0);
 
-            // Initialize 12 months
+            const totalPendingRevenue = revenues
+                .filter(r => r.verificationStatus === 'UNVERIFIED' || r.verificationStatus === 'NEEDS_PROOF')
+                .reduce((sum, r) => sum + r.amount, 0);
+
+            const totalExpenses = expenses.reduce((sum, e) => sum + e.amount, 0);
+
+            const netCashFlow = totalVerifiedRevenue - totalExpenses;
+
+            // Burn Rate (Average Monthly Expense over last 3 months)
+            // Simplified logic: Total Expenses / 12 (or however many months found)
+            // Better: Filter last 3 months
+            const threeMonthsAgo = new Date();
+            threeMonthsAgo.setMonth(now.getMonth() - 3);
+            const recentExpenses = expenses
+                .filter(e => e.date >= threeMonthsAgo)
+                .reduce((sum, e) => sum + e.amount, 0);
+            const burnRate = recentExpenses / 3;
+
+            // 4. Monthly Trend Data (Revenue vs Expense)
+            const monthlyData: Record<string, { month: string, revenue: number, expense: number, pending: number }> = {};
+
+            // Initialize last 12 months map
             for (let i = 0; i < 12; i++) {
                 const d = new Date(twelveMonthsAgo);
                 d.setMonth(twelveMonthsAgo.getMonth() + i);
@@ -46,35 +69,37 @@ export const GET = authorizedRoute(
                     month: d.toLocaleString('default', { month: 'short', year: '2-digit' }),
                     revenue: 0,
                     expense: 0,
-                    counts: 0
+                    pending: 0
                 };
             }
 
-            // Process FinancialRecords
-            actuals.forEach(rec => {
+            // Fill Expenses
+            expenses.forEach(rec => {
                 const key = `${rec.date.getFullYear()}-${(rec.date.getMonth() + 1).toString().padStart(2, '0')}`;
                 if (monthlyData[key]) {
-                    if (rec.type === 'REVENUE') monthlyData[key].revenue += rec.amount;
-                    else monthlyData[key].expense += rec.amount;
-                    monthlyData[key].counts++;
+                    monthlyData[key].expense += rec.amount;
                 }
             });
 
-            // Process Payments as Revenue
-            payments.forEach(pay => {
-                const key = `${pay.paymentDate.getFullYear()}-${(pay.paymentDate.getMonth() + 1).toString().padStart(2, '0')}`;
+            // Fill Revenue
+            revenues.forEach(rec => {
+                const key = `${rec.paymentDate.getFullYear()}-${(rec.paymentDate.getMonth() + 1).toString().padStart(2, '0')}`;
                 if (monthlyData[key]) {
-                    monthlyData[key].revenue += pay.amount;
+                    if (rec.verificationStatus === 'VERIFIED') {
+                        monthlyData[key].revenue += rec.amount;
+                    } else if (rec.verificationStatus === 'UNVERIFIED' || rec.verificationStatus === 'NEEDS_PROOF') {
+                        monthlyData[key].pending += rec.amount;
+                    }
                 }
             });
 
-            const dataArray = Object.values(monthlyData);
+            const actuals = Object.values(monthlyData);
 
-            // 4. Simple Forecasting (Average growth/Linear regression simplified)
-            // We'll use the last 3-6 months average to project
-            const last3Months = dataArray.slice(-3);
-            const avgRev = last3Months.reduce((a, b) => a + b.revenue, 0) / 3;
-            const avgExp = last3Months.reduce((a, b) => a + b.expense, 0) / 3;
+            // 5. Forecast (Simple Projection)
+            // Based on avg growth of verified revenue
+            const last3MonthsData = actuals.slice(-3);
+            const avgRev = last3MonthsData.reduce((a, b) => a + b.revenue, 0) / 3 || 0;
+            const avgExp = last3MonthsData.reduce((a, b) => a + b.expense, 0) / 3 || 0;
 
             const forecast = [];
             for (let i = 1; i <= 3; i++) {
@@ -82,27 +107,57 @@ export const GET = authorizedRoute(
                 d.setMonth(now.getMonth() + i);
                 forecast.push({
                     month: d.toLocaleString('default', { month: 'short', year: '2-digit' }),
-                    projectedRevenue: Number((avgRev * (1 + (i * 0.05))).toFixed(2)), // assuming 5% growth estimate
-                    projectedExpense: Number((avgExp * (1 + (i * 0.02))).toFixed(2)), // assuming 2% growth estimate
+                    projectedRevenue: Number((avgRev * (1 + (i * 0.05))).toFixed(2)), // +5% growth
+                    projectedExpense: Number((avgExp * (1 + (i * 0.02))).toFixed(2)), // +2% inflation
                     isForecast: true
                 });
             }
 
-            // 5. Category Breakdown
-            const categories = await prisma.financialRecord.groupBy({
-                by: ['category', 'type'],
-                where: { companyId: companyId || undefined },
+            // 6. Composition Data (Revenue Sources)
+            // Group by revenueType (NEW vs RENEWAL) or paymentMethod
+            const compositionMap: Record<string, number> = {};
+            revenues.forEach(r => {
+                if (r.verificationStatus === 'VERIFIED') {
+                    const type = r.revenueType || 'OTHER'; // NEW / RENEWAL
+                    compositionMap[type] = (compositionMap[type] || 0) + r.amount;
+                }
+            });
+
+            const revenueComposition = Object.entries(compositionMap).map(([name, value]) => ({
+                name: name.replace('_', ' '),
+                value
+            }));
+
+            // 7. Expense Categories
+            const expenseCategories = await prisma.financialRecord.groupBy({
+                by: ['category'],
+                where: {
+                    companyId: companyId || undefined,
+                    type: 'EXPENSE',
+                    status: 'COMPLETED'
+                },
                 _sum: { amount: true }
             });
 
+            const expenseComposition = expenseCategories.map(c => ({
+                name: c.category,
+                value: c._sum.amount
+            }));
+
             return NextResponse.json({
-                actuals: dataArray,
-                forecast,
-                categories: categories.map(c => ({
-                    name: c.category,
-                    type: c.type,
-                    value: c._sum.amount
-                }))
+                stats: {
+                    totalVerifiedRevenue,
+                    totalPendingRevenue,
+                    totalExpenses,
+                    netCashFlow,
+                    burnRate
+                },
+                charts: {
+                    cashFlow: actuals,
+                    forecast,
+                    revenueComposition,
+                    expenseComposition
+                }
             });
 
         } catch (error) {

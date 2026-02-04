@@ -77,7 +77,7 @@ export const GET = authorizedRoute(
             if (['MANAGER', 'TEAM_LEADER'].includes(user.role)) {
                 const { getDownlineUserIds } = await import('@/lib/hierarchy');
                 const subIds = await getDownlineUserIds(user.id, user.companyId || undefined);
-                const allowedUserIds = [...subIds, user.id];
+                const allowedUserIds = [...subIds]; // Exclude self (user.id) so managers don't see their own pending increments here
 
                 const managedProfiles = await prisma.employeeProfile.findMany({
                     where: { userId: { in: allowedUserIds } },

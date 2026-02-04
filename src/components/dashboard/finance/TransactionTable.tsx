@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { format } from 'date-fns';
+import VerificationBadge from './VerificationBadge';
 
 interface TransactionTableProps {
     transactions: any[];
@@ -126,12 +127,15 @@ export default function TransactionTable({
                     </div>
                 ) : (
                     <table className="w-full text-left border-collapse">
+
+
                         <thead className="bg-secondary-50 text-secondary-500 uppercase text-[10px] font-black tracking-widest sticky top-0 z-10 shadow-sm">
                             <tr>
                                 <th onClick={() => handleSort('date')} className="px-6 py-4 cursor-pointer hover:bg-secondary-100 transition-colors group select-none">
                                     Date <span className="text-gray-400 ml-1">{sortField === 'date' ? (sortDir === 'asc' ? '↑' : '↓') : '↕'}</span>
                                 </th>
                                 <th className="px-6 py-4">Type</th>
+                                <th className="px-6 py-4">Status</th>
                                 <th className="px-6 py-4">Category</th>
                                 <th className="px-6 py-4">Description / Reference</th>
                                 <th className="px-6 py-4">Party</th>
@@ -149,11 +153,14 @@ export default function TransactionTable({
                                     </td>
                                     <td className="px-6 py-4">
                                         <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold border ${rec.type === 'REVENUE'
-                                                ? 'bg-emerald-50 text-emerald-700 border-emerald-100'
-                                                : 'bg-rose-50 text-rose-700 border-rose-100'
+                                            ? 'bg-emerald-50 text-emerald-700 border-emerald-100'
+                                            : 'bg-rose-50 text-rose-700 border-rose-100'
                                             }`}>
                                             {rec.type}
                                         </span>
+                                    </td>
+                                    <td className="px-6 py-4">
+                                        <VerificationBadge status={rec.verificationStatus || rec.status || 'COMPLETED'} />
                                     </td>
                                     <td className="px-6 py-4 text-xs text-secondary-600 uppercase font-bold tracking-tight">
                                         {rec.category}
