@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { IndianRupee, TrendingUp, Globe, Search, ArrowRight, DollarSign, Calendar, Filter } from 'lucide-react';
+import { formatToISTDate, formatToISTTime } from '@/lib/date-utils';
 
 export default function EmployeeTransactions() {
     const [data, setData] = useState<any>(null);
@@ -189,10 +190,10 @@ export default function EmployeeTransactions() {
                                         </td>
                                         <td className="px-8 py-6">
                                             <div className="text-xs font-black text-secondary-700">
-                                                {new Date(p.created_at * 1000).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
+                                                {formatToISTDate(new Date(p.created_at * 1000))}
                                             </div>
                                             <div className="text-[9px] text-secondary-400 font-bold mt-1">
-                                                {new Date(p.created_at * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                {formatToISTTime(new Date(p.created_at * 1000))}
                                             </div>
                                         </td>
                                         <td className="px-8 py-6 text-right">

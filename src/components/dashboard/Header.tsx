@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import GlobalSearch from './GlobalSearch';
 import { NavModule } from '@/config/navigation';
+import { formatToISTTime } from '@/lib/date-utils';
 
 interface HeaderProps {
     sidebarOpen: boolean;
@@ -133,7 +134,7 @@ export default function Header({
                                                 <div className="flex justify-between items-start">
                                                     <p className={`text-xs ${!n.isRead ? 'font-bold text-secondary-900' : 'text-secondary-700'}`}>{n.title}</p>
                                                     <span className="text-[10px] text-secondary-400">
-                                                        {new Date(n.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                        {formatToISTTime(n.createdAt)}
                                                     </span>
                                                 </div>
                                                 <p className="text-[11px] text-secondary-500 mt-1 line-clamp-2">{n.message}</p>

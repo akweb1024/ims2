@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { ChevronLeft, ChevronRight, CheckCircle2, XCircle, AlertCircle, Clock } from 'lucide-react';
 import FormattedDate from '@/components/common/FormattedDate';
+import { formatToISTDate, formatToISTTime } from '@/lib/date-utils';
 
 interface AttendanceCalendarProps {
     attendance: any[];
@@ -153,7 +154,7 @@ export default function AttendanceCalendar({ attendance, workReports, onDateClic
                                     {att ? (
                                         <>
                                             <div className="text-[8px] font-bold text-secondary-500 flex items-center gap-1">
-                                                <Clock size={8} /> {att.checkIn ? new Date(att.checkIn).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '--'}
+                                                <Clock size={8} /> {formatToISTTime(att.checkIn)}
                                             </div>
                                             <div className="text-[8px] font-black text-primary-600">
                                                 {att.checkIn && att.checkOut ? formatDuration(att.checkIn, att.checkOut) : att.checkIn ? 'Active' : '--'}
@@ -180,8 +181,8 @@ export default function AttendanceCalendar({ attendance, workReports, onDateClic
                                         <p className="font-bold border-b border-white/10 pb-1 mb-1"><FormattedDate date={date} /></p>
                                         {att ? (
                                             <>
-                                                <p>In: {att.checkIn ? new Date(att.checkIn).toLocaleTimeString() : 'N/A'}</p>
-                                                <p>Out: {att.checkOut ? new Date(att.checkOut).toLocaleTimeString() : 'N/A'}</p>
+                                                <p>In: {formatToISTTime(att.checkIn)}</p>
+                                                <p>Out: {formatToISTTime(att.checkOut)}</p>
                                                 <p>Status: {att.status}</p>
                                             </>
                                         ) : <p>No Attendance Record</p>}

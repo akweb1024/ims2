@@ -1,5 +1,8 @@
+'use client';
+
 import { useState, useEffect } from 'react';
 import { X, Mail, Phone, ExternalLink, Calendar, MapPin, Download, Sparkles, Save, Clock, ThumbsUp, ThumbsDown } from 'lucide-react';
+import { formatToISTDate, formatToISTTime } from '@/lib/date-utils';
 
 interface CandidateProfileModalProps {
     application: any;
@@ -172,7 +175,7 @@ export default function CandidateProfileModal({ application, onClose, onSchedule
                                         <div className="flex items-center gap-2 mt-1">
                                             <Calendar size={16} className="text-secondary-400" />
                                             <span className="text-secondary-600 font-medium">
-                                                {new Date(application.createdAt).toLocaleDateString(undefined, { dateStyle: 'medium' })}
+                                                {formatToISTDate(application.createdAt)}
                                             </span>
                                         </div>
                                     </div>
@@ -198,8 +201,8 @@ export default function CandidateProfileModal({ application, onClose, onSchedule
                                         {application.interviews.map((interview: any) => (
                                             <div key={interview.id} className="bg-white border border-secondary-100 rounded-xl p-4 flex gap-4 items-start hover:border-primary-200 transition-colors">
                                                 <div className="bg-secondary-50 p-3 rounded-lg text-secondary-500 font-bold text-center min-w-[4rem]">
-                                                    <div className="text-xs uppercase">{new Date(interview.scheduledAt).toLocaleDateString(undefined, { month: 'short' })}</div>
-                                                    <div className="text-xl text-secondary-900">{new Date(interview.scheduledAt).getDate()}</div>
+                                                    <div className="text-xs uppercase">{formatToISTTime(interview.scheduledAt, 'MMM')}</div>
+                                                    <div className="text-xl text-secondary-900">{formatToISTTime(interview.scheduledAt, 'd')}</div>
                                                 </div>
                                                 <div className="flex-1">
                                                     <div className="flex justify-between items-start">
@@ -208,7 +211,7 @@ export default function CandidateProfileModal({ application, onClose, onSchedule
                                                                 {interview.level === 1 ? 'HR Screening' : interview.level === 2 ? 'Technical Round' : 'Final Round'}
                                                             </h5>
                                                             <p className="text-xs text-secondary-500 font-medium mt-0.5">
-                                                                {interview.type} • {new Date(interview.scheduledAt).toLocaleTimeString(undefined, { timeStyle: 'short' })}
+                                                                {interview.type} • {formatToISTTime(interview.scheduledAt)}
                                                             </p>
                                                         </div>
                                                         <span className={`px-2 py-1 rounded text-[10px] font-black uppercase tracking-widest ${interview.status === 'COMPLETED' ? 'bg-green-50 text-green-600' :

@@ -4,6 +4,7 @@ import { useChat } from './ChatContext';
 import { Search, Plus, Hash, Users, Activity } from 'lucide-react';
 import { useState } from 'react';
 import CreateChatModal from './CreateChatModal';
+import { formatToISTTime } from '@/lib/date-utils';
 
 export default function ChatSidebar() {
     const { rooms, activeRoom, setActiveRoom, currentUser } = useChat();
@@ -71,15 +72,15 @@ export default function ChatSidebar() {
                         const otherP = room.participants.find((p: any) => p.userId !== currentUser?.id);
                         // Mock last message for preview
                         const lastMsg = room.messages?.[0]?.content || 'Start the conversation...';
-                        const time = room.messages?.[0]?.createdAt ? new Date(room.messages[0].createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
+                        const time = formatToISTTime(room.messages?.[0]?.createdAt);
 
                         return (
                             <button
                                 key={room.id}
                                 onClick={() => setActiveRoom(room)}
                                 className={`w-full p-3 rounded-2xl flex gap-3 transition-all duration-200 group relative overflow-hidden ${isActive
-                                        ? 'bg-white shadow-lg shadow-indigo-100 ring-1 ring-black/5 z-10 scale-[1.02]'
-                                        : 'hover:bg-gray-100 dark:hover:bg-gray-800 hover:scale-[1.01]'
+                                    ? 'bg-white shadow-lg shadow-indigo-100 ring-1 ring-black/5 z-10 scale-[1.02]'
+                                    : 'hover:bg-gray-100 dark:hover:bg-gray-800 hover:scale-[1.01]'
                                     }`}
                             >
                                 <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-lg font-bold shrink-0 transition-colors ${isActive ? 'bg-indigo-100 text-indigo-600' : 'bg-gray-200 text-gray-500 group-hover:bg-white group-hover:shadow-sm'

@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { toast } from 'react-hot-toast';
 import AttendanceModal from '@/components/dashboard/hr/AttendanceModal';
+import { formatToISTTime, formatToISTDate } from '@/lib/date-utils';
 
 interface AttendanceManagerProps {
     attendance: any[];
@@ -152,11 +153,11 @@ export default function AttendanceManager({ attendance, employees, filters, setF
                                 <div className="mt-6 w-full space-y-3 pt-4 border-t border-secondary-50">
                                     <div className="flex justify-between items-center">
                                         <span className="text-[9px] font-bold text-secondary-400 uppercase">Check In</span>
-                                        <span className="text-xs font-black text-secondary-900">{record.checkIn ? new Date(record.checkIn).toLocaleTimeString() : '--:--'}</span>
+                                        <span className="text-xs font-black text-secondary-900">{formatToISTTime(record.checkIn)}</span>
                                     </div>
                                     <div className="flex justify-between items-center">
                                         <span className="text-[9px] font-bold text-secondary-400 uppercase">Check Out</span>
-                                        <span className="text-xs font-black text-secondary-900">{record.checkOut ? new Date(record.checkOut).toLocaleTimeString() : '--:--'}</span>
+                                        <span className="text-xs font-black text-secondary-900">{formatToISTTime(record.checkOut)}</span>
                                     </div>
                                 </div>
                                 <span className={`mt-2 block text-[9px] font-black px-2 py-0.5 rounded uppercase ${record.status === 'PRESENT' ? 'bg-success-50 text-success-700' : 'bg-warning-50 text-warning-700'}`}>{record.workFrom}</span>
@@ -199,13 +200,13 @@ export default function AttendanceManager({ attendance, employees, filters, setF
                                         <p className="text-[10px] text-secondary-400 font-bold uppercase">{record.employee?.designation}</p>
                                     </td>
                                     <td className="p-4 text-xs font-bold text-secondary-600">
-                                        {new Date(record.date).toLocaleDateString()}
+                                        {formatToISTDate(record.date)}
                                     </td>
                                     <td className="p-4 text-xs font-black text-primary-600">
-                                        {record.checkIn ? new Date(record.checkIn).toLocaleTimeString() : '--:--'}
+                                        {formatToISTTime(record.checkIn)}
                                     </td>
                                     <td className="p-4 text-xs font-black text-secondary-900">
-                                        {record.checkOut ? new Date(record.checkOut).toLocaleTimeString() : '--:--'}
+                                        {formatToISTTime(record.checkOut)}
                                     </td>
                                     <td className="p-4">
                                         <span className="badge badge-secondary">{record.workFrom}</span>

@@ -6,7 +6,8 @@ import {
     AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
     PieChart, Pie, Cell
 } from 'recharts';
-import { Globe, TrendingUp, DollarSign, Download, RefreshCw, Calendar, Search } from 'lucide-react';
+import { Globe, TrendingUp, DollarSign, Download, RefreshCw, Calendar, Search, User, Mail } from 'lucide-react';
+import { downloadCSV } from '@/lib/csv-utils';
 
 export default function RazorpayTrackerPage() {
     const [data, setData] = useState<any>(null);
@@ -134,6 +135,29 @@ export default function RazorpayTrackerPage() {
         } finally {
             setLoading(false);
         }
+    };
+
+    const handleExport = () => {
+        if (!data?.payments || data.payments.length === 0) {
+            alert('No data to export');
+            return;
+        }
+
+        const headers = ['Protocol ID', 'Customer', 'Email', 'Description', 'Date', 'Amount', 'Currency', 'Method', 'Status'];
+        const rows = filteredPayments.map((p: any) => [
+            p.razorpayPaymentId || p.id,
+            p.name || 'Anonymous',
+            p.email || '',
+            (p.description || '').replace(/,/g, ';'),
+            new Date(p.created_at * 1000).toISOString(),
+            p.amount,
+            p.currency,
+            p.method,
+            p.status
+        ]);
+
+        const csvContent = [headers.join(','), ...rows.map((row: any[]) => row.join(','))].join('\n');
+        downloadCSV(csvContent, `razorpay-transactions-${new Date().toISOString().split('T')[0]}.csv`);
     };
 
     return (
@@ -301,29 +325,54 @@ export default function RazorpayTrackerPage() {
                                             <stop offset="5%" stopColor="#10b981" stopOpacity={0.4} />
                                             <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
                                         </linearGradient>
-                                        <linearGradient id="colorFailed" x1="0" y1="0" x2="0" y2="1">
-                                            <stop offset="5%" stopColor="#ef4444" stopOpacity={0.4} />
-                                            <stop offset="95%" stopColor="#ef4444" stopOpacity={0} />
-                                        </linearGradient>
                                     </defs>
-                                    <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
-                                    <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8', fontWeight: 700 }} />
-                                    <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8', fontWeight: 700 }} tickFormatter={(val) => `₹${val / 1000}k`} />
-                                    <Tooltip
-                                        contentStyle={{ borderRadius: '24px', border: 'none', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.1)', fontWeight: 800, fontSize: '12px' }}
-                                        formatter={(value: any, name: any) => [`₹${value.toLocaleString()}`, name ? name.toUpperCase() : '']}
+                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                                    <XAxis
+                                        dataKey="date"
+                                        axisLine={false}
+                                        tickLine={false}
+                                        tick={{ fontSize: 10, fontWeight: 'bold', fill: '#94a3b8' }}
+                                        dy={10}
                                     />
-                                    <Area type="monotone" dataKey="revenue" name="Total Volume" stroke="#2563eb" strokeWidth={3} fill="url(#colorRevenue)" fillOpacity={1} />
-                                    <Area type="monotone" dataKey="captured" name="Captured" stroke="#10b981" strokeWidth={3} fill="url(#colorCaptured)" fillOpacity={1} />
-                                    <Area type="monotone" dataKey="failed" name="Failed" stroke="#ef4444" strokeWidth={3} fill="url(#colorFailed)" fillOpacity={1} />
+                                    <YAxis
+                                        axisLine={false}
+                                        tickLine={false}
+                                        tick={{ fontSize: 10, fontWeight: 'bold', fill: '#94a3b8' }}
+                                        tickFormatter={(value) => `₹${value >= 1000 ? (value / 1000).toFixed(1) + 'k' : value}`}
+                                    />
+                                    <Tooltip
+                                        contentStyle={{
+                                            borderRadius: '24px',
+                                            border: 'none',
+                                            boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1)',
+                                            padding: '16px'
+                                        }}
+                                        labelStyle={{ fontWeight: 'black', color: '#1e293b', marginBottom: '8px', fontSize: '12px' }}
+                                    />
+                                    <Area
+                                        type="monotone"
+                                        dataKey="revenue"
+                                        stroke="#2563eb"
+                                        strokeWidth={4}
+                                        fillOpacity={1}
+                                        fill="url(#colorRevenue)"
+                                    />
+                                    <Area
+                                        type="monotone"
+                                        dataKey="captured"
+                                        stroke="#10b981"
+                                        strokeWidth={4}
+                                        fillOpacity={1}
+                                        fill="url(#colorCaptured)"
+                                    />
                                 </AreaChart>
                             </ResponsiveContainer>
                         </div>
                     </div>
 
                     <div className="card-premium p-8">
-                        <h2 className="text-xl font-black text-secondary-900 uppercase mb-8 text-center">Channels</h2>
-                        <div className="h-80 flex items-center justify-center">
+                        <h2 className="text-xl font-black text-secondary-900 uppercase mb-8">Asset Methodology</h2>
+                        <div className="h-64 mb-8">
                             <ResponsiveContainer width="100%" height="100%">
                                 <PieChart>
                                     <Pie
@@ -332,21 +381,22 @@ export default function RazorpayTrackerPage() {
                                         cy="50%"
                                         innerRadius={60}
                                         outerRadius={90}
-                                        paddingAngle={5}
+                                        paddingAngle={8}
                                         dataKey="value"
+                                        stroke="none"
                                     >
-                                        {methodChartData.map((entry, index) => (
+                                        {methodChartData.map((_, index) => (
                                             <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                                         ))}
                                     </Pie>
                                     <Tooltip
-                                        contentStyle={{ borderRadius: '24px', border: 'none', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.1)', fontWeight: 800, fontSize: '12px' }}
+                                        contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
                                     />
                                 </PieChart>
                             </ResponsiveContainer>
                         </div>
-                        <div className="mt-4 grid grid-cols-2 gap-2">
-                            {methodChartData.map((m, i) => (
+                        <div className="space-y-4">
+                            {methodChartData.map((m: any, i: number) => (
                                 <div key={m.name} className="flex items-center gap-2">
                                     <div className="w-2 h-2 rounded-full" style={{ backgroundColor: COLORS[i % COLORS.length] }}></div>
                                     <span className="text-[10px] font-black text-secondary-600 uppercase tracking-widest truncate">{m.name}</span>
@@ -375,7 +425,10 @@ export default function RazorpayTrackerPage() {
                                     <option value="authorized">Authorized</option>
                                     <option value="failed">Failed</option>
                                 </select>
-                                <button className="btn h-12 bg-secondary-900 text-white rounded-2xl px-8 text-[10px] font-black uppercase tracking-widest shadow-lg flex items-center gap-2 hover:bg-black transition-all active:scale-95">
+                                <button
+                                    onClick={handleExport}
+                                    className="btn h-12 bg-secondary-900 text-white rounded-2xl px-8 text-[10px] font-black uppercase tracking-widest shadow-lg flex items-center gap-2 hover:bg-black transition-all active:scale-95"
+                                >
                                     <Download size={14} /> Export CSV
                                 </button>
                             </div>
@@ -598,36 +651,30 @@ export default function RazorpayTrackerPage() {
                             </div>
                             {selectedPayment.email && (
                                 <div className="col-span-2 py-4 border-t border-b border-secondary-50">
-                                    <div className="text-[10px] font-black text-secondary-400 uppercase tracking-widest mb-2">Customer Profile</div>
+                                    <div className="text-[10px] font-black text-secondary-400 uppercase tracking-widest mb-2">Subject Trace</div>
                                     <div className="flex items-center gap-4">
-                                        <div className="w-12 h-12 rounded-2xl bg-secondary-100 flex items-center justify-center font-black text-secondary-400 text-xl">{selectedPayment.name?.charAt(0) || 'U'}</div>
-                                        <div>
-                                            <div className="font-black text-secondary-900 text-lg tracking-tighter">{selectedPayment.name || 'Anonymous Entity'}</div>
-                                            <div className="text-xs font-bold text-secondary-500">{selectedPayment.email}</div>
+                                        <div className="flex items-center gap-2">
+                                            <User size={14} className="text-secondary-400" />
+                                            <span className="text-sm font-bold text-secondary-900">{selectedPayment.name || 'Anonymous'}</span>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <Mail size={14} className="text-secondary-400" />
+                                            <span className="text-sm font-medium text-secondary-600">{selectedPayment.email}</span>
                                         </div>
                                     </div>
                                 </div>
                             )}
-                            <div className="col-span-2 flex gap-4 mt-4">
+                        </div>
+                        <div className="p-10 bg-secondary-50 flex justify-between items-center">
+                            <button onClick={() => setSelectedPayment(null)} className="px-8 py-4 bg-white border border-secondary-200 text-secondary-900 text-xs font-black uppercase tracking-widest rounded-2xl hover:bg-secondary-900 hover:text-white transition-all">Close Trace</button>
+                            {selectedPayment.status === 'captured' && (
                                 <button
-                                    onClick={() => setSelectedPayment(null)}
-                                    className="flex-1 btn h-16 bg-secondary-100 text-secondary-900 rounded-[24px] font-black uppercase tracking-[0.2em] text-xs shadow-none hover:bg-secondary-200 transition-all active:scale-95"
+                                    onClick={() => handleClaim(selectedPayment.id)}
+                                    className="px-8 py-4 bg-primary-600 text-white text-xs font-black uppercase tracking-widest rounded-2xl hover:bg-primary-700 shadow-lg shadow-primary-200 transition-all"
                                 >
-                                    Dismiss Auditor
+                                    Initiate Claim
                                 </button>
-                                {selectedPayment.status === 'captured' && (!selectedPayment.claims || !selectedPayment.claims.some((c: any) => c.status !== 'REJECTED')) && (
-                                    <button
-                                        onClick={() => {
-                                            if (confirm('Do you want to claim this transaction?')) {
-                                                handleClaim(selectedPayment.id);
-                                            }
-                                        }}
-                                        className="flex-1 btn h-16 bg-primary-600 text-white rounded-[24px] font-black uppercase tracking-[0.2em] text-xs shadow-xl hover:bg-primary-700 transition-all active:scale-95"
-                                    >
-                                        Claim Now
-                                    </button>
-                                )}
-                            </div>
+                            )}
                         </div>
                     </div>
                 </div>

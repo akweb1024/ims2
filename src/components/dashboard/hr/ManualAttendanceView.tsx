@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Search, Save, X, User as UserIcon, Calendar, Clock, AlertTriangle } from 'lucide-react';
 import AttendanceCalendar from '@/components/dashboard/staff/AttendanceCalendar';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
+import { formatToISTTime } from '@/lib/date-utils';
 
 export default function ManualAttendanceView() {
     // State
@@ -78,8 +79,8 @@ export default function ManualAttendanceView() {
         // Populate form
         if (record) {
             setEditForm({
-                checkIn: record.checkIn ? new Date(record.checkIn).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) : '',
-                checkOut: record.checkOut ? new Date(record.checkOut).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) : '',
+                checkIn: formatToISTTime(record.checkIn, 'HH:mm'),
+                checkOut: formatToISTTime(record.checkOut, 'HH:mm'),
                 status: record.status,
                 notes: '' // API doesn't seem to return notes yet
             });

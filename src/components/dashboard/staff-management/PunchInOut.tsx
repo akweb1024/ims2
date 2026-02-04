@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { toast } from 'react-hot-toast';
+import { formatToISTDate, formatToISTTime } from '@/lib/date-utils';
 
 interface PunchInOutProps {
     filters: any;
@@ -192,12 +193,12 @@ export default function PunchInOut({ filters }: PunchInOutProps) {
                                             </div>
                                         </td>
                                         <td className="px-6 py-4 text-sm text-secondary-600">
-                                            {new Date(record.date).toLocaleDateString()}
+                                            {formatToISTDate(record.date)}
                                         </td>
                                         <td className="px-6 py-4 text-sm text-secondary-600">
                                             {record.punchIn ? (
                                                 <div>
-                                                    <span className="font-medium">{new Date(record.punchIn).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}</span>
+                                                    <span className="font-medium">{formatToISTTime(record.punchIn)}</span>
                                                     {record.punchInLocation && (
                                                         <p className="text-xs text-secondary-400">{record.punchInLocation}</p>
                                                     )}
@@ -209,7 +210,7 @@ export default function PunchInOut({ filters }: PunchInOutProps) {
                                         <td className="px-6 py-4 text-sm text-secondary-600">
                                             {record.punchOut ? (
                                                 <div>
-                                                    <span className="font-medium">{new Date(record.punchOut).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}</span>
+                                                    <span className="font-medium">{formatToISTTime(record.punchOut)}</span>
                                                     {record.punchOutLocation && (
                                                         <p className="text-xs text-secondary-400">{record.punchOutLocation}</p>
                                                     )}

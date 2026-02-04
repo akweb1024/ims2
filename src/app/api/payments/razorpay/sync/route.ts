@@ -128,7 +128,7 @@ export async function POST() {
                         // Save Payment
                         const savedPayment = await prisma.payment.create({
                             data: {
-                                amount: Number(rpPayment.amount) / 100,
+                                amount: Number(rpPayment.amount) / 100, // Standardizing to units (Rupees/etc)
                                 currency: rpPayment.currency || 'INR',
                                 paymentMethod: rpPayment.method,
                                 paymentDate: new Date(Number(rpPayment.created_at) * 1000),

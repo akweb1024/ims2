@@ -3,6 +3,7 @@
 import { useChat } from './ChatContext';
 import { Send, Paperclip, MoreVertical, Phone, Video, Smile, Check, CheckCheck } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
+import { formatToISTTime } from '@/lib/date-utils';
 
 export default function ChatWindow() {
     const { activeRoom, messages, sendMessage, currentUser } = useChat();
@@ -88,13 +89,13 @@ export default function ChatWindow() {
                                     <p className="text-[10px] font-bold text-gray-400 mb-1 ml-1">{msg.sender?.name}</p>
                                 )}
                                 <div className={`px-5 py-3 rounded-2xl shadow-sm text-sm leading-relaxed relative ${isMe
-                                        ? 'bg-indigo-600 text-white rounded-br-none'
-                                        : 'bg-white border border-gray-100 text-gray-800 rounded-bl-none'
+                                    ? 'bg-indigo-600 text-white rounded-br-none'
+                                    : 'bg-white border border-gray-100 text-gray-800 rounded-bl-none'
                                     }`}>
                                     {msg.content}
                                     {/* Timestamp & Status */}
                                     <div className={`text-[9px] font-bold mt-1 flex items-center justify-end gap-1 ${isMe ? 'text-indigo-200' : 'text-gray-400'}`}>
-                                        {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                        {formatToISTTime(msg.createdAt)}
                                         {isMe && (
                                             msg.isOptimistic ? <span className="opacity-50">Sending...</span> : <CheckCheck size={12} />
                                         )}

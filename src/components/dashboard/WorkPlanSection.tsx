@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { Target } from 'lucide-react';
 import FormattedDate from '@/components/common/FormattedDate';
+import { formatToISTTime } from '@/lib/date-utils';
 
 interface WorkPlanSectionProps {
     plans: any[];
@@ -180,7 +181,7 @@ export default function WorkPlanSection({ plans, onPlanSubmitted, user }: WorkPl
                                             <div className="bg-secondary-50 p-3 rounded-2xl flex-1">
                                                 <div className="flex justify-between items-start mb-1">
                                                     <span className="text-[10px] font-bold text-secondary-900">{comment.user.name || comment.user.email}</span>
-                                                    <span className="text-[8px] text-secondary-400">{new Date(comment.createdAt).toLocaleTimeString()}</span>
+                                                    <span className="text-[8px] text-secondary-400">{formatToISTTime(comment.createdAt)}</span>
                                                 </div>
                                                 <p className="text-xs text-secondary-700">{comment.content}</p>
                                             </div>

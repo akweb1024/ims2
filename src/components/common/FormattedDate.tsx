@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { formatToISTDate } from '@/lib/date-utils';
 
 interface FormattedDateProps {
     date: string | Date | null | undefined;
@@ -23,8 +24,7 @@ export default function FormattedDate({ date, fallback = 'N/A' }: FormattedDateP
     }
 
     try {
-        const dateObj = typeof date === 'string' ? new Date(date) : date;
-        return <span>{dateObj.toLocaleDateString()}</span>;
+        return <span>{formatToISTDate(date)}</span>;
     } catch (e) {
         return <span>{fallback}</span>;
     }
