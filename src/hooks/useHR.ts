@@ -315,6 +315,13 @@ export const useLeaveLedger = (month: number, year: number) => {
     });
 };
 
+export const useEmployeeLeaveHistory = (employeeId: string, year: number) => {
+    return useQuery<any[]>({
+        queryKey: ['leave-ledger-history', { employeeId, year }],
+        queryFn: () => fetchJson(`/api/hr/leave-ledger?employeeId=${employeeId}&year=${year}`),
+    });
+};
+
 export const useUpdateLeaveLedger = () => {
     const queryClient = useQueryClient();
     return useMutation({

@@ -35,6 +35,7 @@ import TaskTemplateManager from '@/components/dashboard/hr/TaskTemplateManager';
 import PointsRewardsManager from '@/components/dashboard/hr/PointsRewardsManager';
 import GoalManager from '@/components/dashboard/hr/GoalManager';
 import RewardManager from '@/components/dashboard/hr/RewardManager';
+import LeaveLedgerManager from '@/components/dashboard/hr/LeaveLedgerManager';
 import PotentialCalculator from '@/components/dashboard/hr/PotentialCalculator';
 import WorkReportValidator from '@/components/dashboard/hr/WorkReportValidator';
 import { Briefcase, Info, Target, TrendingUp, Award, GraduationCap, Edit, Trash2, ChevronDown } from 'lucide-react';
@@ -55,146 +56,7 @@ const FormattedTime = ({ date }: { date: string | Date | null }) => {
     return <span>{new Date(date).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}</span>
 };
 
-const LeaveLedgerRow = ({ row, onSave }: { row: any, onSave: (data: any) => Promise<any> }) => {
-    const [editData, setEditData] = useState({
-        ...row,
-        openingBalance: row.openingBalance ?? 0,
-        autoCredit: row.autoCredit ?? 1.5,
-        takenLeaves: row.takenLeaves ?? 0,
-        lateDeductions: row.lateDeductions ?? 0,
-        shortLeaveDeductions: row.shortLeaveDeductions ?? 0,
-        closingBalance: row.closingBalance ?? 0,
-        remarks: row.remarks ?? ''
-    });
-    const [negativeLeaves, setNegativeLeaves] = useState(0);
-    const [saving, setSaving] = useState(false);
 
-    // Auto-calculate closing balance & negative leaves whenever inputs change
-    useEffect(() => {
-        const opening = parseFloat(editData.openingBalance) || 0;
-        const allotted = parseFloat(editData.autoCredit) || 0;
-        const taken = parseFloat(editData.takenLeaves) || 0;
-        const lateDeds = parseFloat(editData.lateDeductions) || 0;
-        const shortDeds = parseFloat(editData.shortLeaveDeductions) || 0;
-
-        // Systematic calculation: Opening + Allotted - Taken - (Late + Short Deductions)
-        const actualBalance = opening + allotted - taken - lateDeds - shortDeds;
-        const displayClosing = Math.max(0, actualBalance);
-        const neg = actualBalance < 0 ? Math.abs(actualBalance) : 0;
-
-        setNegativeLeaves(neg);
-
-        if (displayClosing !== parseFloat(editData.closingBalance)) {
-            setEditData((prev: any) => ({ ...prev, closingBalance: displayClosing }));
-        }
-    }, [editData.openingBalance, editData.autoCredit, editData.takenLeaves, editData.lateDeductions, editData.shortLeaveDeductions, editData.closingBalance]);
-
-    const handleSave = async () => {
-        setSaving(true);
-        try {
-            await onSave(editData);
-            toast.success('Saved!');
-        } catch (err) {
-            toast.error('Failed to save');
-        } finally {
-            setSaving(false);
-        }
-    };
-
-    return (
-        <tr className="hover:bg-secondary-50/30 transition-colors">
-            <td className="px-6 py-4">
-                <p className="font-bold text-secondary-900 text-sm whitespace-nowrap">{row.name || row.email.split('@')[0]}</p>
-                <p className="text-[10px] text-secondary-400 font-medium">{row.email}</p>
-            </td>
-            <td className="px-6 py-4">
-                <input
-                    type="number"
-                    step="0.5"
-                    className="input py-1 text-center w-20 text-xs font-bold bg-secondary-50 border-secondary-200"
-                    value={editData.openingBalance}
-                    onChange={e => setEditData({ ...editData, openingBalance: parseFloat(e.target.value) || 0 })}
-                    title="Last Bal Leave (Carry Forward)"
-                />
-            </td>
-            <td className="px-6 py-4">
-                <input
-                    type="number"
-                    step="0.5"
-                    className="input py-1 text-center w-20 text-xs font-bold bg-primary-50 border-primary-200 text-primary-700"
-                    value={editData.autoCredit}
-                    onChange={e => setEditData({ ...editData, autoCredit: parseFloat(e.target.value) || 0 })}
-                    title="Leave Allotted (Monthly Credit)"
-                />
-            </td>
-            <td className="px-6 py-4">
-                <div className="flex flex-col items-center">
-                    <span className="text-[10px] font-black text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-100 mb-1" title="Late Arrivals">L: {row.lateArrivalCount || 0}</span>
-                    <span className="text-[10px] font-black text-rose-600 bg-rose-50 px-1.5 py-0.5 rounded border border-rose-100" title="Short Leaves">S: {row.shortLeaveCount || 0}</span>
-                </div>
-            </td>
-            <td className="px-6 py-4">
-                <input
-                    type="number"
-                    step="0.5"
-                    className="input py-1 text-center w-20 text-xs font-bold bg-secondary-50 border-secondary-200"
-                    value={editData.takenLeaves}
-                    onChange={e => setEditData({ ...editData, takenLeaves: parseFloat(e.target.value) || 0 })}
-                    title="Leave Taken"
-                />
-            </td>
-            <td className="px-6 py-4">
-                <input
-                    type="number"
-                    step="0.5"
-                    className="input py-1 text-center w-16 text-[10px] font-bold bg-amber-50 border-amber-200 text-amber-700"
-                    value={editData.lateDeductions}
-                    onChange={e => setEditData({ ...editData, lateDeductions: parseFloat(e.target.value) || 0 })}
-                    title="Late Arrival Deductions"
-                />
-            </td>
-            <td className="px-6 py-4">
-                <input
-                    type="number"
-                    step="0.5"
-                    className="input py-1 text-center w-16 text-[10px] font-bold bg-orange-50 border-orange-200 text-orange-700"
-                    value={editData.shortLeaveDeductions}
-                    onChange={e => setEditData({ ...editData, shortLeaveDeductions: parseFloat(e.target.value) || 0 })}
-                    title="Short Leave / Early Exit Deductions"
-                />
-            </td>
-            <td className="px-6 py-4">
-                <div className={`w-20 text-center py-1 font-black rounded text-sm ${negativeLeaves > 0 ? 'bg-rose-100 text-rose-700 border border-rose-200' : 'bg-secondary-50 text-secondary-400 opacity-30'}`}>
-                    {negativeLeaves > 0 ? `-${negativeLeaves}` : '0'}
-                </div>
-            </td>
-            <td className="px-6 py-4">
-                <div className="w-20 text-center py-1 font-black text-secondary-900 bg-secondary-100 rounded text-sm">
-                    {editData.closingBalance}
-                </div>
-            </td>
-            <td className="px-6 py-4">
-                <input
-                    type="text"
-                    className="input py-1 text-xs w-full min-w-[120px]"
-                    placeholder="Remarks..."
-                    value={editData.remarks}
-                    onChange={e => setEditData({ ...editData, remarks: e.target.value })}
-                    title="Adjustment Remarks"
-                />
-            </td>
-            <td className="px-6 py-4 text-right">
-                <button
-                    onClick={handleSave}
-                    disabled={saving}
-                    className={`btn py-1 px-4 text-[10px] font-black uppercase tracking-widest ${saving ? 'bg-secondary-100 text-secondary-400' : 'bg-primary-600 text-white shadow-sm hover:bg-primary-700'}`}
-                >
-                    {saving ? '...' : 'Save'}
-                </button>
-            </td>
-        </tr>
-    );
-};
 // Shared Component handles the specific alerts now
 
 const DailyReconciliationTable = ({ days = 7 }: { days?: number }) => {
@@ -352,7 +214,7 @@ const HRManagementContent = () => {
     const { data: jobs = [] } = useJobs(true);
     const { data: applications = [] } = useApplications();
     const { data: holidays = [] } = useHolidays();
-    const [ledgerSearch, setLedgerSearch] = useState('');
+
 
     useEffect(() => {
         const tab = searchParams.get('tab');
@@ -368,7 +230,7 @@ const HRManagementContent = () => {
         startDate: new Date(new Date().setDate(new Date().getDate() - 30)).toISOString().split('T')[0],
         endDate: new Date().toISOString().split('T')[0]
     });
-    const [ledgerFilter, setLedgerFilter] = useState({ month: new Date().getMonth() + 1, year: new Date().getFullYear() });
+
 
     // React Query Hooks - Tab Specific
     const { data: leaves = [] } = useLeaveRequests();
@@ -379,9 +241,7 @@ const HRManagementContent = () => {
     const { data: empDocuments = [] } = useDocuments(selectedDocEmp?.id);
     const { data: allReviews = [] } = usePerformanceReviews();
     const { data: hrInsights } = useHRInsights('hr', activeTab === 'analytics');
-    const { data: leaveLedger = [] } = useLeaveMonitor(new Date().getMonth() + 1, new Date().getFullYear());
-    const { data: manualLedger = [] } = useLeaveLedger(ledgerFilter.month, ledgerFilter.year);
-    const updateLedgerMutation = useUpdateLeaveLedger();
+
     const { data: advances = [] } = useAdvances();
 
     // Mutations
@@ -1042,212 +902,7 @@ const HRManagementContent = () => {
                 )}
 
                 {activeTab === 'leave-ledger' && (
-                    <div className="card-premium overflow-hidden border border-secondary-100 shadow-xl bg-white">
-                        <div className="p-8 border-b border-secondary-100 flex flex-col md:flex-row justify-between items-center bg-secondary-50/30 gap-6">
-                            <div>
-                                <h3 className="text-xl font-black text-secondary-900 flex items-center gap-2">
-                                    <span className="w-8 h-8 rounded-lg bg-primary-600 text-white flex items-center justify-center text-sm shadow-lg shadow-primary-200">🗓️</span>
-                                    Leave Ledger Management
-                                </h3>
-                                <p className="text-[10px] text-secondary-500 font-black uppercase tracking-[0.2em] mt-1 pl-10">Systematic balance calculation & bulk import/export</p>
-                            </div>
-                            <div className="flex flex-wrap gap-4 items-center">
-                                <div className="flex bg-white p-1 rounded-2xl shadow-inner border border-secondary-100">
-                                    <div className="relative border-r border-secondary-100 pr-2 mr-2">
-                                        <input
-                                            type="text"
-                                            placeholder="Search employee..."
-                                            className="input h-full py-2 px-3 text-xs w-48 border-none focus:ring-0"
-                                            value={ledgerSearch}
-                                            onChange={(e) => setLedgerSearch(e.target.value)}
-                                        />
-                                    </div>
-                                    <button
-                                        onClick={() => {
-                                            const newMonth = ledgerFilter.month - 1;
-                                            if (newMonth < 1) {
-                                                setLedgerFilter({ month: 12, year: ledgerFilter.year - 1 });
-                                            } else {
-                                                setLedgerFilter({ ...ledgerFilter, month: newMonth });
-                                            }
-                                        }}
-                                        className="p-2 hover:bg-secondary-50 text-secondary-500 rounded-lg transition-colors"
-                                        title="Previous Month"
-                                    >
-                                        <ChevronDown size={14} className="rotate-90" />
-                                    </button>
-
-                                    <div className="flex items-center bg-white border border-secondary-200 rounded-lg px-2">
-                                        <select
-                                            className="input py-2 px-2 text-xs font-bold border-none bg-transparent focus:ring-0 cursor-pointer"
-                                            value={ledgerFilter.month}
-                                            onChange={e => setLedgerFilter({ ...ledgerFilter, month: parseInt(e.target.value) })}
-                                            title="Filter Ledger by Month"
-                                        >
-                                            {Array.from({ length: 12 }, (_, i) => (
-                                                <option key={i + 1} value={i + 1}>{new Date(2024, i).toLocaleString('default', { month: 'long' })}</option>
-                                            ))}
-                                        </select>
-                                        <div className="h-4 w-px bg-secondary-200 mx-2"></div>
-                                        <select
-                                            className="input py-2 px-2 text-xs font-bold border-none bg-transparent focus:ring-0 cursor-pointer"
-                                            value={ledgerFilter.year}
-                                            onChange={e => setLedgerFilter({ ...ledgerFilter, year: parseInt(e.target.value) })}
-                                            title="Filter Ledger by Year"
-                                        >
-                                            {[2024, 2025, 2026].map(y => (
-                                                <option key={y} value={y}>{y}</option>
-                                            ))}
-                                        </select>
-                                    </div>
-
-                                    <button
-                                        onClick={() => {
-                                            const newMonth = ledgerFilter.month + 1;
-                                            if (newMonth > 12) {
-                                                setLedgerFilter({ month: 1, year: ledgerFilter.year + 1 });
-                                            } else {
-                                                setLedgerFilter({ ...ledgerFilter, month: newMonth });
-                                            }
-                                        }}
-                                        className="p-2 hover:bg-secondary-50 text-secondary-500 rounded-lg transition-colors"
-                                        title="Next Month"
-                                    >
-                                        <ChevronDown size={14} className="-rotate-90" />
-                                    </button>
-                                </div>
-
-                                <div className="flex gap-2">
-                                    <button
-                                        onClick={async () => {
-                                            if (!confirm('Auto-credit 1.5 leaves to all active employees for this month?')) return;
-                                            try {
-                                                const res = await fetch('/api/hr/leave-ledger/auto-credit', {
-                                                    method: 'POST',
-                                                    headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
-                                                });
-                                                if (res.ok) {
-                                                    toast.success('Leaves auto-credited successfully!');
-                                                    window.location.reload();
-                                                } else {
-                                                    toast.error('Failed to auto-credit leaves');
-                                                }
-                                            } catch (err) {
-                                                toast.error('Network error');
-                                            }
-                                        }}
-                                        className="btn bg-indigo-50 text-indigo-700 border-indigo-100 hover:bg-indigo-100 py-2 px-4 text-xs font-bold flex items-center gap-2"
-                                    >
-                                        <span>⚡</span> Auto-Credit
-                                    </button>
-                                    <button
-                                        onClick={async () => {
-                                            const res = await fetch(`/api/hr/leave-ledger/export?month=${ledgerFilter.month}&year=${ledgerFilter.year}`, {
-                                                headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
-                                            });
-                                            if (res.ok) {
-                                                const blob = await res.blob();
-                                                const url = window.URL.createObjectURL(blob);
-                                                const a = document.createElement('a');
-                                                a.href = url;
-                                                a.download = `leave_ledger_${ledgerFilter.month}_${ledgerFilter.year}.csv`;
-                                                a.click();
-                                            }
-                                        }}
-                                        className="btn btn-secondary py-2 px-4 text-xs font-bold flex items-center gap-2"
-                                    >
-                                        <span>📥</span> Export CSV
-                                    </button>
-                                    <label className="btn btn-primary py-2 px-4 text-xs font-bold flex items-center gap-2 cursor-pointer">
-                                        <span>📤</span> Import CSV
-                                        <input
-                                            type="file"
-                                            accept=".csv"
-                                            className="hidden"
-                                            onChange={async (e) => {
-                                                const file = e.target.files?.[0];
-                                                if (!file) return;
-
-                                                const reader = new FileReader();
-                                                reader.onload = async (event) => {
-                                                    const text = event.target?.result as string;
-                                                    const lines = text.split('\n');
-                                                    const headers = lines[0].split(',');
-                                                    const rows = lines.slice(1).map(line => {
-                                                        const values = line.split(',');
-                                                        const obj: any = {};
-                                                        headers.forEach((h, i) => obj[h.trim()] = values[i]?.trim());
-                                                        return obj;
-                                                    }).filter(r => r['Employee ID']);
-
-                                                    try {
-                                                        const res = await fetch('/api/hr/leave-ledger/import', {
-                                                            method: 'POST',
-                                                            headers: {
-                                                                'Authorization': `Bearer ${localStorage.getItem('token')}`,
-                                                                'Content-Type': 'application/json'
-                                                            },
-                                                            body: JSON.stringify({ rows, month: ledgerFilter.month, year: ledgerFilter.year })
-                                                        });
-                                                        const result = await res.json();
-                                                        if (res.ok) {
-                                                            alert(`Import successful! Updated: ${result.updated}, Created: ${result.created}`);
-                                                            window.location.reload();
-                                                        } else {
-                                                            alert(`Import failed: ${result.message}`);
-                                                        }
-                                                    } catch (err) {
-                                                        alert('Failed to connect to server');
-                                                    }
-                                                };
-                                                reader.readAsText(file);
-                                            }}
-                                        />
-                                    </label>
-                                </div>
-                            </div>
-                        </div>
-                        <div className="overflow-x-auto">
-                            <table className="table w-full border-collapse">
-                                <thead className="bg-secondary-50/50">
-                                    <tr className="text-[10px] uppercase font-black text-secondary-400 tracking-wider">
-                                        <th className="px-6 py-5 text-left">Staff Details</th>
-                                        <th className="px-6 py-5 text-center">Last Bal</th>
-                                        <th className="px-6 py-5 text-center">Allotted</th>
-                                        <th className="px-6 py-5 text-center">Taken</th>
-                                        <th className="px-6 py-5 text-center">L/S Counts</th>
-                                        <th className="px-6 py-5 text-center">Late Deds</th>
-                                        <th className="px-6 py-5 text-center">Short Deds</th>
-                                        <th className="px-6 py-5 text-center">Neg Leave</th>
-                                        <th className="px-6 py-5 text-center">New Bal</th>
-                                        <th className="px-6 py-5 text-left">Remarks</th>
-                                        <th className="px-6 py-5 text-right">Action</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-secondary-50">
-                                    {manualLedger
-                                        .filter(row =>
-                                            (row.name || '').toLowerCase().includes(ledgerSearch.toLowerCase()) ||
-                                            (row.email || '').toLowerCase().includes(ledgerSearch.toLowerCase())
-                                        )
-                                        .map(row => (
-                                            <LeaveLedgerRow
-                                                key={row.employeeId}
-                                                row={row}
-                                                onSave={(data) => updateLedgerMutation.mutateAsync(data)}
-                                            />
-                                        ))}
-                                    {manualLedger.length === 0 && (
-                                        <tr>
-                                            <td colSpan={8} className="px-8 py-20 text-center text-secondary-400 font-bold italic bg-secondary-50/20">
-                                                No employee records found for this period.
-                                            </td>
-                                        </tr>
-                                    )}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
+                    <LeaveLedgerManager />
                 )}
 
                 {activeTab === 'attendance' && (

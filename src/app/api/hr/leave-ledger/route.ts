@@ -10,9 +10,14 @@ export const GET = authorizedRoute(
     async (req: NextRequest, user) => {
         try {
             const { searchParams } = new URL(req.url);
-            const month = parseInt(searchParams.get('month') || (new Date().getMonth() + 1).toString());
-            const year = parseInt(searchParams.get('year') || (new Date().getFullYear()).toString());
             const companyId = user.companyId;
+
+            const year = parseInt(searchParams.get('year') || (new Date().getFullYear()).toString());
+            const monthParam = searchParams.get('month');
+            const targetEmployeeId = searchParams.get('employeeId');
+
+            // Default to current month if not fetching history (no employeeId) and no month specified
+            const month = monthParam ? parseInt(monthParam) : (targetEmployeeId ? undefined : new Date().getMonth() + 1);
 
             if (!companyId && user.role !== 'SUPER_ADMIN') {
                 return createErrorResponse('Company context required', 400);
@@ -28,41 +33,91 @@ export const GET = authorizedRoute(
                 where.user.companyId = companyId;
             }
 
-            if (['MANAGER', 'TEAM_LEADER'].includes(user.role)) {
+            if (targetEmployeeId) {
+                where.id = targetEmployeeId;
+            } else if (['MANAGER', 'TEAM_LEADER'].includes(user.role)) {
                 const subIds = await getDownlineUserIds(user.id, companyId || undefined);
                 where.user.id = { in: subIds };
             }
 
-            // Fetch all employees in this company context
+            // Ledger filter
+            const ledgerWhere: any = { year };
+            if (month) {
+                ledgerWhere.month = month;
+            }
+
+            // Fetch employees
             const employees = await prisma.employeeProfile.findMany({
                 where: where,
                 include: {
                     user: { select: { email: true, name: true } },
                     leaveLedgers: {
-                        where: { month, year }
+                        where: ledgerWhere,
+                        orderBy: { month: 'asc' }
                     }
                 }
             });
 
-            const data = employees.map(emp => {
-                const ledger = emp.leaveLedgers[0] || null;
-                return {
-                    employeeId: emp.id,
-                    email: emp.user.email,
-                    name: emp.user.name,
-                    month,
-                    year,
-                    openingBalance: ledger?.openingBalance || 0,
-                    autoCredit: ledger?.autoCredit || 1.5, // Default to 1.5
-                    takenLeaves: ledger?.takenLeaves || 0,
-                    lateArrivalCount: ledger?.lateArrivalCount || 0,
-                    shortLeaveCount: ledger?.shortLeaveCount || 0,
-                    lateDeductions: ledger?.lateDeductions || 0,
-                    shortLeaveDeductions: ledger?.shortLeaveDeductions || 0,
-                    closingBalance: ledger?.closingBalance || 0,
-                    remarks: ledger?.remarks || ''
-                };
-            });
+            // Flatten data
+            // If fetching history (targetEmployeeId present), we might return multiple rows per employee (one per month)
+            // If fetching batch (default), we expect one row per employee (for the specific month)
+
+            let data: any[] = [];
+
+            if (targetEmployeeId && !month) {
+                // History Mode: Return array of ledgers for this employee
+                // We only have one employee in 'employees' array usually
+                employees.forEach(emp => {
+                    // Start with empty months 1-12 to ensure gaps are filled? 
+                    // Or just return what is DB. 
+                    // Let's return what is in DB, UI can handle gaps or we fill them here.
+                    // Better to fill gaps so UI receives clean 12 months.
+
+                    const filledLedgers = [];
+                    for (let m = 1; m <= 12; m++) {
+                        const existing = emp.leaveLedgers.find(l => l.month === m);
+                        filledLedgers.push({
+                            id: existing?.id || `temp_${m}`,
+                            employeeId: emp.id,
+                            email: emp.user.email,
+                            name: emp.user.name,
+                            month: m,
+                            year,
+                            openingBalance: existing?.openingBalance || 0,
+                            autoCredit: existing?.autoCredit || 1.5,
+                            takenLeaves: existing?.takenLeaves || 0,
+                            lateArrivalCount: existing?.lateArrivalCount || 0,
+                            shortLeaveCount: existing?.shortLeaveCount || 0,
+                            lateDeductions: existing?.lateDeductions || 0,
+                            shortLeaveDeductions: existing?.shortLeaveDeductions || 0,
+                            closingBalance: existing?.closingBalance || 0,
+                            remarks: existing?.remarks || ''
+                        });
+                    }
+                    data = filledLedgers;
+                });
+            } else {
+                // Batch Mode
+                data = employees.map(emp => {
+                    const ledger = emp.leaveLedgers[0] || null; // Access 0 because we filtered by month
+                    return {
+                        employeeId: emp.id,
+                        email: emp.user.email,
+                        name: emp.user.name,
+                        month: month || 0, // Should always be present in batch mode
+                        year,
+                        openingBalance: ledger?.openingBalance || 0,
+                        autoCredit: ledger?.autoCredit || 1.5,
+                        takenLeaves: ledger?.takenLeaves || 0,
+                        lateArrivalCount: ledger?.lateArrivalCount || 0,
+                        shortLeaveCount: ledger?.shortLeaveCount || 0,
+                        lateDeductions: ledger?.lateDeductions || 0,
+                        shortLeaveDeductions: ledger?.shortLeaveDeductions || 0,
+                        closingBalance: ledger?.closingBalance || 0,
+                        remarks: ledger?.remarks || ''
+                    };
+                });
+            }
 
             return NextResponse.json(data);
         } catch (error) {
