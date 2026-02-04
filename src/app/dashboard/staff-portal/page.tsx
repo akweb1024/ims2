@@ -31,6 +31,7 @@ import TeamGoalTrackingView from '@/components/dashboard/manager/TeamGoalTrackin
 import TeamTaskMasterView from '@/components/dashboard/manager/TeamTaskMasterView';
 import TeamPointsRewardsView from '@/components/dashboard/manager/TeamPointsRewardsView';
 import TeamWorkReportsView from '@/components/dashboard/manager/TeamWorkReportsView';
+import { formatToISTDate, formatToISTTime } from '@/lib/date-utils';
 
 export default function StaffPortalPage() {
     const [user, setUser] = useState<any>(null);
@@ -58,11 +59,7 @@ export default function StaffPortalPage() {
     const [remainingTime, setRemainingTime] = useState('08h 30m 00s');
 
     const todayAttendance = attendance.find(a => {
-        const d = new Date(a.date);
-        const today = new Date();
-        return d.getDate() === today.getDate() &&
-            d.getMonth() === today.getMonth() &&
-            d.getFullYear() === today.getFullYear();
+        return formatToISTDate(a.date) === formatToISTDate(new Date());
     });
 
     useEffect(() => {
@@ -384,11 +381,11 @@ export default function StaffPortalPage() {
                                     <div className="space-y-4">
                                         <div className="flex justify-between items-center text-sm">
                                             <span className="text-secondary-500">Check In</span>
-                                            <span className="font-bold text-secondary-900">{todayAttendance?.checkIn ? new Date(todayAttendance.checkIn).toLocaleTimeString() : '--:--'}</span>
+                                            <span className="font-bold text-secondary-900">{formatToISTTime(todayAttendance?.checkIn)}</span>
                                         </div>
                                         <div className="flex justify-between items-center text-sm">
                                             <span className="text-secondary-500">Check Out</span>
-                                            <span className="font-bold text-secondary-900">{todayAttendance?.checkOut ? new Date(todayAttendance.checkOut).toLocaleTimeString() : '--:--'}</span>
+                                            <span className="font-bold text-secondary-900">{formatToISTTime(todayAttendance?.checkOut)}</span>
                                         </div>
                                         <div className="flex justify-between items-center text-sm">
                                             <span className="text-secondary-500">Mode</span>
@@ -478,9 +475,9 @@ export default function StaffPortalPage() {
                                             <tr><td colSpan={6} className="text-center py-10 text-secondary-500">No records found</td></tr>
                                         ) : attendance.map(a => (
                                             <tr key={a.id}>
-                                                <td className="font-bold"><FormattedDate date={a.date} /></td>
-                                                <td className="text-success-600 font-medium">{a.checkIn ? new Date(a.checkIn).toLocaleTimeString() : '-'}</td>
-                                                <td className="text-danger-600 font-medium">{a.checkOut ? new Date(a.checkOut).toLocaleTimeString() : '-'}</td>
+                                                <td className="font-bold">{formatToISTDate(a.date)}</td>
+                                                <td className="text-success-600 font-medium">{formatToISTTime(a.checkIn)}</td>
+                                                <td className="text-danger-600 font-medium">{formatToISTTime(a.checkOut)}</td>
                                                 <td><span className="badge badge-secondary">{a.workFrom}</span></td>
                                                 <td>
                                                     <div className="flex items-center gap-2">

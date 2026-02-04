@@ -6,6 +6,7 @@ import { createErrorResponse } from '@/lib/api-utils';
 import { attendanceCorrectionSchema, selfServiceAttendanceSchema } from '@/lib/validators/hr';
 import { getDownlineUserIds } from '@/lib/hierarchy';
 import { processLateArrival } from '@/lib/utils/leave-ledger-processor';
+import { getISTToday } from '@/lib/date-utils';
 
 export const GET = authorizedRoute(
     [],
@@ -16,10 +17,17 @@ export const GET = authorizedRoute(
             const year = parseInt(searchParams.get('year') || String(new Date().getFullYear()));
             const showAll = searchParams.get('all') === 'true';
 
+            const startDate = new Date(Date.UTC(year, month - 1, 1, 0, 0, 0));
+            // Subtract 5.30 hours to get the UTC point that is 00:00 IST
+            const istStart = new Date(startDate.getTime() - (330 * 60000));
+
+            const endDate = new Date(Date.UTC(year, month, 0, 23, 59, 59));
+            const istEnd = new Date(endDate.getTime() - (330 * 60000));
+
             const where: Prisma.AttendanceWhereInput = {
                 date: {
-                    gte: new Date(year, month - 1, 1),
-                    lte: new Date(year, month, 0)
+                    gte: istStart,
+                    lte: istEnd
                 }
             };
 
@@ -121,8 +129,7 @@ export const POST = authorizedRoute(
 
             if (!profile) return createErrorResponse('Failed to initialize employee profile', 500);
 
-            const today = new Date();
-            today.setHours(0, 0, 0, 0);
+            const today = getISTToday();
 
             const existing = await prisma.attendance.findUnique({
                 where: {

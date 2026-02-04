@@ -42,10 +42,12 @@ model Company {
   dispatchOrders              DispatchOrder[]
   documentTemplates           DocumentTemplate[]
   employeeCompanyDesignations EmployeeCompanyDesignation[]
+  expenseAllocations          EmployeeExpenseAllocation[]
   employeeGoals               EmployeeGoal[]
   employeeKpis                EmployeeKPI[]
   pointLogs                   EmployeePointLog[]
   taskTemplates               EmployeeTaskTemplate[]
+  expenseAllocationRules      ExpenseAllocationRule[]
   financialRecords            FinancialRecord[]
   holidays                    Holiday[]
   itAssets                    ITAsset[]
@@ -79,15 +81,13 @@ model Company {
   supportTickets              SupportTicket[]
   tasks                       Task[]
   taxRates                    TaxRate[]
+  teamMembers                 TeamMember[]
   primaryUsers                User[]                       @relation("PrimaryCompany")
   workPlans                   WorkPlan[]
   workReports                 WorkReport[]
   workshops                   Workshop[]
   designations                Designation[]                @relation("CompanyToDesignation")
   users                       User[]                       @relation("UserCompanies")
-  expenseAllocationRules      ExpenseAllocationRule[]
-  expenseAllocations          EmployeeExpenseAllocation[]
-  teamMembers                 TeamMember[]
 }
 
 model Department {
@@ -107,7 +107,9 @@ model Department {
   subDepartments         Department[]                 @relation("DepartmentHierarchy")
   budgets                DepartmentBudget[]
   departmentPerformance  DepartmentPerformance[]
+  expenseAllocations     EmployeeExpenseAllocation[]
   taskTemplates          EmployeeTaskTemplate[]
+  expenseAllocationRules ExpenseAllocationRule[]
   jobApplications        JobApplication[]
   jobPostings            JobPosting[]
   performanceSnapshots   MonthlyPerformanceSnapshot[]
@@ -115,8 +117,6 @@ model Department {
   revenueTransactions    RevenueTransaction[]
   users                  User[]                       @relation("DepartmentMembers")
   designations           Designation[]                @relation("DepartmentToDesignation")
-  expenseAllocationRules ExpenseAllocationRule[]
-  expenseAllocations     EmployeeExpenseAllocation[]
 
   @@unique([companyId, code])
   @@index([companyId])
@@ -147,8 +147,6 @@ model User {
   chatParticipants         ChatParticipant[]
   coAuthorInvitations      CoAuthorInvitation[]
   communications           CommunicationLog[]          @relation("UserCommunications")
-  assignedTasks            StageAssignment[]           @relation("TaskAssignee")
-  assignedByTasks          StageAssignment[]           @relation("TaskAssigner")
   committeeRoles           ConferenceCommitteeMember[]
   conferenceRegistrations  ConferenceRegistration[]
   mentoredCourses          Course[]                    @relation("CourseMentor")
@@ -196,6 +194,7 @@ model User {
   notifications            Notification[]
   paperReviews             PaperReview[]
   passwordResetTokens      PasswordResetToken[]
+  evaluationsConducted     PerformanceEvaluation[]     @relation("EvaluatorUser")
   performanceReviews       PerformanceReview[]         @relation("Reviewer")
   plagiarismReports        PlagiarismReport[]          @relation("PlagiarismChecker")
   pushSubscriptions        PushSubscription[]
@@ -206,9 +205,13 @@ model User {
   assignedReviews          ReviewAssignment[]          @relation("AssignedReviews")
   issuedCertificates       ReviewCertificate[]         @relation("IssuedCertificates")
   validatedReports         ReviewReport[]              @relation("ValidatedReports")
+  assignedByTasks          StageAssignment[]           @relation("TaskAssigner")
+  assignedTasks            StageAssignment[]           @relation("TaskAssignee")
   assignedSubscriptions    Subscription[]              @relation("AssignedSalesExecutive")
   assignedTickets          SupportTicket[]             @relation("AssignedTickets")
   tasks                    Task[]
+  managedTeamMembers       TeamMember[]                @relation("ManagerTeamMembers")
+  teamMemberships          TeamMember[]                @relation("UserTeamMemberships")
   company                  Company?                    @relation("PrimaryCompany", fields: [companyId], references: [id])
   department               Department?                 @relation("DepartmentMembers", fields: [departmentId], references: [id])
   manager                  User?                       @relation("ManagementChain", fields: [managerId], references: [id])
@@ -220,9 +223,6 @@ model User {
   workshopEnrollments      WorkshopEnrollment[]
   assignedToCustomers      CustomerProfile[]           @relation("CustomerToExecutives")
   companies                Company[]                   @relation("UserCompanies")
-  evaluationsConducted     PerformanceEvaluation[]     @relation("EvaluatorUser")
-  managedTeamMembers       TeamMember[]                @relation("ManagerTeamMembers")
-  teamMemberships          TeamMember[]                @relation("UserTeamMemberships")
 
   @@index([email])
   @@index([role])
@@ -240,10 +240,9 @@ model TeamMember {
   isActive   Boolean  @default(true)
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
-
-  manager User    @relation("ManagerTeamMembers", fields: [managerId], references: [id], onDelete: Cascade)
-  user    User    @relation("UserTeamMemberships", fields: [userId], references: [id], onDelete: Cascade)
-  company Company @relation(fields: [companyId], references: [id])
+  company    Company  @relation(fields: [companyId], references: [id])
+  manager    User     @relation("ManagerTeamMembers", fields: [managerId], references: [id], onDelete: Cascade)
+  user       User     @relation("UserTeamMemberships", fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([managerId, userId, companyId])
   @@index([managerId])
@@ -325,13 +324,13 @@ model CustomerProfile {
   company             Company?             @relation(fields: [companyId], references: [id])
   institution         Institution?         @relation(fields: [institutionId], references: [id])
   user                User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  agencyInstitutions  Institution[]        @relation("AgencyInstitutions")
   institutionDetails  InstitutionDetails?
   invoices            Invoice[]
   revenueTransactions RevenueTransaction[]
   subscriptions       Subscription[]
   supportTickets      SupportTicket[]
   assignedExecutives  User[]               @relation("CustomerToExecutives")
-  agencyInstitutions  Institution[]        @relation("AgencyInstitutions")
 
   @@index([customerType])
   @@index([primaryEmail])
@@ -427,12 +426,12 @@ model Institution {
   companyId           String?
   assignedToUserId    String?
   domain              String?
+  agencyId            String?
   communications      CommunicationLog[]
   customers           CustomerProfile[]
+  agency              CustomerProfile?     @relation("AgencyInstitutions", fields: [agencyId], references: [id])
   assignedTo          User?                @relation("InstitutionOwner", fields: [assignedToUserId], references: [id])
   company             Company?             @relation(fields: [companyId], references: [id])
-  agencyId            String?
-  agency              CustomerProfile?     @relation("AgencyInstitutions", fields: [agencyId], references: [id])
   revenueTransactions RevenueTransaction[]
   subscriptions       Subscription[]
 
@@ -870,9 +869,9 @@ model Designation {
   level               Int                          @default(1)
   createdAt           DateTime                     @default(now())
   updatedAt           DateTime                     @updatedAt
+  companyDesignations EmployeeCompanyDesignation[]
   employees           EmployeeProfile[]
   taskTemplates       EmployeeTaskTemplate[]
-  companyDesignations EmployeeCompanyDesignation[]
   companies           Company[]                    @relation("CompanyToDesignation")
   departments         Department[]                 @relation("DepartmentToDesignation")
 }
@@ -901,42 +900,31 @@ model GlobalDesignation {
 }
 
 model EmployeeProfile {
-  id             String    @id @default(uuid())
-  userId         String    @unique
-  employeeId     String?   @unique
-  designation    String?
-  dateOfJoining  DateTime?
-  dateOfBirth    DateTime?
-  baseSalary     Float?
-  fixedSalary    Float?
-  variableSalary Float?
-
-  // Variable Pay Details
-  hasVariable        Boolean @default(false)
-  variablePerTarget  Float?
-  variableUpperCap   Float?
-  variableDefinition String?
-
-  incentiveSalary Float?
-
-  // Incentive Details
-  hasIncentive        Boolean @default(false)
-  incentivePercentage Float?
-  incentiveDefinition String?
-
-  monthlyTarget Float? @default(0)
-  yearlyTarget  Float? @default(0)
-
-  // Salary Breakdown (New)
-  salaryFixed Float? @default(0)
-  baseTarget  Float? @default(0) // Quota for fixed salary
-
-  salaryVariable Float? @default(0)
-  variableRate   Float? @default(0) // e.g. 5000 per Unit
-  variableUnit   Float? @default(0) // e.g. 100000
-
-  salaryIncentive Float? @default(0)
-
+  id                       String                       @id @default(uuid())
+  userId                   String                       @unique
+  employeeId               String?                      @unique
+  designation              String?
+  dateOfJoining            DateTime?
+  dateOfBirth              DateTime?
+  baseSalary               Float?
+  fixedSalary              Float?
+  variableSalary           Float?
+  hasVariable              Boolean                      @default(false)
+  variablePerTarget        Float?
+  variableUpperCap         Float?
+  variableDefinition       String?
+  incentiveSalary          Float?
+  hasIncentive             Boolean                      @default(false)
+  incentivePercentage      Float?
+  incentiveDefinition      String?
+  monthlyTarget            Float?                       @default(0)
+  yearlyTarget             Float?                       @default(0)
+  salaryFixed              Float?                       @default(0)
+  baseTarget               Float?                       @default(0)
+  salaryVariable           Float?                       @default(0)
+  variableRate             Float?                       @default(0)
+  variableUnit             Float?                       @default(0)
+  salaryIncentive          Float?                       @default(0)
   skills                   String[]
   expertise                String[]
   bankName                 String?
@@ -989,6 +977,7 @@ model EmployeeProfile {
   hrComments               EmployeeComment[]
   companyDesignations      EmployeeCompanyDesignation[]
   documents                EmployeeDocument[]
+  expenseAllocations       EmployeeExpenseAllocation[]
   goals                    EmployeeGoal[]
   incentives               EmployeeIncentive[]
   kpis                     EmployeeKPI[]
@@ -999,10 +988,10 @@ model EmployeeProfile {
   leaveRequests            LeaveRequest[]
   performanceSnapshots     MonthlyPerformanceSnapshot[]
   onboardingProgress       OnboardingProgress[]
+  evaluations              PerformanceEvaluation[]      @relation("EvaluatedEmployee")
   performanceInsights      PerformanceInsight[]
   performance              PerformanceReview[]
   revenueClaims            RevenueClaim[]
-  expenseAllocations       EmployeeExpenseAllocation[]
   approvedRevenue          RevenueTransaction[]         @relation("ApprovedRevenue")
   claimedRevenue           RevenueTransaction[]         @relation("ClaimedRevenue")
   salaryAdvances           SalaryAdvance[]
@@ -1013,7 +1002,6 @@ model EmployeeProfile {
   taxDeclarations          TaxDeclaration[]
   workPlans                WorkPlan[]
   workReports              WorkReport[]
-  evaluations              PerformanceEvaluation[]      @relation("EvaluatedEmployee")
 }
 
 model EmployeeCompanyDesignation {
@@ -1026,10 +1014,10 @@ model EmployeeCompanyDesignation {
   assignedAt    DateTime        @default(now())
   createdAt     DateTime        @default(now())
   updatedAt     DateTime        @updatedAt
-  company       Company         @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  employee      EmployeeProfile @relation(fields: [employeeId], references: [id], onDelete: Cascade)
   designationId String?
+  company       Company         @relation(fields: [companyId], references: [id], onDelete: Cascade)
   designatRef   Designation?    @relation(fields: [designationId], references: [id])
+  employee      EmployeeProfile @relation(fields: [employeeId], references: [id], onDelete: Cascade)
 
   @@unique([employeeId, companyId])
   @@index([employeeId])
@@ -1072,54 +1060,40 @@ model AdvanceEMI {
 }
 
 model SalaryIncrementRecord {
-  id                String   @id @default(uuid())
-  employeeProfileId String
-  date              DateTime @default(now())
-  effectiveDate     DateTime @default(now())
-  oldSalary         Float
-
-  // New Standardized Breakdown
-  oldFixed     Float @default(0)
-  oldVariable  Float @default(0)
-  oldIncentive Float @default(0)
-
-  newSalary Float
-
-  newFixed     Float @default(0)
-  newVariable  Float @default(0)
-  newIncentive Float @default(0)
-
-  // Base Target Changes
-  oldBaseTarget Float? @default(0)
-  newBaseTarget Float? @default(0)
-
-  // Variable Config Changes
-  oldVariableRate Float? @default(0)
-  newVariableRate Float? @default(0)
-  oldVariableUnit Float? @default(0)
-  newVariableUnit Float? @default(0)
-
-  currentMonthlyTarget Float?  @default(0)
-  newMonthlyTarget     Float?  @default(0)
-  currentYearlyTarget  Float?  @default(0)
-  newYearlyTarget      Float?  @default(0)
-  variableDefinition   String?
-  incentiveDefinition  String?
-  incrementAmount      Float
-  percentage           Float
-
-  // Opt-in Flags
-  optInVariable  Boolean @default(false)
-  optInIncentive Boolean @default(false)
-
-  // Old Detailed Structure (for history/comparison)
+  id                     String          @id @default(uuid())
+  employeeProfileId      String
+  date                   DateTime        @default(now())
+  effectiveDate          DateTime        @default(now())
+  oldSalary              Float
+  oldFixed               Float           @default(0)
+  oldVariable            Float           @default(0)
+  oldIncentive           Float           @default(0)
+  newSalary              Float
+  newFixed               Float           @default(0)
+  newVariable            Float           @default(0)
+  newIncentive           Float           @default(0)
+  oldBaseTarget          Float?          @default(0)
+  newBaseTarget          Float?          @default(0)
+  oldVariableRate        Float?          @default(0)
+  newVariableRate        Float?          @default(0)
+  oldVariableUnit        Float?          @default(0)
+  newVariableUnit        Float?          @default(0)
+  currentMonthlyTarget   Float?          @default(0)
+  newMonthlyTarget       Float?          @default(0)
+  currentYearlyTarget    Float?          @default(0)
+  newYearlyTarget        Float?          @default(0)
+  variableDefinition     String?
+  incentiveDefinition    String?
+  incrementAmount        Float
+  percentage             Float
+  optInVariable          Boolean         @default(false)
+  optInIncentive         Boolean         @default(false)
   oldVariablePerTarget   Float?
   newVariablePerTarget   Float?
   oldVariableUpperCap    Float?
   newVariableUpperCap    Float?
   oldIncentivePercentage Float?
   newIncentivePercentage Float?
-
   oldHealthCare          Float?
   newHealthCare          Float?
   oldTravelling          Float?
@@ -1158,6 +1132,12 @@ model SalaryIncrementRecord {
   q2Target               Float?          @default(0)
   q3Target               Float?          @default(0)
   q4Target               Float?          @default(0)
+  monthlyFixSalary       Float           @default(0)
+  monthlyFixTarget       Float           @default(0)
+  monthlyTotalSalary     Float           @default(0)
+  monthlyTotalTarget     Float           @default(0)
+  monthlyVariableSalary  Float           @default(0)
+  monthlyVariableTarget  Float           @default(0)
   employeeProfile        EmployeeProfile @relation(fields: [employeeProfileId], references: [id], onDelete: Cascade)
 
   @@index([employeeProfileId])
@@ -1204,10 +1184,10 @@ model Attendance {
   lateMinutes  Int             @default(0)
   otMinutes    Int             @default(0)
   shiftId      String?
+  remarks      String?
   company      Company?        @relation(fields: [companyId], references: [id])
   employee     EmployeeProfile @relation(fields: [employeeId], references: [id], onDelete: Cascade)
   shift        Shift?          @relation(fields: [shiftId], references: [id])
-  remarks      String?
 
   @@unique([employeeId, date])
   @@index([companyId])
@@ -1341,9 +1321,9 @@ model SalarySlip {
   notes               String?
   advanceEmi          AdvanceEMI?
   arrearRecords       ArrearRecord[]
+  linkedIncentives    EmployeeIncentive[]
   company             Company?            @relation(fields: [companyId], references: [id])
   employee            EmployeeProfile     @relation(fields: [employeeId], references: [id], onDelete: Cascade)
-  linkedIncentives    EmployeeIncentive[]
 
   @@index([companyId])
 }
@@ -2046,8 +2026,8 @@ model Article {
   qualityReport       QualityReport?
   reviews             Review[]
   reviewAssignments   ReviewAssignment[]
-  stageAssignments    StageAssignment[]
   certificates        ReviewCertificate[]
+  stageAssignments    StageAssignment[]
 
   @@index([manuscriptId])
   @@index([manuscriptStatus])
@@ -3083,20 +3063,19 @@ model ManuscriptDraft {
 }
 
 model PerformanceEvaluation {
-  id          String   @id @default(uuid())
+  id          String          @id @default(uuid())
   employeeId  String
   evaluatorId String
-  period      String // "JAN-2025", "Q1-2025"
-  periodType  String // "MONTHLY", "QUARTERLY"
-  scores      Json // KPI ID -> Score/Achieved Value
+  period      String
+  periodType  String
+  scores      Json
   feedback    String?
-  rating      Float? // Overall rating 1-5 or 1-10
-  status      String   @default("DRAFT") // DRAFT, SUBMITTED, APPROVED
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  employee  EmployeeProfile @relation("EvaluatedEmployee", fields: [employeeId], references: [id], onDelete: Cascade)
-  evaluator User            @relation("EvaluatorUser", fields: [evaluatorId], references: [id])
+  rating      Float?
+  status      String          @default("DRAFT")
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+  employee    EmployeeProfile @relation("EvaluatedEmployee", fields: [employeeId], references: [id], onDelete: Cascade)
+  evaluator   User            @relation("EvaluatorUser", fields: [evaluatorId], references: [id])
 
   @@unique([employeeId, period])
   @@index([employeeId])
@@ -3480,8 +3459,8 @@ model RevenueTransaction {
   updatedAt           DateTime                    @updatedAt
   createdBy           String?
   revenueType         RevenueType?                @default(NEW)
-  claims              RevenueClaim[]
   expenseAllocations  EmployeeExpenseAllocation[]
+  claims              RevenueClaim[]
   approvedBy          EmployeeProfile?            @relation("ApprovedRevenue", fields: [approvedByManagerId], references: [id])
   claimedBy           EmployeeProfile?            @relation("ClaimedRevenue", fields: [claimedByEmployeeId], references: [id])
   company             Company                     @relation(fields: [companyId], references: [id], onDelete: Cascade)
@@ -3504,7 +3483,7 @@ model ExpenseAllocationRule {
   id           String     @id @default(uuid())
   companyId    String
   departmentId String
-  percentage   Float      @default(0) // 0-100
+  percentage   Float      @default(0)
   isActive     Boolean    @default(true)
   createdAt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
@@ -3527,8 +3506,8 @@ model EmployeeExpenseAllocation {
   createdAt            DateTime           @default(now())
   updatedAt            DateTime           @updatedAt
   company              Company            @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  employee             EmployeeProfile    @relation(fields: [employeeProfileId], references: [id], onDelete: Cascade)
   department           Department         @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+  employee             EmployeeProfile    @relation(fields: [employeeProfileId], references: [id], onDelete: Cascade)
   revenueTransaction   RevenueTransaction @relation(fields: [revenueTransactionId], references: [id], onDelete: Cascade)
 
   @@index([companyId])
@@ -3639,6 +3618,26 @@ model SystemEmailLog {
   error     String?
   createdAt DateTime @default(now())
   metadata  Json?
+}
+
+model StageAssignment {
+  id           String           @id @default(uuid())
+  articleId    String
+  stage        ManuscriptStatus
+  assigneeId   String
+  assignedById String
+  status       String           @default("PENDING")
+  comments     String?
+  assignedAt   DateTime         @default(now())
+  completedAt  DateTime?
+  dueDate      DateTime?
+  article      Article          @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  assignedBy   User             @relation("TaskAssigner", fields: [assignedById], references: [id])
+  assignee     User             @relation("TaskAssignee", fields: [assigneeId], references: [id])
+
+  @@index([articleId])
+  @@index([assigneeId])
+  @@index([stage])
 }
 
 enum TaskCalculationType {
@@ -3874,36 +3873,15 @@ enum ManuscriptStatus {
   PLAGIARISM_CHECK
   UNDER_REVIEW
   QUALITY_CHECK
-  COPYRIGHT_CHECK
-  FORMATTING
-  GALLEY_PROOF
   REVISION_REQUIRED
   REVISED_SUBMITTED
   ACCEPTED
   REJECTED
   PUBLISHED
   WITHDRAWN
-}
-
-model StageAssignment {
-  id           String           @id @default(uuid())
-  articleId    String
-  stage        ManuscriptStatus
-  assigneeId   String
-  assignedById String
-  status       String           @default("PENDING") // PENDING, IN_PROGRESS, COMPLETED
-  comments     String?
-  assignedAt   DateTime         @default(now())
-  completedAt  DateTime?
-  dueDate      DateTime?
-  
-  article      Article          @relation(fields: [articleId], references: [id], onDelete: Cascade)
-  assignee     User             @relation("TaskAssignee", fields: [assigneeId], references: [id])
-  assignedBy   User             @relation("TaskAssigner", fields: [assignedById], references: [id])
-
-  @@index([articleId])
-  @@index([assigneeId])
-  @@index([stage])
+  COPYRIGHT_CHECK
+  FORMATTING
+  GALLEY_PROOF
 }
 
 enum PlagiarismStatus {

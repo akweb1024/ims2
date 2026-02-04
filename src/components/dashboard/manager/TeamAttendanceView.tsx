@@ -4,6 +4,7 @@ import React from 'react';
 import { useAttendance } from '@/hooks/useHR';
 import { Calendar, User, Clock, MapPin, ChevronLeft, ChevronRight } from 'lucide-react';
 import FormattedDate from '@/components/common/FormattedDate';
+import { formatToISTTime } from '@/lib/date-utils';
 
 interface TeamAttendanceViewProps {
     filters: any;
@@ -15,8 +16,7 @@ const TeamAttendanceView: React.FC<TeamAttendanceViewProps> = ({ filters, setFil
     const { data: attendance = [], isLoading: loading } = useAttendance(filters.month, filters.year, true);
 
     const formatTime = (dateStr: string | null) => {
-        if (!dateStr) return '--:--';
-        return new Date(dateStr).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+        return formatToISTTime(dateStr, 'hh:mm a');
     };
 
     const calculateDuration = (checkIn: string | null, checkOut: string | null) => {

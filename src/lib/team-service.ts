@@ -29,14 +29,17 @@ export async function getUnifiedAttendance(
         throw new Error('Forbidden: User not in your team');
     }
 
-    // Build date range for the month
-    const startDate = new Date(year, month - 1, 1);
-    const endDate = new Date(year, month, 0, 23, 59, 59);
+    // Build date range for the month in IST
+    const startDate = new Date(Date.UTC(year, month - 1, 1, 0, 0, 0));
+    const istStart = new Date(startDate.getTime() - (330 * 60000));
+
+    const endDate = new Date(Date.UTC(year, month, 0, 23, 59, 59));
+    const istEnd = new Date(endDate.getTime() - (330 * 60000));
 
     const where: any = {
         date: {
-            gte: startDate,
-            lte: endDate
+            gte: istStart,
+            lte: istEnd
         },
         employee: {
             userId: { in: targetUserIds }

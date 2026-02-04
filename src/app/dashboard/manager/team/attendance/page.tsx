@@ -3,6 +3,7 @@ import { auth } from '@/lib/nextauth';
 import { getUnifiedAttendance } from '@/lib/team-service';
 import AttendanceFilters from './AttendanceFilters';
 import { format } from 'date-fns';
+import { formatToISTTime, formatToISTDate } from '@/lib/date-utils';
 
 function StatusBadge({ status }: { status: string }) {
     const styles = {
@@ -69,7 +70,7 @@ export default async function UnifiedAttendancePage({
                             {attendance.map((record) => (
                                 <tr key={record.id} className="hover:bg-gray-50 transition-colors">
                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                        {format(new Date(record.date), 'MMM d, yyyy')}
+                                        {formatToISTDate(record.date)}
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap">
                                         <div className="flex items-center">
@@ -88,8 +89,8 @@ export default async function UnifiedAttendancePage({
                                         {record.shift?.name || 'Default'}
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                        <div>In: {record.checkIn ? format(new Date(record.checkIn), 'HH:mm') : '-'}</div>
-                                        <div>Out: {record.checkOut ? format(new Date(record.checkOut), 'HH:mm') : '-'}</div>
+                                        <div>In: {formatToISTTime(record.checkIn)}</div>
+                                        <div>Out: {formatToISTTime(record.checkOut)}</div>
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap">
                                         <StatusBadge status={record.status} />
