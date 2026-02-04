@@ -104,16 +104,18 @@ export const GET = authorizedRoute(
             let late = 0;
             let halfDay = 0;
             let totalLateMinutes = 0;
+            let short = 0;
+            let totalShortMinutes = 0;
 
             // For Trends
-            const trendsMap = new Map<string, { date: string, present: number, absent: number, late: number }>();
+            const trendsMap = new Map<string, { date: string, present: number, absent: number, late: number, short: number }>();
 
             attendanceRecords.forEach(record => {
                 const dateKey = format(record.date, 'yyyy-MM-dd');
 
                 // Init trend entry
                 if (!trendsMap.has(dateKey)) {
-                    trendsMap.set(dateKey, { date: dateKey, present: 0, absent: 0, late: 0 });
+                    trendsMap.set(dateKey, { date: dateKey, present: 0, absent: 0, late: 0, short: 0 });
                 }
                 const trend = trendsMap.get(dateKey)!;
 
@@ -135,6 +137,12 @@ export const GET = authorizedRoute(
                     trend.late++;
                     totalLateMinutes += record.lateMinutes;
                 }
+
+                if (record.isShort) {
+                    short++;
+                    trend.short++;
+                    totalShortMinutes += record.shortMinutes;
+                }
             });
 
             const summary = {
@@ -142,8 +150,10 @@ export const GET = authorizedRoute(
                 present,
                 absent,
                 late,
+                short,
                 halfDay,
-                avgLateMinutes: late > 0 ? Math.round(totalLateMinutes / late) : 0
+                avgLateMinutes: late > 0 ? Math.round(totalLateMinutes / late) : 0,
+                avgShortMinutes: short > 0 ? Math.round(totalShortMinutes / short) : 0
             };
 
             const trends = Array.from(trendsMap.values()).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());

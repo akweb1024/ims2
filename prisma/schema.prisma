@@ -1186,7 +1186,10 @@ model Attendance {
   longitude    Float?
   companyId    String?
   lateMinutes  Int             @default(0)
+  shortMinutes Int             @default(0)
   otMinutes    Int             @default(0)
+  isLate       Boolean         @default(false)
+  isShort      Boolean         @default(false)
   shiftId      String?
   remarks      String?
   company      Company?        @relation(fields: [companyId], references: [id])

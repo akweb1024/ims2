@@ -96,31 +96,39 @@ export const POST = authorizedRoute(
             // Encrypt the value
             const encryptedValue = encrypt(value);
 
-            // Upsert configuration
-            const configuration = await prisma.appConfiguration.upsert({
+            // Find existing configuration
+            const existing = await prisma.appConfiguration.findFirst({
                 where: {
-                    companyId_category_key: {
-                        companyId: targetCompanyId || null,
-                        category,
-                        key
-                    }
-                },
-                update: {
-                    value: encryptedValue,
-                    description,
-                    isActive: isActive !== undefined ? isActive : true,
-                    createdBy: user.id
-                },
-                create: {
                     companyId: targetCompanyId || null,
                     category,
-                    key,
-                    value: encryptedValue,
-                    description,
-                    isActive: isActive !== undefined ? isActive : true,
-                    createdBy: user.id
+                    key
                 }
             });
+
+            let configuration;
+            if (existing) {
+                configuration = await prisma.appConfiguration.update({
+                    where: { id: existing.id },
+                    data: {
+                        value: encryptedValue,
+                        description: description || existing.description,
+                        isActive: isActive !== undefined ? isActive : existing.isActive,
+                        createdBy: user.id
+                    }
+                });
+            } else {
+                configuration = await prisma.appConfiguration.create({
+                    data: {
+                        companyId: targetCompanyId || null,
+                        category,
+                        key,
+                        value: encryptedValue,
+                        description,
+                        isActive: isActive !== undefined ? isActive : true,
+                        createdBy: user.id
+                    }
+                });
+            }
 
             return NextResponse.json({
                 ...configuration,

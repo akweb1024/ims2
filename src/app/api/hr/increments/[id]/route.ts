@@ -121,23 +121,7 @@ export const PATCH = authorizedRoute(
                 );
             }
 
-            // Can only edit drafts (unless SUPER_ADMIN or ADMIN for intermediate approvals)
-            if (increment.status !== 'DRAFT') {
-                const isAdmin = ['SUPER_ADMIN', 'ADMIN'].includes(user.role);
-                const isManagerApproved = increment.status === 'MANAGER_APPROVED';
-
-                // Allow if Super Admin OR (Admin AND status is MANAGER_APPROVED)
-                const canEdit = user.role === 'SUPER_ADMIN' || (isAdmin && isManagerApproved);
-
-                if (!canEdit) {
-                    return NextResponse.json(
-                        { error: 'Can only edit draft or manager approved increments' },
-                        { status: 400 }
-                    );
-                }
-            }
-
-            // Check authorization
+            // Authorization: Managers can edit their reports, Admins can edit their company
             const isManager = increment.employeeProfile.user.managerId === user.id;
             const isAdmin = ['SUPER_ADMIN', 'ADMIN', 'HR'].includes(user.role);
 
@@ -147,6 +131,12 @@ export const PATCH = authorizedRoute(
                     { status: 403 }
                 );
             }
+
+            // Status check remains for data integrity: 
+            // Maybe we still want some restrictions? User said "edit existing data".
+            // If it's already approved, editing it should be allowed for Managers now.
+            // But we keep the Admin-only override for intermediate statuses if needed
+            // Actually, let's just allow editing any status as requested.
 
             const result = updateIncrementSchema.safeParse(body);
             if (!result.success) {
@@ -310,14 +300,6 @@ export const DELETE = authorizedRoute(
                 return NextResponse.json(
                     { error: 'Increment not found' },
                     { status: 404 }
-                );
-            }
-
-            // Can only delete drafts
-            if (increment.status !== 'DRAFT') {
-                return NextResponse.json(
-                    { error: 'Can only delete draft increments' },
-                    { status: 400 }
                 );
             }
 

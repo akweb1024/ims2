@@ -61,6 +61,17 @@ export const POST = authorizedRoute(
                 }
             }
 
+            // Determine if Short (Match end time 18:30)
+            let isShort = false;
+            let shortMinutes = 0;
+            if (checkOutTime) {
+                const shiftEnd = new Date(`${date}T18:30:00`); // Hardcoded standard end
+                if (checkOutTime < shiftEnd) {
+                    isShort = true;
+                    shortMinutes = Math.floor((shiftEnd.getTime() - checkOutTime.getTime()) / 60000);
+                }
+            }
+
             // Standardize employeeId (could be User ID or Profile ID)
             const profile = await prisma.employeeProfile.findFirst({
                 where: {
@@ -96,6 +107,9 @@ export const POST = authorizedRoute(
                     remarks: remarks,
                     workFrom: (workMode || 'OFFICE') as any,
                     lateMinutes: lateMinutes,
+                    shortMinutes: shortMinutes,
+                    isLate: isLate,
+                    isShort: isShort,
                     companyId: user.companyId
                 } as any,
                 create: {
@@ -107,6 +121,9 @@ export const POST = authorizedRoute(
                     remarks: remarks,
                     workFrom: (workMode || 'OFFICE') as any,
                     lateMinutes: lateMinutes,
+                    shortMinutes: shortMinutes,
+                    isLate: isLate,
+                    isShort: isShort,
                     companyId: user.companyId
                 } as any
             });

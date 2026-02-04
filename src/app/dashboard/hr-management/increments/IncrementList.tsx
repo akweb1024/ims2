@@ -23,8 +23,12 @@ export default function IncrementList({ initialIncrements }: { initialIncrements
     const [statusFilter, setStatusFilter] = useState('ALL');
     const [searchQuery, setSearchQuery] = useState('');
 
-    const handleDelete = async (id: string) => {
-        if (!confirm('Are you sure you want to delete this increment draft?')) return;
+    const handleDelete = async (id: string, status: string) => {
+        const message = status === 'DRAFT'
+            ? 'Are you sure you want to delete this increment draft?'
+            : `WARNING: This increment is in ${status} status. Deleting it may affect payroll and history. Are you sure you want to proceed?`;
+
+        if (!confirm(message)) return;
 
         try {
             const token = localStorage.getItem('token');
@@ -260,27 +264,21 @@ export default function IncrementList({ initialIncrements }: { initialIncrements
                                                     <Eye size={18} className="text-primary-600" />
                                                 </Link>
 
-                                                {(increment.status === 'DRAFT' ||
-                                                    (increment.status === 'MANAGER_APPROVED' && ['SUPER_ADMIN', 'ADMIN'].includes(currentUser?.role || '')) ||
-                                                    (currentUser?.role === 'SUPER_ADMIN' && increment.status === 'APPROVED')) && (
-                                                        <Link
-                                                            href={`/dashboard/hr-management/increments/${increment.id}/edit`}
-                                                            className="p-2 hover:bg-blue-100 rounded-lg transition-colors"
-                                                            title="Edit"
-                                                        >
-                                                            <Edit size={18} className="text-blue-600" />
-                                                        </Link>
-                                                    )}
+                                                <Link
+                                                    href={`/dashboard/hr-management/increments/${increment.id}/edit`}
+                                                    className="p-2 hover:bg-blue-100 rounded-lg transition-colors"
+                                                    title="Edit"
+                                                >
+                                                    <Edit size={18} className="text-blue-600" />
+                                                </Link>
 
-                                                {increment.status === 'DRAFT' && (
-                                                    <button
-                                                        onClick={() => handleDelete(increment.id)}
-                                                        className="p-2 hover:bg-danger-100 rounded-lg transition-colors"
-                                                        title="Delete"
-                                                    >
-                                                        <Trash2 size={18} className="text-danger-600" />
-                                                    </button>
-                                                )}
+                                                <button
+                                                    onClick={() => handleDelete(increment.id, increment.status)}
+                                                    className="p-2 hover:bg-danger-100 rounded-lg transition-colors"
+                                                    title="Delete"
+                                                >
+                                                    <Trash2 size={18} className="text-danger-600" />
+                                                </button>
                                             </div>
                                         </td>
                                     </tr>

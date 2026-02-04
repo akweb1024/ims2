@@ -100,8 +100,11 @@ export const POST = authorizedRoute(
                     workFrom: 'OFFICE', // Default for manual entry unless specified
                     locationName: 'Manual Entry',
                     isGeofenced: true, // Manual override implies valid
-                    lateMinutes: 0, // Reset or calculate manually if needed
-                    otMinutes: 0, // Reset or calculate manually if needed
+                    lateMinutes: 0,
+                    shortMinutes: 0,
+                    otMinutes: 0,
+                    isLate: false,
+                    isShort: false,
                     // Log modification? Could add note
                 },
                 create: {
@@ -113,7 +116,12 @@ export const POST = authorizedRoute(
                     workFrom: 'OFFICE',
                     locationName: 'Manual Entry',
                     companyId: user.companyId,
-                    isGeofenced: true
+                    isGeofenced: true,
+                    lateMinutes: 0,
+                    shortMinutes: 0,
+                    otMinutes: 0,
+                    isLate: false,
+                    isShort: false
                 }
             });
 

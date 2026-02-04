@@ -159,6 +159,14 @@ export default function AttendanceCalendar({ attendance, workReports, onDateClic
                                             <div className="text-[8px] font-black text-primary-600">
                                                 {att.checkIn && att.checkOut ? formatDuration(att.checkIn, att.checkOut) : att.checkIn ? 'Active' : '--'}
                                             </div>
+                                            <div className="flex gap-1 mt-0.5">
+                                                {att.isLate && (
+                                                    <span className="text-[6px] font-black text-danger-600 bg-danger-50 px-0.5 rounded uppercase">Late</span>
+                                                )}
+                                                {att.isShort && (
+                                                    <span className="text-[6px] font-black text-warning-600 bg-warning-50 px-0.5 rounded uppercase">Short</span>
+                                                )}
+                                            </div>
                                         </>
                                     ) : !isWeekend && date < new Date() && (
                                         <div className="text-[8px] font-bold text-danger-500 uppercase tracking-tighter italic">Absent</div>
@@ -184,6 +192,8 @@ export default function AttendanceCalendar({ attendance, workReports, onDateClic
                                                 <p>In: {formatToISTTime(att.checkIn)}</p>
                                                 <p>Out: {formatToISTTime(att.checkOut)}</p>
                                                 <p>Status: {att.status}</p>
+                                                {att.isLate && <p className="text-danger-400 font-bold">Late: {att.lateMinutes}m</p>}
+                                                {att.isShort && <p className="text-warning-400 font-bold">Short: {att.shortMinutes}m</p>}
                                             </>
                                         ) : <p>No Attendance Record</p>}
                                         {report ? (

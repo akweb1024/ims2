@@ -129,7 +129,8 @@ export default function AttendanceManagement({ filters }: AttendanceManagementPr
         absent: attendance.filter(a => a.status === 'ABSENT').length,
         onLeave: attendance.filter(a => a.status === 'ON_LEAVE').length,
         halfDay: attendance.filter(a => a.status === 'HALF_DAY').length,
-        late: attendance.filter(a => a.isLate).length
+        late: attendance.filter(a => a.isLate).length,
+        short: attendance.filter(a => a.isShort).length
     };
 
     return (
@@ -169,7 +170,7 @@ export default function AttendanceManagement({ filters }: AttendanceManagementPr
             </div>
 
             {/* Summary Cards */}
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
                 <div className="bg-white rounded-xl shadow-sm border border-secondary-200 p-4">
                     <div className="flex items-center justify-between">
                         <div>
@@ -213,6 +214,15 @@ export default function AttendanceManagement({ filters }: AttendanceManagementPr
                             <p className="text-2xl font-bold text-purple-600">{summary.late}</p>
                         </div>
                         <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">🕒</div>
+                    </div>
+                </div>
+                <div className="bg-white rounded-xl shadow-sm border border-secondary-200 p-4">
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <p className="text-xs text-secondary-500 uppercase">Short</p>
+                            <p className="text-2xl font-bold text-orange-600">{summary.short}</p>
+                        </div>
+                        <div className="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center">📉</div>
                     </div>
                 </div>
             </div>
@@ -260,6 +270,7 @@ export default function AttendanceManagement({ filters }: AttendanceManagementPr
                                         </td>
                                         <td className="px-6 py-4 text-sm text-secondary-600">
                                             {record.checkOut ? new Date(record.checkOut).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) : '-'}
+                                            {record.isShort && <span className="ml-2 text-xs text-orange-600 font-medium">(Short)</span>}
                                         </td>
                                         <td className="px-6 py-4 text-sm text-secondary-600">
                                             {record.workingHours ? `${record.workingHours.toFixed(1)} hrs` : '-'}

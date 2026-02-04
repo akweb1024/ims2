@@ -100,6 +100,10 @@ export default function AttendanceAnalysis({ userRole }: AttendanceAnalysisProps
                             <div className="text-2xl font-black text-amber-900">{summary.late}</div>
                             <div className="text-[10px] font-bold text-amber-600">Late</div>
                         </div>
+                        <div>
+                            <div className="text-2xl font-black text-orange-900">{summary.short}</div>
+                            <div className="text-[10px] font-bold text-orange-600">Short</div>
+                        </div>
                     </div>
                 </div>
 
@@ -143,6 +147,7 @@ export default function AttendanceAnalysis({ userRole }: AttendanceAnalysisProps
                                 <Legend />
                                 <Line type="monotone" dataKey="present" stroke="#6366f1" strokeWidth={3} dot={false} name="Present" />
                                 <Line type="monotone" dataKey="late" stroke="#f59e0b" strokeWidth={3} dot={false} name="Late" />
+                                <Line type="monotone" dataKey="short" stroke="#f97316" strokeWidth={3} dot={false} name="Short" />
                                 <Line type="monotone" dataKey="absent" stroke="#f43f5e" strokeWidth={3} dot={false} name="Absent" />
                             </LineChart>
                         </ResponsiveContainer>

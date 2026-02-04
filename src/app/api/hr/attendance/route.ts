@@ -193,6 +193,8 @@ export const POST = authorizedRoute(
                     }
                 }
 
+                const isLate = lateMinutes > 0;
+
                 const record = await prisma.attendance.upsert({
                     where: { employeeId_date: { employeeId: profile.id, date: today } },
                     update: {
@@ -204,7 +206,8 @@ export const POST = authorizedRoute(
                         locationName: locationName || (isRemote ? 'Remote Location' : 'Office HQ'),
                         companyId: user.companyId,
                         shiftId,
-                        lateMinutes
+                        lateMinutes,
+                        isLate
                     },
                     create: {
                         employeeId: profile.id,
@@ -218,7 +221,8 @@ export const POST = authorizedRoute(
                         locationName: locationName || (isRemote ? 'Remote Location' : 'Office HQ'),
                         companyId: user.companyId,
                         shiftId,
-                        lateMinutes
+                        lateMinutes,
+                        isLate
                     }
                 });
 
@@ -254,14 +258,15 @@ export const POST = authorizedRoute(
                     }
                 }
 
+                const isShort = shortLeaveMinutes > 0;
+
                 const record = await prisma.attendance.update({
                     where: { id: existing.id },
                     data: {
                         checkOut: now,
                         otMinutes,
-                        // Assuming we want to track shortLeaveMinutes in attendance record too if schema allowed, 
-                        // but let's check if it exists in schema.
-                        // Actually, processShortLeave handles the ledger part.
+                        shortMinutes: shortLeaveMinutes,
+                        isShort
                     }
                 });
 
