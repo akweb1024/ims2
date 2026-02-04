@@ -116,6 +116,25 @@ function UsersContent() {
         }
     };
 
+    // Helper to get assignable roles based on current user's role
+    const getAssignableRoles = (currentUserRole: string) => {
+        const roles = [
+            { value: 'EXECUTIVE', label: 'Executive' },
+            { value: 'TEAM_LEADER', label: 'Team Leader' },
+            { value: 'MANAGER', label: 'Manager' },
+            { value: 'ADMIN', label: 'Admin' },
+            { value: 'FINANCE_ADMIN', label: 'Finance Admin' },
+            { value: 'SUPER_ADMIN', label: 'Super Admin' },
+        ];
+
+        if (currentUserRole === 'SUPER_ADMIN') return roles;
+        if (currentUserRole === 'ADMIN') return roles.filter(r => ['EXECUTIVE', 'TEAM_LEADER', 'MANAGER'].includes(r.value));
+        if (currentUserRole === 'MANAGER') return roles.filter(r => ['EXECUTIVE', 'TEAM_LEADER'].includes(r.value));
+        if (currentUserRole === 'TEAM_LEADER') return roles.filter(r => ['EXECUTIVE'].includes(r.value));
+
+        return [];
+    };
+
     const handleCreateUser = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         setActionLoading(true);
@@ -589,12 +608,9 @@ function UsersContent() {
                                 <div>
                                     <label className="label">System Role *</label>
                                     <select name="role" className="input" required title="System Role">
-                                        <option value="EXECUTIVE">Executive</option>
-                                        <option value="TEAM_LEADER">Team Leader</option>
-                                        <option value="MANAGER">Manager</option>
-                                        <option value="ADMIN">Admin</option>
-                                        <option value="FINANCE_ADMIN">Finance Admin</option>
-                                        <option value="SUPER_ADMIN">Super Admin</option>
+                                        {getAssignableRoles(userRole).map(role => (
+                                            <option key={role.value} value={role.value}>{role.label}</option>
+                                        ))}
                                     </select>
                                 </div>
                                 <div>
@@ -672,12 +688,9 @@ function UsersContent() {
                             <div>
                                 <label className="label">System Role</label>
                                 <select name="role" className="input" defaultValue={editingUser.role} required title="System Role">
-                                    <option value="EXECUTIVE">Executive</option>
-                                    <option value="TEAM_LEADER">Team Leader</option>
-                                    <option value="MANAGER">Manager</option>
-                                    <option value="ADMIN">Admin</option>
-                                    <option value="FINANCE_ADMIN">Finance Admin</option>
-                                    <option value="SUPER_ADMIN">Super Admin</option>
+                                    {getAssignableRoles(userRole).map(role => (
+                                        <option key={role.value} value={role.value}>{role.label}</option>
+                                    ))}
                                 </select>
                             </div>
                             <div className="flex justify-end space-x-3 mt-8">

@@ -132,6 +132,28 @@ export const POST = authorizedRoute(
                 return createErrorResponse('User already exists', 409);
             }
 
+            // Role Hierarchy Validation
+            const ROLE_HIERARCHY: Record<string, number> = {
+                'SUPER_ADMIN': 100,
+                'ADMIN': 80,
+                'FINANCE_ADMIN': 80,
+                'MANAGER': 60,
+                'TEAM_LEADER': 40,
+                'EXECUTIVE': 20,
+                'CUSTOMER': 0
+            };
+
+            const requesterLevel = ROLE_HIERARCHY[user.role] || 0;
+            const targetLevel = ROLE_HIERARCHY[role as string] || 0;
+
+            if (targetLevel > requesterLevel) {
+                return createErrorResponse('Insufficient privileges to assign this role', 403);
+            }
+            // Strict check: Only SUPER_ADMIN can create ADMIN/FINANCE_ADMIN/SUPER_ADMIN
+            if (['ADMIN', 'FINANCE_ADMIN', 'SUPER_ADMIN'].includes(role) && user.role !== 'SUPER_ADMIN') {
+                return createErrorResponse('Insufficient privileges to assign this role', 403);
+            }
+
             const hashedPassword = await bcrypt.hash(password, 10);
 
             // Determine company context

@@ -56,13 +56,38 @@ export const PATCH = authorizedRoute(
             const existingUser = await prisma.user.findUnique({ where: { id } });
             if (!existingUser) return createErrorResponse('User not found', 404);
 
-            // Access control
             if (user.role !== 'SUPER_ADMIN') {
                 if (user.role === 'ADMIN' && existingUser.companyId !== user.companyId) {
                     return createErrorResponse('Forbidden', 403);
                 }
                 if (['MANAGER', 'TEAM_LEADER'].includes(user.role) && id !== user.id) {
                     return createErrorResponse('Forbidden', 403);
+                }
+            }
+
+            // Role Hierarchy Validation for Updates
+            if (role) {
+                const ROLE_HIERARCHY: Record<string, number> = {
+                    'SUPER_ADMIN': 100,
+                    'ADMIN': 80,
+                    'FINANCE_ADMIN': 80,
+                    'MANAGER': 60,
+                    'TEAM_LEADER': 40,
+                    'EXECUTIVE': 20,
+                    'CUSTOMER': 0
+                };
+
+                const requesterLevel = ROLE_HIERARCHY[user.role] || 0;
+                const targetLevel = ROLE_HIERARCHY[role as string] || 0;
+
+                // 1. Prevent assigning a role higher than oneself
+                if (targetLevel > requesterLevel) {
+                    return createErrorResponse('Insufficient privileges to assign this role', 403);
+                }
+                // 2. Prevent modifying a user who has a higher/equal role (unless Super Admin)
+                const currentTargetLevel = ROLE_HIERARCHY[existingUser.role] || 0;
+                if (user.role !== 'SUPER_ADMIN' && currentTargetLevel >= requesterLevel && user.id !== existingUser.id) {
+                    return createErrorResponse('Cannot modify a user with equal or higher rank', 403);
                 }
             }
 
