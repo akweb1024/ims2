@@ -54,6 +54,8 @@ export default function ConfigurationsPage() {
         value: '',
         description: ''
     });
+    const [isCustomKey, setIsCustomKey] = useState(false);
+    const [customKey, setCustomKey] = useState('');
 
     const fetchConfigurations = useCallback(async () => {
         try {
@@ -98,6 +100,8 @@ export default function ConfigurationsPage() {
             if (res.ok) {
                 setShowAddModal(false);
                 setNewConfig({ category: selectedCategory, key: '', value: '', description: '' });
+                setIsCustomKey(false);
+                setCustomKey('');
                 fetchConfigurations();
             } else {
                 const error = await res.json();
@@ -276,7 +280,12 @@ export default function ConfigurationsPage() {
                                     <select
                                         className="input"
                                         value={newConfig.category}
-                                        onChange={(e) => setNewConfig({ ...newConfig, category: e.target.value, key: '' })}
+                                        onChange={(e) => {
+                                            const cat = e.target.value;
+                                            setNewConfig({ ...newConfig, category: cat, key: '' });
+                                            setIsCustomKey(false);
+                                            setCustomKey('');
+                                        }}
                                     >
                                         {CATEGORIES.map(cat => (
                                             <option key={cat.value} value={cat.value}>{cat.label}</option>
@@ -289,8 +298,16 @@ export default function ConfigurationsPage() {
                                     {PREDEFINED_KEYS[newConfig.category]?.length > 0 ? (
                                         <select
                                             className="input"
-                                            value={newConfig.key}
-                                            onChange={(e) => setNewConfig({ ...newConfig, key: e.target.value })}
+                                            value={isCustomKey ? 'CUSTOM' : newConfig.key}
+                                            onChange={(e) => {
+                                                if (e.target.value === 'CUSTOM') {
+                                                    setIsCustomKey(true);
+                                                    setNewConfig({ ...newConfig, key: '' });
+                                                } else {
+                                                    setIsCustomKey(false);
+                                                    setNewConfig({ ...newConfig, key: e.target.value });
+                                                }
+                                            }}
                                         >
                                             <option value="">Select a key or type custom</option>
                                             {PREDEFINED_KEYS[newConfig.category].map(key => (
@@ -307,12 +324,17 @@ export default function ConfigurationsPage() {
                                             onChange={(e) => setNewConfig({ ...newConfig, key: e.target.value })}
                                         />
                                     )}
-                                    {newConfig.key === 'CUSTOM' && (
+                                    {isCustomKey && (
                                         <input
                                             type="text"
                                             className="input mt-2"
                                             placeholder="Enter custom key name"
-                                            onChange={(e) => setNewConfig({ ...newConfig, key: e.target.value })}
+                                            value={customKey}
+                                            onChange={(e) => {
+                                                const val = e.target.value;
+                                                setCustomKey(val);
+                                                setNewConfig({ ...newConfig, key: val });
+                                            }}
                                         />
                                     )}
                                 </div>

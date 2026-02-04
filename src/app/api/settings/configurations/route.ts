@@ -112,7 +112,7 @@ export const POST = authorizedRoute(
                     createdBy: user.id
                 },
                 create: {
-                    companyId: targetCompanyId,
+                    companyId: targetCompanyId || null,
                     category,
                     key,
                     value: encryptedValue,
@@ -126,9 +126,9 @@ export const POST = authorizedRoute(
                 ...configuration,
                 value: '••••••••' // Don't return decrypted value
             });
-        } catch (error) {
+        } catch (error: any) {
             console.error('Create/Update Configuration Error:', error);
-            return createErrorResponse(error);
+            return createErrorResponse(error.message || 'Failed to save configuration', 500);
         }
     }
 );
