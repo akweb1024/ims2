@@ -260,15 +260,17 @@ export default function IncrementList({ initialIncrements }: { initialIncrements
                                                     <Eye size={18} className="text-primary-600" />
                                                 </Link>
 
-                                                {(increment.status === 'DRAFT' || (currentUser?.role === 'SUPER_ADMIN' && increment.status === 'APPROVED')) && (
-                                                    <Link
-                                                        href={`/dashboard/hr-management/increments/${increment.id}/edit`}
-                                                        className="p-2 hover:bg-blue-100 rounded-lg transition-colors"
-                                                        title="Edit"
-                                                    >
-                                                        <Edit size={18} className="text-blue-600" />
-                                                    </Link>
-                                                )}
+                                                {(increment.status === 'DRAFT' ||
+                                                    (increment.status === 'MANAGER_APPROVED' && ['SUPER_ADMIN', 'ADMIN'].includes(currentUser?.role || '')) ||
+                                                    (currentUser?.role === 'SUPER_ADMIN' && increment.status === 'APPROVED')) && (
+                                                        <Link
+                                                            href={`/dashboard/hr-management/increments/${increment.id}/edit`}
+                                                            className="p-2 hover:bg-blue-100 rounded-lg transition-colors"
+                                                            title="Edit"
+                                                        >
+                                                            <Edit size={18} className="text-blue-600" />
+                                                        </Link>
+                                                    )}
 
                                                 {increment.status === 'DRAFT' && (
                                                     <button

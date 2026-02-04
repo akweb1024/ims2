@@ -190,10 +190,15 @@ export default function FinancePage() {
 
                 {/* Navigation Links (Quick Access) */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    {['Chart of Accounts', 'Journal Entries', 'General Ledger', 'Reports'].map((item) => (
-                        <Link href={`/dashboard/finance/${item.toLowerCase().replace(/ /g, '-')}`} key={item}>
+                    {[
+                        { label: 'Chart of Accounts', path: 'coa' },
+                        { label: 'Journal Entries', path: 'journal' },
+                        { label: 'General Ledger', path: 'ledger' },
+                        { label: 'Reports', path: 'reports' }
+                    ].map((item) => (
+                        <Link href={`/dashboard/finance/${item.path}`} key={item.path}>
                             <div className="bg-white border border-secondary-100 rounded-xl p-4 hover:shadow-md hover:border-primary-200 transition-all cursor-pointer group">
-                                <h4 className="font-bold text-secondary-700 group-hover:text-primary-600 transition-colors">{item}</h4>
+                                <h4 className="font-bold text-secondary-700 group-hover:text-primary-600 transition-colors">{item.label}</h4>
                                 <p className="text-xs text-secondary-400 mt-1">View Details →</p>
                             </div>
                         </Link>

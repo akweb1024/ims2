@@ -115,11 +115,17 @@ export const PATCH = authorizedRoute(
                 );
             }
 
-            // Can only edit drafts (unless SUPER_ADMIN)
+            // Can only edit drafts (unless SUPER_ADMIN or ADMIN for intermediate approvals)
             if (increment.status !== 'DRAFT') {
-                if (user.role !== 'SUPER_ADMIN') {
+                const isAdmin = ['SUPER_ADMIN', 'ADMIN'].includes(user.role);
+                const isManagerApproved = increment.status === 'MANAGER_APPROVED';
+
+                // Allow if Super Admin OR (Admin AND status is MANAGER_APPROVED)
+                const canEdit = user.role === 'SUPER_ADMIN' || (isAdmin && isManagerApproved);
+
+                if (!canEdit) {
                     return NextResponse.json(
-                        { error: 'Can only edit draft increments' },
+                        { error: 'Can only edit draft or manager approved increments' },
                         { status: 400 }
                     );
                 }

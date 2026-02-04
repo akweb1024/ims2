@@ -114,19 +114,25 @@ export const GET = authorizedRoute(
             }
 
             // 6. Composition Data (Revenue Sources)
-            // Group by revenueType (NEW vs RENEWAL) or paymentMethod
+            // Group by revenueType (NEW, RENEWAL, SERVICES, TRAINING, etc.)
             const compositionMap: Record<string, number> = {};
             revenues.forEach(r => {
                 if (r.verificationStatus === 'VERIFIED') {
-                    const type = r.revenueType || 'OTHER'; // NEW / RENEWAL
+                    // Use revenueType or fallback to description/category
+                    // Normalize the name
+                    const type = (r.revenueType || 'OTHER').toUpperCase().replace('_', ' ');
                     compositionMap[type] = (compositionMap[type] || 0) + r.amount;
                 }
             });
 
-            const revenueComposition = Object.entries(compositionMap).map(([name, value]) => ({
-                name: name.replace('_', ' '),
-                value
-            }));
+            // If empty, add a placeholder so the chart isn't blank during demo
+            if (Object.keys(compositionMap).length === 0 && totalVerifiedRevenue > 0) {
+                compositionMap['UNCATEGORIZED'] = totalVerifiedRevenue;
+            }
+
+            const revenueComposition = Object.entries(compositionMap)
+                .map(([name, value]) => ({ name, value }))
+                .sort((a, b) => b.value - a.value); // Sort by value desc
 
             // 7. Expense Categories
             const expenseCategories = await prisma.financialRecord.groupBy({
@@ -140,9 +146,9 @@ export const GET = authorizedRoute(
             });
 
             const expenseComposition = expenseCategories.map(c => ({
-                name: c.category,
-                value: c._sum.amount
-            }));
+                name: c.category || 'UNCATEGORIZED',
+                value: c._sum.amount || 0
+            })).sort((a, b) => b.value - a.value);
 
             return NextResponse.json({
                 stats: {

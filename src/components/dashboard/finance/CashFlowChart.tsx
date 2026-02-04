@@ -57,29 +57,29 @@ export default function CashFlowChart({ data }: CashFlowChartProps) {
                 <AreaChart data={data} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
                     <defs>
                         <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="5%" stopColor="#10B981" stopOpacity={0.2} />
+                            <stop offset="5%" stopColor="#10B981" stopOpacity={0.1} />
                             <stop offset="95%" stopColor="#10B981" stopOpacity={0} />
                         </linearGradient>
                         <linearGradient id="colorExpense" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="5%" stopColor="#F43F5E" stopOpacity={0.2} />
+                            <stop offset="5%" stopColor="#F43F5E" stopOpacity={0.1} />
                             <stop offset="95%" stopColor="#F43F5E" stopOpacity={0} />
                         </linearGradient>
                     </defs>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F3F4F6" />
                     <XAxis
                         dataKey="month"
                         axisLine={false}
                         tickLine={false}
-                        tick={{ fill: '#9CA3AF', fontSize: 12 }}
+                        tick={{ fill: '#6B7280', fontSize: 11, fontWeight: 500 }}
                         dy={10}
                     />
                     <YAxis
                         axisLine={false}
                         tickLine={false}
-                        tick={{ fill: '#9CA3AF', fontSize: 12 }}
+                        tick={{ fill: '#6B7280', fontSize: 11, fontWeight: 500 }}
                         tickFormatter={(value) => `₹${value / 1000}k`}
                     />
-                    <Tooltip content={<CustomTooltip />} cursor={{ stroke: '#E5E7EB', strokeWidth: 1 }} />
+                    <Tooltip content={<CustomTooltip />} cursor={{ stroke: '#E5E7EB', strokeWidth: 1, strokeDasharray: '4 4' }} />
                     <Area
                         type="monotone"
                         dataKey="revenue"
@@ -88,8 +88,6 @@ export default function CashFlowChart({ data }: CashFlowChartProps) {
                         strokeWidth={3}
                         fillOpacity={1}
                         fill="url(#colorRevenue)"
-                        stackId="1" // Do NOT stack IF you want absolute comparison. But stacked is 'net' visual sometimes. Let's start with unstacked for comparison.
-                    // Actually, unstacked is better for comparison.
                     />
                     <Area
                         type="monotone"
