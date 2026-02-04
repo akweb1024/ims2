@@ -38,8 +38,17 @@ const EmployeeLeaveHistory = ({ employeeId, year, onClose, onUpdate }: Props) =>
         const handleSave = async () => {
             setIsSaving(true);
             try {
+                // Calculate correct closing balance before saving
+                const opening = parseFloat(editData.openingBalance) || 0;
+                const auto = parseFloat(editData.autoCredit) || 0;
+                const taken = parseFloat(editData.takenLeaves) || 0;
+                const late = parseFloat(editData.lateDeductions) || 0;
+                const short = parseFloat(editData.shortLeaveDeductions) || 0;
+                const calculatedClosing = Math.max(0, opening + auto - taken - late - short);
+
                 await updateLedgerMutation.mutateAsync({
                     ...editData,
+                    closingBalance: calculatedClosing, // Send correct calculated balance
                     employeeId: row.employeeId,
                     month: row.month,
                     year: row.year
