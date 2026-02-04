@@ -38,6 +38,12 @@ const updateIncrementSchema = z.object({
     newBaseTarget: z.number().min(0).optional(),
     newVariableRate: z.number().min(0).optional(),
     newVariableUnit: z.number().min(0).optional(),
+    monthlyFixTarget: z.number().min(0).optional(),
+    monthlyVariableTarget: z.number().min(0).optional(),
+    monthlyTargets: z.record(z.string(), z.number()).optional(),
+    monthlyVariableTargets: z.record(z.string(), z.number()).optional(),
+    monthlyFixedSalaries: z.record(z.string(), z.number()).optional(),
+    monthlyVariableSalaries: z.record(z.string(), z.number()).optional(),
 });
 
 // GET: Get increment details
@@ -203,6 +209,14 @@ export const PATCH = authorizedRoute(
             if (typeof data.newBaseTarget === 'number') updateData.newBaseTarget = data.newBaseTarget;
             if (typeof data.newVariableRate === 'number') updateData.newVariableRate = data.newVariableRate;
             if (typeof data.newVariableUnit === 'number') updateData.newVariableUnit = data.newVariableUnit;
+
+            // Monthly Targets & Salaries
+            if (typeof data.monthlyFixTarget === 'number') updateData.monthlyFixTarget = data.monthlyFixTarget;
+            if (typeof data.monthlyVariableTarget === 'number') updateData.monthlyVariableTarget = data.monthlyVariableTarget;
+            if (data.monthlyTargets) updateData.monthlyTargets = data.monthlyTargets;
+            if (data.monthlyVariableTargets) updateData.monthlyVariableTargets = data.monthlyVariableTargets;
+            if (data.monthlyFixedSalaries) updateData.monthlyFixedSalaries = data.monthlyFixedSalaries;
+            if (data.monthlyVariableSalaries) updateData.monthlyVariableSalaries = data.monthlyVariableSalaries;
 
             const updated = await prisma.$transaction(async (tx) => {
                 const inc = await tx.salaryIncrementRecord.update({
