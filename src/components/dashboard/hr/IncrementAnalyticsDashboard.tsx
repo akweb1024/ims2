@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import {
     BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
-    LineChart, Line, PieChart, Pie, Cell, AreaChart, Area
+    LineChart, Line, PieChart, Pie, Cell, AreaChart, Area, ComposedChart
 } from 'recharts';
 import {
     TrendingUp, TrendingDown, Users, DollarSign, Target, Award, ArrowUpRight,
@@ -116,81 +116,111 @@ export default function IncrementAnalyticsDashboard({ data }: IncrementAnalytics
                 ))}
             </div>
 
+            {/* NEW: Quarterly Aggregate Targets */}
+            <div className="card-premium p-6">
+                <div className="flex items-center justify-between mb-6">
+                    <div>
+                        <h3 className="text-lg font-black text-secondary-900 flex items-center gap-2">
+                            <Target className="text-teal-500" size={20} />
+                            Quarterly Target Aggregates (FY {fiscalYear})
+                        </h3>
+                        <p className="text-xs text-secondary-500 font-bold uppercase mt-1">Total combined revenue commitment</p>
+                    </div>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    {['Q1', 'Q2', 'Q3', 'Q4'].map((q) => {
+                        const val = quarterlyBreakdown?.[q.toLowerCase()] || 0;
+                        return (
+                            <div key={q} className="p-4 bg-secondary-50 rounded-2xl border border-secondary-100/50">
+                                <p className="text-[10px] font-black text-secondary-400 uppercase tracking-widest">{q} Total Target</p>
+                                <p className="text-xl font-black text-secondary-900 mt-1">{formatCurrency(val)}</p>
+                            </div>
+                        );
+                    })}
+                </div>
+            </div>
+
             {/* Charts Section */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                {/* Budget Impact Trend */}
+                {/* Budget Impact & Revenue Target Trend */}
                 <div className={`card-premium p-6 ${view === 'FORECAST' ? 'border-purple-100 bg-purple-50/10' : ''}`}>
                     <div className="flex items-center justify-between mb-8">
                         <div>
                             <h3 className="text-lg font-black text-secondary-900 flex items-center gap-2">
-                                <BarChart3 className={view === 'FORECAST' ? "text-purple-500" : "text-primary-500"} size={20} />
-                                {view === 'FORECAST' ? 'Projected Spending' : 'Monthly Budget Impact'}
+                                <Activity className={view === 'FORECAST' ? "text-purple-500" : "text-primary-500"} size={20} />
+                                {view === 'FORECAST' ? 'Projected Spending' : 'Impact vs Revenue Commitment'}
                             </h3>
                             <p className="text-xs text-secondary-500 font-bold uppercase mt-1">
-                                {view === 'FORECAST' ? 'AI-driven cost prediction (Next 6 Mo)' : 'Incremental spending over time'}
+                                {view === 'FORECAST' ? 'AI-driven cost prediction (Next 6 Mo)' : 'Salary increase relative to new revenue targets'}
                             </p>
                         </div>
                     </div>
                     <div className="h-[350px] w-full">
                         <ResponsiveContainer width="100%" height="100%">
-                            <AreaChart data={chartData}>
-                                <defs>
-                                    <linearGradient id="colorAmount" x1="0" y1="0" x2="0" y2="1">
-                                        <stop offset="5%" stopColor={view === 'FORECAST' ? "#9333ea" : "#4f46e5"} stopOpacity={0.1} />
-                                        <stop offset="95%" stopColor={view === 'FORECAST' ? "#9333ea" : "#4f46e5"} stopOpacity={0} />
-                                    </linearGradient>
-                                </defs>
+                            <ComposedChart data={chartData}>
                                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
                                 <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 12, fontWeight: 600 }} />
-                                <YAxis axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 12, fontWeight: 600 }} tickFormatter={(value) => `\u20b9${value / 1000}k`} />
+                                <YAxis yAxisId="left" axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 12, fontWeight: 600 }} tickFormatter={(value) => `\u20b9${value / 1000}k`} />
+                                <YAxis yAxisId="right" orientation="right" axisLine={false} tickLine={false} tick={{ fill: '#10b981', fontSize: 12, fontWeight: 600 }} tickFormatter={(value) => `\u20b9${value / 1000}k`} />
                                 <Tooltip
                                     contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 25px -5px rgba(0,0,0,0.1)', padding: '12px' }}
-                                    formatter={(value: any) => [formatCurrency(value), 'Budget Impact']}
+                                    formatter={(value: any, name: any) => [formatCurrency(value), name === 'amount' ? 'Budget Impact' : 'Revenue Target']}
                                 />
                                 <Area
+                                    yAxisId="left"
                                     type="monotone"
                                     dataKey="amount"
                                     stroke={view === 'FORECAST' ? "#9333ea" : "#4f46e5"}
                                     strokeWidth={3}
-                                    strokeDasharray={view === 'FORECAST' ? "5 5" : ""}
-                                    fillOpacity={1}
-                                    fill="url(#colorAmount)"
+                                    fill={view === 'FORECAST' ? "#9333ea20" : "#4f46e520"}
+                                    name="Budget Impact"
                                 />
-                            </AreaChart>
+                                {view !== 'FORECAST' && (
+                                    <Line
+                                        yAxisId="right"
+                                        type="monotone"
+                                        dataKey="revenueTarget"
+                                        stroke="#10b981"
+                                        strokeWidth={3}
+                                        dot={{ r: 4, fill: '#10b981' }}
+                                        name="Revenue Target"
+                                    />
+                                )}
+                            </ComposedChart>
                         </ResponsiveContainer>
                     </div>
                 </div>
 
-                {/* Budget Impact Breakdown */}
+                {/* Budget Impact Breakdown (Salaray Components) */}
                 <div className="card-premium p-6">
                     <div className="flex items-center justify-between mb-8">
                         <div>
                             <h3 className="text-lg font-black text-secondary-900 flex items-center gap-2">
                                 <DollarSign className="text-indigo-500" size={20} />
-                                Budget Impact Breakdown
+                                Salary Component Impact
                             </h3>
-                            <p className="text-xs text-secondary-500 font-bold uppercase mt-1">Impact by salary component</p>
+                            <p className="text-xs text-secondary-500 font-bold uppercase mt-1">Breakdown of monthly costs</p>
                         </div>
                     </div>
                     <div className="h-[350px] w-full">
                         <ResponsiveContainer width="100%" height="100%">
                             <BarChart data={[
-                                { name: 'Fixed', amount: stats.breakdown?.fixed || 0 },
-                                { name: 'Variable', amount: stats.breakdown?.variable || 0 },
-                                { name: 'Incentive', amount: stats.breakdown?.incentive || 0 },
-                                { name: 'Perks', amount: stats.breakdown?.perks || 0 }
+                                { name: 'Fixed Pay', amount: stats.breakdown?.fixed || 0, color: '#4f46e5' },
+                                { name: 'Variable Pay', amount: stats.breakdown?.variable || 0, color: '#10b981' },
+                                { name: 'Incentives', amount: stats.breakdown?.incentive || 0, color: '#f59e0b' },
+                                { name: 'Perks', amount: stats.breakdown?.perks || 0, color: '#ef4444' }
                             ]}>
                                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
                                 <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 12, fontWeight: 700 }} />
-                                <YAxis axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 12, fontWeight: 700 }} tickFormatter={(value) => `₹${(value / 1000).toFixed(0)}k`} />
+                                <YAxis axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 12, fontWeight: 700 }} tickFormatter={(value) => `\u20b9${(value / 1000).toFixed(0)}k`} />
                                 <Tooltip
                                     cursor={{ fill: '#f8fafc' }}
                                     contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 25px -5px rgba(0,0,0,0.1)', padding: '12px' }}
                                     formatter={(value: any) => [formatCurrency(value), 'Impact']}
                                 />
-                                <Bar dataKey="amount" radius={[8, 8, 0, 0]} barSize={40}>
-                                    {['#4f46e5', '#10b981', '#f59e0b', '#ef4444'].map((color, index) => (
-                                        <Cell key={`cell-${index}`} fill={color} />
+                                <Bar dataKey="amount" radius={[8, 8, 0, 0]} barSize={45}>
+                                    {[0, 1, 2, 3].map((_, index) => (
+                                        <Cell key={`cell-${index}`} fill={['#4f46e5', '#10b981', '#f59e0b', '#ef4444'][index]} />
                                     ))}
                                 </Bar>
                             </BarChart>
@@ -198,15 +228,52 @@ export default function IncrementAnalyticsDashboard({ data }: IncrementAnalytics
                     </div>
                 </div>
 
-                {/* Departmental Growth Contribution */}
+                {/* Revenue Target Split Analysis */}
+                <div className="card-premium p-6">
+                    <div className="flex items-center justify-between mb-8">
+                        <div>
+                            <h3 className="text-lg font-black text-secondary-900 flex items-center gap-2">
+                                <Target className="text-rose-500" size={20} />
+                                Revenue Target Split
+                            </h3>
+                            <p className="text-xs text-secondary-500 font-bold uppercase mt-1">Fixed vs Variable targets</p>
+                        </div>
+                    </div>
+                    <div className="h-[350px] w-full">
+                        <ResponsiveContainer width="100%" height="100%">
+                            <PieChart>
+                                <Pie
+                                    data={[
+                                        { name: 'Fixed Revenue', value: stats.targetBreakdown?.fixed || 0 },
+                                        { name: 'Variable Revenue', value: stats.targetBreakdown?.variable || 0 }
+                                    ]}
+                                    innerRadius={80}
+                                    outerRadius={110}
+                                    paddingAngle={10}
+                                    dataKey="value"
+                                >
+                                    <Cell fill="#6366f1" />
+                                    <Cell fill="#10b981" />
+                                </Pie>
+                                <Tooltip
+                                    contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 25px -5px rgba(0,0,0,0.1)' }}
+                                    formatter={(value: any) => [formatCurrency(value), 'Total']}
+                                />
+                                <Legend verticalAlign="bottom" height={36} />
+                            </PieChart>
+                        </ResponsiveContainer>
+                    </div>
+                </div>
+
+                {/* Departmental ROI Comparison */}
                 <div className="card-premium p-6">
                     <div className="flex items-center justify-between mb-8">
                         <div>
                             <h3 className="text-lg font-black text-secondary-900 flex items-center gap-2">
                                 <Building2 className="text-blue-500" size={20} />
-                                Departmental Investment
+                                Dept. Efficiency (Target vs Cost)
                             </h3>
-                            <p className="text-xs text-secondary-500 font-bold uppercase mt-1">Budget allocation by department</p>
+                            <p className="text-xs text-secondary-500 font-bold uppercase mt-1">Commitment vs Investment by department</p>
                         </div>
                     </div>
                     <div className="h-[350px] w-full">
@@ -218,13 +285,10 @@ export default function IncrementAnalyticsDashboard({ data }: IncrementAnalytics
                                 <Tooltip
                                     cursor={{ fill: '#f8fafc' }}
                                     contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 25px -5px rgba(0,0,0,0.1)', padding: '12px' }}
-                                    formatter={(value: any) => [formatCurrency(value), 'Impact']}
                                 />
-                                <Bar dataKey="impact" radius={[0, 8, 8, 0]} barSize={24}>
-                                    {departments.map((entry: any, index: number) => (
-                                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                                    ))}
-                                </Bar>
+                                <Legend />
+                                <Bar dataKey="impact" name="Cost Impact" fill="#4f46e5" radius={[0, 4, 4, 0]} barSize={15} />
+                                <Bar dataKey="target" name="Revenue Target" fill="#10b981" radius={[0, 4, 4, 0]} barSize={15} />
                             </BarChart>
                         </ResponsiveContainer>
                     </div>

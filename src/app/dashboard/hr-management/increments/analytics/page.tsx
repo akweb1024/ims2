@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
-import { TrendingUp, Users, Building, Filter, DollarSign, PieChart, CheckCircle, Clock } from 'lucide-react';
+import { TrendingUp, Users, Building, Filter, DollarSign, PieChart, CheckCircle, Clock, Target } from 'lucide-react';
 import { FormattedNumber } from '@/components/common/FormattedNumber';
 import IncrementAnalyticsChart from '@/components/dashboard/hr/IncrementAnalyticsChart';
 import IncrementDistributionChart from '@/components/dashboard/hr/IncrementDistributionChart';
@@ -158,29 +158,48 @@ export default function IncrementAnalyticsPage() {
                 ) : analytics ? (
                     <>
                         {/* Summary Cards */}
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                            <div className="card-premium p-6 border-l-4 border-indigo-500">
-                                <p className="text-secondary-500 text-xs font-bold uppercase mb-1">Total Impact</p>
-                                <h3 className="text-2xl font-black text-indigo-900">
-                                    ₹<FormattedNumber value={analytics.summary.totalImpact} compact />
-                                </h3>
-                                <p className="text-xs text-secondary-400 mt-1">
-                                    Across {analytics.summary.count} increments
-                                </p>
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                            {[
+                                { title: 'Total Budget Impact', value: analytics.stats.totalApprovedBudgetImpact, sub: `Across ${analytics.stats.approvedCount} increments`, border: 'border-indigo-500', text: 'text-indigo-900', prefix: '₹', compact: true },
+                                { title: 'Avg. Increase', value: analytics.stats.averagePercentage, sub: 'Average percentage hike', border: 'border-emerald-500', text: 'text-emerald-900', suffix: '%', dec: 1 },
+                                { title: 'Revenue Coverage', value: analytics.stats.roiMultiplier, sub: 'Revenue target / Salary cost', border: 'border-orange-500', text: 'text-orange-900', suffix: 'x', dec: 1 },
+                                { title: 'Total Records', value: analytics.stats.approvedCount, sub: 'Adjustments in period', border: 'border-purple-500', text: 'text-purple-900' }
+                            ].map((card, idx) => (
+                                <div key={idx} className={`card-premium p-6 border-l-4 ${card.border} flex flex-col justify-between h-full`}>
+                                    <div>
+                                        <p className="text-secondary-500 text-[10px] font-black uppercase tracking-widest mb-2">{card.title}</p>
+                                        <h3 className={`text-2xl font-black ${card.text}`}>
+                                            {card.prefix}<FormattedNumber value={card.value} compact={card.compact} />{card.suffix}
+                                            {card.dec !== undefined && card.value.toFixed(card.dec)}
+                                            {card.dec === undefined && !card.compact && card.value}
+                                        </h3>
+                                    </div>
+                                    <p className="text-[10px] font-bold text-secondary-400 mt-2 uppercase">{card.sub}</p>
+                                </div>
+                            ))}
+                        </div>
+
+                        {/* Quarterly Aggregate Targets */}
+                        <div className="card-premium p-6">
+                            <div className="flex items-center justify-between mb-6">
+                                <div>
+                                    <h3 className="text-lg font-black text-secondary-900 flex items-center gap-2">
+                                        <Target className="text-teal-500" size={20} />
+                                        Quarterly Target Aggregates
+                                    </h3>
+                                    <p className="text-xs text-secondary-500 font-bold uppercase mt-1">Total combined revenue commitment</p>
+                                </div>
                             </div>
-                            <div className="card-premium p-6 border-l-4 border-emerald-500">
-                                <p className="text-secondary-500 text-xs font-bold uppercase mb-1">Avg. Increase</p>
-                                <h3 className="text-2xl font-black text-emerald-900">
-                                    {analytics.summary.avgPercentage}%
-                                </h3>
-                                <p className="text-xs text-secondary-400 mt-1">Average percentage hike</p>
-                            </div>
-                            <div className="card-premium p-6 border-l-4 border-purple-500">
-                                <p className="text-secondary-500 text-xs font-bold uppercase mb-1">Total Records</p>
-                                <h3 className="text-2xl font-black text-purple-900">
-                                    {analytics.summary.count}
-                                </h3>
-                                <p className="text-xs text-secondary-400 mt-1">Adjustments in period</p>
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                                {['Q1', 'Q2', 'Q3', 'Q4'].map((q) => {
+                                    const val = analytics.quarterlyBreakdown?.[q.toLowerCase()] || 0;
+                                    return (
+                                        <div key={q} className="p-4 bg-secondary-50 rounded-2xl border border-secondary-100/50">
+                                            <p className="text-[10px] font-black text-secondary-400 uppercase tracking-widest">{q} Total Target</p>
+                                            <p className="text-xl font-black text-secondary-900 mt-1">₹<FormattedNumber value={val} compact /></p>
+                                        </div>
+                                    );
+                                })}
                             </div>
                         </div>
 
@@ -189,10 +208,10 @@ export default function IncrementAnalyticsPage() {
                             <div className="lg:col-span-2 card-premium">
                                 <h3 className="font-bold text-lg text-secondary-900 mb-6 flex items-center gap-2">
                                     <TrendingUp size={20} className="text-primary-600" />
-                                    Increment Impact Trend
+                                    Impact vs Revenue Trend
                                 </h3>
-                                <div className="h-64">
-                                    <IncrementAnalyticsChart data={analytics.trendData} />
+                                <div className="h-80">
+                                    <IncrementAnalyticsChart data={analytics.trends} />
                                 </div>
                             </div>
 
@@ -204,21 +223,22 @@ export default function IncrementAnalyticsPage() {
                                         Department Impact
                                     </h3>
                                     <div className="space-y-4 max-h-[300px] overflow-y-auto pr-2">
-                                        {analytics.departmentData.map((d: any, i: number) => (
+                                        {analytics.departments.map((d: any, i: number) => (
                                             <div key={i} className="flex justify-between items-center text-sm">
                                                 <span className="text-secondary-600 font-medium">{d.name}</span>
                                                 <div className="text-right">
-                                                    <div className="font-bold text-secondary-900">₹<FormattedNumber value={d.value} compact /></div>
-                                                    <div className="w-24 h-1.5 bg-secondary-100 rounded-full mt-1 overflow-hidden">
+                                                    <div className="font-bold text-secondary-900 text-xs">₹<FormattedNumber value={d.impact} compact /></div>
+                                                    <div className="w-28 h-2.5 bg-secondary-100 rounded-full mt-1 overflow-hidden border border-secondary-200/50">
                                                         <div
-                                                            className="h-full bg-primary-500 rounded-full"
-                                                            style={{ width: `${(d.value / analytics.summary.totalImpact) * 100}%` }}
+                                                            className={`h-full rounded-full transition-all duration-1000 ${i % 3 === 0 ? 'bg-indigo-500' : i % 3 === 1 ? 'bg-emerald-500' : 'bg-orange-500'
+                                                                }`}
+                                                            style={{ width: `${(d.impact / (analytics.stats.totalApprovedBudgetImpact || 1)) * 100}%` }}
                                                         />
                                                     </div>
                                                 </div>
                                             </div>
                                         ))}
-                                        {analytics.departmentData.length === 0 && (
+                                        {analytics.departments.length === 0 && (
                                             <p className="text-secondary-400 text-center py-8">No department data</p>
                                         )}
                                     </div>
@@ -234,16 +254,16 @@ export default function IncrementAnalyticsPage() {
                                     <PieChart size={20} className="text-primary-600" />
                                     Increment Percentage Distribution
                                 </h3>
-                                <IncrementDistributionChart data={analytics.distributionData} />
+                                <IncrementDistributionChart data={analytics.distribution} />
                             </div>
 
                             {/* Top Increments */}
                             <div className="card-premium">
                                 <h3 className="font-bold text-lg text-secondary-900 mb-6 flex items-center gap-2">
                                     <Users size={20} className="text-primary-600" />
-                                    Top Increments
+                                    High Impact Adjustments
                                 </h3>
-                                <TopIncrementsTable data={analytics.topIncrements} />
+                                <TopIncrementsTable data={analytics.topAdjustments} />
                             </div>
                         </div>
 
@@ -259,10 +279,11 @@ export default function IncrementAnalyticsPage() {
                                         <div key={i} className="bg-secondary-50 p-4 rounded-lg border border-secondary-100">
                                             <p className="text-xs text-secondary-500 font-bold uppercase truncate" title={d.name}>{d.name}</p>
                                             <p className="text-lg font-black text-secondary-900 mt-1">₹<FormattedNumber value={d.value} compact /></p>
-                                            <div className="w-full h-1.5 bg-secondary-200 rounded-full mt-2 overflow-hidden">
+                                            <div className="w-full h-2.5 bg-secondary-200 rounded-full mt-2 overflow-hidden border border-secondary-200/50">
                                                 <div
-                                                    className="h-full bg-indigo-500 rounded-full"
-                                                    style={{ width: `${(d.value / analytics.summary.totalImpact) * 100}%` }}
+                                                    className={`h-full rounded-full transition-all duration-1000 ${i % 2 === 0 ? 'bg-indigo-500' : 'bg-purple-500'
+                                                        }`}
+                                                    style={{ width: `${(d.value / (analytics.stats.totalApprovedBudgetImpact || 1)) * 100}%` }}
                                                 />
                                             </div>
                                         </div>
@@ -277,7 +298,7 @@ export default function IncrementAnalyticsPage() {
                     </div>
                 )}
             </div>
-        </DashboardLayout>
+        </DashboardLayout >
     );
 }
 

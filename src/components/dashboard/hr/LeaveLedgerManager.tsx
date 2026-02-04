@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { useLeaveLedger, useUpdateLeaveLedger } from '@/hooks/useHR';
-import { ChevronDown } from 'lucide-react';
+import { ChevronDown, Save, History, Search, Zap, Download, Upload, AlertCircle, Info, Calendar } from 'lucide-react';
 import { toast } from 'react-hot-toast';
+import { FormattedNumber } from '@/components/common/FormattedNumber';
 import EmployeeLeaveHistory from './EmployeeLeaveHistory';
 
 const LeaveLedgerRow = ({ row, onSave, onViewHistory }: { row: any, onSave: (data: any) => Promise<any>, onViewHistory: () => void }) => {
@@ -16,29 +17,29 @@ const LeaveLedgerRow = ({ row, onSave, onViewHistory }: { row: any, onSave: (dat
         remarks: row.remarks ?? ''
     });
 
-    // Derived state for negative indicator (visual only, logic is in backend/save)
+    const [saving, setSaving] = useState(false);
+
+    // Derived values for live preview
     const opening = parseFloat(editData.openingBalance) || 0;
     const allotted = parseFloat(editData.autoCredit) || 0;
     const taken = parseFloat(editData.takenLeaves) || 0;
     const lateDeds = parseFloat(editData.lateDeductions) || 0;
     const shortDeds = parseFloat(editData.shortLeaveDeductions) || 0;
-    const actualBalance = opening + allotted - taken - lateDeds - shortDeds;
-    const negativeLeaves = actualBalance < 0 ? Math.abs(actualBalance) : 0;
 
-    // Update closing balance in editData whenever inputs change to show preview
-    // Note: We don't automatically setEditData here to avoid infinite loops if not careful, 
-    // but we can render the calculated value or existing value.
-    // Ideally, the user inputs 'Taken' and we calculate 'Closing'. 
-    // The previous implementation had a useEffect for this.
+    // Total deductions = late + short
+    const totalDeds = lateDeds + shortDeds;
+    const actualBalance = opening + allotted - taken - totalDeds;
 
-    const [saving, setSaving] = useState(false);
+    // We show negative leaves separately as per UI requirement, 
+    // but the actual 'New Bal' can now be negative if we follow previous fixes.
+    // However, to match the visual 'Negative' column, we keep the split display.
+    const negativeValue = actualBalance < 0 ? Math.abs(actualBalance) : 0;
+    const displayBalance = actualBalance; // Show raw balance
 
     const handleSave = async () => {
         setSaving(true);
         try {
-            // Recalculate strict closing before saving to ensure consistency
-            const finalClosing = Math.max(0, actualBalance);
-            await onSave({ ...editData, closingBalance: finalClosing });
+            await onSave({ ...editData, closingBalance: actualBalance });
             toast.success('Saved!');
         } catch (err) {
             toast.error('Failed to save');
@@ -48,98 +49,124 @@ const LeaveLedgerRow = ({ row, onSave, onViewHistory }: { row: any, onSave: (dat
     };
 
     return (
-        <tr className="hover:bg-secondary-50/30 transition-colors group">
+        <tr className="hover:bg-secondary-50/50 transition-all group border-b border-secondary-100 last:border-0">
             <td className="px-6 py-4">
                 <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-secondary-200 text-secondary-600 flex items-center justify-center font-bold text-xs uppercase">
+                    <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary-50 to-secondary-100 text-primary-700 flex items-center justify-center font-black text-xs uppercase shadow-sm border border-primary-100/50">
                         {(row.name?.[0] || row.email?.[0] || 'U')}
                     </div>
-                    <div>
-                        <p className="font-bold text-secondary-900 text-sm whitespace-nowrap">{row.name || row.email.split('@')[0]}</p>
-                        <p className="text-[10px] text-secondary-400 font-medium">{row.email}</p>
+                    <div className="flex flex-col">
+                        <p className="font-black text-secondary-900 text-sm whitespace-nowrap leading-tight">{row.name || row.email.split('@')[0]}</p>
+                        <p className="text-[10px] text-secondary-400 font-bold tracking-tight mt-0.5 uppercase">{row.email.split('@')[0]}</p>
                     </div>
                 </div>
             </td>
-            <td className="px-6 py-4">
-                <input
-                    type="number" step="0.5"
-                    className="input py-1 text-center w-16 text-xs font-bold bg-secondary-50 border-secondary-200 focus:bg-white"
-                    value={editData.openingBalance}
-                    onChange={e => setEditData({ ...editData, openingBalance: parseFloat(e.target.value) || 0 })}
-                    title="Opening Balance"
-                />
+
+            {/* Last Balance */}
+            <td className="px-4 py-4 text-center">
+                <div className="relative group/input">
+                    <input
+                        type="number" step="0.5"
+                        className="w-20 text-center py-2 px-1 text-xs font-black bg-secondary-50 border-secondary-200 rounded-lg focus:ring-2 focus:ring-secondary-300 focus:bg-white transition-all outline-none"
+                        value={editData.openingBalance}
+                        onChange={e => setEditData({ ...editData, openingBalance: parseFloat(e.target.value) || 0 })}
+                    />
+                </div>
             </td>
-            <td className="px-6 py-4">
+
+            {/* Allotted (Auto Credit) */}
+            <td className="px-4 py-4 text-center">
                 <input
                     type="number" step="0.5"
-                    className="input py-1 text-center w-16 text-xs font-bold bg-emerald-50 border-emerald-200 text-emerald-700 focus:bg-white"
+                    className="w-20 text-center py-2 px-1 text-xs font-black bg-emerald-50 border-emerald-100 text-emerald-700 rounded-lg focus:ring-2 focus:ring-emerald-300 focus:bg-white transition-all outline-none"
                     value={editData.autoCredit}
                     onChange={e => setEditData({ ...editData, autoCredit: parseFloat(e.target.value) || 0 })}
-                    title="Monthly Credit"
                 />
             </td>
-            <td className="px-6 py-4">
+
+            {/* Taken Leaves */}
+            <td className="px-4 py-4 text-center">
                 <input
                     type="number" step="0.5"
-                    className="input py-1 text-center w-16 text-xs font-bold bg-white border-secondary-200 focus:border-primary-500"
+                    className="w-20 text-center py-2 px-1 text-xs font-black bg-white border-secondary-200 rounded-lg focus:ring-2 focus:ring-primary-400 transition-all outline-none"
                     value={editData.takenLeaves}
                     onChange={e => setEditData({ ...editData, takenLeaves: parseFloat(e.target.value) || 0 })}
-                    title="Taken Leaves"
                 />
             </td>
-            <td className="px-6 py-4">
-                <div className="flex flex-col gap-1">
-                    <input
-                        type="number" step="0.5"
-                        className="input py-0.5 w-14 text-center text-[10px] font-bold bg-rose-50 border-rose-200 text-rose-700"
-                        value={editData.lateDeductions}
-                        onChange={e => setEditData({ ...editData, lateDeductions: parseFloat(e.target.value) || 0 })}
-                        title="Late Deductions"
-                    />
-                    <input
-                        type="number" step="0.5"
-                        className="input py-0.5 w-14 text-center text-[10px] font-bold bg-orange-50 border-orange-200 text-orange-700"
-                        value={editData.shortLeaveDeductions}
-                        onChange={e => setEditData({ ...editData, shortLeaveDeductions: parseFloat(e.target.value) || 0 })}
-                        title="Short Leave Deductions"
-                    />
+
+            {/* Deductions (Late & Short) */}
+            <td className="px-4 py-4">
+                <div className="flex flex-col gap-1.5 min-w-[80px]">
+                    <div className="relative">
+                        <input
+                            type="number" step="0.5"
+                            className="w-full text-center py-1 text-[10px] font-black bg-rose-50 border-rose-100 text-rose-700 rounded-md focus:ring-1 focus:ring-rose-300 outline-none"
+                            value={editData.lateDeductions}
+                            onChange={e => setEditData({ ...editData, lateDeductions: parseFloat(e.target.value) || 0 })}
+                            title="Late Deductions"
+                        />
+                        <span className="absolute -top-2 left-1 bg-rose-100 text-rose-600 text-[8px] font-black px-1 rounded uppercase tracking-tighter">Late</span>
+                    </div>
+                    <div className="relative">
+                        <input
+                            type="number" step="0.5"
+                            className="w-full text-center py-1 text-[10px] font-black bg-orange-50 border-orange-100 text-orange-700 rounded-md focus:ring-1 focus:ring-orange-300 outline-none"
+                            value={editData.shortLeaveDeductions}
+                            onChange={e => setEditData({ ...editData, shortLeaveDeductions: parseFloat(e.target.value) || 0 })}
+                            title="Short Leave Deductions"
+                        />
+                        <span className="absolute -top-2 left-1 bg-orange-100 text-orange-600 text-[8px] font-black px-1 rounded uppercase tracking-tighter">Short</span>
+                    </div>
                 </div>
             </td>
-            <td className="px-6 py-4 text-center">
-                <div className={`text-xs font-black ${negativeLeaves > 0 ? 'text-rose-600 bg-rose-100 px-2 py-1 rounded' : 'text-secondary-300'}`}>
-                    {negativeLeaves > 0 ? `-${negativeLeaves.toFixed(1)}` : '-'}
+
+            {/* Negative / LOP */}
+            <td className="px-4 py-4 text-center">
+                <div className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-black transition-all ${negativeValue > 0 ? 'bg-rose-500 text-white shadow-lg shadow-rose-100' : 'bg-secondary-100 text-secondary-400'}`}>
+                    {negativeValue > 0 ? (
+                        <>
+                            <AlertCircle size={12} strokeWidth={3} />
+                            -{negativeValue.toFixed(1)}
+                        </>
+                    ) : '0.0'}
                 </div>
             </td>
-            <td className="px-6 py-4 text-center">
-                <div className="font-black text-sm text-secondary-900 bg-secondary-100 py-1 px-3 rounded text-center min-w-[3rem]">
-                    {Math.max(0, actualBalance).toFixed(1)}
+
+            {/* New Balance */}
+            <td className="px-4 py-4 text-center">
+                <div className={`inline-block font-black text-sm py-2 px-4 rounded-xl text-center min-w-[4rem] shadow-sm border ${displayBalance < 0 ? 'bg-rose-50 text-rose-700 border-rose-200' : 'bg-primary-50 text-primary-800 border-primary-200'}`}>
+                    {displayBalance.toFixed(1)}
                 </div>
             </td>
-            <td className="px-6 py-4">
+
+            {/* Remarks */}
+            <td className="px-4 py-4">
                 <input
                     type="text"
-                    className="input py-1 text-xs w-full min-w-[120px]"
-                    placeholder="..."
+                    className="w-full min-w-[150px] py-2 px-3 text-xs font-medium bg-secondary-50 border-secondary-200 rounded-lg focus:bg-white focus:ring-2 focus:ring-primary-100 transition-all outline-none"
+                    placeholder="Add remarks..."
                     value={editData.remarks}
                     onChange={e => setEditData({ ...editData, remarks: e.target.value })}
                 />
             </td>
+
+            {/* Actions */}
             <td className="px-6 py-4 text-right">
                 <div className="flex items-center gap-2 justify-end">
                     <button
                         onClick={handleSave}
                         disabled={saving}
-                        className={`p-1.5 rounded transition-colors ${saving ? 'bg-secondary-100 text-secondary-400' : 'bg-primary-50 text-primary-600 hover:bg-primary-100'}`}
+                        className={`p-2.5 rounded-xl border transition-all ${saving ? 'bg-secondary-100 border-secondary-200 text-secondary-400' : 'bg-white border-primary-200 text-primary-600 hover:bg-primary-600 hover:text-white hover:shadow-lg hover:shadow-primary-100 active:scale-95'}`}
                         title="Save Changes"
                     >
-                        {saving ? '⏳' : '💾'}
+                        {saving ? <div className="animate-spin w-4 h-4 border-2 border-current border-t-transparent rounded-full" /> : <Save size={18} strokeWidth={2.5} />}
                     </button>
                     <button
                         onClick={onViewHistory}
-                        className="p-1.5 rounded bg-secondary-50 text-secondary-500 hover:bg-secondary-100 hover:text-secondary-900 transition-colors"
+                        className="p-2.5 rounded-xl border border-secondary-200 bg-white text-secondary-500 hover:bg-secondary-900 hover:text-white hover:border-secondary-900 hover:shadow-lg hover:shadow-secondary-200 transition-all active:scale-95"
                         title="View Yearly History"
                     >
-                        📅
+                        <History size={18} strokeWidth={2.5} />
                     </button>
                 </div>
             </td>
@@ -155,82 +182,93 @@ const LeaveLedgerManager = () => {
     const [viewingHistoryEmployee, setViewingHistoryEmployee] = useState<string | null>(null);
 
     return (
-        <div className="card-premium overflow-hidden border border-secondary-100 shadow-xl bg-white">
-            <div className="p-8 border-b border-secondary-100 flex flex-col md:flex-row justify-between items-center bg-secondary-50/30 gap-6">
-                <div>
-                    <h3 className="text-xl font-black text-secondary-900 flex items-center gap-2">
-                        <span className="w-8 h-8 rounded-lg bg-primary-600 text-white flex items-center justify-center text-sm shadow-lg shadow-primary-200">🗓️</span>
-                        Leave Ledger Management
-                    </h3>
-                    <p className="text-[10px] text-secondary-500 font-black uppercase tracking-[0.2em] mt-1 pl-10">Systematic balance calculation & bulk import/export</p>
+        <div className="card-premium overflow-hidden border border-secondary-100 shadow-2xl bg-white rounded-3xl">
+            <div className="p-8 border-b border-secondary-100 flex flex-col xl:flex-row justify-between items-start xl:items-center bg-gradient-to-r from-secondary-50/50 to-white gap-6">
+                <div className="flex items-center gap-4">
+                    <div className="w-14 h-14 rounded-2xl bg-primary-600 text-white flex items-center justify-center text-xl shadow-xl shadow-primary-100">
+                        <Calendar size={28} strokeWidth={2.5} />
+                    </div>
+                    <div>
+                        <h3 className="text-2xl font-black text-secondary-900 tracking-tight">
+                            Leave Ledger Management
+                        </h3>
+                        <div className="flex items-center gap-2 mt-1">
+                            <span className="flex h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                            <p className="text-[10px] text-secondary-500 font-black uppercase tracking-[0.2em]">Systematic balance calculation & bulk operations</p>
+                        </div>
+                    </div>
                 </div>
-                <div className="flex flex-wrap gap-4 items-center">
-                    <div className="flex bg-white p-1 rounded-2xl shadow-inner border border-secondary-100">
-                        <div className="relative border-r border-secondary-100 pr-2 mr-2">
+
+                <div className="flex flex-wrap gap-4 items-center w-full xl:w-auto">
+                    {/* Search & Period Filter Container */}
+                    <div className="flex flex-wrap bg-white p-1.5 rounded-2xl shadow-sm border border-secondary-200 w-full md:w-auto">
+                        <div className="relative flex items-center border-r border-secondary-100 pr-2 mr-2 group">
+                            <Search size={14} className="absolute left-3 text-secondary-400 group-focus-within:text-primary-500 transition-colors" />
                             <input
                                 type="text"
-                                placeholder="Search employee..."
-                                className="input h-full py-2 px-3 text-xs w-48 border-none focus:ring-0"
+                                placeholder="Search staff..."
+                                className="h-10 pl-9 pr-3 text-xs font-bold w-44 border-none focus:ring-0 rounded-xl bg-secondary-50/50 focus:bg-white transition-all"
                                 value={ledgerSearch}
                                 onChange={(e) => setLedgerSearch(e.target.value)}
                             />
                         </div>
-                        <button
-                            onClick={() => {
-                                const newMonth = ledgerFilter.month - 1;
-                                if (newMonth < 1) {
-                                    setLedgerFilter({ month: 12, year: ledgerFilter.year - 1 });
-                                } else {
-                                    setLedgerFilter({ ...ledgerFilter, month: newMonth });
-                                }
-                            }}
-                            className="p-2 hover:bg-secondary-50 text-secondary-500 rounded-lg transition-colors"
-                            title="Previous Month"
-                        >
-                            <ChevronDown size={14} className="rotate-90" />
-                        </button>
 
-                        <div className="flex items-center bg-white border border-secondary-200 rounded-lg px-2">
-                            <select
-                                className="input py-2 px-2 text-xs font-bold border-none bg-transparent focus:ring-0 cursor-pointer"
-                                value={ledgerFilter.month}
-                                onChange={e => setLedgerFilter({ ...ledgerFilter, month: parseInt(e.target.value) })}
-                                title="Filter Ledger by Month"
+                        <div className="flex items-center gap-1">
+                            <button
+                                onClick={() => {
+                                    const newMonth = ledgerFilter.month - 1;
+                                    if (newMonth < 1) {
+                                        setLedgerFilter({ month: 12, year: ledgerFilter.year - 1 });
+                                    } else {
+                                        setLedgerFilter({ ...ledgerFilter, month: newMonth });
+                                    }
+                                }}
+                                className="p-2.5 hover:bg-secondary-100 text-secondary-600 rounded-xl transition-all active:scale-90"
+                                title="Previous Month"
                             >
-                                {Array.from({ length: 12 }, (_, i) => (
-                                    <option key={i + 1} value={i + 1}>{new Date(2024, i).toLocaleString('default', { month: 'long' })}</option>
-                                ))}
-                            </select>
-                            <div className="h-4 w-px bg-secondary-200 mx-2"></div>
-                            <select
-                                className="input py-2 px-2 text-xs font-bold border-none bg-transparent focus:ring-0 cursor-pointer"
-                                value={ledgerFilter.year}
-                                onChange={e => setLedgerFilter({ ...ledgerFilter, year: parseInt(e.target.value) })}
-                                title="Filter Ledger by Year"
+                                <ChevronDown size={16} strokeWidth={3} className="rotate-90" />
+                            </button>
+
+                            <div className="flex items-center gap-1 px-1">
+                                <select
+                                    className="h-10 px-2 text-xs font-black border-none bg-transparent focus:ring-0 cursor-pointer appearance-none hover:text-primary-600 transition-colors"
+                                    value={ledgerFilter.month}
+                                    onChange={e => setLedgerFilter({ ...ledgerFilter, month: parseInt(e.target.value) })}
+                                >
+                                    {Array.from({ length: 12 }, (_, i) => (
+                                        <option key={i + 1} value={i + 1}>{new Date(2024, i).toLocaleString('default', { month: 'long' })}</option>
+                                    ))}
+                                </select>
+                                <div className="h-3 w-px bg-secondary-200"></div>
+                                <select
+                                    className="h-10 px-2 text-xs font-black border-none bg-transparent focus:ring-0 cursor-pointer appearance-none hover:text-primary-600 transition-colors"
+                                    value={ledgerFilter.year}
+                                    onChange={e => setLedgerFilter({ ...ledgerFilter, year: parseInt(e.target.value) })}
+                                >
+                                    {[2024, 2025, 2026].map(y => (
+                                        <option key={y} value={y}>{y}</option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            <button
+                                onClick={() => {
+                                    const newMonth = ledgerFilter.month + 1;
+                                    if (newMonth > 12) {
+                                        setLedgerFilter({ month: 1, year: ledgerFilter.year + 1 });
+                                    } else {
+                                        setLedgerFilter({ ...ledgerFilter, month: newMonth });
+                                    }
+                                }}
+                                className="p-2.5 hover:bg-secondary-100 text-secondary-600 rounded-xl transition-all active:scale-90"
+                                title="Next Month"
                             >
-                                {[2024, 2025, 2026].map(y => (
-                                    <option key={y} value={y}>{y}</option>
-                                ))}
-                            </select>
+                                <ChevronDown size={16} strokeWidth={3} className="-rotate-90" />
+                            </button>
                         </div>
-
-                        <button
-                            onClick={() => {
-                                const newMonth = ledgerFilter.month + 1;
-                                if (newMonth > 12) {
-                                    setLedgerFilter({ month: 1, year: ledgerFilter.year + 1 });
-                                } else {
-                                    setLedgerFilter({ ...ledgerFilter, month: newMonth });
-                                }
-                            }}
-                            className="p-2 hover:bg-secondary-50 text-secondary-500 rounded-lg transition-colors"
-                            title="Next Month"
-                        >
-                            <ChevronDown size={14} className="-rotate-90" />
-                        </button>
                     </div>
 
-                    <div className="flex gap-2">
+                    <div className="flex gap-2 w-full md:w-auto">
                         <button
                             onClick={async () => {
                                 if (!confirm('Auto-credit 1.5 leaves to all active employees for this month?')) return;
@@ -249,9 +287,9 @@ const LeaveLedgerManager = () => {
                                     toast.error('Network error');
                                 }
                             }}
-                            className="btn bg-indigo-50 text-indigo-700 border-indigo-100 hover:bg-indigo-100 py-2 px-4 text-xs font-bold flex items-center gap-2"
+                            className="flex-1 md:flex-none btn-premium py-2.5 px-5 text-xs font-black bg-indigo-600 text-white hover:bg-indigo-700 shadow-lg shadow-indigo-100 flex items-center justify-center gap-2 rounded-2xl transition-all hover:-translate-y-0.5"
                         >
-                            <span>⚡</span> Auto-Credit
+                            <Zap size={14} fill="currentColor" /> Auto-Credit
                         </button>
                         <button
                             onClick={async () => {
@@ -267,12 +305,12 @@ const LeaveLedgerManager = () => {
                                     a.click();
                                 }
                             }}
-                            className="btn btn-secondary py-2 px-4 text-xs font-bold flex items-center gap-2"
+                            className="flex-1 md:flex-none btn-premium py-2.5 px-5 text-xs font-black bg-white border border-secondary-200 text-secondary-700 hover:bg-secondary-900 hover:text-white flex items-center justify-center gap-2 rounded-2xl transition-all hover:-translate-y-0.5"
                         >
-                            <span>📥</span> Export CSV
+                            <Download size={14} /> Export
                         </button>
-                        <label className="btn btn-primary py-2 px-4 text-xs font-bold flex items-center gap-2 cursor-pointer">
-                            <span>📤</span> Import CSV
+                        <label className="flex-1 md:flex-none btn-premium py-2.5 px-5 text-xs font-black bg-primary-50 text-primary-700 border border-primary-100 hover:bg-primary-600 hover:text-white flex items-center justify-center gap-2 rounded-2xl transition-all cursor-pointer hover:-translate-y-0.5">
+                            <Upload size={14} /> Import
                             <input
                                 type="file"
                                 accept=".csv"
@@ -304,13 +342,13 @@ const LeaveLedgerManager = () => {
                                             });
                                             const result = await res.json();
                                             if (res.ok) {
-                                                alert(`Import successful! Updated: ${result.updated}, Created: ${result.created}`);
+                                                toast.success(`Import successful! Updated: ${result.updated}, Created: ${result.created}`);
                                                 refetch();
                                             } else {
-                                                alert(`Import failed: ${result.message}`);
+                                                toast.error(`Import failed: ${result.message}`);
                                             }
                                         } catch (err) {
-                                            alert('Failed to connect to server');
+                                            toast.error('Failed to connect to server');
                                         }
                                     };
                                     reader.readAsText(file);
@@ -321,22 +359,27 @@ const LeaveLedgerManager = () => {
                 </div>
             </div>
             <div className="overflow-x-auto">
-                {isLoading ? <div className="p-10 text-center animate-pulse">Loading ledger...</div> : (
-                    <table className="table w-full border-collapse">
-                        <thead className="bg-secondary-50/50">
-                            <tr className="text-[10px] uppercase font-black text-secondary-400 tracking-wider">
-                                <th className="px-6 py-5 text-left">Staff Details</th>
-                                <th className="px-6 py-5 text-center">Last Bal</th>
-                                <th className="px-6 py-5 text-center">Allotted</th>
-                                <th className="px-6 py-5 text-center">Taken</th>
-                                <th className="px-6 py-5 text-center">Deductions</th>
-                                <th className="px-6 py-5 text-center">Neg.</th>
-                                <th className="px-6 py-5 text-center">New Bal</th>
-                                <th className="px-6 py-5 text-left">Remarks</th>
-                                <th className="px-6 py-5 text-right">Action</th>
+                {isLoading ? (
+                    <div className="p-20 text-center">
+                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto mb-4"></div>
+                        <p className="text-secondary-400 font-black uppercase tracking-widest text-xs">Loading sync records...</p>
+                    </div>
+                ) : (
+                    <table className="w-full border-collapse">
+                        <thead>
+                            <tr className="bg-secondary-50/50 border-b border-secondary-200">
+                                <th className="px-6 py-6 text-left text-[10px] uppercase font-black text-secondary-400 tracking-widest">Employee Details</th>
+                                <th className="px-4 py-6 text-center text-[10px] uppercase font-black text-secondary-400 tracking-widest">Opening</th>
+                                <th className="px-4 py-6 text-center text-[10px] uppercase font-black text-secondary-400 tracking-widest text-emerald-600 bg-emerald-50/30">Allotted</th>
+                                <th className="px-4 py-6 text-center text-[10px] uppercase font-black text-secondary-400 tracking-widest">Taken</th>
+                                <th className="px-4 py-6 text-center text-[10px] uppercase font-black text-secondary-400 tracking-widest">Deductions</th>
+                                <th className="px-4 py-6 text-center text-[10px] uppercase font-black text-secondary-400 tracking-widest text-rose-600 bg-rose-50/30">LOP Bal</th>
+                                <th className="px-4 py-6 text-center text-[10px] uppercase font-black text-secondary-400 tracking-widest bg-primary-50/30 text-primary-600">New Bal</th>
+                                <th className="px-4 py-6 text-left text-[10px] uppercase font-black text-secondary-400 tracking-widest">Remarks</th>
+                                <th className="px-6 py-6 text-right text-[10px] uppercase font-black text-secondary-400 tracking-widest">Action</th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-secondary-50">
+                        <tbody className="divide-y divide-secondary-100">
                             {manualLedger
                                 .filter(row =>
                                     (row.name || '').toLowerCase().includes(ledgerSearch.toLowerCase()) ||
@@ -352,7 +395,7 @@ const LeaveLedgerManager = () => {
                                 ))}
                             {manualLedger.length === 0 && (
                                 <tr>
-                                    <td colSpan={9} className="px-8 py-20 text-center text-secondary-400 font-bold italic bg-secondary-50/20">
+                                    <td colSpan={9} className="px-8 py-32 text-center text-secondary-300 font-black italic uppercase tracking-widest text-sm bg-secondary-50/10">
                                         No employee records found for this period.
                                     </td>
                                 </tr>
@@ -363,14 +406,19 @@ const LeaveLedgerManager = () => {
             </div>
 
             {viewingHistoryEmployee && (
-                <EmployeeLeaveHistory
-                    employeeId={viewingHistoryEmployee}
-                    year={ledgerFilter.year}
-                    onClose={() => setViewingHistoryEmployee(null)}
-                    onUpdate={() => refetch()}
-                />
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-secondary-900/60 backdrop-blur-sm">
+                    <div className="w-full max-w-6xl max-h-[90vh] overflow-y-auto">
+                        <EmployeeLeaveHistory
+                            employeeId={viewingHistoryEmployee}
+                            year={ledgerFilter.year}
+                            onClose={() => setViewingHistoryEmployee(null)}
+                            onUpdate={() => refetch()}
+                        />
+                    </div>
+                </div>
             )}
         </div>
+
     );
 };
 

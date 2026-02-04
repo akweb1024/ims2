@@ -82,7 +82,7 @@ export const GET = authorizedRoute(
             }
 
             // Fetch Records
-            const increments = await prisma.salaryIncrementRecord.findMany({
+            const increments = (await prisma.salaryIncrementRecord.findMany({
                 where,
                 include: {
                     employeeProfile: {
@@ -94,10 +94,23 @@ export const GET = authorizedRoute(
                     }
                 },
                 orderBy: { effectiveDate: 'asc' }
-            });
+            })) as any[];
 
             // 5. Data Processing / Aggregation
             const totalImpact = increments.reduce((sum, i) => sum + (i.incrementAmount || 0), 0);
+            const totalMonthlyFixSalary = increments.reduce((sum, i) => sum + (i.monthlyFixSalary || 0), 0);
+            const totalMonthlyVariableSalary = increments.reduce((sum, i) => sum + (i.monthlyVariableSalary || 0), 0);
+            const totalMonthlyFixTarget = increments.reduce((sum, i) => sum + (i.monthlyFixTarget || 0), 0);
+            const totalMonthlyVariableTarget = increments.reduce((sum, i) => sum + (i.monthlyVariableTarget || 0), 0);
+            const totalMonthlyTarget = increments.reduce((sum, i) => sum + (i.monthlyTotalTarget || 0), 0);
+
+            const qTotals = {
+                q1: increments.reduce((sum, i) => sum + (i.q1Target || 0), 0),
+                q2: increments.reduce((sum, i) => sum + (i.q2Target || 0), 0),
+                q3: increments.reduce((sum, i) => sum + (i.q3Target || 0), 0),
+                q4: increments.reduce((sum, i) => sum + (i.q4Target || 0), 0),
+            };
+
             const avgPercentage = increments.length > 0
                 ? increments.reduce((sum, i) => sum + (i.percentage || 0), 0) / increments.length
                 : 0;
@@ -113,12 +126,14 @@ export const GET = authorizedRoute(
                     date: d,
                     label,
                     amount: 0,
+                    revenueTarget: 0,
                     count: 0,
                     avgPerc: 0,
                     totalPerc: 0
                 };
 
                 current.amount += (inc.incrementAmount || 0);
+                current.revenueTarget += (inc.monthlyTotalTarget || 0);
                 current.count += 1;
                 current.totalPerc += (inc.percentage || 0);
                 trendMap.set(key, current);
@@ -130,18 +145,26 @@ export const GET = authorizedRoute(
                 .map((t: any) => ({
                     month: t.label,
                     amount: t.amount,
+                    revenueTarget: t.revenueTarget,
                     count: t.count,
                     percentage: t.count > 0 ? parseFloat((t.totalPerc / t.count).toFixed(2)) : 0
                 }));
 
-            // Department Distribution
+            // Department Distribution (Impact vs Target)
             const deptMap = new Map();
             increments.forEach(inc => {
                 const dept = inc.employeeProfile?.user?.department?.name || 'Unassigned';
-                deptMap.set(dept, (deptMap.get(dept) || 0) + (inc.incrementAmount || 0));
+                const current = deptMap.get(dept) || { impact: 0, target: 0 };
+                current.impact += (inc.incrementAmount || 0);
+                current.target += (inc.monthlyTotalTarget || 0);
+                deptMap.set(dept, current);
             });
 
-            const departmentData = Array.from(deptMap.entries()).map(([name, value]) => ({ name, value }));
+            const departmentData = Array.from(deptMap.entries()).map(([name, data]) => ({
+                name,
+                impact: data.impact,
+                target: data.target
+            }));
 
             // 6. Distribution Buckets (Percentage)
             const percBuckets = { '0-5%': 0, '5-10%': 0, '10-15%': 0, '15-20%': 0, '20%+': 0 };
@@ -162,17 +185,20 @@ export const GET = authorizedRoute(
                 .map(inc => ({
                     id: inc.id,
                     name: inc.employeeProfile?.user?.name || 'Unknown',
-                    designation: inc.employeeProfile?.designation || 'N/A',
+                    designation: inc.newDesignation || inc.employeeProfile?.designation || 'N/A',
+                    department: inc.employeeProfile?.user?.department?.name || 'N/A',
                     amount: inc.incrementAmount,
                     percentage: inc.percentage,
-                    newSalary: inc.newSalary
+                    newSalary: inc.newSalary,
+                    effectiveDate: inc.effectiveDate
                 }));
 
             // 8. Designation Breakdown
             const desigMap = new Map();
             increments.forEach(inc => {
                 const d = inc.employeeProfile?.designation || 'Unknown';
-                desigMap.set(d, (desigMap.get(d) || 0) + (inc.incrementAmount || 0));
+                const current = desigMap.get(d) || 0;
+                desigMap.set(d, current + (inc.incrementAmount || 0));
             });
             const designationData = Array.from(desigMap.entries())
                 .map(([name, value]) => ({ name, value }))
@@ -180,17 +206,33 @@ export const GET = authorizedRoute(
                 .slice(0, 8); // Top 8 designations
 
             return NextResponse.json({
-                summary: {
-                    totalImpact,
-                    count: increments.length,
-                    avgPercentage: parseFloat(avgPercentage.toFixed(2))
+                stats: {
+                    totalApprovedBudgetImpact: totalImpact,
+                    approvedCount: increments.length,
+                    averagePercentage: avgPercentage,
+                    totalApprovedPerksImpact: increments.reduce((sum, i) => sum + ((i.newHealthCare || 0) + (i.newTravelling || 0) + (i.newMobile || 0) + (i.newInternet || 0) + (i.newBooksAndPeriodicals || 0)), 0),
+                    totalPendingBudgetImpact: 0, // Placeholder
+                    roiMultiplier: totalImpact > 0 ? (totalMonthlyTarget / (totalMonthlyFixSalary + totalMonthlyVariableSalary)) : 0,
+                    breakdown: {
+                        fixed: totalMonthlyFixSalary,
+                        variable: totalMonthlyVariableSalary,
+                        incentive: increments.reduce((sum, i) => sum + (i.newIncentive || 0), 0),
+                        perks: increments.reduce((sum, i) => sum + ((i.newHealthCare || 0) + (i.newTravelling || 0) + (i.newMobile || 0) + (i.newInternet || 0) + (i.newBooksAndPeriodicals || 0)), 0)
+                    },
+                    targetBreakdown: {
+                        fixed: totalMonthlyFixTarget,
+                        variable: totalMonthlyVariableTarget,
+                        total: totalMonthlyTarget
+                    }
                 },
-                trendData,
-                departmentData,
-                distributionData,
-                topIncrements,
+                trends: trendData,
+                departments: departmentData,
+                distribution: distributionData,
+                topAdjustments: topIncrements,
                 designationData,
-                raw: increments.length // Debug info
+                quarterlyBreakdown: qTotals,
+                fiscalYear: fiscalYearParam || 'Current',
+                raw: increments.length
             });
 
         } catch (error) {
