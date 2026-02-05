@@ -2,7 +2,7 @@
 
 import { useChat } from './ChatContext';
 import { Search, Plus, Hash, Users, Activity } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import CreateChatModal from './CreateChatModal';
 import { formatToISTTime } from '@/lib/date-utils';
 
@@ -10,11 +10,6 @@ export default function ChatSidebar() {
     const { rooms, activeRoom, setActiveRoom, currentUser } = useChat();
     const [search, setSearch] = useState('');
     const [isModalOpen, setIsModalOpen] = useState(false);
-
-    const filteredRooms = rooms.filter(room => {
-        const name = getRoomName(room, currentUser).toLowerCase();
-        return name.includes(search.toLowerCase());
-    });
 
     const getRoomName = (room: any, me: any) => {
         if (room.isGroup) return room.name || 'Group Chat';
@@ -30,6 +25,13 @@ export default function ChatSidebar() {
         if (other?.user?.role === 'CUSTOMER') return <Users size={18} />;
         return <div className="w-2 h-2 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]"></div>; // Online indicator
     };
+
+    const filteredRooms = useMemo(() => {
+        return rooms.filter(room => {
+            const name = getRoomName(room, currentUser).toLowerCase();
+            return name.includes(search.toLowerCase());
+        });
+    }, [rooms, search, currentUser]);
 
     return (
         <div className="w-80 border-r border-gray-100 dark:border-gray-800 flex flex-col bg-gray-50/50 dark:bg-gray-900/50 h-full backdrop-blur-xl">
