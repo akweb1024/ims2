@@ -11,29 +11,101 @@ export async function GET(
         const decoded = await getAuthenticatedUser();
         if (!decoded) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-        const company = await prisma.company.findUnique({
-            where: { id },
-            include: {
-                _count: {
-                    select: {
-                        users: true,
-                        departments: true
-                    }
-                }
-            }
-        });
-
-        if (!company) return NextResponse.json({ error: 'Company not found' }, { status: 404 });
-
         // Security check: Only SUPER_ADMIN or users of that company
         if (decoded.role !== 'SUPER_ADMIN' && decoded.companyId !== id) {
-            // Check if they are ADMIN/MANAGER of this company specifically
-            // This is a bit complex, let's simplify for now: SUPER_ADMIN or if it's their company
             return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
         }
 
-        return NextResponse.json(company);
+        const [company, revenueAgg, projectCount, ticketCount, recentProjects, recentTickets, recentRevenue, performance] = await Promise.all([
+            prisma.company.findUnique({
+                where: { id },
+                include: {
+                    _count: {
+                        select: {
+                            users: true,
+                            departments: true
+                        }
+                    }
+                }
+            }),
+            prisma.revenueTransaction.aggregate({
+                where: { companyId: id, status: 'VERIFIED' },
+                _sum: { amount: true }
+            }),
+            prisma.iTProject.count({
+                where: { companyId: id, status: { notIn: ['COMPLETED', 'CANCELLED'] } }
+            }),
+            prisma.iTSupportTicket.count({
+                where: { companyId: id, status: { notIn: ['RESOLVED', 'CLOSED'] } }
+            }),
+            prisma.iTProject.findMany({
+                where: { companyId: id },
+                orderBy: { createdAt: 'desc' },
+                take: 3
+            }),
+            prisma.iTSupportTicket.findMany({
+                where: { companyId: id },
+                orderBy: { createdAt: 'desc' },
+                take: 3
+            }),
+            prisma.revenueTransaction.findMany({
+                where: { companyId: id },
+                orderBy: { createdAt: 'desc' },
+                take: 3
+            }),
+            prisma.companyPerformance.findMany({
+                where: { companyId: id },
+                orderBy: [
+                    { year: 'desc' },
+                    { month: 'desc' }
+                ],
+                take: 6
+            })
+        ]);
+
+        if (!company) return NextResponse.json({ error: 'Company not found' }, { status: 404 });
+
+        const latestPerformance = performance[0] || null;
+        const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+        const trendData = [...performance].reverse().map(p => ({
+            month: monthNames[p.month - 1] || `M${p.month}`,
+            revenue: p.totalRevenue
+        }));
+
+        // Combine and format recent activity
+        const recentActivity = [
+            ...recentProjects.map((p: any) => ({ id: `p-${p.id}`, title: `Project "${p.name}" ${p.status.toLowerCase()}`, date: p.createdAt, type: 'project' })),
+            ...recentTickets.map((t: any) => ({ id: `t-${t.id}`, title: `Ticket "${t.title}" ${t.status.toLowerCase()}`, date: t.createdAt, type: 'ticket' })),
+            ...recentRevenue.map((r: any) => ({ id: `r-${r.id}`, title: `Revenue transaction ₹${r.amount} ${r.status.toLowerCase()}`, date: r.createdAt, type: 'finance' }))
+        ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).slice(0, 5);
+
+        const responseData = {
+            ...company,
+            stats: {
+                totalRevenue: revenueAgg._sum.amount || 0,
+                activeProjects: projectCount,
+                openTickets: ticketCount,
+                healthScore: latestPerformance?.satisfactionScore || 85,
+                totalEmployees: company._count.users || 0
+            },
+            recentActivity,
+            trendData,
+            sentiment: {
+                score: latestPerformance?.averagePerformance ? latestPerformance.averagePerformance * 10 : 75,
+                trend: latestPerformance?.monthOverMonthGrowth && latestPerformance.monthOverMonthGrowth > 0 ? 'UP' : 'STABLE',
+                breakdown: {
+                    positive: latestPerformance?.satisfactionScore || 70,
+                    neutral: 20,
+                    negative: 10
+                },
+                keywords: ['Reliable', 'Active', 'Growing']
+            }
+        };
+
+        return NextResponse.json(responseData);
     } catch (error) {
+        console.error('Get Company Details Error:', error);
         return NextResponse.json({ error: error instanceof Error ? error.message : 'Unknown error' }, { status: 500 });
     }
 }

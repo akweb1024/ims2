@@ -19,9 +19,10 @@ interface CompanyDetails {
     id: string;
     name: string;
     domain: string;
-    location: string;
-    email: string;
-    phone: string;
+    address: string | null;
+    email: string | null;
+    phone: string | null;
+    website: string | null;
     status: string;
     logoUrl: string | null;
     stats: {
@@ -37,6 +38,7 @@ interface CompanyDetails {
         breakdown: { positive: number; neutral: number; negative: number };
         keywords: string[];
     };
+    trendData: { month: string; revenue: number }[];
 }
 
 export default function CompanyDetailsPage() {
@@ -47,37 +49,23 @@ export default function CompanyDetailsPage() {
     const [activeTab, setActiveTab] = useState<'overview' | 'projects' | 'tickets' | 'financials' | 'intelligence'>('overview');
 
     useEffect(() => {
-        // Simulating data fetch with enhanced Sentiment Data
-        setTimeout(() => {
-            setCompany({
-                id: id,
-                name: 'Acme Corp Solutions',
-                domain: 'acme.com',
-                location: 'New York, USA',
-                email: 'contact@acme.com',
-                phone: '+1 (555) 123-4567',
-                status: 'ACTIVE',
-                logoUrl: null,
-                stats: {
-                    totalRevenue: 1250000,
-                    activeProjects: 3,
-                    openTickets: 5,
-                    healthScore: 88 // Dynamic score
-                },
-                recentActivity: [
-                    { id: 1, title: 'Project "Cloud Migration" started', date: '2 days ago', type: 'project' },
-                    { id: 2, title: 'Invoice #INV-2024-001 paid', date: '5 days ago', type: 'finance' },
-                    { id: 3, title: 'Critical Ticket #IT-992 resolved', date: '1 week ago', type: 'ticket' }
-                ],
-                sentiment: {
-                    score: 78, // out of 100
-                    trend: 'UP',
-                    breakdown: { positive: 65, neutral: 25, negative: 10 },
-                    keywords: ['Efficient', 'Expensive', 'Quick Support', 'Reliable']
-                }
-            });
-            setLoading(false);
-        }, 1200);
+        const fetchCompanyDetails = async () => {
+            setLoading(true);
+            try {
+                const res = await fetch(`/api/companies/${id}`);
+                if (!res.ok) throw new Error('Failed to fetch company details');
+                const data = await res.json();
+                setCompany(data);
+            } catch (error) {
+                console.error('Fetch company details error:', error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        if (id) {
+            fetchCompanyDetails();
+        }
     }, [id]);
 
     const mockChartData = [
@@ -125,11 +113,16 @@ export default function CompanyDetailsPage() {
                                     <Globe className="h-4 w-4" /> {company.domain}
                                 </div>
                                 <div className="flex items-center gap-2">
-                                    <MapPin className="h-4 w-4" /> {company.location}
+                                    <MapPin className="h-4 w-4" /> {company.address || 'No address provided'}
                                 </div>
                                 <div className="flex items-center gap-2 hover:text-indigo-600 transition-colors cursor-pointer">
-                                    <Mail className="h-4 w-4" /> {company.email}
+                                    <Mail className="h-4 w-4" /> {company.email || 'No email provided'}
                                 </div>
+                                {company.website && (
+                                    <div className="flex items-center gap-2 hover:text-indigo-600 transition-colors cursor-pointer">
+                                        <Globe className="h-4 w-4" /> {company.website}
+                                    </div>
+                                )}
                             </div>
                         </div>
                         <div className="flex gap-3">
@@ -200,8 +193,8 @@ export default function CompanyDetailsPage() {
                                     key={tab}
                                     onClick={() => setActiveTab(tab as any)}
                                     className={`py-6 text-xs font-black uppercase tracking-widest border-b-2 transition-all ${activeTab === tab
-                                            ? 'border-indigo-600 text-indigo-600 dark:text-indigo-400'
-                                            : 'border-transparent text-gray-400 hover:text-gray-600 dark:text-gray-500'
+                                        ? 'border-indigo-600 text-indigo-600 dark:text-indigo-400'
+                                        : 'border-transparent text-gray-400 hover:text-gray-600 dark:text-gray-500'
                                         }`}
                                 >
                                     {tab === 'intelligence' ? (
@@ -226,7 +219,7 @@ export default function CompanyDetailsPage() {
                                         </div>
                                         <div className="h-80 w-full bg-gray-50/50 rounded-2xl p-4 border border-gray-100">
                                             <ResponsiveContainer width="100%" height="100%">
-                                                <AreaChart data={mockChartData}>
+                                                <AreaChart data={company.trendData && company.trendData.length > 0 ? company.trendData : mockChartData}>
                                                     <defs>
                                                         <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
                                                             <stop offset="5%" stopColor="#6366f1" stopOpacity={0.2} />
@@ -250,7 +243,7 @@ export default function CompanyDetailsPage() {
                                             {company.recentActivity.map((activity, i) => (
                                                 <div key={activity.id} className="flex items-start gap-4 p-4 bg-white border border-gray-100 rounded-2xl shadow-sm hover:shadow-md transition-all">
                                                     <div className={`mt-1 p-2 rounded-xl shrink-0 ${activity.type === 'project' ? 'bg-blue-50 text-blue-600' :
-                                                            activity.type === 'finance' ? 'bg-green-50 text-green-600' : 'bg-amber-50 text-amber-600'
+                                                        activity.type === 'finance' ? 'bg-green-50 text-green-600' : 'bg-amber-50 text-amber-600'
                                                         }`}>
                                                         {activity.type === 'project' && <Briefcase size={16} />}
                                                         {activity.type === 'finance' && <DollarSign size={16} />}
@@ -258,7 +251,14 @@ export default function CompanyDetailsPage() {
                                                     </div>
                                                     <div>
                                                         <p className="text-sm font-bold text-gray-900 dark:text-white leading-tight">{activity.title}</p>
-                                                        <p className="text-xs text-gray-500 font-medium mt-1">{activity.date}</p>
+                                                        <p className="text-xs text-gray-500 font-medium mt-1">
+                                                            {new Date(activity.date).toLocaleDateString(undefined, {
+                                                                day: 'numeric',
+                                                                month: 'short',
+                                                                hour: '2-digit',
+                                                                minute: '2-digit'
+                                                            })}
+                                                        </p>
                                                     </div>
                                                 </div>
                                             ))}
@@ -369,8 +369,8 @@ export default function CompanyDetailsPage() {
                                         <div className="flex flex-wrap gap-3">
                                             {company.sentiment.keywords.map((kw, i) => (
                                                 <span key={i} className={`px-4 py-2 rounded-xl text-sm font-bold ${['Expensive', 'Slow', 'Bug'].some(bad => kw.includes(bad))
-                                                        ? 'bg-red-50 text-red-600 border border-red-100'
-                                                        : 'bg-indigo-50 text-indigo-600 border border-indigo-100'
+                                                    ? 'bg-red-50 text-red-600 border border-red-100'
+                                                    : 'bg-indigo-50 text-indigo-600 border border-indigo-100'
                                                     }`}>
                                                     {kw}
                                                 </span>
