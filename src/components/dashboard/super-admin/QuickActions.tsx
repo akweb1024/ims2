@@ -12,7 +12,8 @@ import {
     FileText,
     BarChart3,
     Bell,
-    TrendingUp
+    TrendingUp,
+    CreditCard
 } from "lucide-react";
 
 interface QuickActionsProps {
@@ -55,6 +56,12 @@ const actions = [
         icon: Bell,
         color: "bg-rose-50 text-rose-600 hover:bg-rose-100",
         route: "/dashboard/announcements/new"
+    },
+    {
+        label: "Finance Control Tower",
+        icon: CreditCard,
+        color: "bg-emerald-50 text-emerald-600 hover:bg-emerald-100",
+        route: "/dashboard/finance"
     }
 ];
 

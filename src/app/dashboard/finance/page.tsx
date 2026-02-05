@@ -20,6 +20,7 @@ import TransactionTable from '@/components/dashboard/finance/TransactionTable';
 import FinanceStatsCard from '@/components/dashboard/finance/FinanceStatsCard';
 import CashFlowChart from '@/components/dashboard/finance/CashFlowChart';
 import RevenueChart from '@/components/dashboard/finance/RevenueChart';
+import TransactionModal from '@/components/dashboard/finance/TransactionModal';
 
 export default function FinancePage() {
     const { data: session } = useSession();
@@ -231,14 +232,16 @@ export default function FinancePage() {
                 </div>
             </div>
 
-            {/* Keeping the existing Modal logic or importing it would be best, 
-                for now assuming basic integration or placeholder is fine as per instructions to focus on Dashboard UI 
-                But for completeness, if the original file had a modal, passing `setIsModalOpen` would need that Modal component. 
-                I will assume the previous implementation's modal is complex to inline here.
-                Ideally, I should have extracted the Modal to a separate component. 
-                Since I don't have the Modal code handy (it was inside the large page.tsx), 
-                I'll leave a placeholder comment for the Modal integration or if user wants it back I can refactor.
-            */}
+            <TransactionModal
+                isOpen={isModalOpen}
+                onClose={() => setIsModalOpen(false)}
+                onSuccess={() => {
+                    fetchTransactions();
+                    fetchAnalytics();
+                    toast.success('Transaction saved successfully');
+                }}
+                editingTransaction={editingTransaction}
+            />
         </DashboardLayout>
     );
 }

@@ -42,7 +42,7 @@ export async function GET(req: NextRequest) {
         }
 
         // 3. Fetch Data
-        const [increments, revenueTransactions, companies] = await Promise.all([
+        const [increments, revenueTransactions, ledgerExpenses, companies] = await Promise.all([
             prisma.salaryIncrementRecord.findMany({
                 where: incrementWhere,
                 include: {
@@ -56,8 +56,21 @@ export async function GET(req: NextRequest) {
                 where: revenueWhere,
                 orderBy: { paymentDate: 'asc' }
             }),
+            prisma.financialRecord.findMany({
+                where: {
+                    type: 'EXPENSE',
+                    status: 'COMPLETED',
+                    ...(companyId && companyId !== 'ALL' ? { companyId } : {})
+                    // Add date filters if fiscalYearParam exists if you want to be precise, 
+                    // though FinancialRecord uses 'date' and RevenueTransaction uses 'paymentDate'
+                },
+                orderBy: { date: 'asc' }
+            }),
             prisma.company.findMany({ select: { id: true, name: true } })
         ]);
+
+        // Process Ledger Expenses
+        const totalLedgerExpenses = ledgerExpenses.reduce((sum, e) => sum + (e.amount || 0), 0);
 
         // 4. Process Increment Data
         const totalIncrementImpact = increments.reduce((sum, i) => sum + (i.incrementAmount || 0), 0);
@@ -69,7 +82,7 @@ export async function GET(req: NextRequest) {
         const totalRevenueValue = revenueTransactions.reduce((sum, r) => sum + (r.amount || 0), 0);
 
         // 6. Monthly Trends (Combined)
-        const monthlyTrends: Record<string, { month: string, increment: number, revenue: number, timestamp: number }> = {};
+        const monthlyTrends: Record<string, { month: string, increment: number, revenue: number, timestamp: number, ledgerExpense?: number, totalExpense?: number }> = {};
 
         increments.forEach(inc => {
             const d = new Date(inc.effectiveDate);
@@ -91,7 +104,21 @@ export async function GET(req: NextRequest) {
             monthlyTrends[key].revenue += (rev.amount || 0);
         });
 
-        const sortedTrends = Object.values(monthlyTrends).sort((a, b) => a.timestamp - b.timestamp);
+        ledgerExpenses.forEach(exp => {
+            const d = new Date(exp.date);
+            const key = `${d.getFullYear()}-${d.getMonth() + 1}`;
+            const label = d.toLocaleString('default', { month: 'short', year: '2-digit' });
+            if (!monthlyTrends[key]) {
+                monthlyTrends[key] = { month: label, increment: 0, revenue: 0, timestamp: d.getTime(), ledgerExpense: 0 };
+            }
+            if (!monthlyTrends[key].ledgerExpense) monthlyTrends[key].ledgerExpense = 0;
+            monthlyTrends[key].ledgerExpense += (exp.amount || 0);
+        });
+
+        const sortedTrends = Object.values(monthlyTrends).map(t => ({
+            ...t,
+            totalExpense: (t.increment || 0) + (t.ledgerExpense || 0)
+        })).sort((a, b) => a.timestamp - b.timestamp);
 
         // 7. Company Breakdown
         const companyBreakdown = companies.map(comp => {
@@ -114,6 +141,8 @@ export async function GET(req: NextRequest) {
             summary: {
                 totalIncrementImpact,
                 totalRevenue: totalRevenueValue,
+                totalLedgerExpenses,
+                totalOverallExpenses: totalIncrementImpact + totalLedgerExpenses,
                 activeIncrements: increments.length,
                 revenueCount: revenueTransactions.length,
                 avgIncrementPercentage: avgIncrementPerc,

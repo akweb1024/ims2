@@ -20,6 +20,8 @@ interface FinancialsData {
     summary: {
         totalIncrementImpact: number;
         totalRevenue: number;
+        totalLedgerExpenses: number;
+        totalOverallExpenses: number;
         activeIncrements: number;
         revenueCount: number;
         avgIncrementPercentage: number;
@@ -157,6 +159,13 @@ export default function FinancialAnalyticsView() {
                     icon={Wallet}
                     color="amber"
                 />
+                <StatCard
+                    title="Ledger Expenses"
+                    value={formatCurrency(data.summary.totalLedgerExpenses || 0)}
+                    subValue="Non-salary outgoing"
+                    icon={Target}
+                    color="rose"
+                />
             </div>
 
             {/* Main Trend Chart */}
@@ -179,11 +188,11 @@ export default function FinancialAnalyticsView() {
                             <Tooltip
                                 cursor={{ fill: '#f8fafc' }}
                                 contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 25px -5px rgba(0,0,0,0.1)', padding: '16px' }}
-                                formatter={(value: any, name: any) => [formatCurrency(value), name === 'revenue' ? 'Revenue' : 'Increment Impact']}
+                                formatter={(value: any, name: any) => [formatCurrency(value), name]}
                             />
                             <Legend verticalAlign="top" align="right" iconType="circle" />
-                            <Area yAxisId="left" type="monotone" dataKey="revenue" fill="#4f46e520" stroke="#4f46e5" strokeWidth={3} name="revenue" />
-                            <Bar yAxisId="left" dataKey="increment" fill="#f43f5e" radius={[4, 4, 0, 0]} barSize={40} name="increment" />
+                            <Area yAxisId="left" type="monotone" dataKey="revenue" fill="#4f46e520" stroke="#4f46e5" strokeWidth={3} name="Revenue" />
+                            <Bar yAxisId="left" dataKey="totalExpense" fill="#f43f5e" radius={[4, 4, 0, 0]} barSize={40} name="Total Expenses" />
                         </ComposedChart>
                     </ResponsiveContainer>
                 </div>
