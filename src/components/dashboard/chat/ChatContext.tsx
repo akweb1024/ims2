@@ -1,6 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 
 type Room = {
     id: string;
@@ -28,72 +29,57 @@ type ChatContextType = {
 const ChatContext = createContext<ChatContextType | undefined>(undefined);
 
 export function ChatProvider({ children }: { children: ReactNode }) {
-    const [rooms, setRooms] = useState<Room[]>([]);
     const [activeRoom, setActiveRoom] = useState<Room | null>(null);
     const [messages, setMessages] = useState<any[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
     const [currentUser, setCurrentUser] = useState<any>(null);
 
-    const fetchRooms = useCallback(async () => {
-        try {
+    const queryClient = useQueryClient();
+
+    // 1. Fetch Rooms Query
+    const { data: rooms = [], refetch: refreshRooms } = useQuery<Room[]>({
+        queryKey: ['chat-rooms'],
+        queryFn: async () => {
             const token = localStorage.getItem('token');
             const res = await fetch('/api/chat/rooms', {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
-            if (res.ok) {
-                const data = await res.json();
-                setRooms(data);
-            }
-        } catch (error) {
-            console.error('Failed to fetch rooms', error);
-        } finally {
-            setIsLoading(false);
-        }
-    }, []);
+            if (!res.ok) throw new Error('Failed to fetch rooms');
+            return res.json();
+        },
+        refetchInterval: 10000,
+        enabled: !!currentUser
+    });
 
-    // Messages Polling & Fetching
-    const fetchMessages = useCallback(async (roomId: string) => {
-        try {
+    // 2. Fetch Messages Query
+    const { data: messagesData = [], isLoading: isMessagesLoading } = useQuery<any[]>({
+        queryKey: ['chat-messages', activeRoom?.id],
+        queryFn: async () => {
             const token = localStorage.getItem('token');
-            const res = await fetch(`/api/chat/messages?roomId=${roomId}`, {
+            const res = await fetch(`/api/chat/messages?roomId=${activeRoom?.id}`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
-            if (res.ok) {
-                const data = await res.json();
-                setMessages(data);
-            }
-        } catch (error) {
-            console.error('Failed to fetch messages', error);
-        }
-    }, []);
+            if (!res.ok) throw new Error('Failed to fetch messages');
+            return res.json();
+        },
+        refetchInterval: 3000,
+        enabled: !!activeRoom?.id,
+        initialData: []
+    });
 
-    // Initial Load & Auth
+    // Sync messages state for optimistic updates
+    useEffect(() => {
+        if (messagesData.length > 0) {
+            setMessages(messagesData);
+        }
+    }, [messagesData]);
+
+    // Initial Auth Load
     useEffect(() => {
         const userData = localStorage.getItem('user');
         if (userData) {
             setCurrentUser(JSON.parse(userData));
-            fetchRooms();
         }
-    }, [fetchRooms]);
-
-
-
-    // Poll for messages when active room changes
-    useEffect(() => {
-        if (activeRoom) {
-            fetchMessages(activeRoom.id);
-            const interval = setInterval(() => {
-                fetchMessages(activeRoom.id); // Poll active room
-                fetchRooms(); // Poll room list for last message updates
-            }, 3000); // 3s polling for "real-time"
-
-            return () => clearInterval(interval);
-        } else {
-            // Poll room list even if no room active (for unread status)
-            const interval = setInterval(fetchRooms, 10000);
-            return () => clearInterval(interval);
-        }
-    }, [activeRoom, fetchMessages, fetchRooms]);
+    }, []);
 
     const sendMessage = async (content: string, attachments?: any[]) => {
         if (!activeRoom || !content.trim()) return;
@@ -105,7 +91,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
             content,
             senderId: currentUser.id,
             createdAt: new Date().toISOString(),
-            sender: currentUser, // Simplified
+            sender: currentUser,
             isOptimistic: true,
             attachments
         };
@@ -126,9 +112,8 @@ export function ChatProvider({ children }: { children: ReactNode }) {
             if (res.ok) {
                 const sentMsg = await res.json();
                 setMessages(prev => prev.map(m => m.id === tempId ? sentMsg : m));
-                fetchRooms(); // Update sidebar
+                queryClient.invalidateQueries({ queryKey: ['chat-rooms'] });
             } else {
-                // Remove optimistic on failure
                 setMessages(prev => prev.filter(m => m.id !== tempId));
                 alert('Failed to send message');
             }
@@ -139,11 +124,11 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     };
 
     const markAsRead = async (roomId: string) => {
-        // Optimistic
-        setRooms(prev => prev.map(r => r.id === roomId ? { ...r, unreadCount: 0 } : r));
-
-        // In real app, call API to update lastViewedAt
-        // For now we assume fetchMessages implicitly marks 'read' in UI perception
+        // Optimistic Update via React Query
+        queryClient.setQueryData(['chat-rooms'], (old: Room[] | undefined) => {
+            if (!old) return [];
+            return old.map(r => r.id === roomId ? { ...r, unreadCount: 0 } : r);
+        });
     };
 
     return (
@@ -154,9 +139,9 @@ export function ChatProvider({ children }: { children: ReactNode }) {
             messages,
             setMessages,
             sendMessage,
-            isLoading,
+            isLoading: isMessagesLoading,
             currentUser,
-            refreshRooms: fetchRooms,
+            refreshRooms,
             markAsRead
         }}>
             {children}

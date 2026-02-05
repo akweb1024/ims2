@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { authorizedRoute } from '@/lib/middleware-auth';
 import { createErrorResponse } from '@/lib/api-utils';
+import { applyApprovedIncrement } from '@/lib/services/salary-service';
 import { z } from 'zod';
 
 const adminReviewSchema = z.object({
@@ -59,56 +60,8 @@ export const POST = authorizedRoute(
 
             const updated = await prisma.$transaction(async (tx) => {
                 if (action === 'approve') {
-                    // Update employee profile with new salary
-                    await tx.employeeProfile.update({
-                        where: { id: increment.employeeProfileId },
-                        data: {
-                            baseSalary: increment.newSalary,
-                            salaryFixed: increment.newFixed,
-                            salaryVariable: increment.newVariable,
-                            salaryIncentive: increment.newIncentive,
-
-                            // Update Detailed Structure & Flags
-                            hasVariable: increment.optInVariable,
-                            variablePerTarget: increment.newVariablePerTarget,
-                            variableUpperCap: increment.newVariableUpperCap,
-                            variableDefinition: increment.variableDefinition,
-
-                            hasIncentive: increment.optInIncentive,
-                            incentivePercentage: increment.newIncentivePercentage,
-                            incentiveDefinition: increment.incentiveDefinition,
-
-                            designation: increment.newDesignation || increment.previousDesignation,
-                            designationJustification: increment.reason || undefined,
-                            lastIncrementDate: increment.effectiveDate,
-                            lastIncrementPercentage: increment.percentage,
-                            monthlyTarget: increment.newMonthlyTarget || 0,
-                            yearlyTarget: (increment as any).newYearlyTarget || 0,
-                            jobDescription: increment.newJobDescription || undefined,
-                            kra: increment.newKRA || undefined,
-                            metrics: increment.newKPI || undefined,
-                        } as any
-                    });
-
-                    // Update SalaryStructure with new perks
-                    await tx.salaryStructure.upsert({
-                        where: { employeeId: increment.employeeProfileId },
-                        create: {
-                            employeeId: increment.employeeProfileId,
-                            healthCare: increment.newHealthCare || 0,
-                            travelling: increment.newTravelling || 0,
-                            mobile: increment.newMobile || 0,
-                            internet: increment.newInternet || 0,
-                            booksAndPeriodicals: increment.newBooksAndPeriodicals || 0,
-                        },
-                        update: {
-                            healthCare: increment.newHealthCare || 0,
-                            travelling: increment.newTravelling || 0,
-                            mobile: increment.newMobile || 0,
-                            internet: increment.newInternet || 0,
-                            booksAndPeriodicals: increment.newBooksAndPeriodicals || 0,
-                        }
-                    });
+                    // Use Centralized Salary Service to update Profile, Structure, KPIs, etc.
+                    await applyApprovedIncrement(increment, user.id, tx);
 
                     updateData.status = 'APPROVED';
                 } else {

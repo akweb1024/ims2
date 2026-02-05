@@ -44,23 +44,34 @@ export const GET = authorizedRoute(
                 });
 
                 // 3. Get revenue from Razorpay Payments
-                const razorpayRevenue = await prisma.payment.aggregate({
+                const razorpayPayments = await prisma.payment.findMany({
                     where: {
                         companyId: user.companyId,
                         status: 'captured',
                         paymentDate: { gte: start, lte: end }
-                    },
-                    _sum: { amount: true }
+                    }
                 });
 
+                // Deduplicate: If a Razorpay payment is already recorded as a FinancialRecord (via referenceId), 
+                // we should not count it twice.
+                const financeRecords = await prisma.financialRecord.findMany({
+                    where: {
+                        companyId: user.companyId,
+                        type: 'REVENUE',
+                        date: { gte: start, lte: end },
+                        status: 'COMPLETED'
+                    }
+                });
+
+                const financeTotal = financeRecords.reduce((sum, r) => sum + (r.amount || 0), 0);
+                const existingRefIds = new Set(financeRecords.map(r => r.referenceId).filter(Boolean));
+
+                const uniqueRazorpayRevenue = razorpayPayments
+                    .filter(p => !existingRefIds.has(p.razorpayPaymentId) && !existingRefIds.has(p.transactionId))
+                    .reduce((sum, p) => sum + (p.amount || 0), 0);
+
                 const reportedTotal = workReportRevenue._sum.revenueGenerated || 0;
-                // Use the higher of FinancialRecord or Razorpay, or sum them if they are complementary? 
-                // Usually Razorpay is auto-synced, while FinancialRecord is manual. 
-                // Most reliable is Razorpay, but some might be cash/offline (FinancialRecord).
-                // Let's sum them but avoid double counting? 
-                // For now, let's treat FinancialRecord as the 'Official' book and Razorpay as the 'Digital' source.
-                // If the user hasn't synced Razorpay to FinancialRecords, we should probably check both.
-                const actualTotal = (financeRevenue._sum.amount || 0) + (razorpayRevenue._sum.amount || 0);
+                const actualTotal = financeTotal + uniqueRazorpayRevenue;
                 const mismatch = Math.abs(reportedTotal - actualTotal);
                 const isValid = mismatch < 1; // Tolerance for small rounding
 
@@ -68,8 +79,8 @@ export const GET = authorizedRoute(
                     date: currentDate.toISOString().split('T')[0],
                     reportedRevenue: reportedTotal,
                     actualRevenue: actualTotal,
-                    financeRevenue: financeRevenue._sum.amount || 0,
-                    razorpayRevenue: razorpayRevenue._sum.amount || 0,
+                    financeRevenue: financeTotal,
+                    razorpayRevenue: uniqueRazorpayRevenue,
                     mismatch,
                     isValid
                 });

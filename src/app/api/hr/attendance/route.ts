@@ -5,8 +5,8 @@ import { authorizedRoute } from '@/lib/middleware-auth';
 import { createErrorResponse } from '@/lib/api-utils';
 import { attendanceCorrectionSchema, selfServiceAttendanceSchema } from '@/lib/validators/hr';
 import { getDownlineUserIds } from '@/lib/hierarchy';
-import { processLateArrival } from '@/lib/utils/leave-ledger-processor';
 import { getISTToday } from '@/lib/date-utils';
+import { upsertAttendanceRecord } from '@/lib/services/attendance-service';
 
 export const GET = authorizedRoute(
     [],
@@ -143,138 +143,28 @@ export const POST = authorizedRoute(
             if (action === 'check-in') {
                 if (existing?.checkIn) return createErrorResponse('Already checked in today', 400);
 
-                const isRemote = workFrom === 'REMOTE';
-                const userLat = parseFloat(String(latitude));
-                const userLon = parseFloat(String(longitude));
-                let isGeofenced = false;
-
-                if (user.companyId && !isRemote) {
-                    const company = await prisma.company.findUnique({
-                        where: { id: user.companyId },
-                        select: { latitude: true, longitude: true }
-                    });
-
-                    if (company?.latitude && company?.longitude && !isNaN(userLat) && !isNaN(userLon)) {
-                        const R = 6371e3;
-                        const φ1 = (userLat * Math.PI) / 180;
-                        const φ2 = (company.latitude * Math.PI) / 180;
-                        const Δφ = ((company.latitude - userLat) * Math.PI) / 180;
-                        const Δλ = ((company.longitude - userLon) * Math.PI) / 180;
-                        const a = Math.sin(Δφ / 2) * Math.sin(Δφ / 2) + Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
-                        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-                        const distance = R * c;
-                        isGeofenced = distance < 200;
-                    }
-                } else if (isRemote) {
-                    isGeofenced = true;
-                }
-
-                // Find Shift Roster
-                const roster = await prisma.shiftRoster.findUnique({
-                    where: { employeeId_date: { employeeId: profile.id, date: today } },
-                    include: { shift: true }
+                const record = await upsertAttendanceRecord({
+                    employeeId: profile.id,
+                    companyId: user.companyId!,
+                    date: today,
+                    checkIn: new Date(),
+                    workFrom: (workFrom as any) || 'OFFICE',
+                    latitude: latitude ? parseFloat(String(latitude)) : null,
+                    longitude: longitude ? parseFloat(String(longitude)) : null,
+                    locationName
                 });
-
-                const now = new Date();
-                let lateMinutes = 0;
-                const shiftId = roster?.shiftId;
-
-                if (roster?.shift) {
-                    const shift = roster.shift;
-                    const [sHrs, sMin] = shift.startTime.split(':').map(Number);
-                    const shiftStart = new Date(today);
-                    shiftStart.setHours(sHrs, sMin, 0, 0);
-
-                    const graceLimit = new Date(shiftStart);
-                    graceLimit.setMinutes(graceLimit.getMinutes() + (shift.gracePeriod || 0));
-
-                    if (now > graceLimit) {
-                        lateMinutes = Math.floor((now.getTime() - shiftStart.getTime()) / (1000 * 60));
-                    }
-                }
-
-                const isLate = lateMinutes > 0;
-
-                const record = await prisma.attendance.upsert({
-                    where: { employeeId_date: { employeeId: profile.id, date: today } },
-                    update: {
-                        checkIn: now,
-                        workFrom: workFrom || 'OFFICE',
-                        latitude: isNaN(userLat) ? null : userLat,
-                        longitude: isNaN(userLon) ? null : userLon,
-                        isGeofenced,
-                        locationName: locationName || (isRemote ? 'Remote Location' : 'Office HQ'),
-                        companyId: user.companyId,
-                        shiftId,
-                        lateMinutes,
-                        isLate
-                    },
-                    create: {
-                        employeeId: profile.id,
-                        date: today,
-                        checkIn: now,
-                        workFrom: workFrom || 'OFFICE',
-                        status: 'PRESENT',
-                        latitude: isNaN(userLat) ? null : userLat,
-                        longitude: isNaN(userLon) ? null : userLon,
-                        isGeofenced,
-                        locationName: locationName || (isRemote ? 'Remote Location' : 'Office HQ'),
-                        companyId: user.companyId,
-                        shiftId,
-                        lateMinutes,
-                        isLate
-                    }
-                });
-
-                // Process late arrival for leave deduction (if applicable)
-                if (lateMinutes >= 31) {
-                    await processLateArrival(profile.id, lateMinutes, user.companyId);
-                }
 
                 return NextResponse.json(record);
             } else if (action === 'check-out') {
                 if (!existing?.checkIn) return createErrorResponse('Must check in first', 400);
                 if (existing.checkOut) return createErrorResponse('Already checked out today', 400);
 
-                const now = new Date();
-                let otMinutes = 0;
-
-                const attendanceWithShift = await prisma.attendance.findUnique({
-                    where: { id: existing.id },
-                    include: { shift: true }
+                const record = await upsertAttendanceRecord({
+                    employeeId: profile.id,
+                    companyId: user.companyId!,
+                    date: today,
+                    checkOut: new Date()
                 });
-
-                let shortLeaveMinutes = 0;
-                if (attendanceWithShift?.shift) {
-                    const shift = attendanceWithShift.shift;
-                    const [eHrs, eMin] = shift.endTime.split(':').map(Number);
-                    const shiftEnd = new Date(existing.date);
-                    shiftEnd.setHours(eHrs, eMin, 0, 0);
-
-                    if (now > shiftEnd) {
-                        otMinutes = Math.floor((now.getTime() - shiftEnd.getTime()) / (1000 * 60));
-                    } else {
-                        shortLeaveMinutes = Math.floor((shiftEnd.getTime() - now.getTime()) / (1000 * 60));
-                    }
-                }
-
-                const isShort = shortLeaveMinutes > 0;
-
-                const record = await prisma.attendance.update({
-                    where: { id: existing.id },
-                    data: {
-                        checkOut: now,
-                        otMinutes,
-                        shortMinutes: shortLeaveMinutes,
-                        isShort
-                    }
-                });
-
-                // Process short leave for leave deduction (if applicable)
-                if (shortLeaveMinutes >= 90) {
-                    const { processShortLeave } = await import('@/lib/utils/leave-ledger-processor');
-                    await processShortLeave(profile.id, shortLeaveMinutes, user.companyId);
-                }
 
                 return NextResponse.json(record);
             }

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { authorizedRoute } from '@/lib/middleware-auth';
 import { createErrorResponse } from '@/lib/api-utils';
+import { upsertAttendanceRecord } from '@/lib/services/attendance-service';
 
 export const POST = authorizedRoute(
     ['SUPER_ADMIN', 'ADMIN'],
@@ -95,26 +96,17 @@ export const POST = authorizedRoute(
 
                     const status = statusIdx !== -1 ? cols[statusIdx] : 'PRESENT';
 
-                    await prisma.attendance.upsert({
-                        where: {
-                            employeeId_date: {
-                                employeeId: employee.id,
-                                date: date
-                            }
-                        },
-                        update: {
-                            checkIn: checkIn || undefined,
-                            checkOut: checkOut || undefined,
-                            status: status || 'PRESENT'
-                        },
-                        create: {
-                            employeeId: employee.id,
-                            date: date,
-                            checkIn: checkIn,
-                            checkOut: checkOut,
-                            status: status || 'PRESENT',
-                            companyId: user.companyId
-                        }
+                    // Use centralized service for upserting attendance record
+                    // This ensures geofencing, shift matching, and late-arrival deductions are applied
+                    await upsertAttendanceRecord({
+                        employeeId: employee.id,
+                        companyId: user.companyId!,
+                        date: date,
+                        checkIn: checkIn || undefined,
+                        checkOut: checkOut || undefined,
+                        status: (status as any) || 'PRESENT',
+                        isManual: true, // Imports are treated as manual adjustments for rules
+                        workFrom: 'OFFICE' // Default for import unless specified
                     });
 
                     results.success++;

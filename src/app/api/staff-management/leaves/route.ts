@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { authorizedRoute } from '@/lib/middleware-auth';
+import { updateLeaveRequestStatus } from '@/lib/services/leave-service';
 import { logger } from '@/lib/logger';
 
 // GET /api/staff-management/leaves - List leave requests
@@ -97,16 +98,9 @@ export const PUT = authorizedRoute(
                 return NextResponse.json({ error: 'Leave ID and status are required' }, { status: 400 });
             }
 
-            const leave = await prisma.leaveRequest.update({
-                where: { id: leaveId },
-                data: {
-                    status,
-                    ...(status === 'APPROVED' && {
-                        approvedBy: {
-                            connect: { id: user.id }
-                        }
-                    })
-                }
+            // Use centralized service for status update and balance/ledger synchronization
+            const leave = await prisma.$transaction(async (tx) => {
+                return await updateLeaveRequestStatus(leaveId, status, user.id, tx);
             });
 
             return NextResponse.json({ message: 'Leave updated successfully', leave });

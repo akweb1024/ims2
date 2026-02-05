@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { authorizedRoute } from '@/lib/middleware-auth';
 import { createErrorResponse } from '@/lib/api-utils';
+import { upsertAttendanceRecord } from '@/lib/services/attendance-service';
 import { z } from 'zod';
 
 // Validation schema for manual attendance
@@ -85,44 +86,16 @@ export const POST = authorizedRoute(
                 }
             }
 
-            // Upsert Attendance
-            const record = await prisma.attendance.upsert({
-                where: {
-                    employeeId_date: {
-                        employeeId,
-                        date: targetDate
-                    }
-                },
-                update: {
-                    checkIn: checkInDate,
-                    checkOut: checkOutDate,
-                    status,
-                    workFrom: 'OFFICE', // Default for manual entry unless specified
-                    locationName: 'Manual Entry',
-                    isGeofenced: true, // Manual override implies valid
-                    lateMinutes: 0,
-                    shortMinutes: 0,
-                    otMinutes: 0,
-                    isLate: false,
-                    isShort: false,
-                    // Log modification? Could add note
-                },
-                create: {
-                    employeeId,
-                    date: targetDate,
-                    checkIn: checkInDate,
-                    checkOut: checkOutDate,
-                    status,
-                    workFrom: 'OFFICE',
-                    locationName: 'Manual Entry',
-                    companyId: user.companyId,
-                    isGeofenced: true,
-                    lateMinutes: 0,
-                    shortMinutes: 0,
-                    otMinutes: 0,
-                    isLate: false,
-                    isShort: false
-                }
+            // Upsert Attendance via Centralized Service
+            const record = await upsertAttendanceRecord({
+                employeeId,
+                companyId: user.companyId!,
+                date: targetDate,
+                checkIn: checkInDate,
+                checkOut: checkOutDate,
+                status,
+                remarks: notes,
+                isManual: true
             });
 
             return NextResponse.json(record);

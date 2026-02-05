@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { authorizedRoute } from '@/lib/middleware-auth';
+import { upsertAttendanceRecord } from '@/lib/services/attendance-service';
 import { logger } from '@/lib/logger';
 
 // POST /api/staff-management/attendance/manual
@@ -92,40 +93,17 @@ export const POST = authorizedRoute(
 
             const targetProfileId = profile.id;
 
-            // Upsert Attendance Record
-            const attendance = await prisma.attendance.upsert({
-                where: {
-                    employeeId_date: {
-                        employeeId: targetProfileId,
-                        date: recordDate
-                    }
-                },
-                update: {
-                    checkIn: checkInTime,
-                    checkOut: checkOutTime,
-                    status: (status || 'PRESENT') as any,
-                    remarks: remarks,
-                    workFrom: (workMode || 'OFFICE') as any,
-                    lateMinutes: lateMinutes,
-                    shortMinutes: shortMinutes,
-                    isLate: isLate,
-                    isShort: isShort,
-                    companyId: user.companyId
-                } as any,
-                create: {
-                    employeeId: targetProfileId,
-                    date: recordDate,
-                    checkIn: checkInTime,
-                    checkOut: checkOutTime,
-                    status: (status || 'PRESENT') as any,
-                    remarks: remarks,
-                    workFrom: (workMode || 'OFFICE') as any,
-                    lateMinutes: lateMinutes,
-                    shortMinutes: shortMinutes,
-                    isLate: isLate,
-                    isShort: isShort,
-                    companyId: user.companyId
-                } as any
+            // Upsert Attendance via Centralized Service
+            const attendance = await upsertAttendanceRecord({
+                employeeId: targetProfileId,
+                companyId: user.companyId!,
+                date: recordDate,
+                checkIn: checkInTime,
+                checkOut: checkOutTime,
+                status: status || 'PRESENT',
+                remarks: remarks,
+                workFrom: workMode || 'OFFICE',
+                isManual: true
             });
 
             logger.info('Manual attendance record updated/created', {
