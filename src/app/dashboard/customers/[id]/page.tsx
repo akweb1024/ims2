@@ -34,11 +34,12 @@ export default function CustomerDetailPage({ params }: { params: Promise<{ id: s
         if (showEditModal) {
             const token = localStorage.getItem('token');
 
-            if (['SUPER_ADMIN', 'MANAGER'].includes(userRole)) {
-                fetch('/api/users', { headers: { 'Authorization': `Bearer ${token}` } })
-                    .then(res => res.json())
-                    .then(data => setStaffList(data.filter((u: any) => ['EXECUTIVE', 'MANAGER'].includes(u.role))));
-            }
+            fetch('/api/users', { headers: { 'Authorization': `Bearer ${token}` } })
+                .then(res => res.json())
+                .then(response => {
+                    const data = Array.isArray(response) ? response : (response.data || []);
+                    setStaffList(data.filter((u: any) => ['EXECUTIVE', 'MANAGER'].includes(u.role)));
+                });
 
             fetch('/api/institutions', { headers: { 'Authorization': `Bearer ${token}` } })
                 .then(res => res.json())

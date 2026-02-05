@@ -36,7 +36,8 @@ export default function CustomerAssignmentManager({
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             if (res.ok) {
-                const data = await res.json();
+                const response = await res.json();
+                const data = Array.isArray(response) ? response : (response.data || []);
                 setEmployees(data);
             }
         } catch (error) {
@@ -185,8 +186,8 @@ export default function CustomerAssignmentManager({
                                     required
                                 >
                                     <option value="">Choose an employee...</option>
-                                    {employees
-                                        .filter(emp => !currentAssignments.some(a => a.employee.id === emp.id))
+                                    {(Array.isArray(employees) ? employees : [])
+                                        .filter(emp => !currentAssignments?.some(a => a.employee.id === emp.id))
                                         .map(emp => (
                                             <option key={emp.id} value={emp.id}>
                                                 {emp.email} ({emp.role})

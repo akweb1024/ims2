@@ -22,9 +22,12 @@ export default function AssignTaskModal({ isOpen, onClose, articleId, currentSta
     useEffect(() => {
         if (isOpen) {
             // Fetch potential assignees (simplified: fetching all relevant staff)
-            fetch('/api/users?role=staff') // Assuming this endpoint exists or similar
+            fetch('/api/users?role=staff')
                 .then(res => res.json())
-                .then(data => setUsers(data))
+                .then(response => {
+                    const data = Array.isArray(response) ? response : (response.data || []);
+                    setUsers(data);
+                })
                 .catch(err => console.error(err));
         }
     }, [isOpen]);
