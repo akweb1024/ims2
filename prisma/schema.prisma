@@ -223,6 +223,8 @@ model User {
   workshopEnrollments      WorkshopEnrollment[]
   assignedToCustomers      CustomerProfile[]           @relation("CustomerToExecutives")
   companies                Company[]                   @relation("UserCompanies")
+  reviewedGoals            EmployeeGoal[]              @relation("GoalReviewer")
+  createdTasks             Task[]                      @relation("TaskAssigner")
 
   @@index([email])
   @@index([role])
@@ -714,12 +716,15 @@ model ConversationChecklist {
 
 model Task {
   id                    String     @id @default(uuid())
-  userId                String
+  userId                String // Assigned to
+  assignedById          String? // Assigned by (manager/admin)
   title                 String
   description           String?
   dueDate               DateTime
   priority              Priority   @default(MEDIUM)
   status                TaskStatus @default(PENDING)
+  estimatedEffort       Float? // In hours
+  actualEffort          Float? // In hours
   relatedCustomerId     String?
   relatedSubscriptionId String?
   createdAt             DateTime   @default(now())
@@ -727,8 +732,10 @@ model Task {
   companyId             String?
   company               Company?   @relation(fields: [companyId], references: [id])
   user                  User       @relation(fields: [userId], references: [id])
+  assignedBy            User?      @relation("TaskAssigner", fields: [assignedById], references: [id])
 
   @@index([userId])
+  @@index([assignedById])
   @@index([status])
   @@index([dueDate])
   @@index([companyId])
@@ -1060,89 +1067,89 @@ model AdvanceEMI {
 }
 
 model SalaryIncrementRecord {
-  id                     String          @id @default(uuid())
-  employeeProfileId      String
-  date                   DateTime        @default(now())
-  effectiveDate          DateTime        @default(now())
-  oldSalary              Float
-  oldFixed               Float           @default(0)
-  oldVariable            Float           @default(0)
-  oldIncentive           Float           @default(0)
-  newSalary              Float
-  newFixed               Float           @default(0)
-  newVariable            Float           @default(0)
-  newIncentive           Float           @default(0)
-  oldBaseTarget          Float?          @default(0)
-  newBaseTarget          Float?          @default(0)
-  oldVariableRate        Float?          @default(0)
-  newVariableRate        Float?          @default(0)
-  oldVariableUnit        Float?          @default(0)
-  newVariableUnit        Float?          @default(0)
-  currentMonthlyTarget   Float?          @default(0)
-  newMonthlyTarget       Float?          @default(0)
-  currentYearlyTarget    Float?          @default(0)
-  newYearlyTarget        Float?          @default(0)
-  variableDefinition     String?
-  incentiveDefinition    String?
-  incrementAmount        Float
-  percentage             Float
-  optInVariable          Boolean         @default(false)
-  optInIncentive         Boolean         @default(false)
-  oldVariablePerTarget   Float?
-  newVariablePerTarget   Float?
-  oldVariableUpperCap    Float?
-  newVariableUpperCap    Float?
-  oldIncentivePercentage Float?
-  newIncentivePercentage Float?
-  oldHealthCare          Float?
-  newHealthCare          Float?
-  oldTravelling          Float?
-  newTravelling          Float?
-  oldMobile              Float?
-  newMobile              Float?
-  oldInternet            Float?
-  newInternet            Float?
-  oldBooksAndPeriodicals Float?
-  newBooksAndPeriodicals Float?
-  type                   String          @default("INCREMENT")
-  previousDesignation    String?
-  newDesignation         String?
-  oldJobDescription      String?
-  newJobDescription      String?
-  reason                 String?
-  status                 String          @default("DRAFT")
-  isDraft                Boolean         @default(true)
-  recommendedByUserId    String?
-  managerReviewDate      DateTime?
-  managerComments        String?
-  managerApproved        Boolean         @default(false)
-  approvedByUserId       String?
-  adminReviewDate        DateTime?
-  adminComments          String?
-  adminApproved          Boolean         @default(false)
-  oldKRA                 String?
-  oldKPI                 Json?
-  newKRA                 String?
-  newKPI                 Json?
-  performanceNotes       String?
-  createdAt              DateTime        @default(now())
-  updatedAt              DateTime        @updatedAt
-  fiscalYear             String?
-  q1Target               Float?          @default(0)
-  q2Target               Float?          @default(0)
-  q3Target               Float?          @default(0)
-  q4Target               Float?          @default(0)
-  monthlyFixSalary       Float           @default(0)
-  monthlyFixTarget       Float           @default(0)
-  monthlyTotalSalary     Float           @default(0)
-  monthlyTotalTarget     Float           @default(0)
-  monthlyVariableSalary  Float           @default(0)
-  monthlyVariableTarget  Float           @default(0)
-  monthlyTargets         Json?
-  monthlyVariableTargets Json?
-  monthlyFixedSalaries   Json?
+  id                      String          @id @default(uuid())
+  employeeProfileId       String
+  date                    DateTime        @default(now())
+  effectiveDate           DateTime        @default(now())
+  oldSalary               Float
+  oldFixed                Float           @default(0)
+  oldVariable             Float           @default(0)
+  oldIncentive            Float           @default(0)
+  newSalary               Float
+  newFixed                Float           @default(0)
+  newVariable             Float           @default(0)
+  newIncentive            Float           @default(0)
+  oldBaseTarget           Float?          @default(0)
+  newBaseTarget           Float?          @default(0)
+  oldVariableRate         Float?          @default(0)
+  newVariableRate         Float?          @default(0)
+  oldVariableUnit         Float?          @default(0)
+  newVariableUnit         Float?          @default(0)
+  currentMonthlyTarget    Float?          @default(0)
+  newMonthlyTarget        Float?          @default(0)
+  currentYearlyTarget     Float?          @default(0)
+  newYearlyTarget         Float?          @default(0)
+  variableDefinition      String?
+  incentiveDefinition     String?
+  incrementAmount         Float
+  percentage              Float
+  optInVariable           Boolean         @default(false)
+  optInIncentive          Boolean         @default(false)
+  oldVariablePerTarget    Float?
+  newVariablePerTarget    Float?
+  oldVariableUpperCap     Float?
+  newVariableUpperCap     Float?
+  oldIncentivePercentage  Float?
+  newIncentivePercentage  Float?
+  oldHealthCare           Float?
+  newHealthCare           Float?
+  oldTravelling           Float?
+  newTravelling           Float?
+  oldMobile               Float?
+  newMobile               Float?
+  oldInternet             Float?
+  newInternet             Float?
+  oldBooksAndPeriodicals  Float?
+  newBooksAndPeriodicals  Float?
+  type                    String          @default("INCREMENT")
+  previousDesignation     String?
+  newDesignation          String?
+  oldJobDescription       String?
+  newJobDescription       String?
+  reason                  String?
+  status                  String          @default("DRAFT")
+  isDraft                 Boolean         @default(true)
+  recommendedByUserId     String?
+  managerReviewDate       DateTime?
+  managerComments         String?
+  managerApproved         Boolean         @default(false)
+  approvedByUserId        String?
+  adminReviewDate         DateTime?
+  adminComments           String?
+  adminApproved           Boolean         @default(false)
+  oldKRA                  String?
+  oldKPI                  Json?
+  newKRA                  String?
+  newKPI                  Json?
+  performanceNotes        String?
+  createdAt               DateTime        @default(now())
+  updatedAt               DateTime        @updatedAt
+  fiscalYear              String?
+  q1Target                Float?          @default(0)
+  q2Target                Float?          @default(0)
+  q3Target                Float?          @default(0)
+  q4Target                Float?          @default(0)
+  monthlyFixSalary        Float           @default(0)
+  monthlyFixTarget        Float           @default(0)
+  monthlyTotalSalary      Float           @default(0)
+  monthlyTotalTarget      Float           @default(0)
+  monthlyVariableSalary   Float           @default(0)
+  monthlyVariableTarget   Float           @default(0)
+  monthlyTargets          Json?
+  monthlyVariableTargets  Json?
+  monthlyFixedSalaries    Json?
   monthlyVariableSalaries Json?
-  employeeProfile        EmployeeProfile @relation(fields: [employeeProfileId], references: [id], onDelete: Cascade)
+  employeeProfile         EmployeeProfile @relation(fields: [employeeProfileId], references: [id], onDelete: Cascade)
 
   @@index([employeeProfileId])
   @@index([status])
@@ -1555,21 +1562,31 @@ model LeaveRequest {
 }
 
 model WorkPlan {
-  id         String            @id @default(uuid())
-  employeeId String
-  date       DateTime
-  agenda     String
-  strategy   String?
-  status     String            @default("SHARED")
-  createdAt  DateTime          @default(now())
-  updatedAt  DateTime          @updatedAt
-  companyId  String?
-  company    Company?          @relation(fields: [companyId], references: [id])
-  employee   EmployeeProfile   @relation(fields: [employeeId], references: [id], onDelete: Cascade)
-  comments   WorkPlanComment[]
+  id               String            @id @default(uuid())
+  employeeId       String
+  date             DateTime
+  agenda           String
+  strategy         String?
+  priority         String            @default("MEDIUM") // HIGH, MEDIUM, LOW
+  estimatedHours   Float?
+  actualHours      Float?
+  completionStatus String            @default("PLANNED") // PLANNED, IN_PROGRESS, COMPLETED, CANCELLED
+  linkedGoalId     String? // Link to EmployeeGoal
+  visibility       String            @default("MANAGER") // SELF, MANAGER, ADMIN, ALL
+  status           String            @default("SHARED")
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  companyId        String?
+  company          Company?          @relation(fields: [companyId], references: [id])
+  employee         EmployeeProfile   @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  linkedGoal       EmployeeGoal?     @relation("GoalWorkPlans", fields: [linkedGoalId], references: [id])
+  comments         WorkPlanComment[]
 
   @@unique([employeeId, date])
   @@index([companyId])
+  @@index([linkedGoalId])
+  @@index([completionStatus])
+  @@index([date])
 }
 
 model OnboardingModule {
@@ -2629,27 +2646,37 @@ model LeaveLedger {
 }
 
 model EmployeeGoal {
-  id           String          @id @default(uuid())
-  employeeId   String
-  title        String
-  description  String?
-  targetValue  Float
-  currentValue Float           @default(0)
-  unit         String
-  type         GoalType        @default(MONTHLY)
-  startDate    DateTime
-  endDate      DateTime
-  status       String          @default("IN_PROGRESS")
-  companyId    String
-  kpiId        String?
-  createdAt    DateTime        @default(now())
-  updatedAt    DateTime        @updatedAt
-  company      Company         @relation(fields: [companyId], references: [id])
-  employee     EmployeeProfile @relation(fields: [employeeId], references: [id], onDelete: Cascade)
-  kpi          EmployeeKPI?    @relation(fields: [kpiId], references: [id])
+  id                    String          @id @default(uuid())
+  employeeId            String
+  title                 String
+  description           String?
+  kra                   String? // Key Result Area
+  targetValue           Float
+  currentValue          Float           @default(0)
+  achievementPercentage Float           @default(0)
+  unit                  String
+  type                  GoalType        @default(MONTHLY)
+  startDate             DateTime
+  endDate               DateTime
+  status                String          @default("IN_PROGRESS")
+  visibility            String          @default("MANAGER") // SELF, MANAGER, ADMIN, ALL
+  reviewerId            String? // Manager/Admin who reviews
+  reviewNotes           String?
+  companyId             String
+  kpiId                 String?
+  createdAt             DateTime        @default(now())
+  updatedAt             DateTime        @updatedAt
+  company               Company         @relation(fields: [companyId], references: [id])
+  employee              EmployeeProfile @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  kpi                   EmployeeKPI?    @relation(fields: [kpiId], references: [id])
+  reviewer              User?           @relation("GoalReviewer", fields: [reviewerId], references: [id])
+  workPlans             WorkPlan[]      @relation("GoalWorkPlans")
 
   @@index([employeeId])
   @@index([companyId])
+  @@index([reviewerId])
+  @@index([type])
+  @@index([status])
 }
 
 model IncentiveSchema {
