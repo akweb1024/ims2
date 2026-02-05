@@ -317,15 +317,15 @@ function NewIncrementContent() {
                                 New Salary Structure
                             </h2>
 
-                            {/* Fixed Salary */}
+                            {/* CTC */}
                             <div className="mb-6">
-                                <label className="label-premium">Fixed Salary *</label>
+                                <label className="label-premium">CTC *</label>
                                 <input
                                     type="number"
                                     required
                                     min="0"
                                     step="any"
-                                    title="New Fixed Salary"
+                                    title="New CTC"
                                     placeholder="0"
                                     className="input-premium"
                                     value={form.newFixedSalary}
@@ -432,7 +432,7 @@ function NewIncrementContent() {
                                                     value={form.newBaseTarget}
                                                     onChange={(e) => setForm({ ...form, newBaseTarget: parseFloat(e.target.value) || 0 })}
                                                 />
-                                                <p className="text-xs text-blue-600 mt-1">Quota for Fixed Salary</p>
+                                                <p className="text-xs text-blue-600 mt-1">Quota for CTC</p>
                                             </div>
                                         </div>
 
@@ -870,7 +870,7 @@ function NewIncrementContent() {
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
                                 <div>
-                                    <label className="label-premium">New Fixed Salary (Avg/Monthly)</label>
+                                    <label className="label-premium">New CTC (Avg/Monthly)</label>
                                     <input
                                         type="number"
                                         className="input-premium font-bold text-purple-700"

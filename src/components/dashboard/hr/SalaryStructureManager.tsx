@@ -141,7 +141,7 @@ export default function SalaryStructureManager() {
             });
             if (res.ok) {
                 const data = await res.json();
-                if (confirm(`Found approved increment effective ${new Date(data.effectiveDate).toLocaleDateString()}.\nFixed Salary: ₹${data.newFixedSalary || data.newSalary}\nApply this structure?`)) {
+                if (confirm(`Found approved increment effective ${new Date(data.effectiveDate).toLocaleDateString()}.\nCTC: ₹${data.newFixedSalary || data.newSalary}\nApply this structure?`)) {
                     // Use newFixedSalary as the base for Gross Structure
                     // Note: If newFixedSalary is annual, divide by 12?
                     // Typically SalaryIncrementRecord stores MONTHLY or ANNUAL?

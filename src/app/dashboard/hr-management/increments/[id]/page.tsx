@@ -319,7 +319,7 @@ export default function IncrementDetailPage() {
                                     </thead>
                                     <tbody className="divide-y divide-secondary-100">
                                         {[
-                                            { label: 'Fixed Salary', old: increment.oldFixed || 0, new: increment.newFixed || 0 },
+                                            { label: 'CTC', old: increment.oldFixed || 0, new: increment.newFixed || 0 },
                                             { label: 'Variable Pay', old: increment.oldVariable || 0, new: increment.newVariable || 0 },
                                             { label: 'Incentives', old: increment.oldIncentive || 0, new: increment.newIncentive || 0 },
                                             {
@@ -379,10 +379,10 @@ export default function IncrementDetailPage() {
                         <div className="mb-8">
                             <h3 className="text-sm font-bold text-secondary-700 mb-4">Component-wise Comparison</h3>
                             <div className="space-y-4">
-                                {/* Fixed Salary Bar */}
+                                {/* CTC Bar */}
                                 <div>
                                     <div className="flex justify-between mb-2">
-                                        <span className="text-xs font-bold text-secondary-600">Fixed Salary</span>
+                                        <span className="text-xs font-bold text-secondary-600">CTC</span>
                                         <div className="flex gap-4">
                                             <span className="text-xs text-secondary-500">Old: ₹{(increment.oldFixed || 0).toLocaleString()}</span>
                                             <span className="text-xs font-bold text-primary-600">New: ₹{(increment.newFixed || 0).toLocaleString()}</span>

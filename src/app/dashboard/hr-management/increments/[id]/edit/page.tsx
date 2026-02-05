@@ -315,16 +315,21 @@ export default function EditIncrementPage() {
                             })()}
                         </div>
 
-                        {/* New Salary Structure */}
+                        {/* New CTC Structure */}
                         <div className="card-premium p-6">
                             <h2 className="text-lg font-black text-secondary-900 mb-4 flex items-center gap-2">
                                 <DollarSign className="text-success-500" size={20} />
-                                New Salary Structure
+                                New CTC Structure
                             </h2>
 
-                            {/* Fixed Salary */}
+                            {/* CTC Grid */}
+                            <h4 className="text-sm font-black text-secondary-700 mb-3 flex items-center gap-2">
+                                💸 Monthly CTC Breakdown
+                            </h4>
+
+                            {/* CTC */}
                             <div className="mb-6">
-                                <label className="label-premium">Fixed Salary *</label>
+                                <label className="label-premium">CTC *</label>
                                 <input
                                     type="number"
                                     required
@@ -435,7 +440,7 @@ export default function EditIncrementPage() {
                                                     value={form.newBaseTarget}
                                                     onChange={(e) => setForm({ ...form, newBaseTarget: parseFloat(e.target.value) || 0 })}
                                                 />
-                                                <p className="text-xs text-blue-600 mt-1">Quota for Fixed Salary</p>
+                                                <p className="text-xs text-blue-600 mt-1">Quota for CTC</p>
                                             </div>
                                         </div>
 
@@ -868,7 +873,7 @@ export default function EditIncrementPage() {
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
                                 <div>
-                                    <label className="label-premium">New Fixed Salary (Avg/Monthly)</label>
+                                    <label className="label-premium">New CTC (Avg/Monthly)</label>
                                     <input
                                         type="number"
                                         className="input-premium font-bold text-purple-700"

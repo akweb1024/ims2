@@ -99,7 +99,7 @@ export default function Employee360Modal({ employeeId, isOpen, onClose }: Employ
                             </h3>
                             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
                                 <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
-                                    <p className="text-[10px] font-black text-slate-400 uppercase mb-1">Fixed Salary</p>
+                                    <p className="text-[10px] font-black text-slate-400 uppercase mb-1">CTC</p>
                                     <p className="text-xl font-black text-slate-900">₹{employee.salaryStructure?.salaryFixed?.toLocaleString() || '0'}</p>
                                 </div>
                                 <div className="p-4 bg-blue-50/50 rounded-2xl border border-blue-100">

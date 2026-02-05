@@ -260,7 +260,7 @@ export default function SalaryAnalysisSection({ data, companyStats = [] }: Salar
                             <PieChart>
                                 <Pie
                                     data={[
-                                        { name: 'Fixed Salary', value: data.breakdown.fixed },
+                                        { name: 'CTC', value: data.breakdown.fixed },
                                         { name: 'Variable Pay', value: data.breakdown.variable },
                                         { name: 'Incentives', value: data.breakdown.incentive },
                                         { name: 'Reimbursements', value: (data.breakdown as any).reimbursements || 0 }

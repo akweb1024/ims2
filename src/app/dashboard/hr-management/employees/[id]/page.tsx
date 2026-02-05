@@ -576,7 +576,7 @@ export default function EmployeeProfilePage() {
                                     </h3>
                                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                                         <div className="p-4 bg-white rounded-2xl border border-secondary-100 shadow-sm">
-                                            <p className="text-[10px] font-black text-secondary-400 uppercase tracking-wider mb-1">Fixed Salary</p>
+                                            <p className="text-[10px] font-black text-secondary-400 uppercase tracking-wider mb-1">CTC</p>
                                             <p className="text-xl font-black text-secondary-900">₹{employee.salaryStructure?.salaryFixed?.toLocaleString() || '0'}</p>
                                             <p className="text-[10px] text-secondary-500 font-bold">Monthly Base</p>
                                         </div>

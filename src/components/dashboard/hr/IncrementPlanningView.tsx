@@ -471,7 +471,7 @@ export default function IncrementPlanningView() {
                                                         placeholder="0"
                                                         value={editRecord.newBaseTarget || ''}
                                                         onChange={(e) => setEditRecord({ ...editRecord, newBaseTarget: e.target.value })}
-                                                        title="Base Target for Fixed Salary"
+                                                        title="Base Target for CTC"
                                                     />
                                                 </div>
                                             </div>
