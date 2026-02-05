@@ -14,7 +14,8 @@ export async function GET(req: NextRequest) {
         const search = searchParams.get('search') || '';
         const limit = parseInt(searchParams.get('limit') || '50');
 
-        const agencies = await prisma.customerProfile.findMany({
+        // Fetch from CustomerProfile
+        const profileAgencies = await prisma.customerProfile.findMany({
             where: {
                 customerType: 'AGENCY',
                 OR: [
@@ -33,7 +34,43 @@ export async function GET(req: NextRequest) {
             orderBy: { createdAt: 'desc' }
         });
 
-        return NextResponse.json(agencies);
+        // Fetch from Institution
+        const institutionAgencies = await prisma.institution.findMany({
+            where: {
+                type: 'AGENCY',
+                OR: [
+                    { name: { contains: search, mode: 'insensitive' } },
+                    { primaryEmail: { contains: search, mode: 'insensitive' } },
+                    { code: { contains: search, mode: 'insensitive' } }
+                ]
+            },
+            include: {
+                _count: {
+                    select: { subscriptions: true }
+                }
+            },
+            take: limit,
+            orderBy: { createdAt: 'desc' }
+        });
+
+        // Map Institutions to match CustomerProfile structure
+        const mappedInstitutions = institutionAgencies.map(inst => ({
+            ...inst,
+            customerType: 'AGENCY',
+            organizationName: inst.name, // Use name as organizationName for institutes
+            isInstitution: true,
+            agencyDetails: {
+                discountRate: 0,
+                territory: inst.city || '',
+            }
+        }));
+
+        // Combine and limit
+        const combined = [...profileAgencies, ...mappedInstitutions]
+            .sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+            .slice(0, limit);
+
+        return NextResponse.json(combined);
     } catch (error: any) {
         console.error('Error fetching agencies:', error);
         return NextResponse.json({ error: error.message }, { status: 500 });

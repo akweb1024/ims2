@@ -12,7 +12,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
 
         const { id } = await params;
 
-        const agency = await prisma.customerProfile.findUnique({
+        // Try CustomerProfile first
+        let agency: any = await prisma.customerProfile.findUnique({
             where: { id },
             include: {
                 agencyDetails: true,
@@ -25,6 +26,30 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
                 }
             }
         });
+
+        // If not found, try Institution
+        if (!agency) {
+            const inst = await prisma.institution.findUnique({
+                where: { id },
+                include: {
+                    _count: {
+                        select: { subscriptions: true }
+                    }
+                }
+            });
+
+            if (inst && inst.type === 'AGENCY') {
+                agency = {
+                    ...inst,
+                    customerType: 'AGENCY',
+                    isInstitution: true,
+                    agencyDetails: {
+                        discountRate: 0,
+                        territory: inst.city || '',
+                    }
+                };
+            }
+        }
 
         if (!agency) {
             return NextResponse.json({ error: 'Agency not found' }, { status: 404 });
@@ -52,8 +77,21 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
             primaryPhone,
             discountRate,
             commissionTerms,
-            territory
+            territory,
+            isInstitution
         } = body;
+
+        if (isInstitution) {
+            const updated = await prisma.institution.update({
+                where: { id },
+                data: {
+                    name,
+                    primaryPhone,
+                    city: territory, // Map territory back to city for institutes or add specific fields
+                }
+            });
+            return NextResponse.json({ ...updated, isInstitution: true });
+        }
 
         const updated = await prisma.customerProfile.update({
             where: { id },
@@ -90,13 +128,20 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
 
         const { id } = await params;
 
-        // Ideally soft delete or check for subscriptions
-        // For now, cascade delete will handle it via schema
-        await prisma.customerProfile.delete({
-            where: { id }
-        });
+        // Try deleting from CustomerProfile
+        try {
+            await prisma.customerProfile.delete({
+                where: { id }
+            });
+            return NextResponse.json({ success: true });
+        } catch (e) {
+            // If not in CustomerProfile, try Institution
+            await prisma.institution.delete({
+                where: { id, type: 'AGENCY' }
+            });
+            return NextResponse.json({ success: true });
+        }
 
-        return NextResponse.json({ success: true });
     } catch (error: any) {
         return NextResponse.json({ error: error.message }, { status: 500 });
     }
