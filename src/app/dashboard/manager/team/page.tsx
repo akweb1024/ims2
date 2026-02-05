@@ -156,7 +156,7 @@ export default async function TeamOverviewPage() {
                                         </span>
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                        <Link href={`/dashboard/manager/team/members/${member.userId}`} className="text-primary-600 hover:text-primary-900 mr-4">
+                                        <Link href={`/dashboard/hr-management/employees/${member.userId}`} className="text-primary-600 hover:text-primary-900 mr-4">
                                             View Profile
                                         </Link>
                                     </td>

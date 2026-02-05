@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
+import Link from 'next/link';
 import { useTeam } from '@/hooks/useHR';
 import { Search, Grid, List, Mail, Phone, Calendar, Award } from 'lucide-react';
 import FormattedDate from '@/components/common/FormattedDate';
@@ -72,8 +73,8 @@ const TeamMembersView: React.FC = () => {
                                 </div>
                                 <div className="flex flex-col items-end gap-2">
                                     <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${member.role === 'MANAGER' ? 'bg-indigo-50 text-indigo-700 border border-indigo-100' :
-                                            member.role === 'SUPER_ADMIN' ? 'bg-primary-50 text-primary-700 border border-primary-100' :
-                                                'bg-secondary-50 text-secondary-600 border border-secondary-100'
+                                        member.role === 'SUPER_ADMIN' ? 'bg-primary-50 text-primary-700 border border-primary-100' :
+                                            'bg-secondary-50 text-secondary-600 border border-secondary-100'
                                         }`}>
                                         <div className={`w-1.5 h-1.5 rounded-full ${member.isActive ? 'bg-success-500' : 'bg-secondary-300'}`}></div>
                                         {member.role.replace('_', ' ')}
@@ -82,7 +83,9 @@ const TeamMembersView: React.FC = () => {
                             </div>
 
                             <div className="space-y-1 mb-8">
-                                <h3 className="text-xl font-black text-secondary-900 leading-none">{member.name || member.email.split('@')[0]}</h3>
+                                <Link href={`/dashboard/hr-management/employees/${member.id}`} className="hover:underline">
+                                    <h3 className="text-xl font-black text-secondary-900 leading-none">{member.name || (member.email ? member.email.split('@')[0] : 'User')}</h3>
+                                </Link>
                                 <p className="text-sm font-bold text-primary-600/80">{member.designation || 'Specialist'}</p>
                             </div>
 
@@ -107,9 +110,12 @@ const TeamMembersView: React.FC = () => {
                                     </div>
                                 </div>
 
-                                <button className="btn btn-secondary py-1.5 px-4 text-[10px] font-black uppercase tracking-widest hover:bg-primary-600 hover:text-white hover:border-primary-600 transition-all">
+                                <Link
+                                    href={`/dashboard/hr-management/employees/${member.id}`}
+                                    className="btn btn-secondary py-1.5 px-4 text-[10px] font-black uppercase tracking-widest hover:bg-primary-600 hover:text-white hover:border-primary-600 transition-all"
+                                >
                                     View Stats
-                                </button>
+                                </Link>
                             </div>
                         </div>
                     ))}
@@ -135,7 +141,9 @@ const TeamMembersView: React.FC = () => {
                                                 {member.name?.[0]?.toUpperCase() || member.email[0].toUpperCase()}
                                             </div>
                                             <div>
-                                                <p className="font-bold text-secondary-900">{member.name || member.email.split('@')[0]}</p>
+                                                <Link href={`/dashboard/hr-management/employees/${member.id}`} className="hover:underline">
+                                                    <p className="font-bold text-secondary-900">{member.name || (member.email ? member.email.split('@')[0] : 'User')}</p>
+                                                </Link>
                                                 <p className="text-[10px] text-secondary-400 font-medium">{member.email}</p>
                                             </div>
                                         </div>

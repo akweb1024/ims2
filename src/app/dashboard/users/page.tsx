@@ -426,11 +426,15 @@ function UsersContent() {
                                     <tr key={user.id} className="hover:bg-secondary-50 transition-colors">
                                         <td>
                                             <div className="flex items-center">
-                                                <div className="w-10 h-10 rounded-full bg-secondary-100 flex items-center justify-center font-bold text-secondary-600 mr-3">
-                                                    {(user.name?.[0] || user.email.charAt(0)).toUpperCase()}
-                                                </div>
+                                                <Link href={`/dashboard/hr-management/employees/${user.id}`} className="hover:opacity-80 transition-opacity">
+                                                    <div className="w-10 h-10 rounded-full bg-secondary-100 flex items-center justify-center font-bold text-secondary-600 mr-3">
+                                                        {(user.name?.[0] || user.email.charAt(0)).toUpperCase()}
+                                                    </div>
+                                                </Link>
                                                 <div>
-                                                    <p className="text-sm font-bold text-secondary-900 leading-tight">{user.name || user.email.split('@')[0]}</p>
+                                                    <Link href={`/dashboard/hr-management/employees/${user.id}`} className="hover:underline">
+                                                        <p className="text-sm font-bold text-secondary-900 leading-tight">{user.name || user.email.split('@')[0]}</p>
+                                                    </Link>
                                                     <p className="text-[10px] text-secondary-500 font-medium">{user.email}</p>
                                                     <div className="flex flex-wrap gap-1 mt-0.5">
                                                         <span className="text-[9px] font-black text-primary-600 uppercase tracking-tighter">
@@ -491,6 +495,13 @@ function UsersContent() {
                                                         <span>👤</span> Login As
                                                     </button>
                                                 )}
+                                                <Link
+                                                    href={`/dashboard/hr-management/employees/${user.id}`}
+                                                    className="p-2 border border-secondary-200 rounded-lg text-secondary-600 hover:bg-secondary-50 transition-colors flex items-center justify-center"
+                                                    title="View Detailed Profile"
+                                                >
+                                                    View
+                                                </Link>
                                                 <button
                                                     onClick={() => setEditingUser(user)}
                                                     className="p-2 border border-secondary-200 rounded-lg text-secondary-600 hover:bg-secondary-50 transition-colors"
