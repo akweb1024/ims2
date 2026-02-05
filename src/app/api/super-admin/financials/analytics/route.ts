@@ -19,7 +19,7 @@ export async function GET(req: NextRequest) {
 
         // 1. Base Filters
         const incrementWhere: any = { isDraft: false };
-        const revenueWhere: any = { status: 'APPROVED' };
+        const revenueWhere: any = { status: 'VERIFIED' };
 
         if (companyId && companyId !== 'ALL') {
             incrementWhere.employeeProfile = { user: { companyId } };

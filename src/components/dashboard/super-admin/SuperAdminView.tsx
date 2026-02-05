@@ -3,7 +3,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { Loader2, RefreshCw, LayoutDashboard, Landmark, HardDrive } from "lucide-react";
+import { Loader2, RefreshCw, LayoutDashboard, Landmark, HardDrive, Download } from "lucide-react";
 
 // New Advanced Components
 import AdvancedKPIStats from "./AdvancedKPIStats";
@@ -134,7 +134,14 @@ export default function SuperAdminView() {
                     >
                         <RefreshCw size={20} className={`text-secondary-600 ${refreshing ? 'animate-spin' : ''}`} />
                     </button>
-                    <QuickActions onExport={handleExport} />
+                    <button
+                        onClick={handleExport}
+                        className="flex items-center gap-2 px-4 py-2.5 bg-primary-600 text-white rounded-xl hover:bg-primary-700 transition-colors font-medium text-sm"
+                        title="Export Dashboard Data"
+                    >
+                        <Download size={18} />
+                        <span className="hidden sm:inline">Export Data</span>
+                    </button>
                 </div>
             </div>
 
@@ -174,10 +181,16 @@ export default function SuperAdminView() {
             <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-500">
                 {activeTab === "overview" && (
                     <>
+                        {/* Quick Actions - Prominent Widget */}
+                        <QuickActions onExport={handleExport} />
+
+                        {/* Charts Row */}
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                             {data.trends && <RevenueTrendsChart data={data.trends} />}
                             <HeadcountTrends data={{ companies: data.companyStats || [] }} />
                         </div>
+
+                        {/* Company Performance & Widgets */}
                         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                             <div className="lg:col-span-2">
                                 <CompanyPerformanceGrid

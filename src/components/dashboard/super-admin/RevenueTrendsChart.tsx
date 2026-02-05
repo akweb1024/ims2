@@ -53,6 +53,9 @@ export default function RevenueTrendsChart({ data }: { data: TrendData }) {
         return `₹${value}`;
     };
 
+    // Check if there's any data
+    const hasData = companyTotals.length > 0 && companyTotals.some(c => c.total > 0);
+
     return (
         <Card>
             <CardHeader>
@@ -62,29 +65,43 @@ export default function RevenueTrendsChart({ data }: { data: TrendData }) {
                 </CardTitle>
             </CardHeader>
             <CardContent className="h-[350px]">
-                <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                        <XAxis dataKey="month" tick={{ fontSize: 12 }} />
-                        <YAxis tickFormatter={formatYAxis} tick={{ fontSize: 11 }} />
-                        <Tooltip
-                            formatter={(value: number | undefined) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(value || 0)}
-                            contentStyle={{ borderRadius: '8px', border: '1px solid #e5e7eb' }}
-                        />
-                        <Legend />
-                        {companyTotals.map((company, idx) => (
-                            <Line
-                                key={company.name}
-                                type="monotone"
-                                dataKey={company.name}
-                                stroke={colors[idx % colors.length]}
-                                strokeWidth={2}
-                                dot={{ r: 4 }}
-                                activeDot={{ r: 6 }}
+                {!hasData ? (
+                    <div className="flex items-center justify-center h-full">
+                        <div className="text-center">
+                            <div className="text-secondary-400 mb-2">
+                                <svg className="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                                </svg>
+                            </div>
+                            <p className="text-secondary-500 font-medium">No revenue data available</p>
+                            <p className="text-secondary-400 text-sm mt-1">Revenue trends will appear here once data is recorded</p>
+                        </div>
+                    </div>
+                ) : (
+                    <ResponsiveContainer width="100%" height="100%">
+                        <LineChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                            <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                            <XAxis dataKey="month" tick={{ fontSize: 12 }} />
+                            <YAxis tickFormatter={formatYAxis} tick={{ fontSize: 11 }} />
+                            <Tooltip
+                                formatter={(value: number | undefined) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(value || 0)}
+                                contentStyle={{ borderRadius: '8px', border: '1px solid #e5e7eb' }}
                             />
-                        ))}
-                    </LineChart>
-                </ResponsiveContainer>
+                            <Legend />
+                            {companyTotals.map((company, idx) => (
+                                <Line
+                                    key={company.name}
+                                    type="monotone"
+                                    dataKey={company.name}
+                                    stroke={colors[idx % colors.length]}
+                                    strokeWidth={2}
+                                    dot={{ r: 4 }}
+                                    activeDot={{ r: 6 }}
+                                />
+                            ))}
+                        </LineChart>
+                    </ResponsiveContainer>
+                )}
             </CardContent>
         </Card>
     );

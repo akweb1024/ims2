@@ -110,9 +110,9 @@ export default function AdvancedKPIStats({ data }: { data: ExecutiveData }) {
     ];
 
     return (
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
             {metrics.map((metric, i) => (
-                <Card key={i} className="border-secondary-200 shadow-sm hover:shadow-md transition-all duration-200">
+                <Card key={i} className="border-secondary-200 shadow-sm hover:shadow-lg hover:scale-105 transition-all duration-200 cursor-pointer">
                     <CardContent className="p-4">
                         <div className="flex items-center gap-3 mb-3">
                             <div className={`p-2 rounded-lg ${metric.bg} ${metric.color}`}>
