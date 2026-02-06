@@ -138,3 +138,40 @@ export const POST = authorizedRoute(
         }
     }
 );
+
+// DELETE a financial record
+export const DELETE = authorizedRoute(
+    ['SUPER_ADMIN', 'ADMIN', 'FINANCE_ADMIN'],
+    async (req: NextRequest, user) => {
+        try {
+            const { searchParams } = new URL(req.url);
+            const id = searchParams.get('id');
+
+            if (!id) {
+                return NextResponse.json({ error: 'Record ID is required' }, { status: 400 });
+            }
+
+            // Verify the record exists and belongs to the user's company
+            const record = await prisma.financialRecord.findFirst({
+                where: {
+                    id,
+                    companyId: user.companyId
+                }
+            });
+
+            if (!record) {
+                return NextResponse.json({ error: 'Record not found or access denied' }, { status: 404 });
+            }
+
+            await prisma.financialRecord.delete({
+                where: { id }
+            });
+
+            logger.info(`Financial Record ${id} deleted by ${user.email}`);
+
+            return NextResponse.json({ success: true, message: 'Record deleted successfully' });
+        } catch (error) {
+            return createErrorResponse(error);
+        }
+    }
+);
