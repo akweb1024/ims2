@@ -68,7 +68,7 @@ export const GET = authorizedRoute(
             } else if (statusParam === 'RECOMMENDED') {
                 statusFilter.in = ['MANAGER_APPROVED', 'HR_APPROVED'];
             } else if (statusParam === 'ALL') {
-                statusFilter.in = ['APPROVED', 'MANAGER_APPROVED', 'HR_APPROVED'];
+                // Return all records, no filter needed (or exclude REJECTED if desired, but ALL should imply ALL)
             }
 
             if (statusFilter.in) {
