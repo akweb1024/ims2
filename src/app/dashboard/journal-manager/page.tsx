@@ -1,4 +1,7 @@
 import { Suspense } from 'react';
+
+export const dynamic = 'force-dynamic';
+
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import JournalManagerBoard from '@/components/dashboard/journals/JournalManagerBoard';
 import { prisma } from '@/lib/prisma';

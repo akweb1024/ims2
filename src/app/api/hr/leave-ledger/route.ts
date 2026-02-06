@@ -117,15 +117,18 @@ export const GET = authorizedRoute(
                         let closing = 0;
                         let displayShort = short;
 
-                        const rawBalance = opening + auto - taken - late - short;
+                        const rawBalance = opening + auto - taken - late;
 
                         if (rawBalance < 0) {
-                            // If balance is negative even with existing deduction, we need MORE deduction visually
+                            // If balance is negative, the deficit BECOMES the short leave deduction
+                            // equivalent to "Loss of Pay"
                             const deficit = Math.abs(rawBalance);
-                            displayShort += deficit;
+                            displayShort = deficit; // Set short to exactly the deficit
                             closing = 0;
                         } else {
                             closing = rawBalance;
+                            // If balance is positive, we reset short deduction as it represents "unpaid leave" overflow
+                            displayShort = 0; 
                         }
 
                         // If existing record had a closing balance, and our calc differs...
@@ -226,14 +229,19 @@ export const POST = authorizedRoute(
                 const finalLate = safeLateDeds;
                 let finalShort = safeShortDeds;
 
-                // Calculate Raw Balance
-                let rawClosing = finalOpening + finalAuto - finalTaken - finalLate - finalShort;
+                // Calculate Raw Balance (Excluding Short Deduction as it is an OUTCOME of negative balance)
+                let rawClosing = finalOpening + finalAuto - finalTaken - finalLate;
 
                 // Negative Balance Logic: If negative, add deficit to shortLeaveDeductions
+                // We overwrite existing Short with the new Deficit
                 if (rawClosing < 0) {
                     const deficit = Math.abs(rawClosing);
-                    finalShort += deficit; // Increase deduction
-                    rawClosing = 0;        // Floor closing at 0
+                    finalShort = deficit; // Set Deduction = Deficit
+                    rawClosing = 0;       // Floor closing at 0
+                } else {
+                    // Start fresh or keep manual? 
+                    // To be consistent with recursion and FE:
+                    finalShort = 0; 
                 }
 
                 const ledger = await tx.leaveLedger.upsert({
