@@ -471,6 +471,7 @@ export async function getUnifiedSalaries(
         companyId: u.companyId || '',
         companyName: u.company?.name || 'Unknown',
         employeeProfile: u.employeeProfile ? {
+            id: u.employeeProfile.id,
             employeeId: u.employeeProfile.employeeId,
             designation: u.employeeProfile.designation,
             baseSalary: u.employeeProfile.baseSalary,

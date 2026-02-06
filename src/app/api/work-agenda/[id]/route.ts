@@ -48,7 +48,7 @@ export const GET = authorizedRoute(
                         },
                         orderBy: { createdAt: 'desc' }
                     }
-                }
+                } as any
             });
 
             if (!workPlan) {
@@ -57,7 +57,11 @@ export const GET = authorizedRoute(
 
             // Check permissions
             if (['EXECUTIVE'].includes(user.role)) {
-                if (workPlan.employeeId !== user.employeeProfile?.id) {
+                const profile = await prisma.employeeProfile.findUnique({
+                    where: { userId: user.id },
+                    select: { id: true }
+                });
+                if (workPlan.employeeId !== profile?.id) {
                     return createErrorResponse('Forbidden', 403);
                 }
             } else if (['MANAGER', 'TEAM_LEADER'].includes(user.role)) {
@@ -110,7 +114,11 @@ export const PUT = authorizedRoute(
 
             // Check permissions
             if (['EXECUTIVE'].includes(user.role)) {
-                if (existingPlan.employeeId !== user.employeeProfile?.id) {
+                const profile = await prisma.employeeProfile.findUnique({
+                    where: { userId: user.id },
+                    select: { id: true }
+                });
+                if (existingPlan.employeeId !== profile?.id) {
                     return createErrorResponse('Forbidden', 403);
                 }
             } else if (['MANAGER', 'TEAM_LEADER'].includes(user.role)) {
@@ -137,7 +145,7 @@ export const PUT = authorizedRoute(
                     ...(completionStatus && { completionStatus }),
                     ...(linkedGoalId !== undefined && { linkedGoalId }),
                     ...(visibility && { visibility })
-                },
+                } as any,
                 include: {
                     employee: {
                         select: {
@@ -155,7 +163,7 @@ export const PUT = authorizedRoute(
                             type: true
                         }
                     }
-                }
+                } as any
             });
 
             return NextResponse.json(updatedPlan);
@@ -183,7 +191,11 @@ export const DELETE = authorizedRoute(
 
             // Check permissions
             if (['EXECUTIVE'].includes(user.role)) {
-                if (existingPlan.employeeId !== user.employeeProfile?.id) {
+                const profile = await prisma.employeeProfile.findUnique({
+                    where: { userId: user.id },
+                    select: { id: true }
+                });
+                if (existingPlan.employeeId !== profile?.id) {
                     return createErrorResponse('Forbidden', 403);
                 }
             } else if (['MANAGER', 'TEAM_LEADER'].includes(user.role)) {

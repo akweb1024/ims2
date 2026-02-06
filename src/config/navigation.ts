@@ -55,6 +55,7 @@ export const ALL_MODULES: NavModule[] = [
                     { name: 'My Team', href: '/dashboard/manager/team', icon: '👥', roles: ['MANAGER', 'TEAM_LEADER', 'SUPER_ADMIN', 'ADMIN'] },
                     { name: 'Work Reports', href: '/dashboard/manager/team/work-reports', icon: '📝', roles: ['MANAGER', 'TEAM_LEADER', 'SUPER_ADMIN', 'ADMIN'] },
                     { name: 'Performance', href: '/dashboard/manager/team/performance', icon: '📊', roles: ['MANAGER', 'SUPER_ADMIN', 'ADMIN'] },
+                    { name: 'Goal Management', href: '/dashboard/performance/goals', icon: '🎯', roles: ['MANAGER', 'SUPER_ADMIN', 'ADMIN', 'EMPLOYEE'] },
                     { name: 'Salary & Increments', href: '/dashboard/manager/team/salary', icon: '💰', roles: ['MANAGER', 'SUPER_ADMIN', 'ADMIN'] },
                 ]
             },

@@ -340,5 +340,49 @@ export const EmailTemplates = {
                 <p>Best regards,<br/>The HR Team</p>
             </div>
         `
+    }),
+
+    goalEvaluated: (employeeName: string, goalTitle: string, score: number, feedback: string) => ({
+        subject: `Performance Goal Evaluated: ${goalTitle} - STM`,
+        text: `Dear ${employeeName}, your goal "${goalTitle}" has been evaluated with a score of ${score}/10. Feedback: ${feedback}`,
+        html: `
+            <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 8px;">
+                <h1 style="color: #2563eb;">Performance Goal Evaluated</h1>
+                <p>Dear <strong>${employeeName}</strong>,</p>
+                <p>Your manager has completed the evaluation for your goal: <strong>${goalTitle}</strong>.</p>
+                <div style="background: #eff6ff; padding: 15px; border-radius: 4px; margin: 20px 0; border-left: 4px solid #2563eb;">
+                    <p style="margin: 5px 0;"><strong>Goal:</strong> ${goalTitle}</p>
+                    <p style="margin: 5px 0;"><strong>Performance Score:</strong> <span style="font-size: 1.25rem; font-bold; color: #2563eb;">${score}/10</span></p>
+                    ${feedback ? `<p style="margin: 15px 0 5px 0;"><strong>Manager's Feedback:</strong></p><p style="font-style: italic; color: #4b5563;">"${feedback}"</p>` : ''}
+                </div>
+                <p>You can view the full details and history in your performance dashboard.</p>
+                <p>Best regards,<br/>The STM Management</p>
+            </div>
+        `
+    }),
+
+    goalCompleted: (managerName: string, employeeName: string, goalTitle: string) => ({
+        subject: `Goal Completed: ${employeeName} - ${goalTitle}`,
+        text: `Dear ${managerName}, ${employeeName} has marked the goal "${goalTitle}" as COMPLETED. It is now ready for your evaluation.`,
+        html: `
+            <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 8px;">
+                <h1 style="color: #16a34a;">Goal Marked as Completed</h1>
+                <p>Dear <strong>${managerName}</strong>,</p>
+                <p><strong>${employeeName}</strong> has marked the following goal as completed:</p>
+                <div style="background: #f0fdf4; padding: 15px; border-radius: 4px; margin: 20px 0; border-left: 4px solid #16a34a;">
+                    <p style="margin: 5px 0;"><strong>Employee:</strong> ${employeeName}</p>
+                    <p style="margin: 5px 0;"><strong>Goal:</strong> ${goalTitle}</p>
+                    <p style="margin: 5px 0;"><strong>Status:</strong> COMPLETED</p>
+                </div>
+                <p>This goal is now ready for your formal evaluation and scoring. Please log in to your manager dashboard to review and provide feedback.</p>
+                <div style="text-align: center; margin: 30px 0;">
+                    <a href="${process.env.NEXT_PUBLIC_APP_URL}/dashboard/manager/team/performance" 
+                       style="background: #16a34a; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold;">
+                       Evaluate Goal Now
+                    </a>
+                </div>
+                <p>Best regards,<br/>The Performance System</p>
+            </div>
+        `
     })
 };

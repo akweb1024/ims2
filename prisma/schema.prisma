@@ -224,6 +224,7 @@ model User {
   assignedToCustomers      CustomerProfile[]           @relation("CustomerToExecutives")
   companies                Company[]                   @relation("UserCompanies")
   reviewedGoals            EmployeeGoal[]              @relation("GoalReviewer")
+  goalEvaluations         GoalEvaluation[]
   createdTasks             Task[]                      @relation("TaskAssigner")
 
   @@index([email])
@@ -2671,6 +2672,7 @@ model EmployeeGoal {
   kpi                   EmployeeKPI?    @relation(fields: [kpiId], references: [id])
   reviewer              User?           @relation("GoalReviewer", fields: [reviewerId], references: [id])
   workPlans             WorkPlan[]      @relation("GoalWorkPlans")
+  evaluations           GoalEvaluation[]
 
   @@index([employeeId])
   @@index([companyId])
@@ -4041,4 +4043,15 @@ enum AccountType {
   EQUITY
   REVENUE
   EXPENSE
+}
+
+model GoalEvaluation {
+  id          String       @id @default(uuid())
+  goalId      String
+  evaluatorId String
+  score       Float        // 1-10 or percentage
+  feedback    String?
+  createdAt   DateTime     @default(now())
+  goal        EmployeeGoal @relation(fields: [goalId], references: [id], onDelete: Cascade)
+  evaluator   User         @relation(fields: [evaluatorId], references: [id])
 }

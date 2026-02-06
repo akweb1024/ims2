@@ -23,7 +23,11 @@ export const GET = authorizedRoute(
 
             // Role-based filtering
             if (['EXECUTIVE'].includes(user.role)) {
-                where.employeeId = user.employeeProfile?.id;
+                const profile = await prisma.employeeProfile.findUnique({
+                    where: { userId: user.id },
+                    select: { id: true }
+                });
+                where.employeeId = profile?.id;
             } else if (['MANAGER', 'TEAM_LEADER'].includes(user.role)) {
                 if (employeeId) {
                     const downlineIds = await getDownlineUserIds(user.id, user.companyId || undefined);
@@ -99,7 +103,7 @@ export const GET = authorizedRoute(
                         },
                         orderBy: { createdAt: 'desc' }
                     }
-                },
+                } as any,
                 orderBy: { date: 'desc' }
             });
 
@@ -135,7 +139,11 @@ export const POST = authorizedRoute(
 
             // Check permissions
             if (['EXECUTIVE'].includes(user.role)) {
-                if (employeeId !== user.employeeProfile?.id) {
+                const profile = await prisma.employeeProfile.findUnique({
+                    where: { userId: user.id },
+                    select: { id: true }
+                });
+                if (employeeId !== profile?.id) {
                     return createErrorResponse('Forbidden: Can only create your own work plans', 403);
                 }
             } else if (['MANAGER', 'TEAM_LEADER'].includes(user.role)) {
@@ -164,7 +172,7 @@ export const POST = authorizedRoute(
                     visibility: visibility || 'MANAGER',
                     status: 'SHARED',
                     companyId: user.companyId || ''
-                },
+                } as any,
                 include: {
                     employee: {
                         select: {
@@ -182,7 +190,7 @@ export const POST = authorizedRoute(
                             type: true
                         }
                     }
-                }
+                } as any
             });
 
             return NextResponse.json(workPlan);

@@ -45,23 +45,44 @@ export const GET = authorizedRoute(
                 orderBy: { month: 'asc' }
             });
 
+            // Fetch Goals and Evaluations for the year
+            const goals = await prisma.employeeGoal.findMany({
+                where: {
+                    employeeId: { in: targetEmployeeIds },
+                    startDate: { gte: new Date(`${year}-01-01`) },
+                    endDate: { lte: new Date(`${year}-12-31`) }
+                },
+                include: {
+                    evaluations: true
+                }
+            });
+
             // Aggregate Data by Month
             const monthlyData = Array.from({ length: 12 }, (_, i) => {
                 const month = i + 1;
                 const monthSnapshots = snapshots.filter(s => s.month === month);
 
+                // Track monthly goals (starting in this month)
+                const monthGoals = goals.filter(g =>
+                    g.type === 'MONTHLY' &&
+                    new Date(g.startDate).getMonth() + 1 === month
+                );
+
                 const totalTarget = monthSnapshots.reduce((sum, s) => sum + s.revenueTarget, 0);
                 const totalRevenue = monthSnapshots.reduce((sum, s) => sum + s.totalRevenueGenerated, 0);
-                const avgAchievement = monthSnapshots.length > 0
-                    ? monthSnapshots.reduce((sum, s) => sum + s.revenueAchievement, 0) / monthSnapshots.length
-                    : 0;
+
+                const goalTarget = monthGoals.reduce((sum, g) => sum + g.targetValue, 0);
+                const goalAchieved = monthGoals.reduce((sum, g) => sum + g.currentValue, 0);
 
                 return {
                     month,
                     monthName: new Date(year, month - 1).toLocaleString('default', { month: 'short' }),
                     revenueTarget: totalTarget,
                     totalRevenueGenerated: totalRevenue,
-                    revenueAchievement: avgAchievement, // Average achievement %
+                    goalTarget,
+                    goalAchieved,
+                    goalAchievement: goalTarget > 0 ? (goalAchieved / goalTarget) * 100 : 0,
+                    revenueAchievement: totalTarget > 0 ? (totalRevenue / totalTarget) * 100 : 0,
                     snapshotCount: monthSnapshots.length
                 };
             });
@@ -69,15 +90,27 @@ export const GET = authorizedRoute(
             // Calculate Totals for Summary Cards
             const totalYearTarget = monthlyData.reduce((sum, m) => sum + m.revenueTarget, 0);
             const totalYearRevenue = monthlyData.reduce((sum, m) => sum + m.totalRevenueGenerated, 0);
-            const overallAchievement = totalYearTarget > 0 ? (totalYearRevenue / totalYearTarget) * 100 : 0;
+            const overallRevenueAchievement = totalYearTarget > 0 ? (totalYearRevenue / totalYearTarget) * 100 : 0;
+
+            const allGoalTarget = goals.reduce((sum, g) => sum + g.targetValue, 0);
+            const allGoalAchieved = goals.reduce((sum, g) => sum + g.currentValue, 0);
+            const overallGoalAchievement = allGoalTarget > 0 ? (allGoalAchieved / allGoalTarget) * 100 : 0;
+
+            const allEvaluations = goals.flatMap(g => g.evaluations);
+            const avgEvaluationScore = allEvaluations.length > 0
+                ? allEvaluations.reduce((sum, e) => sum + e.score, 0) / allEvaluations.length
+                : 0;
 
             return NextResponse.json({
                 trendData: monthlyData,
                 summary: {
                     totalTarget: totalYearTarget,
                     totalRevenue: totalYearRevenue,
-                    overallAchievement,
-                    employeeCount: targetEmployeeIds.length
+                    overallAchievement: overallRevenueAchievement,
+                    overallGoalAchievement,
+                    avgEvaluationScore,
+                    employeeCount: targetEmployeeIds.length,
+                    totalGoals: goals.length
                 }
             });
 

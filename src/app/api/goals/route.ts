@@ -22,7 +22,11 @@ export const GET = authorizedRoute(
             // Role-based filtering
             if (['EXECUTIVE'].includes(user.role)) {
                 // Employees can only see their own goals
-                where.employeeId = user.employeeProfile?.id;
+                const profile = await prisma.employeeProfile.findUnique({
+                    where: { userId: user.id },
+                    select: { id: true }
+                });
+                where.employeeId = profile?.id;
             } else if (['MANAGER', 'TEAM_LEADER'].includes(user.role)) {
                 // Managers can see their team's goals
                 if (employeeId) {
@@ -81,7 +85,7 @@ export const GET = authorizedRoute(
                             email: true
                         }
                     }
-                },
+                } as any,
                 orderBy: [
                     { type: 'asc' },
                     { startDate: 'desc' }
@@ -124,7 +128,11 @@ export const POST = authorizedRoute(
             // Check if user can create goals for this employee
             if (['EXECUTIVE'].includes(user.role)) {
                 // Employees can only create their own goals
-                if (employeeId !== user.employeeProfile?.id) {
+                const profile = await prisma.employeeProfile.findUnique({
+                    where: { userId: user.id },
+                    select: { id: true }
+                });
+                if (employeeId !== profile?.id) {
                     return createErrorResponse('Forbidden: Can only create your own goals', 403);
                 }
             } else if (['MANAGER', 'TEAM_LEADER'].includes(user.role)) {
@@ -159,7 +167,7 @@ export const POST = authorizedRoute(
                     companyId: user.companyId || '',
                     kpiId: kpiId || null,
                     reviewerId: ['MANAGER', 'TEAM_LEADER'].includes(user.role) ? user.id : null
-                },
+                } as any,
                 include: {
                     employee: {
                         select: {

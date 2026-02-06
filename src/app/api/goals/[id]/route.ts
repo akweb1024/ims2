@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { authorizedRoute } from '@/lib/middleware-auth';
 import { createErrorResponse } from '@/lib/api-utils';
 import { getDownlineUserIds } from '@/lib/hierarchy';
+import { sendEmail, EmailTemplates } from '@/lib/email';
 
 // GET: Get goal details
 export const GET = authorizedRoute(
@@ -39,7 +40,7 @@ export const GET = authorizedRoute(
                         orderBy: { date: 'desc' },
                         take: 10
                     }
-                }
+                } as any
             });
 
             if (!goal) {
@@ -48,7 +49,11 @@ export const GET = authorizedRoute(
 
             // Check access permissions
             if (['EXECUTIVE'].includes(user.role)) {
-                if (goal.employeeId !== user.employeeProfile?.id) {
+                const profile = await prisma.employeeProfile.findUnique({
+                    where: { userId: user.id },
+                    select: { id: true }
+                });
+                if (goal.employeeId !== profile?.id) {
                     return createErrorResponse('Forbidden', 403);
                 }
             } else if (['MANAGER', 'TEAM_LEADER'].includes(user.role)) {
@@ -92,7 +97,18 @@ export const PUT = authorizedRoute(
 
             // Find existing goal
             const existingGoal = await prisma.employeeGoal.findUnique({
-                where: { id }
+                where: { id },
+                include: {
+                    employee: {
+                        include: {
+                            user: { select: { name: true } },
+                            reportTo: {
+                                include: { user: { select: { name: true, email: true } } }
+                            }
+                        }
+                    },
+                    reviewer: { select: { name: true, email: true } }
+                } as any
             });
 
             if (!existingGoal) {
@@ -101,7 +117,11 @@ export const PUT = authorizedRoute(
 
             // Check permissions
             if (['EXECUTIVE'].includes(user.role)) {
-                if (existingGoal.employeeId !== user.employeeProfile?.id) {
+                const profile = await prisma.employeeProfile.findUnique({
+                    where: { userId: user.id },
+                    select: { id: true }
+                });
+                if (existingGoal.employeeId !== profile?.id) {
                     return createErrorResponse('Forbidden', 403);
                 }
             } else if (['MANAGER', 'TEAM_LEADER'].includes(user.role)) {
@@ -118,7 +138,7 @@ export const PUT = authorizedRoute(
             }
 
             // Calculate achievement percentage if currentValue is provided
-            let achievementPercentage = existingGoal.achievementPercentage;
+            let achievementPercentage = (existingGoal as any).achievementPercentage;
             const newCurrentValue = currentValue !== undefined ? parseFloat(currentValue) : existingGoal.currentValue;
             const newTargetValue = targetValue !== undefined ? parseFloat(targetValue) : existingGoal.targetValue;
 
@@ -140,7 +160,7 @@ export const PUT = authorizedRoute(
                     ...(visibility && { visibility }),
                     achievementPercentage,
                     ...(reviewNotes && { reviewerId: user.id })
-                },
+                } as any,
                 include: {
                     employee: {
                         select: {
@@ -159,8 +179,26 @@ export const PUT = authorizedRoute(
                             email: true
                         }
                     }
-                }
+                } as any
             });
+
+            // Trigger Notification for Goal Completion
+            if (status === 'COMPLETED' && existingGoal.status !== 'COMPLETED') {
+                const managerEmail = (updatedGoal as any).reviewer?.email || (existingGoal as any).employee?.reportTo?.user?.email;
+                const managerName = (updatedGoal as any).reviewer?.name || (existingGoal as any).employee?.reportTo?.user?.name || 'Manager';
+
+                if (managerEmail) {
+                    const template = EmailTemplates.goalCompleted(
+                        managerName,
+                        (updatedGoal as any).employee?.user?.name || 'Employee',
+                        updatedGoal.title
+                    );
+                    await sendEmail({
+                        to: managerEmail,
+                        ...template
+                    });
+                }
+            }
 
             return NextResponse.json(updatedGoal);
         } catch (error: any) {
