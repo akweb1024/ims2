@@ -149,17 +149,7 @@ export default function EmployeeProfileView({ employeeId, onClose }: EmployeePro
                                     </div>
                                 </div>
 
-                                <div className="bg-white p-6 rounded-xl border border-secondary-200 shadow-sm">
-                                    <SectionHeader title="Designation History" />
-                                    <Table
-                                        headers={['Designation', 'Company', 'Assigned Date']}
-                                        rows={data.employeeProfile?.companyDesignations?.map((d: any) => [
-                                            d.designation,
-                                            d.company?.name,
-                                            new Date(d.assignedAt).toLocaleDateString()
-                                        ])}
-                                    />
-                                </div>
+
                             </div>
                         )}
 
