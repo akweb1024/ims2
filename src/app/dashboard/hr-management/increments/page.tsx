@@ -60,7 +60,22 @@ async function getIncrements() {
                             select: {
                                 id: true,
                                 name: true,
-                                email: true
+                                email: true,
+                                company: {
+                                    select: {
+                                        name: true
+                                    }
+                                },
+                                department: {
+                                    select: {
+                                        name: true
+                                    }
+                                },
+                                manager: {
+                                    select: {
+                                        name: true
+                                    }
+                                }
                             }
                         }
                     }

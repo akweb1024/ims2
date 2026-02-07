@@ -488,7 +488,7 @@ export default function EmployeeProfilePage() {
                                                     const displayYears = Math.floor(totalMonths / 12);
                                                     const displayMonths = totalMonths % 12;
 
-                                                    return `${displayYears} Y ${displayMonths} M`;
+                                                    return `${displayYears} Years ${displayMonths} Months`;
                                                 })()}
                                             </dd>
                                         </div>
