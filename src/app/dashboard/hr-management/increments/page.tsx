@@ -1,8 +1,6 @@
 import { Suspense } from 'react';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
-import { Plus } from 'lucide-react';
-import Link from 'next/link';
-import IncrementList from './IncrementList';
+import IncrementClientWrapper from './IncrementClientWrapper';
 import IncrementDashboardSkeleton from './IncrementDashboardSkeleton';
 import { prisma } from '@/lib/prisma';
 import { redirect } from 'next/navigation';
@@ -12,13 +10,10 @@ import { verifyToken } from '@/lib/auth-core';
 
 export const dynamic = 'force-dynamic';
 
-
 async function getIncrements() {
     try {
-        // 1. Try unified auth (NextAuth / Headers)
         let user = await getAuthenticatedUser();
 
-        // 2. Fallback to manual cookie check if unified auth failed
         if (!user) {
             const cookieStore = await cookies();
             const token = cookieStore.get('token')?.value;
@@ -31,27 +26,18 @@ async function getIncrements() {
             redirect('/login');
         }
 
-        // IMPROVED: Strict RBAC Check
         const authorizedRoles = ['SUPER_ADMIN', 'ADMIN', 'HR', 'HR_MANAGER', 'MANAGER'];
         if (!authorizedRoles.includes(user.role)) {
-            // Unauthorized users redirected to main dashboard
             redirect('/dashboard');
         }
 
         const where: any = {};
 
-        // Managers can only see their team's increments
         if (user.role === 'MANAGER') {
-            // Fetch users managed by this manager
-            // First get the users directly reported
             const directReports = await prisma.user.findMany({
                 where: { managerId: user.id },
                 select: { id: true }
             });
-
-            // Then get the employee profiles for those users
-            // Also include their own profile so they can see their own increments if needed (optional, typically managers don't set own increments)
-            // But usually this view is for managing OTHERS.
 
             const managedUserIds = directReports.map(u => u.id);
 
@@ -64,7 +50,6 @@ async function getIncrements() {
                 in: managedProfiles.map(p => p.id)
             };
         }
-        // HR/ADMIN/SUPER_ADMIN see all (scoped by company if needed, usually filtered by context middleware/helper, but here we assume full access for these roles for now or rely on existing patterns)
 
         const increments = await prisma.salaryIncrementRecord.findMany({
             where,
@@ -96,30 +81,22 @@ async function getIncrements() {
 
 async function IncrementData() {
     const increments = await getIncrements();
-    return <IncrementList initialIncrements={increments || []} />;
+    return <IncrementClientWrapper initialIncrements={increments || []} />;
 }
 
 export default async function IncrementManagementPage() {
     return (
         <DashboardLayout>
             <div className="p-8 space-y-6">
-                {/* Header */}
-                <div className="flex justify-between items-center">
-                    <div>
-                        <h1 className="text-3xl font-black text-secondary-900">
-                            Salary Increments
-                        </h1>
-                        <p className="text-secondary-600 mt-1">
-                            Manage employee salary increments with dual authentication
-                        </p>
-                    </div>
-                    <Link href="/dashboard/hr-management/increments/new" className="btn btn-primary">
-                        <Plus size={20} />
-                        New Increment
-                    </Link>
+                <div>
+                    <h1 className="text-3xl font-black text-secondary-900">
+                        Salary Increments
+                    </h1>
+                    <p className="text-secondary-600 mt-1">
+                        Track and manage employee salary increments and compensation pivots
+                    </p>
                 </div>
 
-                {/* Increment Data with Suspense */}
                 <Suspense fallback={<IncrementDashboardSkeleton />}>
                     <IncrementData />
                 </Suspense>
