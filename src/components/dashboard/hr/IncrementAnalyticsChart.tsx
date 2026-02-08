@@ -75,7 +75,7 @@ export default function IncrementAnalyticsChart({ data }: IncrementAnalyticsChar
                         itemStyle={{ fontSize: '12px', fontWeight: 700 }}
                         formatter={(value: any, name: any) => {
                             if (typeof value === 'number') {
-                                if (name === 'Total Impact' || name === 'Revenue Target') return [`₹${value.toLocaleString()}`, name];
+                                if (name === 'Total Impact' || name === 'Revenue Target' || name === 'Revenue Achieved') return [`₹${value.toLocaleString()}`, name];
                                 if (name === 'Avg Increase') return [`${value}%`, name];
                             }
                             return [value, name];
@@ -103,6 +103,16 @@ export default function IncrementAnalyticsChart({ data }: IncrementAnalyticsChar
                         stroke="#10b981"
                         strokeWidth={4}
                         dot={{ r: 4, fill: '#10b981', strokeWidth: 2, stroke: '#fff' }}
+                        activeDot={{ r: 6, strokeWidth: 0 }}
+                    />
+                    <Line
+                        yAxisId="left"
+                        type="monotone"
+                        dataKey="revenueAchieved"
+                        name="Revenue Achieved"
+                        stroke="#3b82f6"
+                        strokeWidth={4}
+                        dot={{ r: 4, fill: '#3b82f6', strokeWidth: 2, stroke: '#fff' }}
                         activeDot={{ r: 6, strokeWidth: 0 }}
                     />
                     <Line

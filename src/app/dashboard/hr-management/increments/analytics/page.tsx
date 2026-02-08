@@ -158,17 +158,18 @@ export default function IncrementAnalyticsPage() {
                 ) : analytics ? (
                     <>
                         {/* Summary Cards */}
-                        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                        <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
                             {[
-                                { title: 'Total Budget Impact', value: analytics.stats.totalApprovedBudgetImpact, sub: `Across ${analytics.stats.approvedCount} increments`, border: 'border-indigo-500', text: 'text-indigo-900', prefix: '₹', compact: true },
-                                { title: 'Avg. Increase', value: analytics.stats.averagePercentage, sub: 'Average percentage hike', border: 'border-emerald-500', text: 'text-emerald-900', suffix: '%', dec: 1 },
-                                { title: 'Revenue Coverage', value: analytics.stats.roiMultiplier, sub: 'Revenue target / Salary cost', border: 'border-orange-500', text: 'text-orange-900', suffix: 'x', dec: 1 },
-                                { title: 'Total Records', value: analytics.stats.approvedCount, sub: 'Adjustments in period', border: 'border-purple-500', text: 'text-purple-900' }
+                                { title: 'Budget Impact', value: analytics.stats.totalApprovedBudgetImpact, sub: `Across ${analytics.stats.approvedCount} increments`, border: 'border-indigo-500', text: 'text-indigo-900', prefix: '₹', compact: true },
+                                { title: 'Avg. Increase', value: analytics.stats.averagePercentage, sub: 'Average hike %', border: 'border-emerald-500', text: 'text-emerald-900', suffix: '%', dec: 1 },
+                                { title: 'Total Achievement', value: analytics.stats.totalRevenueAchieved, sub: `Across recorded reviews`, border: 'border-blue-500', text: 'text-blue-900', prefix: '₹', compact: true },
+                                { title: 'Achievement Rate', value: analytics.stats.achievementRate, sub: 'vs Annualized Targets', border: 'border-amber-500', text: 'text-amber-900', suffix: '%', dec: 1 },
+                                { title: 'Revenue Coverage', value: analytics.stats.roiMultiplier, sub: 'Target / Salary cost', border: 'border-orange-500', text: 'text-orange-900', suffix: 'x', dec: 1 },
                             ].map((card, idx) => (
                                 <div key={idx} className={`card-premium p-6 border-l-4 ${card.border} flex flex-col justify-between h-full`}>
                                     <div>
                                         <p className="text-secondary-500 text-[10px] font-black uppercase tracking-widest mb-2">{card.title}</p>
-                                        <h3 className={`text-2xl font-black ${card.text}`}>
+                                        <h3 className={`text-xl font-black ${card.text}`}>
                                             {card.prefix}<FormattedNumber value={card.value} compact={card.compact} />{card.suffix}
                                             {card.dec !== undefined && card.value.toFixed(card.dec)}
                                             {card.dec === undefined && !card.compact && card.value}
@@ -179,7 +180,7 @@ export default function IncrementAnalyticsPage() {
                             ))}
                         </div>
 
-                        {/* Quarterly Aggregate Targets */}
+                        {/* Quarterly Aggregate Targets & Achievement */}
                         <div className="card-premium p-6">
                             <div className="flex items-center justify-between mb-6">
                                 <div>
@@ -187,16 +188,40 @@ export default function IncrementAnalyticsPage() {
                                         <Target className="text-teal-500" size={20} />
                                         Quarterly Target Aggregates
                                     </h3>
-                                    <p className="text-xs text-secondary-500 font-bold uppercase mt-1">Total combined revenue commitment</p>
+                                    <p className="text-xs text-secondary-500 font-bold uppercase mt-1">Total combined revenue commitment vs recorded performance</p>
                                 </div>
                             </div>
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                                 {['Q1', 'Q2', 'Q3', 'Q4'].map((q) => {
-                                    const val = analytics.quarterlyBreakdown?.[q.toLowerCase()] || 0;
+                                    const target = analytics.quarterlyBreakdown?.[q.toLowerCase()] || 0;
+                                    // Calculate achievement for this quarter from trends
+                                    const months = q === 'Q1' ? ['Apr', 'May', 'Jun'] : q === 'Q2' ? ['Jul', 'Aug', 'Sep'] : q === 'Q3' ? ['Oct', 'Nov', 'Dec'] : ['Jan', 'Feb', 'Mar'];
+                                    const achieved = analytics.trends
+                                        .filter((t: any) => months.some(m => t.month.startsWith(m)))
+                                        .reduce((sum: number, t: any) => sum + (t.revenueAchieved || 0), 0);
+
+                                    const perc = target > 0 ? (achieved / target) * 100 : 0;
+
                                     return (
                                         <div key={q} className="p-4 bg-secondary-50 rounded-2xl border border-secondary-100/50">
-                                            <p className="text-[10px] font-black text-secondary-400 uppercase tracking-widest">{q} Total Target</p>
-                                            <p className="text-xl font-black text-secondary-900 mt-1">₹<FormattedNumber value={val} compact /></p>
+                                            <div className="flex justify-between items-start">
+                                                <p className="text-[10px] font-black text-secondary-400 uppercase tracking-widest">{q} Status</p>
+                                                {perc > 0 && (
+                                                    <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${perc >= 100 ? 'bg-success-100 text-success-700' : 'bg-primary-100 text-primary-700'}`}>
+                                                        {perc.toFixed(0)}%
+                                                    </span>
+                                                )}
+                                            </div>
+                                            <div className="mt-2">
+                                                <p className="text-xs font-bold text-secondary-500">Achieved: <span className="text-secondary-900">₹<FormattedNumber value={achieved} compact /></span></p>
+                                                <p className="text-[10px] text-secondary-400">Target: ₹<FormattedNumber value={target} compact /></p>
+                                            </div>
+                                            <div className="w-full h-1.5 bg-secondary-200 rounded-full mt-3 overflow-hidden">
+                                                <div
+                                                    className={`h-full rounded-full transition-all duration-1000 ${perc >= 100 ? 'bg-success-500' : 'bg-primary-500'}`}
+                                                    style={{ width: `${Math.min(perc, 100)}%` }}
+                                                />
+                                            </div>
                                         </div>
                                     );
                                 })}
