@@ -4063,6 +4063,9 @@ model SalaryIncrementReview {
   incrementRecordId    String
   incrementRecord      SalaryIncrementRecord @relation(fields: [incrementRecordId], references: [id], onDelete: Cascade)
   type                 ReviewType            @default(MONTHLY)
+  // Period Mapping
+  month                Int?
+  year                 Int?
   period               String?               // e.g., "Jan 2024", "Q1 2024", "2024"
   date                 DateTime              @default(now())
   reviewerId           String

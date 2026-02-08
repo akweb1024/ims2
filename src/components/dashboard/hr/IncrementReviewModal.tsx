@@ -14,6 +14,8 @@ export default function IncrementReviewModal({ isOpen, onClose, onSave, incremen
     const [reviewForm, setReviewForm] = useState({
         type: 'MONTHLY',
         period: '',
+        month: new Date().getMonth() + 1,
+        year: new Date().getFullYear(),
         revenueAchievement: 0,
         kraProgress: '',
         kpiProgress: {},
@@ -83,6 +85,48 @@ export default function IncrementReviewModal({ isOpen, onClose, onSave, incremen
                         </div>
                     </div>
 
+                    {reviewForm.type === 'MONTHLY' && (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-secondary-100">
+                            <div>
+                                <label className="label-premium">Review Month</label>
+                                <select
+                                    className="input-premium"
+                                    value={reviewForm.month}
+                                    onChange={e => {
+                                        const m = parseInt(e.target.value);
+                                        const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+                                        setReviewForm({
+                                            ...reviewForm,
+                                            month: m,
+                                            period: `${months[m - 1]} ${reviewForm.year}`
+                                        });
+                                    }}
+                                >
+                                    {["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"].map((m, i) => (
+                                        <option key={m} value={i + 1}>{m}</option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div>
+                                <label className="label-premium">Review Year</label>
+                                <input
+                                    type="number"
+                                    className="input-premium"
+                                    value={reviewForm.year}
+                                    onChange={e => {
+                                        const y = parseInt(e.target.value);
+                                        const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+                                        setReviewForm({
+                                            ...reviewForm,
+                                            year: y,
+                                            period: `${months[reviewForm.month - 1]} ${y}`
+                                        });
+                                    }}
+                                />
+                            </div>
+                        </div>
+                    )}
+
                     <div className="space-y-4 pt-4 border-t border-secondary-100">
                         <h4 className="font-bold text-sm text-secondary-900 flex items-center gap-2 uppercase tracking-wider">
                             <Award size={16} className="text-warning-500" />
@@ -91,7 +135,19 @@ export default function IncrementReviewModal({ isOpen, onClose, onSave, incremen
                         <div>
                             <label className="label-premium flex justify-between">
                                 Revenue Achievement
-                                <span className="text-secondary-400 font-bold">Target: ₹{(incrementRecord?.monthlyTotalTarget || 0).toLocaleString()}</span>
+                                <span className="text-secondary-400 font-bold">
+                                    Target: ₹{(() => {
+                                        if (reviewForm.type === 'MONTHLY') {
+                                            const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+                                            const monthName = months[reviewForm.month - 1];
+                                            const monthlyTargets = incrementRecord?.monthlyTargets as any;
+                                            if (monthlyTargets && monthlyTargets[monthName]) {
+                                                return monthlyTargets[monthName].toLocaleString();
+                                            }
+                                        }
+                                        return (incrementRecord?.monthlyTotalTarget || 0).toLocaleString();
+                                    })()}
+                                </span>
                             </label>
                             <div className="relative">
                                 <span className="absolute left-4 top-1/2 -translate-y-1/2 text-secondary-400 font-bold">₹</span>

@@ -7,6 +7,8 @@ import { z } from 'zod';
 const reviewSchema = z.object({
     type: z.enum(['MONTHLY', 'QUARTERLY', 'YEARLY']),
     period: z.string(),
+    month: z.number().int().min(1).max(12).optional(),
+    year: z.number().int().optional(),
     revenueAchievement: z.number().optional(),
     kraProgress: z.string().optional(),
     kpiProgress: z.record(z.string(), z.any()).optional(),
@@ -66,6 +68,8 @@ export const POST = authorizedRoute(
                     reviewerId: user.id,
                     type: validatedData.type,
                     period: validatedData.period,
+                    month: validatedData.month,
+                    year: validatedData.year,
                     revenueAchievement: validatedData.revenueAchievement || 0,
                     kraProgress: validatedData.kraProgress,
                     kpiProgress: validatedData.kpiProgress || {},

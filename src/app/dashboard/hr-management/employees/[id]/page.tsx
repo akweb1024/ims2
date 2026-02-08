@@ -896,50 +896,134 @@ export default function EmployeeProfilePage() {
                                             </div>
                                         </div>
 
-                                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
-                                            <div className="space-y-8">
-                                                <div>
-                                                    <PerformanceProgressBar
-                                                        label="Monthly Revenue Achievement"
-                                                        target={activeIncrement.newMonthlyTarget || 0}
-                                                        current={activeIncrement.reviews?.[0]?.revenueAchievement || 0}
-                                                        unit="₹"
-                                                    />
-                                                    <p className="text-[10px] text-secondary-400 font-bold mt-2 italic">
-                                                        *Based on latest review: {activeIncrement.reviews?.[0]?.period || 'N/A'}
-                                                    </p>
-                                                </div>
+                                        {activeIncrement && (() => {
+                                            const monthlyReviews = activeIncrement.reviews?.filter((r: any) => r.type === 'MONTHLY') || [];
+                                            const currentMonth = new Date().getMonth() + 1;
+                                            const currentYear = new Date().getFullYear();
 
-                                                <div className="p-6 bg-white rounded-[2rem] border border-secondary-100 shadow-sm">
-                                                    <h4 className="text-xs font-black text-secondary-900 uppercase tracking-widest mb-4 flex items-center gap-2">
-                                                        <Shield size={16} className="text-primary-500" /> Current KRA (Increment Specific)
-                                                    </h4>
-                                                    <div className="text-sm text-secondary-700 leading-relaxed bg-secondary-50/50 p-4 rounded-xl border border-secondary-100 italic whitespace-pre-wrap">
-                                                        {activeIncrement.newKRA || 'No specific KRA defined in this increment.'}
+                                            const latestMonthReview = monthlyReviews[0];
+                                            const monthlyTarget = activeIncrement.newMonthlyTarget || 0;
+                                            const monthlyAchieved = latestMonthReview?.revenueAchievement || 0;
+
+                                            const currentQ = Math.floor((currentMonth - 1) / 3) + 1;
+                                            const qMonths = currentQ === 1 ? [1, 2, 3] : currentQ === 2 ? [4, 5, 6] : currentQ === 3 ? [7, 8, 9] : [10, 11, 12];
+                                            const qReviews = monthlyReviews.filter((r: any) => qMonths.includes(r.month) && r.year === currentYear);
+                                            const qAchieved = qReviews.reduce((sum: number, r: any) => sum + (r.revenueAchievement || 0), 0);
+
+                                            const monthlyTargetsJson = activeIncrement.monthlyTargets as any;
+                                            let qTarget = 0;
+                                            if (monthlyTargetsJson) {
+                                                const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+                                                qMonths.forEach(m => {
+                                                    qTarget += (monthlyTargetsJson[monthNames[m - 1]] || monthlyTarget);
+                                                });
+                                            } else {
+                                                qTarget = monthlyTarget * 3;
+                                            }
+
+                                            const yearlyAchieved = monthlyReviews.filter((r: any) => r.year === currentYear).reduce((sum: number, r: any) => sum + (r.revenueAchievement || 0), 0);
+                                            const yearlyTarget = activeIncrement.newYearlyTarget || (monthlyTarget * 12);
+
+                                            return (
+                                                <div className="space-y-10">
+                                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                                                        <PerformanceProgressBar
+                                                            label="Monthly Achievement"
+                                                            target={monthlyTarget}
+                                                            current={monthlyAchieved}
+                                                            unit="₹"
+                                                        />
+                                                        <PerformanceProgressBar
+                                                            label={`Quarterly (Q${currentQ})`}
+                                                            target={qTarget}
+                                                            current={qAchieved}
+                                                            unit="₹"
+                                                            color="bg-indigo-500"
+                                                        />
+                                                        <PerformanceProgressBar
+                                                            label="Yearly Achievement"
+                                                            target={yearlyTarget}
+                                                            current={yearlyAchieved}
+                                                            unit="₹"
+                                                            color="bg-success-500"
+                                                        />
+                                                    </div>
+
+                                                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+                                                        <div className="space-y-8">
+                                                            <div className="p-6 bg-white rounded-[2rem] border border-secondary-100 shadow-sm">
+                                                                <h4 className="text-xs font-black text-secondary-900 uppercase tracking-widest mb-4 flex items-center gap-2">
+                                                                    <Shield size={16} className="text-primary-500" /> Current KRA (Increment Specific)
+                                                                </h4>
+                                                                <div className="text-sm text-secondary-700 leading-relaxed bg-secondary-50/50 p-4 rounded-xl border border-secondary-100 italic whitespace-pre-wrap">
+                                                                    {activeIncrement.newKRA || 'No specific KRA defined in this increment.'}
+                                                                </div>
+                                                            </div>
+
+                                                            <div className="bg-white rounded-[2rem] border border-secondary-100 overflow-hidden shadow-sm">
+                                                                <div className="bg-secondary-50 px-6 py-4 border-b border-secondary-100">
+                                                                    <h4 className="text-[10px] font-black text-secondary-900 uppercase tracking-widest flex items-center gap-2">
+                                                                        <TrendingUp size={14} className="text-indigo-500" /> Monthly Revenue Breakdown
+                                                                    </h4>
+                                                                </div>
+                                                                <table className="w-full text-xs">
+                                                                    <thead>
+                                                                        <tr className="bg-secondary-50/50">
+                                                                            <th className="px-6 py-3 text-left font-bold text-secondary-500 uppercase tracking-tighter">Month</th>
+                                                                            <th className="px-6 py-3 text-right font-bold text-secondary-500 uppercase tracking-tighter">Achieved</th>
+                                                                            <th className="px-6 py-3 text-right font-bold text-secondary-500 uppercase tracking-tighter">Status</th>
+                                                                        </tr>
+                                                                    </thead>
+                                                                    <tbody className="divide-y divide-secondary-100">
+                                                                        {monthlyReviews.slice(0, 6).map((r: any) => {
+                                                                            const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+                                                                            const mTarget = monthlyTargetsJson ? (monthlyTargetsJson[Object.keys(monthlyTargetsJson)[r.month - 1]] || monthlyTarget) : monthlyTarget;
+                                                                            const perc = mTarget > 0 ? (r.revenueAchievement / mTarget) * 100 : 0;
+                                                                            return (
+                                                                                <tr key={r.id} className="hover:bg-secondary-50/50 transition-colors">
+                                                                                    <td className="px-6 py-4 font-bold text-secondary-900">{monthNames[r.month - 1]} {r.year}</td>
+                                                                                    <td className="px-6 py-4 text-right font-black text-primary-600">₹{r.revenueAchievement.toLocaleString()}</td>
+                                                                                    <td className="px-6 py-4 text-right">
+                                                                                        <span className={`px-2 py-1 rounded-lg text-[10px] font-black ${perc >= 100 ? 'bg-success-50 text-success-700' : perc >= 70 ? 'bg-primary-50 text-primary-700' : 'bg-warning-50 text-warning-700'}`}>
+                                                                                            {perc.toFixed(0)}%
+                                                                                        </span>
+                                                                                    </td>
+                                                                                </tr>
+                                                                            );
+                                                                        })}
+                                                                        {monthlyReviews.length === 0 && (
+                                                                            <tr>
+                                                                                <td colSpan={3} className="px-6 py-10 text-center text-secondary-400 italic">No monthly achievement data available.</td>
+                                                                            </tr>
+                                                                        )}
+                                                                    </tbody>
+                                                                </table>
+                                                            </div>
+                                                        </div>
+
+                                                        <div className="space-y-6">
+                                                            <h4 className="text-xs font-black text-secondary-900 uppercase tracking-widest mb-4 flex items-center gap-2">
+                                                                <Activity size={16} className="text-warning-500" /> Latest KPI Checkpoints
+                                                            </h4>
+                                                            <div className="grid grid-cols-1 gap-3">
+                                                                {activeIncrement.newKPI && typeof activeIncrement.newKPI === 'object' ? (
+                                                                    Object.entries(activeIncrement.newKPI).map(([k, v]: [string, any]) => (
+                                                                        <div key={k} className="flex justify-between items-center p-4 bg-white rounded-2xl border border-secondary-100 shadow-sm hover:border-primary-200 transition-colors">
+                                                                            <span className="text-xs font-bold text-secondary-600">{k}</span>
+                                                                            <span className="text-sm font-black text-primary-700">{String(v)}</span>
+                                                                        </div>
+                                                                    ))
+                                                                ) : (
+                                                                    <div className="text-center py-6 bg-secondary-50 rounded-2xl border-dashed border-2 border-secondary-200">
+                                                                        <p className="text-xs text-secondary-400 italic">No specific KPIs defined.</p>
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        </div>
                                                     </div>
                                                 </div>
-                                            </div>
-
-                                            <div className="space-y-6">
-                                                <h4 className="text-xs font-black text-secondary-900 uppercase tracking-widest mb-4 flex items-center gap-2">
-                                                    <Activity size={16} className="text-warning-500" /> Latest KPI Checkpoints
-                                                </h4>
-                                                <div className="grid grid-cols-1 gap-3">
-                                                    {activeIncrement.newKPI && typeof activeIncrement.newKPI === 'object' ? (
-                                                        Object.entries(activeIncrement.newKPI).map(([k, v]: [string, any]) => (
-                                                            <div key={k} className="flex justify-between items-center p-4 bg-white rounded-2xl border border-secondary-100 shadow-sm hover:border-primary-200 transition-colors">
-                                                                <span className="text-xs font-bold text-secondary-600">{k}</span>
-                                                                <span className="text-sm font-black text-primary-700">{String(v)}</span>
-                                                            </div>
-                                                        ))
-                                                    ) : (
-                                                        <div className="text-center py-6 bg-secondary-50 rounded-2xl border-dashed border-2 border-secondary-200">
-                                                            <p className="text-xs text-secondary-400 italic">No specific KPIs defined.</p>
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            </div>
-                                        </div>
+                                            );
+                                        })()}
 
                                         <div className="pt-6 border-t border-secondary-100">
                                             <h3 className="font-black text-secondary-900 flex items-center gap-3 text-lg mb-6">
