@@ -188,32 +188,118 @@ export default function StaffSalaryView({ fullProfile, salarySlips, activeIncrem
                                     </div>
                                 </div>
 
-                                <div className="card-premium p-8 bg-secondary-50 border-secondary-100 space-y-6">
-                                    <h3 className="font-black text-secondary-900 flex items-center gap-3 text-lg">
-                                        <ClipboardList className="text-indigo-600" size={24} />
-                                        Review History
-                                    </h3>
-                                    <div className="space-y-4 overflow-y-auto max-h-[400px] pr-2 custom-scrollbar">
-                                        {activeIncrement.reviews?.map((review: any) => (
-                                            <div key={review.id} className="bg-white p-4 rounded-2xl border border-secondary-100 shadow-sm relative overflow-hidden group">
-                                                <div className="absolute top-0 left-0 w-1 h-full bg-indigo-500"></div>
-                                                <div className="flex justify-between items-start mb-2">
-                                                    <span className="text-[10px] font-black text-indigo-600 uppercase tracking-tighter">{review.period} - {review.type}</span>
-                                                    <span className="text-[9px] text-secondary-400 font-bold"><FormattedDate date={review.date} /></span>
-                                                </div>
-                                                <p className="text-xs text-secondary-700 line-clamp-2 italic mb-3">&ldquo;{review.comments || 'No comments provided'}&rdquo;</p>
-                                                <div className="flex items-center gap-2">
-                                                    <div className="h-5 w-5 rounded-full bg-secondary-100 flex items-center justify-center text-[10px] text-secondary-600 font-bold">
-                                                        {review.reviewer?.name?.[0]}
+                                <div className="card-premium p-8 bg-secondary-50 border-secondary-100 space-y-8">
+                                    <div className="flex justify-between items-center">
+                                        <h3 className="font-black text-secondary-900 flex items-center gap-3 text-lg">
+                                            <ClipboardList className="text-indigo-600" size={24} />
+                                            Monthly Performance Track
+                                        </h3>
+                                        <span className="text-[10px] font-black text-secondary-400 uppercase tracking-widest">
+                                            {activeIncrement.reviews?.length || 0} Records found
+                                        </span>
+                                    </div>
+                                    <div className="space-y-6 overflow-y-auto max-h-[600px] pr-2 custom-scrollbar">
+                                        {activeIncrement.reviews?.map((review: any) => {
+                                            const mTarget = monthlyTargetsJson ? (monthlyTargetsJson[Object.keys(monthlyTargetsJson)[review.month - 1]] || monthlyTarget) : monthlyTarget;
+                                            const perc = mTarget > 0 ? (review.revenueAchievement / mTarget) * 100 : 0;
+
+                                            return (
+                                                <div key={review.id} className="bg-white p-6 rounded-3xl border border-secondary-100 shadow-sm relative overflow-hidden flex flex-col gap-4 group hover:shadow-md transition-all duration-300">
+                                                    <div className="absolute top-0 left-0 w-1.5 h-full bg-indigo-500"></div>
+
+                                                    {/* Header: Period & Status */}
+                                                    <div className="flex justify-between items-start">
+                                                        <div>
+                                                            <span className="text-[10px] font-black text-indigo-600 uppercase tracking-widest px-2 py-0.5 bg-indigo-50 rounded-lg">
+                                                                {review.period} Review
+                                                            </span>
+                                                            <h4 className="text-sm font-black text-secondary-900 mt-2 uppercase tracking-tight">
+                                                                {review.type} Assessment
+                                                            </h4>
+                                                        </div>
+                                                        <div className="text-right">
+                                                            <div className={`text-lg font-black ${perc >= 100 ? 'text-success-600' : perc >= 70 ? 'text-primary-600' : 'text-warning-600'}`}>
+                                                                {perc.toFixed(1)}%
+                                                            </div>
+                                                            <p className="text-[10px] font-bold text-secondary-400 uppercase">Achievement Rate</p>
+                                                        </div>
                                                     </div>
-                                                    <span className="text-[9px] font-black text-secondary-500 uppercase">{review.reviewer?.name}</span>
+
+                                                    {/* Achievement Metrics */}
+                                                    <div className="grid grid-cols-2 gap-4 p-4 bg-secondary-50 rounded-2xl border border-secondary-100/50">
+                                                        <div>
+                                                            <p className="text-[9px] font-black text-secondary-400 uppercase mb-1">Target Revenue</p>
+                                                            <p className="text-sm font-black text-secondary-700">₹{mTarget.toLocaleString()}</p>
+                                                        </div>
+                                                        <div className="text-right">
+                                                            <p className="text-[9px] font-black text-secondary-400 uppercase mb-1">Actual Achieved</p>
+                                                            <p className="text-sm font-black text-secondary-900">₹{review.revenueAchievement.toLocaleString()}</p>
+                                                        </div>
+                                                    </div>
+
+                                                    {/* KRA & KPI Progress */}
+                                                    <div className="space-y-4 pt-2">
+                                                        {review.kraProgress && (
+                                                            <div className="space-y-1">
+                                                                <p className="text-[9px] font-black text-secondary-400 uppercase tracking-widest flex items-center gap-2">
+                                                                    <Shield size={12} className="text-primary-500" /> KRA Progress
+                                                                </p>
+                                                                <p className="text-xs text-secondary-600 italic leading-relaxed pl-5 border-l border-secondary-100">
+                                                                    {review.kraProgress}
+                                                                </p>
+                                                            </div>
+                                                        )}
+
+                                                        {review.kpiProgress && Object.keys(review.kpiProgress || {}).length > 0 && (
+                                                            <div className="space-y-2">
+                                                                <p className="text-[9px] font-black text-secondary-400 uppercase tracking-widest flex items-center gap-2">
+                                                                    <Activity size={12} className="text-warning-500" /> KPI Achievements
+                                                                </p>
+                                                                <div className="grid grid-cols-1 gap-2 pl-5">
+                                                                    {Object.entries(review.kpiProgress).map(([kpi, val]: [string, any]) => (
+                                                                        <div key={kpi} className="flex justify-between items-center py-1.5 px-3 bg-secondary-50/50 rounded-lg border border-secondary-100/30">
+                                                                            <span className="text-[10px] font-bold text-secondary-500">{kpi}</span>
+                                                                            <span className="text-[10px] font-black text-secondary-900">{val}</span>
+                                                                        </div>
+                                                                    ))}
+                                                                </div>
+                                                            </div>
+                                                        )}
+                                                    </div>
+
+                                                    {/* Review Comments */}
+                                                    {review.comments && (
+                                                        <div className="pt-2 border-t border-secondary-50">
+                                                            <p className="text-[9px] font-black text-secondary-400 uppercase tracking-widest mb-1">Feedback</p>
+                                                            <p className="text-xs text-secondary-700 italic border-l-2 border-primary-100 pl-3">
+                                                                &ldquo;{review.comments}&rdquo;
+                                                            </p>
+                                                        </div>
+                                                    )}
+
+                                                    {/* Footer: Reviewer */}
+                                                    <div className="flex items-center justify-between pt-4 mt-auto">
+                                                        <div className="flex items-center gap-2">
+                                                            <div className="h-6 w-6 rounded-full bg-secondary-100 flex items-center justify-center text-[10px] text-secondary-600 font-black border border-secondary-200">
+                                                                {review.reviewer?.name?.[0]}
+                                                            </div>
+                                                            <div className="flex flex-col">
+                                                                <span className="text-[9px] font-black text-secondary-800 uppercase leading-none">{review.reviewer?.name}</span>
+                                                                <span className="text-[8px] text-secondary-400 font-bold">Reviewer</span>
+                                                            </div>
+                                                        </div>
+                                                        <span className="text-[9px] text-secondary-400 font-black uppercase tracking-tight">
+                                                            <FormattedDate date={review.date} />
+                                                        </span>
+                                                    </div>
                                                 </div>
-                                            </div>
-                                        ))}
+                                            );
+                                        })}
                                         {(!activeIncrement.reviews || activeIncrement.reviews.length === 0) && (
-                                            <div className="text-center py-10">
-                                                <Award size={32} className="text-secondary-200 mx-auto mb-2" />
-                                                <p className="text-xs text-secondary-400 font-medium">No performance reviews recorded for this increment yet.</p>
+                                            <div className="text-center py-20 bg-white rounded-3xl border border-dashed border-secondary-200">
+                                                <Award size={48} className="text-secondary-100 mx-auto mb-4" />
+                                                <h4 className="text-sm font-black text-secondary-400 uppercase">No Reviews Yet</h4>
+                                                <p className="text-[10px] text-secondary-300 font-bold uppercase mt-1">Monthly performance tracking will appear here.</p>
                                             </div>
                                         )}
                                     </div>
