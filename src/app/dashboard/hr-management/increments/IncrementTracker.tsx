@@ -278,6 +278,10 @@ export default function IncrementTracker({ initialIncrements }: { initialIncreme
                                                 <span className="text-primary-400">Re: <span className="text-primary-700">₹{newPerksVal.toLocaleString()}</span></span>
                                                 <span className="text-primary-400">v: <span className="text-primary-700">₹{(inc.newVariable || 0).toLocaleString()}</span></span>
                                             </div>
+                                            <div className="text-[10px] text-primary-500 mt-2 flex items-center gap-1 font-bold not-italic">
+                                                <Clock size={10} />
+                                                <FormattedDate date={inc.effectiveDate} />
+                                            </div>
                                         </td>
                                         <td className="px-6 py-4 text-xs italic">
                                             <div className="flex flex-col">
@@ -287,7 +291,7 @@ export default function IncrementTracker({ initialIncrements }: { initialIncreme
                                                     </span>
                                                     <span className="text-[8px] bg-indigo-100 px-1 rounded font-black text-indigo-500">FY{inc.fiscalYear || '??'}</span>
                                                 </div>
-                                                <span className="text-[10px] text-secondary-400 mt-1.5 flex items-center gap-1 font-bold">
+                                                <span className="text-[10px] text-indigo-500 mt-1.5 flex items-center gap-1 font-bold not-italic">
                                                     <Clock size={12} />
                                                     <FormattedDate date={inc.effectiveDate} />
                                                 </span>
