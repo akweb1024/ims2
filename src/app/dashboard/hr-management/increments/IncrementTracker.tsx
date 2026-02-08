@@ -10,12 +10,15 @@ import {
 } from 'lucide-react';
 import FormattedDate from '@/components/common/FormattedDate';
 import Link from 'next/link';
+import IncrementReviewModal from '@/components/dashboard/hr/IncrementReviewModal';
+import { ClipboardList } from 'lucide-react';
 
 export default function IncrementTracker({ initialIncrements }: { initialIncrements: any[] }) {
     const router = useRouter();
     const [increments, setIncrements] = useState(initialIncrements);
     const [selectedIncrement, setSelectedIncrement] = useState<any>(null);
     const [isReasonModalOpen, setIsReasonModalOpen] = useState(false);
+    const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
     const [mounted, setMounted] = useState(false);
 
     useEffect(() => {
@@ -137,6 +140,37 @@ export default function IncrementTracker({ initialIncrements }: { initialIncreme
     const openReasonModal = (increment: any) => {
         setSelectedIncrement(increment);
         setIsReasonModalOpen(true);
+    };
+
+    const openReviewModal = (increment: any) => {
+        setSelectedIncrement(increment);
+        setIsReviewModalOpen(true);
+    };
+
+    const handleSaveReview = async (reviewData: any) => {
+        if (!selectedIncrement) return;
+        try {
+            const token = localStorage.getItem('token');
+            const res = await fetch(`/api/hr/increments/${selectedIncrement.id}/reviews`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(reviewData)
+            });
+
+            if (res.ok) {
+                alert('Review saved successfully!');
+                // We could refresh data here if needed, but for now alert is fine
+            } else {
+                const err = await res.json();
+                alert(`Error: ${err.error}`);
+            }
+        } catch (error) {
+            console.error('Error saving review:', error);
+            alert('Failed to save review');
+        }
     };
 
     return (
@@ -319,6 +353,7 @@ export default function IncrementTracker({ initialIncrements }: { initialIncreme
                                         </td>
                                         <td className="px-6 py-4">
                                             <div className="flex items-center justify-center gap-2">
+                                                <button onClick={() => openReviewModal(inc)} className="p-2 hover:bg-success-50 rounded-xl transition-colors text-success-600 shadow-sm hover:shadow active:scale-95" title="Manage Reviews"><ClipboardList size={18} /></button>
                                                 <Link href={`/dashboard/hr-management/increments/${inc.id}`} className="p-2 hover:bg-primary-50 rounded-xl transition-colors text-primary-600 shadow-sm hover:shadow active:scale-95"><Eye size={18} /></Link>
                                                 <Link href={`/dashboard/hr-management/increments/${inc.id}/edit`} className="p-2 hover:bg-blue-50 rounded-xl transition-colors text-blue-600 shadow-sm hover:shadow active:scale-95"><Edit size={18} /></Link>
                                                 <button onClick={() => handleDelete(inc.id, inc.status)} className="p-2 hover:bg-danger-50 rounded-xl transition-colors text-danger-600 shadow-sm hover:shadow active:scale-95"><Trash2 size={18} /></button>
@@ -465,6 +500,16 @@ export default function IncrementTracker({ initialIncrements }: { initialIncreme
                             </div>
                         </div>
                     </div>,
+                    document.body
+                )}
+
+                {mounted && isReviewModalOpen && selectedIncrement && createPortal(
+                    <IncrementReviewModal
+                        isOpen={isReviewModalOpen}
+                        onClose={() => setIsReviewModalOpen(false)}
+                        onSave={handleSaveReview}
+                        incrementRecord={selectedIncrement}
+                    />,
                     document.body
                 )}
             </div>

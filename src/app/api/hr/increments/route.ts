@@ -117,6 +117,17 @@ export const GET = authorizedRoute(
                                 }
                             }
                         }
+                    },
+                    reviews: {
+                        include: {
+                            reviewer: {
+                                select: {
+                                    name: true,
+                                    email: true
+                                }
+                            }
+                        },
+                        orderBy: { date: 'desc' }
                     }
                 },
                 orderBy: { createdAt: 'desc' }

@@ -226,6 +226,7 @@ model User {
   reviewedGoals            EmployeeGoal[]              @relation("GoalReviewer")
   goalEvaluations         GoalEvaluation[]
   createdTasks             Task[]                      @relation("TaskAssigner")
+  incrementReviews         SalaryIncrementReview[]     @relation("IncrementReviewer")
 
   @@index([email])
   @@index([role])
@@ -1150,6 +1151,7 @@ model SalaryIncrementRecord {
   monthlyVariableTargets  Json?
   monthlyFixedSalaries    Json?
   monthlyVariableSalaries Json?
+  reviews                 SalaryIncrementReview[]
   employeeProfile         EmployeeProfile @relation(fields: [employeeProfileId], references: [id], onDelete: Cascade)
 
   @@index([employeeProfileId])
@@ -4054,4 +4056,35 @@ model GoalEvaluation {
   createdAt   DateTime     @default(now())
   goal        EmployeeGoal @relation(fields: [goalId], references: [id], onDelete: Cascade)
   evaluator   User         @relation(fields: [evaluatorId], references: [id])
+}
+
+model SalaryIncrementReview {
+  id                   String                @id @default(uuid())
+  incrementRecordId    String
+  incrementRecord      SalaryIncrementRecord @relation(fields: [incrementRecordId], references: [id], onDelete: Cascade)
+  type                 ReviewType            @default(MONTHLY)
+  period               String?               // e.g., "Jan 2024", "Q1 2024", "2024"
+  date                 DateTime              @default(now())
+  reviewerId           String
+  reviewer             User                  @relation("IncrementReviewer", fields: [reviewerId], references: [id])
+  
+  // Performance Data
+  revenueAchievement   Float?                @default(0)
+  kraProgress          String?               // Detailed comments on KRA
+  kpiProgress          Json?                 // Actual values for KPIs
+  comments             String?
+  
+  status               String                @default("COMPLETED")
+  
+  createdAt            DateTime              @default(now())
+  updatedAt            DateTime              @updatedAt
+
+  @@index([incrementRecordId])
+  @@index([reviewerId])
+}
+
+enum ReviewType {
+  MONTHLY
+  QUARTERLY
+  YEARLY
 }

@@ -10,8 +10,10 @@ import {
     User, Mail, Phone, MapPin, Briefcase, DollarSign,
     Calendar, FileText, Award, TrendingUp, Clock,
     Shield, ArrowLeft, Edit, Save, Plus, Trash2,
-    Building, ChevronRight, Star, Target, PieChart as PieIcon
+    Building, ChevronRight, Star, Target, PieChart as PieIcon,
+    Activity
 } from 'lucide-react';
+import PerformanceProgressBar from '@/components/common/PerformanceProgressBar';
 import ExpenseImpactAnalytics from '@/components/dashboard/hr/ExpenseImpactAnalytics';
 import TargetPerformanceTable from '@/components/dashboard/hr/TargetPerformanceTable';
 import RichTextEditor from '@/components/common/RichTextEditor';
@@ -25,6 +27,7 @@ export default function EmployeeProfilePage() {
     const router = useRouter();
     const [employee, setEmployee] = useState<any>(null);
     const [loading, setLoading] = useState(true);
+    const [activeIncrement, setActiveIncrement] = useState<any>(null);
     const [activeTab, setActiveTab] = useState('overview');
     const [growthData, setGrowthData] = useState<any>(null);
     const [currentUser, setCurrentUser] = useState<any>(null);
@@ -53,7 +56,17 @@ export default function EmployeeProfilePage() {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             if (res.ok) {
-                setEmployee(await res.json());
+                const data = await res.json();
+                setEmployee(data);
+
+                // Also fetch active increment performance
+                const incRes = await fetch(`/api/hr/increments?employeeId=${params.id}&status=APPROVED`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (incRes.ok) {
+                    const increments = await incRes.json();
+                    if (increments.length > 0) setActiveIncrement(increments[0]);
+                }
             } else {
                 console.error('Failed to fetch employee');
             }
@@ -856,7 +869,7 @@ export default function EmployeeProfilePage() {
 
                         {/* Performance Tab */}
                         {activeTab === 'performance' && (
-                            <div className="space-y-6">
+                            <div className="space-y-8">
                                 <TargetPerformanceTable
                                     employeeId={employee.id}
                                     monthlyTarget={employee.monthlyTarget}
@@ -864,21 +877,132 @@ export default function EmployeeProfilePage() {
                                     onUpdateTargets={fetchEmployeeDetails}
                                 />
 
-                                <h3 className="font-bold text-lg text-secondary-900 mt-8">Performance Reviews & Notes</h3>
-                                {employee.hrComments?.map((comment: any) => (
-                                    <div key={comment.id} className="card-premium p-4 border-l-4 border-warning-400">
-                                        <p className="text-sm text-secondary-800 mb-2">{comment.content}</p>
-                                        <div className="flex justify-between items-center text-xs text-secondary-400">
-                                            <span>By {comment.author?.email}</span>
-                                            <span><FormattedDate date={comment.createdAt} /></span>
+                                {activeIncrement && (
+                                    <div className="card-premium p-8 space-y-8 bg-gradient-to-br from-white to-secondary-50 shadow-lg border-primary-100">
+                                        <div className="flex justify-between items-center border-b border-secondary-100 pb-6">
+                                            <div>
+                                                <h3 className="font-black text-secondary-900 flex items-center gap-3 text-xl">
+                                                    <Target className="text-primary-600" size={28} />
+                                                    Active Performance & Goals
+                                                </h3>
+                                                <p className="text-xs text-secondary-500 font-bold uppercase tracking-widest mt-1">
+                                                    Linked to FY{activeIncrement.fiscalYear} Approved Increment
+                                                </p>
+                                            </div>
+                                            <div className="text-right">
+                                                <span className="badge badge-success px-4 py-1.5 text-[10px] font-black uppercase tracking-widest">
+                                                    Active Structure
+                                                </span>
+                                            </div>
+                                        </div>
+
+                                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+                                            <div className="space-y-8">
+                                                <div>
+                                                    <PerformanceProgressBar
+                                                        label="Monthly Revenue Achievement"
+                                                        target={activeIncrement.newMonthlyTarget || 0}
+                                                        current={activeIncrement.reviews?.[0]?.revenueAchievement || 0}
+                                                        unit="₹"
+                                                    />
+                                                    <p className="text-[10px] text-secondary-400 font-bold mt-2 italic">
+                                                        *Based on latest review: {activeIncrement.reviews?.[0]?.period || 'N/A'}
+                                                    </p>
+                                                </div>
+
+                                                <div className="p-6 bg-white rounded-[2rem] border border-secondary-100 shadow-sm">
+                                                    <h4 className="text-xs font-black text-secondary-900 uppercase tracking-widest mb-4 flex items-center gap-2">
+                                                        <Shield size={16} className="text-primary-500" /> Current KRA (Increment Specific)
+                                                    </h4>
+                                                    <div className="text-sm text-secondary-700 leading-relaxed bg-secondary-50/50 p-4 rounded-xl border border-secondary-100 italic whitespace-pre-wrap">
+                                                        {activeIncrement.newKRA || 'No specific KRA defined in this increment.'}
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div className="space-y-6">
+                                                <h4 className="text-xs font-black text-secondary-900 uppercase tracking-widest mb-4 flex items-center gap-2">
+                                                    <Activity size={16} className="text-warning-500" /> Latest KPI Checkpoints
+                                                </h4>
+                                                <div className="grid grid-cols-1 gap-3">
+                                                    {activeIncrement.newKPI && typeof activeIncrement.newKPI === 'object' ? (
+                                                        Object.entries(activeIncrement.newKPI).map(([k, v]: [string, any]) => (
+                                                            <div key={k} className="flex justify-between items-center p-4 bg-white rounded-2xl border border-secondary-100 shadow-sm hover:border-primary-200 transition-colors">
+                                                                <span className="text-xs font-bold text-secondary-600">{k}</span>
+                                                                <span className="text-sm font-black text-primary-700">{String(v)}</span>
+                                                            </div>
+                                                        ))
+                                                    ) : (
+                                                        <div className="text-center py-6 bg-secondary-50 rounded-2xl border-dashed border-2 border-secondary-200">
+                                                            <p className="text-xs text-secondary-400 italic">No specific KPIs defined.</p>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="pt-6 border-t border-secondary-100">
+                                            <h3 className="font-black text-secondary-900 flex items-center gap-3 text-lg mb-6">
+                                                <TrendingUp className="text-indigo-600" size={24} />
+                                                Performance Review History
+                                            </h3>
+                                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                                {activeIncrement.reviews?.map((review: any) => (
+                                                    <div key={review.id} className="card-premium p-6 border-l-4 border-indigo-500 shadow-md hover:shadow-lg transition-shadow bg-white flex flex-col justify-between">
+                                                        <div>
+                                                            <div className="flex justify-between items-start mb-4">
+                                                                <div>
+                                                                    <p className="text-[10px] font-black text-indigo-600 uppercase tracking-widest">{review.period}</p>
+                                                                    <p className="text-xs font-bold text-secondary-900">{review.type}</p>
+                                                                </div>
+                                                                <span className="text-[10px] text-secondary-400 font-bold">
+                                                                    <FormattedDate date={review.date} />
+                                                                </span>
+                                                            </div>
+                                                            <p className="text-xs text-secondary-700 leading-relaxed italic mb-6">&ldquo;{review.comments || 'No feedback recorded'}&rdquo;</p>
+                                                        </div>
+                                                        <div className="flex items-center gap-3 pt-4 border-t border-secondary-50">
+                                                            <div className="w-8 h-8 rounded-full bg-primary-100 text-primary-700 flex items-center justify-center text-xs font-black">
+                                                                {review.reviewer?.name?.[0]}
+                                                            </div>
+                                                            <div className="overflow-hidden">
+                                                                <p className="text-[10px] font-black text-secondary-900 truncate uppercase">{review.reviewer?.name}</p>
+                                                                <p className="text-[8px] text-secondary-400 truncate">{review.reviewer?.email}</p>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                                {(!activeIncrement.reviews || activeIncrement.reviews.length === 0) && (
+                                                    <div className="col-span-full py-20 text-center card-premium bg-secondary-50/50 border-dashed border-2">
+                                                        <Award size={48} className="text-secondary-200 mx-auto mb-4" />
+                                                        <p className="text-sm text-secondary-500 font-bold uppercase tracking-widest">No reviews recorded yet for this active increment cycle.</p>
+                                                    </div>
+                                                )}
+                                            </div>
                                         </div>
                                     </div>
-                                ))}
-                                {(!employee.hrComments || employee.hrComments.length === 0) && (
-                                    <div className="text-center p-8 text-secondary-400 bg-secondary-50 rounded-xl border-dashed border-2 border-secondary-200">
-                                        No performance reviews or notes added yet.
-                                    </div>
                                 )}
+
+                                <div className="space-y-6">
+                                    <h3 className="font-bold text-lg text-secondary-900 mt-8 flex items-center gap-2">
+                                        <Activity className="text-warning-500" size={20} />
+                                        HR Pulse Comments
+                                    </h3>
+                                    {employee.hrComments?.map((comment: any) => (
+                                        <div key={comment.id} className="card-premium p-4 border-l-4 border-warning-400">
+                                            <p className="text-sm text-secondary-800 mb-2">{comment.content}</p>
+                                            <div className="flex justify-between items-center text-xs text-secondary-400">
+                                                <span>By {comment.author?.email}</span>
+                                                <span><FormattedDate date={comment.createdAt} /></span>
+                                            </div>
+                                        </div>
+                                    ))}
+                                    {(!employee.hrComments || employee.hrComments.length === 0) && (
+                                        <div className="text-center p-8 text-secondary-400 bg-secondary-50 rounded-xl border-dashed border-2 border-secondary-200">
+                                            No HR pulse comments added yet.
+                                        </div>
+                                    )}
+                                </div>
                             </div>
                         )}
 

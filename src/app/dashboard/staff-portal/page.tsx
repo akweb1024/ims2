@@ -45,6 +45,7 @@ export default function StaffPortalPage() {
     const [snapshots, setSnapshots] = useState<any[]>([]); // Added for dynamic performance
     const [fullProfile, setFullProfile] = useState<any>(null);
     const [compliance, setCompliance] = useState<any>({ isCompliant: true, pendingDocuments: [], pendingModules: [] });
+    const [activeIncrement, setActiveIncrement] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState('overview');
     const [checkingIn, setCheckingIn] = useState(false);
@@ -92,7 +93,7 @@ export default function StaffPortalPage() {
                 fetch('/api/hr/my-documents', { headers: { 'Authorization': `Bearer ${token}` } }),
                 fetch('/api/hr/profile/me', { headers: { 'Authorization': `Bearer ${token}` } }),
                 fetch('/api/hr/onboarding/compliance', { headers: { 'Authorization': `Bearer ${token}` } }),
-                fetch(`/api/hr/performance/monthly?employeeId=self&year=${new Date().getFullYear()}`, { headers: { 'Authorization': `Bearer ${token}` } }) // Fetch Snapshots
+                fetch(`/api/hr/performance/monthly?employeeId=self&year=${new Date().getFullYear()}`, { headers: { 'Authorization': `Bearer ${token}` } }), // Fetch Snapshots
             ]);
 
             if (complRes.ok) {
@@ -120,6 +121,11 @@ export default function StaffPortalPage() {
             if (leavesRes.ok) setLeaves(await leavesRes.json());
             if (perfRes.ok) setPerformance(await perfRes.json());
             if (snapRes.ok) setSnapshots(await snapRes.json());
+            const incRes = await fetch('/api/staff/performance/active-increment', { headers: { 'Authorization': `Bearer ${token}` } });
+            if (incRes.ok) {
+                const incData = await incRes.json();
+                setActiveIncrement(incData.increment);
+            }
         } catch (err) {
             console.error('Failed to fetch staff data', err);
         } finally {

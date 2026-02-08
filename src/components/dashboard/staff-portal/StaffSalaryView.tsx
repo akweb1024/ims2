@@ -1,12 +1,14 @@
-import { TrendingUp } from 'lucide-react';
+import { TrendingUp, Target, Shield, Activity, ClipboardList, Award } from 'lucide-react';
 import FormattedDate from '@/components/common/FormattedDate';
+import PerformanceProgressBar from '@/components/common/PerformanceProgressBar';
 
 interface StaffSalaryViewProps {
     fullProfile: any;
     salarySlips: any[];
+    activeIncrement?: any;
 }
 
-export default function StaffSalaryView({ fullProfile, salarySlips }: StaffSalaryViewProps) {
+export default function StaffSalaryView({ fullProfile, salarySlips, activeIncrement }: StaffSalaryViewProps) {
     if (!fullProfile) return null;
 
     const handleDownloadSlip = async (slip: any) => {
@@ -67,81 +69,166 @@ export default function StaffSalaryView({ fullProfile, salarySlips }: StaffSalar
                     </div>
                 </div>
 
-                {/* Increment History */}
-                {fullProfile.incrementHistory?.length > 0 && (
-                    <div className="card-premium overflow-hidden">
-                        <div className="p-6 border-b border-secondary-100 flex justify-between items-center bg-secondary-50/30">
-                            <h3 className="font-bold text-secondary-900 flex items-center gap-2">
-                                <TrendingUp size={18} className="text-primary-600" />
-                                Increment History
-                            </h3>
+                {/* Performance & Active Targets */}
+                {activeIncrement && (
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        <div className="lg:col-span-2 card-premium p-8 space-y-8">
+                            <div className="flex justify-between items-center">
+                                <h3 className="font-black text-secondary-900 flex items-center gap-3 text-lg">
+                                    <Target className="text-primary-600" size={24} />
+                                    Active Performance Targets
+                                </h3>
+                                <span className="bg-primary-50 text-primary-700 px-4 py-1.5 rounded-2xl text-[10px] font-black uppercase tracking-wider border border-primary-100 italic">
+                                    Linked to FY{activeIncrement.fiscalYear} Increment
+                                </span>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                <div className="space-y-6">
+                                    <PerformanceProgressBar
+                                        label="Monthly Revenue Target"
+                                        target={activeIncrement.newMonthlyTarget || 0}
+                                        current={activeIncrement.reviews?.[0]?.revenueAchievement || 0}
+                                        unit="₹"
+                                    />
+                                    <div className="p-4 bg-secondary-50 rounded-2xl border border-secondary-100">
+                                        <p className="text-[10px] font-black text-secondary-400 uppercase mb-2 flex items-center gap-2">
+                                            <Shield size={12} className="text-primary-500" /> Current KRA
+                                        </p>
+                                        <p className="text-xs text-secondary-700 leading-relaxed italic line-clamp-3">
+                                            {activeIncrement.newKRA || 'Standard KRA policy active.'}
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <div className="space-y-4">
+                                    <p className="text-[10px] font-black text-secondary-400 uppercase tracking-widest flex items-center gap-2">
+                                        <Activity size={14} className="text-warning-500" /> KPI Metrics (Latest)
+                                    </p>
+                                    <div className="space-y-3">
+                                        {activeIncrement.newKPI && typeof activeIncrement.newKPI === 'object' ? (
+                                            Object.entries(activeIncrement.newKPI).map(([k, v]: [string, any]) => (
+                                                <div key={k} className="flex justify-between items-center p-3 bg-white rounded-xl border border-secondary-50 shadow-sm">
+                                                    <span className="text-[11px] font-bold text-secondary-600">{k}</span>
+                                                    <span className="text-xs font-black text-primary-600">{String(v)}</span>
+                                                </div>
+                                            ))
+                                        ) : (
+                                            <p className="text-xs text-secondary-400 italic">No specific KPIs defined for the current period.</p>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
                         </div>
-                        <div className="overflow-x-auto">
-                            <table className="table">
-                                <thead>
-                                    <tr>
-                                        <th>Date</th>
-                                        <th>Type</th>
-                                        <th className="text-right">Previous</th>
-                                        <th className="text-right">Revised</th>
-                                        <th className="text-right">Change</th>
-                                        <th className="text-right">Status</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {fullProfile.incrementHistory.map((rec: any) => (
-                                        <tr key={rec.id}>
-                                            <td className="font-medium"><FormattedDate date={rec.effectiveDate} /></td>
-                                            <td><span className="badge badge-secondary">{rec.type}</span></td>
-                                            <td className="text-right text-secondary-500">₹{rec.oldSalary.toLocaleString()}</td>
-                                            <td className="text-right font-bold text-secondary-900">₹{rec.newSalary.toLocaleString()}</td>
-                                            <td className="text-right">
-                                                <span className={`font-bold ${rec.percentage >= 0 ? 'text-success-600' : 'text-danger-600'}`}>
-                                                    {rec.percentage > 0 ? '+' : ''}{rec.percentage}%
-                                                </span>
-                                            </td>
-                                            <td className="text-right"><span className="badge badge-success">{rec.status}</span></td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
+
+                        <div className="card-premium p-8 bg-secondary-50 border-secondary-100 space-y-6">
+                            <h3 className="font-black text-secondary-900 flex items-center gap-3 text-lg">
+                                <ClipboardList className="text-indigo-600" size={24} />
+                                Review History
+                            </h3>
+                            <div className="space-y-4 overflow-y-auto max-h-[300px] pr-2 custom-scrollbar">
+                                {activeIncrement.reviews?.map((review: any) => (
+                                    <div key={review.id} className="bg-white p-4 rounded-2xl border border-secondary-100 shadow-sm relative overflow-hidden group">
+                                        <div className="absolute top-0 left-0 w-1 h-full bg-indigo-500"></div>
+                                        <div className="flex justify-between items-start mb-2">
+                                            <span className="text-[10px] font-black text-indigo-600 uppercase tracking-tighter">{review.period} - {review.type}</span>
+                                            <span className="text-[9px] text-secondary-400 font-bold"><FormattedDate date={review.date} /></span>
+                                        </div>
+                                        <p className="text-xs text-secondary-700 line-clamp-2 italic mb-3">&ldquo;{review.comments || 'No comments provided'}&rdquo;</p>
+                                        <div className="flex items-center gap-2">
+                                            <div className="h-5 w-5 rounded-full bg-secondary-100 flex items-center justify-center text-[10px] text-secondary-600 font-bold">
+                                                {review.reviewer?.name?.[0]}
+                                            </div>
+                                            <span className="text-[9px] font-black text-secondary-500 uppercase">{review.reviewer?.name}</span>
+                                        </div>
+                                    </div>
+                                ))}
+                                {(!activeIncrement.reviews || activeIncrement.reviews.length === 0) && (
+                                    <div className="text-center py-10">
+                                        <Award size={32} className="text-secondary-200 mx-auto mb-2" />
+                                        <p className="text-xs text-secondary-400 font-medium">No performance reviews recorded for this increment yet.</p>
+                                    </div>
+                                )}
+                            </div>
                         </div>
                     </div>
                 )}
+            </div>
 
-                {/* Salary Slips */}
-                <div>
-                    <h3 className="font-bold text-lg text-secondary-900 mb-4">Salary Slips</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        {salarySlips.map(slip => (
-                            <div key={slip.id} className="card-premium p-6 flex justify-between items-center">
-                                <div className="flex items-center gap-4">
-                                    <div className="w-12 h-12 bg-success-100 text-success-600 rounded-xl flex items-center justify-center text-xl">
-                                        💵
-                                    </div>
-                                    <div>
-                                        <p className="font-bold text-secondary-900">Salary Slip - {['', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][slip.month] || slip.month} {slip.year}</p>
-                                        <p className="text-xs text-secondary-500">Paid on <FormattedDate date={slip.generatedAt} /></p>
-                                    </div>
-                                </div>
-                                <div className="text-right">
-                                    <p className="text-lg font-black text-secondary-900">₹{slip.amountPaid.toLocaleString()}</p>
-                                    <button
-                                        onClick={() => handleDownloadSlip(slip)}
-                                        id={`download-btn-${slip.id}`}
-                                        className="text-[10px] font-bold text-primary-600 uppercase tracking-widest hover:underline mt-1"
-                                    >
-                                        Download PDF
-                                    </button>
-                                </div>
-                            </div>
-                        ))}
-                        {salarySlips.length === 0 && (
-                            <div className="col-span-full py-20 text-center card-premium">
-                                <p className="text-secondary-500 tracking-wide">No salary slips generated yet.</p>
-                            </div>
-                        )}
+            {/* Increment History */}
+            {fullProfile.incrementHistory?.length > 0 && (
+                <div className="card-premium overflow-hidden">
+                    <div className="p-6 border-b border-secondary-100 flex justify-between items-center bg-secondary-50/30">
+                        <h3 className="font-bold text-secondary-900 flex items-center gap-2">
+                            <TrendingUp size={18} className="text-primary-600" />
+                            Increment History
+                        </h3>
                     </div>
+                    <div className="overflow-x-auto">
+                        <table className="table">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Type</th>
+                                    <th className="text-right">Previous</th>
+                                    <th className="text-right">Revised</th>
+                                    <th className="text-right">Change</th>
+                                    <th className="text-right">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {fullProfile.incrementHistory.map((rec: any) => (
+                                    <tr key={rec.id}>
+                                        <td className="font-medium"><FormattedDate date={rec.effectiveDate} /></td>
+                                        <td><span className="badge badge-secondary">{rec.type}</span></td>
+                                        <td className="text-right text-secondary-500">₹{rec.oldSalary.toLocaleString()}</td>
+                                        <td className="text-right font-bold text-secondary-900">₹{rec.newSalary.toLocaleString()}</td>
+                                        <td className="text-right">
+                                            <span className={`font-bold ${rec.percentage >= 0 ? 'text-success-600' : 'text-danger-600'}`}>
+                                                {rec.percentage > 0 ? '+' : ''}{rec.percentage}%
+                                            </span>
+                                        </td>
+                                        <td className="text-right"><span className="badge badge-success">{rec.status}</span></td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            )}
+
+            {/* Salary Slips */}
+            <div>
+                <h3 className="font-bold text-lg text-secondary-900 mb-4">Salary Slips</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {salarySlips.map(slip => (
+                        <div key={slip.id} className="card-premium p-6 flex justify-between items-center">
+                            <div className="flex items-center gap-4">
+                                <div className="w-12 h-12 bg-success-100 text-success-600 rounded-xl flex items-center justify-center text-xl">
+                                    💵
+                                </div>
+                                <div>
+                                    <p className="font-bold text-secondary-900">Salary Slip - {['', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][slip.month] || slip.month} {slip.year}</p>
+                                    <p className="text-xs text-secondary-500">Paid on <FormattedDate date={slip.generatedAt} /></p>
+                                </div>
+                            </div>
+                            <div className="text-right">
+                                <p className="text-lg font-black text-secondary-900">₹{slip.amountPaid.toLocaleString()}</p>
+                                <button
+                                    onClick={() => handleDownloadSlip(slip)}
+                                    id={`download-btn-${slip.id}`}
+                                    className="text-[10px] font-bold text-primary-600 uppercase tracking-widest hover:underline mt-1"
+                                >
+                                    Download PDF
+                                </button>
+                            </div>
+                        </div>
+                    ))}
+                    {salarySlips.length === 0 && (
+                        <div className="col-span-full py-20 text-center card-premium">
+                            <p className="text-secondary-500 tracking-wide">No salary slips generated yet.</p>
+                        </div>
+                    )}
                 </div>
             </div>
         </div>
