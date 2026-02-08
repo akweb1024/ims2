@@ -175,12 +175,13 @@ export default function EmployeeProfileView({ employeeId, onClose }: EmployeePro
                                 <div className="bg-white p-6 rounded-xl border border-secondary-200 shadow-sm">
                                     <SectionHeader title="Recent Increments" />
                                     <Table
-                                        headers={['Effective Date', 'Old Salary', 'New Salary', 'Increment Amount']}
+                                        headers={['Effective Date', 'Old Salary', 'New Salary', 'Increment Amount', 'Status']}
                                         rows={data.employeeProfile?.incrementHistory?.map((h: any) => [
                                             new Date(h.effectiveDate).toLocaleDateString(),
                                             formatCurrency(h.oldSalary),
                                             formatCurrency(h.newSalary),
-                                            `+${formatCurrency(h.incrementAmount)}`
+                                            `+${formatCurrency(h.incrementAmount)}`,
+                                            <IncrementStatusBadge status={h.status} key={h.id} />
                                         ])}
                                     />
                                 </div>
@@ -313,6 +314,22 @@ const StatusBadge = ({ status }: { status: string }) => {
     };
     return <span className={`px-2 py-0.5 rounded text-xs font-semibold ${colors[status] || 'bg-gray-100 text-gray-700'}`}>{status}</span>;
 }
+
+const IncrementStatusBadge = ({ status }: { status: string }) => {
+    const colors: any = {
+        DRAFT: 'bg-secondary-100 text-secondary-600',
+        PENDING_MANAGER: 'bg-amber-100 text-amber-600',
+        PENDING_ADMIN: 'bg-blue-100 text-blue-600',
+        APPROVED: 'bg-emerald-100 text-emerald-600',
+        COMPLETED: 'bg-green-100 text-green-600',
+        REJECTED: 'bg-rose-100 text-rose-600'
+    };
+    return (
+        <span className={`px-2 py-0.5 rounded-full text-[10px] font-black tracking-wider uppercase border ${colors[status] || 'bg-gray-100 text-gray-600 border-gray-200'}`}>
+            {status?.replace('_', ' ') || 'UNKNOWN'}
+        </span>
+    );
+};
 
 const formatCurrency = (amount: number) => {
     if (!amount) return '₹0';
