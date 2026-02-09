@@ -371,10 +371,10 @@ export default function IncrementAnalyticsDashboard({ data }: IncrementAnalytics
                                         <td className="py-4">
                                             <div className="flex items-center gap-3">
                                                 <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-indigo-100 to-primary-100 flex items-center justify-center text-primary-600 font-black shadow-sm group-hover:scale-110 transition-transform">
-                                                    {inc.employee.name.charAt(0)}
+                                                    {(inc.name || inc.employee?.name || '?').charAt(0)}
                                                 </div>
                                                 <div>
-                                                    <p className="font-bold text-secondary-900">{inc.employee.name}</p>
+                                                    <p className="font-bold text-secondary-900">{inc.name || inc.employee?.name || 'Unknown'}</p>
                                                     <p className="text-xs text-secondary-500 font-medium">Applied: {new Date(inc.effectiveDate).toLocaleDateString()}</p>
                                                 </div>
                                             </div>
