@@ -2,10 +2,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { authorizedRoute } from '@/lib/middleware-auth';
 import { logger } from '@/lib/logger';
+import { getDownlineUserIds } from '@/lib/hierarchy';
 
 // GET /api/staff-management/employees - List employees
 export const GET = authorizedRoute(
-    ['SUPER_ADMIN', 'ADMIN', 'HR_MANAGER', 'HR'],
+    ['SUPER_ADMIN', 'ADMIN', 'HR_MANAGER', 'HR', 'MANAGER', 'TEAM_LEADER'],
     async (req: NextRequest, user) => {
         try {
             const { searchParams } = new URL(req.url);
@@ -23,7 +24,11 @@ export const GET = authorizedRoute(
             // Filter by company
             const showAll = searchParams.get('all') === 'true';
 
-            if (companyId && companyId !== 'all') {
+            if (['MANAGER', 'TEAM_LEADER'].includes(user.role)) {
+                // Managers and Team Leaders see their downline (hierarchy)
+                const subIds = await getDownlineUserIds(user.id, null); // null allows cross-company if needed
+                where.id = { in: subIds };
+            } else if (companyId && companyId !== 'all') {
                 where.companyId = companyId;
             } else if (user.companyId && !showAll) {
                 // Only restrict by user's company if NOT showAll

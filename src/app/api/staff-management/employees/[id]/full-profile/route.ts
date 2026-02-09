@@ -67,7 +67,7 @@ export const GET = authorizedRoute(
                             },
 
                             // Performance
-                            performance: {
+                            performanceReviews: {
                                 orderBy: { date: 'desc' },
                                 take: 5,
                                 include: { reviewer: { select: { name: true } } }

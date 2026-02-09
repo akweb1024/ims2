@@ -15,7 +15,7 @@ export const GET = authorizedRoute(
 
             const where: any = {};
 
-            if (showAll && ['SUPER_ADMIN', 'ADMIN', 'MANAGER'].includes(user.role)) {
+            if (showAll && ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'TEAM_LEADER'].includes(user.role)) {
                 if (['MANAGER', 'TEAM_LEADER'].includes(user.role)) {
                     const subIds = await getDownlineUserIds(user.id, user.companyId || undefined);
                     where.employee = { userId: { in: [...subIds, user.id] } };
@@ -24,7 +24,7 @@ export const GET = authorizedRoute(
                 }
             } else if (employeeId) {
                 // Managers checking specific employee
-                if (!['SUPER_ADMIN', 'ADMIN', 'MANAGER'].includes(user.role)) {
+                if (!['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'TEAM_LEADER'].includes(user.role)) {
                     return createErrorResponse('Forbidden', 403);
                 }
 

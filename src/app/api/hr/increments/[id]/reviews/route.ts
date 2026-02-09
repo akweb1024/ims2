@@ -1,3 +1,4 @@
+
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { authorizedRoute } from '@/lib/middleware-auth';
@@ -13,7 +14,8 @@ const reviewSchema = z.object({
     kraProgress: z.string().optional(),
     kpiProgress: z.record(z.string(), z.any()).optional(),
     comments: z.string().optional(),
-    status: z.string().optional()
+    status: z.string().optional(),
+    rating: z.number().min(1).max(5).optional()
 });
 
 // GET: Fetch reviews for a specific increment
@@ -62,11 +64,12 @@ export const POST = authorizedRoute(
                 return createErrorResponse('Increment record not found', 404);
             }
 
+            // Create SalaryIncrementReview
             const review = await prisma.salaryIncrementReview.create({
                 data: {
                     incrementRecordId: incrementId,
                     reviewerId: user.id,
-                    type: validatedData.type,
+                    type: validatedData.type as any,
                     period: validatedData.period,
                     month: validatedData.month,
                     year: validatedData.year,
@@ -74,6 +77,7 @@ export const POST = authorizedRoute(
                     kraProgress: validatedData.kraProgress,
                     kpiProgress: validatedData.kpiProgress || {},
                     comments: validatedData.comments,
+                    rating: validatedData.rating,
                     status: validatedData.status || 'COMPLETED'
                 },
                 include: {
@@ -86,6 +90,21 @@ export const POST = authorizedRoute(
                     }
                 }
             });
+
+            // If rating is provided, create a linked PerformanceReview
+            if (validatedData.rating) {
+                await prisma.performanceReview.create({
+                    data: {
+                        employeeId: increment.employeeProfileId,
+                        reviewerId: user.id,
+                        date: new Date(),
+                        period: `${validatedData.period} (${validatedData.type})`,
+                        rating: validatedData.rating,
+                        feedback: validatedData.comments || 'Auto-generated from Increment Review',
+                        salaryIncrementRecordId: incrementId
+                    }
+                });
+            }
 
             return NextResponse.json(review);
         } catch (error) {

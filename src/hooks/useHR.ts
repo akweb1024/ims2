@@ -148,10 +148,14 @@ export const useDocuments = (employeeId?: string) => {
     });
 };
 
-export const usePerformanceReviews = () => {
+export const usePerformanceReviews = (employeeId?: string, all: boolean = false) => {
+    const params = new URLSearchParams();
+    if (employeeId) params.append('employeeId', employeeId);
+    if (all) params.append('all', 'true');
+
     return useQuery<any[]>({
-        queryKey: ['performance-reviews'],
-        queryFn: () => fetchJson('/api/hr/performance'),
+        queryKey: ['performance-reviews', { employeeId, all }],
+        queryFn: () => fetchJson(`/api/hr/performance?${params.toString()}`),
     });
 };
 

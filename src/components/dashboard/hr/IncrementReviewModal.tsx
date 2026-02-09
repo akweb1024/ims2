@@ -20,10 +20,35 @@ export default function IncrementReviewModal({ isOpen, onClose, onSave, incremen
         kraProgress: '',
         kpiProgress: {},
         comments: '',
-        status: 'COMPLETED'
+        status: 'COMPLETED',
+        rating: 0
     });
 
     const [loading, setLoading] = useState(false);
+    const [fetchingData, setFetchingData] = useState(false);
+
+    const fetchRealData = async () => {
+        if (reviewForm.type !== 'MONTHLY') return;
+        setFetchingData(true);
+        try {
+            const res = await fetch(`/api/hr/performance/real-data?employeeId=${incrementRecord.employeeProfileId}&month=${reviewForm.month}&year=${reviewForm.year}`);
+            const data = await res.json();
+
+            if (data.revenueAchievement) {
+                setReviewForm(prev => ({
+                    ...prev,
+                    revenueAchievement: data.revenueAchievement,
+                    kraProgress: prev.kraProgress || (data.kpiSummary ? `Key Achievements:\n${data.kpiSummary}` : prev.kraProgress)
+                }));
+            } else {
+                // toast.error('No data found for this period'); 
+            }
+        } catch (error) {
+            console.error(error);
+        } finally {
+            setFetchingData(false);
+        }
+    };
 
     if (!isOpen) return null;
 
@@ -127,6 +152,20 @@ export default function IncrementReviewModal({ isOpen, onClose, onSave, incremen
                         </div>
                     )}
 
+                    {reviewForm.type === 'MONTHLY' && (
+                        <div className="flex justify-end pt-2">
+                            <button
+                                type="button"
+                                onClick={fetchRealData}
+                                disabled={fetchingData}
+                                className="text-primary-600 text-xs font-bold uppercase tracking-wider hover:bg-primary-50 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-2"
+                            >
+                                {fetchingData ? <span className="animate-spin">⏳</span> : <Target size={14} />}
+                                Fetch Real Performance Data
+                            </button>
+                        </div>
+                    )}
+
                     <div className="space-y-4 pt-4 border-t border-secondary-100">
                         <h4 className="font-bold text-sm text-secondary-900 flex items-center gap-2 uppercase tracking-wider">
                             <Award size={16} className="text-warning-500" />
@@ -186,6 +225,22 @@ export default function IncrementReviewModal({ isOpen, onClose, onSave, incremen
                             value={reviewForm.comments}
                             onChange={e => setReviewForm({ ...reviewForm, comments: e.target.value })}
                         />
+                    </div>
+
+                    <div className="space-y-4 pt-4 border-t border-secondary-100">
+                        <label className="label-premium">Performance Rating</label>
+                        <div className="flex gap-2">
+                            {[1, 2, 3, 4, 5].map(star => (
+                                <button
+                                    type="button"
+                                    key={star}
+                                    onClick={() => setReviewForm({ ...reviewForm, rating: star })}
+                                    className={`text-2xl transition-transform hover:scale-110 ${star <= reviewForm.rating ? 'text-warning-500' : 'text-secondary-200'}`}
+                                >
+                                    ★
+                                </button>
+                            ))}
+                        </div>
                     </div>
 
                     <div className="pt-6 border-t border-secondary-100 flex gap-4">

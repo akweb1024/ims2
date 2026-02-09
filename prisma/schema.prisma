@@ -998,8 +998,8 @@ model EmployeeProfile {
   performanceSnapshots     MonthlyPerformanceSnapshot[]
   onboardingProgress       OnboardingProgress[]
   evaluations              PerformanceEvaluation[]      @relation("EvaluatedEmployee")
+  performanceReviews       PerformanceReview[]          @relation("EmployeeReviews")
   performanceInsights      PerformanceInsight[]
-  performance              PerformanceReview[]
   revenueClaims            RevenueClaim[]
   approvedRevenue          RevenueTransaction[]         @relation("ApprovedRevenue")
   claimedRevenue           RevenueTransaction[]         @relation("ClaimedRevenue")
@@ -1097,6 +1097,7 @@ model SalaryIncrementRecord {
   percentage              Float
   optInVariable           Boolean         @default(false)
   optInIncentive          Boolean         @default(false)
+  performanceReviews      PerformanceReview[]
   oldVariablePerTarget    Float?
   newVariablePerTarget    Float?
   oldVariableUpperCap     Float?
@@ -1487,7 +1488,7 @@ model SalaryStructure {
   booksAndPeriodicals Float           @default(0)
   salaryFixed         Float           @default(0)
   salaryVariable      Float           @default(0)
-  salaryIncentive     Float           @default(0)
+  salaryIncentive          Float           @default(0)
   ctc                 Float           @default(0)
   effectiveFrom       DateTime        @default(now())
   createdAt           DateTime        @default(now())
@@ -1506,10 +1507,13 @@ model PerformanceReview {
   companyId  String?
   createdAt  DateTime        @default(now())
   company    Company?        @relation(fields: [companyId], references: [id])
-  employee   EmployeeProfile @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  employee   EmployeeProfile @relation("EmployeeReviews", fields: [employeeId], references: [id], onDelete: Cascade)
   reviewer   User            @relation("Reviewer", fields: [reviewerId], references: [id])
+  salaryIncrementRecordId String?
+  salaryIncrementRecord   SalaryIncrementRecord? @relation(fields: [salaryIncrementRecordId], references: [id])
 
   @@index([companyId])
+  @@index([salaryIncrementRecordId])
 }
 
 model EmployeeKPI {
@@ -4075,6 +4079,7 @@ model SalaryIncrementReview {
   revenueAchievement   Float?                @default(0)
   kraProgress          String?               // Detailed comments on KRA
   kpiProgress          Json?                 // Actual values for KPIs
+  rating               Float?
   comments             String?
   
   status               String                @default("COMPLETED")

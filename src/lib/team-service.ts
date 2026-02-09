@@ -323,7 +323,7 @@ export async function getUnifiedPerformance(
                         orderBy: { createdAt: 'desc' },
                         take: 20
                     },
-                    performance: {
+                    performanceReviews: {
                         select: {
                             id: true,
                             period: true,
@@ -376,7 +376,7 @@ export async function getUnifiedPerformance(
         companyId: u.companyId || '',
         companyName: u.company?.name || 'Unknown',
         kpis: u.employeeProfile?.kpis || [],
-        reviews: u.employeeProfile?.performance.map(p => ({
+        reviews: u.employeeProfile?.performanceReviews.map(p => ({
             id: p.id,
             period: p.period,
             rating: p.rating,
@@ -519,7 +519,7 @@ export async function getManagerTeamMemberProfile(managerId: string, targetUserI
                         take: 5,
                         orderBy: { date: 'desc' }
                     },
-                    performance: {
+                    performanceReviews: {
                         take: 3,
                         orderBy: { createdAt: 'desc' }
                     }
@@ -538,7 +538,7 @@ export async function getManagerTeamMemberProfile(managerId: string, targetUserI
         recentAttendance: user.employeeProfile?.attendance || [],
         pendingLeaves: user.employeeProfile?.leaveRequests || [],
         recentReports: user.employeeProfile?.workReports || [],
-        recentReviews: user.employeeProfile?.performance || [],
+        recentReviews: user.employeeProfile?.performanceReviews || [],
         incrementHistory: user.employeeProfile?.incrementHistory || []
     };
 }

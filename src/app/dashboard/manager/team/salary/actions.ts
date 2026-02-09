@@ -51,6 +51,7 @@ export async function getEmployeePerformance(employeeProfileId: string) {
     if (!session?.user?.id) return { success: false, error: 'Unauthorized' };
 
     try {
+        // Fetch Goals and Evaluations
         const goals = await prisma.employeeGoal.findMany({
             where: { employeeId: employeeProfileId },
             include: {
@@ -61,39 +62,74 @@ export async function getEmployeePerformance(employeeProfileId: string) {
             } as any
         });
 
-        if (goals.length === 0) {
-            return {
-                success: true,
-                performance: {
-                    avgAchievement: 0,
-                    avgEvaluation: 0,
-                    goalCount: 0,
-                    recommendation: 'No goals found for this period.'
+        // Fetch Recent increment reviews (monthly ratings)
+        const incrementReviews = await prisma.salaryIncrementReview.findMany({
+            where: {
+                incrementRecord: {
+                    employeeProfileId: employeeProfileId
                 }
-            };
-        }
+            },
+            orderBy: { date: 'desc' },
+            take: 6
+        });
 
-        const totalAchievement = goals.reduce((acc, goal) => acc + ((goal as any).achievementPercentage || 0), 0);
-        const avgAchievement = totalAchievement / goals.length;
+        // Fetch general performance reviews
+        const generalReviews = await prisma.performanceReview.findMany({
+            where: { employeeId: employeeProfileId },
+            orderBy: { date: 'desc' },
+            take: 3
+        });
 
-        const evaluations = goals
+        // Fetch recent snapshots for revenue consistency
+        const snapshots = await prisma.monthlyPerformanceSnapshot.findMany({
+            where: { employeeId: employeeProfileId },
+            orderBy: [
+                { year: 'desc' },
+                { month: 'desc' }
+            ],
+            take: 6
+        });
+
+        const totalGoalAchievement = goals.reduce((acc, goal) => acc + ((goal as any).achievementPercentage || 0), 0);
+        const avgGoalAchievement = goals.length > 0 ? totalGoalAchievement / goals.length : 0;
+
+        const goalEvaluations = goals
             .map(g => (g as any).evaluations?.[0])
             .filter(e => e !== undefined);
+        const avgGoalScore = goalEvaluations.length > 0
+            ? goalEvaluations.reduce((acc, e) => acc + (e.score || 0), 0) / goalEvaluations.length
+            : 0;
 
-        const totalEvaluation = evaluations.reduce((acc, e) => acc + (e.score || 0), 0);
-        const avgEvaluation = evaluations.length > 0 ? totalEvaluation / evaluations.length : 0;
+        const avgIncrementRating = incrementReviews.length > 0
+            ? incrementReviews.reduce((acc, r) => acc + ((r as any).rating || 0), 0) / incrementReviews.length
+            : 0;
+
+        const avgGeneralRating = generalReviews.length > 0
+            ? generalReviews.reduce((acc, r) => acc + (r.rating || 0), 0) / generalReviews.length
+            : 0;
+
+        const avgSnapshotAchievement = snapshots.length > 0
+            ? snapshots.reduce((acc, s) => acc + (s.revenueAchievement || s.overallScore || 0), 0) / snapshots.length
+            : 0;
+
+        // Combined score (weighted)
+        // Goal Achievement: 30%, Rating: 40%, Snapshot Achievement: 30%
+        const combinedAchievement = (avgGoalAchievement * 0.3) + (avgSnapshotAchievement * 0.3) + ((avgIncrementRating || avgGeneralRating || 0) * 20); // Rating 1-5 maps to 0-100? No, let's just use raw values for recommendation.
 
         // Recommendation Logic
         let recommendation = 'Standard Increment (5-10%)';
         let suggestedPercentage = 5;
 
-        if (avgAchievement > 90 || avgEvaluation > 9) {
+        const finalScore = (avgGoalAchievement + avgSnapshotAchievement) / 2;
+        const finalRating = (avgIncrementRating + (avgGeneralRating || avgIncrementRating)) / 2;
+
+        if (finalScore > 90 || finalRating >= 4.5) {
             recommendation = 'Exceeds Expectations (15-20% Increment Suggested)';
             suggestedPercentage = 15;
-        } else if (avgAchievement > 75 || avgEvaluation > 7.5) {
+        } else if (finalScore > 75 || finalRating >= 3.5) {
             recommendation = 'Strong Performer (10-15% Increment Suggested)';
             suggestedPercentage = 10;
-        } else if (avgAchievement < 40) {
+        } else if (finalScore < 40 || finalRating < 2) {
             recommendation = 'Needs Improvement (0-5% Increment Suggested)';
             suggestedPercentage = 0;
         }
@@ -101,11 +137,14 @@ export async function getEmployeePerformance(employeeProfileId: string) {
         return {
             success: true,
             performance: {
-                avgAchievement,
-                avgEvaluation,
+                avgAchievement: finalScore,
+                avgEvaluation: avgGoalScore,
+                avgRating: finalRating,
                 goalCount: goals.length,
+                reviewCount: incrementReviews.length,
                 recommendation,
-                suggestedPercentage
+                suggestedPercentage,
+                recentRevenue: snapshots[0]?.totalRevenueGenerated || 0
             }
         };
     } catch (error) {

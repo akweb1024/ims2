@@ -116,6 +116,10 @@ export const GET = authorizedRoute(
             });
 
             const totalAchievement = allReviews.reduce((sum, r) => sum + (r.revenueAchievement || 0), 0);
+            const reviewsWithRating = allReviews.filter(r => (r as any).rating !== undefined && (r as any).rating !== null);
+            const avgRating = reviewsWithRating.length > 0
+                ? reviewsWithRating.reduce((sum, r) => sum + ((r as any).rating || 0), 0) / reviewsWithRating.length
+                : 0;
 
             const qTotals = {
                 q1: increments.reduce((sum, i) => sum + (i.q1Target || 0), 0),
@@ -142,6 +146,8 @@ export const GET = authorizedRoute(
                         amount: 0,
                         revenueTarget: 0,
                         revenueAchieved: 0,
+                        avgRating: 0,
+                        ratingCount: 0,
                         count: 0,
                         totalPerc: 0
                     });
@@ -162,6 +168,8 @@ export const GET = authorizedRoute(
                         amount: 0,
                         revenueTarget: 0,
                         revenueAchieved: 0,
+                        avgRating: 0,
+                        ratingCount: 0,
                         count: 0,
                         totalPerc: 0
                     };
@@ -186,6 +194,10 @@ export const GET = authorizedRoute(
                 const current = trendMap.get(key);
                 if (current) {
                     current.revenueAchieved += (rev.revenueAchievement || 0);
+                    if ((rev as any).rating) {
+                        current.avgRating = ((current.avgRating * current.ratingCount) + (rev as any).rating) / (current.ratingCount + 1);
+                        current.ratingCount += 1;
+                    }
                 }
             });
 
@@ -197,6 +209,7 @@ export const GET = authorizedRoute(
                     amount: t.amount,
                     revenueTarget: t.revenueTarget,
                     revenueAchieved: t.revenueAchieved,
+                    avgRating: parseFloat((t.avgRating).toFixed(1)),
                     count: t.count,
                     percentage: t.count > 0 ? parseFloat((t.totalPerc / t.count).toFixed(2)) : 0
                 }));
@@ -268,6 +281,7 @@ export const GET = authorizedRoute(
                     totalApprovedBudgetImpact: totalImpact,
                     approvedCount: increments.length,
                     averagePercentage: avgPercentage,
+                    averageRating: avgRating,
                     totalApprovedPerksImpact: increments.reduce((sum, i) => sum + ((i.newHealthCare || 0) + (i.newTravelling || 0) + (i.newMobile || 0) + (i.newInternet || 0) + (i.newBooksAndPeriodicals || 0)), 0),
                     totalRevenueAchieved: totalAchievement,
                     totalPendingBudgetImpact: 0, // Placeholder
@@ -285,7 +299,8 @@ export const GET = authorizedRoute(
                         fixed: totalMonthlyFixTarget,
                         variable: totalMonthlyVariableTarget,
                         total: totalMonthlyTarget,
-                        achieved: totalAchievement
+                        achieved: totalAchievement,
+                        avgRating: avgRating
                     }
                 },
                 trends: trendData,

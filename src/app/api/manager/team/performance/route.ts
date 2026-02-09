@@ -72,7 +72,7 @@ export const GET = authorizedRoute(
                                 orderBy: { createdAt: 'desc' },
                                 take: 20
                             },
-                            performance: {
+                            performanceReviews: {
                                 select: {
                                     id: true,
                                     period: true,
@@ -112,7 +112,7 @@ export const GET = authorizedRoute(
                 companyId: u.companyId || '',
                 companyName: u.company?.name || 'Unknown',
                 kpis: u.employeeProfile?.kpis || [],
-                reviews: u.employeeProfile?.performance.map(p => ({
+                reviews: u.employeeProfile?.performanceReviews.map(p => ({
                     id: p.id,
                     period: p.period,
                     rating: p.rating,
