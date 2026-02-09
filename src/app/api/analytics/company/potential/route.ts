@@ -3,6 +3,8 @@ import { prisma } from '@/lib/prisma';
 import { authorizedRoute } from '@/lib/middleware-auth';
 import { createErrorResponse } from '@/lib/api-utils';
 
+export const dynamic = 'force-dynamic';
+
 export const GET = authorizedRoute(
     ['SUPER_ADMIN', 'ADMIN'],
     async (req: NextRequest, user) => {

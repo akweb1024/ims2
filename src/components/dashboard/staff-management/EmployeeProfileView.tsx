@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { X, User, Briefcase, DollarSign, FileText, Monitor, Clock, Calendar } from 'lucide-react';
+import { X, User, Briefcase, DollarSign, FileText, Monitor, Clock, Calendar, TrendingUp } from 'lucide-react';
+import LeaveLedgerHistory from '../hr/LeaveLedgerHistory';
 
 interface EmployeeProfileViewProps {
     employeeId: string;
@@ -46,6 +47,7 @@ export default function EmployeeProfileView({ employeeId, onClose }: EmployeePro
         { id: 'documents', label: 'Documents', icon: FileText },
         { id: 'assets', label: 'Assets', icon: Monitor },
         { id: 'attendance', label: 'Attendance', icon: Clock },
+        { id: 'leave', label: 'Leave & Attendance', icon: TrendingUp },
     ];
 
     return (
@@ -253,6 +255,12 @@ export default function EmployeeProfileView({ employeeId, onClose }: EmployeePro
                                         ])}
                                     />
                                 </div>
+                            </div>
+                        )}
+
+                        {activeTab === 'leave' && (
+                            <div className="space-y-6">
+                                <LeaveLedgerHistory employeeId={data.employeeProfile?.id || employeeId} />
                             </div>
                         )}
 

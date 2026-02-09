@@ -62,8 +62,11 @@ export const GET = authorizedRoute(
                                 take: 10
                             },
                             leaveLedgers: {
-                                orderBy: { createdAt: 'desc' },
-                                take: 20
+                                orderBy: [
+                                    { year: 'desc' },
+                                    { month: 'desc' }
+                                ],
+                                take: 12 // Last 12 months
                             },
 
                             // Performance
