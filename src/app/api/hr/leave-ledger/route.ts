@@ -128,7 +128,7 @@ export const GET = authorizedRoute(
                         } else {
                             closing = rawBalance;
                             // If balance is positive, we reset short deduction as it represents "unpaid leave" overflow
-                            displayShort = 0; 
+                            displayShort = 0;
                         }
 
                         // If existing record had a closing balance, and our calc differs...
@@ -207,6 +207,15 @@ export const POST = authorizedRoute(
                 return isNaN(n) ? 0 : n;
             };
 
+            // Prevent future updates
+            const now = new Date();
+            const currentYear = now.getFullYear();
+            const currentMonth = now.getMonth() + 1;
+
+            if (year > currentYear || (year === currentYear && month > currentMonth)) {
+                return createErrorResponse('Cannot update leave ledger for future months', 400);
+            }
+
             const safeOpening = parseNum(openingBalance);
             const safeAllotted = parseNum(autoCredit || 1.5);
             const safeTaken = parseNum(takenLeaves);
@@ -241,7 +250,7 @@ export const POST = authorizedRoute(
                 } else {
                     // Start fresh or keep manual? 
                     // To be consistent with recursion and FE:
-                    finalShort = 0; 
+                    finalShort = 0;
                 }
 
                 const ledger = await tx.leaveLedger.upsert({

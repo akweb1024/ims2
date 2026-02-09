@@ -233,20 +233,50 @@ const LeaveLedgerManager = () => {
                                 <select
                                     className="h-10 px-2 text-xs font-black border-none bg-transparent focus:ring-0 cursor-pointer appearance-none hover:text-primary-600 transition-colors"
                                     value={ledgerFilter.month}
-                                    onChange={e => setLedgerFilter({ ...ledgerFilter, month: parseInt(e.target.value) })}
+                                    onChange={e => {
+                                        const m = parseInt(e.target.value);
+                                        const now = new Date();
+                                        if (ledgerFilter.year === now.getFullYear() && m > now.getMonth() + 1) {
+                                            toast.error('Cannot select future month');
+                                            return;
+                                        }
+                                        setLedgerFilter({ ...ledgerFilter, month: m });
+                                    }}
                                 >
-                                    {Array.from({ length: 12 }, (_, i) => (
-                                        <option key={i + 1} value={i + 1}>{new Date(2024, i).toLocaleString('default', { month: 'long' })}</option>
-                                    ))}
+                                    {Array.from({ length: 12 }, (_, i) => {
+                                        const m = i + 1;
+                                        const now = new Date();
+                                        const isFuture = ledgerFilter.year === now.getFullYear() && m > now.getMonth() + 1;
+                                        return (
+                                            <option key={m} value={m} disabled={isFuture || ledgerFilter.year > now.getFullYear()}>
+                                                {new Date(2024, i).toLocaleString('default', { month: 'long' })}
+                                            </option>
+                                        );
+                                    })}
                                 </select>
                                 <div className="h-3 w-px bg-secondary-200"></div>
                                 <select
                                     className="h-10 px-2 text-xs font-black border-none bg-transparent focus:ring-0 cursor-pointer appearance-none hover:text-primary-600 transition-colors"
                                     value={ledgerFilter.year}
-                                    onChange={e => setLedgerFilter({ ...ledgerFilter, year: parseInt(e.target.value) })}
+                                    onChange={e => {
+                                        const y = parseInt(e.target.value);
+                                        const now = new Date();
+                                        if (y > now.getFullYear()) {
+                                            toast.error('Cannot select future year');
+                                            return;
+                                        }
+                                        // If switching to current year, ensure month is valid
+                                        if (y === now.getFullYear() && ledgerFilter.month > now.getMonth() + 1) {
+                                            setLedgerFilter({ month: now.getMonth() + 1, year: y });
+                                        } else {
+                                            setLedgerFilter({ ...ledgerFilter, year: y });
+                                        }
+                                    }}
                                 >
                                     {[2024, 2025, 2026].map(y => (
-                                        <option key={y} value={y}>{y}</option>
+                                        <option key={y} value={y} disabled={y > new Date().getFullYear()}>
+                                            {y}
+                                        </option>
                                     ))}
                                 </select>
                             </div>
@@ -254,13 +284,31 @@ const LeaveLedgerManager = () => {
                             <button
                                 onClick={() => {
                                     const newMonth = ledgerFilter.month + 1;
+                                    let newYear = ledgerFilter.year;
+                                    let nextM = newMonth;
+
                                     if (newMonth > 12) {
-                                        setLedgerFilter({ month: 1, year: ledgerFilter.year + 1 });
-                                    } else {
-                                        setLedgerFilter({ ...ledgerFilter, month: newMonth });
+                                        nextM = 1;
+                                        newYear = ledgerFilter.year + 1;
                                     }
+
+                                    const now = new Date();
+                                    const isFuture = newYear > now.getFullYear() || (newYear === now.getFullYear() && nextM > now.getMonth() + 1);
+
+                                    if (isFuture) {
+                                        toast.error('Cannot navigate to future months');
+                                        return;
+                                    }
+
+                                    setLedgerFilter({ month: nextM, year: newYear });
                                 }}
-                                className="p-2.5 hover:bg-secondary-100 text-secondary-600 rounded-xl transition-all active:scale-90"
+                                disabled={(() => {
+                                    const now = new Date();
+                                    const nextM = ledgerFilter.month + 1 > 12 ? 1 : ledgerFilter.month + 1;
+                                    const nextY = ledgerFilter.month + 1 > 12 ? ledgerFilter.year + 1 : ledgerFilter.year;
+                                    return nextY > now.getFullYear() || (nextY === now.getFullYear() && nextM > now.getMonth() + 1);
+                                })()}
+                                className="p-2.5 hover:bg-secondary-100 text-secondary-600 rounded-xl transition-all active:scale-90 disabled:opacity-30 disabled:cursor-not-allowed"
                                 title="Next Month"
                             >
                                 <ChevronDown size={16} strokeWidth={3} className="-rotate-90" />
