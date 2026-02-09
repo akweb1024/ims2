@@ -110,7 +110,7 @@ export default async function UnifiedPerformancePage({
                                                     </span>
                                                 </div>
                                                 {review.feedback && (
-                                                    <p className="text-sm text-gray-600 italic">"{review.feedback}"</p>
+                                                    <p className="text-sm text-gray-600 italic">&ldquo;{review.feedback}&rdquo;</p>
                                                 )}
                                                 <div className="mt-2 text-xs text-gray-500">
                                                     Reviewed by: {review.reviewer?.name}
