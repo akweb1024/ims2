@@ -11,11 +11,14 @@ interface IncrementReviewModalProps {
 }
 
 export default function IncrementReviewModal({ isOpen, onClose, onSave, incrementRecord }: IncrementReviewModalProps) {
+    const monthsShort = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    const currentDate = new Date();
+
     const [reviewForm, setReviewForm] = useState({
         type: 'MONTHLY',
-        period: '',
-        month: new Date().getMonth() + 1,
-        year: new Date().getFullYear(),
+        period: `${monthsShort[currentDate.getMonth()]} ${currentDate.getFullYear()}`,
+        month: currentDate.getMonth() + 1,
+        year: currentDate.getFullYear(),
         revenueAchievement: 0,
         kraProgress: '',
         kpiProgress: {},
@@ -56,7 +59,12 @@ export default function IncrementReviewModal({ isOpen, onClose, onSave, incremen
         e.preventDefault();
         setLoading(true);
         try {
-            await onSave(reviewForm);
+            // Sanitize payload: rating 0 should be undefined to pass Zod validation (.min(1).optional())
+            const payload = {
+                ...reviewForm,
+                rating: reviewForm.rating > 0 ? reviewForm.rating : undefined
+            };
+            await onSave(payload);
             onClose();
         } catch (err) {
             console.error(err);
