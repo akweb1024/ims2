@@ -249,8 +249,8 @@ export default function IncrementTracker({ initialIncrements }: { initialIncreme
                                 <th className="px-6 py-5 text-left text-[10px] font-black text-secondary-500 uppercase tracking-widest text-nowrap">Current Approved (FY)</th>
                                 <th className="px-6 py-5 text-left text-[10px] font-black text-secondary-500 uppercase tracking-widest text-nowrap">Next Proposal (FY)</th>
                                 <th className="px-6 py-5 text-center text-[10px] font-black text-secondary-500 uppercase tracking-widest">Logic</th>
-                                <th className="px-6 py-5 text-right text-[10px] font-black text-secondary-500 uppercase tracking-widest">Total CTC Past</th>
-                                <th className="px-6 py-5 text-right text-[10px] font-black text-secondary-500 uppercase tracking-widest">CTC After</th>
+                                <th className="px-6 py-5 text-right text-[10px] font-black text-secondary-500 uppercase tracking-widest">Fixed Salary (Past)</th>
+                                <th className="px-6 py-5 text-right text-[10px] font-black text-secondary-500 uppercase tracking-widest">Fixed Salary (New)</th>
                                 <th className="px-6 py-5 text-center text-[10px] font-black text-secondary-500 uppercase tracking-widest">Propagate</th>
                             </tr>
                         </thead>
@@ -260,8 +260,8 @@ export default function IncrementTracker({ initialIncrements }: { initialIncreme
                                 const oldPerksVal = (inc.oldHealthCare || 0) + (inc.oldTravelling || 0) + (inc.oldMobile || 0) + (inc.oldInternet || 0) + (inc.oldBooksAndPeriodicals || 0);
                                 const newPerksVal = (inc.newHealthCare || 0) + (inc.newTravelling || 0) + (inc.newMobile || 0) + (inc.newInternet || 0) + (inc.newBooksAndPeriodicals || 0);
 
-                                const lastApprovedTotal = (inc.oldFixed || 0) + oldPerksVal + (inc.oldVariable || 0);
-                                const currentApprovedTotal = (inc.newFixed || 0) + newPerksVal + (inc.newVariable || 0);
+                                // const lastApprovedTotal = (inc.oldFixed || 0) + oldPerksVal + (inc.oldVariable || 0);
+                                // const currentApprovedTotal = (inc.newFixed || 0) + newPerksVal + (inc.newVariable || 0);
 
                                 return (
                                     <tr key={inc.id} className="hover:bg-primary-50/50 transition-colors group">
@@ -293,24 +293,22 @@ export default function IncrementTracker({ initialIncrements }: { initialIncreme
                                         </td>
                                         <td className="px-6 py-4 text-secondary-600 font-mono text-xs italic">
                                             <div className="flex items-center gap-2">
-                                                <p className="font-black text-secondary-900">₹{lastApprovedTotal.toLocaleString()}</p>
+                                                <p className="font-black text-secondary-900">₹{(inc.oldFixed || 0).toLocaleString()}</p>
                                                 <span className="text-[8px] bg-secondary-100 px-1 rounded font-black text-secondary-400">FY{inc.fiscalYear || '??'}</span>
                                             </div>
                                             <div className="flex flex-wrap gap-x-2 gap-y-0.5 mt-1.5 text-[9px] font-black uppercase tracking-tighter">
-                                                <span className="text-secondary-400">F: <span className="text-secondary-600">₹{(inc.oldFixed || 0).toLocaleString()}</span></span>
                                                 <span className="text-secondary-400">Re: <span className="text-secondary-600">₹{oldPerksVal.toLocaleString()}</span></span>
-                                                <span className="text-secondary-400">v: <span className="text-secondary-600">₹{(inc.oldVariable || 0).toLocaleString()}</span></span>
+                                                <span className="text-secondary-400">Var: <span className="text-secondary-600">₹{(inc.oldVariable || 0).toLocaleString()}</span></span>
                                             </div>
                                         </td>
                                         <td className="px-6 py-4 text-secondary-600 font-mono text-xs italic">
                                             <div className="flex items-center gap-2">
-                                                <p className="font-black text-secondary-900 underline decoration-primary-200 underline-offset-4">₹{currentApprovedTotal.toLocaleString()}</p>
+                                                <p className="font-black text-secondary-900 underline decoration-primary-200 underline-offset-4">₹{(inc.newFixed || 0).toLocaleString()}</p>
                                                 <span className="text-[8px] bg-primary-100 px-1 rounded font-black text-primary-500">FY{inc.fiscalYear || '??'}</span>
                                             </div>
                                             <div className="flex flex-wrap gap-x-2 gap-y-0.5 mt-1.5 text-[9px] font-black uppercase tracking-tighter">
-                                                <span className="text-primary-400">F: <span className="text-primary-700">₹{(inc.newFixed || 0).toLocaleString()}</span></span>
                                                 <span className="text-primary-400">Re: <span className="text-primary-700">₹{newPerksVal.toLocaleString()}</span></span>
-                                                <span className="text-primary-400">v: <span className="text-primary-700">₹{(inc.newVariable || 0).toLocaleString()}</span></span>
+                                                <span className="text-primary-400">Var: <span className="text-primary-700">₹{(inc.newVariable || 0).toLocaleString()}</span></span>
                                             </div>
                                             <div className="text-[10px] text-primary-500 mt-2 flex items-center gap-1 font-bold not-italic">
                                                 <Clock size={10} />
@@ -471,9 +469,34 @@ export default function IncrementTracker({ initialIncrements }: { initialIncreme
                                         <div className="space-y-3">
                                             <p className="text-[10px] font-black text-secondary-600 uppercase ml-2 tracking-widest">Defined KPI Metrics</p>
                                             <div className="p-7 bg-secondary-900 rounded-[2rem] border border-secondary-800 min-h-[220px] text-xs font-mono text-primary-400 overflow-x-auto shadow-inner hover:bg-secondary-800 transition-all custom-scrollbar">
-                                                {typeof selectedIncrement.newKPI === 'object'
-                                                    ? <pre className="leading-loose">{JSON.stringify(selectedIncrement.newKPI, null, 4)}</pre>
-                                                    : selectedIncrement.newKPI || 'Baseline performance metrics applied.'}
+                                                {(() => {
+                                                    let kpiData;
+                                                    try {
+                                                        const rawKPI = selectedIncrement.newKPI;
+                                                        if (typeof rawKPI === 'object' && rawKPI !== null) {
+                                                            kpiData = rawKPI;
+                                                        } else if (typeof rawKPI === 'string' && rawKPI.trim().startsWith('{')) {
+                                                            kpiData = JSON.parse(rawKPI);
+                                                        } else {
+                                                            return rawKPI || 'Baseline performance metrics applied.';
+                                                        }
+
+                                                        if (Object.keys(kpiData).length === 0) return 'No metrics defined.';
+
+                                                        return (
+                                                            <ul className="space-y-2">
+                                                                {Object.entries(kpiData).map(([key, value]: [string, any]) => (
+                                                                    <li key={key} className="flex justify-between items-center border-b border-secondary-800 pb-1">
+                                                                        <span className="text-secondary-400 font-bold opacity-80">{key.replace(/_/g, ' ')}:</span>
+                                                                        <span className="text-white font-black">{String(value)}</span>
+                                                                    </li>
+                                                                ))}
+                                                            </ul>
+                                                        );
+                                                    } catch (e) {
+                                                        return selectedIncrement.newKPI || 'Baseline performance metrics applied.';
+                                                    }
+                                                })()}
                                             </div>
                                         </div>
                                     </div>

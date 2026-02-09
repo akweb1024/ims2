@@ -72,7 +72,7 @@ export default function IncrementReviewModal({ isOpen, onClose, onSave, incremen
                     <div>
                         <h3 className="text-2xl font-black flex items-center gap-2">
                             <TrendingUp size={24} />
-                            Performance Review
+                            Performance Review <span className="text-primary-200 font-medium text-lg ml-2 opacity-80">- {reviewForm.period}</span>
                         </h3>
                         <p className="text-primary-100 text-xs font-bold uppercase tracking-widest mt-1">
                             Linking achievements to salary increment
