@@ -83,16 +83,57 @@ export default async function UnifiedPerformancePage({
                                     </table>
                                 </div>
                             </div>
+
+                            {/* Recent Reviews */}
+                            {user.reviews && user.reviews.length > 0 && (
+                                <div className="lg:col-span-2 mt-4 pt-4 border-t border-gray-100">
+                                    <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-4">Recent Performance Reviews</h4>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        {user.reviews.map((review: any) => (
+                                            <div key={review.id} className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                                                <div className="flex justify-between items-start mb-2">
+                                                    <div>
+                                                        <span className="text-sm font-semibold text-gray-900">{review.period}</span>
+                                                        <div className="flex items-center mt-1">
+                                                            <span className="text-xs text-gray-500 mr-2">Rating:</span>
+                                                            <div className="flex">
+                                                                {[1, 2, 3, 4, 5].map((star) => (
+                                                                    <span key={star} className={`text-sm ${star <= review.rating ? 'text-yellow-400' : 'text-gray-300'}`}>
+                                                                        ★
+                                                                    </span>
+                                                                ))}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <span className="text-xs text-gray-400">
+                                                        {format(new Date(review.createdAt), 'MMM d, yyyy')}
+                                                    </span>
+                                                </div>
+                                                {review.feedback && (
+                                                    <p className="text-sm text-gray-600 italic">"{review.feedback}"</p>
+                                                )}
+                                                <div className="mt-2 text-xs text-gray-500">
+                                                    Reviewed by: {review.reviewer?.name}
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )
+                            }
                         </div>
                     </div>
-                ))}
-                {performanceData.length === 0 && (
-                    <div className="text-center py-12 text-gray-500 bg-white rounded-xl border border-gray-200">
-                        No team members found with performance data.
-                    </div>
-                )}
-            </div>
-        </div>
+                ))
+                }
+                {
+                    performanceData.length === 0 && (
+                        <div className="text-center py-12 text-gray-500 bg-white rounded-xl border border-gray-200">
+                            No team members found with performance data.
+                        </div>
+                    )
+                }
+            </div >
+        </div >
     );
 }
 
