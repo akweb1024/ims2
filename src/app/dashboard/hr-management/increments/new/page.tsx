@@ -301,7 +301,7 @@ function NewIncrementContent() {
                                                 <p className="font-bold">₹{oldInc.toLocaleString()}</p>
                                             </div>
                                             <div>
-                                                <p className="text-secondary-500">Total CTC</p>
+                                                <p className="text-secondary-500">Total Fix Salary</p>
                                                 <p className="font-bold text-primary-600">₹{(selectedEmployee.baseSalary || 0).toLocaleString()}</p>
                                             </div>
                                         </div>
@@ -317,15 +317,15 @@ function NewIncrementContent() {
                                 New Salary Structure
                             </h2>
 
-                            {/* CTC */}
+                            {/* Fix Salary */}
                             <div className="mb-6">
-                                <label className="label-premium">CTC *</label>
+                                <label className="label-premium">Fix Salary *</label>
                                 <input
                                     type="number"
                                     required
                                     min="0"
                                     step="any"
-                                    title="New CTC"
+                                    title="New Fix Salary"
                                     placeholder="0"
                                     className="input-premium"
                                     value={form.newFixedSalary}
@@ -432,7 +432,7 @@ function NewIncrementContent() {
                                                     value={form.newBaseTarget}
                                                     onChange={(e) => setForm({ ...form, newBaseTarget: parseFloat(e.target.value) || 0 })}
                                                 />
-                                                <p className="text-xs text-blue-600 mt-1">Quota for CTC</p>
+                                                <p className="text-xs text-blue-600 mt-1">Quota for Fix Salary</p>
                                             </div>
                                         </div>
 
@@ -870,7 +870,7 @@ function NewIncrementContent() {
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
                                 <div>
-                                    <label className="label-premium">New CTC (Avg/Monthly)</label>
+                                    <label className="label-premium">New Fix Salary (Avg/Monthly)</label>
                                     <input
                                         type="number"
                                         className="input-premium font-bold text-purple-700"
