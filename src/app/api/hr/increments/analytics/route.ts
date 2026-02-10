@@ -53,11 +53,18 @@ export const GET = authorizedRoute(
                 const reportIds = reports.map(r => r.employeeProfile?.id).filter(Boolean);
                 where.employeeId = { in: reportIds };
             } else {
-                if (!['SUPER_ADMIN', 'ADMIN', 'HR', 'HR_MANAGER', 'FINANCE_ADMIN'].includes(user.role)) {
-                    return NextResponse.json({ error: 'Unauthorized for Company scope' }, { status: 403 });
-                }
+                // If COMPANY scope is requested but user is not authorized, fallback to TEAM
+                const authorizedForCompany = ['SUPER_ADMIN', 'ADMIN', 'HR', 'HR_MANAGER', 'FINANCE_ADMIN'].includes(user.role);
 
-                if (targetCompanyId) {
+                if (!authorizedForCompany) {
+                    // Fallback to TEAM scope logic
+                    const reports = await prisma.user.findMany({
+                        where: { managerId: user.id },
+                        select: { employeeProfile: { select: { id: true } } }
+                    });
+                    const reportIds = reports.map(r => r.employeeProfile?.id).filter(Boolean);
+                    where.employeeId = { in: reportIds };
+                } else if (targetCompanyId) {
                     where.employeeProfile = { user: { companyId: targetCompanyId } };
                 }
             }

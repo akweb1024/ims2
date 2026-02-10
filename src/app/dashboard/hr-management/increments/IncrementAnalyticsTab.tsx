@@ -18,11 +18,13 @@ import { FormattedNumber } from '@/components/common/FormattedNumber';
 export default function IncrementAnalyticsTab() {
     const [data, setData] = useState<any>(null);
     const [loading, setLoading] = useState(true);
+    const [user, setUser] = useState<any>(null);
     const [filters, setFilters] = useState({
         fiscalYear: '25-26',
         scope: 'COMPANY',
         status: 'APPROVED',
         departmentId: '',
+        companyId: '',
     });
 
     const [availableFilters, setAvailableFilters] = useState({
@@ -31,29 +33,60 @@ export default function IncrementAnalyticsTab() {
     });
 
     useEffect(() => {
-        fetchAnalytics();
-    }, [filters]);
+        fetchUser();
+    }, []);
+
+    useEffect(() => {
+        if (user) {
+            fetchAnalytics();
+        }
+    }, [filters, user]);
 
     useEffect(() => {
         fetchDepartments();
-    }, []);
+    }, [filters.companyId]);
 
-    const fetchDepartments = async () => {
+    useEffect(() => {
+        if (user?.role === 'SUPER_ADMIN') {
+            fetchCompanies();
+        }
+    }, [user]);
+
+    const fetchUser = async () => {
         try {
-            const res = await fetch('/api/hr/departments');
-            const result = await res.json();
-            if (Array.isArray(result)) {
-                setAvailableFilters(prev => ({ ...prev, departments: result }));
+            const res = await fetch('/api/auth/me');
+            if (res.ok) {
+                const userData = await res.json();
+                setUser(userData);
+                // Default scope to TEAM for Managers
+                if (userData.role === 'MANAGER') {
+                    setFilters(prev => ({ ...prev, scope: 'TEAM' }));
+                }
             }
         } catch (error) {
-            console.error('Error fetching departments:', error);
+            console.error('Error fetching user:', error);
+        }
+    };
+
+    const fetchCompanies = async () => {
+        try {
+            const res = await fetch('/api/companies?limit=1000');
+            const result = await res.json();
+            if (result.data) {
+                setAvailableFilters(prev => ({ ...prev, companies: result.data }));
+            }
+        } catch (error) {
+            console.error('Error fetching companies:', error);
         }
     };
 
     const fetchAnalytics = async () => {
         setLoading(true);
         try {
-            const queryParams = new URLSearchParams(filters);
+            const queryParams = new URLSearchParams();
+            Object.entries(filters).forEach(([key, value]) => {
+                if (value) queryParams.append(key, value);
+            });
             const res = await fetch(`/api/hr/increments/analytics?${queryParams.toString()}`);
             const result = await res.json();
             setData(result);
@@ -61,6 +94,30 @@ export default function IncrementAnalyticsTab() {
             console.error('Error fetching analytics:', error);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const fetchDepartments = async () => {
+        try {
+            const url = filters.companyId
+                ? `/api/hr/departments?companyId=${filters.companyId}`
+                : '/api/hr/departments';
+            const res = await fetch(url);
+            const result = await res.json();
+            if (Array.isArray(result)) {
+                // Deduplicate by name
+                const uniqueDepts: any[] = [];
+                const seenNames = new Set();
+                result.forEach(dept => {
+                    if (!seenNames.has(dept.name)) {
+                        seenNames.add(dept.name);
+                        uniqueDepts.push(dept);
+                    }
+                });
+                setAvailableFilters(prev => ({ ...prev, departments: uniqueDepts }));
+            }
+        } catch (error) {
+            console.error('Error fetching departments:', error);
         }
     };
 
@@ -116,6 +173,22 @@ export default function IncrementAnalyticsTab() {
                             <option value="TEAM">My Team</option>
                         </select>
                     </div>
+
+                    {user?.role === 'SUPER_ADMIN' && availableFilters.companies.length > 0 && (
+                        <div className="flex items-center gap-2 px-3 py-1.5 bg-secondary-50 rounded-xl border border-secondary-200">
+                            <Search size={14} className="text-secondary-400" />
+                            <select
+                                className="bg-transparent text-xs font-bold text-secondary-700 outline-none"
+                                value={filters.companyId}
+                                onChange={(e) => setFilters({ ...filters, companyId: e.target.value })}
+                            >
+                                <option value="">All Companies</option>
+                                {availableFilters.companies.map((company: any) => (
+                                    <option key={company.id} value={company.id}>{company.name}</option>
+                                ))}
+                            </select>
+                        </div>
+                    )}
 
                     {availableFilters.departments.length > 0 && (
                         <div className="flex items-center gap-2 px-3 py-1.5 bg-secondary-50 rounded-xl border border-secondary-200">
