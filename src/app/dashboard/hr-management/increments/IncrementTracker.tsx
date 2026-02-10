@@ -255,12 +255,10 @@ export default function IncrementTracker({ initialIncrements }: { initialIncreme
                             <tr>
                                 <th className="px-6 py-5 text-left text-[10px] font-black text-secondary-500 uppercase tracking-widest">Employee Intelligence</th>
                                 <th className="px-6 py-5 text-left text-[10px] font-black text-secondary-500 uppercase tracking-widest whitespace-nowrap">Tenure (EXP)</th>
-                                <th className="px-6 py-5 text-left text-[10px] font-black text-secondary-500 uppercase tracking-widest text-nowrap">Last Approved (FY)</th>
-                                <th className="px-6 py-5 text-left text-[10px] font-black text-secondary-500 uppercase tracking-widest text-nowrap">Current Approved (FY)</th>
-                                <th className="px-6 py-5 text-left text-[10px] font-black text-secondary-500 uppercase tracking-widest text-nowrap">Next Proposal (FY)</th>
+                                <th className="px-6 py-5 text-left text-[10px] font-black text-secondary-500 uppercase tracking-widest text-nowrap">Previous Scale (PAST)</th>
+                                <th className="px-6 py-5 text-left text-[10px] font-black text-secondary-500 uppercase tracking-widest text-nowrap">Proposed Scale (REVISED)</th>
+                                <th className="px-6 py-5 text-left text-[10px] font-black text-secondary-500 uppercase tracking-widest text-nowrap">Increment Analysis (DELTA)</th>
                                 <th className="px-6 py-5 text-center text-[10px] font-black text-secondary-500 uppercase tracking-widest">Logic</th>
-                                <th className="px-6 py-5 text-right text-[10px] font-black text-secondary-500 uppercase tracking-widest">Fixed Salary (Past)</th>
-                                <th className="px-6 py-5 text-right text-[10px] font-black text-secondary-500 uppercase tracking-widest">Fixed Salary (New)</th>
                                 <th className="px-6 py-5 text-center text-[10px] font-black text-secondary-500 uppercase tracking-widest">Propagate</th>
                             </tr>
                         </thead>
@@ -305,7 +303,7 @@ export default function IncrementTracker({ initialIncrements }: { initialIncreme
                                         <td className="px-6 py-4 text-xs italic align-top">
                                             <div className="flex flex-col gap-1.5 p-2 bg-secondary-50/50 rounded-xl border border-secondary-100/50">
                                                 <div className="flex items-center justify-between text-[10px] uppercase font-black text-secondary-500/70 border-b border-secondary-200 pb-1.5 mb-1">
-                                                    <span>FY Breakdown</span>
+                                                    <span>Previous CTC</span>
                                                     <span>({inc.fiscalYear})</span>
                                                 </div>
                                                 <div className="space-y-1">
@@ -323,7 +321,7 @@ export default function IncrementTracker({ initialIncrements }: { initialIncreme
                                                     </div>
                                                 </div>
                                                 <div className="mt-1 pt-1.5 border-t border-secondary-200 flex justify-between items-center">
-                                                    <span className="text-[10px] font-black text-secondary-500 uppercase">Total CTC</span>
+                                                    <span className="text-[10px] font-black text-secondary-500 uppercase">Old Total</span>
                                                     <span className="text-[11px] font-black text-secondary-900">₹{((inc.oldFixed || 0) + (inc.oldVariable || 0) + oldPerksVal).toLocaleString()}</span>
                                                 </div>
                                             </div>
@@ -331,7 +329,7 @@ export default function IncrementTracker({ initialIncrements }: { initialIncreme
                                         <td className="px-6 py-4 text-primary-600 italic align-top">
                                             <div className="flex flex-col gap-1.5 p-2 bg-primary-50/30 rounded-xl border border-primary-100/50">
                                                 <div className="flex items-center justify-between text-[10px] uppercase font-black text-primary-500/70 border-b border-primary-100 pb-1.5 mb-1">
-                                                    <span>Current Scale</span>
+                                                    <span>Proposed Scale</span>
                                                     <span>FY{inc.fiscalYear}</span>
                                                 </div>
                                                 <div className="space-y-1">
@@ -361,8 +359,8 @@ export default function IncrementTracker({ initialIncrements }: { initialIncreme
                                         <td className="px-6 py-4 text-xs italic align-top">
                                             <div className="flex flex-col gap-1.5 p-2 bg-indigo-50/30 rounded-xl border border-indigo-100/50">
                                                 <div className="flex items-center justify-between text-[10px] uppercase font-black text-indigo-500/70 border-b border-indigo-100 pb-1.5 mb-1">
-                                                    <span>Mix</span>
-                                                    <span>Delta</span>
+                                                    <span>Increment</span>
+                                                    <span>Breakdown</span>
                                                 </div>
                                                 <div className="space-y-1">
                                                     <div className="flex justify-between items-center text-[11px]">
@@ -379,7 +377,7 @@ export default function IncrementTracker({ initialIncrements }: { initialIncreme
                                                     </div>
                                                 </div>
                                                 <div className="mt-1 pt-1.5 border-t border-indigo-200 flex justify-between items-center">
-                                                    <span className="text-[10px] font-black text-indigo-500 uppercase">Total Inc</span>
+                                                    <span className="text-[10px] font-black text-indigo-500 uppercase">Total Hike</span>
                                                     <span className="text-[11px] font-black text-indigo-900 bg-indigo-100 px-1.5 py-0.5 rounded">₹{(inc.incrementAmount || 0).toLocaleString()}</span>
                                                 </div>
                                             </div>
@@ -393,17 +391,7 @@ export default function IncrementTracker({ initialIncrements }: { initialIncreme
                                                 <HelpCircle size={20} className="group-hover/btn:scale-110 transition-transform" />
                                             </button>
                                         </td>
-                                        <td className="px-6 py-4 text-right text-xs italic">
-                                            <p className="font-black text-secondary-800">₹{(inc.oldSalary || 0).toLocaleString()}</p>
-                                        </td>
-                                        <td className="px-6 py-4 text-right text-xs italic">
-                                            <div className="flex flex-col items-end">
-                                                <p className="font-black text-success-600 text-sm">₹{(inc.newSalary || 0).toLocaleString()}</p>
-                                                <span className="text-[10px] font-black bg-success-50 text-success-700 px-2 py-0.5 rounded-full mt-1.5 border border-success-100">
-                                                    +{(inc.percentage || 0).toFixed(1)}%
-                                                </span>
-                                            </div>
-                                        </td>
+
                                         <td className="px-6 py-4">
                                             <div className="flex items-center justify-center gap-2">
                                                 <button onClick={() => openReviewModal(inc)} className="p-2 hover:bg-success-50 rounded-xl transition-colors text-success-600 shadow-sm hover:shadow active:scale-95" title="Manage Reviews"><ClipboardList size={18} /></button>
