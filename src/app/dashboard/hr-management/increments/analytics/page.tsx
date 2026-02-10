@@ -19,27 +19,36 @@ export default function IncrementAnalyticsPage() {
     const [scope, setScope] = useState<'COMPANY' | 'TEAM' | 'INDIVIDUAL'>('COMPANY');
     const [status, setStatus] = useState<'APPROVED' | 'RECOMMENDED' | 'ALL'>('APPROVED');
 
-    useEffect(() => {
-        const userData = localStorage.getItem('user');
-        if (userData) {
-            const parsedUser = JSON.parse(userData);
-            setUser(parsedUser);
+    const fetchUser = async () => {
+        try {
+            const res = await fetch('/api/auth/me');
+            if (res.ok) {
+                const data = await res.json();
+                const parsedUser = data.user;
+                setUser(parsedUser);
 
-            // Set default scope based on role
-            if (['SUPER_ADMIN', 'ADMIN', 'HR', 'HR_MANAGER'].includes(parsedUser.role)) {
-                setScope('COMPANY');
-            } else if (['MANAGER', 'TEAM_LEADER'].includes(parsedUser.role)) {
-                setScope('TEAM');
-            } else {
-                setScope('INDIVIDUAL');
+                // Set default scope based on role
+                if (['SUPER_ADMIN', 'ADMIN', 'HR', 'HR_MANAGER'].includes(parsedUser.role)) {
+                    setScope('COMPANY');
+                } else if (['MANAGER', 'TEAM_LEADER'].includes(parsedUser.role)) {
+                    setScope('TEAM');
+                } else {
+                    setScope('INDIVIDUAL');
+                }
+
+                // Set default FY
+                const year = new Date().getFullYear();
+                const month = new Date().getMonth();
+                const startYear = month >= 3 ? year : year - 1;
+                setFiscalYear(`${startYear}-${(startYear + 1).toString().slice(-2)}`);
             }
-
-            // Set default FY
-            const year = new Date().getFullYear();
-            const month = new Date().getMonth();
-            const startYear = month >= 3 ? year : year - 1;
-            setFiscalYear(`${startYear}-${(startYear + 1).toString().slice(-2)}`);
+        } catch (error) {
+            console.error('Error fetching user:', error);
         }
+    };
+
+    useEffect(() => {
+        fetchUser();
     }, []);
 
     const fetchAnalytics = useCallback(async () => {

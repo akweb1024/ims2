@@ -123,9 +123,12 @@ export const GET = authorizedRoute(
             const totalImpact = increments.reduce((sum, i) => sum + (i.incrementAmount || 0), 0);
             const totalMonthlyFixSalary = increments.reduce((sum, i) => sum + (i.monthlyFixSalary || 0), 0);
             const totalMonthlyVariableSalary = increments.reduce((sum, i) => sum + (i.monthlyVariableSalary || 0), 0);
-            const totalMonthlyFixTarget = increments.reduce((sum, i) => sum + (i.monthlyFixTarget || 0), 0);
-            const totalMonthlyVariableTarget = increments.reduce((sum, i) => sum + (i.monthlyVariableTarget || 0), 0);
-            const totalMonthlyTarget = increments.reduce((sum, i) => sum + (i.monthlyTotalTarget || 0), 0);
+            const totalMonthlyFixTarget = increments.reduce((sum, i) => sum + (i.monthlyFixTarget || i.newBaseTarget || 0), 0);
+            const totalMonthlyVariableTarget = increments.reduce((sum, i) => sum + (i.monthlyVariableTarget || (i.newMonthlyTarget ? (i.newMonthlyTarget - (i.monthlyFixTarget || i.newBaseTarget || 0)) : 0) || 0), 0);
+            const totalMonthlyTarget = increments.reduce((sum, i) => {
+                const target = i.monthlyTotalTarget || i.newMonthlyTarget || (i.newYearlyTarget ? (i.newYearlyTarget / 12) : 0) || 0;
+                return sum + target;
+            }, 0);
 
             // Fetch Reviews separately if we want to include all reviews in the period, 
             // even if the record was effective before the period.

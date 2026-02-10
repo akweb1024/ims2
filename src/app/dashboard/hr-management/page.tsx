@@ -305,7 +305,8 @@ const HRManagementContent = () => {
         const userData = localStorage.getItem('user');
         if (userData) {
             const parsedUser = JSON.parse(userData);
-            if (!parsedUser.companyId && parsedUser.role !== 'SUPER_ADMIN') {
+            const isGlobalAdmin = ['SUPER_ADMIN', 'ADMIN'].includes(parsedUser.role);
+            if (!parsedUser.companyId && !isGlobalAdmin) {
                 alert("This module is only accessible to members associated with a company.");
                 window.location.href = '/dashboard';
                 return;

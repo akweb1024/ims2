@@ -34,10 +34,11 @@ export default function PerformanceAnalyticsPage() {
             const res = await fetch('/api/auth/me');
             if (res.ok) {
                 const userData = await res.json();
-                setUser(userData);
+                const actualUser = userData.user;
+                setUser(actualUser);
 
                 // Admin roles default to COMPANY, others to TEAM
-                const isAdmin = ['SUPER_ADMIN', 'ADMIN', 'HR'].includes(userData.role);
+                const isAdmin = ['SUPER_ADMIN', 'ADMIN', 'HR'].includes(actualUser.role);
                 setFilters(prev => ({
                     ...prev,
                     scope: isAdmin ? 'COMPANY' : 'TEAM'
@@ -160,7 +161,7 @@ export default function PerformanceAnalyticsPage() {
                         </div>
                     </div>
 
-                    {user?.role === 'SUPER_ADMIN' && availableFilters.companies.length > 0 && (
+                    {user?.role === 'SUPER_ADMIN' && (
                         <div className="flex flex-col gap-2 min-w-[200px]">
                             <label className="label block text-[10px] font-black uppercase text-secondary-400">Company</label>
                             <select

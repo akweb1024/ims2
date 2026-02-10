@@ -57,9 +57,10 @@ export default function IncrementAnalyticsTab() {
             const res = await fetch('/api/auth/me');
             if (res.ok) {
                 const userData = await res.json();
-                setUser(userData);
+                const actualUser = userData.user;
+                setUser(actualUser);
                 // Default scope to TEAM for Managers
-                if (userData.role === 'MANAGER') {
+                if (actualUser.role === 'MANAGER') {
                     setFilters(prev => ({ ...prev, scope: 'TEAM' }));
                 }
             }
@@ -174,7 +175,7 @@ export default function IncrementAnalyticsTab() {
                         </select>
                     </div>
 
-                    {user?.role === 'SUPER_ADMIN' && availableFilters.companies.length > 0 && (
+                    {user?.role === 'SUPER_ADMIN' && (
                         <div className="flex items-center gap-2 px-3 py-1.5 bg-secondary-50 rounded-xl border border-secondary-200">
                             <Search size={14} className="text-secondary-400" />
                             <select

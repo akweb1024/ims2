@@ -26,8 +26,9 @@ async function getIncrements() {
             redirect('/login');
         }
 
-        const authorizedRoles = ['SUPER_ADMIN', 'ADMIN', 'HR', 'HR_MANAGER', 'MANAGER'];
-        if (!authorizedRoles.includes(user.role)) {
+        const authorizedRoles = ['SUPER_ADMIN', 'ADMIN', 'HR', 'HR_MANAGER', 'MANAGER', 'TEAM_LEADER'];
+        const role = user.role?.toString().toUpperCase();
+        if (!authorizedRoles.includes(role)) {
             redirect('/dashboard');
         }
 

@@ -181,10 +181,9 @@ export default function DashboardLayout({ children, userRole: propUserRole = 'CU
                 // Clear client-side router cache to ensure fresh data
                 router.refresh();
 
-                // Allow small buffer for cookie propagation before hard navigation
-                // Using window.location.href instead of reload() ensures a fresh navigation event
+                // Allow small buffer for cookie propagation before reload
                 setTimeout(() => {
-                    window.location.href = '/dashboard';
+                    window.location.reload();
                 }, 100);
             }
         } catch (error) {
