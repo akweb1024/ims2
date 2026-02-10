@@ -19,7 +19,7 @@ export default function IncrementAnalyticsTab() {
     const [data, setData] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [filters, setFilters] = useState({
-        fiscalYear: '24-25',
+        fiscalYear: '25-26',
         scope: 'COMPANY',
         status: 'APPROVED',
         departmentId: '',
@@ -86,6 +86,7 @@ export default function IncrementAnalyticsTab() {
                             value={filters.fiscalYear}
                             onChange={(e) => setFilters({ ...filters, fiscalYear: e.target.value })}
                         >
+                            <option value="25-26">FY 2025-26</option>
                             <option value="24-25">FY 2024-25</option>
                             <option value="23-24">FY 2023-24</option>
                         </select>

@@ -173,7 +173,7 @@ export const GET = authorizedRoute(
                 where: {
                     companyId: targetCompanyId || undefined,
                     departmentId: departmentId || undefined,
-                    status: 'APPROVED' as any,
+                    status: 'VERIFIED' as any,
                     paymentDate: fiscalYearStart && fiscalYearEnd ? {
                         gte: fiscalYearStart,
                         lte: fiscalYearEnd
