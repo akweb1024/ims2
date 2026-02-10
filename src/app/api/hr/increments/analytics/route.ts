@@ -34,7 +34,9 @@ export const GET = authorizedRoute(
 
             // 2. Scope Filter Construction
             const where: any = {};
-            const targetCompanyId = (user.role === 'SUPER_ADMIN' && filterCompanyId) ? filterCompanyId : user.companyId;
+            const targetCompanyId = (user.role === 'SUPER_ADMIN')
+                ? (filterCompanyId || undefined)
+                : user.companyId;
 
             if (scope === 'INDIVIDUAL') {
                 if (employeeId) {
