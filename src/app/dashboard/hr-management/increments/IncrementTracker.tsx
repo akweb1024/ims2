@@ -137,14 +137,14 @@ export default function IncrementTracker({ initialIncrements }: { initialIncreme
         );
     };
 
-    const getStatusBorder = (status: string) => {
-        const borders: any = {
-            'DRAFT': 'border-secondary-300',
-            'MANAGER_APPROVED': 'border-blue-500',
-            'APPROVED': 'border-success-500',
-            'REJECTED': 'border-danger-500'
+    const getStatusStyles = (status: string) => {
+        const styles: any = {
+            'DRAFT': { border: 'border-secondary-300', bg: 'bg-secondary-50/30', text: 'text-secondary-600' },
+            'MANAGER_APPROVED': { border: 'border-blue-500', bg: 'bg-blue-50/20', text: 'text-blue-600' },
+            'APPROVED': { border: 'border-success-500', bg: 'bg-success-50/20', text: 'text-success-600' },
+            'REJECTED': { border: 'border-danger-500', bg: 'bg-danger-50/20', text: 'text-danger-600' }
         };
-        return borders[status] || 'border-transparent';
+        return styles[status] || styles['DRAFT'];
     };
 
     const openReasonModal = (increment: any) => {
@@ -274,8 +274,8 @@ export default function IncrementTracker({ initialIncrements }: { initialIncreme
                                 // const currentApprovedTotal = (inc.newFixed || 0) + newPerksVal + (inc.newVariable || 0);
 
                                 return (
-                                    <tr key={inc.id} className={`hover:bg-primary-50/50 transition-colors group border-l-4 ${getStatusBorder(inc.status)}`}>
-                                        <td className="px-6 py-4">
+                                    <tr key={inc.id} className="hover:bg-primary-50/30 transition-colors group">
+                                        <td className={`px-6 py-4 border-l-4 ${getStatusStyles(inc.status).border} ${getStatusStyles(inc.status).bg}`}>
                                             <div className="flex items-center gap-3 text-xs">
                                                 <div className="h-10 w-10 rounded-2xl bg-secondary-100 flex items-center justify-center text-secondary-500 group-hover:bg-primary-100 group-hover:text-primary-600 transition-colors">
                                                     <UserIcon size={18} />
@@ -288,7 +288,8 @@ export default function IncrementTracker({ initialIncrements }: { initialIncreme
                                                         {emp?.user?.name}
                                                     </Link>
                                                     <p className="text-[10px] text-secondary-400">{emp?.user?.email}</p>
-                                                    <p className="text-[9px] text-primary-500 font-black uppercase mt-0.5 tracking-widest">{emp?.user?.company?.name || 'Main Group'}</p>
+                                                    <p className="text-[9px] text-primary-500 font-black uppercase mt-0.5 tracking-widest leading-none mb-2">{emp?.user?.company?.name || 'Main Group'}</p>
+                                                    {getStatusBadge(inc.status)}
                                                 </div>
                                             </div>
                                         </td>
@@ -302,70 +303,84 @@ export default function IncrementTracker({ initialIncrements }: { initialIncreme
                                             </div>
                                         </td>
                                         <td className="px-6 py-4 text-xs italic align-top">
-                                            <div className="flex flex-col gap-1">
-                                                <div className="flex items-center justify-between text-[10px] uppercase font-bold text-secondary-400 border-b border-dashed border-secondary-200 pb-1 mb-1">
-                                                    <span>Mix</span>
-                                                    <span>Amount</span>
+                                            <div className="flex flex-col gap-1.5 p-2 bg-secondary-50/50 rounded-xl border border-secondary-100/50">
+                                                <div className="flex items-center justify-between text-[10px] uppercase font-black text-secondary-500/70 border-b border-secondary-200 pb-1.5 mb-1">
+                                                    <span>FY Breakdown</span>
+                                                    <span>({inc.fiscalYear})</span>
                                                 </div>
-                                                <div className="flex justify-between items-center text-xs">
-                                                    <span className="text-secondary-500 font-bold">Fix:</span>
-                                                    <span className="font-mono font-bold text-secondary-700">₹{(inc.oldFixed || 0).toLocaleString()}</span>
+                                                <div className="space-y-1">
+                                                    <div className="flex justify-between items-center text-[11px]">
+                                                        <span className="text-secondary-400 font-bold">Fix:</span>
+                                                        <span className="font-mono font-bold text-secondary-800">₹{(inc.oldFixed || 0).toLocaleString()}</span>
+                                                    </div>
+                                                    <div className="flex justify-between items-center text-[11px]">
+                                                        <span className="text-secondary-400 font-bold">Var:</span>
+                                                        <span className="font-mono font-bold text-secondary-800">₹{(inc.oldVariable || 0).toLocaleString()}</span>
+                                                    </div>
+                                                    <div className="flex justify-between items-center text-[11px]">
+                                                        <span className="text-secondary-400 font-bold">Re:</span>
+                                                        <span className="font-mono font-bold text-secondary-800">₹{oldPerksVal.toLocaleString()}</span>
+                                                    </div>
                                                 </div>
-                                                <div className="flex justify-between items-center text-xs">
-                                                    <span className="text-secondary-500 font-bold">Var:</span>
-                                                    <span className="font-mono font-bold text-secondary-700">₹{(inc.oldVariable || 0).toLocaleString()}</span>
-                                                </div>
-                                                <div className="flex justify-between items-center text-xs">
-                                                    <span className="text-secondary-500 font-bold">Re:</span>
-                                                    <span className="font-mono font-bold text-secondary-700">₹{oldPerksVal.toLocaleString()}</span>
+                                                <div className="mt-1 pt-1.5 border-t border-secondary-200 flex justify-between items-center">
+                                                    <span className="text-[10px] font-black text-secondary-500 uppercase">Total CTC</span>
+                                                    <span className="text-[11px] font-black text-secondary-900">₹{((inc.oldFixed || 0) + (inc.oldVariable || 0) + oldPerksVal).toLocaleString()}</span>
                                                 </div>
                                             </div>
                                         </td>
-                                        <td className="px-6 py-4 text-secondary-600 italic align-top">
-                                            <div className="flex flex-col gap-1">
-                                                <div className="flex items-center justify-between text-[10px] uppercase font-bold text-primary-400 border-b border-dashed border-primary-100 pb-1 mb-1">
-                                                    <span>Mix</span>
-                                                    <span>Amount</span>
+                                        <td className="px-6 py-4 text-primary-600 italic align-top">
+                                            <div className="flex flex-col gap-1.5 p-2 bg-primary-50/30 rounded-xl border border-primary-100/50">
+                                                <div className="flex items-center justify-between text-[10px] uppercase font-black text-primary-500/70 border-b border-primary-100 pb-1.5 mb-1">
+                                                    <span>Current Scale</span>
+                                                    <span>FY{inc.fiscalYear}</span>
                                                 </div>
-                                                <div className="flex justify-between items-center text-xs">
-                                                    <span className="text-primary-500 font-bold">Fix:</span>
-                                                    <span className="font-mono font-bold text-primary-700">₹{(inc.newFixed || 0).toLocaleString()}</span>
+                                                <div className="space-y-1">
+                                                    <div className="flex justify-between items-center text-[11px]">
+                                                        <span className="text-primary-400 font-bold">Fix:</span>
+                                                        <span className="font-mono font-bold text-primary-800">₹{(inc.newFixed || 0).toLocaleString()}</span>
+                                                    </div>
+                                                    <div className="flex justify-between items-center text-[11px]">
+                                                        <span className="text-primary-400 font-bold">Var:</span>
+                                                        <span className="font-mono font-bold text-primary-800">₹{(inc.newVariable || 0).toLocaleString()}</span>
+                                                    </div>
+                                                    <div className="flex justify-between items-center text-[11px]">
+                                                        <span className="text-primary-400 font-bold">Re:</span>
+                                                        <span className="font-mono font-bold text-primary-800">₹{newPerksVal.toLocaleString()}</span>
+                                                    </div>
                                                 </div>
-                                                <div className="flex justify-between items-center text-xs">
-                                                    <span className="text-primary-500 font-bold">Var:</span>
-                                                    <span className="font-mono font-bold text-primary-700">₹{(inc.newVariable || 0).toLocaleString()}</span>
+                                                <div className="mt-1 pt-1.5 border-t border-primary-100 flex justify-between items-center">
+                                                    <span className="text-[10px] font-black text-primary-500 uppercase">New Total</span>
+                                                    <span className="text-[11px] font-black text-primary-900">₹{((inc.newFixed || 0) + (inc.newVariable || 0) + newPerksVal).toLocaleString()}</span>
                                                 </div>
-                                                <div className="flex justify-between items-center text-xs">
-                                                    <span className="text-primary-500 font-bold">Re:</span>
-                                                    <span className="font-mono font-bold text-primary-700">₹{newPerksVal.toLocaleString()}</span>
-                                                </div>
-                                                <div className="mt-2 pt-2 border-t border-primary-100 text-[10px] text-primary-500 flex items-center justify-end gap-1 font-bold not-italic">
-                                                    <Clock size={10} />
+                                                <div className="mt-1 pt-1 border-t border-primary-100/50 text-[9px] text-primary-400 flex items-center justify-end gap-1 font-bold not-italic">
+                                                    <Clock size={8} />
                                                     <FormattedDate date={inc.effectiveDate} />
                                                 </div>
                                             </div>
                                         </td>
                                         <td className="px-6 py-4 text-xs italic align-top">
-                                            <div className="flex flex-col gap-1">
-                                                <div className="flex items-center justify-between text-[10px] uppercase font-bold text-indigo-400 border-b border-dashed border-indigo-100 pb-1 mb-1">
+                                            <div className="flex flex-col gap-1.5 p-2 bg-indigo-50/30 rounded-xl border border-indigo-100/50">
+                                                <div className="flex items-center justify-between text-[10px] uppercase font-black text-indigo-500/70 border-b border-indigo-100 pb-1.5 mb-1">
                                                     <span>Mix</span>
                                                     <span>Delta</span>
                                                 </div>
-                                                <div className="flex justify-between items-center text-xs">
-                                                    <span className="text-indigo-500 font-bold">Fix:</span>
-                                                    <span className="font-mono font-bold text-indigo-700">+₹{((inc.newFixed || 0) - (inc.oldFixed || 0)).toLocaleString()}</span>
+                                                <div className="space-y-1">
+                                                    <div className="flex justify-between items-center text-[11px]">
+                                                        <span className="text-indigo-400 font-bold">Fix:</span>
+                                                        <span className="font-mono font-black text-indigo-700">+₹{((inc.newFixed || 0) - (inc.oldFixed || 0)).toLocaleString()}</span>
+                                                    </div>
+                                                    <div className="flex justify-between items-center text-[11px]">
+                                                        <span className="text-indigo-400 font-bold">Var:</span>
+                                                        <span className="font-mono font-black text-indigo-700">{((inc.newVariable || 0) - (inc.oldVariable || 0)) >= 0 ? '+' : ''}₹{((inc.newVariable || 0) - (inc.oldVariable || 0)).toLocaleString()}</span>
+                                                    </div>
+                                                    <div className="flex justify-between items-center text-[11px]">
+                                                        <span className="text-indigo-400 font-bold">Re:</span>
+                                                        <span className="font-mono font-black text-indigo-700">{(newPerksVal - oldPerksVal) >= 0 ? '+' : ''}₹{(newPerksVal - oldPerksVal).toLocaleString()}</span>
+                                                    </div>
                                                 </div>
-                                                <div className="flex justify-between items-center text-xs">
-                                                    <span className="text-indigo-500 font-bold">Var:</span>
-                                                    <span className="font-mono font-bold text-indigo-700">+₹{((inc.newVariable || 0) - (inc.oldVariable || 0)).toLocaleString()}</span>
-                                                </div>
-                                                <div className="flex justify-between items-center text-xs">
-                                                    <span className="text-indigo-500 font-bold">Re:</span>
-                                                    <span className="font-mono font-bold text-indigo-700">+₹{(newPerksVal - oldPerksVal).toLocaleString()}</span>
-                                                </div>
-                                                <div className="mt-2 pt-2 border-t border-indigo-100 flex justify-between items-center">
+                                                <div className="mt-1 pt-1.5 border-t border-indigo-200 flex justify-between items-center">
                                                     <span className="text-[10px] font-black text-indigo-500 uppercase">Total Inc</span>
-                                                    <span className="text-xs font-black text-indigo-700">₹{(inc.incrementAmount || 0).toLocaleString()}</span>
+                                                    <span className="text-[11px] font-black text-indigo-900 bg-indigo-100 px-1.5 py-0.5 rounded">₹{(inc.incrementAmount || 0).toLocaleString()}</span>
                                                 </div>
                                             </div>
                                         </td>
