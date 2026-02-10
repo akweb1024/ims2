@@ -60,7 +60,7 @@ export default function BalanceLeave({ filters }: BalanceLeaveProps) {
         fetchLeaveBalances();
     }, [filters]);
 
-    const getAvailable = (total: number, used: number) => Math.max(0, total - used);
+    const getAvailable = (total: number, used: number, pending: number = 0) => Math.max(0, total - used - pending);
 
     return (
         <div className="space-y-6">
@@ -84,7 +84,7 @@ export default function BalanceLeave({ filters }: BalanceLeaveProps) {
                         <div>
                             <p className="text-xs text-secondary-500 uppercase">Annual Leave</p>
                             <p className="text-2xl font-bold text-blue-600">
-                                {leaveBalances.reduce((sum, b) => sum + getAvailable(b.annual, b.used.annual), 0)}
+                                {leaveBalances.reduce((sum, b) => sum + getAvailable(b.annual, b.used.annual, b.pending.annual), 0)}
                             </p>
                         </div>
                         <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">📅</div>
@@ -95,7 +95,7 @@ export default function BalanceLeave({ filters }: BalanceLeaveProps) {
                         <div>
                             <p className="text-xs text-secondary-500 uppercase">Sick Leave</p>
                             <p className="text-2xl font-bold text-green-600">
-                                {leaveBalances.reduce((sum, b) => sum + getAvailable(b.sick, b.used.sick), 0)}
+                                {leaveBalances.reduce((sum, b) => sum + getAvailable(b.sick, b.used.sick, b.pending.sick), 0)}
                             </p>
                         </div>
                         <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">🏥</div>
@@ -106,7 +106,7 @@ export default function BalanceLeave({ filters }: BalanceLeaveProps) {
                         <div>
                             <p className="text-xs text-secondary-500 uppercase">Casual Leave</p>
                             <p className="text-2xl font-bold text-yellow-600">
-                                {leaveBalances.reduce((sum, b) => sum + getAvailable(b.casual, b.used.casual), 0)}
+                                {leaveBalances.reduce((sum, b) => sum + getAvailable(b.casual, b.used.casual, b.pending.casual), 0)}
                             </p>
                         </div>
                         <div className="w-10 h-10 bg-yellow-100 rounded-lg flex items-center justify-center">🎉</div>
@@ -117,7 +117,7 @@ export default function BalanceLeave({ filters }: BalanceLeaveProps) {
                         <div>
                             <p className="text-xs text-secondary-500 uppercase">Compensatory</p>
                             <p className="text-2xl font-bold text-purple-600">
-                                {leaveBalances.reduce((sum, b) => sum + getAvailable(b.compensatory, b.used.compensatory), 0)}
+                                {leaveBalances.reduce((sum, b) => sum + getAvailable(b.compensatory, b.used.compensatory, b.pending.compensatory), 0)}
                             </p>
                         </div>
                         <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">🔄</div>
@@ -148,10 +148,10 @@ export default function BalanceLeave({ filters }: BalanceLeaveProps) {
                                 <tbody className="divide-y divide-secondary-200">
                                     {leaveBalances.map((balance) => {
                                         const totalAvailable =
-                                            getAvailable(balance.annual, balance.used.annual) +
-                                            getAvailable(balance.sick, balance.used.sick) +
-                                            getAvailable(balance.casual, balance.used.casual) +
-                                            getAvailable(balance.compensatory, balance.used.compensatory);
+                                            getAvailable(balance.annual, balance.used.annual, balance.pending.annual) +
+                                            getAvailable(balance.sick, balance.used.sick, balance.pending.sick) +
+                                            getAvailable(balance.casual, balance.used.casual, balance.pending.casual) +
+                                            getAvailable(balance.compensatory, balance.used.compensatory, balance.pending.compensatory);
 
                                         return (
                                             <tr key={balance.id} className="hover:bg-secondary-50 transition-colors">
@@ -168,7 +168,7 @@ export default function BalanceLeave({ filters }: BalanceLeaveProps) {
                                                 </td>
                                                 <td className="px-6 py-4 text-center">
                                                     <div className="text-sm font-bold text-secondary-900">
-                                                        {getAvailable(balance.annual, balance.used.annual)}
+                                                        {getAvailable(balance.annual, balance.used.annual, balance.pending.annual)}
                                                     </div>
                                                     <div className="text-xs text-secondary-500">
                                                         / {balance.annual}
@@ -176,7 +176,7 @@ export default function BalanceLeave({ filters }: BalanceLeaveProps) {
                                                 </td>
                                                 <td className="px-6 py-4 text-center">
                                                     <div className="text-sm font-bold text-secondary-900">
-                                                        {getAvailable(balance.sick, balance.used.sick)}
+                                                        {getAvailable(balance.sick, balance.used.sick, balance.pending.sick)}
                                                     </div>
                                                     <div className="text-xs text-secondary-500">
                                                         / {balance.sick}
@@ -184,7 +184,7 @@ export default function BalanceLeave({ filters }: BalanceLeaveProps) {
                                                 </td>
                                                 <td className="px-6 py-4 text-center">
                                                     <div className="text-sm font-bold text-secondary-900">
-                                                        {getAvailable(balance.casual, balance.used.casual)}
+                                                        {getAvailable(balance.casual, balance.used.casual, balance.pending.casual)}
                                                     </div>
                                                     <div className="text-xs text-secondary-500">
                                                         / {balance.casual}
@@ -192,7 +192,7 @@ export default function BalanceLeave({ filters }: BalanceLeaveProps) {
                                                 </td>
                                                 <td className="px-6 py-4 text-center">
                                                     <div className="text-sm font-bold text-secondary-900">
-                                                        {getAvailable(balance.compensatory, balance.used.compensatory)}
+                                                        {getAvailable(balance.compensatory, balance.used.compensatory, balance.pending.compensatory)}
                                                     </div>
                                                     <div className="text-xs text-secondary-500">
                                                         / {balance.compensatory}

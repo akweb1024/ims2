@@ -430,12 +430,37 @@ export const POST = authorizedRoute(
 
                 await updateFutureMonths(month, year, rawClosing);
 
-                // Sync EmployeeProfile
+                // Sync EmployeeProfile including metrics breakdown
+                const profile = await tx.employeeProfile.findUnique({
+                    where: { id: employeeId },
+                    select: { metrics: true, leaveLedgers: { where: { month, year } } }
+                });
+
+                const oldLedger = profile?.leaveLedgers[0];
+                const oldTaken = oldLedger?.takenLeaves || 0;
+                const deltaTaken = safeTaken - oldTaken;
+
+                const metrics = profile?.metrics as any || {};
+                if (!metrics.leaveBalances) {
+                    metrics.leaveBalances = {
+                        sick: { total: 10, used: 0 },
+                        casual: { total: 7, used: 0 },
+                        annual: { total: 20, used: 0 },
+                        compensatory: { total: 5, used: 0 }
+                    };
+                }
+
+                // Apply delta to Annual bucket as the default for manual ledger adjustments
+                if (metrics.leaveBalances.annual) {
+                    metrics.leaveBalances.annual.used = Math.max(0, (metrics.leaveBalances.annual.used || 0) + deltaTaken);
+                }
+
                 await tx.employeeProfile.update({
                     where: { id: employeeId },
                     data: {
                         currentLeaveBalance: rawClosing,
-                        leaveBalance: rawClosing
+                        leaveBalance: rawClosing,
+                        metrics: metrics
                     }
                 });
 

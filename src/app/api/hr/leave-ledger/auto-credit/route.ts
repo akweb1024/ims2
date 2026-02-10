@@ -54,11 +54,28 @@ export const POST = authorizedRoute(
                     }
                 });
 
-                // Update employee profile current balance
+                // Update employee profile current balance and metrics breakdown
+                const profile = emp;
+                const metrics = profile.metrics as any || {};
+                if (!metrics.leaveBalances) {
+                    metrics.leaveBalances = {
+                        sick: { total: 10, used: 0 },
+                        casual: { total: 7, used: 0 },
+                        annual: { total: 20, used: 0 },
+                        compensatory: { total: 5, used: 0 }
+                    };
+                }
+
+                // Increment Annual bucket
+                if (metrics.leaveBalances.annual) {
+                    metrics.leaveBalances.annual.total = (metrics.leaveBalances.annual.total || 0) + LEAVE_CREDIT;
+                }
+
                 await prisma.employeeProfile.update({
                     where: { id: emp.id },
                     data: {
-                        currentLeaveBalance: { increment: LEAVE_CREDIT }
+                        currentLeaveBalance: { increment: LEAVE_CREDIT },
+                        metrics: metrics
                     }
                 });
 

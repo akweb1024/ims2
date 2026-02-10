@@ -54,10 +54,46 @@ export const GET = authorizedRoute(
                 }
             });
 
+            // Fetch pending leaves for all relevant employees to calculate bucket-specific pending counts
+            const empIds = employees.map(e => e.id);
+            const pendingLeavesRaw = await prisma.leaveRequest.findMany({
+                where: {
+                    employeeId: { in: empIds },
+                    status: 'PENDING'
+                },
+                select: {
+                    employeeId: true,
+                    type: true,
+                    startDate: true,
+                    endDate: true
+                }
+            });
+
+            // Map pending counts by employee and type
+            const pendingMap: Record<string, any> = {};
+            pendingLeavesRaw.forEach(leave => {
+                if (!pendingMap[leave.employeeId]) pendingMap[leave.employeeId] = { sick: 0, casual: 0, annual: 0, compensatory: 0 };
+
+                const start = new Date(leave.startDate);
+                const end = new Date(leave.endDate);
+                const days = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+
+                const typeMapping: Record<string, string> = {
+                    'SICK': 'sick',
+                    'CASUAL': 'casual',
+                    'EARNED': 'annual',
+                    'ANNUAL': 'annual',
+                    'COMPENSATORY': 'compensatory'
+                };
+                const bucket = typeMapping[leave.type] || 'annual';
+                pendingMap[leave.employeeId][bucket] += days;
+            });
+
             // Transform to match component expectations
             const balances = employees.map((emp: any) => {
                 const metrics = emp.employeeProfile?.metrics as any || {};
                 const leaveBalances = metrics.leaveBalances || {};
+                const pending = pendingMap[emp.id] || { sick: 0, casual: 0, annual: 0, compensatory: 0 };
 
                 return {
                     id: emp.id,
@@ -77,13 +113,8 @@ export const GET = authorizedRoute(
                         casual: leaveBalances.casual?.used ?? 0,
                         compensatory: leaveBalances.compensatory?.used ?? 0
                     },
-                    // Pending leaves (fetching from requests would be better but keeping 0 for now as per original)
-                    pending: {
-                        annual: 0,
-                        sick: 0,
-                        casual: 0,
-                        compensatory: 0
-                    }
+                    // Pending leaves calculated from real-time records
+                    pending: pending
                 };
             });
 

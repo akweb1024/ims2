@@ -139,6 +139,91 @@ export const POST = authorizedRoute(
     }
 );
 
+// PATCH update a financial record
+export const PATCH = authorizedRoute(
+    ['SUPER_ADMIN', 'ADMIN', 'FINANCE_ADMIN'],
+    async (req: NextRequest, user) => {
+        try {
+            const { searchParams } = new URL(req.url);
+            const id = searchParams.get('id');
+
+            if (!id) {
+                return NextResponse.json({ error: 'Record ID is required' }, { status: 400 });
+            }
+
+            const body = await req.json();
+            const {
+                type, category, amount, currency, date, description, status, paymentMethod, referenceId,
+                customerName, bankName, customerEmail, customerPhone, referenceNumber
+            } = body;
+
+            // Verify ownership
+            const existing = await prisma.financialRecord.findUnique({
+                where: { id }
+            });
+
+            if (!existing) return NextResponse.json({ error: 'Record not found' }, { status: 404 });
+            if (user.role !== 'SUPER_ADMIN' && existing.companyId !== user.companyId) {
+                return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+            }
+
+            const updated = await prisma.financialRecord.update({
+                where: { id },
+                data: {
+                    type,
+                    category,
+                    amount: amount ? parseFloat(amount) : undefined,
+                    currency,
+                    date: date ? new Date(date) : undefined,
+                    description,
+                    status,
+                    paymentMethod,
+                    referenceId: referenceNumber || referenceId,
+                }
+            });
+
+            // SYNC: If this is a REVENUE record, update the corresponding RevenueTransaction
+            if (updated.type === 'REVENUE' && user.companyId) {
+                try {
+                    // Try to find by the linked ID in notes (or match by reference/amount/date)
+                    const syncNote = `Auto-generated from Financial Record ID: ${updated.id}`;
+                    const revenueTx = await prisma.revenueTransaction.findFirst({
+                        where: {
+                            companyId: user.companyId,
+                            notes: { contains: updated.id }
+                        }
+                    });
+
+                    if (revenueTx) {
+                        await prisma.revenueTransaction.update({
+                            where: { id: revenueTx.id },
+                            data: {
+                                amount: updated.amount,
+                                currency: updated.currency,
+                                paymentMethod: updated.paymentMethod || 'OTHER',
+                                paymentDate: updated.date,
+                                description: updated.description || `Manual Entry from Finance: ${updated.category}`,
+                                customerName: customerName || null,
+                                bankName: bankName || null,
+                                customerEmail: customerEmail || null,
+                                customerPhone: customerPhone || null,
+                                referenceNumber: referenceNumber || referenceId || null
+                            }
+                        });
+                        logger.info('Synced update to RevenueTransaction', { id: revenueTx.id });
+                    }
+                } catch (syncError) {
+                    logger.error('Failed to sync update to RevenueTransaction', syncError);
+                }
+            }
+
+            return NextResponse.json(updated);
+        } catch (error) {
+            return createErrorResponse(error);
+        }
+    }
+);
+
 // DELETE a financial record
 export const DELETE = authorizedRoute(
     ['SUPER_ADMIN', 'ADMIN', 'FINANCE_ADMIN'],
@@ -161,6 +246,21 @@ export const DELETE = authorizedRoute(
 
             if (!record) {
                 return NextResponse.json({ error: 'Record not found or access denied' }, { status: 404 });
+            }
+
+            // SYNC: If this is a REVENUE record, also remove from RevenueTransaction
+            if (record.type === 'REVENUE' && user.companyId) {
+                try {
+                    await prisma.revenueTransaction.deleteMany({
+                        where: {
+                            companyId: user.companyId,
+                            notes: { contains: id }
+                        }
+                    });
+                    logger.info('Cleaned up linked RevenueTransactions', { id });
+                } catch (syncError) {
+                    logger.error('Failed to clean up linked RevenueTransaction', syncError);
+                }
             }
 
             await prisma.financialRecord.delete({

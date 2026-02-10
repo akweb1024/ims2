@@ -42,16 +42,47 @@ export default function StaffLeaveManagement({ leaves, fullProfile, onLeaveSubmi
     return (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <div className="lg:col-span-1 space-y-6">
-                <div className="card-premium p-8 bg-gradient-to-br from-primary-600 to-primary-800 text-white relative overflow-hidden">
-                    <div className="absolute top-0 right-0 p-4 opacity-10">
-                        <Wallet size={64} />
+                <div className="grid grid-cols-1 gap-4">
+                    {/* Primary Pool Card */}
+                    <div className="card-premium p-6 bg-gradient-to-br from-indigo-600 to-indigo-800 text-white relative overflow-hidden">
+                        <div className="absolute top-0 right-0 p-4 opacity-10">
+                            <Wallet size={48} />
+                        </div>
+                        <div className="relative z-10">
+                            <h3 className="text-[10px] font-bold uppercase tracking-[0.2em] mb-1 opacity-80">Total Available Pool</h3>
+                            <p className="text-4xl font-black mb-2">{fullProfile?.leaveBalance || 0} <span className="text-sm font-bold opacity-70">Days</span></p>
+                            <div className="flex items-center gap-2 bg-white/10 px-3 py-1.5 rounded-lg text-[10px] font-bold">
+                                <Info size={12} />
+                                <span>Main balance used for all leave types</span>
+                            </div>
+                        </div>
                     </div>
-                    <div className="relative z-10">
-                        <h3 className="text-sm font-bold uppercase tracking-[0.2em] mb-1 opacity-80">Leave Balance</h3>
-                        <p className="text-5xl font-black mb-4">{fullProfile?.leaveBalance || 0} <span className="text-lg font-bold opacity-70">Days</span></p>
-                        <div className="flex items-center gap-2 bg-white/10 px-3 py-1.5 rounded-lg text-[10px] font-bold">
-                            <Info size={12} />
-                            <span>Paid leaves remaining for this year</span>
+
+                    {/* Breakdown Grid */}
+                    <div className="grid grid-cols-2 gap-3">
+                        <div className="bg-white p-4 rounded-xl border border-secondary-200 shadow-sm">
+                            <p className="text-[10px] font-bold text-secondary-500 uppercase mb-1">Annual</p>
+                            <p className="text-xl font-bold text-blue-600">
+                                {Math.max(0, (fullProfile?.metrics?.leaveBalances?.annual?.total || 20) - (fullProfile?.metrics?.leaveBalances?.annual?.used || 0))}
+                            </p>
+                        </div>
+                        <div className="bg-white p-4 rounded-xl border border-secondary-200 shadow-sm">
+                            <p className="text-[10px] font-bold text-secondary-500 uppercase mb-1">Sick</p>
+                            <p className="text-xl font-bold text-green-600">
+                                {Math.max(0, (fullProfile?.metrics?.leaveBalances?.sick?.total || 10) - (fullProfile?.metrics?.leaveBalances?.sick?.used || 0))}
+                            </p>
+                        </div>
+                        <div className="bg-white p-4 rounded-xl border border-secondary-200 shadow-sm">
+                            <p className="text-[10px] font-bold text-secondary-500 uppercase mb-1">Casual</p>
+                            <p className="text-xl font-bold text-yellow-600">
+                                {Math.max(0, (fullProfile?.metrics?.leaveBalances?.casual?.total || 7) - (fullProfile?.metrics?.leaveBalances?.casual?.used || 0))}
+                            </p>
+                        </div>
+                        <div className="bg-white p-4 rounded-xl border border-secondary-200 shadow-sm">
+                            <p className="text-[10px] font-bold text-secondary-500 uppercase mb-1">Comp.</p>
+                            <p className="text-xl font-bold text-purple-600">
+                                {Math.max(0, (fullProfile?.metrics?.leaveBalances?.compensatory?.total || 5) - (fullProfile?.metrics?.leaveBalances?.compensatory?.used || 0))}
+                            </p>
                         </div>
                     </div>
                 </div>

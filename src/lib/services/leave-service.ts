@@ -114,11 +114,37 @@ export async function updateLeaveRequestStatus(
             });
 
             // Sync Profile
+            const profile = existing.employee;
+            const metrics = profile.metrics as any || {};
+            if (!metrics.leaveBalances) {
+                metrics.leaveBalances = {
+                    sick: { total: 10, used: 0 },
+                    casual: { total: 7, used: 0 },
+                    annual: { total: 20, used: 0 },
+                    compensatory: { total: 5, used: 0 }
+                };
+            }
+
+            // Map type to bucket
+            const typeMapping: Record<string, string> = {
+                'SICK': 'sick',
+                'CASUAL': 'casual',
+                'EARNED': 'annual', // Map EARNED to annual bucket
+                'ANNUAL': 'annual',
+                'COMPENSATORY': 'compensatory'
+            };
+
+            const bucket = typeMapping[existing.type] || 'annual';
+            if (metrics.leaveBalances[bucket]) {
+                metrics.leaveBalances[bucket].used = Math.max(0, (metrics.leaveBalances[bucket].used || 0) + takenAdjustment);
+            }
+
             await tx.employeeProfile.update({
                 where: { id: existing.employeeId },
                 data: {
                     currentLeaveBalance: displayBalance,
-                    leaveBalance: displayBalance // Sync both fields used in different parts of app
+                    leaveBalance: displayBalance,
+                    metrics: metrics // Sync the JSON breakdown
                 }
             });
         }
