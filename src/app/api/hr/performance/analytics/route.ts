@@ -11,15 +11,22 @@ export const GET = authorizedRoute(
             const { searchParams } = new URL(req.url);
             const employeeId = searchParams.get('employeeId');
             const scope = searchParams.get('scope') || 'INDIVIDUAL'; // INDIVIDUAL, TEAM, COMPANY
+            const filterCompanyId = searchParams.get('companyId');
+            const departmentId = searchParams.get('departmentId');
             const year = parseInt(searchParams.get('year') || new Date().getFullYear().toString());
 
             let targetEmployeeIds: string[] = [];
 
-            if (scope === 'INDIVIDUAL') {
+            // 1. Role-Based Scoping & Access Control
+            const isRestrictedRole = !['SUPER_ADMIN', 'ADMIN', 'HR'].includes(user.role);
+
+            // If restricted role tries to access COMPANY scope, fallback to TEAM
+            const effectiveScope = (isRestrictedRole && scope === 'COMPANY') ? 'TEAM' : scope;
+
+            if (effectiveScope === 'INDIVIDUAL') {
                 if (!employeeId) return createErrorResponse('Employee ID required for INDIVIDUAL scope', 400);
                 targetEmployeeIds = [employeeId];
-            } else if (scope === 'TEAM') {
-                // Fetch direct reports via User relation
+            } else if (effectiveScope === 'TEAM') {
                 const directReports = await prisma.user.findMany({
                     where: { managerId: user.id },
                     select: { employeeProfile: { select: { id: true } } }
@@ -28,12 +35,27 @@ export const GET = authorizedRoute(
                 targetEmployeeIds = directReports
                     .map(u => u.employeeProfile?.id)
                     .filter(id => id !== undefined && id !== null) as string[];
-            } else if (scope === 'COMPANY') {
-                if (!['SUPER_ADMIN', 'ADMIN', 'HR'].includes(user.role)) {
-                    return createErrorResponse('Unauthorized for COMPANY scope', 403);
+            } else if (effectiveScope === 'COMPANY') {
+                const targetCompanyId = (user.role === 'SUPER_ADMIN')
+                    ? (filterCompanyId || undefined)
+                    : (user.companyId || undefined);
+
+                const where: any = {};
+                if (targetCompanyId) {
+                    where.user = { companyId: targetCompanyId };
                 }
-                const allEmployees = await prisma.employeeProfile.findMany({ select: { id: true } });
-                targetEmployeeIds = allEmployees.map(e => e.id);
+                if (departmentId) {
+                    where.user = {
+                        ...(where.user || {}),
+                        departmentId
+                    };
+                }
+
+                const employees = await prisma.employeeProfile.findMany({
+                    where,
+                    select: { id: true }
+                });
+                targetEmployeeIds = employees.map(e => e.id);
             }
 
             // Fetch Snapshots

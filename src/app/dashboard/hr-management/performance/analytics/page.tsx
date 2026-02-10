@@ -15,32 +15,95 @@ export default function PerformanceAnalyticsPage() {
 
     const [filters, setFilters] = useState({
         scope: 'TEAM' as 'TEAM' | 'COMPANY',
-        year: new Date().getFullYear()
+        year: new Date().getFullYear(),
+        companyId: '',
+        departmentId: '',
+    });
+
+    const [availableFilters, setAvailableFilters] = useState({
+        companies: [] as any[],
+        departments: [] as any[],
     });
 
     useEffect(() => {
-        const userData = localStorage.getItem('user');
-        if (userData) {
-            const parsedUser = JSON.parse(userData);
-            setUser(parsedUser);
-            if (['SUPER_ADMIN', 'ADMIN'].includes(parsedUser.role)) {
-                setFilters(prev => ({ ...prev, scope: 'COMPANY' }));
+        fetchUser();
+    }, []);
+
+    const fetchUser = async () => {
+        try {
+            const res = await fetch('/api/auth/me');
+            if (res.ok) {
+                const userData = await res.json();
+                setUser(userData);
+
+                // Admin roles default to COMPANY, others to TEAM
+                const isAdmin = ['SUPER_ADMIN', 'ADMIN', 'HR'].includes(userData.role);
+                setFilters(prev => ({
+                    ...prev,
+                    scope: isAdmin ? 'COMPANY' : 'TEAM'
+                }));
             }
+        } catch (error) {
+            console.error('Error fetching user:', error);
+        }
+    };
+
+    const fetchCompanies = useCallback(async () => {
+        try {
+            const res = await fetch('/api/companies?limit=1000');
+            const result = await res.json();
+            if (result.data) {
+                setAvailableFilters(prev => ({ ...prev, companies: result.data }));
+            }
+        } catch (error) {
+            console.error('Error fetching companies:', error);
         }
     }, []);
+
+    const fetchDepartments = useCallback(async () => {
+        try {
+            const url = filters.companyId
+                ? `/api/hr/departments?companyId=${filters.companyId}`
+                : '/api/hr/departments';
+            const res = await fetch(url);
+            const result = await res.json();
+            if (Array.isArray(result)) {
+                // Deduplicate by name
+                const uniqueDepts: any[] = [];
+                const seenNames = new Set();
+                result.forEach(dept => {
+                    if (!seenNames.has(dept.name)) {
+                        seenNames.add(dept.name);
+                        uniqueDepts.push(dept);
+                    }
+                });
+                setAvailableFilters(prev => ({ ...prev, departments: uniqueDepts }));
+            }
+        } catch (error) {
+            console.error('Error fetching departments:', error);
+        }
+    }, [filters.companyId]);
+
+    useEffect(() => {
+        if (user?.role === 'SUPER_ADMIN') {
+            fetchCompanies();
+        }
+    }, [user, fetchCompanies]);
+
+    useEffect(() => {
+        fetchDepartments();
+    }, [fetchDepartments]);
 
     const fetchAnalytics = useCallback(async () => {
         if (!user) return;
         setLoading(true);
         try {
-            const token = localStorage.getItem('token');
             const params = new URLSearchParams();
-            params.append('scope', filters.scope);
-            params.append('year', filters.year.toString());
-
-            const res = await fetch(`/api/hr/performance/analytics?${params.toString()}`, {
-                headers: { 'Authorization': `Bearer ${token}` }
+            Object.entries(filters).forEach(([key, value]) => {
+                if (value) params.append(key, value.toString());
             });
+
+            const res = await fetch(`/api/hr/performance/analytics?${params.toString()}`);
 
             if (res.ok) {
                 const data = await res.json();
@@ -76,30 +139,63 @@ export default function PerformanceAnalyticsPage() {
                 </div>
 
                 {/* Filters */}
-                <div className="card-premium p-4 md:p-6 flex flex-wrap gap-6 items-end">
-                    <div>
-                        <label className="label mb-2 block text-[10px] font-black uppercase text-secondary-400">Analysis Scope</label>
+                <div className="card-premium p-4 md:p-6 flex flex-wrap gap-4 items-end">
+                    <div className="flex flex-col gap-2">
+                        <label className="label block text-[10px] font-black uppercase text-secondary-400">Analysis Scope</label>
                         <div className="flex bg-secondary-100 p-1 rounded-xl">
                             {['TEAM', 'COMPANY'].map((scope) => (
                                 <button
                                     key={scope}
                                     onClick={() => setFilters({ ...filters, scope: scope as any })}
                                     disabled={scope === 'COMPANY' && !['SUPER_ADMIN', 'ADMIN', 'HR'].includes(user?.role)}
-                                    className={`px-6 py-2 text-xs font-bold rounded-lg transition-all flex items-center gap-2 ${filters.scope === scope
+                                    className={`px-4 py-1.5 text-[10px] font-black uppercase rounded-lg transition-all flex items-center gap-2 ${filters.scope === scope
                                         ? 'bg-white text-primary-700 shadow-sm'
                                         : 'text-secondary-500 hover:text-secondary-700 disabled:opacity-50 disabled:cursor-not-allowed'
                                         }`}
                                 >
-                                    {scope === 'TEAM' ? <Users size={14} /> : <Building size={14} />}
+                                    {scope === 'TEAM' ? <Users size={12} /> : <Building size={12} />}
                                     {scope}
                                 </button>
                             ))}
                         </div>
                     </div>
-                    <div>
-                        <label className="label mb-2 block text-[10px] font-black uppercase text-secondary-400">Fiscal Year</label>
+
+                    {user?.role === 'SUPER_ADMIN' && availableFilters.companies.length > 0 && (
+                        <div className="flex flex-col gap-2 min-w-[200px]">
+                            <label className="label block text-[10px] font-black uppercase text-secondary-400">Company</label>
+                            <select
+                                className="input-premium py-2 text-xs font-bold"
+                                value={filters.companyId}
+                                onChange={(e) => setFilters({ ...filters, companyId: e.target.value })}
+                            >
+                                <option value="">All Companies</option>
+                                {availableFilters.companies.map((company: any) => (
+                                    <option key={company.id} value={company.id}>{company.name}</option>
+                                ))}
+                            </select>
+                        </div>
+                    )}
+
+                    {availableFilters.departments.length > 0 && (
+                        <div className="flex flex-col gap-2 min-w-[180px]">
+                            <label className="label block text-[10px] font-black uppercase text-secondary-400">Department</label>
+                            <select
+                                className="input-premium py-2 text-xs font-bold"
+                                value={filters.departmentId}
+                                onChange={(e) => setFilters({ ...filters, departmentId: e.target.value })}
+                            >
+                                <option value="">All Departments</option>
+                                {availableFilters.departments.map((dept: any) => (
+                                    <option key={dept.id} value={dept.id}>{dept.name}</option>
+                                ))}
+                            </select>
+                        </div>
+                    )}
+
+                    <div className="flex flex-col gap-2">
+                        <label className="label block text-[10px] font-black uppercase text-secondary-400">Year</label>
                         <select
-                            className="input-premium py-2 w-32 text-xs font-bold"
+                            className="input-premium py-2 w-28 text-xs font-bold"
                             value={filters.year}
                             onChange={(e) => setFilters({ ...filters, year: parseInt(e.target.value) })}
                         >
