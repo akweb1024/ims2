@@ -1,13 +1,14 @@
 'use client';
 
 import { useState } from 'react';
-import { List, LayoutGrid, Plus } from 'lucide-react';
+import { List, LayoutGrid, Plus, BarChart2 } from 'lucide-react';
 import Link from 'next/link';
 import IncrementList from './IncrementList';
 import IncrementTracker from './IncrementTracker';
+import IncrementAnalyticsTab from './IncrementAnalyticsTab';
 
 export default function IncrementClientWrapper({ initialIncrements }: { initialIncrements: any[] }) {
-    const [viewMode, setViewMode] = useState<'list' | 'tracker'>('tracker');
+    const [viewMode, setViewMode] = useState<'list' | 'tracker' | 'analytics'>('tracker');
 
     return (
         <div className="space-y-6">
@@ -18,8 +19,8 @@ export default function IncrementClientWrapper({ initialIncrements }: { initialI
                         <button
                             onClick={() => setViewMode('list')}
                             className={`p-2 rounded-lg transition-all flex items-center gap-2 text-xs font-bold ${viewMode === 'list'
-                                    ? 'bg-white shadow-sm text-primary-600'
-                                    : 'text-secondary-500 hover:text-secondary-700'
+                                ? 'bg-white shadow-sm text-primary-600'
+                                : 'text-secondary-500 hover:text-secondary-700'
                                 }`}
                         >
                             <List size={16} /> List
@@ -27,11 +28,20 @@ export default function IncrementClientWrapper({ initialIncrements }: { initialI
                         <button
                             onClick={() => setViewMode('tracker')}
                             className={`p-2 rounded-lg transition-all flex items-center gap-2 text-xs font-bold ${viewMode === 'tracker'
-                                    ? 'bg-white shadow-sm text-primary-600'
-                                    : 'text-secondary-500 hover:text-secondary-700'
+                                ? 'bg-white shadow-sm text-primary-600'
+                                : 'text-secondary-500 hover:text-secondary-700'
                                 }`}
                         >
                             <LayoutGrid size={16} /> Tracker
+                        </button>
+                        <button
+                            onClick={() => setViewMode('analytics')}
+                            className={`p-2 rounded-lg transition-all flex items-center gap-2 text-xs font-bold ${viewMode === 'analytics'
+                                ? 'bg-white shadow-sm text-primary-600'
+                                : 'text-secondary-500 hover:text-secondary-700'
+                                }`}
+                        >
+                            <BarChart2 size={16} /> Analytics
                         </button>
                     </div>
                 </div>
@@ -44,8 +54,10 @@ export default function IncrementClientWrapper({ initialIncrements }: { initialI
             {/* Data View */}
             {viewMode === 'list' ? (
                 <IncrementList initialIncrements={initialIncrements} />
-            ) : (
+            ) : viewMode === 'tracker' ? (
                 <IncrementTracker initialIncrements={initialIncrements} />
+            ) : (
+                <IncrementAnalyticsTab />
             )}
         </div>
     );

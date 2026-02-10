@@ -75,7 +75,8 @@ export default function IncrementAnalyticsChart({ data }: IncrementAnalyticsChar
                         itemStyle={{ fontSize: '12px', fontWeight: 700 }}
                         formatter={(value: any, name: any) => {
                             if (typeof value === 'number') {
-                                if (name === 'Total Impact' || name === 'Revenue Target' || name === 'Revenue Achieved') return [`₹${value.toLocaleString()}`, name];
+                                if (name === 'Total Impact' || name === 'Revenue Target' || name === 'Target Achieved' || name === 'Real Revenue' || name === 'Real Expense')
+                                    return [`₹${value.toLocaleString()}`, name];
                                 if (name === 'Avg Increase') return [`${value}%`, name];
                             }
                             return [value, name];
@@ -109,11 +110,29 @@ export default function IncrementAnalyticsChart({ data }: IncrementAnalyticsChar
                         yAxisId="left"
                         type="monotone"
                         dataKey="revenueAchieved"
-                        name="Revenue Achieved"
+                        name="Target Achieved"
                         stroke="#3b82f6"
                         strokeWidth={4}
                         dot={{ r: 4, fill: '#3b82f6', strokeWidth: 2, stroke: '#fff' }}
                         activeDot={{ r: 6, strokeWidth: 0 }}
+                    />
+                    <Line
+                        yAxisId="left"
+                        type="monotone"
+                        dataKey="realRevenue"
+                        name="Real Revenue"
+                        stroke="#06b6d4"
+                        strokeWidth={4}
+                        dot={{ r: 4, fill: '#06b6d4', strokeWidth: 2, stroke: '#fff' }}
+                    />
+                    <Line
+                        yAxisId="left"
+                        type="monotone"
+                        dataKey="realExpense"
+                        name="Real Expense"
+                        stroke="#f43f5e"
+                        strokeWidth={4}
+                        dot={{ r: 4, fill: '#f43f5e', strokeWidth: 2, stroke: '#fff' }}
                     />
                     <Line
                         yAxisId="right"

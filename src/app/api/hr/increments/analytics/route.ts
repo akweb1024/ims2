@@ -13,13 +13,14 @@ export const GET = authorizedRoute(
             const scope = searchParams.get('scope') || 'COMPANY'; // COMPANY, TEAM, INDIVIDUAL
             const statusParam = searchParams.get('status') || 'APPROVED'; // APPROVED, RECOMMENDED, ALL
             const employeeId = searchParams.get('employeeId');
+            const departmentId = searchParams.get('departmentId');
+            const filterCompanyId = searchParams.get('companyId');
 
             // 1. Fiscal Year Logic
             let fiscalYearStart: Date | undefined;
             let fiscalYearEnd: Date | undefined;
 
             if (fiscalYearParam) {
-                // Handle "24-25" or "2024-25"
                 const parts = fiscalYearParam.split('-');
                 let startYear = parseInt(parts[0]);
                 let endYear = parseInt(parts[1]);
@@ -27,23 +28,22 @@ export const GET = authorizedRoute(
                 if (startYear < 100) startYear += 2000;
                 if (endYear < 100) endYear += 2000;
 
-                fiscalYearStart = new Date(`${startYear}-04-01`); // April 1st
-                fiscalYearEnd = new Date(`${endYear}-03-31T23:59:59`); // March 31st
+                fiscalYearStart = new Date(`${startYear}-04-01`);
+                fiscalYearEnd = new Date(`${endYear}-03-31T23:59:59`);
             }
 
             // 2. Scope Filter Construction
             const where: any = {};
+            const targetCompanyId = (user.role === 'SUPER_ADMIN' && filterCompanyId) ? filterCompanyId : user.companyId;
 
             if (scope === 'INDIVIDUAL') {
                 if (employeeId) {
                     where.employeeId = employeeId;
                 } else {
-                    // Fallback to self if no employeeId provided (for non-admins)
                     const profile = await prisma.employeeProfile.findUnique({ where: { userId: user.id } });
                     if (profile) where.employeeId = profile.id;
                 }
             } else if (scope === 'TEAM') {
-                // Get Direct Reports
                 const reports = await prisma.user.findMany({
                     where: { managerId: user.id },
                     select: { employeeProfile: { select: { id: true } } }
@@ -51,13 +51,24 @@ export const GET = authorizedRoute(
                 const reportIds = reports.map(r => r.employeeProfile?.id).filter(Boolean);
                 where.employeeId = { in: reportIds };
             } else {
-                // COMPANY scope - ensure proper authorization
                 if (!['SUPER_ADMIN', 'ADMIN', 'HR', 'HR_MANAGER', 'FINANCE_ADMIN'].includes(user.role)) {
                     return NextResponse.json({ error: 'Unauthorized for Company scope' }, { status: 403 });
                 }
-                if (user.role !== 'SUPER_ADMIN' || user.companyId) {
-                    where.employeeProfile = { user: { companyId: user.companyId } };
+
+                if (targetCompanyId) {
+                    where.employeeProfile = { user: { companyId: targetCompanyId } };
                 }
+            }
+
+            // Apply Department Filter if Segmenting
+            if (departmentId) {
+                where.employeeProfile = {
+                    ...where.employeeProfile,
+                    user: {
+                        ...(where.employeeProfile?.user || {}),
+                        departmentId
+                    }
+                };
             }
 
             // 3. Status Filter Logic
@@ -149,11 +160,38 @@ export const GET = authorizedRoute(
                         avgRating: 0,
                         ratingCount: 0,
                         count: 0,
-                        totalPerc: 0
+                        totalPerc: 0,
+                        realRevenue: 0,
+                        realExpense: 0
                     });
                     current.setMonth(current.getMonth() + 1);
                 }
             }
+
+            // 5. Fetch Actual Financials (Revenue & Expenses)
+            const revenueTransactions = await prisma.revenueTransaction.findMany({
+                where: {
+                    companyId: targetCompanyId || undefined,
+                    departmentId: departmentId || undefined,
+                    status: 'APPROVED' as any,
+                    paymentDate: fiscalYearStart && fiscalYearEnd ? {
+                        gte: fiscalYearStart,
+                        lte: fiscalYearEnd
+                    } : undefined
+                }
+            });
+
+            const expenseRecords = await prisma.financialRecord.findMany({
+                where: {
+                    companyId: targetCompanyId || undefined,
+                    type: 'EXPENSE',
+                    status: 'COMPLETED',
+                    date: fiscalYearStart && fiscalYearEnd ? {
+                        gte: fiscalYearStart,
+                        lte: fiscalYearEnd
+                    } : undefined
+                }
+            });
 
             // Map Increments to Trends (by effective date)
             increments.forEach(inc => {
@@ -171,7 +209,9 @@ export const GET = authorizedRoute(
                         avgRating: 0,
                         ratingCount: 0,
                         count: 0,
-                        totalPerc: 0
+                        totalPerc: 0,
+                        realRevenue: 0,
+                        realExpense: 0
                     };
                     trendMap.set(key, current);
                 }
@@ -180,6 +220,26 @@ export const GET = authorizedRoute(
                 current.revenueTarget += (inc.monthlyTotalTarget || 0);
                 current.count += 1;
                 current.totalPerc += (inc.percentage || 0);
+            });
+
+            // Map Actual Revenue to Trends
+            revenueTransactions.forEach(rev => {
+                const d = new Date(rev.paymentDate);
+                const key = `${d.getFullYear()}-${d.getMonth()}`;
+                const current = trendMap.get(key);
+                if (current) {
+                    current.realRevenue += (rev.amount || 0);
+                }
+            });
+
+            // Map Actual Expenses to Trends
+            expenseRecords.forEach(exp => {
+                const d = new Date(exp.date);
+                const key = `${d.getFullYear()}-${d.getMonth()}`;
+                const current = trendMap.get(key);
+                if (current) {
+                    current.realExpense += (exp.amount || 0);
+                }
             });
 
             // Map Reviews to Trends (by review month/year or date)
@@ -209,6 +269,8 @@ export const GET = authorizedRoute(
                     amount: t.amount,
                     revenueTarget: t.revenueTarget,
                     revenueAchieved: t.revenueAchieved,
+                    realRevenue: t.realRevenue,
+                    realExpense: t.realExpense,
                     avgRating: parseFloat((t.avgRating).toFixed(1)),
                     count: t.count,
                     percentage: t.count > 0 ? parseFloat((t.totalPerc / t.count).toFixed(2)) : 0
@@ -276,6 +338,9 @@ export const GET = authorizedRoute(
                 .sort((a, b: any) => b.value - a.value) // Sort by impact
                 .slice(0, 8); // Top 8 designations
 
+            const totalRealRevenue = revenueTransactions.reduce((sum, r) => sum + (r.amount || 0), 0);
+            const totalRealExpense = expenseRecords.reduce((sum, e) => sum + (e.amount || 0), 0);
+
             return NextResponse.json({
                 stats: {
                     totalApprovedBudgetImpact: totalImpact,
@@ -284,6 +349,8 @@ export const GET = authorizedRoute(
                     averageRating: avgRating,
                     totalApprovedPerksImpact: increments.reduce((sum, i) => sum + ((i.newHealthCare || 0) + (i.newTravelling || 0) + (i.newMobile || 0) + (i.newInternet || 0) + (i.newBooksAndPeriodicals || 0)), 0),
                     totalRevenueAchieved: totalAchievement,
+                    totalRealRevenue,
+                    totalRealExpense,
                     totalPendingBudgetImpact: 0, // Placeholder
                     roiMultiplier: (totalImpact > 0 && (totalMonthlyFixSalary + totalMonthlyVariableSalary) > 0)
                         ? (totalMonthlyTarget / (totalMonthlyFixSalary + totalMonthlyVariableSalary))
@@ -293,7 +360,9 @@ export const GET = authorizedRoute(
                         fixed: totalMonthlyFixSalary,
                         variable: totalMonthlyVariableSalary,
                         incentive: increments.reduce((sum, i) => sum + (i.newIncentive || 0), 0),
-                        perks: increments.reduce((sum, i) => sum + ((i.newHealthCare || 0) + (i.newTravelling || 0) + (i.newMobile || 0) + (i.newInternet || 0) + (i.newBooksAndPeriodicals || 0)), 0)
+                        perks: increments.reduce((sum, i) => sum + ((i.newHealthCare || 0) + (i.newTravelling || 0) + (i.newMobile || 0) + (i.newInternet || 0) + (i.newBooksAndPeriodicals || 0)), 0),
+                        revenue: totalRealRevenue,
+                        expense: totalRealExpense
                     },
                     targetBreakdown: {
                         fixed: totalMonthlyFixTarget,
