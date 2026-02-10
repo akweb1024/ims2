@@ -183,11 +183,22 @@ export const POST = authorizedRoute(
             const monthlyVariableTarget = validatedData.monthlyVariableTarget || 0;
             const totalTargetVal = monthlyFixTarget + monthlyVariableTarget;
 
+            // Fetch previous record for fiscal year snapshot
+            const lastIncrement = await prisma.salaryIncrementRecord.findFirst({
+                where: {
+                    employeeProfileId: validatedData.employeeProfileId,
+                    status: 'APPROVED'
+                },
+                orderBy: { effectiveDate: 'desc' }
+            });
+
             // Create increment record
             const increment = await prisma.salaryIncrementRecord.create({
                 data: {
                     employeeProfileId: validatedData.employeeProfileId,
                     effectiveDate: validatedData.effectiveDate ? new Date(validatedData.effectiveDate) : new Date(),
+                    fiscalYear: validatedData.fiscalYear ? String(validatedData.fiscalYear) : undefined,
+                    previousFiscalYear: lastIncrement?.fiscalYear || undefined, // Store snapshot of previous FY
 
                     // Old values (snapshot)
                     oldSalary: employee.baseSalary || 0,
@@ -261,7 +272,6 @@ export const POST = authorizedRoute(
                     currentYearlyTarget: employee.yearlyTarget || 0,
                     newYearlyTarget: validatedData.newYearlyTarget || (totalTargetVal * 12) || employee.yearlyTarget || 0,
 
-                    fiscalYear: validatedData.fiscalYear ? String(validatedData.fiscalYear) : undefined,
                     q1Target: validatedData.q1Target,
                     q2Target: validatedData.q2Target,
                     q3Target: validatedData.q3Target,

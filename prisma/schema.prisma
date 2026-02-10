@@ -1138,6 +1138,7 @@ model SalaryIncrementRecord {
   createdAt               DateTime        @default(now())
   updatedAt               DateTime        @updatedAt
   fiscalYear              String?
+  previousFiscalYear      String?
   q1Target                Float?          @default(0)
   q2Target                Float?          @default(0)
   q3Target                Float?          @default(0)

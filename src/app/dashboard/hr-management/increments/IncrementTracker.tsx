@@ -304,7 +304,7 @@ export default function IncrementTracker({ initialIncrements }: { initialIncreme
                                             <div className="flex flex-col gap-1.5 p-2 bg-secondary-50/50 rounded-xl border border-secondary-100/50">
                                                 <div className="flex items-center justify-between text-[10px] uppercase font-black text-secondary-500/70 border-b border-secondary-200 pb-1.5 mb-1">
                                                     <span>Previous CTC</span>
-                                                    <span>({inc.fiscalYear})</span>
+                                                    <span>({inc.previousFiscalYear || 'PAST'})</span>
                                                 </div>
                                                 <div className="space-y-1">
                                                     <div className="flex justify-between items-center text-[11px]">
