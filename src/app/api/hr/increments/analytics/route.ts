@@ -353,6 +353,20 @@ export const GET = authorizedRoute(
             const totalRealRevenue = revenueTransactions.reduce((sum, r) => sum + (r.amount || 0), 0);
             const totalRealExpense = expenseRecords.reduce((sum, e) => sum + (e.amount || 0), 0);
 
+            // Fetch available fiscal years for filtering
+            const allFiscalYears = await prisma.salaryIncrementRecord.findMany({
+                where: {
+                    employeeProfile: targetCompanyId ? { user: { companyId: targetCompanyId } } : undefined
+                },
+                select: { fiscalYear: true },
+                distinct: ['fiscalYear']
+            });
+
+            const availableFiscalYears = allFiscalYears
+                .map(f => f.fiscalYear)
+                .filter(Boolean)
+                .sort((a, b) => (b || '').localeCompare(a || ''));
+
             return NextResponse.json({
                 stats: {
                     totalApprovedBudgetImpact: totalImpact,
@@ -391,6 +405,7 @@ export const GET = authorizedRoute(
                 designationData,
                 quarterlyBreakdown: qTotals,
                 fiscalYear: fiscalYearParam || 'Current',
+                availableFiscalYears,
                 raw: increments.length
             });
 

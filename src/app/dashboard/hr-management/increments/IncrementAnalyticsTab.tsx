@@ -30,6 +30,7 @@ export default function IncrementAnalyticsTab() {
     const [availableFilters, setAvailableFilters] = useState({
         companies: [] as any[],
         departments: [] as any[],
+        fiscalYears: [] as string[],
     });
 
     useEffect(() => {
@@ -91,6 +92,9 @@ export default function IncrementAnalyticsTab() {
             const res = await fetch(`/api/hr/increments/analytics?${queryParams.toString()}`);
             const result = await res.json();
             setData(result);
+            if (result.availableFiscalYears) {
+                setAvailableFilters(prev => ({ ...prev, fiscalYears: result.availableFiscalYears }));
+            }
         } catch (error) {
             console.error('Error fetching analytics:', error);
         } finally {
@@ -144,9 +148,17 @@ export default function IncrementAnalyticsTab() {
                             value={filters.fiscalYear}
                             onChange={(e) => setFilters({ ...filters, fiscalYear: e.target.value })}
                         >
-                            <option value="25-26">FY 2025-26</option>
-                            <option value="24-25">FY 2024-25</option>
-                            <option value="23-24">FY 2023-24</option>
+                            {availableFilters.fiscalYears.length > 0 ? (
+                                availableFilters.fiscalYears.map(year => (
+                                    <option key={year} value={year}>{`FY 20${year.split('-').join('-20')}`}</option>
+                                ))
+                            ) : (
+                                <>
+                                    <option value="25-26">FY 2025-26</option>
+                                    <option value="24-25">FY 2024-25</option>
+                                    <option value="23-24">FY 2023-24</option>
+                                </>
+                            )}
                         </select>
                     </div>
 
