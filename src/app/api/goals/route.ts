@@ -61,6 +61,7 @@ export const GET = authorizedRoute(
             if (type) where.type = type;
             if (status) where.status = status;
 
+            // 1. Fetch Explicit Goals
             const goals = await prisma.employeeGoal.findMany({
                 where,
                 include: {
@@ -92,7 +93,99 @@ export const GET = authorizedRoute(
                 ]
             });
 
-            return NextResponse.json(goals);
+            // 2. If filtering by a single employee, synthesize additional "Virtual Goals" from KPIs
+            let synthesizedGoals: any[] = [];
+            if (employeeId && (typeof where.employeeId === 'string' || !where.employeeId)) {
+                const targetEmployeeId = employeeId;
+
+                // Fetch KPIs for this employee
+                const kpis = await prisma.employeeKPI.findMany({
+                    where: {
+                        employeeId: targetEmployeeId,
+                        // If type is specified, filter KPIs by period
+                        period: type ? type : undefined
+                    },
+                    include: {
+                        employee: {
+                            include: {
+                                user: {
+                                    select: { name: true, email: true }
+                                }
+                            }
+                        }
+                    }
+                });
+
+                // Fetch Profile to get KRA and Monthly Target
+                const profile = await prisma.employeeProfile.findUnique({
+                    where: { id: targetEmployeeId },
+                    select: {
+                        kra: true,
+                        monthlyTarget: true,
+                        baseTarget: true,
+                        user: { select: { name: true, email: true } }
+                    }
+                });
+
+                const now = new Date();
+                const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+                const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+
+                // Transform KPIs to Goal objects
+                synthesizedGoals = kpis.map(kpi => ({
+                    id: `virtual-kpi-${kpi.id}`,
+                    title: kpi.title,
+                    description: `Synthesized from Increment KPI (${kpi.category})`,
+                    kra: profile?.kra || 'General',
+                    targetValue: kpi.target,
+                    currentValue: kpi.current,
+                    achievementPercentage: kpi.target > 0 ? (kpi.current / kpi.target) * 100 : 0,
+                    unit: kpi.unit || 'units',
+                    type: kpi.period as any,
+                    startDate: startOfMonth.toISOString(), // Placeholder for current period
+                    endDate: endOfMonth.toISOString(),
+                    status: kpi.current >= kpi.target ? 'COMPLETED' : 'IN_PROGRESS',
+                    visibility: 'MANAGER',
+                    employee: {
+                        user: {
+                            name: kpi.employee.user.name,
+                            email: kpi.employee.user.email
+                        }
+                    },
+                    isVirtual: true
+                }));
+
+                // Add a primary goal if profile has a target and it's not already covered
+                if (profile?.monthlyTarget && profile.monthlyTarget > 0 && (!type || type === 'MONTHLY')) {
+                    const hasMainTarget = goals.some(g => g.title.toLowerCase().includes('monthly target'));
+                    if (!hasMainTarget) {
+                        synthesizedGoals.push({
+                            id: `virtual-profile-target-${targetEmployeeId}`,
+                            title: 'Monthly Performance Target',
+                            description: `Main target defined in employee profile / last increment`,
+                            kra: profile.kra || 'Key Result Areas',
+                            targetValue: profile.monthlyTarget,
+                            currentValue: 0, // Profile doesn't track current monthly progress directly
+                            achievementPercentage: 0,
+                            unit: 'units',
+                            type: 'MONTHLY',
+                            startDate: startOfMonth.toISOString(),
+                            endDate: endOfMonth.toISOString(),
+                            status: 'IN_PROGRESS',
+                            visibility: 'MANAGER',
+                            employee: {
+                                user: {
+                                    name: profile.user?.name,
+                                    email: profile.user?.email
+                                }
+                            },
+                            isVirtual: true
+                        });
+                    }
+                }
+            }
+
+            return NextResponse.json([...goals, ...synthesizedGoals]);
         } catch (error: any) {
             console.error('Error fetching goals:', error);
             return createErrorResponse(error.message, 500);

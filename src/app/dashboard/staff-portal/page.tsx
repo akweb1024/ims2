@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import FormattedDate from '@/components/common/FormattedDate';
-import WorkPlanSection from '@/components/dashboard/WorkPlanSection';
+import WorkAgendaPlanner from '@/components/dashboard/work-agenda/WorkAgendaPlanner';
 import EmployeeIDCard from '@/components/dashboard/EmployeeIDCard';
 import TaxDeclarationPortal from '@/components/dashboard/staff/TaxDeclarationPortal';
 import EmployeeOnboarding from '@/components/dashboard/staff/EmployeeOnboarding';
@@ -40,7 +40,6 @@ export default function StaffPortalPage() {
     const [salarySlips, setSalarySlips] = useState<any[]>([]);
     const [leaves, setLeaves] = useState<any[]>([]);
     const [performance, setPerformance] = useState<any[]>([]);
-    const [workPlans, setWorkPlans] = useState<any[]>([]);
     const [documents, setDocuments] = useState<any>(null);
     const [snapshots, setSnapshots] = useState<any[]>([]); // Added for dynamic performance
     const [fullProfile, setFullProfile] = useState<any>(null);
@@ -83,10 +82,9 @@ export default function StaffPortalPage() {
         setLoading(true);
         const token = localStorage.getItem('token');
         try {
-            const [attendanceRes, reportsRes, plansRes, slipsRes, leavesRes, perfRes, docsRes, profileRes, complRes, snapRes] = await Promise.all([
+            const [attendanceRes, reportsRes, slipsRes, leavesRes, perfRes, docsRes, profileRes, complRes, snapRes] = await Promise.all([
                 fetch('/api/hr/attendance', { headers: { 'Authorization': `Bearer ${token}` } }),
                 fetch('/api/hr/work-reports?employeeId=self', { headers: { 'Authorization': `Bearer ${token}` } }),
-                fetch('/api/hr/work-plans', { headers: { 'Authorization': `Bearer ${token}` } }),
                 fetch('/api/hr/salary-slips', { headers: { 'Authorization': `Bearer ${token}` } }),
                 fetch('/api/hr/leave-requests', { headers: { 'Authorization': `Bearer ${token}` } }),
                 fetch('/api/hr/performance', { headers: { 'Authorization': `Bearer ${token}` } }),
@@ -116,7 +114,6 @@ export default function StaffPortalPage() {
             }
             if (attendanceRes.ok) setAttendance(await attendanceRes.json());
             if (reportsRes.ok) setWorkReports(await reportsRes.json());
-            if (plansRes.ok) setWorkPlans(await plansRes.json());
             if (slipsRes.ok) setSalarySlips(await slipsRes.json());
             if (leavesRes.ok) setLeaves(await leavesRes.json());
             if (perfRes.ok) setPerformance(await perfRes.json());
@@ -219,6 +216,7 @@ export default function StaffPortalPage() {
         { id: 'profile', name: 'My Profile', icon: '👤' },
         { id: 'attendance', name: 'Attendance', icon: '📅' },
         { id: 'work-reports', name: 'Work Reports', icon: '📝' },
+        { id: 'work-agenda', name: 'Work Agenda', icon: '📔' },
         { id: 'tax-declarations', name: 'Tax Declarations', icon: '🛡️' },
         { id: 'leaves', name: 'Leave Requests', icon: '🏃' },
         { id: 'performance', name: 'Performance', icon: '📈' },
@@ -521,11 +519,9 @@ export default function StaffPortalPage() {
                     )}
 
                     {activeTab === 'work-agenda' && (
-                        <WorkPlanSection
-                            plans={workPlans}
-                            onPlanSubmitted={fetchAllData}
-                            user={user}
-                        />
+                        <div className="p-8">
+                            <WorkAgendaPlanner isOwnAgenda={true} />
+                        </div>
                     )}
 
                     {activeTab === 'salary' && (
