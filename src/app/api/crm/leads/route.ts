@@ -21,7 +21,7 @@ export async function GET(req: NextRequest) {
 
         const where: any = {
             companyId: user.companyId,
-            customerType: 'LEAD',
+            leadStatus: { not: null },
             ...(!isGlobal && { assignedToUserId: user.id }),
             ...(status && { leadStatus: status }),
             ...(search && {
@@ -109,7 +109,7 @@ export async function POST(req: NextRequest) {
             data: {
                 userId: leadUser.id,
                 companyId: user.companyId,
-                customerType: 'LEAD',
+                customerType: 'INDIVIDUAL',
                 name: body.name,
                 primaryEmail: body.primaryEmail,
                 primaryPhone: body.primaryPhone || '',

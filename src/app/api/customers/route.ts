@@ -35,6 +35,7 @@ export async function GET(req: NextRequest) {
 
         if (userCompanyId) {
             where.companyId = userCompanyId;
+            where.leadStatus = null; // Exclude leads
         }
 
         if (search) {

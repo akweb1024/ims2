@@ -3720,7 +3720,6 @@ enum CustomerType {
   INDIVIDUAL
   INSTITUTION
   AGENCY
-  LEAD
 }
 
 enum LeadStatus {

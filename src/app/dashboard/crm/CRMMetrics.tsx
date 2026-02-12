@@ -30,12 +30,12 @@ export default async function CRMMetrics({ user }: { user: any }) {
         employeeProfile
     ] = await Promise.all([
         prisma.customerProfile.count({
-            where: { ...customerFilter, customerType: { not: 'LEAD' } }
+            where: { ...customerFilter, leadStatus: null } // Only count regular customers, not leads
         }),
         prisma.customerProfile.count({
             where: {
                 ...customerFilter,
-                customerType: { not: 'LEAD' },
+                leadStatus: null, // Only count regular customers
                 createdAt: {
                     gte: new Date(new Date().getFullYear(), new Date().getMonth(), 1)
                 }
@@ -44,8 +44,10 @@ export default async function CRMMetrics({ user }: { user: any }) {
         prisma.customerProfile.count({
             where: {
                 ...customerFilter,
-                customerType: 'LEAD',
-                leadStatus: { notIn: ['CONVERTED', 'LOST'] }
+                leadStatus: {
+                    not: null,
+                    notIn: ['CONVERTED', 'LOST']
+                }
             }
         }),
         prisma.deal.aggregate({

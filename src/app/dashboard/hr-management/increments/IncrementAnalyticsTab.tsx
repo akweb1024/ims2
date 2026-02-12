@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
     TrendingUp,
     DollarSign,
@@ -13,7 +13,7 @@ import {
     Users
 } from 'lucide-react';
 import IncrementAnalyticsChart from '@/components/dashboard/hr/IncrementAnalyticsChart';
-import { FormattedNumber } from '@/components/common/FormattedNumber';
+
 
 export default function IncrementAnalyticsTab() {
     const [data, setData] = useState<any>(null);
@@ -33,27 +33,9 @@ export default function IncrementAnalyticsTab() {
         fiscalYears: [] as string[],
     });
 
-    useEffect(() => {
-        fetchUser();
-    }, []);
 
-    useEffect(() => {
-        if (user) {
-            fetchAnalytics();
-        }
-    }, [filters, user]);
 
-    useEffect(() => {
-        fetchDepartments();
-    }, [filters.companyId]);
-
-    useEffect(() => {
-        if (user?.role === 'SUPER_ADMIN') {
-            fetchCompanies();
-        }
-    }, [user]);
-
-    const fetchUser = async () => {
+    const fetchUser = useCallback(async () => {
         try {
             const res = await fetch('/api/auth/me');
             if (res.ok) {
@@ -68,9 +50,9 @@ export default function IncrementAnalyticsTab() {
         } catch (error) {
             console.error('Error fetching user:', error);
         }
-    };
+    }, []);
 
-    const fetchCompanies = async () => {
+    const fetchCompanies = useCallback(async () => {
         try {
             const res = await fetch('/api/companies?limit=1000');
             const result = await res.json();
@@ -80,9 +62,9 @@ export default function IncrementAnalyticsTab() {
         } catch (error) {
             console.error('Error fetching companies:', error);
         }
-    };
+    }, []);
 
-    const fetchAnalytics = async () => {
+    const fetchAnalytics = useCallback(async () => {
         setLoading(true);
         try {
             const queryParams = new URLSearchParams();
@@ -100,9 +82,9 @@ export default function IncrementAnalyticsTab() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [filters]);
 
-    const fetchDepartments = async () => {
+    const fetchDepartments = useCallback(async () => {
         try {
             const url = filters.companyId
                 ? `/api/hr/departments?companyId=${filters.companyId}`
@@ -124,7 +106,27 @@ export default function IncrementAnalyticsTab() {
         } catch (error) {
             console.error('Error fetching departments:', error);
         }
-    };
+    }, [filters.companyId]);
+
+    useEffect(() => {
+        fetchUser();
+    }, [fetchUser]);
+
+    useEffect(() => {
+        if (user) {
+            fetchAnalytics();
+        }
+    }, [filters, user, fetchAnalytics]);
+
+    useEffect(() => {
+        fetchDepartments();
+    }, [filters.companyId, fetchDepartments]);
+
+    useEffect(() => {
+        if (user?.role === 'SUPER_ADMIN') {
+            fetchCompanies();
+        }
+    }, [user, fetchCompanies]);
 
     if (loading && !data) {
         return (
