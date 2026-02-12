@@ -24,36 +24,35 @@ export default async function CRMMetrics({ user }: { user: any }) {
     const [
         totalCustomers,
         newCustomersThisMonth,
-        totalInteractions,
-        pendingFollowUps,
+        activeLeads,
+        pipelineValue,
         revenueData,
         employeeProfile
     ] = await Promise.all([
-        prisma.customerProfile.count({ where: customerFilter }),
+        prisma.customerProfile.count({
+            where: { ...customerFilter, customerType: { not: 'LEAD' } }
+        }),
         prisma.customerProfile.count({
             where: {
                 ...customerFilter,
+                customerType: { not: 'LEAD' },
                 createdAt: {
                     gte: new Date(new Date().getFullYear(), new Date().getMonth(), 1)
                 }
             }
         }),
-        prisma.communicationLog.count({
+        prisma.customerProfile.count({
             where: {
-                createdAt: {
-                    gte: new Date(new Date().getFullYear(), new Date().getMonth(), 1)
-                }
-                // Note: Communication logs might not perfectly link to "assigned" customers if created by others,
-                // but usually they are. For now, showing global logs for context or we'd need a join.
+                ...customerFilter,
+                customerType: 'LEAD',
+                leadStatus: { notIn: ['CONVERTED', 'LOST'] }
             }
         }),
-        prisma.communicationLog.count({
+        prisma.deal.aggregate({
+            _sum: { value: true },
             where: {
-                nextFollowUpDate: { not: null },
-                isFollowUpCompleted: false,
-                // assigning user logic for tasks?
-                // Ideally follow-ups are user specific.
-                userId: isGlobal ? undefined : user.id
+                ...customerFilter, // ownerId match if not global, deals linked to customer
+                stage: { notIn: ['CLOSED_LOST', 'CLOSED_WON'] }
             }
         }),
         prisma.invoice.aggregate({
@@ -72,20 +71,34 @@ export default async function CRMMetrics({ user }: { user: any }) {
     ]);
 
     const currentRevenue = revenueData._sum.total || 0;
-    const target = employeeProfile?.monthlyTarget || 1; // Avoid div by zero
+    const target = employeeProfile?.monthlyTarget || 1;
     const achievementPercent = Math.min(Math.round((currentRevenue / target) * 100), 100);
+    const totalPipeline = pipelineValue._sum.value || 0;
 
     return (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Total Customers</CardTitle>
-                    <span className="text-2xl">👥</span>
+                    <CardTitle className="text-sm font-medium">Active Leads</CardTitle>
+                    <span className="text-2xl">🎯</span>
                 </CardHeader>
                 <CardContent>
-                    <div className="text-2xl font-bold">{totalCustomers}</div>
+                    <div className="text-2xl font-bold">{activeLeads}</div>
                     <p className="text-xs text-secondary-500">
-                        +{newCustomersThisMonth} new this month
+                        Potential opportunities
+                    </p>
+                </CardContent>
+            </Card>
+
+            <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Pipeline Value</CardTitle>
+                    <span className="text-2xl">💼</span>
+                </CardHeader>
+                <CardContent>
+                    <div className="text-2xl font-bold">₹{totalPipeline.toLocaleString()}</div>
+                    <p className="text-xs text-secondary-500">
+                        Open deals
                     </p>
                 </CardContent>
             </Card>
@@ -111,26 +124,13 @@ export default async function CRMMetrics({ user }: { user: any }) {
 
             <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Interactions</CardTitle>
-                    <span className="text-2xl">📞</span>
+                    <CardTitle className="text-sm font-medium">Total Customers</CardTitle>
+                    <span className="text-2xl">👥</span>
                 </CardHeader>
                 <CardContent>
-                    <div className="text-2xl font-bold">{totalInteractions}</div>
+                    <div className="text-2xl font-bold">{totalCustomers}</div>
                     <p className="text-xs text-secondary-500">
-                        This month (Calls/Emails)
-                    </p>
-                </CardContent>
-            </Card>
-
-            <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Pending Follow-ups</CardTitle>
-                    <span className="text-2xl">📅</span>
-                </CardHeader>
-                <CardContent>
-                    <div className="text-2xl font-bold">{pendingFollowUps}</div>
-                    <p className="text-xs text-secondary-500">
-                        Requires attention
+                        +{newCustomersThisMonth} new this month
                     </p>
                 </CardContent>
             </Card>

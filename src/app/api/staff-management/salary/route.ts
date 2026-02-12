@@ -56,6 +56,12 @@ export const GET = authorizedRoute(
                                         }
                                     }
                                 }
+                            },
+                            salarySlips: {
+                                where: {
+                                    month: month ? parseInt(month.split('-')[1]) : new Date().getMonth() + 1,
+                                    year: year ? parseInt(year) : (month ? parseInt(month.split('-')[0]) : new Date().getFullYear())
+                                }
                             }
                         }
                     }
@@ -69,32 +75,36 @@ export const GET = authorizedRoute(
             const formattedRecords = salaryRecords.map((record: any) => {
                 const emp = record.employee;
                 const usr = emp?.user;
+                const slip = emp?.salarySlips?.[0]; // Get the slip for this month if exists
+
+                const currentMonth = month || new Date().toISOString().slice(0, 7);
+                const currentYear = year ? parseInt(year) : (month ? parseInt(month.split('-')[0]) : new Date().getFullYear());
 
                 return {
-                    id: record.id,
+                    id: slip?.id || record.id, // Use slip ID if exists, else structure ID (for key)
                     employeeId: record.employeeId,
                     employeeName: usr?.name || 'Unknown',
                     employeeEmail: usr?.email || 'N/A',
                     department: usr?.department?.name || 'N/A',
-                    month: month || new Date().toISOString().slice(0, 7),
-                    year: year ? parseInt(year) : new Date().getFullYear(),
-                    basicSalary: record.basicSalary || 0,
-                    hra: record.hra || 0,
-                    allowances: record.otherAllowances || 0,
-                    otherAllowances: record.otherAllowances || 0,
-                    deductions: record.totalDeductions || 0,
-                    totalDeductions: record.totalDeductions || 0,
-                    tax: record.tds || 0,
-                    tds: record.tds || 0,
-                    netSalary: record.netSalary || 0,
-                    status: 'PENDING', // Placeholder since monthly history is not in schema yet
-                    paymentDate: null
+                    month: currentMonth,
+                    year: currentYear,
+                    basicSalary: slip ? slip.basicSalary : (record.basicSalary || 0),
+                    hra: slip ? slip.hra : (record.hra || 0),
+                    allowances: slip ? (slip.specialAllowance + slip.otherAllowances) : (record.specialAllowance + record.otherAllowances || 0),
+                    otherAllowances: slip ? slip.otherAllowances : (record.otherAllowances || 0),
+                    deductions: slip ? slip.totalDeductions : (record.totalDeductions || 0),
+                    totalDeductions: slip ? slip.totalDeductions : (record.totalDeductions || 0),
+                    tax: slip ? slip.tds : (record.tds || 0),
+                    tds: slip ? slip.tds : (record.tds || 0),
+                    netSalary: slip ? slip.netPayable : (record.netSalary || 0),
+                    status: slip ? slip.status : 'PENDING',
+                    paymentDate: slip?.amountPaid > 0 ? slip.generatedAt : null // Rough proxy for payment date
                 };
             });
 
             return NextResponse.json(formattedRecords);
         } catch (error) {
-            logger.error('Error fetching salary records:', error);
+            console.error('Error fetching salary records:', error); // Changed logger to console for now as logger was not imported correctly in context
             return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
         }
     }

@@ -9,6 +9,7 @@ interface StaffOverviewProps {
         totalSalary: number;
         pendingLeaves: number;
         approvedLeaves: number;
+        recentActivities?: any[];
     };
     filters: any;
     onAction: (action: string) => void;
@@ -20,57 +21,43 @@ export default function StaffOverview({ staffData, filters, onAction }: StaffOve
             name: 'Total Employees',
             value: staffData.totalEmployees,
             icon: '👥',
-            color: 'bg-blue-500',
-            change: '+12%',
-            changeType: 'positive'
+            color: 'bg-blue-500'
         },
         {
             name: 'Present Today',
             value: staffData.presentToday,
             icon: '✅',
-            color: 'bg-green-500',
-            change: `${staffData.totalEmployees > 0 ? Math.round((staffData.presentToday / staffData.totalEmployees) * 100) : 0}%`,
-            changeType: 'positive'
+            color: 'bg-green-500'
         },
         {
             name: 'On Leave',
             value: staffData.onLeave,
             icon: '🏖️',
-            color: 'bg-yellow-500',
-            change: 'Fixed',
-            changeType: 'neutral'
+            color: 'bg-yellow-500'
         },
         {
             name: 'Absent',
             value: staffData.absent,
             icon: '❌',
-            color: 'bg-red-500',
-            change: `${staffData.totalEmployees > 0 ? Math.round((staffData.absent / staffData.totalEmployees) * 100) : 0}%`,
-            changeType: 'negative'
+            color: 'bg-red-500'
         },
         {
             name: 'Monthly Salary',
             value: `₹${(staffData.totalSalary || 0).toLocaleString()}`,
             icon: '💰',
-            color: 'bg-emerald-500',
-            change: '+8%',
-            changeType: 'positive'
+            color: 'bg-emerald-500'
         },
         {
             name: 'Pending Leaves',
             value: staffData.pendingLeaves,
             icon: '⏳',
-            color: 'bg-orange-500',
-            change: 'Needs Review',
-            changeType: 'neutral'
+            color: 'bg-orange-500'
         },
         {
             name: 'Approved Leaves',
             value: staffData.approvedLeaves,
             icon: '🎉',
-            color: 'bg-purple-500',
-            change: 'This Month',
-            changeType: 'positive'
+            color: 'bg-purple-500'
         }
     ];
 
@@ -91,14 +78,6 @@ export default function StaffOverview({ staffData, filters, onAction }: StaffOve
                             <div className={`w-12 h-12 ${stat.color} rounded-xl flex items-center justify-center text-2xl`}>
                                 {stat.icon}
                             </div>
-                        </div>
-                        <div className="mt-4 flex items-center">
-                            <span className={`text-sm font-medium ${stat.changeType === 'positive' ? 'text-green-600' :
-                                stat.changeType === 'negative' ? 'text-red-600' :
-                                    'text-secondary-500'
-                                }`}>
-                                {stat.change}
-                            </span>
                         </div>
                     </div>
                 ))}
@@ -143,25 +122,33 @@ export default function StaffOverview({ staffData, filters, onAction }: StaffOve
             <div className="bg-white rounded-xl shadow-sm border border-secondary-200 p-6">
                 <h2 className="text-lg font-semibold text-secondary-900 mb-4">Recent Activity</h2>
                 <div className="space-y-4">
-                    {[
-                        { icon: '👤', text: 'New employee John Doe added to Engineering team', time: '2 hours ago', color: 'bg-blue-100 text-blue-600' },
-                        { icon: '🏖️', text: 'Leave request approved for Jane Smith', time: '3 hours ago', color: 'bg-green-100 text-green-600' },
-                        { icon: '💰', text: 'Salary processed for March 2024', time: '5 hours ago', color: 'bg-purple-100 text-purple-600' },
-                        { icon: '🕒', text: 'Attendance marked for 45 employees', time: '6 hours ago', color: 'bg-yellow-100 text-yellow-600' },
-                        { icon: '📝', text: 'Work report submitted by Mike Johnson', time: '8 hours ago', color: 'bg-red-100 text-red-600' },
-                    ].map((activity, index) => (
-                        <div key={index} className="flex items-center gap-4 p-3 rounded-lg hover:bg-secondary-50 transition-colors">
-                            <div className={`w-10 h-10 rounded-full flex items-center justify-center ${activity.color}`}>
-                                <span className="text-lg">{activity.icon}</span>
+                    {staffData.recentActivities && staffData.recentActivities.length > 0 ? (
+                        staffData.recentActivities.map((activity: any) => (
+                            <div key={activity.id} className="flex items-center gap-4 p-3 rounded-lg hover:bg-secondary-50 transition-colors">
+                                <div className={`w-10 h-10 rounded-full flex items-center justify-center ${activity.type === 'ATTENDANCE' ? 'bg-green-100 text-green-600' :
+                                    activity.type === 'LEAVE' ? 'bg-yellow-100 text-yellow-600' :
+                                        activity.type === 'WORK_REPORT' ? 'bg-blue-100 text-blue-600' :
+                                            'bg-purple-100 text-purple-600'
+                                    }`}>
+                                    <span className="text-lg">
+                                        {activity.type === 'ATTENDANCE' ? '🕒' :
+                                            activity.type === 'LEAVE' ? '🏖️' :
+                                                activity.type === 'WORK_REPORT' ? '📝' : '📌'}
+                                    </span>
+                                </div>
+                                <div className="flex-1">
+                                    <p className="text-sm font-medium text-secondary-900">{activity.description}</p>
+                                    <p className="text-xs text-secondary-500">
+                                        {new Date(activity.timestamp).toLocaleString()}
+                                    </p>
+                                </div>
                             </div>
-                            <div className="flex-1">
-                                <p className="text-sm font-medium text-secondary-900">{activity.text}</p>
-                                <p className="text-xs text-secondary-500">{activity.time}</p>
-                            </div>
-                        </div>
-                    ))}
+                        ))
+                    ) : (
+                        <p className="text-sm text-secondary-500 text-center py-4">No recent activity</p>
+                    )}
                 </div>
             </div>
-        </div>
+        </div >
     );
 }

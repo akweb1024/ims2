@@ -230,8 +230,9 @@ export default function SalaryManagement({ filters }: SalaryManagementProps) {
                                         </td>
                                         <td className="px-6 py-4">
                                             <span className={`px-2 py-1 text-xs font-semibold rounded-full ${record.status === 'PAID' ? 'bg-green-100 text-green-700' :
-                                                record.status === 'PENDING' ? 'bg-yellow-100 text-yellow-700' :
-                                                    'bg-gray-100 text-gray-700'
+                                                record.status === 'GENERATED' ? 'bg-blue-100 text-blue-700' :
+                                                    record.status === 'PENDING' ? 'bg-yellow-100 text-yellow-700' :
+                                                        'bg-gray-100 text-gray-700'
                                                 }`}>
                                                 {record.status}
                                             </span>
@@ -247,7 +248,7 @@ export default function SalaryManagement({ filters }: SalaryManagementProps) {
                                                 >
                                                     View
                                                 </button>
-                                                {record.status === 'PENDING' && (
+                                                {record.status === 'GENERATED' && (
                                                     <button
                                                         onClick={() => handleProcessPayment(record.id)}
                                                         className="text-green-600 hover:text-green-800 text-sm"

@@ -41,6 +41,7 @@ model Company {
   departmentPerformance       DepartmentPerformance[]
   dispatchOrders              DispatchOrder[]
   documentTemplates           DocumentTemplate[]
+  deals                       Deal[]
   employeeCompanyDesignations EmployeeCompanyDesignation[]
   expenseAllocations          EmployeeExpenseAllocation[]
   employeeGoals               EmployeeGoal[]
@@ -227,6 +228,7 @@ model User {
   goalEvaluations         GoalEvaluation[]
   createdTasks             Task[]                      @relation("TaskAssigner")
   incrementReviews         SalaryIncrementReview[]     @relation("IncrementReviewer")
+  deals                    Deal[]
 
   @@index([email])
   @@index([role])
@@ -316,6 +318,9 @@ model CustomerProfile {
   preferredChannel    String?
   notes               String?
   tags                String?
+  leadStatus          LeadStatus?          @default(NEW)
+  leadScore           Int?                 @default(0)
+  source              String?              @default("DIRECT")
   createdAt           DateTime             @default(now())
   updatedAt           DateTime             @updatedAt
   companyId           String?
@@ -334,6 +339,7 @@ model CustomerProfile {
   revenueTransactions RevenueTransaction[]
   subscriptions       Subscription[]
   supportTickets      SupportTicket[]
+  deals               Deal[]
   assignedExecutives  User[]               @relation("CustomerToExecutives")
 
   @@index([customerType])
@@ -3714,6 +3720,50 @@ enum CustomerType {
   INDIVIDUAL
   INSTITUTION
   AGENCY
+  LEAD
+}
+
+enum LeadStatus {
+  NEW
+  CONTACTED
+  QUALIFIED
+  PROPOSAL_SENT
+  NEGOTIATION
+  CONVERTED
+  LOST
+}
+
+enum DealStage {
+  DISCOVERY
+  PROPOSAL
+  NEGOTIATION
+  CLOSED_WON
+  CLOSED_LOST
+}
+
+model Deal {
+  id          String    @id @default(uuid())
+  title       String
+  value       Float     @default(0)
+  currency    String    @default("INR")
+  stage       DealStage @default(DISCOVERY)
+  probability Int       @default(20)
+  expectedCloseDate DateTime?
+  customerId  String
+  ownerId     String
+  notes       String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  companyId   String?
+  
+  customer    CustomerProfile @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  owner       User            @relation(fields: [ownerId], references: [id])
+  company     Company?        @relation(fields: [companyId], references: [id])
+
+  @@index([customerId])
+  @@index([ownerId])
+  @@index([stage])
+  @@index([companyId])
 }
 
 enum InstitutionType {

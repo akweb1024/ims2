@@ -45,7 +45,14 @@ export const GET = authorizedRoute(
                 }
             });
 
-            return NextResponse.json(team);
+            // Enrich with Last Pulse
+            const { getLastPulse } = await import('@/lib/services/activity-service');
+            const teamWithPulse = await Promise.all(team.map(async (member) => {
+                const lastPulse = await getLastPulse(member.id);
+                return { ...member, lastPulse };
+            }));
+
+            return NextResponse.json(teamWithPulse);
         } catch (error: any) {
             console.error('Fetch Team Error:', error);
             return createErrorResponse('Internal Server Error', 500);

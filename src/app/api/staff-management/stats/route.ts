@@ -74,6 +74,13 @@ export const GET = authorizedRoute(
                 }
             });
 
+            // Fetch recent activities
+            const { getCompanyActivity } = await import('@/lib/services/activity-service');
+            const activities = await getCompanyActivity(
+                companyId && companyId !== 'all' ? companyId : user.companyId || '',
+                5
+            );
+
             return NextResponse.json({
                 totalEmployees,
                 presentToday,
@@ -81,7 +88,8 @@ export const GET = authorizedRoute(
                 absent,
                 totalSalary,
                 pendingLeaves,
-                approvedLeaves
+                approvedLeaves,
+                recentActivities: activities
             });
         } catch (error) {
             return createErrorResponse(error);
