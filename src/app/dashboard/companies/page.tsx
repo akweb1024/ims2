@@ -1,10 +1,11 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import Link from 'next/link';
+import CompanyClientLayout from './CompanyClientLayout';
 import FormattedDate from '@/components/common/FormattedDate';
 import DataTransferActions from '@/components/dashboard/DataTransferActions';
+import { CardSkeleton } from '@/components/ui/skeletons';
 
 export default function CompaniesPage() {
     const [companies, setCompanies] = useState<any[]>([]);
@@ -85,7 +86,7 @@ export default function CompaniesPage() {
     };
 
     return (
-        <DashboardLayout userRole={userRole}>
+        <CompanyClientLayout>
             <div className="space-y-6">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                     <div>
@@ -107,8 +108,8 @@ export default function CompaniesPage() {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {loading ? (
-                        Array(3).fill(0).map((_, i) => (
-                            <div key={i} className="card-premium h-48 animate-pulse bg-secondary-100"></div>
+                        Array(6).fill(0).map((_, i) => (
+                            <CardSkeleton key={i} />
                         ))
                     ) : companies.map(company => (
                         <div key={company.id} className="card-premium p-6 hover:shadow-xl transition-all border-l-4 border-primary-500">
@@ -228,6 +229,6 @@ export default function CompaniesPage() {
                     </div>
                 </div>
             )}
-        </DashboardLayout>
+        </CompanyClientLayout>
     );
 }

@@ -1,10 +1,11 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import Link from 'next/link';
+import CompanyClientLayout from '../companies/CompanyClientLayout';
 import CompanyAnalyticsOverview from '@/components/dashboard/company/CompanyAnalyticsOverview';
 import WorkforceAnalytics from '@/components/dashboard/company/WorkforceAnalytics';
+import { DashboardSkeleton } from '@/components/ui/skeletons';
 
 export default function CompanyPage() {
     const [company, setCompany] = useState<any>(null);
@@ -245,17 +246,15 @@ export default function CompanyPage() {
 
     if (loading) {
         return (
-            <DashboardLayout userRole={userRole}>
-                <div className="flex items-center justify-center h-64">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
-                </div>
-            </DashboardLayout>
+            <CompanyClientLayout>
+                <DashboardSkeleton />
+            </CompanyClientLayout>
         );
     }
 
     if (!company) {
         return (
-            <DashboardLayout userRole={userRole}>
+            <CompanyClientLayout>
                 <div className="max-w-md mx-auto mt-20 p-10 bg-white rounded-3xl shadow-2xl text-center border border-secondary-100">
                     <div className="w-20 h-20 bg-secondary-100 rounded-2xl flex items-center justify-center mx-auto mb-6">
                         <span className="text-4xl text-secondary-400">🏢</span>
@@ -278,12 +277,12 @@ export default function CompanyPage() {
                         </button>
                     </div>
                 </div>
-            </DashboardLayout>
+            </CompanyClientLayout>
         );
     }
 
     return (
-        <DashboardLayout userRole={userRole}>
+        <CompanyClientLayout>
             <div className="space-y-6">
                 <div className="flex justify-between items-center">
                     <div>
@@ -755,6 +754,6 @@ export default function CompanyPage() {
                     </div>
                 </div>
             )}
-        </DashboardLayout>
+        </CompanyClientLayout>
     );
 }

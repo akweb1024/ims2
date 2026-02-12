@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
+import HRClientLayout from '../hr-management/HRClientLayout';
 import RecruitmentDashboardComponent from '@/components/dashboard/hr/RecruitmentDashboard';
 import { Users } from 'lucide-react';
 
@@ -14,7 +14,7 @@ export default function RecruitmentDashboardPage() {
     }, []);
 
     return (
-        <DashboardLayout userRole={userRole}>
+        <HRClientLayout>
             <div className="space-y-6">
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                     <div>
@@ -29,6 +29,6 @@ export default function RecruitmentDashboardPage() {
                 {/* Use the shared modular component */}
                 <RecruitmentDashboardComponent />
             </div>
-        </DashboardLayout>
+        </HRClientLayout>
     );
 }

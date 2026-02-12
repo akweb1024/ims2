@@ -20,7 +20,7 @@ const getClient = () => {
         const [, user, password, host, port, database] = match;
         pool = new Pool({
             user,
-            password,
+            password: decodeURIComponent(password),
             host,
             port: parseInt(port),
             database: database.split('?')[0],

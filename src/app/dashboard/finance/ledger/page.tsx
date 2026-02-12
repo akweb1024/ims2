@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
+import FinanceClientLayout from '../FinanceClientLayout';
 
 export default function GeneralLedgerPage() {
     const [accounts, setAccounts] = useState<any[]>([]);
@@ -50,7 +50,7 @@ export default function GeneralLedgerPage() {
     }, [fetchLedger, selectedAccount]);
 
     return (
-        <DashboardLayout>
+        <FinanceClientLayout>
             <div className="space-y-6">
                 <div>
                     <h1 className="text-2xl font-bold text-gray-900">General Ledger</h1>
@@ -121,6 +121,6 @@ export default function GeneralLedgerPage() {
                     </table>
                 </div>
             </div>
-        </DashboardLayout>
+        </FinanceClientLayout>
     );
 }

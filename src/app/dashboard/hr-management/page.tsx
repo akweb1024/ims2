@@ -3,7 +3,7 @@
 import { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
+import HRClientLayout from './HRClientLayout';
 import FormattedDate from '@/components/common/FormattedDate';
 
 import DocumentManager from '@/components/dashboard/DocumentManager';
@@ -38,6 +38,7 @@ import RewardManager from '@/components/dashboard/hr/RewardManager';
 import LeaveLedgerManager from '@/components/dashboard/hr/LeaveLedgerManager';
 import PotentialCalculator from '@/components/dashboard/hr/PotentialCalculator';
 import WorkReportValidator from '@/components/dashboard/hr/WorkReportValidator';
+import { TableSkeleton, CardSkeleton } from '@/components/ui/skeletons';
 import { Briefcase, Info, Target, TrendingUp, Award, GraduationCap, Edit, Trash2, ChevronDown } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import {
@@ -77,7 +78,7 @@ const DailyReconciliationTable = ({ days = 7 }: { days?: number }) => {
         fetchData();
     }, [days]);
 
-    if (loading) return <div className="p-10 text-center animate-pulse font-bold text-secondary-400">Auditing historical data...</div>;
+    if (loading) return <div className="p-6"><TableSkeleton rows={5} /></div>;
 
     return (
         <div className="card-premium p-0 overflow-hidden shadow-xl border-secondary-200">
@@ -466,7 +467,7 @@ const HRManagementContent = () => {
     };
 
     return (
-        <DashboardLayout userRole={userRole}>
+        <HRClientLayout>
             <div className="space-y-8">
                 <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                     <div>
@@ -1442,7 +1443,7 @@ const HRManagementContent = () => {
                     />
                 )}
             </div>
-        </DashboardLayout >
+        </HRClientLayout>
     );
 }
 

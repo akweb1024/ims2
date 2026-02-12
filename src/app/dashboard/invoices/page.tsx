@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
+import FinanceClientLayout from '../finance/FinanceClientLayout';
 import FormattedDate from '@/components/common/FormattedDate';
 
 import CreateInvoiceModal from '@/components/dashboard/CreateInvoiceModal';
@@ -82,7 +82,7 @@ export default function InvoicesPage() {
     };
 
     return (
-        <DashboardLayout userRole={userRole}>
+        <FinanceClientLayout>
             <div className="space-y-6">
                 <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                     <div>
@@ -180,7 +180,7 @@ export default function InvoicesPage() {
                                     <th className="px-6 py-4 text-xs font-bold text-secondary-500 uppercase tracking-wider text-right">Actions</th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-secondary-100">
+                            <tbody className="divide-y divide-secondary-100 min-h-[400px]">
                                 {loading ? (
                                     <tr>
                                         <td colSpan={6} className="text-center py-12">
@@ -195,7 +195,7 @@ export default function InvoicesPage() {
                                             <button onClick={fetchInvoices} className="btn btn-secondary mt-4">Try Again</button>
                                         </td>
                                     </tr>
-                                ) : invoices.length === 0 ? (
+                                ) : !loading && invoices.length === 0 ? (
                                     <tr>
                                         <td colSpan={6} className="text-center py-12 text-secondary-500">
                                             No billing records found
@@ -279,7 +279,7 @@ export default function InvoicesPage() {
                     // Optional: Show success toast
                 }}
             />
-        </DashboardLayout>
+        </FinanceClientLayout>
     );
 }
 

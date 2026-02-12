@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useCallback, useEffect } from 'react';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
+import FinanceClientLayout from './FinanceClientLayout';
 import { toast } from 'react-hot-toast';
 import { useSession } from 'next-auth/react';
 import Link from 'next/link';
@@ -84,7 +84,7 @@ export default function FinancePage() {
     }, [session, fetchAnalytics, fetchTransactions]);
 
     return (
-        <DashboardLayout>
+        <FinanceClientLayout>
             <div className="space-y-8">
                 {/* Header */}
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -242,6 +242,6 @@ export default function FinancePage() {
                 }}
                 editingTransaction={editingTransaction}
             />
-        </DashboardLayout>
+        </FinanceClientLayout>
     );
 }

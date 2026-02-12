@@ -1,6 +1,6 @@
 import { Suspense } from 'react';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import IncrementClientWrapper from './IncrementClientWrapper';
+import HRClientLayout from '../HRClientLayout';
 import IncrementDashboardSkeleton from './IncrementDashboardSkeleton';
 import { prisma } from '@/lib/prisma';
 import { redirect } from 'next/navigation';
@@ -102,7 +102,7 @@ async function IncrementData() {
 
 export default async function IncrementManagementPage() {
     return (
-        <DashboardLayout>
+        <HRClientLayout>
             <div className="p-8 space-y-6">
                 <div>
                     <h1 className="text-3xl font-black text-secondary-900">
@@ -117,6 +117,6 @@ export default async function IncrementManagementPage() {
                     <IncrementData />
                 </Suspense>
             </div>
-        </DashboardLayout>
+        </HRClientLayout>
     );
 }

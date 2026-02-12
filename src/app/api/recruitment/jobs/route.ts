@@ -5,42 +5,41 @@ import { jobPostingSchema, updateJobPostingSchema } from '@/lib/validators/hr';
 import { authorizedRoute } from '@/lib/middleware-auth';
 import { createErrorResponse } from '@/lib/api-utils';
 
-export async function GET(req: NextRequest) {
-    try {
-        const user = await getAuthenticatedUser().catch(() => null);
-        const { searchParams } = new URL(req.url);
-        const showAll = searchParams.get('all') === 'true';
-        const queryCompanyId = searchParams.get('companyId');
+export const GET = authorizedRoute(
+    [],
+    async (req: NextRequest, user) => {
+        try {
+            const { searchParams } = new URL(req.url);
+            const showAll = searchParams.get('all') === 'true';
+            const queryCompanyId = searchParams.get('companyId');
 
-        let where: any = { status: 'OPEN' };
+            let where: any = { status: 'OPEN' };
 
-        if (showAll && user && ['SUPER_ADMIN', 'ADMIN', 'MANAGER'].includes(user.role)) {
-            where = {}; // Managers can see all status
+            if (showAll && ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'HR_MANAGER', 'HR'].includes(user.role)) {
+                where = {}; // Management roles can see all status
+            }
+
+            const finalCompanyId = (user.role === 'SUPER_ADMIN' && queryCompanyId) ? queryCompanyId : user.companyId;
+
+            if (finalCompanyId) {
+                where.companyId = finalCompanyId;
+            }
+
+            const jobs = await prisma.jobPosting.findMany({
+                where,
+                include: {
+                    company: { select: { name: true } },
+                    department: { select: { name: true } },
+                    _count: { select: { applications: true } }
+                },
+                orderBy: { createdAt: 'desc' }
+            });
+            return NextResponse.json(jobs);
+        } catch (error: any) {
+            return createErrorResponse(error);
         }
-
-        const targetCompanyId = queryCompanyId || user?.companyId;
-
-        if (targetCompanyId) {
-            where.companyId = targetCompanyId;
-        } else if (user?.role !== 'SUPER_ADMIN') {
-            // If not super admin and no companyId, we should probably still only show public jobs if any
-            // but for management views, they need a companyId.
-        }
-
-        const jobs = await prisma.jobPosting.findMany({
-            where,
-            include: {
-                company: { select: { name: true } },
-                department: { select: { name: true } },
-                _count: { select: { applications: true } }
-            },
-            orderBy: { createdAt: 'desc' }
-        });
-        return NextResponse.json(jobs);
-    } catch (error: any) {
-        return createErrorResponse(error);
     }
-}
+);
 
 export const POST = authorizedRoute(
     ['SUPER_ADMIN', 'ADMIN', 'MANAGER'],

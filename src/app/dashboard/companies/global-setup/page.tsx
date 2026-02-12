@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Plus, Edit2, CheckCircle, Globe, Building, Layout, Target, Users, ArrowRight, Zap, Search } from 'lucide-react';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
+import CompanyClientLayout from '../CompanyClientLayout';
 
 export default function GlobalSetupPage() {
     const [departments, setDepartments] = useState<any[]>([]);
@@ -96,7 +96,7 @@ export default function GlobalSetupPage() {
     );
 
     return (
-        <DashboardLayout userRole="SUPER_ADMIN">
+        <CompanyClientLayout>
             <div className="space-y-8 pb-20">
                 {/* Hero Section */}
                 <div className="relative overflow-hidden bg-secondary-900 rounded-[2rem] p-8 md:p-12 text-white shadow-2xl">
@@ -396,6 +396,6 @@ export default function GlobalSetupPage() {
                     </div>
                 )}
             </div>
-        </DashboardLayout>
+        </CompanyClientLayout>
     );
 }

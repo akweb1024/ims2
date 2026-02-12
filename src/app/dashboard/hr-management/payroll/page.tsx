@@ -1,8 +1,9 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
+import HRClientLayout from '../HRClientLayout';
 import FormattedDate from '@/components/common/FormattedDate';
+import { TableSkeleton } from '@/components/ui/skeletons';
 import { Download, Plus, RefreshCw, FileText, UserPlus, X, Search } from 'lucide-react';
 
 export default function PayrollPage() {
@@ -164,7 +165,7 @@ export default function PayrollPage() {
     );
 
     return (
-        <DashboardLayout userRole={userRole}>
+        <HRClientLayout>
             <div className="space-y-6">
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div>
@@ -269,7 +270,9 @@ export default function PayrollPage() {
                             </thead>
                             <tbody>
                                 {loading ? (
-                                    <tr><td colSpan={6} className="text-center py-10">Loading...</td></tr>
+                                    Array(5).fill(0).map((_, i) => (
+                                        <tr key={i}><td colSpan={6}><div className="h-12 w-full animate-pulse bg-secondary-50 rounded-lg"></div></td></tr>
+                                    ))
                                 ) : slips.length === 0 ? (
                                     <tr><td colSpan={6} className="text-center py-10 text-secondary-500">No salary slips found for {months.find(m => m.value === selectedMonth)?.label} {selectedYear}. Click &quot;Generate Slip&quot; to process payroll.</td></tr>
                                 ) : (
@@ -378,6 +381,6 @@ export default function PayrollPage() {
                     </div>
                 )}
             </div>
-        </DashboardLayout>
+        </HRClientLayout>
     );
 }

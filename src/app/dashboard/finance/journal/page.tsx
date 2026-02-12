@@ -1,7 +1,8 @@
 'use client';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
+import FinanceClientLayout from '../FinanceClientLayout';
+import { TableSkeleton } from '@/components/ui/skeletons';
 
 export default function JournalEntriesPage() {
     const [entries, setEntries] = useState<any[]>([]);
@@ -24,10 +25,22 @@ export default function JournalEntriesPage() {
         }
     };
 
-    if (loading) return <DashboardLayout><div>Loading...</div></DashboardLayout>;
+    if (loading) {
+        return (
+            <FinanceClientLayout>
+                <div className="space-y-6">
+                    <div className="flex justify-between items-center">
+                        <div className="h-10 w-48 bg-secondary-100 animate-pulse rounded-lg"></div>
+                        <div className="h-10 w-32 bg-secondary-100 animate-pulse rounded-lg"></div>
+                    </div>
+                    <TableSkeleton />
+                </div>
+            </FinanceClientLayout>
+        );
+    }
 
     return (
-        <DashboardLayout>
+        <FinanceClientLayout>
             <div className="space-y-6">
                 <div className="flex justify-between items-center">
                     <div>
@@ -80,6 +93,6 @@ export default function JournalEntriesPage() {
                     </table>
                 </div>
             </div>
-        </DashboardLayout>
+        </FinanceClientLayout>
     );
 }

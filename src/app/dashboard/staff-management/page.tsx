@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
+import HRClientLayout from '../hr-management/HRClientLayout';
 import StaffFilters from '@/components/dashboard/staff-management/StaffFilters';
 import StaffOverview from '@/components/dashboard/staff-management/StaffOverview';
 import EmployeeManagement from '@/components/dashboard/staff-management/EmployeeManagement';
@@ -13,6 +13,7 @@ import WorkReportManagement from '@/components/dashboard/staff-management/WorkRe
 import StaffAnalytics from '@/components/dashboard/staff-management/StaffAnalytics';
 import PunchInOut from '@/components/dashboard/staff-management/PunchInOut';
 import BalanceLeave from '@/components/dashboard/staff-management/BalanceLeave';
+import { TableSkeleton } from '@/components/ui/skeletons';
 import { toast } from 'react-hot-toast';
 
 const tabs = [
@@ -109,11 +110,9 @@ function StaffManagementContent() {
 
     if (isLoading) {
         return (
-            <DashboardLayout userRole={userRole}>
-                <div className="flex items-center justify-center h-64">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
-                </div>
-            </DashboardLayout>
+            <HRClientLayout>
+                <div className="p-8"><TableSkeleton rows={10} /></div>
+            </HRClientLayout>
         );
     }
 
@@ -138,7 +137,7 @@ function StaffManagementContent() {
     };
 
     return (
-        <DashboardLayout userRole={userRole}>
+        <HRClientLayout>
             <div className="space-y-6">
                 {/* Header */}
                 <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
@@ -208,7 +207,7 @@ function StaffManagementContent() {
                     )}
                 </div>
             </div>
-        </DashboardLayout>
+        </HRClientLayout>
     );
 }
 
