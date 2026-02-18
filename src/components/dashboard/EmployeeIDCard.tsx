@@ -113,7 +113,24 @@ export default function EmployeeIDCard({ employee }: { employee: any }) {
                         </div>
                         <div className="flex items-start gap-4 text-xs text-secondary-600 border-b border-secondary-100 pb-2">
                             <span className="font-bold w-20 uppercase text-[10px] text-secondary-400">Exp.</span>
-                            <span className="flex-1 font-medium">{employee.totalExperienceYears !== undefined ? `${employee.totalExperienceYears}Y ${employee.totalExperienceMonths || 0}M` : '0 years'}</span>
+                            <span className="flex-1 font-medium">
+                                {(() => {
+                                    const doj = employee.dateOfJoining ? new Date(employee.dateOfJoining) : new Date();
+                                    const now = new Date();
+
+                                    // Calculate tenure
+                                    let tenureMonths = (now.getFullYear() - doj.getFullYear()) * 12 + (now.getMonth() - doj.getMonth());
+                                    if (now.getDate() < doj.getDate()) tenureMonths--;
+
+                                    // Add previous experience
+                                    const totalMonths = ((employee.totalExperienceYears || 0) * 12) + (employee.totalExperienceMonths || 0) + Math.max(0, tenureMonths);
+
+                                    const years = Math.floor(totalMonths / 12);
+                                    const months = totalMonths % 12;
+
+                                    return `${years}Y ${months}M`;
+                                })()}
+                            </span>
                         </div>
                         <div className="flex items-start gap-4 text-xs text-secondary-600 border-b border-secondary-100 pb-2">
                             <span className="font-bold w-20 uppercase text-[10px] text-secondary-400">Mobile</span>

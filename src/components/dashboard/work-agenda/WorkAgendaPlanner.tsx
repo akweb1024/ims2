@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { Calendar, Clock, Plus, CheckCircle, XCircle, Edit, Link as LinkIcon } from 'lucide-react';
+import CreateWorkPlanModal from './CreateWorkPlanModal';
+import EditWorkPlanModal from './EditWorkPlanModal';
 
 interface WorkPlan {
     id: string;
@@ -23,6 +25,7 @@ interface WorkPlan {
             email: string;
         };
     };
+    visibility: string;
 }
 
 interface WorkAgendaPlannerProps {
@@ -295,10 +298,18 @@ export default function WorkAgendaPlanner({ employeeId, isOwnAgenda = false }: W
 
             {/* Modals */}
             {showCreateModal && (
-                <div>Create Work Plan Modal</div>
+                <CreateWorkPlanModal
+                    onClose={() => setShowCreateModal(false)}
+                    onSuccess={fetchWorkPlans}
+                    employeeId={employeeId}
+                />
             )}
             {editingPlan && (
-                <div>Edit Work Plan Modal</div>
+                <EditWorkPlanModal
+                    plan={editingPlan}
+                    onClose={() => setEditingPlan(null)}
+                    onSuccess={fetchWorkPlans}
+                />
             )}
         </div>
     );

@@ -227,6 +227,7 @@ export default function FinancePage() {
                             onFilter={(f, v) => setFilters(prev => ({ ...prev, [f]: v }))}
                             filters={filters}
                             loading={loading}
+                            onRefresh={refreshData}
                         />
                     </div>
                 </div>

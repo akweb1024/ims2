@@ -5,8 +5,35 @@ import { createErrorResponse } from '@/lib/api-utils';
 
 export const dynamic = 'force-dynamic';
 
+const calculatePotential = async (companyId: string) => {
+    // Fetch current metrics to calculate potential
+    const stats = await prisma.financialRecord.findMany({
+        where: { companyId, type: 'REVENUE' },
+        orderBy: { date: 'desc' },
+        take: 12
+    });
+
+    const avgMonthlyRevenue = stats.length > 0
+        ? stats.reduce((acc, curr) => acc + curr.amount, 0) / stats.length
+        : 100000; // Mock fallback
+
+    // Simple projections (could be way more complex with real data/AI)
+    const growthRate = 1.05; // 5% growth per period
+
+    return {
+        monthlyPotential: avgMonthlyRevenue * growthRate,
+        quarterlyPotential: avgMonthlyRevenue * 3 * Math.pow(growthRate, 2),
+        halfYearlyPotential: avgMonthlyRevenue * 6 * Math.pow(growthRate, 4),
+        yearlyPotential: avgMonthlyRevenue * 12 * Math.pow(growthRate, 8),
+        twoYearPotential: avgMonthlyRevenue * 24 * Math.pow(growthRate, 16),
+        threeYearPotential: avgMonthlyRevenue * 36 * Math.pow(growthRate, 24),
+        fiveYearPotential: avgMonthlyRevenue * 60 * Math.pow(growthRate, 40),
+        lastCalculated: new Date()
+    };
+};
+
 export const GET = authorizedRoute(
-    ['SUPER_ADMIN', 'ADMIN'],
+    ['SUPER_ADMIN', 'ADMIN', 'MANAGER'],
     async (req: NextRequest, user) => {
         try {
             if (!user.companyId) return createErrorResponse('Company association required', 403);
@@ -15,11 +42,19 @@ export const GET = authorizedRoute(
                 where: { companyId: user.companyId }
             });
 
-            if (!potential) {
-                // Initialize if not exists
-                potential = await prisma.companyPotential.create({
-                    data: {
+            // Check if refresh needed (older than 1 hour or null)
+            const shouldRecalculate = !potential ||
+                (new Date().getTime() - new Date(potential.lastCalculated).getTime() > 1000 * 60 * 60);
+
+            if (shouldRecalculate) {
+                const potentialData = await calculatePotential(user.companyId);
+
+                potential = await prisma.companyPotential.upsert({
+                    where: { companyId: user.companyId },
+                    update: potentialData,
+                    create: {
                         companyId: user.companyId,
+                        ...potentialData,
                         growthFactors: [
                             { factor: "Market Expansion", impact: "High", importance: 9 },
                             { factor: "Employee Productivity", impact: "Medium", importance: 7 },
@@ -43,30 +78,7 @@ export const POST = authorizedRoute(
         try {
             if (!user.companyId) return createErrorResponse('Company association required', 403);
 
-            // Fetch current metrics to calculate potential
-            const stats = await prisma.financialRecord.findMany({
-                where: { companyId: user.companyId, type: 'REVENUE' },
-                orderBy: { date: 'desc' },
-                take: 12
-            });
-
-            const avgMonthlyRevenue = stats.length > 0
-                ? stats.reduce((acc, curr) => acc + curr.amount, 0) / stats.length
-                : 100000; // Mock fallback
-
-            // Simple projections (could be way more complex with real data/AI)
-            const growthRate = 1.05; // 5% growth per period
-
-            const potentialData = {
-                monthlyPotential: avgMonthlyRevenue * growthRate,
-                quarterlyPotential: avgMonthlyRevenue * 3 * Math.pow(growthRate, 2),
-                halfYearlyPotential: avgMonthlyRevenue * 6 * Math.pow(growthRate, 4),
-                yearlyPotential: avgMonthlyRevenue * 12 * Math.pow(growthRate, 8),
-                twoYearPotential: avgMonthlyRevenue * 24 * Math.pow(growthRate, 16),
-                threeYearPotential: avgMonthlyRevenue * 36 * Math.pow(growthRate, 24),
-                fiveYearPotential: avgMonthlyRevenue * 60 * Math.pow(growthRate, 40),
-                lastCalculated: new Date()
-            };
+            const potentialData = await calculatePotential(user.companyId);
 
             const potential = await prisma.companyPotential.upsert({
                 where: { companyId: user.companyId },

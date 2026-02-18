@@ -19,12 +19,13 @@ export default function WorkReportValidator({ reports, onApprove, onAddComment }
     const [approvedTaskIds, setApprovedTaskIds] = useState<string[]>([]);
     const [rejectedTaskIds, setRejectedTaskIds] = useState<string[]>([]);
     const [managerComment, setManagerComment] = useState('');
-    const [managerRating, setManagerRating] = useState(5);
+    const [managerRating, setManagerRating] = useState(1);
     const [evaluation, setEvaluation] = useState({
-        discipline: 5,
-        workQuality: 5,
-        efficiency: 5,
-        instructionCompliance: 5
+        attendance: 1,
+        discipline: 1,
+        workQuality: 1,
+        efficiency: 1,
+        instructionCompliance: 1
     });
     const [commentText, setCommentText] = useState('');
     const [submitting, setSubmitting] = useState(false);
@@ -37,12 +38,13 @@ export default function WorkReportValidator({ reports, onApprove, onAddComment }
         setApprovedTaskIds(taskIds);
         setRejectedTaskIds([]);
         setManagerComment('');
-        setManagerRating(report.selfRating || 5);
+        setManagerRating(report.selfRating || 1);
         setEvaluation(report.evaluation || {
-            discipline: 5,
-            workQuality: 5,
-            efficiency: 5,
-            instructionCompliance: 5
+            attendance: 1,
+            discipline: 1,
+            workQuality: 1,
+            efficiency: 1,
+            instructionCompliance: 1
         });
         setShowValidationModal(true);
     };
@@ -468,7 +470,7 @@ export default function WorkReportValidator({ reports, onApprove, onAddComment }
                                                 <label className="text-xs font-bold text-secondary-600 uppercase tracking-wider">
                                                     {key.replace(/([A-Z])/g, ' $1').trim()}
                                                 </label>
-                                                <span className={`text-xs font-black px-2 py-0.5 rounded ${Number(val) >= 4 ? 'bg-success-100 text-success-700' : Number(val) >= 3 ? 'bg-indigo-100 text-indigo-700' : 'bg-rose-100 text-rose-700'}`}>
+                                                <span className={`text-xs font-black px-2 py-0.5 rounded ${Number(val) >= 4 ? 'bg-success-100 text-success-700' : Number(val) >= 3 ? 'bg-indigo-100 text-indigo-700' : 'bg-rose-100 text-rose-700'} `}>
                                                     {val}/5
                                                 </span>
                                             </div>
@@ -476,14 +478,14 @@ export default function WorkReportValidator({ reports, onApprove, onAddComment }
                                                 type="range"
                                                 min="1"
                                                 max="5"
-                                                step="0.5"
-                                                value={val as number}
-                                                onChange={(e) => setEvaluation({ ...evaluation, [key]: Number(e.target.value) })}
+                                                step="1"
+                                                value={Number(val)}
+                                                onChange={(e) => setEvaluation(prev => ({ ...prev, [key]: Number(e.target.value) }))}
                                                 className="w-full h-2 bg-secondary-200 rounded-lg appearance-none cursor-pointer accent-primary-600"
                                             />
                                             <div className="flex justify-between text-[10px] text-secondary-400 font-bold uppercase mt-1">
-                                                <span>Needs Improvement</span>
-                                                <span>Outstanding</span>
+                                                <span>Poor</span>
+                                                <span>Excellent</span>
                                             </div>
                                         </div>
                                     ))}

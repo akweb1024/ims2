@@ -165,27 +165,28 @@ export const GET = authorizedRoute(
             ]);
 
             // HR Stats
-
             let hrStats: any = null;
             if (role !== 'CUSTOMER' && role !== 'AGENCY') {
+                // Fetch profile first without includes to avoid potential relation errors
                 const profile = await prisma.employeeProfile.findUnique({
-                    where: { userId },
-                    include: {
-                        _count: { select: { attendance: true, workReports: true, leaveRequests: true } }
-                    }
+                    where: { userId }
                 });
 
                 if (profile) {
                     const today = new Date();
                     today.setHours(0, 0, 0, 0);
-                    const [todayAttendance, pendingLeaves] = await Promise.all([
+
+                    // Run queries in parallel for performance
+                    const [todayAttendance, pendingLeaves, totalAttendance, totalReports] = await Promise.all([
                         prisma.attendance.findFirst({ where: { employeeId: profile.id, date: { gte: today } } }),
-                        prisma.leaveRequest.count({ where: { employeeId: profile.id, status: 'PENDING' } })
+                        prisma.leaveRequest.count({ where: { employeeId: profile.id, status: 'PENDING' } }),
+                        prisma.attendance.count({ where: { employeeId: profile.id } }),
+                        prisma.workReport.count({ where: { employeeId: profile.id } })
                     ]);
 
                     hrStats = {
-                        totalAttendance: profile._count.attendance,
-                        totalReports: profile._count.workReports,
+                        totalAttendance,
+                        totalReports,
                         hasCheckedIn: !!todayAttendance?.checkIn,
                         hasCheckedOut: !!todayAttendance?.checkOut,
                         pendingLeaves

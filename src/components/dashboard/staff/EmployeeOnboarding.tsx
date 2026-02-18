@@ -53,7 +53,11 @@ export default function EmployeeOnboarding() {
                         </div>
 
                         <div className="prose prose-secondary max-w-none prose-headings:font-black prose-headings:text-secondary-900 prose-p:text-secondary-600 prose-li:text-secondary-600">
-                            <div dangerouslySetInnerHTML={{ __html: activeModule.content }} />
+                            <div dangerouslySetInnerHTML={{
+                                __html: activeModule.content.replace(/{{COMPANY_NAME}}/g,
+                                    JSON.parse(localStorage.getItem('user') || '{}')?.company?.name || 'Our Company'
+                                )
+                            }} />
                         </div>
 
                         <div className="mt-16 flex justify-center border-t border-secondary-50 pt-10">

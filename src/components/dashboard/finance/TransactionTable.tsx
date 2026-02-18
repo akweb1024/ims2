@@ -16,6 +16,7 @@ interface TransactionTableProps {
         date: string;
     };
     loading: boolean;
+    onRefresh?: () => void;
 }
 
 export default function TransactionTable({
@@ -25,7 +26,8 @@ export default function TransactionTable({
     onSearch,
     onFilter,
     filters,
-    loading
+    loading,
+    onRefresh
 }: TransactionTableProps) {
     const [searchTerm, setSearchTerm] = useState('');
     const [sortField, setSortField] = useState('date');
@@ -110,6 +112,15 @@ export default function TransactionTable({
                         <option value="OFFICE_SUPPLIES">Verify Supplies</option>
                         <option value="OTHER">Other</option>
                     </select>
+                    {onRefresh && (
+                        <button
+                            onClick={onRefresh}
+                            className="p-2 bg-secondary-100 text-secondary-600 rounded-xl hover:bg-primary-100 hover:text-primary-600 transition-colors ml-2"
+                            title="Sync / Refresh Data"
+                        >
+                            🔄
+                        </button>
+                    )}
                 </div>
             </div>
 
@@ -213,7 +224,14 @@ export default function TransactionTable({
             {/* Simple Pagination Footer (Placeholder for now since API sends all) */}
             <div className="px-6 py-3 border-t border-secondary-100 bg-secondary-50 text-xs text-secondary-500 flex justify-between items-center">
                 <span>Showing <strong>{sortedTransactions.length}</strong> transactions</span>
-                <span className="text-[10px] uppercase font-bold tracking-wider text-secondary-400">Real-time Data</span>
+                <span
+                    onClick={onRefresh}
+                    className={`text-[10px] uppercase font-bold tracking-wider text-secondary-400 flex items-center gap-1 ${onRefresh ? 'cursor-pointer hover:text-primary-600' : ''}`}
+                    title={onRefresh ? "Click to Sync" : "Live"}
+                >
+                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                    {onRefresh ? "Synced Just Now" : "Real-time Data"}
+                </span>
             </div>
         </div>
     );

@@ -4,7 +4,13 @@ import { auth } from '@/lib/nextauth';
 import { prisma } from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';
 
-export async function updateWorkReportStatus(reportId: string, status: string, comment?: string) {
+export async function updateWorkReportStatus(
+    reportId: string,
+    status: string,
+    comment?: string,
+    managerRating?: number,
+    evaluation?: any
+) {
     const session = await auth();
     if (!session?.user?.id) {
         return { success: false, error: 'Unauthorized' };
@@ -18,6 +24,12 @@ export async function updateWorkReportStatus(reportId: string, status: string, c
                 data: {
                     status,
                     managerComment: comment,
+                    managerRating,
+                    evaluation,
+                    // If evaluation has attendance/discipline, update separate fields too if needed
+                    // For now, relies on evaluation JSON or we can extract:
+                    attendanceStatus: evaluation?.attendance ? (evaluation.attendance >= 3 ? 'PRESENT' : 'ABSENT') : undefined,
+                    disciplineStatus: evaluation?.discipline ? (evaluation.discipline >= 3 ? 'GOOD' : 'VIOLATION') : undefined
                 },
             });
 

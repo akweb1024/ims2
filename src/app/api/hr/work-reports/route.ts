@@ -497,7 +497,9 @@ export const PATCH = authorizedRoute(
                     pointsEarned: finalPointsEarned,
                     tasksSnapshot: updatedTasksSnapshot,
                     ...(managerRating && { managerRating: parseInt(managerRating) }),
-                    evaluation
+                    evaluation,
+                    attendanceStatus: evaluation?.attendance ? (Number(evaluation.attendance) >= 3 ? 'PRESENT' : 'ABSENT') : undefined,
+                    disciplineStatus: evaluation?.discipline ? (Number(evaluation.discipline) >= 3 ? 'GOOD' : 'WARNING') : undefined
                 }
             });
 

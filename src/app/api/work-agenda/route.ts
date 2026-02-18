@@ -132,9 +132,21 @@ export const POST = authorizedRoute(
                 visibility
             } = body;
 
+            let targetEmployeeId = employeeId;
+
+            // If no employeeId provided, infer from current user
+            if (!targetEmployeeId) {
+                const profile = await prisma.employeeProfile.findUnique({
+                    where: { userId: user.id },
+                    select: { id: true }
+                });
+                if (!profile) return createErrorResponse('Employee profile not found', 404);
+                targetEmployeeId = profile.id;
+            }
+
             // Validation
-            if (!employeeId || !date || !agenda) {
-                return createErrorResponse('Missing required fields', 400);
+            if (!date || !agenda) {
+                return createErrorResponse('Missing required fields (date, agenda)', 400);
             }
 
             // Check permissions
@@ -143,25 +155,29 @@ export const POST = authorizedRoute(
                     where: { userId: user.id },
                     select: { id: true }
                 });
-                if (employeeId !== profile?.id) {
+                if (targetEmployeeId !== profile?.id) {
                     return createErrorResponse('Forbidden: Can only create your own work plans', 403);
                 }
             } else if (['MANAGER', 'TEAM_LEADER'].includes(user.role)) {
                 const downlineIds = await getDownlineUserIds(user.id, user.companyId || undefined);
                 const employeeProfiles = await prisma.employeeProfile.findMany({
-                    where: { userId: { in: downlineIds } },
+                    where: { userId: { in: (await getDownlineUserIds(user.id, user.companyId || undefined)).concat([user.id]) } }, // Allow self + team
                     select: { id: true }
                 });
                 const profileIds = employeeProfiles.map(p => p.id);
 
-                if (!profileIds.includes(employeeId)) {
-                    return createErrorResponse('Forbidden: Not in your team', 403);
+                if (!profileIds.includes(targetEmployeeId)) {
+                    // Check if it is self?
+                    const myProfile = await prisma.employeeProfile.findUnique({ where: { userId: user.id }, select: { id: true } });
+                    if (myProfile?.id !== targetEmployeeId) {
+                        return createErrorResponse('Forbidden: Not in your team', 403);
+                    }
                 }
             }
 
             const workPlan = await prisma.workPlan.create({
                 data: {
-                    employeeId,
+                    employeeId: targetEmployeeId,
                     date: new Date(date),
                     agenda,
                     strategy,
@@ -171,7 +187,7 @@ export const POST = authorizedRoute(
                     linkedGoalId: linkedGoalId || null,
                     visibility: visibility || 'MANAGER',
                     status: 'SHARED',
-                    companyId: user.companyId || ''
+                    companyId: user.companyId || undefined
                 } as any,
                 include: {
                     employee: {
