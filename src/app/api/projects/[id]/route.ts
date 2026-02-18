@@ -5,9 +5,9 @@ import { createErrorResponse } from '@/lib/api-utils';
 
 export const GET = authorizedRoute(
     ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'TEAM_LEADER', 'EXECUTIVE'],
-    async (req: NextRequest, user, { params }: { params: { id: string } }) => {
+    async (req: NextRequest, user, { params }: { params: Promise<{ id: string }> }) => {
         try {
-            const id = params.id;
+            const id = (await params).id;
             const project = await prisma.project.findUnique({
                 where: { id },
                 include: {
@@ -48,9 +48,9 @@ export const GET = authorizedRoute(
 
 export const PUT = authorizedRoute(
     ['SUPER_ADMIN', 'ADMIN', 'MANAGER'],
-    async (req: NextRequest, user, { params }: { params: { id: string } }) => {
+    async (req: NextRequest, user, { params }: { params: Promise<{ id: string }> }) => {
         try {
-            const id = params.id;
+            const id = (await params).id;
             const body = await req.json();
 
             // validation logic omitted for brevity, ensure user has rights
@@ -80,10 +80,11 @@ export const PUT = authorizedRoute(
 
 export const DELETE = authorizedRoute(
     ['SUPER_ADMIN', 'ADMIN'],
-    async (req: NextRequest, user, { params }: { params: { id: string } }) => {
+    async (req: NextRequest, user, { params }: { params: Promise<{ id: string }> }) => {
         try {
             // Check existence and permissions
-            await prisma.project.delete({ where: { id: params.id } });
+            const id = (await params).id;
+            await prisma.project.delete({ where: { id } });
             return NextResponse.json({ success: true });
         } catch (error) {
             return createErrorResponse(error);

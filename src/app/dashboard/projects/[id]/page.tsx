@@ -3,12 +3,13 @@
 import { useProject, useProjectMutations } from '@/hooks/useProjects'; // Need to ensure hooks export specific mutations
 import { useRouter } from 'next/navigation';
 import { toast } from 'react-hot-toast';
-import { useState } from 'react';
+import { useState, use } from 'react';
 import { Calendar, Users, Briefcase, CheckCircle, AlertCircle, Clock, Trash2, Edit } from 'lucide-react';
 import Link from 'next/link';
 
-export default function ProjectDetailsPage({ params }: { params: { id: string } }) {
-    const { data: project, isLoading } = useProject(params.id);
+export default function ProjectDetailsPage({ params }: { params: Promise<{ id: string }> }) {
+    const { id } = use(params);
+    const { data: project, isLoading } = useProject(id);
     const router = useRouter();
     // Assuming deleteProject is available in useProjectMutations
     const { deleteProject } = useProjectMutations();

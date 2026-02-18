@@ -5,9 +5,9 @@ import { createErrorResponse } from '@/lib/api-utils';
 
 export const POST = authorizedRoute(
     ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'TEAM_LEADER', 'EXECUTIVE'],
-    async (req: NextRequest, user, { params }: { params: { id: string } }) => {
+    async (req: NextRequest, user, { params }: { params: Promise<{ id: string }> }) => {
         try {
-            const issueId = params.id;
+            const issueId = (await params).id;
             const body = await req.json();
 
             const followUp = await prisma.issueFollowUp.create({
