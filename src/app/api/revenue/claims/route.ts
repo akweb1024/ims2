@@ -51,8 +51,13 @@ export const POST = authorizedRoute(['ADMIN', 'MANAGER', 'TEAM_LEADER', 'HR', 'E
         // Logic to handle claiming via Payment ID
         if (!revenueTransactionId && paymentId) {
             // Check if payment exists
-            const payment = await prisma.payment.findUnique({
-                where: { id: paymentId },
+            const payment = await prisma.payment.findFirst({
+                where: {
+                    OR: [
+                        { id: paymentId },
+                        { razorpayPaymentId: paymentId }
+                    ]
+                },
                 include: { revenueTransactions: true }
             });
 

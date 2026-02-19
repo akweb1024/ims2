@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { X, Calendar, DollarSign, Quote } from 'lucide-react';
 
 interface MilestoneModalProps {
@@ -20,13 +20,31 @@ interface MilestoneModalProps {
 }
 
 export default function MilestoneModal({ isOpen, onClose, projectId, onSuccess, milestone }: MilestoneModalProps) {
-    const [name, setName] = useState(milestone?.name || '');
-    const [description, setDescription] = useState(milestone?.description || '');
-    const [dueDate, setDueDate] = useState(milestone?.dueDate ? new Date(milestone.dueDate).toISOString().split('T')[0] : '');
-    const [paymentAmount, setPaymentAmount] = useState(milestone?.paymentAmount?.toString() || '0');
-    const [status, setStatus] = useState(milestone?.status || 'PENDING');
-    const [isPaid, setIsPaid] = useState(milestone?.isPaid || false);
+    const [name, setName] = useState('');
+    const [description, setDescription] = useState('');
+    const [dueDate, setDueDate] = useState('');
+    const [paymentAmount, setPaymentAmount] = useState('0');
+    const [status, setStatus] = useState('PENDING');
+    const [isPaid, setIsPaid] = useState(false);
     const [loading, setLoading] = useState(false);
+
+    useEffect(() => {
+        if (milestone) {
+            setName(milestone.name);
+            setDescription(milestone.description || '');
+            setDueDate(milestone.dueDate ? new Date(milestone.dueDate).toISOString().split('T')[0] : '');
+            setPaymentAmount(milestone.paymentAmount?.toString() || '0');
+            setStatus(milestone.status);
+            setIsPaid(milestone.isPaid);
+        } else {
+            setName('');
+            setDescription('');
+            setDueDate('');
+            setPaymentAmount('0');
+            setStatus('PENDING');
+            setIsPaid(false);
+        }
+    }, [milestone, isOpen]);
 
     if (!isOpen) return null;
 
