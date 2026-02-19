@@ -115,11 +115,37 @@ export const POST = authorizedRoute(['ADMIN', 'MANAGER', 'TEAM_LEADER', 'HR', 'E
             return NextResponse.json({ error: 'Transaction not found or access denied' }, { status: 404 });
         }
 
+        // Resolve Employee ID
+        let targetEmployeeId = employeeId;
+        if (!targetEmployeeId) {
+            const profile = await prisma.employeeProfile.findUnique({
+                where: { userId: user.id }
+            });
+            if (profile) {
+                targetEmployeeId = profile.id;
+            } else {
+                // Auto-create profile if missing? Or error?
+                // For now, let's try to find or create to ensure we have an ID
+                const newProfile = await prisma.employeeProfile.create({
+                    data: { userId: user.id }
+                });
+                targetEmployeeId = newProfile.id;
+            }
+        }
+
+        if (!targetEmployeeId) return NextResponse.json({ error: 'Employee profile required' }, { status: 400 });
+
+        // Resolve Claim Amount
+        let finalClaimAmount = Number(claimAmount);
+        if (isNaN(finalClaimAmount) || finalClaimAmount <= 0) {
+            finalClaimAmount = transaction.amount;
+        }
+
         // Check if employee already claimed this transaction
         const existing = await prisma.revenueClaim.findFirst({
             where: {
                 revenueTransactionId,
-                employeeId,
+                employeeId: targetEmployeeId,
                 status: { not: 'REJECTED' }
             }
         });
@@ -131,10 +157,10 @@ export const POST = authorizedRoute(['ADMIN', 'MANAGER', 'TEAM_LEADER', 'HR', 'E
         const claim = await prisma.revenueClaim.create({
             data: {
                 revenueTransactionId,
-                employeeId,
+                employeeId: targetEmployeeId,
                 workReportId,
-                claimAmount: Number(claimAmount),
-                claimReason,
+                claimAmount: finalClaimAmount,
+                claimReason: claimReason || 'Manual Claim',
                 status: 'PENDING'
             }
         });
