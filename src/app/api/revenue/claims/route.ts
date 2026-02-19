@@ -191,22 +191,38 @@ export const PUT = authorizedRoute(['ADMIN', 'SUPER_ADMIN', 'MANAGER', 'FINANCE_
             }
         });
 
-        // If approved, update work report revenue if linked
-        if (status === 'APPROVED' && claim.workReportId) {
-            // Recalculate work report revenue from all approved claims
-            const allApprovedClaims = await prisma.revenueClaim.findMany({
-                where: {
-                    workReportId: claim.workReportId,
-                    status: 'APPROVED'
-                }
-            });
+        // If approved, update work report revenue if linked AND verify the transaction
+        if (status === 'APPROVED') {
+            // 1. Verify the underlying Revenue Transaction
+            if (claim.revenueTransactionId) {
+                await prisma.revenueTransaction.update({
+                    where: { id: claim.revenueTransactionId },
+                    data: {
+                        verificationStatus: 'VERIFIED',
+                        status: 'VERIFIED', // Ensure main status reflects this too
+                        verifiedAt: new Date(),
+                        approvedByManagerId: user.id
+                    }
+                });
+            }
 
-            const totalRevenue = allApprovedClaims.reduce((sum: number, c: any) => sum + Number(c.claimAmount), 0);
+            // 2. Update Work Report Revenue
+            if (claim.workReportId) {
+                // Recalculate work report revenue from all approved claims
+                const allApprovedClaims = await prisma.revenueClaim.findMany({
+                    where: {
+                        workReportId: claim.workReportId,
+                        status: 'APPROVED'
+                    }
+                });
 
-            await prisma.workReport.update({
-                where: { id: claim.workReportId },
-                data: { revenueGenerated: totalRevenue }
-            });
+                const totalRevenue = allApprovedClaims.reduce((sum: number, c: any) => sum + Number(c.claimAmount), 0);
+
+                await prisma.workReport.update({
+                    where: { id: claim.workReportId },
+                    data: { revenueGenerated: totalRevenue }
+                });
+            }
         }
 
         return NextResponse.json(claim);
