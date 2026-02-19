@@ -314,7 +314,7 @@ function NewTaskForm() {
                                     <option value="LOW">Low</option>
                                     <option value="MEDIUM">Medium</option>
                                     <option value="HIGH">High</option>
-                                    <option value="CRITICAL">Critical</option>
+                                    <option value="URGENT">Critical / Urgent</option>
                                 </select>
                             </div>
                         </div>
@@ -335,7 +335,7 @@ function NewTaskForm() {
                                 >
                                     <option value="PENDING">Pending</option>
                                     <option value="IN_PROGRESS">In Progress</option>
-                                    <option value="TESTING">Testing</option>
+                                    <option value="UNDER_REVIEW">Testing / Review</option>
                                     <option value="COMPLETED">Completed</option>
                                     <option value="CANCELLED">Cancelled</option>
                                 </select>
