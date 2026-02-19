@@ -39,6 +39,51 @@ export default function WorkAssignmentManager({ userId, view = 'received', canAs
     const [selectedStatus, setSelectedStatus] = useState<'ALL' | 'PENDING' | 'IN_PROGRESS' | 'COMPLETED'>('ALL');
     const [selectedPriority, setSelectedPriority] = useState<'ALL' | 'HIGH' | 'MEDIUM' | 'LOW'>('ALL');
     const [showCreateModal, setShowCreateModal] = useState(false);
+    const [creating, setCreating] = useState(false);
+    const [newTask, setNewTask] = useState({
+        title: '',
+        description: '',
+        dueDate: '',
+        priority: 'MEDIUM' as 'HIGH' | 'MEDIUM' | 'LOW',
+        estimatedEffort: ''
+    });
+
+    const handleCreateTask = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setCreating(true);
+        try {
+            const res = await fetch('/api/work-assignments', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    userId,
+                    ...newTask,
+                    estimatedEffort: newTask.estimatedEffort ? parseFloat(newTask.estimatedEffort) : undefined
+                })
+            });
+
+            if (res.ok) {
+                alert('Task assigned successfully!');
+                setShowCreateModal(false);
+                setNewTask({
+                    title: '',
+                    description: '',
+                    dueDate: '',
+                    priority: 'MEDIUM',
+                    estimatedEffort: ''
+                });
+                fetchTasks();
+            } else {
+                const err = await res.json();
+                alert(`Failed to assign task: ${err.error || 'Unknown error'}`);
+            }
+        } catch (error) {
+            console.error('Error creating task:', error);
+            alert('Network error while assigning task');
+        } finally {
+            setCreating(false);
+        }
+    };
 
     useEffect(() => {
         fetchTasks();
@@ -169,8 +214,8 @@ export default function WorkAssignmentManager({ userId, view = 'received', canAs
                                         key={v}
                                         onClick={() => setSelectedView(v as any)}
                                         className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${selectedView === v
-                                                ? 'bg-primary-600 text-white'
-                                                : 'bg-secondary-100 text-secondary-600 hover:bg-secondary-200'
+                                            ? 'bg-primary-600 text-white'
+                                            : 'bg-secondary-100 text-secondary-600 hover:bg-secondary-200'
                                             }`}
                                     >
                                         {v.charAt(0).toUpperCase() + v.slice(1)}
@@ -187,8 +232,8 @@ export default function WorkAssignmentManager({ userId, view = 'received', canAs
                                     key={status}
                                     onClick={() => setSelectedStatus(status as any)}
                                     className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${selectedStatus === status
-                                            ? 'bg-primary-600 text-white'
-                                            : 'bg-secondary-100 text-secondary-600 hover:bg-secondary-200'
+                                        ? 'bg-primary-600 text-white'
+                                        : 'bg-secondary-100 text-secondary-600 hover:bg-secondary-200'
                                         }`}
                                 >
                                     {status.replace('_', ' ')}
@@ -204,8 +249,8 @@ export default function WorkAssignmentManager({ userId, view = 'received', canAs
                                     key={priority}
                                     onClick={() => setSelectedPriority(priority as any)}
                                     className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${selectedPriority === priority
-                                            ? 'bg-primary-600 text-white'
-                                            : 'bg-secondary-100 text-secondary-600 hover:bg-secondary-200'
+                                        ? 'bg-primary-600 text-white'
+                                        : 'bg-secondary-100 text-secondary-600 hover:bg-secondary-200'
                                         }`}
                                 >
                                     {priority}
@@ -290,7 +335,100 @@ export default function WorkAssignmentManager({ userId, view = 'received', canAs
 
             {/* Create Modal */}
             {showCreateModal && (
-                <div>Create Assignment Modal</div>
+                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                    <div className="bg-white rounded-3xl w-full max-w-md overflow-hidden shadow-2xl animate-in zoom-in duration-200">
+                        <div className="bg-secondary-50 p-6 border-b border-secondary-100 flex justify-between items-center">
+                            <h3 className="text-xl font-bold text-secondary-900">Assign New Task</h3>
+                            <button
+                                onClick={() => setShowCreateModal(false)}
+                                className="text-secondary-400 hover:text-secondary-600 transition-colors"
+                            >
+                                ✕
+                            </button>
+                        </div>
+
+                        <form onSubmit={handleCreateTask} className="p-6 space-y-4">
+                            <div>
+                                <label className="label-premium">Task Title <span className="text-red-500">*</span></label>
+                                <input
+                                    type="text"
+                                    required
+                                    className="input-premium"
+                                    placeholder="e.g., Complete Monthly Report"
+                                    value={newTask.title}
+                                    onChange={e => setNewTask({ ...newTask, title: e.target.value })}
+                                />
+                            </div>
+
+                            <div>
+                                <label className="label-premium">Description</label>
+                                <textarea
+                                    className="input-premium min-h-[100px]"
+                                    placeholder="Add details about the task..."
+                                    value={newTask.description}
+                                    onChange={e => setNewTask({ ...newTask, description: e.target.value })}
+                                />
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="label-premium">Due Date <span className="text-red-500">*</span></label>
+                                    <input
+                                        type="date"
+                                        required
+                                        className="input-premium"
+                                        min={new Date().toISOString().split('T')[0]}
+                                        value={newTask.dueDate}
+                                        onChange={e => setNewTask({ ...newTask, dueDate: e.target.value })}
+                                    />
+                                </div>
+                                <div>
+                                    <label className="label-premium">Priority</label>
+                                    <select
+                                        className="input-premium"
+                                        value={newTask.priority}
+                                        onChange={e => setNewTask({ ...newTask, priority: e.target.value as any })}
+                                    >
+                                        <option value="LOW">Low</option>
+                                        <option value="MEDIUM">Medium</option>
+                                        <option value="HIGH">High</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className="label-premium">Est. Effort (Hours)</label>
+                                <input
+                                    type="number"
+                                    className="input-premium"
+                                    placeholder="e.g., 2.5"
+                                    step="0.5"
+                                    min="0"
+                                    value={newTask.estimatedEffort}
+                                    onChange={e => setNewTask({ ...newTask, estimatedEffort: e.target.value })}
+                                />
+                            </div>
+
+                            <div className="pt-4 flex justify-end gap-3">
+                                <button
+                                    type="button"
+                                    onClick={() => setShowCreateModal(false)}
+                                    className="btn btn-secondary"
+                                    disabled={creating}
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="submit"
+                                    className="btn btn-primary"
+                                    disabled={creating}
+                                >
+                                    {creating ? 'Assigning...' : 'Assign Task'}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
             )}
         </div>
     );
