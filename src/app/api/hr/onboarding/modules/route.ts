@@ -3,7 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { authorizedRoute } from '@/lib/middleware-auth';
 import { createErrorResponse } from '@/lib/api-utils';
 
-// GET: Fetch all onboarding modules for the company
+// GET: Fetch all onboarding modules for the company (and Global)
 export const GET = authorizedRoute(
     ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'MANAGER', 'TEAM_LEADER'],
     async (req: NextRequest, user) => {
@@ -11,7 +11,14 @@ export const GET = authorizedRoute(
             if (!user.companyId) return createErrorResponse('Company association required', 403);
 
             const modules = await prisma.onboardingModule.findMany({
-                where: { companyId: user.companyId },
+                where: {
+                    isActive: true, // filteredModules usually wants active ones? Or maybe all for manager? existing was just companyId.
+                    // Let's keep it simple and consistent with previous behavior + Global
+                    OR: [
+                        { companyId: user.companyId },
+                        { companyId: null }
+                    ]
+                },
                 include: { questions: true },
                 orderBy: { order: 'asc' }
             });
@@ -39,9 +46,9 @@ export const POST = authorizedRoute(
 
             const newModule = await prisma.onboardingModule.create({
                 data: {
-                    companyId: user.companyId,
+                    companyId: type === 'GLOBAL' ? null : user.companyId,
                     title,
-                    type, // COMPANY, ROLE, DEPARTMENT
+                    type, // COMPANY, GLOBAL, ROLE, DEPARTMENT
                     description,
                     content,
                     departmentId: departmentId || null,

@@ -1622,13 +1622,13 @@ model OnboardingModule {
   description            String?
   content                String
   departmentId           String?
-  companyId              String
+  companyId              String?
   requiredForDesignation String?
   order                  Int                  @default(0)
   isActive               Boolean              @default(true)
   createdAt              DateTime             @default(now())
   updatedAt              DateTime             @updatedAt
-  company                Company              @relation(fields: [companyId], references: [id])
+  company                Company?             @relation(fields: [companyId], references: [id])
   department             Department?          @relation(fields: [departmentId], references: [id])
   progress               OnboardingProgress[]
   questions              QuizQuestion[]

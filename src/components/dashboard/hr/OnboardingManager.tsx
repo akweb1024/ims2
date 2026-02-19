@@ -115,6 +115,7 @@ export default function OnboardingManager() {
                                     title="Module Type"
                                 >
                                     <option value="COMPANY">Company-wide</option>
+                                    <option value="GLOBAL">Global / All Companies</option>
                                     <option value="DEPARTMENT">Department Specific</option>
                                     <option value="ROLE">Role Specific</option>
                                 </select>
@@ -256,7 +257,7 @@ export default function OnboardingManager() {
                     <div key={module.id} className="card-premium p-6 group hover:border-primary-200 transition-all flex flex-col justify-between">
                         <div>
                             <div className="flex justify-between items-start mb-4">
-                                <div className={`p-3 rounded-2xl ${module.type === 'COMPANY' ? 'bg-indigo-50 text-indigo-600' : module.type === 'DEPARTMENT' ? 'bg-orange-50 text-orange-600' : 'bg-success-50 text-success-600'}`}>
+                                <div className={`p-3 rounded-2xl ${module.type === 'COMPANY' ? 'bg-indigo-50 text-indigo-600' : module.type === 'GLOBAL' ? 'bg-purple-50 text-purple-600' : module.type === 'DEPARTMENT' ? 'bg-orange-50 text-orange-600' : 'bg-success-50 text-success-600'}`}>
                                     <BookOpen size={20} />
                                 </div>
                                 <div className="flex gap-2">

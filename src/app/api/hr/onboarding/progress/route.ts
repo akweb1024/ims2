@@ -30,19 +30,21 @@ export const GET = authorizedRoute(
             // Fetch all relevant modules
             const allModules = await prisma.onboardingModule.findMany({
                 where: {
-                    companyId,
                     isActive: true,
                     OR: [
-                        { type: 'COMPANY' },
-                        {
-                            type: 'DEPARTMENT',
-                            departmentId: departmentId
-                        },
-                        {
-                            type: 'ROLE',
-                            requiredForDesignation: employee.designation
-                        }
-                    ]
+                        { companyId }, // Company Specific
+                        { companyId: null }, // Global Modules
+                    ],
+                    // Apply filtering logic in application or refine query if needed
+                    // For now, let's fetch possibly relevant and filter in memory if complex OR logic is tricky with standard prisma in one go
+                    // Actually, let's just stick to the specific conditions as requested:
+                    // OR: [
+                    //     { companyId, type: 'COMPANY' },
+                    //     { companyId: null }, // Global
+                    //     { companyId, type: 'DEPARTMENT', departmentId },
+                    //     { companyId, type: 'ROLE', requiredForDesignation: employee.designation }
+                    // ]
+                    // Simplified query to ensure we capture all potential matches:
                 },
                 include: {
                     questions: {
@@ -51,6 +53,17 @@ export const GET = authorizedRoute(
                 },
                 orderBy: { order: 'asc' }
             });
+
+            // Filter in memory for specific Department/Role logic if needed, OR refine the query:
+            // The previous query had specific OR conditions. Let's adapt that to include global.
+            const filteredModules = allModules.filter(m => {
+                if (!m.companyId) return true; // Global
+                if (m.type === 'COMPANY') return true;
+                if (m.type === 'DEPARTMENT' && m.departmentId === departmentId) return true;
+                if (m.type === 'ROLE' && m.requiredForDesignation === employee.designation) return true;
+                return false;
+            });
+
 
             // Fetch existing progress
             const existingProgress = await prisma.onboardingProgress.findMany({
@@ -63,7 +76,7 @@ export const GET = authorizedRoute(
             let isPreviousCompleted = true; // First one is unlocked by default
             const result = [];
 
-            for (const mod of allModules) {
+            for (const mod of filteredModules) {
                 let status = 'LOCKED';
                 let score = null;
                 const currentProgress = progressMap.get(mod.id);
@@ -91,9 +104,9 @@ export const GET = authorizedRoute(
                 // Update IsPrevious for next iteration
                 isPreviousCompleted = (status === 'COMPLETED');
 
-                // Replace Keywords (e.g., {{COMPANY_NAME}})
+                // Replace Keywords (e.g., {{COMPANY_NAME}}) - Case insensitive and robust
                 const companyName = userContext.company?.name || 'the Company';
-                const processedContent = (mod.content || '').replace(/\{\{COMPANY_NAME\}\}/g, companyName);
+                const processedContent = (mod.content || '').replace(/\{\{\s*COMPANY_NAME\s*\}\}/gi, companyName);
 
                 result.push({
                     ...mod,

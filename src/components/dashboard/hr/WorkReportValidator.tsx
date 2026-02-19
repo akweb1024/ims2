@@ -40,6 +40,26 @@ export default function WorkReportValidator({ reports, onApprove, onAddComment }
         // ((Score + 15) / 30) * 9 + 1
         const calculatedRating = Math.round((((totalScore + 15) / 30) * 9) + 1);
         setManagerRating(Math.max(1, Math.min(10, calculatedRating)));
+
+        // Generate feedback based on metrics
+        const feedbackParts = [];
+        
+        // Overall sentiment
+        if (totalScore >= 10) feedbackParts.push("Exceptional performance across the board.");
+        else if (totalScore >= 5) feedbackParts.push("Strong performance with good results.");
+        else if (totalScore >= 0) feedbackParts.push("Satisfactory performance, meeting expectations.");
+        else if (totalScore >= -5) feedbackParts.push("Performance needs improvement in some areas.");
+        else feedbackParts.push("Performance is below expectations. Immediate improvement required.");
+
+        // Specific highlights
+        if (evaluation.workQuality >= 2) feedbackParts.push("Great work quality.");
+        if (evaluation.efficiency >= 2) feedbackParts.push("Highly efficient execution.");
+        if (evaluation.attendance < 0) feedbackParts.push("Attendance needs attention.");
+        if (evaluation.discipline < 0) feedbackParts.push("Discipline requires improvement.");
+        if (evaluation.instructionCompliance < 0) feedbackParts.push("Must follow instructions more closely.");
+
+        setManagerComment(feedbackParts.join(" "));
+
     }, [evaluation, showValidationModal]);
 
     const openValidationModal = (report: any) => {

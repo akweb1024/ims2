@@ -203,23 +203,9 @@ export async function PATCH(
                         const val = parseFloat(body[field]?.toString());
                         updateData[field] = isNaN(val) ? null : val;
                     } else if (field === 'projectManagerId') {
-                        // For UPDATE with ITProjectUpdateInput, use relation fields
-                        if (body[field]) {
-                            updateData.projectManager = { connect: { id: body[field] } };
-                        } else {
-                            updateData.projectManager = { disconnect: true };
-                        }
-                        // Don't add projectManagerId to updateData - skip to next field
-                        continue;
+                        updateData.projectManagerId = body[field] || null;
                     } else if (field === 'teamLeadId') {
-                        // For UPDATE with ITProjectUpdateInput, use relation fields
-                        if (body[field]) {
-                            updateData.teamLead = { connect: { id: body[field] } };
-                        } else {
-                            updateData.teamLead = { disconnect: true };
-                        }
-                        // Don't add teamLeadId to updateData - skip to next field
-                        continue;
+                        updateData.teamLeadId = body[field] || null;
                     } else {
                         updateData[field] = body[field];
                     }
