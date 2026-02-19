@@ -101,7 +101,39 @@ export default function StaffProfileView({ user, fullProfile }: StaffProfileView
                         </div>
                         <div className="grid grid-cols-3 border-b border-secondary-50 pb-2">
                             <dt className="text-xs font-bold text-secondary-400 uppercase pt-1">DOB</dt>
-                            <dd className="col-span-2 text-sm font-bold text-secondary-900"><FormattedDate date={fullProfile.dateOfBirth} /></dd>
+                            <dd className="col-span-2 text-sm font-bold text-secondary-900 flex items-center justify-between group">
+                                <span>{fullProfile.dateOfBirth ? <FormattedDate date={fullProfile.dateOfBirth} /> : '--'}</span>
+                                <button
+                                    onClick={async () => {
+                                        const current = fullProfile.dateOfBirth ? new Date(fullProfile.dateOfBirth).toISOString().split('T')[0] : '';
+                                        const newDate = prompt('Enter your Date of Birth (YYYY-MM-DD):', current);
+                                        if (newDate) {
+                                            try {
+                                                const token = localStorage.getItem('token');
+                                                const res = await fetch('/api/hr/profile/me', {
+                                                    method: 'PUT',
+                                                    headers: {
+                                                        'Content-Type': 'application/json',
+                                                        'Authorization': `Bearer ${token}`
+                                                    },
+                                                    body: JSON.stringify({ dateOfBirth: newDate })
+                                                });
+                                                if (res.ok) {
+                                                    window.location.reload();
+                                                } else {
+                                                    alert('Failed to update DOB');
+                                                }
+                                            } catch (e) {
+                                                console.error(e);
+                                                alert('Error updating DOB');
+                                            }
+                                        }
+                                    }}
+                                    className="text-xs text-primary-500 hover:text-primary-700 opacity-0 group-hover:opacity-100 transition-opacity uppercase font-bold"
+                                >
+                                    Edit
+                                </button>
+                            </dd>
                         </div>
                         <div className="grid grid-cols-3 border-b border-secondary-50 pb-2">
                             <dt className="text-xs font-bold text-secondary-400 uppercase pt-1">Blood Group</dt>

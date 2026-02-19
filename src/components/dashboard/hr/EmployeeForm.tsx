@@ -59,6 +59,7 @@ const initialFormState = {
     isActive: true,
     dateOfJoining: '',
     profilePicture: '',
+    dateOfBirth: '',
     employeeId: '',
     manualLeaveAdjustment: 0,
     initialLeaveBalance: 0,
@@ -255,6 +256,16 @@ export default function EmployeeForm({
                             placeholder="O+"
                             value={empForm.bloodGroup}
                             onChange={e => setEmpForm({ ...empForm, bloodGroup: e.target.value })}
+                        />
+                    </div>
+                    <div className="md:col-span-1">
+                        <label className="label-premium">Date of Birth</label>
+                        <input
+                            type="date"
+                            className="input-premium"
+                            title="Date of Birth"
+                            value={empForm.dateOfBirth}
+                            onChange={e => setEmpForm({ ...empForm, dateOfBirth: e.target.value })}
                         />
                     </div>
                     <div className="md:col-span-3">

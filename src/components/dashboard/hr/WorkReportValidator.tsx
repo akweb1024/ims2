@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { CheckCircle, XCircle, Grid3x3, List, Award, Clock, DollarSign, Target, AlertCircle, MessageSquare } from 'lucide-react';
 import FormattedDate from '@/components/common/FormattedDate';
 
@@ -29,6 +29,18 @@ export default function WorkReportValidator({ reports, onApprove, onAddComment }
     });
     const [commentText, setCommentText] = useState('');
     const [submitting, setSubmitting] = useState(false);
+
+    // Auto-adjust verdict based on evaluation metrics
+    useEffect(() => {
+        if (!showValidationModal) return;
+
+        const totalScore = Object.values(evaluation).reduce((sum, val) => sum + (Number(val) || 0), 0);
+        // Map range -15 to 15 (5 metrics * [-3 to 3]) to 1-10 scale
+        // Formula: ((Score - Min) / (Max - Min)) * (TargetMax - TargetMin) + TargetMin
+        // ((Score + 15) / 30) * 9 + 1
+        const calculatedRating = Math.round((((totalScore + 15) / 30) * 9) + 1);
+        setManagerRating(Math.max(1, Math.min(10, calculatedRating)));
+    }, [evaluation, showValidationModal]);
 
     const openValidationModal = (report: any) => {
         setSelectedReport(report);
@@ -470,22 +482,23 @@ export default function WorkReportValidator({ reports, onApprove, onAddComment }
                                                 <label className="text-xs font-bold text-secondary-600 uppercase tracking-wider">
                                                     {key.replace(/([A-Z])/g, ' $1').trim()}
                                                 </label>
-                                                <span className={`text-xs font-black px-2 py-0.5 rounded ${Number(val) >= 4 ? 'bg-success-100 text-success-700' : Number(val) >= 3 ? 'bg-indigo-100 text-indigo-700' : 'bg-rose-100 text-rose-700'} `}>
-                                                    {val}/5
+                                                <span className={`text-xs font-black px-2 py-0.5 rounded ${Number(val) > 0 ? 'bg-success-100 text-success-700' : Number(val) === 0 ? 'bg-secondary-200 text-secondary-700' : 'bg-rose-100 text-rose-700'} `}>
+                                                    {Number(val) > 0 ? `+${val}` : val}
                                                 </span>
                                             </div>
                                             <input
                                                 type="range"
-                                                min="1"
-                                                max="5"
+                                                min="-3"
+                                                max="3"
                                                 step="1"
                                                 value={Number(val)}
                                                 onChange={(e) => setEvaluation(prev => ({ ...prev, [key]: Number(e.target.value) }))}
                                                 className="w-full h-2 bg-secondary-200 rounded-lg appearance-none cursor-pointer accent-primary-600"
                                             />
                                             <div className="flex justify-between text-[10px] text-secondary-400 font-bold uppercase mt-1">
-                                                <span>Poor</span>
-                                                <span>Excellent</span>
+                                                <span>Poor (-3)</span>
+                                                <span>Neutral (0)</span>
+                                                <span>Excellent (+3)</span>
                                             </div>
                                         </div>
                                     ))}

@@ -66,6 +66,7 @@ export const createEmployeeSchema = z.object({
     department: z.string().optional(),
     departmentId: z.string().optional(),
     dateOfJoining: z.coerce.date(),
+    dateOfBirth: z.coerce.date().optional(),
     baseSalary: z.coerce.number().min(0),
     // Optional profile fields
     phone: z.string().optional(),

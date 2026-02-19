@@ -36,6 +36,27 @@ export const GET = authorizedRoute(
                     isActive: true,
                     lastLogin: true,
                     createdAt: true,
+                    name: true, // Also need name if not already selected
+                    employeeProfile: {
+                        select: {
+                            id: true,
+                            initialLeaveBalance: true,
+                            manualLeaveAdjustment: true,
+                            dateOfJoining: true,
+                            leaveRequests: {
+                                where: {
+                                    status: 'APPROVED',
+                                    startDate: {
+                                        gte: new Date(new Date().getFullYear(), 0, 1) // Only fetch for current year
+                                    }
+                                },
+                                select: {
+                                    startDate: true,
+                                    endDate: true
+                                }
+                            }
+                        }
+                    },
                     _count: {
                         select: {
                             assignedSubscriptions: true,

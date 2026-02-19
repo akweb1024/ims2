@@ -43,3 +43,38 @@ export const GET = authorizedRoute(
         }
     }
 );
+
+export const PUT = authorizedRoute(
+    [],
+    async (req: NextRequest, user) => {
+        try {
+            const body = await req.json();
+            const { dateOfBirth, phoneNumber, emergencyContact, bloodGroup, address, bankName, accountNumber, ifscCode } = body;
+
+            // Find profile
+            const profile = await prisma.employeeProfile.findFirst({
+                where: { userId: user.id }
+            });
+
+            if (!profile) return createErrorResponse('Profile not found', 404);
+
+            const updated = await prisma.employeeProfile.update({
+                where: { id: profile.id },
+                data: {
+                    dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : undefined,
+                    phoneNumber,
+                    emergencyContact,
+                    bloodGroup,
+                    address,
+                    bankName,
+                    accountNumber,
+                    ifscCode
+                }
+            });
+
+            return NextResponse.json(updated);
+        } catch (error) {
+            return createErrorResponse(error);
+        }
+    }
+);

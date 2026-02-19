@@ -98,6 +98,9 @@ export default function EmployeeIDCard({ employee }: { employee: any }) {
                         <p className="text-sm font-bold text-primary-600 uppercase tracking-wider">{employee.designatRef?.name || employee.designation || 'Specialist'}</p>
                         <div className="flex justify-center gap-2 mt-2">
                             <span className="px-2 py-1 bg-secondary-100 rounded text-[10px] font-mono text-secondary-600">ID: {employee.employeeId || 'N/A'}</span>
+                            <span className={`px-2 py-1 rounded text-[10px] font-bold ${employee.user.isActive ? 'bg-success-50 text-success-600' : 'bg-danger-50 text-danger-600'}`}>
+                                {employee.user.isActive ? 'ACTIVE' : 'INACTIVE'}
+                            </span>
                             {employee.bloodGroup && employee.bloodGroup !== 'N/A' && <span className="px-2 py-1 bg-danger-50 text-danger-600 rounded text-[10px] font-bold">🩸 {employee.bloodGroup}</span>}
                         </div>
                     </div>
@@ -112,10 +115,15 @@ export default function EmployeeIDCard({ employee }: { employee: any }) {
                             <span className="flex-1 font-medium">{employee.dateOfJoining ? new Date(employee.dateOfJoining).toLocaleDateString() : '--'}</span>
                         </div>
                         <div className="flex items-start gap-4 text-xs text-secondary-600 border-b border-secondary-100 pb-2">
+                            <span className="font-bold w-20 uppercase text-[10px] text-secondary-400">DOB</span>
+                            <span className="flex-1 font-medium">{employee.dateOfBirth ? new Date(employee.dateOfBirth).toLocaleDateString() : '--'}</span>
+                        </div>
+                        <div className="flex items-start gap-4 text-xs text-secondary-600 border-b border-secondary-100 pb-2">
                             <span className="font-bold w-20 uppercase text-[10px] text-secondary-400">Exp.</span>
                             <span className="flex-1 font-medium">
                                 {(() => {
-                                    const doj = employee.dateOfJoining ? new Date(employee.dateOfJoining) : new Date();
+                                    if (!employee.dateOfJoining) return '--';
+                                    const doj = new Date(employee.dateOfJoining);
                                     const now = new Date();
 
                                     // Calculate tenure

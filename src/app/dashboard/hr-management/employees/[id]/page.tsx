@@ -1161,7 +1161,8 @@ export default function EmployeeProfilePage() {
 
                                                         // Manual Adjustment included
                                                         const adjustment = employee.manualLeaveAdjustment || 0;
-                                                        const balance = accrued - taken + adjustment;
+                                                        const initial = employee.initialLeaveBalance || 0;
+                                                        const balance = initial + accrued - taken + adjustment;
 
                                                         return balance.toFixed(1);
                                                     })()}
