@@ -7,6 +7,8 @@ import { redirect } from 'next/navigation';
 import { getAuthenticatedUser } from '@/lib/auth';
 import { cookies } from 'next/headers';
 import { verifyToken } from '@/lib/auth-core';
+import { FiHelpCircle } from 'react-icons/fi';
+import Link from 'next/link';
 
 export const dynamic = 'force-dynamic';
 
@@ -104,13 +106,23 @@ export default async function IncrementManagementPage() {
     return (
         <HRClientLayout>
             <div className="p-8 space-y-6">
-                <div>
-                    <h1 className="text-3xl font-black text-secondary-900">
-                        Salary Increments
-                    </h1>
-                    <p className="text-secondary-600 mt-1">
-                        Track and manage employee salary increments and compensation pivots
-                    </p>
+                <div className="flex items-start justify-between">
+                    <div>
+                        <h1 className="text-3xl font-black text-secondary-900">
+                            Salary Increments
+                        </h1>
+                        <p className="text-secondary-600 mt-1">
+                            Track and manage employee salary increments and compensation pivots
+                        </p>
+                    </div>
+                    
+                    <Link 
+                        href="/dashboard/hr-management/increments/help"
+                        className="flex items-center gap-2 px-4 py-2 bg-secondary-50 hover:bg-secondary-100 text-secondary-700 rounded-lg text-sm font-medium transition-colors border border-secondary-200"
+                    >
+                        <FiHelpCircle className="w-4 h-4" />
+                        Process Guide
+                    </Link>
                 </div>
 
                 <Suspense fallback={<IncrementDashboardSkeleton />}>

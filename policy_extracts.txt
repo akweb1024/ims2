@@ -1,0 +1,86 @@
+--- 11_Performance_Management_System_PMS.docx ---
+11. PERFORMANCE MANAGEMENT SYSTEM (PMS)
+This Performance Management System (PMS) policy defines ITBREAKCOM Private Limited’s structured, data-driven approach to managing performance. It establishes quarterly KPIs, monthly reviews, dashboards, and scorecards, with a direct linkage between performance outcomes, compensation, promotion, development actions, and exits. This policy forms an integral part of the Board-approved HR Governance Pack.
+11.1 OBJECTIVE
+The objectives of the PMS are to:• Align individual performance with organizational goals and revenue targets• Establish measurable, outcome-based KPIs• Enable continuous feedback and course correction• Drive a high-performance culture• Ensure fairness and transparency in pay, promotion, and exit decisions
+11.2 SCOPE & APPLICABILITY
+This PMS applies to:• All employees (M1–M6)• Trainees transitioning to employee rolesConsultants are governed by contractual performance clauses.
+11.3 PERFORMANCE CYCLE
+The standard performance cycle includes:• Quarterly KPI setting• Monthly performance reviews• Mid-cycle corrections (if required)• Annual performance summary
+11.4 KPI & KRA FRAMEWORK
+• KPIs and KRAs shall be role-specific and aligned with business priorities.• KPIs may include revenue, delivery, quality, efficiency, and behavior metrics.• Each KPI shall have defined targets and weightages.• KPI scorecards shall be documented and acknowledged.
+11.5 MONTHLY REVIEWS & FEEDBACK
+• Managers shall conduct monthly one-on-one reviews.• Progress against KPIs shall be discussed.• Feedback shall be documented and shared.• Early identification of performance risks is encouraged.
+11.6 DASHBOARDS & REPORTING
+• Performance dashboards may be maintained through HRMS / CRM tools.• Dashboards shall provide visibility into individual, team, and function-level performance.• Data integrity and confidentiality shall be maintained.
+11.7 PERFORMANCE RATINGS
+• Performance shall be rated based on objective scorecards.• Rating categories may include...
+
+--- 9_Compensation_Philosophy_and_CTC_Design.docx ---
+9. COMPENSATION PHILOSOPHY & CTC DESIGN
+This Compensation Philosophy & CTC Design policy defines ITBREAK COM Private Limited’s approach to employee compensation. It establishes a pay-for-performance model with a minimum CTC threshold, a structured fixed and variable pay mix, and compliance optimization for PF, ESIC, and investor scrutiny. This policy forms an integral part of the Board-approved HR Governance Pack.
+9.1 OBJECTIVE
+The objectives of this policy are to:• Attract and retain high-quality talent• Align compensation with performance and business outcomes• Ensure internal equity and market competitiveness• Maintain statutory compliance (PF, ESIC, Bonus)• Meet investor expectations on compensation governance
+9.2 COMPENSATION PHILOSOPHY
+• The Company follows a pay-for-performance philosophy.• Compensation decisions are based on role value, M-Level, performance, and market benchmarks.• Fixed pay ensures income stability; variable pay rewards outcomes.• Compensation structures are designed for scalability and transparency.
+9.3 MINIMUM CTC THRESHOLD
+• The minimum Cost to Company (CTC) for any full-time employee shall be ₹23,000 per month.• This threshold supports statutory wage requirements and fair compensation practices.• Any exception requires Managing Director and HR approval.
+9.4 CTC STRUCTURE – FIXED & VARIABLE
+CTC shall typically comprise:Fixed Components:• Basic Salary• House Rent Allowance (HRA), where applicable• Other allowancesVariable Components:• Performance-linked incentives• Sales or revenue incentives• Annual / quarterly bonuses
+9.5 STATUTORY OPTIMIZATION (PF / ESIC)
+• PF contributions shall be calculated on Basic Salary as per law.• ESIC applicability shall be determined based on statutory wage thresholds.• CTC structures shall be designed to ensure compliance without artificial wage splitting.• Any changes in statutory limits shall be incorporated promptly.
+9.6 INTERNAL EQUITY & MARKET BENCHMARKING
+• Compensation shall be reviewed periodically f...
+
+--- 10_Variable_Pay_Incentives_and_Bonus_Policy.docx ---
+10. VARIABLE PAY, INCENTIVES & BONUS POLICY
+This policy defines the Variable Pay, Incentives & Bonus framework of ITBREAKCOM Private Limited. It establishes KPI-linked incentive structures with gatekeeper rules and ensures statutory compliance under the Payment of Bonus Act, 1965. This policy forms an integral part of the Board-approved HR Governance Pack.
+10.1 OBJECTIVE
+The objectives of this policy are to:• Align employee rewards with business performance and outcomes• Incentivize high performance and goal achievement• Maintain transparency and fairness in variable compensation• Ensure statutory compliance with bonus-related laws• Support cost discipline during growth phases
+10.2 SCOPE & APPLICABILITY
+This policy applies to:• Eligible employees as defined by role and M-Level• Trainees and consultants only where contractually specifiedStatutory bonus applicability shall be governed by law.
+10.3 COMPONENTS OF VARIABLE PAY
+Variable compensation may include:• Performance-linked incentives (PLI)• Sales or revenue-based incentives• Annual or quarterly performance bonuses• Statutory bonus (where applicable)
+10.4 KPI-LINKED INCENTIVE STRUCTURE
+• Variable pay shall be linked to predefined KPIs and KRAs.• KPIs shall be measurable, time-bound, and aligned with PMS.• Weightages shall be assigned to each KPI.• Incentive payout shall be based on achieved scores.
+10.5 GATEKEEPER RULES
+Incentive payouts are subject to gatekeeper conditions, including:• Minimum performance threshold achievement• Compliance with Company policies and code of conduct• No active disciplinary action or PIP at the time of payout• Continued employment on payout date, unless otherwise approved
+10.6 PAYOUT FREQUENCY & TIMING
+• Incentives may be paid monthly, quarterly, or annually based on role.• Payout timelines shall be communicated in advance.• The Company reserves the right to defer payouts in exceptional circumstances.
+10.7 STATUTORY BONUS COMPLIANCE
+• Statutory bonus shall be paid in accordance with ...
+
+--- 8_Onboarding_and_Probation_Management.docx ---
+8. ONBOARDING & PROBATION MANAGEMENT
+This policy defines the Onboarding & Probation Management framework of ITBREAKCOM Private Limited. It establishes a structured onboarding process, buddy assignment, 30-60-90 day plans, and clearly defined probation confirmation criteria to ensure smooth integration, early productivity, and informed confirmation decisions. This policy forms an integral part of the Board-approved HR Governance Pack.
+8.1 OBJECTIVE
+The objectives of this policy are to:• Ensure a consistent and professional onboarding experience• Enable early role clarity and productivity• Support cultural and functional integration• Assess suitability during probation• Reduce early attrition and hiring risk
+8.2 SCOPE & APPLICABILITY
+This policy applies to:• All newly hired employees• Trainees transitioning into employee rolesConsultants are governed by contractual onboarding provisions.
+8.3 ONBOARDING PROCESS
+The onboarding process shall include:• Pre-joining documentation and verification• Day 1 orientation (Company, policies, culture)• Role and responsibility briefing• System and tool access setup• Introduction to team and stakeholders
+8.4 ONBOARDING CHECKLIST
+• Appointment letter and policy acknowledgement• ID and access credentials issuance• IT and system access• HR documentation completion• Compliance and POSH briefing
+8.5 BUDDY ASSIGNMENT
+• A buddy may be assigned to support the new hire during initial weeks.• The buddy shall assist with functional and cultural orientation.• Buddy support is advisory and does not replace reporting manager responsibility.
+8.6 30-60-90 DAY PLAN
+• A structured 30-60-90 day plan shall be defined for each new hire.• The plan shall outline learning goals, deliverables, and performance expectations.• Progress shall be reviewed at defined milestones.
+8.7 PROBATION PERIOD
+• Standard probation period shall be as specified in the appointment letter.• During probation, performance and behavior shall be closely monitored.• Feedback shall be...
+
+--- 23_ITBREAKCOM_Separation_Exit_FnF_SOP.docx ---
+23. SEPARATION, EXIT & FULL & FINAL (F&F) SOP
+This Standard Operating Procedure (SOP) defines the separation, exit, and Full & Final (F&F) settlement process at ITBREAKCOM Private Limited. It ensures fair treatment, compliance with labour laws, asset protection, and timely closure of employment engagements. This SOP forms an integral part of the Board-approved HR Governance Pack.
+23.1 OBJECTIVE
+The objectives of this SOP are to:• Ensure orderly and compliant employee separations• Protect Company assets and confidential information• Provide a fair and transparent exit experience• Complete Full & Final settlements within statutory timelines• Maintain proper documentation for audit and investor diligence
+23.2 TYPES OF SEPARATION
+Separations may occur due to:• Resignation by employee• Termination by Company (performance, misconduct, redundancy)• Completion of fixed-term or trainee engagement• Mutual separation• Retirement or incapacity (where applicable)
+23.3 NOTICE PERIODS
+Notice periods shall be governed by appointment letters and HR policies:• M0 (Trainee): 7 days• M1 – M2: ________ days• M3 – M4: ________ days• M5 and above: ________ daysThe Company may waive notice or recover salary in lieu thereof, subject to applicable laws.
+23.4 RESIGNATION PROCESS
+• Resignations must be submitted in writing to the reporting manager and HR.• HR shall acknowledge receipt and confirm last working day.• Knowledge transfer and handover plan shall be initiated.• Exit checklist shall be shared with the employee.
+23.5 TERMINATION PROCESS
+• Terminations shall follow due process and principles of natural justice.• In performance-related cases, PIP documentation shall be maintained.• Immediate termination may occur in cases of misconduct, breach of trust, or policy violations.• Termination decisions shall be documented and approved by authorized authorities.
+23.6 EXIT INTERVIEW
+• HR shall conduct an exit interview for all separating employees.• Feedback shall be recorded confidentially.• ...
+
