@@ -55,6 +55,8 @@ export default function IncrementPlanningView() {
                 body: JSON.stringify({
                     newSalary: editRecord.newSalary,
 
+                    proposedPercentage: editRecord.proposedPercentage,
+
                     newFixed: editRecord.newFixed,
                     newVariable: editRecord.newVariable,
                     newIncentive: editRecord.newIncentive,
@@ -238,18 +240,26 @@ export default function IncrementPlanningView() {
                                     </div>
                                 </td>
                                 <td className="px-6 py-4 text-right">
-                                    <div className="font-mono font-bold text-secondary-900 text-sm">₹{emp.currentSalary.toLocaleString()}</div>
-                                    {emp.lastIncrementDate && (
-                                        <div className="text-[10px] text-secondary-400 mt-1">
-                                            L.H: <FormattedDate date={emp.lastIncrementDate} />
-                                        </div>
+                                    {emp.currentSalary !== undefined ? (
+                                        <>
+                                            <div className="font-mono font-bold text-secondary-900 text-sm">₹{(emp.currentSalary || 0).toLocaleString()}</div>
+                                            {emp.lastIncrementDate && (
+                                                <div className="text-[10px] text-secondary-400 mt-1">
+                                                    L.H: <FormattedDate date={emp.lastIncrementDate} />
+                                                </div>
+                                            )}
+                                        </>
+                                    ) : (
+                                        <div className="font-mono font-bold text-secondary-400 text-sm italic">Hidden</div>
                                     )}
                                 </td>
                                 <td className="px-6 py-4">
                                     {emp.pendingRecommendation ? (
                                         <div className="flex flex-col items-center">
                                             <div className="flex items-center gap-2">
-                                                <span className="font-mono font-bold text-success-600 text-sm">₹{emp.pendingRecommendation.newSalary.toLocaleString()}</span>
+                                                {emp.pendingRecommendation.newSalary !== undefined && emp.pendingRecommendation.newSalary !== null && emp.currentSalary !== undefined && (
+                                                    <span className="font-mono font-bold text-success-600 text-sm">₹{emp.pendingRecommendation.newSalary.toLocaleString()}</span>
+                                                )}
                                                 <span className="px-2 py-0.5 rounded-full bg-success-100 text-success-700 text-[10px] font-black uppercase">
                                                     +{emp.pendingRecommendation.percentage}%
                                                 </span>
@@ -271,6 +281,7 @@ export default function IncrementPlanningView() {
                                                 onClick={() => setEditRecord({
                                                     id: emp.pendingRecommendation.id,
                                                     newSalary: emp.pendingRecommendation.newSalary,
+                                                    proposedPercentage: emp.pendingRecommendation.percentage,
 
                                                     newFixed: emp.pendingRecommendation.newFixed,
                                                     newVariable: emp.pendingRecommendation.newVariable,
@@ -308,15 +319,23 @@ export default function IncrementPlanningView() {
                                             )}
                                         </div>
                                     ) : (
-                                        <button
-                                            onClick={() => {
-                                                window.location.href = `/dashboard/hr-management/employees/${emp.profileId}`;
-                                            }}
-                                            className="btn btn-secondary py-1 px-4 text-[10px] font-black uppercase tracking-widest shadow-sm"
-                                            title={`Create proposal for ${emp.name}`}
-                                        >
-                                            PROPOSE
-                                        </button>
+                                        (() => {
+                                            const today = new Date();
+                                            const joiningDate = emp.dateOfJoining ? new Date(emp.dateOfJoining) : null;
+                                            const isProbation = joiningDate ? (today.getTime() - joiningDate.getTime()) / (1000 * 60 * 60 * 24 * 30) < 6 : false;
+                                            return (
+                                                <button
+                                                    onClick={() => {
+                                                        window.location.href = `/dashboard/hr-management/employees/${emp.profileId}`;
+                                                    }}
+                                                    className={`btn py-1 px-4 text-[10px] font-black uppercase tracking-widest shadow-sm ${isProbation ? 'btn-secondary opacity-50 cursor-not-allowed' : 'btn-secondary'}`}
+                                                    title={isProbation ? `Cannot propose: Employee is on probation (< 6 months tenure)` : `Create proposal for ${emp.name}`}
+                                                    disabled={isProbation}
+                                                >
+                                                    PROPOSE
+                                                </button>
+                                            );
+                                        })()
                                     )}
                                 </td>
                             </tr>
@@ -341,213 +360,239 @@ export default function IncrementPlanningView() {
                             </div>
 
                             {/* Current vs Proposed Visualizer */}
-                            <div className="px-8 pt-4">
-                                <div className="p-3 bg-secondary-900 rounded-2xl text-white flex justify-between items-center">
-                                    <div className="flex-1 border-r border-white/10 px-2">
-                                        <p className="text-[9px] font-black text-secondary-400 uppercase tracking-widest leading-none mb-1">Current Fixed</p>
-                                        <p className="font-mono text-sm font-bold">₹{(filteredItems.find((i: any) => i.pendingRecommendation?.id === editRecord.id)?.currentFixed || 0).toLocaleString()}</p>
-                                    </div>
-                                    <div className="flex-1 border-r border-white/10 px-4">
-                                        <p className="text-[9px] font-black text-secondary-400 uppercase tracking-widest leading-none mb-1">Proposed Fixed</p>
-                                        <p className="font-mono text-sm font-bold text-success-400">₹{(parseFloat(editRecord.newFixed) || 0).toLocaleString()}</p>
-                                    </div>
-                                    <div className="flex-1 px-2 text-right">
-                                        <p className="text-[9px] font-black text-secondary-400 uppercase tracking-widest leading-none mb-1">Incr.</p>
-                                        <p className="font-mono text-sm font-black text-primary-400">
-                                            +{(((parseFloat(editRecord.newFixed) || 0) / (filteredItems.find((i: any) => i.pendingRecommendation?.id === editRecord.id)?.currentFixed || 1) - 1) * 100).toFixed(1)}%
-                                        </p>
+                            {['HR_MANAGER', 'ADMIN', 'SUPER_ADMIN', 'FINANCE_ADMIN'].includes(currentUser?.role) && (
+                                <div className="px-8 pt-4">
+                                    <div className="p-3 bg-secondary-900 rounded-2xl text-white flex justify-between items-center">
+                                        <div className="flex-1 border-r border-white/10 px-2">
+                                            <p className="text-[9px] font-black text-secondary-400 uppercase tracking-widest leading-none mb-1">Current Fixed</p>
+                                            <p className="font-mono text-sm font-bold">₹{(filteredItems.find((i: any) => i.pendingRecommendation?.id === editRecord.id)?.currentFixed || 0).toLocaleString()}</p>
+                                        </div>
+                                        <div className="flex-1 border-r border-white/10 px-4">
+                                            <p className="text-[9px] font-black text-secondary-400 uppercase tracking-widest leading-none mb-1">Proposed Fixed</p>
+                                            <p className="font-mono text-sm font-bold text-success-400">₹{(parseFloat(editRecord.newFixed) || 0).toLocaleString()}</p>
+                                        </div>
+                                        <div className="flex-1 px-2 text-right">
+                                            <p className="text-[9px] font-black text-secondary-400 uppercase tracking-widest leading-none mb-1">Incr.</p>
+                                            <p className="font-mono text-sm font-black text-primary-400">
+                                                +{(((parseFloat(editRecord.newFixed) || 0) / (filteredItems.find((i: any) => i.pendingRecommendation?.id === editRecord.id)?.currentFixed || 1) - 1) * 100).toFixed(1)}%
+                                            </p>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
+                            )}
 
                             <div className="p-8 space-y-5">
-                                <div>
-                                    <div className="flex justify-between items-end mb-2">
-                                        <label className="text-[10px] font-black text-secondary-400 uppercase tracking-widest">Proposed Structure</label>
-                                        <div className="text-right">
-                                            <span className="text-[10px] text-secondary-400 font-bold mr-1">TOTAL CTC</span>
-                                            <span className="font-mono font-black text-primary-600">
-                                                ₹{(
-                                                    (parseFloat(editRecord.newFixed) || 0) +
-                                                    (parseFloat(editRecord.newVariable) || 0) +
-                                                    (parseFloat(editRecord.newIncentive) || 0) +
-                                                    (parseFloat(editRecord.newHealthCare) || 0) +
-                                                    (parseFloat(editRecord.newTravelling) || 0) +
-                                                    (parseFloat(editRecord.newMobile) || 0) +
-                                                    (parseFloat(editRecord.newInternet) || 0)
-                                                ).toLocaleString()}
-                                            </span>
-                                        </div>
-                                    </div>
-                                    <div className="grid grid-cols-3 gap-3">
+                                {['HR_MANAGER', 'ADMIN', 'SUPER_ADMIN', 'FINANCE_ADMIN'].includes(currentUser?.role) ? (
+                                    <>
                                         <div>
-                                            <label className="text-[9px] font-bold text-secondary-400 uppercase block mb-1">Fixed Component</label>
-                                            <div className="relative group">
-                                                <span className="absolute left-2 top-1/2 -translate-y-1/2 font-bold text-secondary-300 text-xs">₹</span>
-                                                <input
-                                                    type="number"
-                                                    className="input-premium pl-5 text-sm font-bold w-full"
-                                                    placeholder="Fixed"
-                                                    value={editRecord.newFixed || ''}
-                                                    onChange={(e) => setEditRecord({ ...editRecord, newFixed: e.target.value })}
-                                                    title="Base Salary (Fixed)"
-                                                />
-                                                <div className="absolute opacity-0 group-hover:opacity-100 bottom-full left-0 mb-2 p-2 bg-secondary-800 text-white text-[10px] rounded shadow-lg w-32 pointer-events-none transition-opacity z-10">
-                                                    Guaranteed monthly payout excluding variables.
+                                            <div className="flex justify-between items-end mb-2">
+                                                <label className="text-[10px] font-black text-secondary-400 uppercase tracking-widest">Proposed Structure</label>
+                                                <div className="text-right">
+                                                    <span className="text-[10px] text-secondary-400 font-bold mr-1">TOTAL CTC</span>
+                                                    <span className="font-mono font-black text-primary-600">
+                                                        ₹{(
+                                                            (parseFloat(editRecord.newFixed) || 0) +
+                                                            (parseFloat(editRecord.newVariable) || 0) +
+                                                            (parseFloat(editRecord.newIncentive) || 0) +
+                                                            (parseFloat(editRecord.newHealthCare) || 0) +
+                                                            (parseFloat(editRecord.newTravelling) || 0) +
+                                                            (parseFloat(editRecord.newMobile) || 0) +
+                                                            (parseFloat(editRecord.newInternet) || 0)
+                                                        ).toLocaleString()}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                            <div className="grid grid-cols-3 gap-3">
+                                                <div>
+                                                    <label className="text-[9px] font-bold text-secondary-400 uppercase block mb-1">Fixed Component</label>
+                                                    <div className="relative group">
+                                                        <span className="absolute left-2 top-1/2 -translate-y-1/2 font-bold text-secondary-300 text-xs">₹</span>
+                                                        <input
+                                                            type="number"
+                                                            className="input-premium pl-5 text-sm font-bold w-full"
+                                                            placeholder="Fixed"
+                                                            value={editRecord.newFixed || ''}
+                                                            onChange={(e) => setEditRecord({ ...editRecord, newFixed: e.target.value })}
+                                                            title="Base Salary (Fixed)"
+                                                        />
+                                                        <div className="absolute opacity-0 group-hover:opacity-100 bottom-full left-0 mb-2 p-2 bg-secondary-800 text-white text-[10px] rounded shadow-lg w-32 pointer-events-none transition-opacity z-10">
+                                                            Guaranteed monthly payout excluding variables.
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div>
+                                                    <label className="text-[9px] font-bold text-secondary-400 uppercase block mb-1">Variable Pay</label>
+                                                    <div className="relative group">
+                                                        <span className="absolute left-2 top-1/2 -translate-y-1/2 font-bold text-secondary-300 text-xs">₹</span>
+                                                        <input
+                                                            type="number"
+                                                            className="input-premium pl-5 text-sm font-bold w-full"
+                                                            placeholder="Variable"
+                                                            value={editRecord.newVariable || ''}
+                                                            onChange={(e) => setEditRecord({ ...editRecord, newVariable: e.target.value })}
+                                                            title="Variable Pay"
+                                                        />
+                                                        <div className="absolute opacity-0 group-hover:opacity-100 bottom-full left-0 mb-2 p-2 bg-secondary-800 text-white text-[10px] rounded shadow-lg w-32 pointer-events-none transition-opacity z-10">
+                                                            Performance linked pay (PLI/Bonus).
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div>
+                                                    <label className="text-[9px] font-bold text-secondary-400 uppercase block mb-1">Incentives</label>
+                                                    <div className="relative group">
+                                                        <span className="absolute left-2 top-1/2 -translate-y-1/2 font-bold text-secondary-300 text-xs">₹</span>
+                                                        <input
+                                                            type="number"
+                                                            className="input-premium pl-5 text-sm font-bold w-full"
+                                                            placeholder="Incentive"
+                                                            value={editRecord.newIncentive || ''}
+                                                            onChange={(e) => setEditRecord({ ...editRecord, newIncentive: e.target.value })}
+                                                            title="Targets/Incentives"
+                                                        />
+                                                        <div className="absolute opacity-0 group-hover:opacity-100 bottom-full left-0 mb-2 p-2 bg-secondary-800 text-white text-[10px] rounded shadow-lg w-32 pointer-events-none transition-opacity z-10">
+                                                            Sales/Target based incentives.
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div className="grid grid-cols-2 gap-3 mt-4">
+                                                <div>
+                                                    <label className="text-[9px] font-bold text-secondary-400 uppercase block mb-1">Monthly Target</label>
+                                                    <input
+                                                        type="number"
+                                                        className="input-premium pl-2 text-sm font-bold w-full"
+                                                        placeholder="Monthly Target"
+                                                        value={editRecord.newMonthlyTarget || ''}
+                                                        onChange={(e) => setEditRecord({ ...editRecord, newMonthlyTarget: e.target.value })}
+                                                        title="Monthly Target"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="text-[9px] font-bold text-secondary-400 uppercase block mb-1">Yearly Target</label>
+                                                    <input
+                                                        type="number"
+                                                        className="input-premium pl-2 text-sm font-bold w-full"
+                                                        placeholder="Yearly Target"
+                                                        value={editRecord.newYearlyTarget || ''}
+                                                        onChange={(e) => setEditRecord({ ...editRecord, newYearlyTarget: e.target.value })}
+                                                        title="Yearly Target"
+                                                    />
+                                                </div>
+                                            </div>
+
+                                            {/* Advanced Variable Config */}
+                                            <div className="bg-secondary-50 p-3 rounded-xl mt-4 border border-dashed border-secondary-200">
+                                                <label className="text-[10px] font-black text-secondary-400 uppercase tracking-widest mb-3 block">Variable & Incentive Rules</label>
+                                                <div className="grid grid-cols-3 gap-3">
+                                                    <div>
+                                                        <label className="text-[9px] font-bold text-secondary-400 uppercase block mb-1">Base Quota (Target)</label>
+                                                        <div className="relative">
+                                                            <span className="absolute left-2 top-1/2 -translate-y-1/2 font-bold text-secondary-300 text-xs">₹</span>
+                                                            <input
+                                                                type="number"
+                                                                className="input-premium pl-5 text-xs font-bold w-full"
+                                                                placeholder="0"
+                                                                value={editRecord.newBaseTarget || ''}
+                                                                onChange={(e) => setEditRecord({ ...editRecord, newBaseTarget: e.target.value })}
+                                                                title="Base Target for CTC"
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                    <div>
+                                                        <label className="text-[9px] font-bold text-secondary-400 uppercase block mb-1">Var. Rate </label>
+                                                        <div className="relative">
+                                                            <span className="absolute left-2 top-1/2 -translate-y-1/2 font-bold text-secondary-300 text-xs">₹</span>
+                                                            <input
+                                                                type="number"
+                                                                className="input-premium pl-5 text-xs font-bold w-full"
+                                                                placeholder="Rate"
+                                                                value={editRecord.newVariableRate || ''}
+                                                                onChange={(e) => setEditRecord({ ...editRecord, newVariableRate: e.target.value })}
+                                                                title="Amount earned per unit"
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                    <div>
+                                                        <label className="text-[9px] font-bold text-secondary-400 uppercase block mb-1">Var. Unit</label>
+                                                        <div className="relative">
+                                                            <span className="absolute left-2 top-1/2 -translate-y-1/2 font-bold text-secondary-300 text-xs">₹</span>
+                                                            <input
+                                                                type="number"
+                                                                className="input-premium pl-5 text-xs font-bold w-full"
+                                                                placeholder="Unit"
+                                                                value={editRecord.newVariableUnit || ''}
+                                                                onChange={(e) => setEditRecord({ ...editRecord, newVariableUnit: e.target.value })}
+                                                                title="Revenue Unit (e.g. 100k)"
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div className="mt-4 border-t border-dashed border-secondary-200 pt-4">
+                                                <label className="text-[10px] font-black text-secondary-400 uppercase tracking-widest mb-3 block">Reimbursements & Allowances (Annual)</label>
+                                                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                                                    <div>
+                                                        <label className="text-[9px] font-bold text-secondary-400 uppercase block mb-1">Health Care</label>
+                                                        <input
+                                                            type="number"
+                                                            className="input-premium pl-2 text-xs font-bold w-full"
+                                                            value={editRecord.newHealthCare || ''}
+                                                            onChange={(e) => setEditRecord({ ...editRecord, newHealthCare: e.target.value })}
+                                                        />
+                                                    </div>
+                                                    <div>
+                                                        <label className="text-[9px] font-bold text-secondary-400 uppercase block mb-1">Travelling</label>
+                                                        <input
+                                                            type="number"
+                                                            className="input-premium pl-2 text-xs font-bold w-full"
+                                                            value={editRecord.newTravelling || ''}
+                                                            onChange={(e) => setEditRecord({ ...editRecord, newTravelling: e.target.value })}
+                                                        />
+                                                    </div>
+                                                    <div>
+                                                        <label className="text-[9px] font-bold text-secondary-400 uppercase block mb-1">Mobile</label>
+                                                        <input
+                                                            type="number"
+                                                            className="input-premium pl-2 text-xs font-bold w-full"
+                                                            value={editRecord.newMobile || ''}
+                                                            onChange={(e) => setEditRecord({ ...editRecord, newMobile: e.target.value })}
+                                                        />
+                                                    </div>
+                                                    <div>
+                                                        <label className="text-[9px] font-bold text-secondary-400 uppercase block mb-1">Internet</label>
+                                                        <input
+                                                            type="number"
+                                                            className="input-premium pl-2 text-xs font-bold w-full"
+                                                            value={editRecord.newInternet || ''}
+                                                            onChange={(e) => setEditRecord({ ...editRecord, newInternet: e.target.value })}
+                                                        />
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
-                                        <div>
-                                            <label className="text-[9px] font-bold text-secondary-400 uppercase block mb-1">Variable Pay</label>
-                                            <div className="relative group">
-                                                <span className="absolute left-2 top-1/2 -translate-y-1/2 font-bold text-secondary-300 text-xs">₹</span>
-                                                <input
-                                                    type="number"
-                                                    className="input-premium pl-5 text-sm font-bold w-full"
-                                                    placeholder="Variable"
-                                                    value={editRecord.newVariable || ''}
-                                                    onChange={(e) => setEditRecord({ ...editRecord, newVariable: e.target.value })}
-                                                    title="Variable Pay"
-                                                />
-                                                <div className="absolute opacity-0 group-hover:opacity-100 bottom-full left-0 mb-2 p-2 bg-secondary-800 text-white text-[10px] rounded shadow-lg w-32 pointer-events-none transition-opacity z-10">
-                                                    Performance linked pay (PLI/Bonus).
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div>
-                                            <label className="text-[9px] font-bold text-secondary-400 uppercase block mb-1">Incentives</label>
-                                            <div className="relative group">
-                                                <span className="absolute left-2 top-1/2 -translate-y-1/2 font-bold text-secondary-300 text-xs">₹</span>
-                                                <input
-                                                    type="number"
-                                                    className="input-premium pl-5 text-sm font-bold w-full"
-                                                    placeholder="Incentive"
-                                                    value={editRecord.newIncentive || ''}
-                                                    onChange={(e) => setEditRecord({ ...editRecord, newIncentive: e.target.value })}
-                                                    title="Targets/Incentives"
-                                                />
-                                                <div className="absolute opacity-0 group-hover:opacity-100 bottom-full left-0 mb-2 p-2 bg-secondary-800 text-white text-[10px] rounded shadow-lg w-32 pointer-events-none transition-opacity z-10">
-                                                    Sales/Target based incentives.
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div className="grid grid-cols-2 gap-3 mt-4">
-                                        <div>
-                                            <label className="text-[9px] font-bold text-secondary-400 uppercase block mb-1">Monthly Target</label>
+                                    </>
+                                ) : (
+                                    <div>
+                                        <label className="text-[10px] font-black text-secondary-400 uppercase tracking-widest mb-2 block">Proposed Increment (%)</label>
+                                        <div className="relative group">
                                             <input
                                                 type="number"
-                                                className="input-premium pl-2 text-sm font-bold w-full"
-                                                placeholder="Monthly Target"
-                                                value={editRecord.newMonthlyTarget || ''}
-                                                onChange={(e) => setEditRecord({ ...editRecord, newMonthlyTarget: e.target.value })}
-                                                title="Monthly Target"
+                                                className="input-premium pl-5 text-sm font-bold w-full"
+                                                placeholder="e.g. 10"
+                                                value={editRecord.proposedPercentage || ''}
+                                                onChange={(e) => setEditRecord({ ...editRecord, proposedPercentage: parseFloat(e.target.value) || 0 })}
+                                                max={100}
+                                                min={0}
+                                                title="Percentage Proposal"
                                             />
-                                        </div>
-                                        <div>
-                                            <label className="text-[9px] font-bold text-secondary-400 uppercase block mb-1">Yearly Target</label>
-                                            <input
-                                                type="number"
-                                                className="input-premium pl-2 text-sm font-bold w-full"
-                                                placeholder="Yearly Target"
-                                                value={editRecord.newYearlyTarget || ''}
-                                                onChange={(e) => setEditRecord({ ...editRecord, newYearlyTarget: e.target.value })}
-                                                title="Yearly Target"
-                                            />
-                                        </div>
-                                    </div>
-
-                                    {/* Advanced Variable Config */}
-                                    <div className="bg-secondary-50 p-3 rounded-xl mt-4 border border-dashed border-secondary-200">
-                                        <label className="text-[10px] font-black text-secondary-400 uppercase tracking-widest mb-3 block">Variable & Incentive Rules</label>
-                                        <div className="grid grid-cols-3 gap-3">
-                                            <div>
-                                                <label className="text-[9px] font-bold text-secondary-400 uppercase block mb-1">Base Quota (Target)</label>
-                                                <div className="relative">
-                                                    <span className="absolute left-2 top-1/2 -translate-y-1/2 font-bold text-secondary-300 text-xs">₹</span>
-                                                    <input
-                                                        type="number"
-                                                        className="input-premium pl-5 text-xs font-bold w-full"
-                                                        placeholder="0"
-                                                        value={editRecord.newBaseTarget || ''}
-                                                        onChange={(e) => setEditRecord({ ...editRecord, newBaseTarget: e.target.value })}
-                                                        title="Base Target for CTC"
-                                                    />
-                                                </div>
-                                            </div>
-                                            <div>
-                                                <label className="text-[9px] font-bold text-secondary-400 uppercase block mb-1">Var. Rate </label>
-                                                <div className="relative">
-                                                    <span className="absolute left-2 top-1/2 -translate-y-1/2 font-bold text-secondary-300 text-xs">₹</span>
-                                                    <input
-                                                        type="number"
-                                                        className="input-premium pl-5 text-xs font-bold w-full"
-                                                        placeholder="Rate"
-                                                        value={editRecord.newVariableRate || ''}
-                                                        onChange={(e) => setEditRecord({ ...editRecord, newVariableRate: e.target.value })}
-                                                        title="Amount earned per unit"
-                                                    />
-                                                </div>
-                                            </div>
-                                            <div>
-                                                <label className="text-[9px] font-bold text-secondary-400 uppercase block mb-1">Var. Unit</label>
-                                                <div className="relative">
-                                                    <span className="absolute left-2 top-1/2 -translate-y-1/2 font-bold text-secondary-300 text-xs">₹</span>
-                                                    <input
-                                                        type="number"
-                                                        className="input-premium pl-5 text-xs font-bold w-full"
-                                                        placeholder="Unit"
-                                                        value={editRecord.newVariableUnit || ''}
-                                                        onChange={(e) => setEditRecord({ ...editRecord, newVariableUnit: e.target.value })}
-                                                        title="Revenue Unit (e.g. 100k)"
-                                                    />
-                                                </div>
+                                            <span className="absolute right-4 top-1/2 -translate-y-1/2 font-bold text-secondary-300 text-xs">%</span>
+                                            <div className="absolute opacity-0 group-hover:opacity-100 bottom-full left-0 mb-2 p-2 bg-secondary-800 text-white text-[10px] rounded shadow-lg w-48 pointer-events-none transition-opacity z-10">
+                                                Based on Performance: Rating A (10-12%), Rating B (7-9%). High percentages require strict justification.
                                             </div>
                                         </div>
                                     </div>
-
-                                    <div className="mt-4 border-t border-dashed border-secondary-200 pt-4">
-                                        <label className="text-[10px] font-black text-secondary-400 uppercase tracking-widest mb-3 block">Reimbursements & Allowances (Annual)</label>
-                                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                                            <div>
-                                                <label className="text-[9px] font-bold text-secondary-400 uppercase block mb-1">Health Care</label>
-                                                <input
-                                                    type="number"
-                                                    className="input-premium pl-2 text-xs font-bold w-full"
-                                                    value={editRecord.newHealthCare || ''}
-                                                    onChange={(e) => setEditRecord({ ...editRecord, newHealthCare: e.target.value })}
-                                                />
-                                            </div>
-                                            <div>
-                                                <label className="text-[9px] font-bold text-secondary-400 uppercase block mb-1">Travelling</label>
-                                                <input
-                                                    type="number"
-                                                    className="input-premium pl-2 text-xs font-bold w-full"
-                                                    value={editRecord.newTravelling || ''}
-                                                    onChange={(e) => setEditRecord({ ...editRecord, newTravelling: e.target.value })}
-                                                />
-                                            </div>
-                                            <div>
-                                                <label className="text-[9px] font-bold text-secondary-400 uppercase block mb-1">Mobile</label>
-                                                <input
-                                                    type="number"
-                                                    className="input-premium pl-2 text-xs font-bold w-full"
-                                                    value={editRecord.newMobile || ''}
-                                                    onChange={(e) => setEditRecord({ ...editRecord, newMobile: e.target.value })}
-                                                />
-                                            </div>
-                                            <div>
-                                                <label className="text-[9px] font-bold text-secondary-400 uppercase block mb-1">Internet</label>
-                                                <input
-                                                    type="number"
-                                                    className="input-premium pl-2 text-xs font-bold w-full"
-                                                    value={editRecord.newInternet || ''}
-                                                    onChange={(e) => setEditRecord({ ...editRecord, newInternet: e.target.value })}
-                                                />
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
+                                )}
                                 <div className="grid grid-cols-2 gap-4">
                                     <div>
                                         <label className="text-[10px] font-black text-secondary-400 uppercase tracking-widest mb-2 block">Effective Date</label>

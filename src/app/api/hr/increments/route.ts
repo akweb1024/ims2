@@ -9,8 +9,11 @@ const incrementSchema = z.object({
     employeeProfileId: z.string(),
     effectiveDate: z.string().optional(),
 
-    // New Salary Structure
-    newFixedSalary: z.number().min(0),
+    // Support for Percentage-based Proposals (Managers)
+    proposedPercentage: z.number().min(0).max(100).optional(),
+
+    // New Salary Structure (Admins/HR can override or Manager can send 0 if using % only)
+    newFixedSalary: z.number().min(0).optional(),
     newVariableSalary: z.number().min(0).optional(),
     newIncentive: z.number().min(0).optional(),
 
@@ -167,10 +170,29 @@ export const POST = authorizedRoute(
                 }
             }
 
-            // Calculate Totals
-            const newFixed = validatedData.newFixedSalary || 0;
-            const newVariable = validatedData.newVariableSalary || 0;
-            const newIncentive = validatedData.newIncentive || 0;
+            // Calculate Totals based on Percentage or provided values
+            let newFixed = validatedData.newFixedSalary || 0;
+            let newVariable = validatedData.newVariableSalary || 0;
+            let newIncentive = validatedData.newIncentive || 0;
+
+            const oldBaseSalary = employee.baseSalary || 0;
+            const oldFixed = employee.salaryFixed || 0;
+            const oldVariable = employee.salaryVariable || 0;
+
+            if (validatedData.proposedPercentage !== undefined && validatedData.proposedPercentage > 0) {
+                // Percentage based calculation
+                const totalSalaryMultiplier = 1 + (validatedData.proposedPercentage / 100);
+                const projectedTotal = oldBaseSalary * totalSalaryMultiplier;
+
+                // Simple ratio distribution (respecting previous fixed/variable split)
+                const fixedRatio = oldBaseSalary > 0 ? oldFixed / oldBaseSalary : 1; // Default to 100% fixed if no base
+                const variableRatio = oldBaseSalary > 0 ? (oldVariable || 0) / oldBaseSalary : 0;
+
+                newFixed = projectedTotal * fixedRatio;
+                newVariable = projectedTotal * variableRatio;
+                newIncentive = employee.salaryIncentive || 0; // Incentives typically not auto-scaled by standard %
+            }
+
             const totalSalary = newFixed + newVariable + newIncentive;
 
             // Monthly Breakdown

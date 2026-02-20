@@ -135,10 +135,23 @@ export const GET = authorizedRoute(
                     calculatedTotalExperience = `${years} years${months > 0 ? ` ${months} months` : ''}`;
                 }
 
-                return {
+                const result: any = {
                     ...emp,
                     calculatedTotalExperience
                 };
+
+                // RBAC: Mask Salary Data for Managers & others
+                if (!['SUPER_ADMIN', 'ADMIN', 'HR', 'FINANCE_ADMIN'].includes(user.role)) {
+                    delete result.salaryStructure;
+                    delete result.baseSalary;
+                    delete result.salaryFixed;
+                    delete result.salaryVariable;
+                    delete result.salaryIncentive;
+                    // Note: incrementHistory is not selected in the base query here, but just in case
+                    delete result.incrementHistory;
+                }
+
+                return result;
             });
 
             return NextResponse.json(mappedEmployees);

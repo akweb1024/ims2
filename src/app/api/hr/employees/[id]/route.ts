@@ -110,7 +110,17 @@ export const GET = authorizedRoute(
                 }
             }
 
-            return NextResponse.json(employee);
+            // RBAC: Mask Salary Data for Managers & others
+            if (!['SUPER_ADMIN', 'ADMIN', 'HR', 'FINANCE_ADMIN'].includes(user.role)) {
+                delete empAny.salaryStructure;
+                delete empAny.baseSalary;
+                delete empAny.salaryFixed;
+                delete empAny.salaryVariable;
+                delete empAny.salaryIncentive;
+                delete empAny.incrementHistory;
+            }
+
+            return NextResponse.json(empAny);
         } catch (error) {
             return createErrorResponse(error);
         }
