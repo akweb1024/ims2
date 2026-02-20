@@ -18,6 +18,7 @@ import {
     Plus,
     ListTodo,
     Settings,
+    BookOpen,
 } from 'lucide-react';
 import MilestoneModal from '@/components/dashboard/it/MilestoneModal';
 import ITDocumentManager from '@/components/dashboard/it/ITDocumentManager';
@@ -462,13 +463,22 @@ export default function ProjectDetailPage() {
                                             <ListTodo className="h-5 w-5" />
                                             Tasks ({project.tasks.length})
                                         </h2>
-                                        <button
-                                            onClick={() => router.push(`/dashboard/it-management/tasks/new?projectId=${projectId}`)}
-                                            className="flex items-center gap-2 px-3 py-1 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-sm transition-colors"
-                                        >
-                                            <Plus className="h-4 w-4" />
-                                            Add Task
-                                        </button>
+                                        <div className="flex items-center gap-3">
+                                            <button
+                                                onClick={() => router.push('/dashboard/it-management/tasks/guidelines')}
+                                                className="flex items-center gap-2 px-3 py-1 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 text-purple-600 dark:text-purple-400 rounded-lg text-sm transition-colors border border-gray-200 dark:border-gray-700 shadow-sm"
+                                            >
+                                                <BookOpen className="h-4 w-4" />
+                                                Guidelines
+                                            </button>
+                                            <button
+                                                onClick={() => router.push(`/dashboard/it-management/tasks/new?projectId=${projectId}`)}
+                                                className="flex items-center gap-2 px-3 py-1 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-sm transition-colors shadow-sm"
+                                            >
+                                                <Plus className="h-4 w-4" />
+                                                Add Task
+                                            </button>
+                                        </div>
                                     </div>
 
                                     {project.tasks.length === 0 ? (

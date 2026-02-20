@@ -173,36 +173,16 @@ export async function PATCH(req: NextRequest, context: { params: Promise<{ id: s
                     const val = parseFloat(body[field]?.toString());
                     updateData[field] = isNaN(val) ? (field === 'progressPercent' ? 0 : null) : val;
                 } else if (field === 'projectId') {
-                    // For UPDATE with ITTaskUpdateInput, use relation fields
-                    if (body[field]) {
-                        updateData.project = { connect: { id: body[field] } };
-                    } else if (body[field] === null || body[field] === '') {
-                        updateData.project = { disconnect: true };
-                    }
+                    updateData.projectId = body[field] || null;
                     continue;
                 } else if (field === 'assignedToId') {
-                    // For UPDATE with ITTaskUpdateInput, use relation fields
-                    if (body[field]) {
-                        updateData.assignedTo = { connect: { id: body[field] } };
-                    } else if (body[field] === null || body[field] === '') {
-                        updateData.assignedTo = { disconnect: true };
-                    }
+                    updateData.assignedToId = body[field] || null;
                     continue;
                 } else if (field === 'reporterId') {
-                    // For UPDATE with ITTaskUpdateInput, use relation fields
-                    if (body[field]) {
-                        updateData.reporter = { connect: { id: body[field] } };
-                    } else if (body[field] === null || body[field] === '') {
-                        updateData.reporter = { disconnect: true };
-                    }
+                    updateData.reporterId = body[field] || null;
                     continue;
                 } else if (field === 'serviceId') {
-                    // For UPDATE with ITTaskUpdateInput, use relation fields
-                    if (body[field]) {
-                        updateData.service = { connect: { id: body[field] } };
-                    } else if (body[field] === null || body[field] === '') {
-                        updateData.service = { disconnect: true };
-                    }
+                    updateData.serviceId = body[field] || null;
                     continue;
                 } else {
                     updateData[field] = body[field];

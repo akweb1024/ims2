@@ -12,6 +12,7 @@ import {
     Clock,
     User,
     AlertCircle,
+    BookOpen,
 } from 'lucide-react';
 import TaskDetailModal from '@/components/dashboard/it/TaskDetailModal';
 
@@ -317,13 +318,22 @@ export default function TasksPage() {
                         </p>
                     </div>
 
-                    <button
-                        onClick={() => router.push('/dashboard/it-management/tasks/new')}
-                        className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-lg font-medium flex items-center gap-2 shadow-lg hover:shadow-xl transition-all"
-                    >
-                        <Plus className="h-5 w-5" />
-                        New Task
-                    </button>
+                    <div className="flex items-center gap-3">
+                        <button
+                            onClick={() => router.push('/dashboard/it-management/tasks/guidelines')}
+                            className="bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 text-purple-600 dark:text-purple-400 px-6 py-3 rounded-lg font-medium flex items-center gap-2 shadow hover:shadow-md transition-all border border-gray-200 dark:border-gray-700"
+                        >
+                            <BookOpen className="h-5 w-5" />
+                            Guidelines
+                        </button>
+                        <button
+                            onClick={() => router.push('/dashboard/it-management/tasks/new')}
+                            className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-lg font-medium flex items-center gap-2 shadow-lg hover:shadow-xl transition-all"
+                        >
+                            <Plus className="h-5 w-5" />
+                            New Task
+                        </button>
+                    </div>
                 </div>
 
                 {/* Controls */}
