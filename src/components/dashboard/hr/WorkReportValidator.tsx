@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { CheckCircle, XCircle, Grid3x3, List, Award, Clock, DollarSign, Target, AlertCircle, MessageSquare } from 'lucide-react';
+import { useState, useEffect, useMemo } from 'react';
+import { CheckCircle, XCircle, Grid3x3, List, Award, Clock, DollarSign, Target, AlertCircle, MessageSquare, RefreshCw } from 'lucide-react';
 import FormattedDate from '@/components/common/FormattedDate';
 
 interface WorkReportValidatorProps {
@@ -30,28 +30,28 @@ export default function WorkReportValidator({ reports, onApprove, onAddComment }
     const [commentText, setCommentText] = useState('');
     const [submitting, setSubmitting] = useState(false);
 
-    // Auto-adjust verdict based on evaluation metrics
+    // Compute rating from evaluation metrics (read-only derived value)
+    const calculatedRating = useMemo(() => {
+        const totalScore = Object.values(evaluation).reduce((sum, val) => sum + (Number(val) || 0), 0);
+        // Map -15..+15 (5 metrics × -3..+3) → 1–10
+        return Math.max(1, Math.min(10, Math.round((((totalScore + 15) / 30) * 9) + 1)));
+    }, [evaluation]);
+
+    // Auto-generate feedback text based on metrics (does NOT overwrite managerRating)
     useEffect(() => {
         if (!showValidationModal) return;
 
         const totalScore = Object.values(evaluation).reduce((sum, val) => sum + (Number(val) || 0), 0);
-        // Map range -15 to 15 (5 metrics * [-3 to 3]) to 1-10 scale
-        // Formula: ((Score - Min) / (Max - Min)) * (TargetMax - TargetMin) + TargetMin
-        // ((Score + 15) / 30) * 9 + 1
-        const calculatedRating = Math.round((((totalScore + 15) / 30) * 9) + 1);
-        setManagerRating(Math.max(1, Math.min(10, calculatedRating)));
 
         // Generate feedback based on metrics
-        const feedbackParts = [];
-        
-        // Overall sentiment
+        const feedbackParts: string[] = [];
+
         if (totalScore >= 10) feedbackParts.push("Exceptional performance across the board.");
         else if (totalScore >= 5) feedbackParts.push("Strong performance with good results.");
         else if (totalScore >= 0) feedbackParts.push("Satisfactory performance, meeting expectations.");
         else if (totalScore >= -5) feedbackParts.push("Performance needs improvement in some areas.");
         else feedbackParts.push("Performance is below expectations. Immediate improvement required.");
 
-        // Specific highlights
         if (evaluation.workQuality >= 2) feedbackParts.push("Great work quality.");
         if (evaluation.efficiency >= 2) feedbackParts.push("Highly efficient execution.");
         if (evaluation.attendance < 0) feedbackParts.push("Attendance needs attention.");
@@ -59,7 +59,6 @@ export default function WorkReportValidator({ reports, onApprove, onAddComment }
         if (evaluation.instructionCompliance < 0) feedbackParts.push("Must follow instructions more closely.");
 
         setManagerComment(feedbackParts.join(" "));
-
     }, [evaluation, showValidationModal]);
 
     const openValidationModal = (report: any) => {
@@ -70,14 +69,22 @@ export default function WorkReportValidator({ reports, onApprove, onAddComment }
         setApprovedTaskIds(taskIds);
         setRejectedTaskIds([]);
         setManagerComment('');
-        setManagerRating(report.selfRating || 1);
-        setEvaluation(report.evaluation || {
+
+        // Compute initial rating from evaluation metrics (or fallback to saved evaluation)
+        const defaultEval = report.evaluation || {
             attendance: 1,
             discipline: 1,
             workQuality: 1,
             efficiency: 1,
             instructionCompliance: 1
-        });
+        };
+        setEvaluation(defaultEval);
+
+        // Initialize managerRating from the metrics-derived score (not selfRating)
+        const initScore = Object.values(defaultEval).reduce((sum: number, val: any) => sum + (Number(val) || 0), 0);
+        const initRating = Math.max(1, Math.min(10, Math.round((((initScore + 15) / 30) * 9) + 1)));
+        setManagerRating(initRating);
+
         setShowValidationModal(true);
     };
 
@@ -494,7 +501,17 @@ export default function WorkReportValidator({ reports, onApprove, onAddComment }
                             )}
 
                             <div className="space-y-4">
-                                <h4 className="font-bold text-lg text-secondary-900 border-b border-secondary-100 pb-2">Evaluation Metrics</h4>
+                                <div className="flex items-center justify-between border-b border-secondary-100 pb-2">
+                                    <h4 className="font-bold text-lg text-secondary-900">Evaluation Metrics</h4>
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-xs text-secondary-500">Calculated Score:</span>
+                                        <span className={`text-sm font-black px-3 py-1 rounded-full ${
+                                            calculatedRating >= 8 ? 'bg-success-100 text-success-700' :
+                                            calculatedRating >= 5 ? 'bg-amber-100 text-amber-700' :
+                                            'bg-rose-100 text-rose-700'
+                                        }`}>{calculatedRating}/10</span>
+                                    </div>
+                                </div>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     {Object.entries(evaluation).map(([key, val]) => (
                                         <div key={key} className="bg-secondary-50 p-3 rounded-lg">
@@ -527,10 +544,27 @@ export default function WorkReportValidator({ reports, onApprove, onAddComment }
 
                             {/* Manager Feedback */}
                             <div className="space-y-4 pt-4 border-t border-secondary-100">
-                                <h4 className="font-bold text-lg text-secondary-900">Final Verdict & Feedback</h4>
+                                <div className="flex items-center justify-between">
+                                    <h4 className="font-bold text-lg text-secondary-900">Final Verdict & Feedback</h4>
+                                    {managerRating !== calculatedRating && (
+                                        <button
+                                            onClick={() => setManagerRating(calculatedRating)}
+                                            className="flex items-center gap-1 text-xs text-primary-600 hover:text-primary-700 bg-primary-50 px-3 py-1 rounded-lg border border-primary-100 transition-all"
+                                            title="Reset to metric-calculated score"
+                                        >
+                                            <RefreshCw size={11} />
+                                            Use Calculated Score ({calculatedRating}/10)
+                                        </button>
+                                    )}
+                                </div>
 
                                 <div>
-                                    <label className="label">Overall Rating (1-10)</label>
+                                    <div className="flex items-center justify-between mb-1">
+                                        <label className="label mb-0">Overall Rating (1–10)</label>
+                                        {managerRating !== calculatedRating && (
+                                            <span className="text-[10px] font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded">Manually overridden</span>
+                                        )}
+                                    </div>
                                     <input
                                         type="range"
                                         min="1"
