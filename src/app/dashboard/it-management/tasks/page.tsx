@@ -54,7 +54,6 @@ interface Task {
 const STATUSES = [
     { value: 'PENDING', label: 'To Do', color: 'bg-gray-100 dark:bg-gray-800' },
     { value: 'IN_PROGRESS', label: 'In Progress', color: 'bg-blue-50 dark:bg-blue-900/20' },
-    { value: 'TESTING', label: 'Testing', color: 'bg-purple-50 dark:bg-purple-900/20' },
     { value: 'UNDER_REVIEW', label: 'Review', color: 'bg-amber-50 dark:bg-amber-900/20' },
     { value: 'COMPLETED', label: 'Done', color: 'bg-green-50 dark:bg-green-900/20' },
 ];

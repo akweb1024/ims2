@@ -152,12 +152,10 @@ export default function EditProjectPage() {
         setSaving(true);
 
         try {
-            const token = localStorage.getItem('token');
             const response = await fetch(`/api/it/projects/${projectId}`, {
                 method: 'PATCH',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`,
                 },
                 body: JSON.stringify({
                     ...formData,

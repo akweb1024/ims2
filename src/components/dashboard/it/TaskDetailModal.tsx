@@ -32,12 +32,9 @@ interface TaskDetailModalProps {
 
 const STATUSES = [
     { value: 'PENDING', label: 'To Do' },
-    { value: 'PLANNING', label: 'Planning' },
     { value: 'IN_PROGRESS', label: 'In Progress' },
-    { value: 'TESTING', label: 'Testing' },
     { value: 'UNDER_REVIEW', label: 'Review' },
     { value: 'COMPLETED', label: 'Done' },
-    { value: 'ON_HOLD', label: 'On Hold' },
     { value: 'CANCELLED', label: 'Cancelled' },
 ];
 
