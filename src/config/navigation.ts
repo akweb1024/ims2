@@ -319,6 +319,7 @@ export const ALL_MODULES: NavModule[] = [
             {
                 title: 'User Services',
                 items: [
+                    { name: 'My Tasks & Projects', href: '/dashboard/my-tasks', icon: '📋', roles: ['*'] },
                     { name: 'IT Support Portal', href: '/dashboard/service-desk', icon: '🎫', roles: ['*'] },
                 ]
             },
@@ -390,6 +391,10 @@ export function getNavigationModules(role: string, allowedModules: string[] = ['
         'FINANCE_ADMIN': ['CORE', 'FINANCE', 'QUALITY', 'HR'],
         'HR_MANAGER': ['CORE', 'HR', 'STAFF_MANAGEMENT', 'LMS', 'QUALITY'],
         'EXECUTIVE': ['CORE', 'CRM', 'PUBLICATION', 'QUALITY', 'LOGISTIC'],
+        'EMPLOYEE': ['CORE', 'IT'],
+        'IT_MANAGER': ['CORE', 'IT', 'QUALITY'],
+        'IT_ADMIN': ['CORE', 'IT', 'QUALITY'],
+        'IT_SUPPORT': ['CORE', 'IT'],
     };
 
     const defaultMods = defaultModulesByRole[role] || ['CORE'];

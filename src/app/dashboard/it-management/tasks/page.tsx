@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
+import { useSession } from 'next-auth/react';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import {
     Plus,
@@ -60,6 +61,11 @@ const STATUSES = [
 
 export default function TasksPage() {
     const router = useRouter();
+    const { data: session } = useSession();
+    const userRole = (session?.user as any)?.role || 'EMPLOYEE';
+    const isEmployee = userRole === 'EMPLOYEE';
+    const canManage = ['SUPER_ADMIN', 'ADMIN', 'IT_MANAGER', 'IT_ADMIN', 'MANAGER', 'TEAM_LEADER'].includes(userRole);
+
     const [tasks, setTasks] = useState<Task[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
@@ -326,13 +332,15 @@ export default function TasksPage() {
                             <BookOpen className="h-5 w-5" />
                             Guidelines
                         </button>
-                        <button
-                            onClick={() => router.push('/dashboard/it-management/tasks/new')}
-                            className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-lg font-medium flex items-center gap-2 shadow-lg hover:shadow-xl transition-all"
-                        >
-                            <Plus className="h-5 w-5" />
-                            New Task
-                        </button>
+                        {!isEmployee && (
+                            <button
+                                onClick={() => router.push('/dashboard/it-management/tasks/new')}
+                                className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-lg font-medium flex items-center gap-2 shadow-lg hover:shadow-xl transition-all"
+                            >
+                                <Plus className="h-5 w-5" />
+                                New Task
+                            </button>
+                        )}
                     </div>
                 </div>
 
@@ -351,26 +359,30 @@ export default function TasksPage() {
                             >
                                 My Tasks
                             </button>
-                            <button
-                                onClick={() => setView('team')}
-                                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${view === 'team'
-                                    ? 'bg-white dark:bg-gray-600 text-purple-600 dark:text-purple-400 shadow-sm'
-                                    : 'text-gray-600 dark:text-gray-400'
-                                    }`}
-                                title="Show team tasks"
-                            >
-                                Team
-                            </button>
-                            <button
-                                onClick={() => setView('all')}
-                                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${view === 'all'
-                                    ? 'bg-white dark:bg-gray-600 text-purple-600 dark:text-purple-400 shadow-sm'
-                                    : 'text-gray-600 dark:text-gray-400'
-                                    }`}
-                                title="Show all tasks"
-                            >
-                                All
-                            </button>
+                            {!isEmployee && (
+                                <button
+                                    onClick={() => setView('team')}
+                                    className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${view === 'team'
+                                        ? 'bg-white dark:bg-gray-600 text-purple-600 dark:text-purple-400 shadow-sm'
+                                        : 'text-gray-600 dark:text-gray-400'
+                                        }`}
+                                    title="Show team tasks"
+                                >
+                                    Team
+                                </button>
+                            )}
+                            {canManage && (
+                                <button
+                                    onClick={() => setView('all')}
+                                    className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${view === 'all'
+                                        ? 'bg-white dark:bg-gray-600 text-purple-600 dark:text-purple-400 shadow-sm'
+                                        : 'text-gray-600 dark:text-gray-400'
+                                        }`}
+                                    title="Show all tasks"
+                                >
+                                    All
+                                </button>
+                            )}
                         </div>
 
                         {/* Search */}
