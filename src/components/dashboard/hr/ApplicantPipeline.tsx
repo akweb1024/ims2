@@ -8,9 +8,9 @@ import {
     Sparkles, Filter, Search,
     ArrowRight, MessageSquare, Plus
 } from 'lucide-react';
-import InterviewFeedbackModal from './InterviewFeedbackModal';
 import CandidateProfileModal from './CandidateProfileModal';
 import AddCandidateModal from './AddCandidateModal';
+import InterviewScorecardModal from './screening/InterviewScorecardModal';
 import { useJobApplications, useJobPostings, useApplicationMutations, useInterviewMutations } from '@/hooks/useRecruitment';
 import { useEmployees } from '@/hooks/useHR';
 
@@ -25,8 +25,8 @@ export default function ApplicantPipeline() {
     const [dragOverStage, setDragOverStage] = useState<string | null>(null);
     const [showInterviewModal, setShowInterviewModal] = useState(false);
     const [selectedAppForInterview, setSelectedAppForInterview] = useState<any>(null);
-    const [showFeedbackModal, setShowFeedbackModal] = useState(false);
-    const [feedbackInterview, setFeedbackInterview] = useState<any>(null);
+    const [showScorecardModal, setShowScorecardModal] = useState(false);
+    const [scorecardInterview, setScorecardInterview] = useState<any>(null);
 
     // New Features State
     const [showAddCandidateModal, setShowAddCandidateModal] = useState(false);
@@ -266,10 +266,10 @@ export default function ApplicantPipeline() {
 
                                                 {stage === 'INTERVIEW' && app.interviews?.[0] && (
                                                     <button
-                                                        onClick={(e) => { e.stopPropagation(); setFeedbackInterview(app.interviews[0]); setShowFeedbackModal(true); }}
+                                                        onClick={(e) => { e.stopPropagation(); setScorecardInterview(app.interviews[0]); setShowScorecardModal(true); }}
                                                         className="flex items-center gap-1 text-[10px] font-bold text-amber-600 uppercase hover:bg-amber-50 px-2 py-1 rounded transition-colors ml-2"
                                                     >
-                                                        <MessageSquare size={10} /> Feedback
+                                                        <MessageSquare size={10} /> Scorecard
                                                     </button>
                                                 )}
                                             </div>
@@ -290,11 +290,11 @@ export default function ApplicantPipeline() {
                 </div>
             </div>
 
-            {/* Feedback Modal */}
-            {showFeedbackModal && feedbackInterview && (
-                <InterviewFeedbackModal
-                    interview={feedbackInterview}
-                    onClose={() => { setShowFeedbackModal(false); setFeedbackInterview(null); }}
+            {/* Scorecard Modal */}
+            {showScorecardModal && scorecardInterview && (
+                <InterviewScorecardModal
+                    interview={{...scorecardInterview, application: applications?.find(a => a.id === scorecardInterview.applicationId) || {}}} 
+                    onClose={() => { setShowScorecardModal(false); setScorecardInterview(null); }}
                 />
             )}
 
@@ -389,7 +389,7 @@ export default function ApplicantPipeline() {
                 <CandidateProfileModal
                     application={selectedAppForProfile}
                     onClose={() => setSelectedAppForProfile(null)}
-                    onSchedule={(app) => {
+                    onSchedule={(app: any) => {
                         setSelectedAppForProfile(null); // Close profile modal
                         setSelectedAppForInterview(app); // Set app for interview modal
                         setShowInterviewModal(true); // Open interview modal

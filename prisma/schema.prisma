@@ -91,6 +91,7 @@ model Company {
   users                       User[]                       @relation("UserCompanies")
   projects                    Project[]
   issues                      Issue[]
+  screeningTemplates          ScreeningTemplate[]
 }
 
 model Department {
@@ -126,117 +127,119 @@ model Department {
 }
 
 model User {
-  id                       String                      @id @default(uuid())
-  email                    String                      @unique
-  password                 String
-  role                     UserRole                    @default(EXECUTIVE)
-  isActive                 Boolean                     @default(true)
-  emailVerified            Boolean                     @default(false)
-  lastLogin                DateTime?
-  theme                    String                      @default("light")
-  notificationsEnabled     Boolean                     @default(true)
-  companyId                String?
-  departmentId             String?
-  managerId                String?
-  createdAt                DateTime                    @default(now())
-  updatedAt                DateTime                    @updatedAt
-  name                     String?
-  allowedModules           String[]                    @default(["CORE"])
-  roles                    UserRole[]                  @default([EXECUTIVE])
-  announcements            Announcement[]
-  auditLogs                AuditLog[]
-  certificates             Certificate[]
-  sentMessages             ChatMessage[]
-  chatParticipants         ChatParticipant[]
-  coAuthorInvitations      CoAuthorInvitation[]
-  communications           CommunicationLog[]          @relation("UserCommunications")
-  committeeRoles           ConferenceCommitteeMember[]
-  conferenceRegistrations  ConferenceRegistration[]
-  mentoredCourses          Course[]                    @relation("CourseMentor")
-  courseDiscussions        CourseDiscussion[]
-  courseEnrollments        CourseEnrollment[]
-  courseNotes              CourseNote[]
-  customerAssignments      CustomerAssignment[]        @relation("EmployeeAssignments")
-  assignedCustomers        CustomerProfile[]           @relation("AssignedCustomers")
-  customerProfile          CustomerProfile?
-  headOfDepartments        Department[]                @relation("DepartmentHead")
-  discussionReplies        DiscussionReply[]
-  editorialMemberships     EditorialBoardMember[]
-  authoredComments         EmployeeComment[]
-  employeeProfile          EmployeeProfile?
-  createdFinanceRecords    FinancialRecord[]           @relation("FinanceCreator")
-  assignedAssets           ITAsset[]
-  itPerformanceMetrics     ITPerformanceMetric[]       @relation("ITPerformance")
-  managedProjects          ITProject[]                 @relation("ProjectManager")
-  ledProjects              ITProject[]                 @relation("TeamLead")
-  itProjectComments        ITProjectComment[]          @relation("ITProjectComments")
-  itResolutions            ITSupportTicket[]           @relation("ITResolver")
-  itRequests               ITSupportTicket[]           @relation("ITRequestor")
-  assignedITTasks          ITTask[]                    @relation("ITTaskAssignee")
-  createdITTasks           ITTask[]                    @relation("ITTaskCreator")
-  reportedITTasks          ITTask[]                    @relation("ITTaskReporter")
-  itTaskComments           ITTaskComment[]             @relation("ITTaskComments")
-  itTaskStatusChanges      ITTaskStatusHistory[]       @relation("ITStatusChanger")
-  itTimeEntries            ITTimeEntry[]               @relation("ITTimeEntries")
-  assignedInstitutions     Institution[]               @relation("InstitutionOwner")
-  mentoredInternships      Internship[]                @relation("InternshipMentor")
-  internshipApplications   InternshipApplication[]
-  managedJournals          Journal[]                   @relation("JournalEditor")
-  managedJournalsAsManager Journal[]                   @relation("JournalManager")
-  postedJournalEntries     JournalEntry[]
-  reviewerProfiles         JournalReviewer[]           @relation("ReviewerProfile")
-  knowledgeArticles        KnowledgeArticle[]
-  sentLMSEmails            LMSEmailLog[]
-  mentorPayments           LMSMentorPayment[]          @relation("MentorPayments")
-  approvedLeaves           LeaveRequest[]              @relation("LeaveApprover")
-  sentCommunications       ManuscriptCommunication[]   @relation("SentCommunications")
-  receivedCommunications   ManuscriptCommunication[]   @relation("ReceivedCommunications")
-  manuscriptDrafts         ManuscriptDraft[]
-  manuscriptRevisions      ManuscriptRevision[]
-  manuscriptStatusChanges  ManuscriptStatusHistory[]
-  notifications            Notification[]
-  paperReviews             PaperReview[]
-  passwordResetTokens      PasswordResetToken[]
-  evaluationsConducted     PerformanceEvaluation[]     @relation("EvaluatorUser")
-  performanceReviews       PerformanceReview[]         @relation("Reviewer")
-  plagiarismReports        PlagiarismReport[]          @relation("PlagiarismChecker")
-  pushSubscriptions        PushSubscription[]
-  qualityReports           QualityReport[]             @relation("QualityChecker")
-  quizAttempts             QuizAttempt[]
-  interviewsConducted      RecruitmentInterview[]      @relation("RecruitmentInterviewer")
-  reviews                  Review[]
-  assignedReviews          ReviewAssignment[]          @relation("AssignedReviews")
-  issuedCertificates       ReviewCertificate[]         @relation("IssuedCertificates")
-  validatedReports         ReviewReport[]              @relation("ValidatedReports")
-  assignedByTasks          StageAssignment[]           @relation("TaskAssigner")
-  assignedTasks            StageAssignment[]           @relation("TaskAssignee")
-  assignedSubscriptions    Subscription[]              @relation("AssignedSalesExecutive")
-  assignedTickets          SupportTicket[]             @relation("AssignedTickets")
-  tasks                    Task[]
-  managedTeamMembers       TeamMember[]                @relation("ManagerTeamMembers")
-  teamMemberships          TeamMember[]                @relation("UserTeamMemberships")
-  company                  Company?                    @relation("PrimaryCompany", fields: [companyId], references: [id])
-  department               Department?                 @relation("DepartmentMembers", fields: [departmentId], references: [id])
-  manager                  User?                       @relation("ManagementChain", fields: [managerId], references: [id])
-  subordinates             User[]                      @relation("ManagementChain")
-  lessonProgress           UserLessonProgress[]
-  workPlanComments         WorkPlanComment[]
-  workReportComments       WorkReportComment[]         @relation("WorkReportCommentAuthor")
-  mentoredWorkshops        Workshop[]                  @relation("WorkshopMentor")
-  workshopEnrollments      WorkshopEnrollment[]
-  assignedToCustomers      CustomerProfile[]           @relation("CustomerToExecutives")
-  companies                Company[]                   @relation("UserCompanies")
-  reviewedGoals            EmployeeGoal[]              @relation("GoalReviewer")
-  goalEvaluations         GoalEvaluation[]
-  createdTasks             Task[]                      @relation("TaskAssigner")
-  incrementReviews         SalaryIncrementReview[]     @relation("IncrementReviewer")
-  deals                    Deal[]
-  businessProjects         Project[]                   @relation("BusinessProjectManager")
-  businessLedProjects      Project[]                   @relation("BusinessTeamLead")
-  assignedIssues           Issue[]                     @relation("IssueAssignee")
-  reportedIssues           Issue[]                     @relation("IssueReporter")
-  issueFollowUps           IssueFollowUp[]
-  projectMemberships       ProjectMember[]
+  id                        String                      @id @default(uuid())
+  email                     String                      @unique
+  password                  String
+  role                      UserRole                    @default(EXECUTIVE)
+  isActive                  Boolean                     @default(true)
+  emailVerified             Boolean                     @default(false)
+  lastLogin                 DateTime?
+  theme                     String                      @default("light")
+  notificationsEnabled      Boolean                     @default(true)
+  companyId                 String?
+  departmentId              String?
+  managerId                 String?
+  createdAt                 DateTime                    @default(now())
+  updatedAt                 DateTime                    @updatedAt
+  name                      String?
+  allowedModules            String[]                    @default(["CORE"])
+  roles                     UserRole[]                  @default([EXECUTIVE])
+  announcements             Announcement[]
+  auditLogs                 AuditLog[]
+  certificates              Certificate[]
+  sentMessages              ChatMessage[]
+  chatParticipants          ChatParticipant[]
+  coAuthorInvitations       CoAuthorInvitation[]
+  communications            CommunicationLog[]          @relation("UserCommunications")
+  committeeRoles            ConferenceCommitteeMember[]
+  conferenceRegistrations   ConferenceRegistration[]
+  mentoredCourses           Course[]                    @relation("CourseMentor")
+  courseDiscussions         CourseDiscussion[]
+  courseEnrollments         CourseEnrollment[]
+  courseNotes               CourseNote[]
+  customerAssignments       CustomerAssignment[]        @relation("EmployeeAssignments")
+  assignedCustomers         CustomerProfile[]           @relation("AssignedCustomers")
+  customerProfile           CustomerProfile?
+  headOfDepartments         Department[]                @relation("DepartmentHead")
+  discussionReplies         DiscussionReply[]
+  editorialMemberships      EditorialBoardMember[]
+  authoredComments          EmployeeComment[]
+  employeeProfile           EmployeeProfile?
+  createdFinanceRecords     FinancialRecord[]           @relation("FinanceCreator")
+  assignedAssets            ITAsset[]
+  itPerformanceMetrics      ITPerformanceMetric[]       @relation("ITPerformance")
+  managedProjects           ITProject[]                 @relation("ProjectManager")
+  ledProjects               ITProject[]                 @relation("TeamLead")
+  itProjectComments         ITProjectComment[]          @relation("ITProjectComments")
+  itResolutions             ITSupportTicket[]           @relation("ITResolver")
+  itRequests                ITSupportTicket[]           @relation("ITRequestor")
+  assignedITTasks           ITTask[]                    @relation("ITTaskAssignee")
+  createdITTasks            ITTask[]                    @relation("ITTaskCreator")
+  reportedITTasks           ITTask[]                    @relation("ITTaskReporter")
+  itTaskComments            ITTaskComment[]             @relation("ITTaskComments")
+  itTaskStatusChanges       ITTaskStatusHistory[]       @relation("ITStatusChanger")
+  itTimeEntries             ITTimeEntry[]               @relation("ITTimeEntries")
+  assignedInstitutions      Institution[]               @relation("InstitutionOwner")
+  mentoredInternships       Internship[]                @relation("InternshipMentor")
+  internshipApplications    InternshipApplication[]
+  managedJournals           Journal[]                   @relation("JournalEditor")
+  managedJournalsAsManager  Journal[]                   @relation("JournalManager")
+  postedJournalEntries      JournalEntry[]
+  reviewerProfiles          JournalReviewer[]           @relation("ReviewerProfile")
+  knowledgeArticles         KnowledgeArticle[]
+  sentLMSEmails             LMSEmailLog[]
+  mentorPayments            LMSMentorPayment[]          @relation("MentorPayments")
+  approvedLeaves            LeaveRequest[]              @relation("LeaveApprover")
+  sentCommunications        ManuscriptCommunication[]   @relation("SentCommunications")
+  receivedCommunications    ManuscriptCommunication[]   @relation("ReceivedCommunications")
+  manuscriptDrafts          ManuscriptDraft[]
+  manuscriptRevisions       ManuscriptRevision[]
+  manuscriptStatusChanges   ManuscriptStatusHistory[]
+  notifications             Notification[]
+  paperReviews              PaperReview[]
+  passwordResetTokens       PasswordResetToken[]
+  evaluationsConducted      PerformanceEvaluation[]     @relation("EvaluatorUser")
+  performanceReviews        PerformanceReview[]         @relation("Reviewer")
+  plagiarismReports         PlagiarismReport[]          @relation("PlagiarismChecker")
+  pushSubscriptions         PushSubscription[]
+  qualityReports            QualityReport[]             @relation("QualityChecker")
+  quizAttempts              QuizAttempt[]
+  interviewsConducted       RecruitmentInterview[]      @relation("RecruitmentInterviewer")
+  reviews                   Review[]
+  assignedReviews           ReviewAssignment[]          @relation("AssignedReviews")
+  issuedCertificates        ReviewCertificate[]         @relation("IssuedCertificates")
+  validatedReports          ReviewReport[]              @relation("ValidatedReports")
+  assignedByTasks           StageAssignment[]           @relation("TaskAssigner")
+  assignedTasks             StageAssignment[]           @relation("TaskAssignee")
+  assignedSubscriptions     Subscription[]              @relation("AssignedSalesExecutive")
+  assignedTickets           SupportTicket[]             @relation("AssignedTickets")
+  tasks                     Task[]
+  managedTeamMembers        TeamMember[]                @relation("ManagerTeamMembers")
+  teamMemberships           TeamMember[]                @relation("UserTeamMemberships")
+  company                   Company?                    @relation("PrimaryCompany", fields: [companyId], references: [id])
+  department                Department?                 @relation("DepartmentMembers", fields: [departmentId], references: [id])
+  manager                   User?                       @relation("ManagementChain", fields: [managerId], references: [id])
+  subordinates              User[]                      @relation("ManagementChain")
+  lessonProgress            UserLessonProgress[]
+  workPlanComments          WorkPlanComment[]
+  workReportComments        WorkReportComment[]         @relation("WorkReportCommentAuthor")
+  mentoredWorkshops         Workshop[]                  @relation("WorkshopMentor")
+  workshopEnrollments       WorkshopEnrollment[]
+  assignedToCustomers       CustomerProfile[]           @relation("CustomerToExecutives")
+  companies                 Company[]                   @relation("UserCompanies")
+  reviewedGoals             EmployeeGoal[]              @relation("GoalReviewer")
+  goalEvaluations           GoalEvaluation[]
+  createdTasks              Task[]                      @relation("TaskAssigner")
+  incrementReviews          SalaryIncrementReview[]     @relation("IncrementReviewer")
+  deals                     Deal[]
+  businessProjects          Project[]                   @relation("BusinessProjectManager")
+  businessLedProjects       Project[]                   @relation("BusinessTeamLead")
+  assignedIssues            Issue[]                     @relation("IssueAssignee")
+  reportedIssues            Issue[]                     @relation("IssueReporter")
+  issueFollowUps            IssueFollowUp[]
+  projectMemberships        ProjectMember[]
+  screeningTemplatesCreated ScreeningTemplate[]
+  screeningsSubmitted       InterviewScreening[]        @relation("ScreeningSubmitter")
 
   @@index([email])
   @@index([role])
@@ -1085,34 +1088,34 @@ model AdvanceEMI {
 }
 
 model SalaryIncrementRecord {
-  id                      String          @id @default(uuid())
+  id                      String                  @id @default(uuid())
   employeeProfileId       String
-  date                    DateTime        @default(now())
-  effectiveDate           DateTime        @default(now())
+  date                    DateTime                @default(now())
+  effectiveDate           DateTime                @default(now())
   oldSalary               Float
-  oldFixed                Float           @default(0)
-  oldVariable             Float           @default(0)
-  oldIncentive            Float           @default(0)
+  oldFixed                Float                   @default(0)
+  oldVariable             Float                   @default(0)
+  oldIncentive            Float                   @default(0)
   newSalary               Float
-  newFixed                Float           @default(0)
-  newVariable             Float           @default(0)
-  newIncentive            Float           @default(0)
-  oldBaseTarget           Float?          @default(0)
-  newBaseTarget           Float?          @default(0)
-  oldVariableRate         Float?          @default(0)
-  newVariableRate         Float?          @default(0)
-  oldVariableUnit         Float?          @default(0)
-  newVariableUnit         Float?          @default(0)
-  currentMonthlyTarget    Float?          @default(0)
-  newMonthlyTarget        Float?          @default(0)
-  currentYearlyTarget     Float?          @default(0)
-  newYearlyTarget         Float?          @default(0)
+  newFixed                Float                   @default(0)
+  newVariable             Float                   @default(0)
+  newIncentive            Float                   @default(0)
+  oldBaseTarget           Float?                  @default(0)
+  newBaseTarget           Float?                  @default(0)
+  oldVariableRate         Float?                  @default(0)
+  newVariableRate         Float?                  @default(0)
+  oldVariableUnit         Float?                  @default(0)
+  newVariableUnit         Float?                  @default(0)
+  currentMonthlyTarget    Float?                  @default(0)
+  newMonthlyTarget        Float?                  @default(0)
+  currentYearlyTarget     Float?                  @default(0)
+  newYearlyTarget         Float?                  @default(0)
   variableDefinition      String?
   incentiveDefinition     String?
   incrementAmount         Float
   percentage              Float
-  optInVariable           Boolean         @default(false)
-  optInIncentive          Boolean         @default(false)
+  optInVariable           Boolean                 @default(false)
+  optInIncentive          Boolean                 @default(false)
   performanceReviews      PerformanceReview[]
   oldVariablePerTarget    Float?
   newVariablePerTarget    Float?
@@ -1130,47 +1133,47 @@ model SalaryIncrementRecord {
   newInternet             Float?
   oldBooksAndPeriodicals  Float?
   newBooksAndPeriodicals  Float?
-  type                    String          @default("INCREMENT")
+  type                    String                  @default("INCREMENT")
   previousDesignation     String?
   newDesignation          String?
   oldJobDescription       String?
   newJobDescription       String?
   reason                  String?
-  status                  String          @default("DRAFT")
-  isDraft                 Boolean         @default(true)
+  status                  String                  @default("DRAFT")
+  isDraft                 Boolean                 @default(true)
   recommendedByUserId     String?
   managerReviewDate       DateTime?
   managerComments         String?
-  managerApproved         Boolean         @default(false)
+  managerApproved         Boolean                 @default(false)
   approvedByUserId        String?
   adminReviewDate         DateTime?
   adminComments           String?
-  adminApproved           Boolean         @default(false)
+  adminApproved           Boolean                 @default(false)
   oldKRA                  String?
   oldKPI                  Json?
   newKRA                  String?
   newKPI                  Json?
   performanceNotes        String?
-  createdAt               DateTime        @default(now())
-  updatedAt               DateTime        @updatedAt
+  createdAt               DateTime                @default(now())
+  updatedAt               DateTime                @updatedAt
   fiscalYear              String?
   previousFiscalYear      String?
-  q1Target                Float?          @default(0)
-  q2Target                Float?          @default(0)
-  q3Target                Float?          @default(0)
-  q4Target                Float?          @default(0)
-  monthlyFixSalary        Float           @default(0)
-  monthlyFixTarget        Float           @default(0)
-  monthlyTotalSalary      Float           @default(0)
-  monthlyTotalTarget      Float           @default(0)
-  monthlyVariableSalary   Float           @default(0)
-  monthlyVariableTarget   Float           @default(0)
+  q1Target                Float?                  @default(0)
+  q2Target                Float?                  @default(0)
+  q3Target                Float?                  @default(0)
+  q4Target                Float?                  @default(0)
+  monthlyFixSalary        Float                   @default(0)
+  monthlyFixTarget        Float                   @default(0)
+  monthlyTotalSalary      Float                   @default(0)
+  monthlyTotalTarget      Float                   @default(0)
+  monthlyVariableSalary   Float                   @default(0)
+  monthlyVariableTarget   Float                   @default(0)
   monthlyTargets          Json?
   monthlyVariableTargets  Json?
   monthlyFixedSalaries    Json?
   monthlyVariableSalaries Json?
   reviews                 SalaryIncrementReview[]
-  employeeProfile         EmployeeProfile @relation(fields: [employeeProfileId], references: [id], onDelete: Cascade)
+  employeeProfile         EmployeeProfile         @relation(fields: [employeeProfileId], references: [id], onDelete: Cascade)
 
   @@index([employeeProfileId])
   @@index([status])
@@ -1251,8 +1254,8 @@ model WorkReport {
   kraMatchRatio       Float?
   metrics             Json?
   evaluation          Json?
-  attendanceStatus    String?              // PRESENT, LATE, ABSENT
-  disciplineStatus    String?              // GOOD, WARNING, VIOLATION
+  attendanceStatus    String? // PRESENT, LATE, ABSENT
+  disciplineStatus    String? // GOOD, WARNING, VIOLATION
   pointsEarned        Int                  @default(0)
   tasksSnapshot       Json?
   revenueClaims       RevenueClaim[]
@@ -1507,7 +1510,7 @@ model SalaryStructure {
   booksAndPeriodicals Float           @default(0)
   salaryFixed         Float           @default(0)
   salaryVariable      Float           @default(0)
-  salaryIncentive          Float           @default(0)
+  salaryIncentive     Float           @default(0)
   ctc                 Float           @default(0)
   effectiveFrom       DateTime        @default(now())
   createdAt           DateTime        @default(now())
@@ -1516,18 +1519,18 @@ model SalaryStructure {
 }
 
 model PerformanceReview {
-  id         String          @id @default(uuid())
-  employeeId String
-  reviewerId String
-  date       DateTime        @default(now())
-  rating     Int
-  feedback   String?
-  period     String?
-  companyId  String?
-  createdAt  DateTime        @default(now())
-  company    Company?        @relation(fields: [companyId], references: [id])
-  employee   EmployeeProfile @relation("EmployeeReviews", fields: [employeeId], references: [id], onDelete: Cascade)
-  reviewer   User            @relation("Reviewer", fields: [reviewerId], references: [id])
+  id                      String                 @id @default(uuid())
+  employeeId              String
+  reviewerId              String
+  date                    DateTime               @default(now())
+  rating                  Int
+  feedback                String?
+  period                  String?
+  companyId               String?
+  createdAt               DateTime               @default(now())
+  company                 Company?               @relation(fields: [companyId], references: [id])
+  employee                EmployeeProfile        @relation("EmployeeReviews", fields: [employeeId], references: [id], onDelete: Cascade)
+  reviewer                User                   @relation("Reviewer", fields: [reviewerId], references: [id])
   salaryIncrementRecordId String?
   salaryIncrementRecord   SalaryIncrementRecord? @relation(fields: [salaryIncrementRecordId], references: [id])
 
@@ -1722,26 +1725,27 @@ model JobPosting {
 }
 
 model JobApplication {
-  id             String                 @id @default(uuid())
-  jobPostingId   String
-  applicantName  String
-  applicantEmail String
-  applicantPhone String?
-  resumeUrl      String?
-  aiMatchScore   Int                    @default(0)
-  aiTags         String[]               @default([])
-  status         String                 @default("APPLIED")
-  offerLetterUrl String?
-  contractUrl    String?
-  notes          String?
-  rating         Int?
-  createdAt      DateTime               @default(now())
-  updatedAt      DateTime               @updatedAt
-  departmentId   String?
-  examAttempt    ExamAttempt?
-  department     Department?            @relation(fields: [departmentId], references: [id])
-  jobPosting     JobPosting             @relation(fields: [jobPostingId], references: [id], onDelete: Cascade)
-  interviews     RecruitmentInterview[]
+  id                  String                 @id @default(uuid())
+  jobPostingId        String
+  applicantName       String
+  applicantEmail      String
+  applicantPhone      String?
+  resumeUrl           String?
+  aiMatchScore        Int                    @default(0)
+  aiTags              String[]               @default([])
+  status              String                 @default("APPLIED")
+  offerLetterUrl      String?
+  contractUrl         String?
+  notes               String?
+  rating              Int?
+  createdAt           DateTime               @default(now())
+  updatedAt           DateTime               @updatedAt
+  departmentId        String?
+  examAttempt         ExamAttempt?
+  department          Department?            @relation(fields: [departmentId], references: [id])
+  jobPosting          JobPosting             @relation(fields: [jobPostingId], references: [id], onDelete: Cascade)
+  interviews          RecruitmentInterview[]
+  interviewScreenings InterviewScreening[]
 }
 
 model RecruitmentExam {
@@ -1768,23 +1772,24 @@ model ExamAttempt {
 }
 
 model RecruitmentInterview {
-  id            String         @id @default(uuid())
+  id            String              @id @default(uuid())
   applicationId String
   level         Int
   interviewerId String
   scheduledAt   DateTime
-  status        String         @default("SCHEDULED")
-  result        String         @default("PENDING")
+  status        String              @default("SCHEDULED")
+  result        String              @default("PENDING")
   feedback      String?
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
-  duration      Int            @default(30)
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+  duration      Int                 @default(30)
   location      String?
   meetingLink   String?
   rating        Int?
-  type          String         @default("VIRTUAL")
-  application   JobApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
-  interviewer   User           @relation("RecruitmentInterviewer", fields: [interviewerId], references: [id])
+  type          String              @default("VIRTUAL")
+  application   JobApplication      @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  interviewer   User                @relation("RecruitmentInterviewer", fields: [interviewerId], references: [id])
+  screening     InterviewScreening?
 
   @@unique([applicationId, level])
 }
@@ -2672,31 +2677,31 @@ model LeaveLedger {
 }
 
 model EmployeeGoal {
-  id                    String          @id @default(uuid())
+  id                    String           @id @default(uuid())
   employeeId            String
   title                 String
   description           String?
   kra                   String? // Key Result Area
   targetValue           Float
-  currentValue          Float           @default(0)
-  achievementPercentage Float           @default(0)
+  currentValue          Float            @default(0)
+  achievementPercentage Float            @default(0)
   unit                  String
-  type                  GoalType        @default(MONTHLY)
+  type                  GoalType         @default(MONTHLY)
   startDate             DateTime
   endDate               DateTime
-  status                String          @default("IN_PROGRESS")
-  visibility            String          @default("MANAGER") // SELF, MANAGER, ADMIN, ALL
+  status                String           @default("IN_PROGRESS")
+  visibility            String           @default("MANAGER") // SELF, MANAGER, ADMIN, ALL
   reviewerId            String? // Manager/Admin who reviews
   reviewNotes           String?
   companyId             String
   kpiId                 String?
-  createdAt             DateTime        @default(now())
-  updatedAt             DateTime        @updatedAt
-  company               Company         @relation(fields: [companyId], references: [id])
-  employee              EmployeeProfile @relation(fields: [employeeId], references: [id], onDelete: Cascade)
-  kpi                   EmployeeKPI?    @relation(fields: [kpiId], references: [id])
-  reviewer              User?           @relation("GoalReviewer", fields: [reviewerId], references: [id])
-  workPlans             WorkPlan[]      @relation("GoalWorkPlans")
+  createdAt             DateTime         @default(now())
+  updatedAt             DateTime         @updatedAt
+  company               Company          @relation(fields: [companyId], references: [id])
+  employee              EmployeeProfile  @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  kpi                   EmployeeKPI?     @relation(fields: [kpiId], references: [id])
+  reviewer              User?            @relation("GoalReviewer", fields: [reviewerId], references: [id])
+  workPlans             WorkPlan[]       @relation("GoalWorkPlans")
   evaluations           GoalEvaluation[]
 
   @@index([employeeId])
@@ -3753,23 +3758,23 @@ enum DealStage {
 }
 
 model Deal {
-  id          String    @id @default(uuid())
-  title       String
-  value       Float     @default(0)
-  currency    String    @default("INR")
-  stage       DealStage @default(DISCOVERY)
-  probability Int       @default(20)
+  id                String    @id @default(uuid())
+  title             String
+  value             Float     @default(0)
+  currency          String    @default("INR")
+  stage             DealStage @default(DISCOVERY)
+  probability       Int       @default(20)
   expectedCloseDate DateTime?
-  customerId  String
-  ownerId     String
-  notes       String?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  companyId   String?
-  
-  customer    CustomerProfile @relation(fields: [customerId], references: [id], onDelete: Cascade)
-  owner       User            @relation(fields: [ownerId], references: [id])
-  company     Company?        @relation(fields: [companyId], references: [id])
+  customerId        String
+  ownerId           String
+  notes             String?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  companyId         String?
+
+  customer CustomerProfile @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  owner    User            @relation(fields: [ownerId], references: [id])
+  company  Company?        @relation(fields: [companyId], references: [id])
 
   @@index([customerId])
   @@index([ownerId])
@@ -4117,7 +4122,7 @@ model GoalEvaluation {
   id          String       @id @default(uuid())
   goalId      String
   evaluatorId String
-  score       Float        // 1-10 or percentage
+  score       Float // 1-10 or percentage
   feedback    String?
   createdAt   DateTime     @default(now())
   goal        EmployeeGoal @relation(fields: [goalId], references: [id], onDelete: Cascade)
@@ -4125,29 +4130,29 @@ model GoalEvaluation {
 }
 
 model SalaryIncrementReview {
-  id                   String                @id @default(uuid())
-  incrementRecordId    String
-  incrementRecord      SalaryIncrementRecord @relation(fields: [incrementRecordId], references: [id], onDelete: Cascade)
-  type                 ReviewType            @default(MONTHLY)
+  id                String                @id @default(uuid())
+  incrementRecordId String
+  incrementRecord   SalaryIncrementRecord @relation(fields: [incrementRecordId], references: [id], onDelete: Cascade)
+  type              ReviewType            @default(MONTHLY)
   // Period Mapping
-  month                Int?
-  year                 Int?
-  period               String?               // e.g., "Jan 2024", "Q1 2024", "2024"
-  date                 DateTime              @default(now())
-  reviewerId           String
-  reviewer             User                  @relation("IncrementReviewer", fields: [reviewerId], references: [id])
-  
+  month             Int?
+  year              Int?
+  period            String? // e.g., "Jan 2024", "Q1 2024", "2024"
+  date              DateTime              @default(now())
+  reviewerId        String
+  reviewer          User                  @relation("IncrementReviewer", fields: [reviewerId], references: [id])
+
   // Performance Data
-  revenueAchievement   Float?                @default(0)
-  kraProgress          String?               // Detailed comments on KRA
-  kpiProgress          Json?                 // Actual values for KPIs
-  rating               Float?
-  comments             String?
-  
-  status               String                @default("COMPLETED")
-  
-  createdAt            DateTime              @default(now())
-  updatedAt            DateTime              @updatedAt
+  revenueAchievement Float?  @default(0)
+  kraProgress        String? // Detailed comments on KRA
+  kpiProgress        Json? // Actual values for KPIs
+  rating             Float?
+  comments           String?
+
+  status String @default("COMPLETED")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([incrementRecordId])
   @@index([reviewerId])
@@ -4160,24 +4165,24 @@ enum ReviewType {
 }
 
 model Project {
-  id          String   @id @default(uuid())
+  id          String          @id @default(uuid())
   title       String
   description String?
   startDate   DateTime
   endDate     DateTime?
-  status      String   @default("PLANNED") // PLANNED, IN_PROGRESS, COMPLETED, ON_HOLD
-  priority    String   @default("MEDIUM")
+  status      String          @default("PLANNED") // PLANNED, IN_PROGRESS, COMPLETED, ON_HOLD
+  priority    String          @default("MEDIUM")
   companyId   String
-  company     Company  @relation(fields: [companyId], references: [id])
+  company     Company         @relation(fields: [companyId], references: [id])
   managerId   String?
-  manager     User?    @relation("BusinessProjectManager", fields: [managerId], references: [id])
+  manager     User?           @relation("BusinessProjectManager", fields: [managerId], references: [id])
   leadId      String?
-  lead        User?    @relation("BusinessTeamLead", fields: [leadId], references: [id])
+  lead        User?           @relation("BusinessTeamLead", fields: [leadId], references: [id])
   members     ProjectMember[]
   tasks       Task[]
   issues      Issue[]
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
 
   @@index([companyId])
   @@index([managerId])
@@ -4189,29 +4194,29 @@ model ProjectMember {
   project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
   userId    String
   user      User     @relation(fields: [userId], references: [id])
-  role      String?  // MEMBER, LEAD
+  role      String? // MEMBER, LEAD
   joinedAt  DateTime @default(now())
 
   @@unique([projectId, userId])
 }
 
 model Issue {
-  id          String   @id @default(uuid())
+  id          String          @id @default(uuid())
   projectId   String?
-  project     Project? @relation(fields: [projectId], references: [id])
+  project     Project?        @relation(fields: [projectId], references: [id])
   title       String
   description String?
-  status      String   @default("OPEN") // OPEN, IN_PROGRESS, RESOLVED, CLOSED
-  priority    String   @default("MEDIUM")
-  type        String   @default("BUG") // BUG, FEATURE, TASK
+  status      String          @default("OPEN") // OPEN, IN_PROGRESS, RESOLVED, CLOSED
+  priority    String          @default("MEDIUM")
+  type        String          @default("BUG") // BUG, FEATURE, TASK
   assigneeId  String?
-  assignee    User?    @relation("IssueAssignee", fields: [assigneeId], references: [id])
+  assignee    User?           @relation("IssueAssignee", fields: [assigneeId], references: [id])
   reporterId  String
-  reporter    User     @relation("IssueReporter", fields: [reporterId], references: [id])
+  reporter    User            @relation("IssueReporter", fields: [reporterId], references: [id])
   companyId   String
-  company     Company  @relation(fields: [companyId], references: [id])
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  company     Company         @relation(fields: [companyId], references: [id])
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
   dueDate     DateTime?
   followUps   IssueFollowUp[]
 
@@ -4230,4 +4235,65 @@ model IssueFollowUp {
   createdAt DateTime @default(now())
 
   @@index([issueId])
+}
+
+model ScreeningTemplate {
+  id         String   @id @default(uuid())
+  title      String
+  companyId  String?
+  jobRoleId  String?
+  department String?
+  jobType    String?
+  version    Int      @default(1)
+  categories Json
+  questions  Json // Array of questions with rubric, type, difficulty
+  weights    Json? // e.g. { "Technical": 60, "Communication": 40 }
+  createdBy  String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  screenings InterviewScreening[]
+  company    Company?             @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  creator    User                 @relation(fields: [createdBy], references: [id])
+}
+
+model InterviewScreening {
+  id              String    @id @default(uuid())
+  interviewId     String    @unique
+  applicationId   String
+  templateId      String
+  templateVersion Int
+  overallScore    Float?
+  categoryScores  Json?
+  recommendation  String? // e.g. Strong Hire / Hire / Lean Hire / Lean No / No Hire
+  status          String    @default("DRAFT") // DRAFT or SUBMITTED
+  submittedBy     String?
+  submittedAt     DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  interview   RecruitmentInterview @relation(fields: [interviewId], references: [id], onDelete: Cascade)
+  application JobApplication       @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  template    ScreeningTemplate    @relation(fields: [templateId], references: [id])
+  submitter   User?                @relation("ScreeningSubmitter", fields: [submittedBy], references: [id])
+  responses   ScreeningResponse[]
+
+  @@index([applicationId])
+  @@index([templateId])
+}
+
+model ScreeningResponse {
+  id             String   @id @default(uuid())
+  screeningId    String
+  questionId     String
+  rating         Int?
+  checkboxStatus String? // e.g. MEETS, PARTIAL, NO
+  notes          String?
+  flags          String? // e.g. STRONG_SIGNAL, RED_FLAG
+  followupsUsed  Boolean  @default(false)
+  updatedAt      DateTime @updatedAt
+
+  screening InterviewScreening @relation(fields: [screeningId], references: [id], onDelete: Cascade)
+
+  @@index([screeningId])
 }
