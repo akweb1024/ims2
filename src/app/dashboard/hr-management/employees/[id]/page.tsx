@@ -31,6 +31,8 @@ export default function EmployeeProfilePage() {
     const [activeTab, setActiveTab] = useState('overview');
     const [growthData, setGrowthData] = useState<any>(null);
     const [currentUser, setCurrentUser] = useState<any>(null);
+    
+    const canViewSalary = currentUser && ['SUPER_ADMIN', 'ADMIN', 'HR', 'MANAGER', 'FINANCE', 'FINANCE_ADMIN'].includes(currentUser.role);
 
     useEffect(() => {
         const userData = localStorage.getItem('user');
@@ -559,7 +561,7 @@ export default function EmployeeProfilePage() {
                                 </div>
 
                                 {/* Multi-Company Designations Card */}
-                                {employee.companyDesignations && employee.companyDesignations.length > 0 && (
+                                {canViewSalary && employee.companyDesignations && employee.companyDesignations.length > 0 && (
                                     <div className="card-premium p-6">
                                         <h3 className="font-bold text-lg mb-4 flex items-center gap-2">
                                             <Briefcase className="text-purple-500" size={20} />
@@ -584,48 +586,52 @@ export default function EmployeeProfilePage() {
                                 )}
 
                                 {/* Compensation Overview Card */}
-                                <div className="card-premium p-6 md:col-span-2 bg-gradient-to-br from-white to-secondary-50/50">
-                                    <h3 className="font-bold text-lg mb-6 flex items-center gap-2">
-                                        <DollarSign className="text-primary-600" size={20} />
-                                        Compensation Structure
-                                    </h3>
-                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                                        <div className="p-4 bg-white rounded-2xl border border-secondary-100 shadow-sm">
-                                            <p className="text-[10px] font-black text-secondary-400 uppercase tracking-wider mb-1">CTC</p>
-                                            <p className="text-xl font-black text-secondary-900">₹{employee.salaryStructure?.salaryFixed?.toLocaleString() || '0'}</p>
-                                            <p className="text-[10px] text-secondary-500 font-bold">Monthly Base</p>
-                                        </div>
-                                        <div className="p-4 bg-white rounded-2xl border border-secondary-100 shadow-sm">
-                                            <p className="text-[10px] font-black text-secondary-400 uppercase tracking-wider mb-1">Variable Pay</p>
-                                            <p className="text-xl font-black text-primary-600">₹{employee.salaryStructure?.salaryVariable?.toLocaleString() || '0'}</p>
-                                            <p className="text-[10px] text-secondary-500 font-bold">Performance Linked</p>
-                                        </div>
-                                        <div className="p-4 bg-white rounded-2xl border border-secondary-100 shadow-sm">
-                                            <p className="text-[10px] font-black text-secondary-400 uppercase tracking-wider mb-1">Incentives</p>
-                                            <p className="text-xl font-black text-warning-600">₹{employee.salaryStructure?.salaryIncentive?.toLocaleString() || '0'}</p>
-                                            <p className="text-[10px] text-secondary-500 font-bold">Target Bonuses</p>
-                                        </div>
-                                        <div className="p-4 bg-white rounded-2xl border border-secondary-100 shadow-sm">
-                                            <p className="text-[10px] font-black text-secondary-400 uppercase tracking-wider mb-1">Perks/Exemp</p>
-                                            <p className="text-xl font-black text-success-600">₹{(
-                                                (employee.salaryStructure?.healthCare || 0) +
-                                                (employee.salaryStructure?.travelling || 0) +
-                                                (employee.salaryStructure?.mobile || 0) +
-                                                (employee.salaryStructure?.internet || 0) +
-                                                (employee.salaryStructure?.booksAndPeriodicals || 0)
-                                            ).toLocaleString()}</p>
-                                            <p className="text-[10px] text-secondary-500 font-bold">Sec-10 Benefits</p>
+                                {canViewSalary && (
+                                    <div className="card-premium p-6 md:col-span-2 bg-gradient-to-br from-white to-secondary-50/50">
+                                        <h3 className="font-bold text-lg mb-6 flex items-center gap-2">
+                                            <DollarSign className="text-primary-600" size={20} />
+                                            Compensation Structure
+                                        </h3>
+                                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                            <div className="p-4 bg-white rounded-2xl border border-secondary-100 shadow-sm">
+                                                <p className="text-[10px] font-black text-secondary-400 uppercase tracking-wider mb-1">CTC</p>
+                                                <p className="text-xl font-black text-secondary-900">₹{employee.salaryStructure?.salaryFixed?.toLocaleString() || '0'}</p>
+                                                <p className="text-[10px] text-secondary-500 font-bold">Monthly Base</p>
+                                            </div>
+                                            <div className="p-4 bg-white rounded-2xl border border-secondary-100 shadow-sm">
+                                                <p className="text-[10px] font-black text-secondary-400 uppercase tracking-wider mb-1">Variable Pay</p>
+                                                <p className="text-xl font-black text-primary-600">₹{employee.salaryStructure?.salaryVariable?.toLocaleString() || '0'}</p>
+                                                <p className="text-[10px] text-secondary-500 font-bold">Performance Linked</p>
+                                            </div>
+                                            <div className="p-4 bg-white rounded-2xl border border-secondary-100 shadow-sm">
+                                                <p className="text-[10px] font-black text-secondary-400 uppercase tracking-wider mb-1">Incentives</p>
+                                                <p className="text-xl font-black text-warning-600">₹{employee.salaryStructure?.salaryIncentive?.toLocaleString() || '0'}</p>
+                                                <p className="text-[10px] text-secondary-500 font-bold">Target Bonuses</p>
+                                            </div>
+                                            <div className="p-4 bg-white rounded-2xl border border-secondary-100 shadow-sm">
+                                                <p className="text-[10px] font-black text-secondary-400 uppercase tracking-wider mb-1">Perks/Exemp</p>
+                                                <p className="text-xl font-black text-success-600">₹{(
+                                                    (employee.salaryStructure?.healthCare || 0) +
+                                                    (employee.salaryStructure?.travelling || 0) +
+                                                    (employee.salaryStructure?.mobile || 0) +
+                                                    (employee.salaryStructure?.internet || 0) +
+                                                    (employee.salaryStructure?.booksAndPeriodicals || 0)
+                                                ).toLocaleString()}</p>
+                                                <p className="text-[10px] text-secondary-500 font-bold">Sec-10 Benefits</p>
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
+                                )}
 
-                                <div className="card-premium p-6 md:col-span-2">
-                                    <h3 className="font-bold text-lg mb-6 flex items-center gap-2">
-                                        <PieIcon className="text-primary-600" size={20} />
-                                        Departmental Expense Impact
-                                    </h3>
-                                    <ExpenseImpactAnalytics employeeId={params.id as string} />
-                                </div>
+                                {canViewSalary && (
+                                    <div className="card-premium p-6 md:col-span-2">
+                                        <h3 className="font-bold text-lg mb-6 flex items-center gap-2">
+                                            <PieIcon className="text-primary-600" size={20} />
+                                            Departmental Expense Impact
+                                        </h3>
+                                        <ExpenseImpactAnalytics employeeId={params.id as string} />
+                                    </div>
+                                )}
 
                                 <div className="card-premium p-6 md:col-span-2">
                                     <h3 className="font-bold text-lg mb-4 flex items-center gap-2">
@@ -661,7 +667,7 @@ export default function EmployeeProfilePage() {
                         )}
 
                         {/* History Tab (Increments) */}
-                        {activeTab === 'history' && (
+                        {activeTab === 'history' && canViewSalary && (
                             <div className="space-y-6">
                                 <div className="flex justify-between items-center">
                                     <h3 className="font-bold text-lg text-secondary-900">Compensation History</h3>

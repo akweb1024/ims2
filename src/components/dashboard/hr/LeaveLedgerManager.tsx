@@ -13,6 +13,8 @@ const LeaveLedgerRow = ({ row, onSave, onViewHistory }: { row: any, onSave: (dat
         takenLeaves: row.takenLeaves ?? 0,
         lateDeductions: row.lateDeductions ?? 0,
         shortLeaveDeductions: row.shortLeaveDeductions ?? 0,
+        lateArrivalCount: row.lateArrivalCount ?? 0,
+        shortLeaveCount: row.shortLeaveCount ?? 0,
         closingBalance: row.closingBalance ?? 0,
         remarks: row.remarks ?? ''
     });
@@ -96,8 +98,9 @@ const LeaveLedgerRow = ({ row, onSave, onViewHistory }: { row: any, onSave: (dat
 
             {/* Deductions (Late & Short) */}
             <td className="px-4 py-4">
-                <div className="flex flex-col gap-1.5 min-w-[80px]">
-                    <div className="relative">
+                <div className="flex flex-col gap-1.5 min-w-[100px]">
+                    <div className="relative flex items-center gap-1">
+                        <span className="text-[10px] font-bold text-secondary-500 w-4 text-center bg-rose-50 rounded-md" title="Late Arrivals Count">{editData.lateArrivalCount}</span>
                         <input
                             type="number" step="0.5"
                             className="w-full text-center py-1 text-[10px] font-black bg-rose-50 border-rose-100 text-rose-700 rounded-md focus:ring-1 focus:ring-rose-300 outline-none"
@@ -105,9 +108,10 @@ const LeaveLedgerRow = ({ row, onSave, onViewHistory }: { row: any, onSave: (dat
                             onChange={e => setEditData({ ...editData, lateDeductions: parseFloat(e.target.value) || 0 })}
                             title="Late Deductions"
                         />
-                        <span className="absolute -top-2 left-1 bg-rose-100 text-rose-600 text-[8px] font-black px-1 rounded uppercase tracking-tighter">Late</span>
+                        <span className="absolute -top-2 left-6 bg-rose-100 text-rose-600 text-[8px] font-black px-1 rounded uppercase tracking-tighter">Late</span>
                     </div>
-                    <div className="relative">
+                    <div className="relative flex items-center gap-1">
+                        <span className="text-[10px] font-bold text-secondary-500 w-4 text-center bg-orange-50 rounded-md" title="Short Leaves Count">{editData.shortLeaveCount}</span>
                         <input
                             type="number" step="0.5"
                             className="w-full text-center py-1 text-[10px] font-black bg-orange-50 border-orange-100 text-orange-700 rounded-md focus:ring-1 focus:ring-orange-300 outline-none"
@@ -115,7 +119,7 @@ const LeaveLedgerRow = ({ row, onSave, onViewHistory }: { row: any, onSave: (dat
                             onChange={e => setEditData({ ...editData, shortLeaveDeductions: parseFloat(e.target.value) || 0 })}
                             title="Short Leave Deductions"
                         />
-                        <span className="absolute -top-2 left-1 bg-orange-100 text-orange-600 text-[8px] font-black px-1 rounded uppercase tracking-tighter">Short</span>
+                        <span className="absolute -top-2 left-6 bg-orange-100 text-orange-600 text-[8px] font-black px-1 rounded uppercase tracking-tighter">Short</span>
                     </div>
                 </div>
             </td>
