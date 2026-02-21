@@ -3,11 +3,15 @@ const nextConfig = {
     reactStrictMode: true,
     output: 'standalone',
     images: {
-        domains: ['localhost'],
         remotePatterns: [
             {
                 protocol: 'https',
                 hostname: '*.amazonaws.com',
+            },
+            {
+                protocol: 'http',
+                hostname: 'localhost',
+                port: '3000',
             }
         ]
     },
