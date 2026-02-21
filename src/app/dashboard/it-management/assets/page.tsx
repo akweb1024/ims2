@@ -6,6 +6,7 @@ import { Computer, Plus, Search, Filter, AlertCircle, CheckCircle, User, Server,
 
 export default function ITAssetsPage() {
     const [assets, setAssets] = useState<any[]>([]);
+    const [employees, setEmployees] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
     const [showModal, setShowModal] = useState(false);
@@ -18,6 +19,7 @@ export default function ITAssetsPage() {
         type: 'LAPTOP',
         serialNumber: '',
         status: 'AVAILABLE',
+        assignedToId: '',
         details: '',
         value: '',
         purchaseDate: ''
@@ -27,7 +29,20 @@ export default function ITAssetsPage() {
         const user = localStorage.getItem('user');
         if (user) setUserRole(JSON.parse(user).role);
         fetchAssets();
+        fetchEmployees();
     }, []);
+
+    const fetchEmployees = async () => {
+        try {
+            const token = localStorage.getItem('token');
+            const res = await fetch('/api/hr/employees?all=true', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (res.ok) setEmployees(await res.json());
+        } catch (error) {
+            console.error('Failed to load employees', error);
+        }
+    };
 
     const fetchAssets = async () => {
         try {
@@ -80,7 +95,7 @@ export default function ITAssetsPage() {
 
     const resetForm = () => {
         setEditingAsset(null);
-        setFormData({ name: '', type: 'LAPTOP', serialNumber: '', status: 'AVAILABLE', details: '', value: '', purchaseDate: '' });
+        setFormData({ name: '', type: 'LAPTOP', serialNumber: '', status: 'AVAILABLE', assignedToId: '', details: '', value: '', purchaseDate: '' });
     };
 
     const openEditModal = (asset: any) => {
@@ -90,6 +105,7 @@ export default function ITAssetsPage() {
             type: asset.type,
             serialNumber: asset.serialNumber || '',
             status: asset.status,
+            assignedToId: asset.assignedToId || '',
             details: asset.details || '',
             value: asset.value?.toString() || '',
             purchaseDate: asset.purchaseDate ? new Date(asset.purchaseDate).toISOString().split('T')[0] : ''
@@ -336,6 +352,22 @@ export default function ITAssetsPage() {
                                             onChange={e => setFormData({ ...formData, purchaseDate: e.target.value })}
                                         />
                                     </div>
+                                </div>
+
+                                <div>
+                                    <label className="text-[10px] font-black text-secondary-400 uppercase tracking-widest">Assign To Employee</label>
+                                    <select
+                                        className="input w-full font-bold mb-4"
+                                        value={formData.assignedToId}
+                                        onChange={e => setFormData({ ...formData, assignedToId: e.target.value })}
+                                    >
+                                        <option value="">-- Unassigned --</option>
+                                        {employees.map(emp => (
+                                            <option key={emp.id} value={emp.id}>
+                                                {emp.name} ({emp.employeeId || 'No ID'})
+                                            </option>
+                                        ))}
+                                    </select>
                                 </div>
 
                                 <div>

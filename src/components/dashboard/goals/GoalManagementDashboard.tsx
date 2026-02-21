@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Target, Plus, TrendingUp, Calendar, Award, Edit, Trash2, Eye } from 'lucide-react';
 
 interface Goal {
@@ -44,11 +44,7 @@ export default function GoalManagementDashboard({ employeeId, isOwnGoals = false
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [editingGoal, setEditingGoal] = useState<Goal | null>(null);
 
-    useEffect(() => {
-        fetchGoals();
-    }, [employeeId, selectedType, selectedStatus]);
-
-    const fetchGoals = async () => {
+    const fetchGoals = useCallback(async () => {
         try {
             setLoading(true);
             const params = new URLSearchParams();
@@ -66,7 +62,11 @@ export default function GoalManagementDashboard({ employeeId, isOwnGoals = false
         } finally {
             setLoading(false);
         }
-    };
+    }, [employeeId, selectedType, selectedStatus]);
+
+    useEffect(() => {
+        fetchGoals();
+    }, [fetchGoals]);
 
     const getProgressColor = (percentage: number) => {
         if (percentage >= 100) return 'bg-green-500';

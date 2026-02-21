@@ -220,9 +220,37 @@ export default function CandidateProfileModal({ application, onClose, onSchedule
                                                             {interview.status}
                                                         </span>
                                                     </div>
-                                                    {interview.feedback && (
+                                                    {interview.feedback && !interview.screening && (
                                                         <div className="mt-3 bg-secondary-50/50 p-3 rounded-lg text-sm text-secondary-600 italic border border-secondary-50">
                                                             &quot;{interview.feedback}&quot;
+                                                        </div>
+                                                    )}
+                                                    {interview.screening && interview.screening.status === 'SUBMITTED' && (
+                                                        <div className="mt-3 bg-white border border-primary-100 p-4 rounded-xl shadow-sm">
+                                                            <div className="flex justify-between items-center mb-3">
+                                                                <h6 className="text-[10px] font-black tracking-widest uppercase text-primary-600">Scorecard Results</h6>
+                                                                <div className="flex items-center gap-2">
+                                                                    <span className="text-sm font-bold text-gray-900 border border-gray-100 bg-gray-50 px-2 py-0.5 rounded">
+                                                                        Score: {interview.screening.overallScore?.toFixed(1) || 'N/A'}
+                                                                    </span>
+                                                                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-widest text-white ${
+                                                                        interview.screening.recommendation === 'Strong Hire' || interview.screening.recommendation === 'Hire' ? 'bg-green-500' :
+                                                                        interview.screening.recommendation === 'No Hire' || interview.screening.recommendation === 'Lean No' ? 'bg-red-500' : 'bg-amber-500'
+                                                                    }`}>
+                                                                        {interview.screening.recommendation || 'Pending'}
+                                                                    </span>
+                                                                </div>
+                                                            </div>
+                                                            {interview.screening.categoryScores && (
+                                                                <div className="grid grid-cols-2 gap-2 mt-2">
+                                                                    {Object.entries(interview.screening.categoryScores).map(([cat, score]: [string, any]) => (
+                                                                        <div key={cat} className="flex justify-between items-center text-xs">
+                                                                            <span className="text-secondary-500">{cat}</span>
+                                                                            <span className="font-bold text-secondary-900">{typeof score === 'number' ? score.toFixed(1) : score} / 5</span>
+                                                                        </div>
+                                                                    ))}
+                                                                </div>
+                                                            )}
                                                         </div>
                                                     )}
                                                 </div>

@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect, use } from 'react';
+import { useState, useEffect, use, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import CRMClientLayout from '../../CRMClientLayout';
@@ -20,7 +20,7 @@ export default function LeadDetailPage({ params }: { params: Promise<{ id: strin
     const [actionLoading, setActionLoading] = useState(false);
     const [activeTab, setActiveTab] = useState('overview');
 
-    const fetchLead = async () => {
+    const fetchLead = useCallback(async () => {
         try {
             const res = await fetch(`/api/crm/leads/${id}`);
             if (res.ok) {
@@ -34,11 +34,11 @@ export default function LeadDetailPage({ params }: { params: Promise<{ id: strin
         } finally {
             setLoading(false);
         }
-    };
+    }, [id, router]);
 
     useEffect(() => {
         fetchLead();
-    }, [id]);
+    }, [fetchLead]);
 
     const handleConvert = async () => {
         if (!confirm('Are you sure you want to convert this lead to a customer?')) return;

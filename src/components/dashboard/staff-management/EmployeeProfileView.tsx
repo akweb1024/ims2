@@ -220,12 +220,12 @@ export default function EmployeeProfileView({ employeeId, onClose }: EmployeePro
                             <div className="bg-white p-6 rounded-xl border border-secondary-200 shadow-sm">
                                 <SectionHeader title="Assigned IT Assets" />
                                 <Table
-                                    headers={['Asset Name', 'Model', 'Serial Number', 'Date Assigned']}
+                                    headers={['Asset Name', 'Type', 'Serial Number', 'Status']}
                                     rows={data.assignedAssets?.map((a: any) => [
                                         a.name,
-                                        a.modelNumber || '-',
+                                        a.type || '-',
                                         a.serialNumber || '-',
-                                        new Date(a.createdAt).toLocaleDateString() // Using createdAt as assigned date proxy
+                                        <span key={a.id} className="text-[10px] font-black tracking-widest uppercase border border-secondary-200 px-2 py-1 rounded bg-secondary-50">{a.status}</span>
                                     ])}
                                 />
                             </div>

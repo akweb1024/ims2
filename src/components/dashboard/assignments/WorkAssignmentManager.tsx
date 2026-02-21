@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { ClipboardList, Plus, User, Calendar, AlertCircle, CheckCircle2, Clock } from 'lucide-react';
 
 interface Task {
@@ -85,11 +85,7 @@ export default function WorkAssignmentManager({ userId, view = 'received', canAs
         }
     };
 
-    useEffect(() => {
-        fetchTasks();
-    }, [userId, selectedView, selectedStatus, selectedPriority]);
-
-    const fetchTasks = async () => {
+    const fetchTasks = useCallback(async () => {
         try {
             setLoading(true);
             const params = new URLSearchParams();
@@ -108,7 +104,11 @@ export default function WorkAssignmentManager({ userId, view = 'received', canAs
         } finally {
             setLoading(false);
         }
-    };
+    }, [userId, selectedView, selectedStatus, selectedPriority]);
+
+    useEffect(() => {
+        fetchTasks();
+    }, [fetchTasks]);
 
     const getPriorityColor = (priority: string) => {
         const colors: Record<string, string> = {

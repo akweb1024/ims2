@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
 import {
     FiTarget,
@@ -33,7 +33,7 @@ export default function GoalsPage() {
     const userRole = user?.role;
     const isManager = ['SUPER_ADMIN', 'ADMIN', 'MANAGER'].includes(userRole);
 
-    const fetchGoals = async () => {
+    const fetchGoals = useCallback(async () => {
         setIsLoading(true);
         try {
             const res = await fetch(`/api/performance/goals?type=${activeTab}`);
@@ -48,13 +48,13 @@ export default function GoalsPage() {
         } finally {
             setIsLoading(false);
         }
-    };
+    }, [activeTab]);
 
     useEffect(() => {
         if (session) {
             fetchGoals();
         }
-    }, [activeTab, session]);
+    }, [fetchGoals, session]);
 
     const handleCreateGoal = () => {
         setSelectedGoal(null);

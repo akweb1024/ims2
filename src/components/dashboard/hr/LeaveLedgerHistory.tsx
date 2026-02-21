@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
     Calendar, TrendingUp, TrendingDown, AlertCircle, Clock,
     CheckCircle, XCircle, Minus, ChevronDown, Filter
@@ -57,11 +57,7 @@ export default function LeaveLedgerHistory({ employeeId }: LeaveLedgerHistoryPro
 
     const years = Array.from({ length: 4 }, (_, i) => currentYear - i);
 
-    useEffect(() => {
-        fetchLeaveLedger();
-    }, [employeeId, selectedYear, selectedMonth]);
-
-    const fetchLeaveLedger = async () => {
+    const fetchLeaveLedger = useCallback(async () => {
         setLoading(true);
         try {
             const params = new URLSearchParams();
@@ -81,7 +77,11 @@ export default function LeaveLedgerHistory({ employeeId }: LeaveLedgerHistoryPro
         } finally {
             setLoading(false);
         }
-    };
+    }, [employeeId, selectedYear, selectedMonth]);
+
+    useEffect(() => {
+        fetchLeaveLedger();
+    }, [fetchLeaveLedger]);
 
     const getBalanceColor = (balance: number) => {
         if (balance >= 10) return 'text-success-600 bg-success-50';

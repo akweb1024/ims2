@@ -66,7 +66,8 @@ export const GET = authorizedRoute(
                     jobPosting: { select: { title: true, companyId: true } },
                     interviews: {
                         orderBy: { scheduledAt: 'desc' },
-                        take: 1
+                        take: 1,
+                        include: { screening: true }
                     }
                 },
                 orderBy: { createdAt: 'desc' }

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { X, Save, MessageSquare, CheckSquare, TriangleAlert, Flag, ThumbsUp, ThumbsDown } from 'lucide-react';
 import { fetchJson } from '@/lib/api-utils';
 import { toast } from 'react-hot-toast';
@@ -20,11 +20,7 @@ export default function InterviewScorecardModal({ interview, onClose }: Intervie
     const [finalRecommendation, setFinalRecommendation] = useState('');
     const [finalNotes, setFinalNotes] = useState('');
 
-    useEffect(() => {
-        loadData();
-    }, []);
-
-    const loadData = async () => {
+    const loadData = useCallback(async () => {
         setLoading(true);
         try {
             // Check if screening exists
@@ -50,7 +46,11 @@ export default function InterviewScorecardModal({ interview, onClose }: Intervie
         } finally {
             setLoading(false);
         }
-    };
+    }, [interview.id]);
+
+    useEffect(() => {
+        loadData();
+    }, [loadData]);
 
     const handleInitScreening = async () => {
         if (!selectedTemplateId) return toast.error('Select a template first');

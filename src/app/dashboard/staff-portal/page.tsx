@@ -570,8 +570,37 @@ export default function StaffPortalPage() {
                                     <p className="text-xs text-secondary-500">You review and approve the solution before it&apos;s finalized.</p>
                                 </div>
                             </div>
+                            
+                            {/* Assigned Assets Section */}
+                            <div className="card-premium mt-8">
+                                <h3 className="text-lg font-black text-secondary-900 mb-6 flex items-center gap-2">
+                                    <span className="text-2xl">💻</span> My Assigned Assets
+                                </h3>
+                                {fullProfile?.assignedAssets && fullProfile.assignedAssets.filter((a: any) => a.status === 'ASSIGNED').length > 0 ? (
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        {fullProfile.assignedAssets.filter((a: any) => a.status === 'ASSIGNED').map((asset: any) => (
+                                            <div key={asset.id} className="p-4 border border-secondary-200 rounded-xl bg-secondary-50/50 flex gap-4 items-center">
+                                                <div className="p-3 bg-white rounded-xl shadow-sm border border-secondary-100 text-xl">
+                                                    {asset.type === 'LAPTOP' || asset.type === 'DESKTOP' ? '💻' : 
+                                                     asset.type === 'MOBILE' ? '📱' : '🔌'}
+                                                </div>
+                                                <div>
+                                                    <h4 className="font-bold text-secondary-900">{asset.name}</h4>
+                                                    <div className="flex items-center gap-2 mt-1">
+                                                        <span className="badge badge-primary">{asset.type}</span>
+                                                        <span className="text-xs text-secondary-500 font-mono">S/N: {asset.serialNumber || 'N/A'}</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <p className="text-sm text-secondary-500 italic py-4 text-center">No IT assets are currently assigned to you.</p>
+                                )}
+                            </div>
                         </div>
                     )}
+
                     {activeTab === 'team-ops' && (
                         <div className="p-8 space-y-8">
                             <div className="flex flex-wrap gap-4 mb-8 bg-secondary-50 p-2 rounded-2xl w-fit">

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Calendar, Clock, Plus, CheckCircle, XCircle, Edit, Link as LinkIcon } from 'lucide-react';
 import CreateWorkPlanModal from './CreateWorkPlanModal';
 import EditWorkPlanModal from './EditWorkPlanModal';
@@ -40,11 +40,7 @@ export default function WorkAgendaPlanner({ employeeId, isOwnAgenda = false }: W
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [editingPlan, setEditingPlan] = useState<WorkPlan | null>(null);
 
-    useEffect(() => {
-        fetchWorkPlans();
-    }, [employeeId, selectedDate]);
-
-    const fetchWorkPlans = async () => {
+    const fetchWorkPlans = useCallback(async () => {
         try {
             setLoading(true);
             const params = new URLSearchParams();
@@ -70,7 +66,11 @@ export default function WorkAgendaPlanner({ employeeId, isOwnAgenda = false }: W
         } finally {
             setLoading(false);
         }
-    };
+    }, [employeeId, selectedDate]);
+
+    useEffect(() => {
+        fetchWorkPlans();
+    }, [fetchWorkPlans]);
 
     const getPriorityColor = (priority: string) => {
         const colors: Record<string, string> = {

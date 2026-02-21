@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect, use } from 'react';
+import { useState, useEffect, use, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import CRMClientLayout from '../../CRMClientLayout';
@@ -16,7 +16,7 @@ export default function DealDetailPage({ params }: { params: Promise<{ id: strin
     const [loading, setLoading] = useState(true);
     const [actionLoading, setActionLoading] = useState(false);
 
-    const fetchDeal = async () => {
+    const fetchDeal = useCallback(async () => {
         try {
             const res = await fetch(`/api/crm/deals/${id}`);
             if (res.ok) {
@@ -30,11 +30,11 @@ export default function DealDetailPage({ params }: { params: Promise<{ id: strin
         } finally {
             setLoading(false);
         }
-    };
+    }, [id, router]);
 
     useEffect(() => {
         fetchDeal();
-    }, [id]);
+    }, [fetchDeal]);
 
     const handleStageUpdate = async (stage: string) => {
         setActionLoading(true);
