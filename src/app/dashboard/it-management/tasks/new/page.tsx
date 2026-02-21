@@ -39,7 +39,7 @@ function NewTaskForm() {
         title: '',
         description: '',
         projectId: '',
-        category: 'DEVELOPMENT',
+        category: 'GENERAL',
         type: 'REVENUE',
         priority: 'MEDIUM',
         status: 'PENDING',
@@ -268,13 +268,16 @@ function NewTaskForm() {
                                     className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 dark:bg-gray-700 dark:text-white"
                                     title="Category"
                                 >
-                                    <option value="ENHANCEMENT">Enhancement</option>
+                                    <option value="GENERAL">General</option>
                                     <option value="BUG_FIX">Bug Fix</option>
                                     <option value="FEATURE">Feature</option>
+                                    <option value="ENHANCEMENT">Enhancement</option>
+                                    <option value="SUPPORT">Support</option>
                                     <option value="DOCUMENTATION">Documentation</option>
                                     <option value="TESTING">Testing</option>
                                     <option value="DEPLOYMENT">Deployment</option>
-                                    <option value="GENERAL">General</option>
+                                    <option value="RESEARCH">Research</option>
+                                    <option value="SERVICE_REQUEST">Service Request</option>
                                 </select>
                             </div>
 
