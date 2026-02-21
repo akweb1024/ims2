@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { Wallet, Info, Calendar } from 'lucide-react';
+import { Wallet, Info, Calendar, BookOpen, X } from 'lucide-react';
 import FormattedDate from '@/components/common/FormattedDate';
+import LeaveGuidelines from '@/components/dashboard/staff/LeaveGuidelines';
 
 interface StaffLeaveManagementProps {
     leaves: any[];
@@ -10,6 +11,7 @@ interface StaffLeaveManagementProps {
 
 export default function StaffLeaveManagement({ leaves, fullProfile, onLeaveSubmitted }: StaffLeaveManagementProps) {
     const [submitting, setSubmitting] = useState(false);
+    const [showGuidelines, setShowGuidelines] = useState(false);
 
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
@@ -49,9 +51,16 @@ export default function StaffLeaveManagement({ leaves, fullProfile, onLeaveSubmi
                             <Wallet size={48} />
                         </div>
                         <div className="relative z-10">
-                            <h3 className="text-[10px] font-bold uppercase tracking-[0.2em] mb-1 opacity-80">Total Available Pool</h3>
-                            <p className="text-4xl font-black mb-2">{fullProfile?.leaveBalance || 0} <span className="text-sm font-bold opacity-70">Days</span></p>
-                            <div className="flex items-center gap-2 bg-white/10 px-3 py-1.5 rounded-lg text-[10px] font-bold">
+                            <div className="flex justify-between items-start">
+                                <div>
+                                    <h3 className="text-[10px] font-bold uppercase tracking-[0.2em] mb-1 opacity-80">Total Available Pool</h3>
+                                    <p className="text-4xl font-black mb-2">{fullProfile?.leaveBalance || 0} <span className="text-sm font-bold opacity-70">Days</span></p>
+                                </div>
+                                <button onClick={() => setShowGuidelines(true)} className="flex items-center gap-1 bg-white/20 hover:bg-white/30 px-3 py-1.5 rounded-lg text-xs font-bold transition-all backdrop-blur-sm">
+                                    <BookOpen size={14} /> Guidelines
+                                </button>
+                            </div>
+                            <div className="flex items-center gap-2 bg-white/10 px-3 py-1.5 rounded-lg text-[10px] font-bold mt-2">
                                 <Info size={12} />
                                 <span>Main balance used for all leave types</span>
                             </div>
@@ -193,6 +202,42 @@ export default function StaffLeaveManagement({ leaves, fullProfile, onLeaveSubmi
                     </div>
                 </div>
             </div>
+
+            {/* Guidelines Modal */}
+            {showGuidelines && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-secondary-900/60 backdrop-blur-sm">
+                    <div className="bg-white rounded-3xl w-full max-w-3xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden border border-secondary-100 animate-in fade-in zoom-in duration-200">
+                        <div className="px-6 py-4 border-b border-secondary-100 flex justify-between items-center bg-secondary-50/50 sticky top-0 z-10">
+                            <div>
+                                <h3 className="text-xl font-black text-secondary-900 flex items-center gap-2">
+                                    <BookOpen className="text-indigo-600" size={24} />
+                                    Leave Policies & Guidelines
+                                </h3>
+                                <p className="text-[10px] text-secondary-500 font-black uppercase tracking-widest mt-1">
+                                    Official Employee Reference
+                                </p>
+                            </div>
+                            <button
+                                onClick={() => setShowGuidelines(false)}
+                                className="p-2 text-secondary-400 hover:bg-rose-50 hover:text-rose-600 rounded-xl transition-colors"
+                            >
+                                <X size={20} strokeWidth={3} />
+                            </button>
+                        </div>
+                        <div className="p-6 overflow-y-auto custom-scrollbar">
+                            <LeaveGuidelines />
+                        </div>
+                        <div className="px-6 py-4 border-t border-secondary-100 bg-secondary-50 flex justify-end">
+                            <button
+                                onClick={() => setShowGuidelines(false)}
+                                className="btn-premium px-6 py-2.5 bg-primary-600 text-white rounded-xl shadow-lg shadow-primary-200 hover:bg-primary-700 font-bold"
+                            >
+                                Got it
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
