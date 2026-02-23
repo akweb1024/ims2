@@ -15,9 +15,14 @@ export const GET = authorizedRoute(
 
             const targetDate = date ? new Date(date) : new Date();
             targetDate.setHours(0, 0, 0, 0);
+            const nextDay = new Date(targetDate);
+            nextDay.setDate(nextDay.getDate() + 1);
 
             const where: any = {
-                date: targetDate
+                date: {
+                    gte: targetDate,
+                    lt: nextDay
+                }
             };
 
             if (companyId && companyId !== 'all') {

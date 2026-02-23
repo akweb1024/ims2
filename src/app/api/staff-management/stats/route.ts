@@ -13,28 +13,40 @@ export const GET = authorizedRoute(
 
             // Build filter conditions
             const where: any = {};
+            const userWhere: any = {};
 
             if (companyId && companyId !== 'all') {
-                where.companyId = companyId;
+                userWhere.companyId = companyId;
+                where.user = userWhere;
             }
 
             if (teamId && teamId !== 'all') {
-                where.user = { departmentId: teamId };
+                userWhere.departmentId = teamId;
+                where.user = userWhere;
             }
 
             // Get employee count
-            const totalEmployees = await prisma.employeeProfile.count({ where });
+            const totalEmployees = await prisma.employeeProfile.count({ 
+                where 
+            });
 
-            // Get today's date
-            const today = new Date();
-            today.setHours(0, 0, 0, 0);
+            // Get today's range (24 hours to be robust against localized date mismatches)
+            const todayStart = new Date();
+            todayStart.setHours(0, 0, 0, 0);
+            const todayEnd = new Date(todayStart);
+            todayEnd.setDate(todayEnd.getDate() + 1);
+
+            const companyFilter = companyId && companyId !== 'all' ? { companyId } : {};
 
             // Get present count
             const presentToday = await prisma.attendance.count({
                 where: {
-                    date: today,
+                    date: {
+                        gte: todayStart,
+                        lt: todayEnd
+                    },
                     status: 'PRESENT',
-                    ...(companyId && companyId !== 'all' ? { companyId } : {})
+                    ...companyFilter
                 }
             });
 
@@ -42,17 +54,20 @@ export const GET = authorizedRoute(
             const onLeave = await prisma.leaveRequest.count({
                 where: {
                     status: 'APPROVED',
-                    startDate: { lte: today },
-                    endDate: { gte: today },
-                    ...(companyId && companyId !== 'all' ? { companyId } : {})
+                    startDate: { lte: todayStart },
+                    endDate: { gte: todayStart },
+                    ...companyFilter
                 }
             });
 
-            // Calculate absent
+            // Calculate absent (only for the selected scope)
             const absent = Math.max(0, totalEmployees - presentToday - onLeave);
 
-            // Get total salary (simplified calculation)
+            // Get total salary for the filtered scope
             const salaryData = await prisma.salaryStructure.aggregate({
+                where: {
+                    employee: where
+                },
                 _sum: { grossSalary: true }
             });
 
@@ -62,15 +77,15 @@ export const GET = authorizedRoute(
             const pendingLeaves = await prisma.leaveRequest.count({
                 where: {
                     status: 'PENDING',
-                    ...(companyId && companyId !== 'all' ? { companyId } : {})
+                    ...companyFilter
                 }
             });
 
             const approvedLeaves = await prisma.leaveRequest.count({
                 where: {
                     status: 'APPROVED',
-                    startDate: { gte: new Date(today.getFullYear(), today.getMonth(), 1) },
-                    ...(companyId && companyId !== 'all' ? { companyId } : {})
+                    startDate: { gte: new Date(todayStart.getFullYear(), todayStart.getMonth(), 1) },
+                    ...companyFilter
                 }
             });
 
@@ -96,12 +111,27 @@ export const GET = authorizedRoute(
                 
                 const allAttendanceRaw = await prisma.attendance.groupBy({
                     by: ['companyId'],
-                    where: { date: today, status: 'PRESENT' },
+                    where: { 
+                        date: {
+                            gte: todayStart,
+                            lt: todayEnd
+                        }, 
+                        status: 'PRESENT' 
+                    },
                     _count: { id: true }
                 });
 
                 const allSalaryRaw = await prisma.salaryStructure.findMany({
-                    select: { grossSalary: true, employee: { select: { user: { select: { companyId: true } } } } }
+                    select: { 
+                        grossSalary: true, 
+                        employee: { 
+                            select: { 
+                                user: { 
+                                    select: { companyId: true } 
+                                } 
+                            } 
+                        } 
+                    }
                 });
 
                 companyBreakdown = companies.map(c => {
