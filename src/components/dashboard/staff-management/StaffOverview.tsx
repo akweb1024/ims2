@@ -1,4 +1,5 @@
 'use client';
+import Image from 'next/image';
 
 interface StaffOverviewProps {
     staffData: {
@@ -112,7 +113,7 @@ export default function StaffOverview({ staffData, filters, onAction }: StaffOve
                                         <td className="py-3 px-4">
                                             <div className="flex items-center gap-3">
                                                 {company.logo ? (
-                                                    <img src={company.logo} alt={company.name} className="w-8 h-8 rounded object-contain border border-secondary-200 bg-white" />
+                                                    <Image src={company.logo} alt={company.name} width={32} height={32} className="w-8 h-8 rounded object-contain border border-secondary-200 bg-white" />
                                                 ) : (
                                                     <div className="w-8 h-8 rounded bg-primary-100 flex items-center justify-center text-primary-700 font-bold text-xs uppercase">
                                                         {company.name.substring(0, 2)}

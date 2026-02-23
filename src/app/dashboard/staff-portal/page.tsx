@@ -42,6 +42,7 @@ export default function StaffPortalPage() {
     const [performance, setPerformance] = useState<any[]>([]);
     const [documents, setDocuments] = useState<any>(null);
     const [snapshots, setSnapshots] = useState<any[]>([]); // Added for dynamic performance
+    const [kpis, setKpis] = useState<any[]>([]); // Added for Active Goals widget
     const [fullProfile, setFullProfile] = useState<any>(null);
     const [compliance, setCompliance] = useState<any>({ isCompliant: true, pendingDocuments: [], pendingModules: [] });
     const [activeIncrement, setActiveIncrement] = useState<any>(null);
@@ -82,7 +83,7 @@ export default function StaffPortalPage() {
         setLoading(true);
         const token = localStorage.getItem('token');
         try {
-            const [attendanceRes, reportsRes, slipsRes, leavesRes, perfRes, docsRes, profileRes, complRes, snapRes] = await Promise.all([
+            const results = await Promise.all([
                 fetch('/api/hr/attendance', { headers: { 'Authorization': `Bearer ${token}` } }),
                 fetch('/api/hr/work-reports?employeeId=self', { headers: { 'Authorization': `Bearer ${token}` } }),
                 fetch('/api/hr/salary-slips', { headers: { 'Authorization': `Bearer ${token}` } }),
@@ -92,7 +93,10 @@ export default function StaffPortalPage() {
                 fetch('/api/hr/profile/me', { headers: { 'Authorization': `Bearer ${token}` } }),
                 fetch('/api/hr/onboarding/compliance', { headers: { 'Authorization': `Bearer ${token}` } }),
                 fetch(`/api/hr/performance/monthly?employeeId=self&year=${new Date().getFullYear()}`, { headers: { 'Authorization': `Bearer ${token}` } }), // Fetch Snapshots
+                fetch('/api/hr/performance/kpis?employeeId=self', { headers: { 'Authorization': `Bearer ${token}` } }), // Fetch KPIs
             ]);
+            
+            const [attendanceRes, reportsRes, slipsRes, leavesRes, perfRes, docsRes, profileRes, complRes, snapRes, kpisRes] = results;
 
             if (complRes.ok) {
                 const complData = await complRes.json();
@@ -118,6 +122,8 @@ export default function StaffPortalPage() {
             if (leavesRes.ok) setLeaves(await leavesRes.json());
             if (perfRes.ok) setPerformance(await perfRes.json());
             if (snapRes.ok) setSnapshots(await snapRes.json());
+            if (kpisRes && kpisRes.ok) setKpis(await kpisRes.json());
+
             const incRes = await fetch('/api/staff/performance/active-increment', { headers: { 'Authorization': `Bearer ${token}` } });
             if (incRes.ok) {
                 const incData = await incRes.json();
@@ -437,6 +443,45 @@ export default function StaffPortalPage() {
                                         </button>
                                     </div>
                                 </div>
+                            </div>
+
+                            {/* Active Goals (KRA/KPI) Summary Widget */}
+                            <div className="card-premium p-6">
+                                <div className="flex items-center justify-between mb-4">
+                                    <h3 className="font-bold text-lg text-secondary-900 flex items-center gap-2">
+                                        <Zap className="text-amber-500" size={20} /> Active Goals (KRA / KPI)
+                                    </h3>
+                                    <button onClick={() => setActiveTab('performance')} className="text-xs font-bold text-primary-600 uppercase hover:underline">View All Details</button>
+                                </div>
+                                {kpis.length === 0 ? (
+                                    <div className="p-4 bg-secondary-50 text-secondary-500 rounded-xl text-sm italic text-center">
+                                        No active goals assigned yet. Discuss your KRAs with your manager.
+                                    </div>
+                                ) : (
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        {kpis.slice(0, 4).map((kpi: any) => {
+                                            const percentage = Math.min((kpi.current / kpi.target) * 100, 100);
+                                            return (
+                                                <div key={kpi.id} className="p-4 rounded-xl border border-secondary-100 hover:border-primary-300 transition-colors bg-white">
+                                                    <div className="flex justify-between items-start mb-2">
+                                                        <h4 className="font-bold text-sm text-secondary-900 line-clamp-1 flex-1 pr-2" title={kpi.title}>{kpi.title}</h4>
+                                                        <span className="text-[10px] font-black text-secondary-400 uppercase tracking-widest">{percentage.toFixed(0)}%</span>
+                                                    </div>
+                                                    <div className="w-full bg-secondary-100 rounded-full h-1.5 overflow-hidden mb-2">
+                                                        <div
+                                                            className={`h-full rounded-full transition-all duration-1000 ${percentage >= 100 ? 'bg-success-500' : 'bg-primary-500'}`}
+                                                            style={{ width: `${percentage}%` }}
+                                                        ></div>
+                                                    </div>
+                                                    <div className="flex justify-between items-center text-xs">
+                                                        <span className="text-secondary-500">Target: <span className="font-bold text-secondary-900">{kpi.target} {kpi.unit}</span></span>
+                                                        <span className="text-secondary-500">Current: <span className="font-bold text-secondary-900">{kpi.current}</span></span>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                )}
                             </div>
 
                             {/* Daily Task Tracker */}
