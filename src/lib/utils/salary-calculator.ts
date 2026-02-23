@@ -5,18 +5,27 @@
  * are identical across all modules (Increments, Payroll generation, etc.)
  */
 
-export const SALARY_POLICY = {
-    BASIC_PERCENTAGE: 0.4,
-    HRA_PERCENTAGE: 0.3,
-    SPECIAL_ALLOWANCE_PERCENTAGE: 0.2,
-    CONVEYANCE_PERCENTAGE: 0.05,
-    MEDICAL_PERCENTAGE: 0.05,
-    PF_EMPLOYEE_RATE: 0.12,
-    PF_EMPLOYER_RATE: 0.12,
-    ESIC_EMPLOYEE_RATE: 0.0075,
-    ESIC_EMPLOYER_RATE: 0.0325,
-    ESIC_THRESHOLD: 21000,
-    GRATUITY_RATE: 0.0481 // 4.81% of basic
+export const SALARY_POLICIES = {
+    PF_DEDUCTED: {
+        BASIC: 0.45,
+        HRA: 0.22,
+        CONVEYANCE: 0.09,
+        STATUTORY_BONUS: 0.08,
+        SPECIAL_ALLOWANCE: 0.05, // Adjusted from 6% to 5% to keep CTC at 100%
+        PF_EMPLOYER: 0.08,
+        ESIC_EMPLOYER: 0.03,
+        GROSS_PERCENTAGE: 0.89
+    },
+    NO_PF: {
+        BASIC: 0.50,
+        HRA: 0.25,
+        CONVEYANCE: 0.04,
+        STATUTORY_BONUS: 0.09,
+        SPECIAL_ALLOWANCE: 0.12,
+        PF_EMPLOYER: 0,
+        ESIC_EMPLOYER: 0,
+        GROSS_PERCENTAGE: 1.00
+    }
 };
 
 export interface SalaryBreakdown {
@@ -25,6 +34,7 @@ export interface SalaryBreakdown {
     specialAllowance: number;
     conveyance: number;
     medical: number;
+    statutoryBonus: number;
     grossSalary: number;
     pfEmployee: number;
     esicEmployee: number;
@@ -37,29 +47,40 @@ export interface SalaryBreakdown {
 }
 
 /**
- * Calculates a standard salary breakdown based on a total base salary amount
+ * Calculates a standard salary breakdown based on a total CTC amount
+ * according to the new percentage policies.
  */
-export function calculateSalaryBreakdown(baseSalary: number): SalaryBreakdown {
-    const basicSalary = baseSalary * SALARY_POLICY.BASIC_PERCENTAGE;
-    const hra = baseSalary * SALARY_POLICY.HRA_PERCENTAGE;
-    const specialAllowance = baseSalary * SALARY_POLICY.SPECIAL_ALLOWANCE_PERCENTAGE;
-    const conveyance = baseSalary * SALARY_POLICY.CONVEYANCE_PERCENTAGE;
-    const medical = baseSalary * SALARY_POLICY.MEDICAL_PERCENTAGE;
+export function calculateSalaryBreakdown(ctc: number, deductPF: boolean = true): SalaryBreakdown {
+    const policy = deductPF ? SALARY_POLICIES.PF_DEDUCTED : SALARY_POLICIES.NO_PF;
 
-    const grossSalary = basicSalary + hra + specialAllowance + conveyance + medical;
+    const basicSalary = ctc * policy.BASIC;
+    const hra = ctc * policy.HRA;
+    const conveyance = ctc * policy.CONVEYANCE;
+    const statutoryBonus = ctc * policy.STATUTORY_BONUS;
+    const specialAllowance = ctc * policy.SPECIAL_ALLOWANCE;
+    const medical = 0; // Medical is not specifically listed in new percentages, consolidated into other fields or Special
+
+    const grossSalary = basicSalary + hra + conveyance + statutoryBonus + specialAllowance + medical;
 
     // Deductions
-    const pfEmployee = basicSalary * SALARY_POLICY.PF_EMPLOYEE_RATE;
-    const esicEmployee = grossSalary <= SALARY_POLICY.ESIC_THRESHOLD ? grossSalary * SALARY_POLICY.ESIC_EMPLOYEE_RATE : 0;
+    // Employee PF usually matches Employer PF (8% of CTC in this specific structure)
+    const pfEmployee = deductPF ? ctc * 0.08 : 0;
+    
+    // ESIC Employee is usually 0.75% of Gross if PF is deducted, or 0 if not.
+    // However, if the user wants 89% Gross and specified Employer ESIC as 3%, 
+    // let's stick to statutory-like logic for employee side unless specified otherwise.
+    // Given the precision of 8% and 3% for employer, let's assume employee ESIC is also part of what "deduct PF" controls.
+    const esicEmployee = deductPF ? Math.ceil(grossSalary * 0.0075) : 0;
+    
     const totalDeductions = pfEmployee + esicEmployee;
 
-    // Employer Contributions
-    const pfEmployer = basicSalary * SALARY_POLICY.PF_EMPLOYER_RATE;
-    const esicEmployer = grossSalary <= SALARY_POLICY.ESIC_THRESHOLD ? grossSalary * SALARY_POLICY.ESIC_EMPLOYER_RATE : 0;
-    const gratuity = basicSalary * SALARY_POLICY.GRATUITY_RATE;
+    // Employer Contributions (as specified by user)
+    const pfEmployer = ctc * policy.PF_EMPLOYER;
+    const esicEmployer = ctc * policy.ESIC_EMPLOYER;
+    const gratuity = 0; // Gratutity not mentioned in new breakdown, usually over/above CTC in such specific specs or part of it? 
+    // If CTC is 100%, and components add to 100% (89+8+3), then gratuity must be 0 or outside.
 
     const netSalary = grossSalary - totalDeductions;
-    const ctc = grossSalary + pfEmployer + esicEmployer + gratuity;
 
     return {
         basicSalary,
@@ -67,6 +88,7 @@ export function calculateSalaryBreakdown(baseSalary: number): SalaryBreakdown {
         specialAllowance,
         conveyance,
         medical,
+        statutoryBonus,
         grossSalary,
         pfEmployee,
         esicEmployee,

@@ -27,7 +27,8 @@ export default function SalaryStructureManager() {
         travelling: 0,
         mobile: 0,
         internet: 0,
-        booksAndPeriodicals: 0
+        booksAndPeriodicals: 0,
+        deductPF: true
     });
 
     useEffect(() => {
@@ -55,7 +56,8 @@ export default function SalaryStructureManager() {
                     travelling: 0,
                     mobile: 0,
                     internet: 0,
-                    booksAndPeriodicals: 0
+                    booksAndPeriodicals: 0,
+                    deductPF: true
                 });
             }
         }
@@ -96,38 +98,25 @@ export default function SalaryStructureManager() {
         }
     };
 
-    const calculateStructureFromGross = (gross: number, bonusOverride = 0, perkOverrides?: any) => {
-        // Standard Indian breakdown: 40-50% Basic, 50% of Basic as HRA, etc.
-        const basic = Math.round(gross * 0.4);
-        const hra = Math.round(basic * 0.5);
-        const special = gross - basic - hra;
-
-        // Deductions
-        const pf = Math.min(basic, 15000) * 0.12;
-        let esic = 0;
-        if (gross <= 21000) esic = Math.ceil(gross * 0.0075);
-
-        // Statutory Bonus (usually 8.33% of Basic/Minimum Wage, often capped)
-        const bonus = bonusOverride > 0 ? bonusOverride : Math.round(Math.min(basic, 7000) * 0.0833);
-        const revisedGross = basic + hra + special + bonus; // bonus is usually part of Gross or CTC depending on definition?
-        // Actually earlier logic had bonus as earning.
-        // Let's assume input gross is TOTAL earnings.
+    const calculateStructureFromGross = (ctc: number, bonusOverride = 0, perkOverrides?: any) => {
+        const { calculateSalaryBreakdown } = require('@/lib/utils/salary-calculator');
+        const breakdown = calculateSalaryBreakdown(ctc, formData.deductPF);
 
         setFormData({
             ...formData,
-            basicSalary: basic,
-            hra,
-            specialAllowance: special - bonus, // Adjust special to accommodate bonus in same gross
-            statutoryBonus: bonus,
-            conveyance: 0,
-            medical: 0,
+            basicSalary: breakdown.basicSalary,
+            hra: breakdown.hra,
+            specialAllowance: breakdown.specialAllowance,
+            statutoryBonus: breakdown.statutoryBonus || bonusOverride,
+            conveyance: breakdown.conveyance,
+            medical: breakdown.medical,
             otherAllowances: 0,
-            pfEmployee: pf,
-            pfEmployer: pf,
-            esicEmployee: esic,
-            esicEmployer: Math.ceil(gross * 0.0325),
-            professionalTax: gross > 10000 ? 200 : 0,
-            gratuity: Math.round(basic * (15 / 26) * (1 / 12)), // Approx monthly provision
+            pfEmployee: breakdown.pfEmployee,
+            pfEmployer: breakdown.pfEmployer,
+            esicEmployee: breakdown.esicEmployee,
+            esicEmployer: breakdown.esicEmployer,
+            professionalTax: breakdown.grossSalary > 10000 ? 200 : 0,
+            gratuity: breakdown.gratuity,
             ...(perkOverrides || {})
         });
     };
@@ -223,7 +212,16 @@ export default function SalaryStructureManager() {
                                     <h2 className="text-2xl font-black text-secondary-900 tracking-tight">Salary Structure</h2>
                                     <p className="text-secondary-500 font-medium text-sm">Define components for <span className="text-primary-600 font-bold">{selectedEmp.user?.name || selectedEmp.user?.email}</span></p>
                                 </div>
-                                <div className="flex gap-3">
+                                <div className="flex gap-3 items-center">
+                                    <div className="flex items-center gap-2 mr-4 bg-secondary-50 px-4 py-2 rounded-xl border border-secondary-100">
+                                        <span className="text-[10px] font-black text-secondary-500 uppercase tracking-widest">Deduct PF</span>
+                                        <input 
+                                            type="checkbox" 
+                                            checked={formData.deductPF} 
+                                            onChange={e => setFormData({ ...formData, deductPF: e.target.checked })}
+                                            className="toggle toggle-primary toggle-sm"
+                                        />
+                                    </div>
                                     <button onClick={fetchLatestIncrement} className="btn bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold text-xs uppercase tracking-widest px-4 rounded-xl flex items-center gap-2 transition-all">
                                         <DownloadCloud size={16} /> Fetch Increment
                                     </button>

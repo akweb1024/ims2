@@ -1357,6 +1357,7 @@ model SalarySlip {
   salaryFixed         Float               @default(0)
   salaryVariable      Float               @default(0)
   salaryIncentive     Float               @default(0)
+  isPFDeducted        Boolean             @default(true)
   isFinalSettlement   Boolean             @default(false)
   notes               String?
   advanceEmi          AdvanceEMI?
@@ -1512,6 +1513,7 @@ model SalaryStructure {
   salaryVariable      Float           @default(0)
   salaryIncentive     Float           @default(0)
   ctc                 Float           @default(0)
+  deductPF            Boolean         @default(true)
   effectiveFrom       DateTime        @default(now())
   createdAt           DateTime        @default(now())
   updatedAt           DateTime        @updatedAt

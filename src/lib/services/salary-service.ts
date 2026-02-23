@@ -66,7 +66,7 @@ export async function applyApprovedIncrement(
         gratuity,
         netSalary,
         ctc
-    } = calculateSalaryBreakdown(increment.newSalary || 0);
+    } = calculateSalaryBreakdown(increment.newSalary || 0, increment.deductPF ?? true);
 
     await tx.salaryStructure.upsert({
         where: { employeeId: profileId },
@@ -76,6 +76,7 @@ export async function applyApprovedIncrement(
             conveyance,
             medical,
             specialAllowance,
+            statutoryBonus: (increment as any).statutoryBonus || 0,
             grossSalary,
             pfEmployee,
             esicEmployee,
@@ -85,6 +86,7 @@ export async function applyApprovedIncrement(
             gratuity,
             netSalary,
             ctc,
+            deductPF: increment.deductPF ?? true,
             healthCare: increment.newHealthCare || 0,
             travelling: increment.newTravelling || 0,
             mobile: increment.newMobile || 0,

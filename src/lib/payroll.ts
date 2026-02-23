@@ -21,6 +21,10 @@ export interface PayrollInput {
     salaryFixed?: number;
     salaryVariable?: number;
     salaryIncentive?: number;
+    pfEmployee?: number;
+    pfEmployer?: number;
+    esicEmployee?: number;
+    esicEmployer?: number;
 }
 
 export interface StatutorySettings {
@@ -141,16 +145,30 @@ export class PayrollCalculator {
         const totalPerks = adjHealth + adjTrav + adjMob + adjInt + adjBooks;
 
         // 3. Deductions
+        
+        // PF Calculation
+        let pfEmployee = 0;
+        let pfEmployer = 0;
+        
+        if (input.pfEmployee !== undefined && input.pfEmployer !== undefined) {
+            // Use structural overrides (pro-rated by LOP)
+            pfEmployee = input.pfEmployee * ratio;
+            pfEmployer = input.pfEmployer * ratio;
+        } else {
+            // Fallback to Statutory Calculation (12% of Basic, capped)
+            const pfBasis = Math.min(adjBasic, config.pfCeilingAmount);
+            pfEmployee = (pfBasis * config.pfEmployeeRate) / 100;
+            pfEmployer = (pfBasis * config.pfEmployerRate) / 100;
+        }
 
-        // PF Calculation (Typically 12% of Basic, capped at ceiling)
-        const pfBasis = Math.min(adjBasic, config.pfCeilingAmount);
-        const pfEmployee = (pfBasis * config.pfEmployeeRate) / 100;
-        const pfEmployer = (pfBasis * config.pfEmployerRate) / 100;
-
-        // ESIC Calculation (Only if Gross <= Limit)
+        // ESIC Calculation
         let esicEmployee = 0;
         let esicEmployer = 0;
-        if (adjustedGross <= config.esicLimitAmount) {
+        
+        if (input.esicEmployee !== undefined && input.esicEmployer !== undefined) {
+            esicEmployee = input.esicEmployee * ratio;
+            esicEmployer = input.esicEmployer * ratio;
+        } else if (adjustedGross <= config.esicLimitAmount) {
             esicEmployee = Math.ceil(adjustedGross * (config.esicEmployeeRate / 100));
             esicEmployer = Math.ceil(adjustedGross * (config.esicEmployerRate / 100));
         }

@@ -18,6 +18,9 @@ interface SalaryRecord {
     basicSalary: number;
     hra: number;
     allowances?: number;
+    conveyance?: number;
+    statutoryBonus?: number;
+    specialAllowance?: number;
     otherAllowances?: number;
     deductions?: number;
     totalDeductions?: number;
@@ -341,8 +344,20 @@ export default function SalaryManagement({ filters }: SalaryManagementProps) {
                                     <span className="font-medium">₹{(selectedSalary.hra || 0).toLocaleString()}</span>
                                 </div>
                                 <div className="flex justify-between">
-                                    <span className="text-secondary-600">Allowances</span>
-                                    <span className="font-medium">₹{(selectedSalary.allowances || selectedSalary.otherAllowances || 0).toLocaleString()}</span>
+                                    <span className="text-secondary-600">Conveyance</span>
+                                    <span className="font-medium">₹{(selectedSalary.conveyance || 0).toLocaleString()}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                    <span className="text-secondary-600">Statutory Bonus</span>
+                                    <span className="font-medium">₹{(selectedSalary.statutoryBonus || 0).toLocaleString()}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                    <span className="text-secondary-600">Special Allowance</span>
+                                    <span className="font-medium">₹{(selectedSalary.specialAllowance || 0).toLocaleString()}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                    <span className="text-secondary-600">Other Allowances</span>
+                                    <span className="font-medium">₹{(selectedSalary.otherAllowances || selectedSalary.allowances || 0).toLocaleString()}</span>
                                 </div>
                                 <div className="flex justify-between text-red-600">
                                     <span>Deductions</span>

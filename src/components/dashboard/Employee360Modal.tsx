@@ -339,17 +339,30 @@ export default function Employee360Modal({ employeeId, onClose, viewAs = 'all' }
                                             <div className="bg-white rounded-2xl p-6 border border-secondary-100 shadow-sm">
                                                 <div className="flex items-center justify-between mb-4">
                                                     <h3 className="font-black text-secondary-900 flex items-center gap-2"><DollarSign size={16} className="text-indigo-500" />Current Salary Structure</h3>
-                                                    <span className="text-2xl font-black text-emerald-600">{fmt(profile.salaryStructure.netSalary)}<span className="text-sm font-medium text-secondary-400">/mo</span></span>
+                                                    <div className="flex flex-col items-end">
+                                                        <span className="text-2xl font-black text-emerald-600">{fmt(profile.salaryStructure.netSalary)}<span className="text-sm font-medium text-secondary-400">/mo</span></span>
+                                                        <span className="text-[10px] font-black text-secondary-400 uppercase tracking-widest mt-1">Total CTC: {fmt(profile.salaryStructure.ctc)}</span>
+                                                    </div>
                                                 </div>
                                                 <div className="grid grid-cols-2 md:grid-cols-3 gap-5">
                                                     <InfoField label="Basic Salary" value={fmt(profile.salaryStructure.basicSalary)} />
                                                     <InfoField label="HRA" value={fmt(profile.salaryStructure.hra)} />
+                                                    <InfoField label="Conveyance" value={fmt(profile.salaryStructure.conveyance)} />
+                                                    <InfoField label="Statutory Bonus" value={fmt(profile.salaryStructure.statutoryBonus)} />
+                                                    <InfoField label="Medical" value={fmt(profile.salaryStructure.medical)} />
                                                     <InfoField label="Special Allowance" value={fmt(profile.salaryStructure.specialAllowance)} />
+                                                    <div className="col-span-full border-t border-secondary-50 my-2" />
                                                     <InfoField label="Gross Salary" value={fmt(profile.salaryStructure.grossSalary)} />
                                                     <InfoField label="PF (Employee)" value={fmt(profile.salaryStructure.pfEmployee)} />
+                                                    <InfoField label="ESIC (Employee)" value={fmt(profile.salaryStructure.esicEmployee)} />
                                                     <InfoField label="Professional Tax" value={fmt(profile.salaryStructure.professionalTax)} />
                                                     <InfoField label="Total Deductions" value={fmt(profile.salaryStructure.totalDeductions)} />
                                                     <InfoField label="Net Salary" value={fmt(profile.salaryStructure.netSalary)} />
+                                                    <div className="col-span-full border-t border-secondary-50 my-2" />
+                                                    <InfoField label="Employer PF" value={fmt(profile.salaryStructure.pfEmployer)} />
+                                                    <InfoField label="Employer ESIC" value={fmt(profile.salaryStructure.esicEmployer)} />
+                                                    <InfoField label="Gratuity Provision" value={fmt(profile.salaryStructure.gratuity)} />
+                                                    <InfoField label="Total CTC" value={fmt(profile.salaryStructure.ctc)} />
                                                 </div>
                                             </div>
                                         )}

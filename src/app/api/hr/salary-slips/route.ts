@@ -205,6 +205,10 @@ export const POST = authorizedRoute(
                                 salaryFixed: struct.salaryFixed || 0,
                                 salaryVariable: struct.salaryVariable || 0,
                                 salaryIncentive: 0,
+                                pfEmployee: struct.pfEmployee,
+                                pfEmployer: struct.pfEmployer,
+                                esicEmployee: struct.esicEmployee,
+                                esicEmployer: struct.esicEmployer,
                                 lwpDays: overheadDays,
                                 daysInMonth
                             }, statutoryConfig);
@@ -266,6 +270,7 @@ export const POST = authorizedRoute(
                                     salaryVariable: breakdown.salaryVariable,
                                     salaryIncentive: incentiveSum,
                                     netPayable: amountPaidData,
+                                    isPFDeducted: struct.deductPF,
                                     status: 'GENERATED',
                                     companyId: user.companyId
                                 } as any
