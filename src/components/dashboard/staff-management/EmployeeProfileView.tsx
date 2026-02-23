@@ -132,7 +132,7 @@ export default function EmployeeProfileView({ employeeId, onClose }: EmployeePro
                                 <SectionHeader title="Identity Documents" />
                                 <div className="grid grid-cols-2 gap-4">
                                     <Field label="Aadhar" value={data.employeeProfile?.aadharNumber || 'Not provided'} />
-                                    <Field label="PAN / Tax ID" value={data.taxDeclarations?.[0]?.pan || 'Not provided'} />
+                                    <Field label="PAN / Tax ID" value={data.employeeProfile?.panNumber || 'Not provided'} />
                                     <Field label="UAN (PF)" value={data.employeeProfile?.uanNumber || 'Not provided'} />
                                     <Field label="ESIC" value={data.employeeProfile?.esicNumber || 'Not provided'} />
                                 </div>

@@ -22,7 +22,7 @@ const tabs = [
     { id: 'attendance', name: 'Attendance', icon: '🕒' },
     { id: 'punch', name: 'Punch In/Out', icon: '⏱️' },
     { id: 'leave', name: 'Leave Management', icon: '🏖️' },
-    { id: 'balance-leave', name: 'Balance Leave', icon: '📋' },
+    { id: 'balance-leave', name: 'Leave Ledger', icon: '📋' },
     { id: 'salary', name: 'Salary', icon: '💰' },
     { id: 'work-reports', name: 'Work Reports', icon: '📝' },
     { id: 'analytics', name: 'Analytics & Graphs', icon: '📈' },

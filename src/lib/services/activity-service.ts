@@ -86,9 +86,11 @@ export async function getUserActivity(userId: string, limit = 5): Promise<Activi
 export async function getCompanyActivity(companyId: string, limit = 10): Promise<ActivityItem[]> {
     const activities: ActivityItem[] = [];
 
+    const companyFilter = companyId && companyId !== 'all' ? { companyId } : {};
+
     // 1. Recent Attendance (Company wide)
     const recentAttendance = await prisma.attendance.findMany({
-        where: { companyId, status: 'PRESENT' },
+        where: { ...companyFilter, status: 'PRESENT' },
         orderBy: { date: 'desc' },
         take: limit,
         include: { employee: { select: { user: { select: { name: true, id: true } } } } }
@@ -108,7 +110,7 @@ export async function getCompanyActivity(companyId: string, limit = 10): Promise
 
     // 2. Recent Work Reports
     const recentReports = await prisma.workReport.findMany({
-        where: { companyId },
+        where: companyFilter,
         orderBy: { date: 'desc' },
         take: limit,
         include: { employee: { select: { user: { select: { name: true, id: true } } } } }
@@ -126,7 +128,7 @@ export async function getCompanyActivity(companyId: string, limit = 10): Promise
 
     // 3. Recent Leaves
     const recentLeaves = await prisma.leaveRequest.findMany({
-        where: { companyId },
+        where: companyFilter,
         orderBy: { createdAt: 'desc' },
         take: limit,
         include: { employee: { select: { user: { select: { name: true, id: true } } } } }

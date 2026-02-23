@@ -67,8 +67,8 @@ export default function BalanceLeave({ filters }: BalanceLeaveProps) {
             {/* Header */}
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div>
-                    <h2 className="text-lg font-semibold text-secondary-900">Leave Balance Management</h2>
-                    <p className="text-sm text-secondary-500">Track employee leave balances - Auto-credited monthly</p>
+                    <h2 className="text-lg font-semibold text-secondary-900">Employee Leave Ledger</h2>
+                    <p className="text-sm text-secondary-500">Track employee leave balances and ledger history - Auto-credited monthly</p>
                 </div>
                 <div className="flex items-center gap-2 px-4 py-2 bg-blue-50 border border-blue-200 rounded-lg">
                     <span className="text-sm text-blue-700">

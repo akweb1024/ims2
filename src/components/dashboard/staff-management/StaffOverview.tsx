@@ -10,6 +10,15 @@ interface StaffOverviewProps {
         pendingLeaves: number;
         approvedLeaves: number;
         recentActivities?: any[];
+        companyBreakdown?: {
+            id: string;
+            name: string;
+            logo: string | null;
+            totalEmployees: number;
+            presentToday: number;
+            presentPercentage: number;
+            totalSalary: number;
+        }[];
     };
     filters: any;
     onAction: (action: string) => void;
@@ -82,6 +91,60 @@ export default function StaffOverview({ staffData, filters, onAction }: StaffOve
                     </div>
                 ))}
             </div>
+
+            {/* Company Comparison (only visible if companyBreakdown exists i.e. 'All Companies' is active) */}
+            {staffData.companyBreakdown && staffData.companyBreakdown.length > 0 && (
+                <div className="bg-white rounded-xl shadow-sm border border-secondary-200 p-6 overflow-hidden">
+                    <h2 className="text-lg font-semibold text-secondary-900 mb-4">Company Comparison</h2>
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-left border-collapse">
+                            <thead>
+                                <tr className="border-b border-secondary-200 text-secondary-500 text-sm">
+                                    <th className="py-3 px-4 font-semibold">Company</th>
+                                    <th className="py-3 px-4 font-semibold text-center">Employees</th>
+                                    <th className="py-3 px-4 font-semibold text-center">Attendance</th>
+                                    <th className="py-3 px-4 font-semibold text-right">Monthly Salary</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {staffData.companyBreakdown.map((company) => (
+                                    <tr key={company.id} className="border-b border-secondary-100 hover:bg-secondary-50 transition-colors last:border-0">
+                                        <td className="py-3 px-4">
+                                            <div className="flex items-center gap-3">
+                                                {company.logo ? (
+                                                    <img src={company.logo} alt={company.name} className="w-8 h-8 rounded object-contain border border-secondary-200 bg-white" />
+                                                ) : (
+                                                    <div className="w-8 h-8 rounded bg-primary-100 flex items-center justify-center text-primary-700 font-bold text-xs uppercase">
+                                                        {company.name.substring(0, 2)}
+                                                    </div>
+                                                )}
+                                                <span className="font-medium text-secondary-900">{company.name}</span>
+                                            </div>
+                                        </td>
+                                        <td className="py-3 px-4 text-center text-secondary-700 font-medium">
+                                            {company.totalEmployees}
+                                        </td>
+                                        <td className="py-3 px-4">
+                                            <div className="flex items-center justify-center gap-2">
+                                                <span className="text-secondary-700 font-medium">{company.presentPercentage}%</span>
+                                                <div className="w-16 h-2 bg-secondary-100 rounded-full overflow-hidden">
+                                                    <div 
+                                                        className={`h-full rounded-full ${company.presentPercentage >= 90 ? 'bg-green-500' : company.presentPercentage >= 75 ? 'bg-yellow-500' : 'bg-red-500'}`}
+                                                        style={{ width: `${company.presentPercentage}%` }}
+                                                    ></div>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td className="py-3 px-4 text-right text-emerald-600 font-semibold">
+                                            ₹{(company.totalSalary / 1000).toFixed(0)}K
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            )}
 
             {/* Quick Actions */}
             <div className="bg-white rounded-xl shadow-sm border border-secondary-200 p-6">

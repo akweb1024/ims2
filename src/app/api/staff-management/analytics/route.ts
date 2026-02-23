@@ -9,14 +9,17 @@ export const GET = authorizedRoute(
     async (req: NextRequest, user) => {
         try {
             const { searchParams } = new URL(req.url);
-            const companyId = searchParams.get('companyId') || user.companyId;
+            const companyIdParam = searchParams.get('companyId');
+            const companyId = companyIdParam && companyIdParam !== 'all' ? companyIdParam : undefined;
             const startDate = searchParams.get('startDate');
             const endDate = searchParams.get('endDate');
+
+            const companyFilter = companyId ? { companyId } : {};
 
             // Get employee count
             const totalEmployees = await prisma.user.count({
                 where: {
-                    companyId,
+                    ...companyFilter,
                     employeeProfile: {
                         isNot: null
                     }
@@ -26,7 +29,7 @@ export const GET = authorizedRoute(
             // Get active employees
             const activeEmployees = await prisma.user.count({
                 where: {
-                    companyId,
+                    ...companyFilter,
                     isActive: true,
                     employeeProfile: {
                         isNot: null
@@ -44,31 +47,21 @@ export const GET = authorizedRoute(
             // Get leave stats
             const pendingLeaves = await prisma.leaveRequest.count({
                 where: {
-                    employee: {
-                        user: {
-                            companyId
-                        }
-                    },
+                    ...companyFilter,
                     status: 'PENDING'
                 }
             });
 
             const approvedLeaves = await prisma.leaveRequest.count({
                 where: {
-                    employee: {
-                        user: {
-                            companyId
-                        }
-                    },
+                    ...companyFilter,
                     status: 'APPROVED'
                 }
             });
 
             // Get department-wise breakdown
             const departmentStats = await prisma.department.findMany({
-                where: {
-                    companyId
-                },
+                where: companyFilter,
                 include: {
                     _count: {
                         select: {
@@ -85,7 +78,7 @@ export const GET = authorizedRoute(
             // 1. Attendance Trends (Last 6 Months)
             const attendanceRecords = await prisma.attendance.findMany({
                 where: {
-                    companyId,
+                    ...companyFilter,
                     date: { gte: sixMonthsAgo }
                 },
                 select: {
@@ -119,7 +112,7 @@ export const GET = authorizedRoute(
             const leaveBreakdown = await prisma.leaveRequest.groupBy({
                 by: ['type'],
                 where: {
-                    companyId,
+                    ...companyFilter,
                     status: 'APPROVED',
                     startDate: { gte: new Date(new Date().getFullYear(), 0, 1) } // Current year
                 },
@@ -134,7 +127,7 @@ export const GET = authorizedRoute(
             // 3. Salary by Department
             const usersWithSalary = await prisma.user.findMany({
                 where: {
-                    companyId,
+                    ...companyFilter,
                     isActive: true,
                     departmentId: { not: null },
                     employeeProfile: { isNot: null }
@@ -161,7 +154,7 @@ export const GET = authorizedRoute(
             // Use averageManagerRating (1-5 scale)
             const performanceData = await prisma.monthlyPerformanceSnapshot.findMany({
                 where: {
-                    companyId,
+                    ...companyFilter,
                     month: new Date().getMonth() === 0 ? 12 : new Date().getMonth(), // Previous month
                     year: new Date().getMonth() === 0 ? new Date().getFullYear() - 1 : new Date().getFullYear()
                 },
@@ -187,7 +180,7 @@ export const GET = authorizedRoute(
             const performanceTrends = await prisma.monthlyPerformanceSnapshot.groupBy({
                 by: ['month', 'year'],
                 where: {
-                    companyId,
+                    ...companyFilter,
                     calculatedAt: {
                         gte: sixMonthsAgo
                     }

@@ -77,9 +77,51 @@ export const GET = authorizedRoute(
             // Fetch recent activities
             const { getCompanyActivity } = await import('@/lib/services/activity-service');
             const activities = await getCompanyActivity(
-                companyId && companyId !== 'all' ? companyId : user.companyId || '',
+                companyId && companyId !== 'all' ? companyId : 'all',
                 5
             );
+
+            // Fetch Company Breakdown if 'all' is selected
+            let companyBreakdown: any[] = [];
+            if (!companyId || companyId === 'all') {
+                const companies = await prisma.company.findMany({ select: { id: true, name: true, logoUrl: true } });
+                
+                const allEmployeesRaw = await prisma.user.groupBy({
+                    by: ['companyId'],
+                    where: {
+                        employeeProfile: { isNot: null }
+                    },
+                    _count: { id: true }
+                });
+                
+                const allAttendanceRaw = await prisma.attendance.groupBy({
+                    by: ['companyId'],
+                    where: { date: today, status: 'PRESENT' },
+                    _count: { id: true }
+                });
+
+                const allSalaryRaw = await prisma.salaryStructure.findMany({
+                    select: { grossSalary: true, employee: { select: { user: { select: { companyId: true } } } } }
+                });
+
+                companyBreakdown = companies.map(c => {
+                    const empCount = allEmployeesRaw.find((e: any) => e.companyId === c.id)?._count.id || 0;
+                    const presCount = allAttendanceRaw.find((a: any) => a.companyId === c.id)?._count.id || 0;
+                    
+                    const companySalaries = allSalaryRaw.filter(s => s.employee?.user?.companyId === c.id);
+                    const totalSal = companySalaries.reduce((sum, s) => sum + (s.grossSalary || 0), 0);
+
+                    return {
+                        id: c.id,
+                        name: c.name,
+                        logo: c.logoUrl,
+                        totalEmployees: empCount,
+                        presentToday: presCount,
+                        presentPercentage: empCount > 0 ? Math.round((presCount / empCount) * 100) : 0,
+                        totalSalary: totalSal
+                    };
+                });
+            }
 
             return NextResponse.json({
                 totalEmployees,
@@ -89,7 +131,8 @@ export const GET = authorizedRoute(
                 totalSalary,
                 pendingLeaves,
                 approvedLeaves,
-                recentActivities: activities
+                recentActivities: activities,
+                companyBreakdown
             });
         } catch (error) {
             return createErrorResponse(error);
