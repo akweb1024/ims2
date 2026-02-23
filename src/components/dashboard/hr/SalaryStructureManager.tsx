@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useEmployees, useSalaryStructures } from '@/hooks/useHR';
 import { IndianRupee, PieChart, Users, ArrowRight, Calculator, DownloadCloud } from 'lucide-react';
+import { calculateSalaryBreakdown } from '@/lib/utils/salary-calculator';
 
 export default function SalaryStructureManager() {
     const { data: employees } = useEmployees();
@@ -99,7 +100,6 @@ export default function SalaryStructureManager() {
     };
 
     const calculateStructureFromGross = (ctc: number, bonusOverride = 0, perkOverrides?: any) => {
-        const { calculateSalaryBreakdown } = require('@/lib/utils/salary-calculator');
         const breakdown = calculateSalaryBreakdown(ctc, formData.deductPF);
 
         setFormData({
