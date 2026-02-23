@@ -1,11 +1,13 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useKPIs } from '@/hooks/useHR';
 import { Target, Flag, CheckCircle2, Circle, AlertCircle } from 'lucide-react';
+import Employee360Modal from '@/components/dashboard/Employee360Modal';
 
 const TeamGoalTrackingView: React.FC = () => {
     const { data: goals = [], isLoading: loading } = useKPIs();
+    const [viewingEmployeeId, setViewingEmployeeId] = useState<string | null>(null);
 
     // Calculate aggregated team metrics
     const totalGoals = goals.length;
@@ -86,12 +88,15 @@ const TeamGoalTrackingView: React.FC = () => {
                     <div key={goal.id} className="card-premium bg-white p-8 border border-secondary-100 hover:border-primary-300 transition-all group shadow-sm hover:shadow-xl relative overflow-hidden">
                         <div className="absolute top-0 right-0 w-32 h-32 bg-secondary-50 rotate-45 -mr-16 -mt-16 group-hover:bg-primary-50 transition-colors"></div>
 
-                        <div className="flex items-center gap-4 mb-6 relative">
-                            <div className="w-12 h-12 rounded-2xl bg-secondary-900 text-white flex items-center justify-center font-black group-hover:bg-primary-600 transition-all">
+                        <div 
+                            className="flex items-center gap-4 mb-6 relative cursor-pointer hover:opacity-80 transition-opacity"
+                            onClick={() => setViewingEmployeeId(goal.employee?.id)}
+                        >
+                            <div className="w-12 h-12 rounded-2xl bg-secondary-900 text-white flex items-center justify-center font-black group-hover:bg-primary-600 transition-all shadow-lg ring-2 ring-white/10">
                                 {goal.employee?.user.name?.[0]?.toUpperCase() || '?'}
                             </div>
                             <div>
-                                <h3 className="font-black text-secondary-900">{goal.employee?.user.name || 'Unknown User'}</h3>
+                                <h3 className="font-black text-secondary-900 group-hover:text-primary-600 transition-colors">{goal.employee?.user.name || 'Unknown User'}</h3>
                                 <p className="text-[10px] font-black text-secondary-400 uppercase tracking-widest">{goal.employee?.designation}</p>
                             </div>
                         </div>
@@ -134,6 +139,14 @@ const TeamGoalTrackingView: React.FC = () => {
                     </div>
                 ))}
             </div>
+
+            {viewingEmployeeId && (
+                <Employee360Modal
+                    employeeId={viewingEmployeeId}
+                    onClose={() => setViewingEmployeeId(null)}
+                    viewAs="manager"
+                />
+            )}
         </div>
     );
 };

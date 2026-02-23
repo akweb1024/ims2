@@ -7,7 +7,7 @@ interface EmployeeManagementProps {
     filters: any;
 }
 
-import EmployeeProfileView from './EmployeeProfileView';
+import Employee360Modal from '@/components/dashboard/Employee360Modal';
 
 export default function EmployeeManagement({ filters }: EmployeeManagementProps) {
     const [employees, setEmployees] = useState<any[]>([]);
@@ -540,9 +540,10 @@ export default function EmployeeManagement({ filters }: EmployeeManagementProps)
             )}
             {/* Profile View Modal */}
             {viewingProfileId && (
-                <EmployeeProfileView
+                <Employee360Modal
                     employeeId={viewingProfileId}
                     onClose={() => setViewingProfileId(null)}
+                    viewAs="admin"
                 />
             )}
         </div>

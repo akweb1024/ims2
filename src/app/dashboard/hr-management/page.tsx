@@ -9,7 +9,7 @@ import FormattedDate from '@/components/common/FormattedDate';
 import DocumentManager from '@/components/dashboard/DocumentManager';
 import EmployeeList from '@/components/dashboard/hr/EmployeeList';
 import StaffFilters from '@/components/dashboard/staff-management/StaffFilters';
-import EmployeeProfileView from '@/components/dashboard/staff-management/EmployeeProfileView';
+import Employee360Modal from '@/components/dashboard/Employee360Modal';
 
 import HolidayManager from '@/components/dashboard/hr/HolidayManager';
 
@@ -1437,9 +1437,10 @@ const HRManagementContent = () => {
                 />
 
                 {viewingProfileId && (
-                    <EmployeeProfileView
+                    <Employee360Modal
                         employeeId={viewingProfileId}
                         onClose={() => setViewingProfileId(null)}
+                        viewAs="admin"
                     />
                 )}
             </div>

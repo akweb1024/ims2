@@ -3,8 +3,9 @@
 import React, { useState, useMemo } from 'react';
 import Link from 'next/link';
 import { useTeam, useUpdateEmployee } from '@/hooks/useHR';
-import { Search, Grid, List, Mail, Phone, Calendar, Award, Edit2, X, Check } from 'lucide-react';
+import { Search, Grid, List, Mail, Calendar, Edit2, X, Check } from 'lucide-react';
 import FormattedDate from '@/components/common/FormattedDate';
+import Employee360Modal from '@/components/dashboard/Employee360Modal';
 
 const TeamMembersView: React.FC = () => {
     const { data: team = [], isLoading: loading, refetch } = useTeam();
@@ -12,6 +13,7 @@ const TeamMembersView: React.FC = () => {
     const [search, setSearch] = useState('');
     const [editingBalance, setEditingBalance] = useState<string | null>(null);
     const [newAdjustment, setNewAdjustment] = useState<number>(0);
+    const [viewingEmployeeId, setViewingEmployeeId] = useState<string | null>(null);
 
     const { mutate: updateEmployee } = useUpdateEmployee();
 
@@ -212,12 +214,12 @@ const TeamMembersView: React.FC = () => {
                                     </div>
                                 </div>
 
-                                <Link
-                                    href={`/dashboard/hr-management/employees/${member.employeeProfile?.id || '#'}`}
+                                <button
+                                    onClick={() => setViewingEmployeeId(member.id)}
                                     className="btn btn-secondary py-1.5 px-4 text-[10px] font-black uppercase tracking-widest hover:bg-primary-600 hover:text-white hover:border-primary-600 transition-all"
                                 >
-                                    View Stats
-                                </Link>
+                                    View Detail
+                                </button>
                             </div>
                         </div>
                     ))}
@@ -307,15 +309,26 @@ const TeamMembersView: React.FC = () => {
                                         )}
                                     </td>
                                     <td className="px-8 py-5 text-right">
-                                        <Link href={`/dashboard/hr-management/employees/${member.employeeProfile?.id || '#'}`} className="btn btn-secondary py-1.5 px-4 text-[10px] font-black uppercase tracking-widest hover:bg-primary-600 hover:text-white hover:border-primary-600 transition-all">
-                                            View
-                                        </Link>
+                                        <button
+                                            onClick={() => setViewingEmployeeId(member.id)}
+                                            className="btn btn-secondary py-1.5 px-4 text-[10px] font-black uppercase tracking-widest hover:bg-primary-600 hover:text-white hover:border-primary-600 transition-all"
+                                        >
+                                            View Detail
+                                        </button>
                                     </td>
                                 </tr>
                             ))}
                         </tbody>
                     </table>
                 </div>
+            )}
+
+            {viewingEmployeeId && (
+                <Employee360Modal
+                    employeeId={viewingEmployeeId}
+                    onClose={() => setViewingEmployeeId(null)}
+                    viewAs="manager"
+                />
             )}
         </div>
     );
