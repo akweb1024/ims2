@@ -902,6 +902,8 @@ model Designation {
   taskTemplates       EmployeeTaskTemplate[]
   companies           Company[]                    @relation("CompanyToDesignation")
   departments         Department[]                 @relation("DepartmentToDesignation")
+  previousIncrements  SalaryIncrementRecord[]      @relation("PreviousDesignation")
+  newIncrements       SalaryIncrementRecord[]      @relation("NewDesignation")
 }
 
 model GlobalDepartment {
@@ -1135,7 +1137,11 @@ model SalaryIncrementRecord {
   newBooksAndPeriodicals  Float?
   type                    String                  @default("INCREMENT")
   previousDesignation     String?
+  previousDesignationId   String?
+  previousDesignatRef     Designation?            @relation("PreviousDesignation", fields: [previousDesignationId], references: [id])
   newDesignation          String?
+  newDesignationId        String?
+  newDesignatRef          Designation?            @relation("NewDesignation", fields: [newDesignationId], references: [id])
   oldJobDescription       String?
   newJobDescription       String?
   reason                  String?

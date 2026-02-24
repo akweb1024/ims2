@@ -21,6 +21,8 @@ export const GET = authorizedRoute(
                     title: true,
                     description: true,
                     points: true,
+                    designationId: true,
+                    designationIds: true,
                     designation: {
                         select: {
                             name: true

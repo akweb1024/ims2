@@ -48,15 +48,55 @@ export const GET = authorizedRoute(
                 }
             });
 
-            const kpiSummary = completedGoals.map(g =>
+            // Fetch Work Reports for task completion analysis
+            const workReports = await prisma.workReport.findMany({
+                where: {
+                    employeeId,
+                    date: {
+                        gte: monthStart,
+                        lte: monthEnd
+                    },
+                    status: 'APPROVED'
+                },
+                select: {
+                    tasksSnapshot: true,
+                    date: true
+                }
+            });
+
+            const taskStats: Record<string, { title: string, count: number, points: number }> = {};
+            workReports.forEach(report => {
+                const snapshot = report.tasksSnapshot as any;
+                if (Array.isArray(snapshot)) {
+                    snapshot.forEach(task => {
+                        if (!taskStats[task.id]) {
+                            taskStats[task.id] = { title: task.title, count: 0, points: 0 };
+                        }
+                        taskStats[task.id].count += 1;
+                        taskStats[task.id].points += (task.points || 0);
+                    });
+                }
+            });
+
+            const goalsSummary = completedGoals.map(g =>
                 `${g.title}: ${g.currentValue}/${g.targetValue} ${g.unit}`
             ).join('\n');
+
+            const reportsSummary = Object.values(taskStats).map(s =>
+                `${s.title}: ${s.count} times (${Math.round(s.points)} pts)`
+            ).join('\n');
+
+            const kpiSummary = [
+                goalsSummary ? `[Goals]\n${goalsSummary}` : '',
+                reportsSummary ? `[Work Report Tasks]\n${reportsSummary}` : ''
+            ].filter(Boolean).join('\n\n');
 
             return NextResponse.json({
                 revenueAchievement: snapshot?.totalRevenueGenerated || 0,
                 revenueTarget: snapshot?.revenueTarget || 0,
                 kpiSummary,
-                snapshotFound: !!snapshot
+                snapshotFound: !!snapshot,
+                reportCount: workReports.length
             });
 
         } catch (error) {

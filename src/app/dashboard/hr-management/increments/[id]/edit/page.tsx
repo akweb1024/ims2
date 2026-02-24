@@ -14,7 +14,9 @@ export default function EditIncrementPage() {
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [taskTemplates, setTaskTemplates] = useState<any[]>([]);
+    const [designations, setDesignations] = useState<any[]>([]);
     const [selectedTemplates, setSelectedTemplates] = useState<string[]>([]);
+    const [manualTemplateChange, setManualTemplateChange] = useState(false);
 
     const [form, setForm] = useState({
         employeeProfileId: '',
@@ -25,6 +27,8 @@ export default function EditIncrementPage() {
         newIncentive: 0,
         newIncentivePercentage: 0,
         newDesignation: '',
+        newDesignationId: '',
+        previousDesignationId: '',
         reason: '',
         performanceNotes: '',
         newKRA: '',
@@ -65,9 +69,10 @@ export default function EditIncrementPage() {
     const fetchIncrement = useCallback(async () => {
         try {
             const token = localStorage.getItem('token');
-            const [res, tmplRes] = await Promise.all([
+            const [res, tmplRes, desigRes] = await Promise.all([
                 fetch(`/api/hr/increments/${params.id}`, { headers: { 'Authorization': `Bearer ${token}` } }),
-                fetch('/api/hr/task-templates', { headers: { 'Authorization': `Bearer ${token}` } })
+                fetch('/api/hr/task-templates', { headers: { 'Authorization': `Bearer ${token}` } }),
+                fetch('/api/hr/designations', { headers: { 'Authorization': `Bearer ${token}` } })
             ]);
 
             if (res.ok) {
@@ -84,6 +89,8 @@ export default function EditIncrementPage() {
                     newIncentive: data.newIncentive ?? data.newIncentiveSalary ?? 0,
                     newIncentivePercentage: data.newIncentivePercentage || 0,
                     newDesignation: data.newDesignation || '',
+                    newDesignationId: data.newDesignationId || '',
+                    previousDesignationId: data.previousDesignationId || '',
                     reason: data.reason || '',
                     performanceNotes: data.performanceNotes || '',
                     newKRA: data.newKRA || '',
@@ -126,7 +133,13 @@ export default function EditIncrementPage() {
                     if (data.newKPI?.linkedTaskTemplates) {
                         const ids = data.newKPI.linkedTaskTemplates.map((t: any) => t.id);
                         setSelectedTemplates(ids);
+                        setManualTemplateChange(true); // Don't auto-override existing data
                     }
+                }
+
+                if (desigRes.ok) {
+                    const desigData = await desigRes.json();
+                    setDesignations(desigData);
                 }
             } else {
                 alert('Increment not found');
@@ -171,6 +184,19 @@ export default function EditIncrementPage() {
             q4Target: fixQ4 + varQ4
         }));
     }, [form.monthlyTargets, form.monthlyVariableTargets]);
+
+    // Auto-select tasks when designation changes (only if no manual changes yet)
+    useEffect(() => {
+        if (form.newDesignationId && taskTemplates.length > 0 && !manualTemplateChange) {
+            const desigTemplates = taskTemplates.filter(t => {
+                const matchSingular = t.designationId === form.newDesignationId;
+                const matchPlural = Array.isArray(t.designationIds) && t.designationIds.includes(form.newDesignationId);
+                return matchSingular || matchPlural;
+            });
+            const templateIds = desigTemplates.map(t => t.id);
+            setSelectedTemplates(templateIds);
+        }
+    }, [form.newDesignationId, taskTemplates, manualTemplateChange]);
 
     const totalNewSalary = form.newFixedSalary + form.newVariableSalary + form.newIncentive;
     const oldSalary = increment?.oldSalary || 0;
@@ -994,13 +1020,24 @@ export default function EditIncrementPage() {
                             <div className="grid grid-cols-1 gap-4">
                                 <div>
                                     <label className="label-premium">New Designation (if changed)</label>
-                                    <input
-                                        type="text"
+                                    <select
                                         className="input-premium"
-                                        placeholder="e.g., Senior Developer, Team Lead"
-                                        value={form.newDesignation}
-                                        onChange={(e) => setForm({ ...form, newDesignation: e.target.value })}
-                                    />
+                                        value={form.newDesignationId}
+                                        onChange={(e) => {
+                                            const desig = designations.find(d => d.id === e.target.value);
+                                            setForm({ 
+                                                ...form, 
+                                                newDesignationId: e.target.value,
+                                                newDesignation: desig?.name || ''
+                                            });
+                                            setManualTemplateChange(false); // Reset manual flag on designation change to trigger auto-select
+                                        }}
+                                    >
+                                        <option value="">Select Designation</option>
+                                        {designations.map(d => (
+                                            <option key={d.id} value={d.id}>{d.name} {d.level ? `(Level ${d.level})` : ''}</option>
+                                        ))}
+                                    </select>
                                 </div>
 
                                 <div>
@@ -1049,13 +1086,25 @@ export default function EditIncrementPage() {
                                         {taskTemplates.length === 0 ? (
                                             <div className="text-sm text-secondary-400 p-2">No task templates found.</div>
                                         ) : (
-                                            taskTemplates.map(tmpl => (
-                                                <label key={tmpl.id} className="flex items-start gap-3 p-3 bg-white rounded-lg border border-transparent hover:border-primary-100 shadow-sm cursor-pointer transition-all">
+                                            taskTemplates
+                                                .sort((a, b) => {
+                                                    // Sort templates belonging to selected designation first
+                                                    const aMatch = a.designationId === form.newDesignationId || (Array.isArray(a.designationIds) && a.designationIds.includes(form.newDesignationId));
+                                                    const bMatch = b.designationId === form.newDesignationId || (Array.isArray(b.designationIds) && b.designationIds.includes(form.newDesignationId));
+                                                    if (aMatch && !bMatch) return -1;
+                                                    if (!aMatch && bMatch) return 1;
+                                                    return 0;
+                                                })
+                                                .map(tmpl => {
+                                                    const isMatch = tmpl.designationId === form.newDesignationId || (Array.isArray(tmpl.designationIds) && tmpl.designationIds.includes(form.newDesignationId));
+                                                    return (
+                                                        <label key={tmpl.id} className={`flex items-start gap-3 p-3 rounded-lg border shadow-sm cursor-pointer transition-all ${isMatch ? 'bg-primary-50/50 border-primary-200' : 'bg-white border-transparent hover:border-primary-100'}`}>
                                                     <input
                                                         type="checkbox"
                                                         className="mt-1 w-4 h-4 rounded text-primary-600 focus:ring-primary-500"
                                                         checked={selectedTemplates.includes(tmpl.id)}
                                                         onChange={(e) => {
+                                                            setManualTemplateChange(true);
                                                             if (e.target.checked) {
                                                                 setSelectedTemplates(prev => [...prev, tmpl.id]);
                                                             } else {
@@ -1071,8 +1120,9 @@ export default function EditIncrementPage() {
                                                             {tmpl.designation?.name && <span className="px-2 py-0.5 bg-secondary-100 text-secondary-600 rounded text-[10px] font-bold uppercase">{tmpl.designation.name}</span>}
                                                         </div>
                                                     </div>
-                                                </label>
-                                            ))
+                                                        </label>
+                                                    );
+                                                })
                                         )}
                                     </div>
                                     <p className="text-xs text-secondary-500 mt-2">

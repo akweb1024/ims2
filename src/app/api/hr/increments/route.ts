@@ -31,6 +31,8 @@ const incrementSchema = z.object({
 
     // Designation change
     newDesignation: z.string().optional(),
+    newDesignationId: z.string().optional(),
+    previousDesignationId: z.string().optional(),
 
     // Reason and notes
     reason: z.string().optional(),
@@ -279,6 +281,8 @@ export const POST = authorizedRoute(
 
                     // Meta
                     newDesignation: validatedData.newDesignation || employee.designation,
+                    newDesignationId: validatedData.newDesignationId,
+                    previousDesignationId: validatedData.previousDesignationId || employee.designationId,
                     reason: validatedData.reason,
                     performanceNotes: validatedData.performanceNotes,
 

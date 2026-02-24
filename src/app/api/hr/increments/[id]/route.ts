@@ -10,6 +10,8 @@ const updateIncrementSchema = z.object({
     newVariableSalary: z.number().min(0).optional(),
     newIncentive: z.number().min(0).optional(),
     newDesignation: z.string().optional(),
+    newDesignationId: z.string().optional(),
+    previousDesignationId: z.string().optional(),
     reason: z.string().optional(),
     performanceNotes: z.string().optional(),
     newKRA: z.string().optional(),
@@ -169,6 +171,8 @@ export const PATCH = authorizedRoute(
 
             // Update other fields
             if (data.newDesignation) updateData.newDesignation = data.newDesignation;
+            if (data.newDesignationId) updateData.newDesignationId = data.newDesignationId;
+            if (data.previousDesignationId) updateData.previousDesignationId = data.previousDesignationId;
             if (data.reason) updateData.reason = data.reason;
             if (data.performanceNotes) updateData.performanceNotes = data.performanceNotes;
             if (data.newKRA) updateData.newKRA = data.newKRA;

@@ -12,6 +12,7 @@ import FormattedDate from '@/components/common/FormattedDate';
 import Link from 'next/link';
 import IncrementReviewModal from '@/components/dashboard/hr/IncrementReviewModal';
 import { ClipboardList } from 'lucide-react';
+import KPIPerformancePanel from '@/components/dashboard/hr/KPIPerformancePanel';
 
 export default function IncrementTracker({ initialIncrements }: { initialIncrements: any[] }) {
     const router = useRouter();
@@ -521,10 +522,26 @@ export default function IncrementTracker({ initialIncrements }: { initialIncreme
                                                         } else if (typeof rawKPI === 'string' && rawKPI.trim().startsWith('{')) {
                                                             kpiData = JSON.parse(rawKPI);
                                                         } else {
-                                                            return rawKPI || 'Baseline performance metrics applied.';
+                                                            return <div className="text-secondary-300">{rawKPI || 'Baseline performance metrics applied.'}</div>;
                                                         }
 
-                                                        if (Object.keys(kpiData).length === 0) return 'No metrics defined.';
+                                                        if (kpiData.linkedTaskTemplates && Array.isArray(kpiData.linkedTaskTemplates)) {
+                                                            return (
+                                                                <div className="space-y-3">
+                                                                    {kpiData.linkedTaskTemplates.map((t: any) => (
+                                                                        <div key={t.id} className="p-4 bg-secondary-800/50 border border-secondary-700 rounded-2xl flex justify-between items-center group/kpi">
+                                                                            <div className="flex-1">
+                                                                                <p className="text-xs font-black text-white uppercase tracking-tight leading-tight">{t.title}</p>
+                                                                                {t.designation && <p className="text-[9px] text-primary-400 uppercase font-black mt-1 tracking-widest">{t.designation}</p>}
+                                                                            </div>
+                                                                            <span className="px-2 py-1 bg-primary-600/20 text-primary-400 rounded-lg text-[10px] font-black border border-primary-600/30">{t.points} PTS</span>
+                                                                        </div>
+                                                                    ))}
+                                                                </div>
+                                                            );
+                                                        }
+
+                                                        if (Object.keys(kpiData).length === 0) return <div className="text-secondary-500">No specific KPI metrics defined.</div>;
 
                                                         return (
                                                             <ul className="space-y-2">
@@ -537,12 +554,19 @@ export default function IncrementTracker({ initialIncrements }: { initialIncreme
                                                             </ul>
                                                         );
                                                     } catch (e) {
-                                                        return selectedIncrement.newKPI || 'Baseline performance metrics applied.';
+                                                        return <div className="text-secondary-300">{selectedIncrement.newKPI || 'Baseline performance metrics applied.'}</div>;
                                                     }
                                                 })()}
                                             </div>
                                         </div>
                                     </div>
+                                    
+                                    {/* Achievement Analytics - The Bridge Layer */}
+                                    {selectedIncrement.newKPI && typeof selectedIncrement.newKPI === 'object' && (
+                                        <div className="pt-10 border-t border-secondary-100/50 mt-10">
+                                            <KPIPerformancePanel incrementId={selectedIncrement.id} />
+                                        </div>
+                                    )}
                                 </section>
                             </div>
 
