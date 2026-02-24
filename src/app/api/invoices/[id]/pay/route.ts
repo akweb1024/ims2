@@ -63,7 +63,7 @@ export async function POST(
             });
 
             // Update Subscription Status if fully paid and currently pending
-            if (newStatus === 'PAID' && invoice.subscription.status === 'PENDING_PAYMENT') {
+            if (newStatus === 'PAID' && invoice.subscription?.status === 'PENDING_PAYMENT') {
                 await tx.subscription.update({
                     where: { id: invoice.subscriptionId },
                     data: { status: 'ACTIVE' }
@@ -85,37 +85,35 @@ export async function POST(
         });
 
         // 4. Notify Customer
-        const customer = await prisma.customerProfile.findUnique({
-            where: { id: result.invoice.subscription.customerProfileId },
-            select: { userId: true }
-        });
-
-        if (customer?.userId) {
-            const { createNotification } = await import('@/lib/notifications');
-            await createNotification({
-                userId: customer.userId,
-                title: result.invoice.status === 'PAID' ? 'Payment Received' : 'Partial Payment Recorded',
-                message: `A payment of ${result.invoice.currency} ${amount.toLocaleString()} has been recorded for invoice ${result.invoice.invoiceNumber}.`,
-                type: result.invoice.status === 'PAID' ? 'SUCCESS' : 'INFO',
-                link: `/dashboard/invoices/${id}`
+        const customerProfileId = result.invoice.customerProfileId;
+        
+        if (customerProfileId) {
+            const customer = await prisma.customerProfile.findUnique({
+                where: { id: customerProfileId },
+                select: { userId: true, name: true, primaryEmail: true }
             });
 
-            // Send Email Notification
-            const profile = await prisma.customerProfile.findUnique({
-                where: { id: result.invoice.subscription.customerProfileId },
-                select: { name: true, primaryEmail: true }
-            });
+            if (customer?.userId) {
+                const { createNotification } = await import('@/lib/notifications');
+                await createNotification({
+                    userId: customer.userId,
+                    title: result.invoice.status === 'PAID' ? 'Payment Received' : 'Partial Payment Recorded',
+                    message: `A payment of ${result.invoice.currency} ${amount.toLocaleString()} has been recorded for invoice ${result.invoice.invoiceNumber}.`,
+                    type: result.invoice.status === 'PAID' ? 'SUCCESS' : 'INFO',
+                    link: `/dashboard/crm/invoices/${id}`
+                });
+            }
 
-            if (profile) {
+            if (customer?.primaryEmail) {
                 const { sendEmail, EmailTemplates } = await import('@/lib/email');
                 const template = EmailTemplates.paymentReceived(
-                    profile.name,
+                    customer.name,
                     `${result.invoice.currency} ${amount.toLocaleString()}`,
                     result.invoice.invoiceNumber
                 );
 
                 await sendEmail({
-                    to: profile.primaryEmail,
+                    to: customer.primaryEmail,
                     ...template
                 });
             }

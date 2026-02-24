@@ -25,7 +25,7 @@ export default function FinanceClientLayout({ children }: FinanceClientLayoutPro
         { name: 'Accounts', href: '/dashboard/finance/coa', icon: BookOpen },
         { name: 'Journal', href: '/dashboard/finance/journal', icon: BookText },
         { name: 'Ledger', href: '/dashboard/finance/ledger', icon: FileText },
-        { name: 'Invoices', href: '/dashboard/invoices', icon: FileText },
+        { name: 'Invoices', href: '/dashboard/crm/invoices', icon: FileText },
         { name: 'Payments', href: '/dashboard/payments', icon: CreditCard },
         { name: 'Reports', href: '/dashboard/finance/reports', icon: PieChart },
     ];

@@ -65,7 +65,7 @@ export async function POST(req: NextRequest) {
                     title: 'Subscription Expiring Soon',
                     message: `Your subscription for ${journalName} expires in ${days} days. Renew now!`,
                     type: 'WARNING',
-                    link: `/dashboard/subscriptions/${sub.id}`
+                    link: `/dashboard/crm/subscriptions/${sub.id}`
                 });
 
                 // 3. Log Communication

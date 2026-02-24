@@ -118,7 +118,9 @@ export const POST = authorizedRoute(['ADMIN', 'SUPER_ADMIN', 'MANAGER', 'TEAM_LE
             customerProfileId,
             institutionId,
             invoiceId,
-            revenueType
+            revenueType,
+            source,
+            sourceOther
         } = body;
 
         // Validate required fields
@@ -163,7 +165,9 @@ export const POST = authorizedRoute(['ADMIN', 'SUPER_ADMIN', 'MANAGER', 'TEAM_LE
                 institutionId: institutionId || null,
                 invoiceId: invoiceId || null,
                 createdBy: user.id,
-                revenueType: revenueType || 'NEW'
+                revenueType: revenueType || 'NEW',
+                source: source || 'Subscription',
+                sourceOther: sourceOther || null
             }
         });
 
@@ -183,29 +187,84 @@ export const POST = authorizedRoute(['ADMIN', 'SUPER_ADMIN', 'MANAGER', 'TEAM_LE
         // SYNC BACKWARD: Create a General Ledger (FinancialRecord) entry for this revenue
         try {
             // We use 'SALE' as a generic category for revenue transactions, or derive it
-            // If we had a category field in RevenueTransaction, we'd use it.
             await prisma.financialRecord.create({
                 data: {
                     companyId: user.companyId as string,
                     type: 'REVENUE',
-                    category: 'SALE', // Defaulting to SALE as it's the most common revenue type here
+                    category: 'SALE',
                     amount: Number(amount),
                     currency: 'INR',
                     date: new Date(paymentDate),
                     description: `Revenue via Transaction #${transactionNumber} (${customerName || 'Unknown Customer'})`,
                     status: 'COMPLETED',
                     paymentMethod,
-                    referenceId: referenceNumber || transactionNumber, // Use Ref or TRN
+                    referenceId: referenceNumber || transactionNumber,
                     createdByUserId: user.id
                 }
             });
             logger.info('Auto-synced FinancialRecord for transaction', { transactionNumber });
         } catch (syncError) {
             logger.error('Failed to sync FinancialRecord', syncError, { transactionNumber });
-            // Don't fail the request, just log
+        }
+
+        // NEW: Auto-create Invoice if not provided
+        if (!invoiceId && (revenueType === 'NEW' || !revenueType)) {
+            try {
+                let targetCustomerProfileId = customerProfileId;
+
+                // Try to find profile by email if not provided
+                if (!targetCustomerProfileId && customerEmail) {
+                    const profile = await prisma.customerProfile.findFirst({
+                        where: {
+                            primaryEmail: customerEmail,
+                            companyId: user.companyId
+                        }
+                    });
+                    if (profile) targetCustomerProfileId = profile.id;
+                }
+
+                if (targetCustomerProfileId) {
+                    const year = new Date().getFullYear();
+                    const invCount = await prisma.invoice.count();
+                    const invoiceNumber = `INV-AUTO-${year}-${(invCount + 1).toString().padStart(5, '0')}`;
+
+                    const newInvoice = await prisma.invoice.create({
+                        data: {
+                            invoiceNumber,
+                            customerProfileId: targetCustomerProfileId,
+                            dueDate: new Date(paymentDate),
+                            amount: Number(amount),
+                            tax: 0,
+                            total: Number(amount),
+                            status: 'PAID', // Assuming revenue recorded means it's paid
+                            description: `Auto-generated from Transaction #${transactionNumber}`,
+                            companyId: user.companyId as string,
+                            lineItems: [
+                                {
+                                    description: description || 'Revenue Transaction',
+                                    quantity: 1,
+                                    price: Number(amount),
+                                    amount: Number(amount)
+                                }
+                            ]
+                        }
+                    });
+
+                    // Update the transaction with the new invoice ID
+                    await prisma.revenueTransaction.update({
+                        where: { id: transaction.id },
+                        data: { invoiceId: newInvoice.id }
+                    });
+
+                    logger.info('Auto-created invoice for transaction', { transactionNumber, invoiceNumber: newInvoice.invoiceNumber });
+                }
+            } catch (invError) {
+                logger.error('Failed to auto-create invoice', invError, { transactionNumber });
+            }
         }
 
         return NextResponse.json(transaction);
+
     } catch (error: any) {
         logger.error('Error creating transaction', error);
         return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });

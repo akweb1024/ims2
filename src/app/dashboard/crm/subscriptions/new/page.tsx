@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
+import GuidelineHelp from '@/components/dashboard/GuidelineHelp';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 
 export default function NewSubscriptionPage() {
@@ -33,6 +35,20 @@ export default function NewSubscriptionPage() {
         autoRenew: false,
         currency: 'INR'
     });
+
+    const [taxType, setTaxType] = useState<'DOMESTIC' | 'INTERNATIONAL'>('DOMESTIC');
+    const [taxRate, setTaxRate] = useState(18); // Default GST 18%
+
+    const handleTaxTypeChange = (type: 'DOMESTIC' | 'INTERNATIONAL') => {
+        setTaxType(type);
+        if (type === 'INTERNATIONAL') {
+            setFormData(prev => ({ ...prev, currency: 'USD' }));
+            setTaxRate(0);
+        } else {
+            setFormData(prev => ({ ...prev, currency: 'INR' }));
+            setTaxRate(18);
+        }
+    };
 
     useEffect(() => {
         const userData = localStorage.getItem('user');
@@ -140,12 +156,15 @@ export default function NewSubscriptionPage() {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${token}`
                 },
-                body: JSON.stringify(formData)
+                body: JSON.stringify({
+                    ...formData,
+                    taxRate
+                })
             });
 
             if (res.ok) {
                 alert(userRole === 'CUSTOMER' ? 'Your subscription request has been submitted successfully!' : 'Subscription created successfully!');
-                router.push('/dashboard/subscriptions');
+                router.push('/dashboard/crm/subscriptions');
             } else {
                 const err = await res.json();
                 alert(err.error || 'Something went wrong');
@@ -160,9 +179,11 @@ export default function NewSubscriptionPage() {
 
     const subtotalAmount = formData.items.reduce((acc, item) => acc + (item.price * item.quantity), 0);
     const discountAmount = selectedAgency ? (subtotalAmount * (discountDisplay / 100)) : 0;
-    const totalAmount = subtotalAmount - discountAmount;
+    const taxableAmount = subtotalAmount - discountAmount;
+    const taxAmount = taxableAmount * (taxRate / 100);
+    const totalAmount = taxableAmount + taxAmount;
 
-    const currencySymbol = formData.currency === 'INR' ? '₹' : '$';
+    const currencySymbol = formData.currency === 'INR' ? '₹' : (formData.currency === 'USD' ? '$' : (formData.currency === 'EUR' ? '€' : (formData.currency === 'GBP' ? '£' : '$')));
 
     return (
         <DashboardLayout userRole={userRole}>
@@ -268,15 +289,25 @@ export default function NewSubscriptionPage() {
                     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4">
                         <div className="card-premium p-6">
                             <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
-                                <h3 className="text-xl font-bold text-secondary-900">Step 2: Selection Catalog</h3>
+                                <div className="flex items-center justify-between">
+                                    <h3 className="text-xl font-bold text-secondary-900">Step 2: Subscription Details</h3>
+                                    <GuidelineHelp category="SUBSCRIPTION" search="Process" />
+                                </div>
                                 <div className="flex items-center gap-3 w-full md:w-auto">
-                                    <input
-                                        type="text"
-                                        placeholder="Search journals..."
-                                        className="input py-1 px-3 w-full md:w-64"
-                                        value={searchTerm}
-                                        onChange={(e) => setSearchTerm(e.target.value)}
-                                    />
+                                    <div>
+                                        <div className="flex items-center justify-between mb-2">
+                                            <label className="label mb-0">Region & Tax Type</label>
+                                            <GuidelineHelp category="BILLING" search="Tax" />
+                                        </div>
+                                        <select
+                                            className="input"
+                                            value={taxType}
+                                            onChange={(e) => handleTaxTypeChange(e.target.value as any)}
+                                        >
+                                            <option value="DOMESTIC">Domestic (GST 18%)</option>
+                                            <option value="INTERNATIONAL">International (Non-Taxable)</option>
+                                        </select>
+                                    </div>
                                     <select
                                         className="input py-1 px-3 w-auto"
                                         value={formData.currency}
@@ -289,6 +320,8 @@ export default function NewSubscriptionPage() {
                                     >
                                         <option value="INR">INR (₹)</option>
                                         <option value="USD">USD ($)</option>
+                                        <option value="EUR">EUR (€)</option>
+                                        <option value="GBP">GBP (£)</option>
                                     </select>
                                 </div>
                             </div>
@@ -464,19 +497,25 @@ export default function NewSubscriptionPage() {
                                 <span className="text-primary-700">Items</span>
                                 <span className="font-bold text-primary-900">{formData.items.length} Journals</span>
                             </div>
-                            <div className="flex justify-between text-sm border-t border-primary-200 pt-2">
+                            <div className="flex justify-between text-sm">
                                 <span className="text-primary-700">Subtotal</span>
                                 <span className="font-bold text-primary-900 opacity-70">{currencySymbol}{subtotalAmount.toLocaleString()}</span>
                             </div>
                             {selectedAgency && (
                                 <div className="flex justify-between text-sm">
-                                    <span className="text-success-600 font-bold">Agency Discount ({discountDisplay}%)</span>
-                                    <span className="font-bold text-success-600">-{currencySymbol}{discountAmount.toLocaleString()}</span>
+                                    <span className="text-secondary-600 font-bold">Agency Discount ({discountDisplay}%)</span>
+                                    <span className="font-bold text-secondary-600">-{currencySymbol}{discountAmount.toLocaleString()}</span>
                                 </div>
                             )}
+                            <div className="flex justify-between text-sm">
+                                <span className="text-secondary-600 font-bold">
+                                    {taxType === 'DOMESTIC' ? 'GST (18%)' : 'Tax (International)'}
+                                </span>
+                                <span className="font-bold text-secondary-600">+{currencySymbol}{taxAmount.toLocaleString()}</span>
+                            </div>
                             <div className="flex justify-between text-lg pt-2 border-t border-primary-300">
-                                <span className="font-bold text-primary-900">Total Payable</span>
-                                <span className="font-bold text-primary-700 text-xl">{currencySymbol}{totalAmount.toLocaleString()}</span>
+                                <span className="font-bold text-primary-900 uppercase">Total Amount</span>
+                                <span className="font-bold text-primary-700 text-2xl">{currencySymbol}{totalAmount.toLocaleString()}</span>
                             </div>
                         </div>
 

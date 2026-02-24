@@ -757,6 +757,48 @@ async function main() {
     console.log('- Finance: finance@stm.com');
     console.log('- Agency: agency@partner.com');
     console.log('- Customer: library@mit.edu');
+
+    // 14. Create Knowledge Articles (Guideline Hub)
+    console.log('📚 Seeding guidelines...');
+    const guidelines = [
+        {
+            id: 'guide-settle-invoice',
+            title: 'How to Settle Invoices',
+            content: 'To settle an invoice, navigate to the Invoice Detail page, click the "Settle" button, and follow the payment prompts. Ensure the correct currency is selected.',
+            category: 'BILLING',
+            targetRole: 'ALL'
+        },
+        {
+            id: 'guide-tax-calc',
+            title: 'Tax Calculation Guidelines',
+            content: 'Domestic invoices are subject to 18% GST. International invoices are non-taxable (0%). Always verify the customer region before finalizing prices.',
+            category: 'BILLING',
+            targetRole: 'ALL'
+        },
+        {
+            id: 'guide-sub-process',
+            title: 'Subscription Creation Process',
+            content: 'When creating a subscription, step 1 is selecting the customer. Step 2 requires adding journals/plans. Invoices are auto-generated upon submission.',
+            category: 'SUBSCRIPTION',
+            targetRole: 'ALL'
+        },
+        {
+            id: 'guide-it-support',
+            title: 'IT Support Protocol',
+            content: 'For any technical issues, create a support ticket with priority level. Urgent tickets are addressed within 2 hours.',
+            category: 'IT',
+            targetRole: 'ALL'
+        }
+    ];
+
+    for (const g of guidelines) {
+        await prisma.knowledgeArticle.upsert({
+            where: { id: g.id },
+            update: { ...g, authorId: superAdmin.id },
+            create: { ...g, authorId: superAdmin.id }
+        });
+    }
+    console.log(`- Knowledge Articles: ${await prisma.knowledgeArticle.count()}`);
 }
 
 main()

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
-import FinanceClientLayout from '../finance/FinanceClientLayout';
+import FinanceClientLayout from '../../finance/FinanceClientLayout';
 import FormattedDate from '@/components/common/FormattedDate';
 
 import CreateInvoiceModal from '@/components/dashboard/CreateInvoiceModal';
@@ -224,7 +224,10 @@ export default function InvoicesPage() {
                                                 <FormattedDate date={inv.dueDate} />
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap">
-                                                <span className="text-sm font-bold text-primary-700">₹{inv.total.toLocaleString()}</span>
+                                                <span className="text-sm font-bold text-primary-700">
+                                                    {inv.currency === 'INR' || !inv.currency ? '₹' : inv.currency + ' '}
+                                                    {inv.total.toLocaleString()}
+                                                </span>
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap">
                                                 <span className={`badge ${getStatusBadgeClass(inv.status)}`}>
@@ -233,7 +236,7 @@ export default function InvoicesPage() {
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-right">
                                                 <Link
-                                                    href={`/dashboard/invoices/${inv.id}`}
+                                                    href={`/dashboard/crm/invoices/${inv.id}`}
                                                     className="btn btn-secondary py-1 text-xs"
                                                 >
                                                     View Details

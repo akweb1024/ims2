@@ -134,7 +134,7 @@ export default function SubscriptionsPage() {
                                 </button>
                             </>
                         )}
-                        <Link href="/dashboard/subscriptions/new" className="btn btn-primary px-6">
+                        <Link href="/dashboard/crm/subscriptions/new" className="btn btn-primary px-6">
                             {userRole === 'CUSTOMER' ? 'Request Subscription' : 'New Subscription'}
                         </Link>
                     </div>
@@ -247,7 +247,7 @@ export default function SubscriptionsPage() {
                                             <td className="text-right">
                                                 <div className="flex justify-end space-x-2">
                                                     <Link
-                                                        href={`/dashboard/subscriptions/${sub.id}`}
+                                                        href={`/dashboard/crm/subscriptions/${sub.id}`}
                                                         className="p-2 hover:bg-secondary-100 rounded-full text-secondary-600 transition-colors"
                                                         title="View Details"
                                                     >

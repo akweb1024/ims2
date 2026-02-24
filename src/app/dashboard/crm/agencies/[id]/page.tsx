@@ -160,7 +160,7 @@ export default function AgencyDetailPage({ params }: { params: Promise<{ id: str
                             Edit Profile
                         </button>
                         <Link
-                            href={`/dashboard/subscriptions/new?agencyId=${customer.agencyDetails?.id}`}
+                            href={`/dashboard/crm/subscriptions/new?agencyId=${customer.agencyDetails?.id}`}
                             className="btn btn-primary"
                         >
                             New Subscription
@@ -350,7 +350,7 @@ export default function AgencyDetailPage({ params }: { params: Promise<{ id: str
                                     <div className="card-premium text-center py-12">
                                         <p className="text-secondary-500">No subscriptions sold by this agency yet.</p>
                                         <Link
-                                            href={`/dashboard/subscriptions/new?agencyId=${customer.agencyDetails?.id}`}
+                                            href={`/dashboard/crm/subscriptions/new?agencyId=${customer.agencyDetails?.id}`}
                                             className="btn btn-primary mt-4"
                                         >
                                             Create New Subscription
@@ -374,7 +374,7 @@ export default function AgencyDetailPage({ params }: { params: Promise<{ id: str
                                                         {sub.status.replace('_', ' ')}
                                                     </span>
                                                     <Link
-                                                        href={`/dashboard/subscriptions/${sub.id}`}
+                                                        href={`/dashboard/crm/subscriptions/${sub.id}`}
                                                         className="text-xs text-primary-600 font-bold hover:underline"
                                                     >
                                                         View Details →
@@ -535,7 +535,7 @@ export default function AgencyDetailPage({ params }: { params: Promise<{ id: str
                                                                 </td>
                                                                 <td className="text-right">
                                                                     <Link
-                                                                        href={`/dashboard/invoices/${invoice.id}`}
+                                                                        href={`/dashboard/crm/invoices/${invoice.id}`}
                                                                         className="btn btn-secondary py-1 text-xs"
                                                                     >
                                                                         View Invoice

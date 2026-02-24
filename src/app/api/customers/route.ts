@@ -216,6 +216,7 @@ export async function POST(req: NextRequest) {
                     tags,
                     institutionId: institutionId || null,
                     designation: designation || null,
+                    leadStatus: null,
                 }
             });
 

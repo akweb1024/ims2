@@ -99,7 +99,7 @@ export async function GET(req: NextRequest) {
                 title: `Subscription: ${s.id.slice(0, 8)}`,
                 subtitle: `Customer: ${s.customerProfile.name}`,
                 type: 'Subscription',
-                href: `/dashboard/subscriptions/${s.id}`,
+                href: `/dashboard/crm/subscriptions/${s.id}`,
                 icon: '📋'
             })),
             ...invoices.map((i: any) => ({
@@ -107,7 +107,7 @@ export async function GET(req: NextRequest) {
                 title: `Invoice: ${i.invoiceNumber}`,
                 subtitle: `Customer: ${i.subscription.customerProfile.name}`,
                 type: 'Invoice',
-                href: `/dashboard/invoices/${i.id}`,
+                href: `/dashboard/crm/invoices/${i.id}`,
                 icon: '🧾'
             })),
             ...journals.map((j: any) => ({

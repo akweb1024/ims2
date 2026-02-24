@@ -85,7 +85,8 @@ export async function POST(req: NextRequest) {
                         country: item.country,
                         state: item.state,
                         city: item.city,
-                        companyId: decoded.companyId
+                        companyId: decoded.companyId,
+                        leadStatus: null
                     }
                 });
             });

@@ -160,7 +160,7 @@ export async function PATCH(
                     title,
                     message,
                     type: status === 'ACTIVE' ? 'SUCCESS' : 'INFO',
-                    link: `/dashboard/subscriptions/${id}`
+                    link: `/dashboard/crm/subscriptions/${id}`
                 });
 
                 // Send Email Notification

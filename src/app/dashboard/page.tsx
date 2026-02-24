@@ -123,7 +123,7 @@ export default function DashboardPage() {
                     </div>
                     <div className="mt-4 sm:mt-0">
                         {['CUSTOMER', 'AGENCY'].includes(userRole) ? (
-                            <Link href="/dashboard/subscriptions/new" className="btn btn-primary">
+                            <Link href="/dashboard/crm/subscriptions/new" className="btn btn-primary">
                                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                                 </svg>
@@ -255,7 +255,7 @@ export default function DashboardPage() {
                                     </div>
                                     <div className="mt-8">
                                         <Link
-                                            href="/dashboard/subscriptions/new"
+                                            href="/dashboard/crm/subscriptions/new"
                                             className="inline-flex items-center px-6 py-3 bg-white text-primary-700 font-bold rounded-xl hover:bg-primary-50 transition-all shadow-lg text-sm"
                                         >
                                             Browse Journals
@@ -306,7 +306,7 @@ export default function DashboardPage() {
                 <div className="card-premium">
                     <h2 className="text-xl font-bold text-secondary-900 mb-6">Quick Actions</h2>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                        <Link href="/dashboard/subscriptions/new" className="flex flex-col items-center justify-center p-6 bg-secondary-50 rounded-lg hover:bg-secondary-100 transition-colors text-center">
+                        <Link href="/dashboard/crm/subscriptions/new" className="flex flex-col items-center justify-center p-6 bg-secondary-50 rounded-lg hover:bg-secondary-100 transition-colors text-center">
                             <span className="text-3xl mb-2">📋</span>
                             <span className="text-xs font-bold uppercase tracking-widest text-secondary-900">New Subscription</span>
                         </Link>

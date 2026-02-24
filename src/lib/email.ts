@@ -144,7 +144,7 @@ export const EmailTemplates = {
                 <p>Great news! Your subscription request has been approved.</p>
                 <p>To activate your subscription, please log in to your dashboard and complete the payment for the generated invoice.</p>
                 <div style="text-align: center; margin: 30px 0;">
-                    <a href="${process.env.NEXT_PUBLIC_APP_URL}/dashboard/subscriptions/${subId}" 
+                    <a href="${process.env.NEXT_PUBLIC_APP_URL}/dashboard/crm/subscriptions/${subId}" 
                        style="background: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold;">
                        View Subscription & Pay
                     </a>
@@ -185,7 +185,7 @@ export const EmailTemplates = {
                 <p>This is a reminder that your subscription for <strong>${journalName}</strong> is set to expire in <strong>${daysLeft} days</strong>.</p>
                 <p>To ensure uninterrupted access to your research and journals, please renew your subscription today.</p>
                 <div style="text-align: center; margin: 30px 0;">
-                    <a href="${process.env.NEXT_PUBLIC_APP_URL}/dashboard/subscriptions/${subId}" 
+                    <a href="${process.env.NEXT_PUBLIC_APP_URL}/dashboard/crm/subscriptions/${subId}" 
                        style="background: #ea580c; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold;">
                        Renew Subscription Now
                     </a>

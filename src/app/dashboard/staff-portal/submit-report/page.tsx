@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
-import { Briefcase, Send, CheckCircle, Award, Settings, TrendingUp, Users, DollarSign, Search, X, PlusCircle } from 'lucide-react';
+import { Briefcase, Send, CheckCircle, Award, Settings, TrendingUp, Users, DollarSign, Search, X, PlusCircle, FileText, RefreshCw } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import RevenueFlowHelp from '@/components/dashboard/hr/RevenueFlowHelp';
 import { toast } from 'react-hot-toast';
@@ -31,7 +31,7 @@ export default function SubmitReportPage() {
     const [showRevenueModal, setShowRevenueModal] = useState(false);
     const [revenueFormData, setRevenueFormData] = useState({
         amount: '',
-        paymentMethod: 'BANK_TRANSFER',
+        paymentMethod: 'UPI',
         date: new Date().toISOString().split('T')[0],
         customerName: '',
         customerEmail: '',
@@ -45,8 +45,46 @@ export default function SubmitReportPage() {
         originalAmount: '',
         currency: 'INR',
         inrAmount: '',
-        revenueType: 'NEW'
+        revenueType: 'NEW',
+        source: 'Subscription',
+        sourceOther: '',
+        invoiceId: ''
     });
+
+    const [invoices, setInvoices] = useState<any[]>([]);
+    const [loadingInvoices, setLoadingInvoices] = useState(false);
+    const [showInvoiceSync, setShowInvoiceSync] = useState(false);
+
+    const fetchRecentInvoices = async () => {
+        setLoadingInvoices(true);
+        try {
+            const token = localStorage.getItem('token');
+            const res = await fetch('/api/invoices?limit=10', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const data = await res.json();
+            setInvoices(data.data || []);
+        } catch (error) {
+            console.error('Failed to fetch invoices', error);
+        } finally {
+            setLoadingInvoices(false);
+        }
+    };
+
+    const populateFromInvoice = (invoice: any) => {
+        setRevenueFormData({
+            ...revenueFormData,
+            amount: invoice.total.toString(),
+            customerName: invoice.customerProfile?.name || invoice.subscription?.customerProfile?.name || '',
+            customerEmail: invoice.customerProfile?.email || invoice.subscription?.customerProfile?.email || '',
+            description: `Invoice: ${invoice.invoiceNumber}`,
+            invoiceId: invoice.id,
+            revenueType: 'NEW',
+            source: 'Subscription'
+        });
+        setShowInvoiceSync(false);
+        toast.success(`Populated from ${invoice.invoiceNumber}`);
+    };
 
     // Form State - Simplified to narrative only
     const [commonData, setCommonData] = useState({
@@ -359,7 +397,11 @@ export default function SubmitReportPage() {
                     customerPhone: revenueFormData.customerPhone,
                     referenceNumber: revenueFormData.referenceNumber,
                     bankName: revenueFormData.bankName,
-                    description: revenueFormData.description
+                    description: revenueFormData.description,
+                    revenueType: revenueFormData.revenueType,
+                    source: revenueFormData.source,
+                    sourceOther: revenueFormData.sourceOther,
+                    invoiceId: revenueFormData.invoiceId
                 })
             });
 
@@ -373,7 +415,7 @@ export default function SubmitReportPage() {
                 // Reset form
                 setRevenueFormData({
                     amount: '',
-                    paymentMethod: 'BANK_TRANSFER',
+                    paymentMethod: 'UPI',
                     date: new Date().toISOString().split('T')[0],
                     customerName: '',
                     customerEmail: '',
@@ -386,9 +428,13 @@ export default function SubmitReportPage() {
                     originalAmount: '',
                     currency: 'INR',
                     inrAmount: '',
-                    revenueType: 'NEW'
+                    revenueType: 'NEW',
+                    source: 'Subscription',
+                    sourceOther: '',
+                    invoiceId: ''
                 });
                 setShowRevenueModal(false);
+
             } else {
                 const error = await res.json();
                 toast.error(error.error || 'Failed to record revenue');
@@ -1074,12 +1120,11 @@ export default function SubmitReportPage() {
                                             onChange={(e) => setRevenueFormData({ ...revenueFormData, paymentMethod: e.target.value })}
                                             title="Select Payment Method"
                                         >
-                                            <option value="BANK_TRANSFER">Bank Transfer (IMPS/NEFT)</option>
                                             <option value="UPI">UPI / PhonePe / GPay</option>
-                                            <option value="RAZORPAY">Razorpay</option>
-                                            <option value="CASH">Cash Payment</option>
+                                            <option value="BANK_TRANSFER">Bank Transfer (IMPS/NEFT)</option>
                                             <option value="CHEQUE">Cheque Payment</option>
                                             <option value="DD">Demand Draft (DD)</option>
+                                            <option value="CASH">Cash Payment</option>
                                             <option value="OTHER">Other Method</option>
                                         </select>
                                     </div>
@@ -1091,12 +1136,82 @@ export default function SubmitReportPage() {
                                             onChange={(e) => setRevenueFormData({ ...revenueFormData, revenueType: e.target.value })}
                                             title="Revenue Type"
                                         >
-                                            <option value="NEW">New Business</option>
-                                            <option value="RENEWAL">Renewal</option>
+                                            <option value="NEW">New Business (New)</option>
+                                            <option value="RENEWAL">Subscription Renewal (Renewal)</option>
                                         </select>
                                     </div>
 
-                                    {/* Date & Reference */}
+                                    <div className="col-span-1">
+                                        <label className="text-[10px] font-black text-secondary-400 uppercase tracking-widest block mb-1">Source</label>
+                                        <select
+                                            className="w-full px-4 py-3 rounded-xl border border-secondary-200 focus:ring-2 focus:ring-primary-500 transition-all outline-none"
+                                            value={revenueFormData.source}
+                                            onChange={(e) => setRevenueFormData({ ...revenueFormData, source: e.target.value })}
+                                            title="Source"
+                                        >
+                                            <option value="Subscription">Subscription</option>
+                                            <option value="Courses">Courses</option>
+                                            <option value="Workshops">Workshops</option>
+                                            <option value="WoS">Web of Science (WoS)</option>
+                                            <option value="APC">Article Processing Charge (APC)</option>
+                                            <option value="DOI">DOI Registration</option>
+                                            <option value="Certificate">Certificate</option>
+                                            <option value="Other">Other (Please specify)</option>
+                                        </select>
+                                    </div>
+
+                                    {revenueFormData.source === 'Other' && (
+                                        <div className="col-span-2">
+                                            <label className="text-[10px] font-black text-secondary-400 uppercase tracking-widest block mb-1">Specify Other Source</label>
+                                            <input
+                                                type="text"
+                                                required
+                                                className="w-full px-4 py-3 rounded-xl border border-secondary-200 focus:ring-2 focus:ring-primary-500 transition-all outline-none"
+                                                placeholder="Enter source name"
+                                                value={revenueFormData.sourceOther}
+                                                onChange={(e) => setRevenueFormData({ ...revenueFormData, sourceOther: e.target.value })}
+                                            />
+                                        </div>
+                                    )}
+
+                                    {/* Invoice Sync Toggle */}
+                                    <div className="col-span-2">
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                setShowInvoiceSync(!showInvoiceSync);
+                                                if (!showInvoiceSync) fetchRecentInvoices();
+                                            }}
+                                            className="flex items-center gap-2 text-xs font-black text-primary-600 hover:text-primary-700 transition-colors uppercase tracking-widest py-2"
+                                        >
+                                            <FileText size={14} />
+                                            {showInvoiceSync ? 'Hide Invoice List' : 'Auto-Sync from Recent Invoices'}
+                                        </button>
+                                        
+                                        {showInvoiceSync && (
+                                            <div className="mt-2 p-3 bg-primary-50 rounded-xl border border-primary-100 max-h-40 overflow-y-auto space-y-2">
+                                                {loadingInvoices ? (
+                                                    <div className="flex justify-center py-4"><RefreshCw size={16} className="animate-spin text-primary-400" /></div>
+                                                ) : invoices.length === 0 ? (
+                                                    <p className="text-[10px] text-primary-400 text-center italic">No recent invoices found.</p>
+                                                ) : (
+                                                    invoices.map((inv: any) => (
+                                                        <div 
+                                                            key={inv.id} 
+                                                            onClick={() => populateFromInvoice(inv)}
+                                                            className="flex justify-between items-center p-2 bg-white rounded-lg border border-primary-100 hover:border-primary-400 cursor-pointer transition-all shadow-sm"
+                                                        >
+                                                            <div className="text-[10px]">
+                                                                <p className="font-bold text-secondary-900">{inv.invoiceNumber}</p>
+                                                                <p className="text-secondary-500">{inv.customerProfile?.name || inv.subscription?.customerProfile?.name || 'Unknown Client'}</p>
+                                                            </div>
+                                                            <span className="text-[10px] font-black text-success-600">₹{inv.total.toLocaleString()}</span>
+                                                        </div>
+                                                    ))
+                                                )}
+                                            </div>
+                                        )}
+                                    </div>
                                     <div className="col-span-1">
                                         <label className="text-[10px] font-black text-secondary-400 uppercase tracking-widest block mb-1">Payment Date</label>
                                         <input

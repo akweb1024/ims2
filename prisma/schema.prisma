@@ -3527,8 +3527,11 @@ model RevenueTransaction {
   updatedAt           DateTime                    @updatedAt
   createdBy           String?
   revenueType         RevenueType?                @default(NEW)
+  source              String?                     @default("Subscription")
+  sourceOther         String?
   expenseAllocations  EmployeeExpenseAllocation[]
   claims              RevenueClaim[]
+
   approvedBy          EmployeeProfile?            @relation("ApprovedRevenue", fields: [approvedByManagerId], references: [id])
   claimedBy           EmployeeProfile?            @relation("ClaimedRevenue", fields: [claimedByEmployeeId], references: [id])
   company             Company                     @relation(fields: [companyId], references: [id], onDelete: Cascade)

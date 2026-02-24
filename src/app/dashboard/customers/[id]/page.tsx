@@ -235,7 +235,7 @@ export default function CustomerDetailPage({ params }: { params: Promise<{ id: s
                             Edit Profile
                         </button>
                         <Link
-                            href={`/dashboard/subscriptions/new?customerId=${customer.id}`}
+                            href={`/dashboard/crm/subscriptions/new?customerId=${customer.id}`}
                             className="btn btn-primary"
                         >
                             New Subscription
@@ -516,7 +516,7 @@ export default function CustomerDetailPage({ params }: { params: Promise<{ id: s
                                     <div className="card-premium text-center py-12">
                                         <p className="text-secondary-500">No active subscriptions found.</p>
                                         <Link
-                                            href={`/dashboard/subscriptions/new?customerId=${customer.id}`}
+                                            href={`/dashboard/crm/subscriptions/new?customerId=${customer.id}`}
                                             className="btn btn-primary mt-4"
                                         >
                                             Create First Subscription
@@ -540,7 +540,7 @@ export default function CustomerDetailPage({ params }: { params: Promise<{ id: s
                                                         {sub.status.replace('_', ' ')}
                                                     </span>
                                                     <Link
-                                                        href={`/dashboard/subscriptions/${sub.id}`}
+                                                        href={`/dashboard/crm/subscriptions/${sub.id}`}
                                                         className="text-xs text-primary-600 font-bold hover:underline"
                                                     >
                                                         View Details →
@@ -721,7 +721,7 @@ export default function CustomerDetailPage({ params }: { params: Promise<{ id: s
                                                                 </td>
                                                                 <td className="text-right">
                                                                     <Link
-                                                                        href={`/dashboard/invoices/${invoice.id}`}
+                                                                        href={`/dashboard/crm/invoices/${invoice.id}`}
                                                                         className="btn btn-secondary py-1 text-xs"
                                                                     >
                                                                         View Invoice

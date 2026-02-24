@@ -117,7 +117,7 @@ export async function POST(request: NextRequest) {
                 title: 'New Subscription Request',
                 message: `${customerProfile.name} has requested a subscription for ${items.length} journals (${currency} ${total.toLocaleString()}).`,
                 type: 'INFO',
-                link: `/dashboard/subscriptions/${subscription.id}`
+                link: `/dashboard/crm/subscriptions/${subscription.id}`
             });
         }
 

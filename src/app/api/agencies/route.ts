@@ -132,9 +132,10 @@ export async function POST(req: NextRequest) {
                         create: {
                             discountRate: parseFloat(discountRate || '0'),
                             commissionTerms,
-                            territory
+                            territory,
                         }
-                    }
+                    },
+                    leadStatus: null
                 },
                 include: {
                     agencyDetails: true

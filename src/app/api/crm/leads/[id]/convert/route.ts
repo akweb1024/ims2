@@ -29,7 +29,7 @@ export async function POST(
         const updatedCustomer = await prisma.customerProfile.update({
             where: { id },
             data: {
-                leadStatus: 'CONVERTED', // We keep CONVERTED but they will now show in customer lists too
+                leadStatus: null, // Lead converted to formal customer
                 updatedAt: new Date()
             }
         });

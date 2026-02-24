@@ -92,7 +92,7 @@ export default function SubscriptionDetailsPage() {
 
             if (res.ok) {
                 const newSubscription = await res.json();
-                router.push(`/dashboard/subscriptions/${newSubscription.id}`);
+                router.push(`/dashboard/crm/subscriptions/${newSubscription.id}`);
                 alert('Renewal created successfully as a new pending subscription!');
             } else {
                 const err = await res.json();
@@ -122,7 +122,7 @@ export default function SubscriptionDetailsPage() {
                     <div className="text-danger-600 text-5xl mb-4">⚠️</div>
                     <h2 className="text-2xl font-bold text-secondary-900">Error</h2>
                     <p className="text-secondary-600 mt-2">{error || 'Subscription not found'}</p>
-                    <Link href="/dashboard/subscriptions" className="btn btn-secondary mt-6">
+                    <Link href="/dashboard/crm/subscriptions" className="btn btn-secondary mt-6">
                         Back to Subscriptions
                     </Link>
                 </div>
@@ -149,7 +149,7 @@ export default function SubscriptionDetailsPage() {
                 <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                     <div>
                         <div className="flex items-center gap-3">
-                            <Link href="/dashboard/subscriptions" className="p-2 hover:bg-secondary-100 rounded-full text-secondary-600 transition-colors">
+                            <Link href="/dashboard/crm/subscriptions" className="p-2 hover:bg-secondary-100 rounded-full text-secondary-600 transition-colors">
                                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
                                 </svg>
@@ -344,7 +344,7 @@ export default function SubscriptionDetailsPage() {
                                     <p className="text-sm text-secondary-500 text-center py-4">No invoices found</p>
                                 )}
                                 <Link
-                                    href="/dashboard/invoices"
+                                    href="/dashboard/crm/invoices"
                                     className="block text-center text-sm text-primary-600 font-bold hover:underline"
                                 >
                                     View All Invoices

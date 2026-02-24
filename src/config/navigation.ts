@@ -149,8 +149,6 @@ export const ALL_MODULES: NavModule[] = [
                 title: 'Billing',
                 items: [
                     { name: 'Increment Analysis', href: '/dashboard/finance/increments/analytics', icon: '📊', roles: ['SUPER_ADMIN', 'ADMIN', 'FINANCE_ADMIN'] },
-                    { name: 'Invoices', href: '/dashboard/invoices', icon: '🧾', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'EXECUTIVE', 'FINANCE_ADMIN', 'AGENCY', 'CUSTOMER'] },
-                    { name: 'Subscriptions', href: '/dashboard/subscriptions', icon: '📋', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'EXECUTIVE', 'FINANCE_ADMIN', 'AGENCY', 'CUSTOMER'] },
                 ]
             }
         ]
@@ -167,6 +165,8 @@ export const ALL_MODULES: NavModule[] = [
                     { name: 'All Customers', href: '/dashboard/customers', icon: '👥', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'TEAM_LEADER', 'EXECUTIVE'] },
                     { name: 'Add Customer', href: '/dashboard/customers/new', icon: '➕', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'TEAM_LEADER', 'EXECUTIVE'] },
                     { name: 'Agencies', href: '/dashboard/crm/agencies', icon: '🤝', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'EXECUTIVE'] },
+                    { name: 'Invoices', href: '/dashboard/crm/invoices', icon: '🧾', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'EXECUTIVE', 'FINANCE_ADMIN', 'AGENCY', 'CUSTOMER'] },
+                    { name: 'Subscriptions', href: '/dashboard/crm/subscriptions', icon: '📋', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'EXECUTIVE', 'FINANCE_ADMIN', 'AGENCY', 'CUSTOMER'] },
                     { name: 'Institutions', href: '/dashboard/institutions', icon: '🏛️', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'EXECUTIVE'] },
                 ]
             },

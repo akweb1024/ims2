@@ -54,7 +54,7 @@ export default async function AlertsPanel({ user }: { user: any }) {
                             {overdueInvoices.map(inv => (
                                 <li key={inv.id} className="flex justify-between items-center text-sm bg-white p-2 rounded border border-danger-100">
                                     <div>
-                                        <Link href={`/dashboard/invoices/${inv.id}`} className="font-medium text-secondary-900 hover:text-primary-600 underline">
+                                        <Link href={`/dashboard/crm/invoices/${inv.id}`} className="font-medium text-secondary-900 hover:text-primary-600 underline">
                                             {inv.invoiceNumber}
                                         </Link>
                                         <p className="text-[10px] text-secondary-500">{inv.subscription?.customerProfile?.name}</p>

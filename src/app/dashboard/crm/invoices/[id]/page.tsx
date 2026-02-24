@@ -108,13 +108,13 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
         );
     }
 
-    const currencySymbol = invoice.currency === 'INR' ? '₹' : '$';
+    const currencySymbol = invoice.currency === 'INR' ? '₹' : (invoice.currency === 'USD' ? '$' : (invoice.currency === 'EUR' ? '€' : (invoice.currency === 'GBP' ? '£' : (invoice.currency || '$'))));
 
     // Robustly resolve customer details (Subscription -> Invoice Direct)
     const customer = invoice.subscription?.customerProfile || invoice.customerProfile || {};
 
     // Robustly resolve items
-    const invoiceItems = invoice.subscription?.items || (Array.isArray(invoice.lineItems) ? invoice.lineItems : []) || [];
+    const invoiceItems = Array.isArray(invoice.lineItems) ? invoice.lineItems : (invoice.subscription?.items || []);
 
     return (
         <DashboardLayout userRole={userRole}>
@@ -225,8 +225,8 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
                                 </thead>
                                 <tbody className="divide-y divide-secondary-100">
                                     {invoiceItems.length > 0 ? (
-                                        invoiceItems.map((item: any) => (
-                                            <tr key={item.id}>
+                                        invoiceItems.map((item: any, idx: number) => (
+                                            <tr key={item.id || `item-${idx}`}>
                                                 <td className="py-6">
                                                     <div className="font-bold text-secondary-900">{item.journal?.name || item.description || 'Item'}</div>
                                                     <div className="text-sm text-secondary-500">
@@ -252,17 +252,17 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
                         {/* Totals */}
                         <div className="flex justify-end pt-8">
                             <div className="w-full sm:w-80 space-y-4">
-                                <div className="flex justify-between text-secondary-600">
+                                <div className="flex justify-between text-secondary-600 font-medium">
                                     <span>Subtotal</span>
-                                    <span className="font-bold">{currencySymbol}{invoice.amount.toLocaleString()}</span>
+                                    <span>{currencySymbol}{(invoice.amount || 0).toLocaleString()}</span>
                                 </div>
-                                <div className="flex justify-between text-secondary-600">
-                                    <span>Tax (0%)</span>
-                                    <span className="font-bold">+{currencySymbol}0.00</span>
+                                <div className="flex justify-between text-secondary-600 font-medium">
+                                    <span>Tax ({invoice.taxRate || 0}%)</span>
+                                    <span>+{currencySymbol}{(invoice.tax || 0).toLocaleString()}</span>
                                 </div>
                                 <div className="flex justify-between items-center pt-4 border-t-2 border-secondary-900">
-                                    <span className="text-xl font-bold text-secondary-900 uppercase">Total Due</span>
-                                    <span className="text-3xl font-extrabold text-primary-600">{currencySymbol}{invoice.total.toLocaleString()}</span>
+                                    <span className="text-xl font-bold text-secondary-900 uppercase tracking-tight">Total Due</span>
+                                    <span className="text-3xl font-extrabold text-primary-600">{currencySymbol}{(invoice.total || 0).toLocaleString()}</span>
                                 </div>
                             </div>
                         </div>

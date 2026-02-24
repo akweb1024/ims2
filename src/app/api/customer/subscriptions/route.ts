@@ -10,13 +10,19 @@ export async function POST(req: NextRequest) {
         }
 
         const body = await req.json();
-        const { journalId, planId, quantity = 1 } = body;
+        let { items } = body;
+        const { journalId, planId, quantity = 1, currency = 'INR', taxRate = 0 } = body;
 
-        if (!journalId || !planId) {
-            return NextResponse.json({ error: 'Missing Required Fields' }, { status: 400 });
+        // 1. Normalize items list
+        if (!items && journalId && planId) {
+            items = [{ journalId, planId, quantity }];
         }
 
-        // 1. Get Customer Profile
+        if (!items || items.length === 0) {
+            return NextResponse.json({ error: 'Missing Required Fields (items)' }, { status: 400 });
+        }
+
+        // 2. Get Customer Profile
         const customerProfile = await prisma.customerProfile.findUnique({
             where: { userId: decoded.id }
         });
@@ -25,52 +31,71 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: 'Customer Profile not found' }, { status: 404 });
         }
 
-        // 2. Get Plan and Journal Details
-        const plan = await prisma.plan.findUnique({
-            where: { id: planId },
-            include: { journal: true }
-        });
+        // 3. Process Items and Calculate Totals
+        let selectedCurrencyTotal = 0;
+        const subscriptionItems: any[] = [];
+        const invoiceLineItems: any[] = [];
 
-        if (!plan || plan.journalId !== journalId || !plan.isActive) {
-            return NextResponse.json({ error: 'Invalid or Inactive Plan' }, { status: 400 });
+        for (const item of items) {
+            const plan = await prisma.plan.findUnique({
+                where: { id: item.planId },
+                include: { journal: true }
+            });
+
+            if (!plan) return NextResponse.json({ error: `Plan ${item.planId} not found` }, { status: 404 });
+
+            const price = currency === 'USD' ? plan.priceUSD : plan.priceINR;
+            const amount = price * (item.quantity || 1);
+            selectedCurrencyTotal += amount;
+
+            subscriptionItems.push({
+                journalId: plan.journalId,
+                planId: plan.id,
+                quantity: item.quantity || 1,
+                price: price,
+                seats: plan.format === 'Online' ? 1 : 0
+            });
+
+            invoiceLineItems.push({
+                journalId: plan.journalId,
+                planId: plan.id,
+                quantity: item.quantity || 1,
+                price: price,
+                amount: amount,
+                description: plan.journal?.name || 'Journal Subscription'
+            });
         }
 
-        // 3. Calculate Totals (Mock Tax/Discount for now)
-        const price = plan.priceINR; // Default to INR for MPV
-        const subtotal = price * quantity;
-        const tax = subtotal * 0.18; // 18% GST assumption
-        const total = subtotal + tax;
+        // 4. Final Calculations
+        const taxAmount = selectedCurrencyTotal * (Number(taxRate) / 100);
+        const totalAmount = selectedCurrencyTotal + taxAmount;
 
-        // 4. Create Subscription
+        // 5. Create Subscription and Invoice in Transaction
         const subscription = await prisma.subscription.create({
             data: {
                 customerProfileId: customerProfile.id,
                 salesChannel: 'DIRECT',
                 startDate: new Date(),
-                endDate: new Date(new Date().setFullYear(new Date().getFullYear() + 1)), // 1 Year Default
+                endDate: new Date(new Date().setFullYear(new Date().getFullYear() + 1)),
                 status: 'PENDING_PAYMENT',
-                currency: 'INR',
-                subtotal: subtotal,
-                tax: tax,
-                total: total,
+                currency,
+                subtotal: selectedCurrencyTotal,
+                tax: taxAmount,
+                total: totalAmount,
                 items: {
-                    create: {
-                        journalId: journalId,
-                        planId: planId,
-                        quantity: quantity,
-                        price: price,
-                        seats: plan.format === 'Online' ? 1 : 0
-                    }
+                    create: subscriptionItems
                 },
                 invoices: {
                     create: {
                         invoiceNumber: `INV-${Date.now()}`,
-                        currency: 'INR',
-                        amount: subtotal,
-                        tax: tax,
-                        total: total,
+                        customerProfileId: customerProfile.id,
+                        currency,
+                        amount: selectedCurrencyTotal,
+                        tax: taxAmount,
+                        total: totalAmount,
                         status: 'UNPAID',
-                        dueDate: new Date(new Date().setDate(new Date().getDate() + 7)) // 7 Days due
+                        dueDate: new Date(new Date().setDate(new Date().getDate() + 7)),
+                        lineItems: invoiceLineItems
                     }
                 }
             },

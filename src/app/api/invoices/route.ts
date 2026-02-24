@@ -114,7 +114,7 @@ export async function POST(req: NextRequest) {
         }
 
         const body = await req.json();
-        const { customerProfileId, dueDate, lineItems, description, taxRate = 0 } = body;
+        const { customerProfileId, dueDate, lineItems, description, taxRate = 0, currency = 'INR' } = body;
 
         if (!customerProfileId || !lineItems || lineItems.length === 0) {
             return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
@@ -149,6 +149,7 @@ export async function POST(req: NextRequest) {
                 total,
                 status: 'UNPAID',
                 description,
+                currency,
                 lineItems: processedItems, // Saved as JSON
                 companyId: (decoded as any).companyId
             }
