@@ -31,7 +31,7 @@ export default function Sidebar({
 
     return (
         <aside
-            className={`fixed left-0 h-full bg-white border-r border-secondary-200 transition-all duration-300 z-20 ${sidebarOpen ? 'w-64' : 'w-0 lg:w-20'} ${isImpersonating ? 'top-[calc(4rem+2.5rem)]' : 'top-16'}
+            className={`fixed left-0 h-full bg-white border-r border-secondary-100 shadow-[4px_0_24px_rgba(0,0,0,0.02)] transition-all duration-300 z-20 ${sidebarOpen ? 'w-64' : 'w-0 lg:w-20'} ${isImpersonating ? 'top-[calc(4rem+2.5rem)]' : 'top-16'}
                 }`}
         >
             <nav className="p-4 space-y-2 h-full flex flex-col overflow-y-auto custom-scrollbar">
@@ -81,21 +81,21 @@ export default function Sidebar({
                                                     setSidebarOpen(false);
                                                 }
                                             }}
-                                            className={`relative flex items-center space-x-3 px-3 py-2.5 rounded-xl transition-all duration-300 group overflow-hidden ${isActive
-                                                ? 'bg-secondary-900 text-white shadow-lg shadow-secondary-200'
-                                                : 'text-secondary-600 hover:bg-secondary-50 hover:text-secondary-900'
+                                            className={`relative flex items-center space-x-3 px-3 py-3 rounded-xl transition-all duration-200 group overflow-hidden ${isActive
+                                                ? 'bg-primary-50 text-primary-600 font-semibold'
+                                                : 'text-secondary-500 hover:bg-secondary-50 hover:text-secondary-900 font-medium'
                                                 }`}
                                             title={!sidebarOpen ? item.name : ''}
                                         >
                                             {/* Active Indicator Line */}
                                             {isActive && (
-                                                <div className="absolute left-0 top-1/2 -translate-y-1/2 h-1/2 w-1 bg-primary-500 rounded-r-full"></div>
+                                                <div className="absolute left-0 top-1/2 -translate-y-1/2 h-8 w-1 bg-primary-600 rounded-r-full"></div>
                                             )}
 
-                                            <span className={`text-lg transition-transform duration-300 ${isActive ? 'scale-110' : 'group-hover:scale-110 group-hover:rotate-3'}`}>
+                                            <span className={`text-lg transition-transform duration-200 ${isActive ? 'scale-105' : 'group-hover:scale-105'}`}>
                                                 {item.icon}
                                             </span>
-                                            <span className={`text-xs font-bold tracking-wide ${sidebarOpen ? 'block opacity-100 translate-x-0' : 'hidden opacity-0 -translate-x-4'} transition-all duration-300`}>
+                                            <span className={`text-sm tracking-wide ${sidebarOpen ? 'block opacity-100 translate-x-0' : 'hidden opacity-0 -translate-x-4'} transition-all duration-300 whitespace-nowrap`}>
                                                 {item.name}
                                             </span>
 

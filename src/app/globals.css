@@ -50,7 +50,7 @@
   }
 }
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap");
 
 @layer base {
   :root {
@@ -71,7 +71,7 @@
     --card-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
   }
 
-  [data-theme='dark'] {
+  [data-theme="dark"] {
     --bg-main: 18 18 18;
     --text-main: 224 224 224;
     --text-muted: 160 160 160;
@@ -82,7 +82,7 @@
     --card-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
   }
 
-  [data-theme='eco'] {
+  [data-theme="eco"] {
     --bg-main: 244 247 240;
     --text-main: 45 59 45;
     --text-muted: 92 112 92;
@@ -93,7 +93,7 @@
     --card-shadow: 0 10px 40px rgba(74, 108, 64, 0.1);
   }
 
-  [data-theme='luxury'] {
+  [data-theme="luxury"] {
     --bg-main: 15 23 42;
     --text-main: 248 250 252;
     --text-muted: 148 163 184;
@@ -104,7 +104,7 @@
     --card-shadow: 0 10px 40px rgba(212, 175, 55, 0.15);
   }
 
-  [data-theme='industrial'] {
+  [data-theme="industrial"] {
     --bg-main: 43 45 66;
     --text-main: 237 242 244;
     --text-muted: 141 153 174;
@@ -115,7 +115,7 @@
     --card-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
   }
 
-  [data-theme='minimal'] {
+  [data-theme="minimal"] {
     --bg-main: 255 255 255;
     --text-main: 0 0 0;
     --text-muted: 102 102 102;
@@ -129,26 +129,25 @@
   body {
     background-color: rgb(var(--bg-main));
     color: rgb(var(--text-main));
-    font-family: 'Inter', sans-serif;
-    transition: background-color 0.3s ease, color 0.3s ease;
+    font-family: "Inter", sans-serif;
+    transition:
+      background-color 0.3s ease,
+      color 0.3s ease;
   }
 }
 
 @layer components {
-
   /* Premium Card Styles */
   .card-premium {
-    background-color: rgb(var(--surface) / 0.7);
-    -webkit-backdrop-filter: blur(10px);
-    backdrop-filter: blur(10px);
-    border-color: rgb(var(--border) / 0.4);
-    box-shadow: var(--card-shadow);
-    @apply rounded-2xl p-6 border transition-all duration-500 hover:shadow-premium-lg hover:border-primary-500/30;
+    background-color: rgb(var(--surface));
+    border-color: rgb(var(--border) / 0.5);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+    @apply rounded-2xl p-6 border transition-all duration-300 hover:shadow-[0_8px_30px_rgba(0,0,0,0.06)] hover:border-secondary-200;
   }
 
   /* Button Styles */
   .btn {
-    @apply px-6 py-3 rounded-lg font-medium transition-all duration-200 inline-flex items-center justify-center gap-2;
+    @apply px-6 py-3 rounded-xl font-medium transition-all duration-200 inline-flex items-center justify-center gap-2;
   }
 
   .btn-primary {
@@ -217,7 +216,7 @@
   }
 
   .stat-card-icon {
-    @apply w-12 h-12 rounded-lg flex items-center justify-center text-2xl;
+    @apply w-12 h-12 rounded-xl flex items-center justify-center text-2xl;
   }
 
   /* Navigation Styles */
@@ -394,7 +393,6 @@
 }
 
 @media print {
-
   /* Hide sidebar, header, and non-printable elements */
   aside,
   nav,

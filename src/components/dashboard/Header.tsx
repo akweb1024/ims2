@@ -46,14 +46,14 @@ export default function Header({
     const router = useRouter();
 
     return (
-        <nav className={`bg-white border-b border-secondary-200 fixed w-full z-30 transition-all ${isImpersonating ? 'top-10' : 'top-0'}`}>
+        <nav className={`bg-white border-b border-secondary-100 fixed w-full z-30 transition-all shadow-[0_4px_24px_rgba(0,0,0,0.02)] ${isImpersonating ? 'top-10' : 'top-0'}`}>
             <div className="px-4 sm:px-6 lg:px-8">
                 <div className="flex justify-between h-16">
                     <div className="flex items-center">
                         {/* Sidebar Toggle */}
                         <button
                             onClick={() => setSidebarOpen(!sidebarOpen)}
-                            className="text-secondary-500 hover:text-secondary-700 focus:outline-none lg:hidden"
+                            className="text-secondary-400 hover:text-primary-600 focus:outline-none lg:hidden transition-colors"
                         >
                             <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
@@ -62,7 +62,10 @@ export default function Header({
 
                         {/* Logo */}
                         <Link href="/dashboard" className="flex items-center ml-4 lg:ml-0">
-                            <h1 className="text-xl font-bold text-gradient">STM Customer</h1>
+                            <div className="w-8 h-8 rounded-lg bg-primary-600 flex items-center justify-center mr-2.5 shadow-md shadow-primary-500/20">
+                                <span className="text-white font-bold text-lg leading-none">S</span>
+                            </div>
+                            <h1 className="text-xl font-bold text-secondary-900 tracking-tight">STM <span className="text-primary-600 font-semibold">Customer</span></h1>
                         </Link>
 
                         {/* Global Search */}
@@ -71,7 +74,7 @@ export default function Header({
                         </div>
 
                         {/* Module Switcher - Horizontal */}
-                        <div className="hidden lg:flex items-center ml-8 space-x-1 bg-secondary-100/50 p-1 rounded-2xl border border-secondary-200">
+                        <div className="hidden lg:flex items-center ml-10 space-x-2">
                             {navigationModules.map((mod) => (
                                 <button
                                     key={mod.id}
@@ -81,12 +84,12 @@ export default function Header({
                                         const firstLink = mod.categories[0]?.items[0]?.href;
                                         if (firstLink) router.push(firstLink);
                                     }}
-                                    className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeModule === mod.id
-                                        ? 'bg-white text-primary-600 shadow-md ring-1 ring-primary-100'
-                                        : 'text-secondary-500 hover:text-secondary-700 hover:bg-white/50'
+                                    className={`px-4 py-2 rounded-xl text-xs font-semibold tracking-wide transition-all duration-200 flex items-center gap-2 ${activeModule === mod.id
+                                        ? 'bg-primary-50 text-primary-600'
+                                        : 'text-secondary-500 hover:text-secondary-900 hover:bg-secondary-50'
                                         }`}
                                 >
-                                    <span className="mr-2">{mod.icon}</span>
+                                    <span className={activeModule === mod.id ? "text-primary-600" : "text-secondary-400"}>{mod.icon}</span>
                                     {mod.name.split(' ')[0]}
                                 </button>
                             ))}
