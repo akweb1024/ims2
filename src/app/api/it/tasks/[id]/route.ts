@@ -172,17 +172,13 @@ export async function PATCH(req: NextRequest, context: { params: Promise<{ id: s
                     // Logic fix: Allow 0 value explicitly, handle NaN
                     const val = parseFloat(body[field]?.toString());
                     updateData[field] = isNaN(val) ? (field === 'progressPercent' ? 0 : null) : val;
-                } else if (field === 'projectId') {
-                    updateData.projectId = body[field] || null;
-                    continue;
-                } else if (field === 'assignedToId') {
-                    updateData.assignedToId = body[field] || null;
-                    continue;
-                } else if (field === 'reporterId') {
-                    updateData.reporterId = body[field] || null;
-                    continue;
-                } else if (field === 'serviceId') {
-                    updateData.serviceId = body[field] || null;
+                } else if (['projectId', 'assignedToId', 'reporterId', 'serviceId'].includes(field)) {
+                    const relationName = field.replace('Id', '');
+                    if (body[field]) {
+                        updateData[relationName] = { connect: { id: body[field] } };
+                    } else {
+                        updateData[relationName] = { disconnect: true };
+                    }
                     continue;
                 } else {
                     updateData[field] = body[field];

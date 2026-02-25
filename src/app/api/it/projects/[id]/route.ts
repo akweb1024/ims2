@@ -226,7 +226,12 @@ export async function PATCH(
                         const val = parseFloat(body[field]?.toString());
                         updateData[field] = isNaN(val) ? null : val;
                     } else if (field === 'projectManagerId' || field === 'teamLeadId' || field === 'departmentId' || field === 'websiteId') {
-                        updateData[field] = body[field] || null;
+                        const relationName = field.replace('Id', '');
+                        if (body[field]) {
+                            updateData[relationName] = { connect: { id: body[field] } };
+                        } else {
+                            updateData[relationName] = { disconnect: true };
+                        }
                     } else {
                         updateData[field] = body[field];
                     }
