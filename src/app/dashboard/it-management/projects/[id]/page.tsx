@@ -23,7 +23,8 @@ import {
 import MilestoneModal from '@/components/dashboard/it/MilestoneModal';
 import ITDocumentManager from '@/components/dashboard/it/ITDocumentManager';
 import ProjectTimeline from '@/components/dashboard/it/ProjectTimeline';
-import { LayoutDashboard, FileText as FileIcon, GanttChart } from 'lucide-react';
+import ProjectComments from '@/components/dashboard/it/ProjectComments';
+import { LayoutDashboard, FileText as FileIcon, GanttChart, Globe, Building2, Tag } from 'lucide-react';
 
 interface Project {
     id: string;
@@ -43,6 +44,12 @@ interface Project {
     endDate: string | null;
     createdAt: string;
     updatedAt: string;
+    about?: string | null;
+    details?: string | null;
+    keywords?: string[];
+    department?: { id: string; name: string } | null;
+    website?: { id: string; name: string; url: string } | null;
+    taggedEmployees?: Array<{ id: string; name: string; email: string; employeeProfile: { profilePicture: string | null } | null }>;
     projectManager: {
         id: string;
         name: string;
@@ -337,14 +344,54 @@ export default function ProjectDetailPage() {
                     <div className="lg:col-span-2 space-y-6">
                         {activeTab === 'overview' ? (
                             <>
-                                {/* Description */}
+                                {/* Description and Details */}
                                 <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
                                     <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
-                                        Description
+                                        About &amp; Scope
                                     </h2>
-                                    <p className="text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
-                                        {project.description || 'No description provided'}
-                                    </p>
+                                    
+                                    {project.about && (
+                                        <div className="mb-4">
+                                            <h3 className="text-sm font-medium text-gray-500 mb-1">About (Short Summary)</h3>
+                                            <p className="text-gray-900 dark:text-gray-100 font-medium">
+                                                {project.about}
+                                            </p>
+                                        </div>
+                                    )}
+
+                                    <div className="mb-4">
+                                        <h3 className="text-sm font-medium text-gray-500 mb-1">Description</h3>
+                                        <p className="text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
+                                            {project.description || 'No description provided'}
+                                        </p>
+                                    </div>
+
+                                    {project.details && (
+                                        <div className="mb-4">
+                                            <h3 className="text-sm font-medium text-gray-500 mb-1">Detailed Scope</h3>
+                                            <div className="prose dark:prose-invert max-w-none text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
+                                                {project.details}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {project.keywords && project.keywords.length > 0 && (
+                                        <div className="mt-6 pt-4 border-t border-gray-100 dark:border-gray-700">
+                                            <h3 className="text-sm font-medium text-gray-500 mb-3 flex items-center gap-2">
+                                                <Tag className="w-4 h-4" /> Keywords
+                                            </h3>
+                                            <div className="flex flex-wrap gap-2">
+                                                {project.keywords.map(kw => (
+                                                    <span key={kw} className="px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-lg text-xs font-medium">
+                                                        {kw}
+                                                    </span>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Comments Integration */}
+                                    <ProjectComments projectId={projectId} />
                                 </div>
 
                                 {/* Milestones */}
@@ -644,8 +691,62 @@ export default function ProjectDetailPage() {
                                         No team members assigned
                                     </p>
                                 )}
+
+                                {project.taggedEmployees && project.taggedEmployees.length > 0 && (
+                                    <div className="pt-4 mt-4 border-t border-gray-100 dark:border-gray-700">
+                                        <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">Followers &amp; Participants</p>
+                                        <div className="flex flex-wrap gap-2">
+                                            {project.taggedEmployees.map(emp => (
+                                                <div key={emp.id} className="flex items-center gap-2 bg-gray-50 dark:bg-gray-700/50 px-2 py-1 rounded-full text-xs">
+                                                    {emp.employeeProfile?.profilePicture ? (
+                                                        <img src={emp.employeeProfile.profilePicture} className="w-5 h-5 rounded-full" alt="" />
+                                                    ) : (
+                                                        <div className="w-5 h-5 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold">{emp.name.charAt(0)}</div>
+                                                    )}
+                                                    <span className="font-medium text-gray-700 dark:text-gray-300">{emp.name}</span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                         </div>
+
+                        {/* Synced Modules */}
+                        {(project.department || project.website) && (
+                            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
+                                <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                                    <Globe className="h-5 w-5" />
+                                    Synced Modules
+                                </h2>
+
+                                <div className="space-y-4">
+                                    {project.department && (
+                                        <div>
+                                            <p className="text-sm text-gray-600 dark:text-gray-400 flex items-center gap-1">
+                                                <Building2 className="h-4 w-4" />
+                                                Department Focus
+                                            </p>
+                                            <p className="font-medium text-gray-900 dark:text-white mt-1">
+                                                {project.department.name}
+                                            </p>
+                                        </div>
+                                    )}
+
+                                    {project.website && (
+                                        <div>
+                                            <p className="text-sm text-gray-600 dark:text-gray-400 flex items-center gap-1">
+                                                <Globe className="h-4 w-4" />
+                                                Website Config
+                                            </p>
+                                            <a href={project.website.url} target="_blank" rel="noopener noreferrer" className="font-medium text-blue-600 hover:underline mt-1 block">
+                                                {project.website.name}
+                                            </a>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        )}
 
                         {/* Revenue Breakdown */}
                         {project.isRevenueBased && (

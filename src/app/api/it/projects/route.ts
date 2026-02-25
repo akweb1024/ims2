@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getAuthenticatedUser } from '@/lib/auth-legacy';
 import { createErrorResponse } from '@/lib/api-utils';
+import { createNotification } from '@/lib/system-notifications';
 
 export const dynamic = 'force-dynamic';
 
@@ -130,6 +131,8 @@ export async function POST(req: NextRequest) {
         const {
             name,
             description,
+            about,
+            details,
             category,
             type,
             status,
@@ -148,6 +151,10 @@ export async function POST(req: NextRequest) {
             billingType,
             hourlyRate,
             tags,
+            keywords,
+            departmentId,
+            websiteId,
+            taggedEmployeeIds,
         } = body;
 
         // Validate required fields
@@ -166,6 +173,8 @@ export async function POST(req: NextRequest) {
                 projectCode,
                 name,
                 description,
+                about,
+                details,
                 category: category || 'DEVELOPMENT',
                 type: type || 'SUPPORT',
                 status: status || 'PLANNING',
@@ -174,6 +183,8 @@ export async function POST(req: NextRequest) {
                 clientType,
                 projectManager: projectManagerId ? { connect: { id: projectManagerId } } : undefined,
                 teamLead: teamLeadId ? { connect: { id: teamLeadId } } : undefined,
+                department: departmentId ? { connect: { id: departmentId } } : undefined,
+                website: websiteId ? { connect: { id: websiteId } } : undefined,
                 startDate: startDate ? new Date(startDate) : null,
                 endDate: endDate ? new Date(endDate) : null,
                 estimatedHours: estimatedHours ? parseFloat(estimatedHours) : null,
@@ -184,6 +195,10 @@ export async function POST(req: NextRequest) {
                 billingType,
                 hourlyRate: hourlyRate ? parseFloat(hourlyRate) : null,
                 tags: tags || [],
+                keywords: keywords || [],
+                taggedEmployees: taggedEmployeeIds && Array.isArray(taggedEmployeeIds) ? {
+                    connect: taggedEmployeeIds.map((id: string) => ({ id }))
+                } : undefined,
                 milestones: body.milestones && Array.isArray(body.milestones) ? {
                     create: body.milestones.map((m: any) => ({
                         name: m.title || m.name,
@@ -208,8 +223,33 @@ export async function POST(req: NextRequest) {
                         email: true,
                     }
                 },
+                department: { select: { id: true, name: true } },
+                website: { select: { id: true, name: true } },
+                taggedEmployees: { select: { id: true, name: true, email: true } },
             }
         });
+
+        // Notifications
+        const notificationSet = new Set<string>();
+
+        if (taggedEmployeeIds && Array.isArray(taggedEmployeeIds)) {
+            for (const empId of taggedEmployeeIds) {
+                if (empId !== user.id) notificationSet.add(empId);
+            }
+        }
+        if (projectManagerId && projectManagerId !== user.id) notificationSet.add(projectManagerId);
+        if (teamLeadId && teamLeadId !== user.id) notificationSet.add(teamLeadId);
+
+        for (const recipientId of notificationSet) {
+            await createNotification({
+                userId: recipientId,
+                title: `You were tagged in a new Project: ${projectCode}`,
+                message: `You have been added as a participant to the project "${name}".`,
+                type: 'INFO',
+                link: `/dashboard/it-management/projects/${project.id}`,
+                channels: ['IN_APP', 'EMAIL'] // The user wanted email/sns/etc.
+            });
+        }
 
         return NextResponse.json(project, { status: 201 });
     } catch (error) {

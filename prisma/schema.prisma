@@ -121,6 +121,7 @@ model Department {
   revenueTransactions    RevenueTransaction[]
   users                  User[]                       @relation("DepartmentMembers")
   designations           Designation[]                @relation("DepartmentToDesignation")
+  itProjects             ITProject[]                  @relation("DepartmentITProjects")
 
   @@unique([companyId, code])
   @@index([companyId])
@@ -144,6 +145,7 @@ model User {
   name                      String?
   allowedModules            String[]                    @default(["CORE"])
   roles                     UserRole[]                  @default([EXECUTIVE])
+  taggedITProjects          ITProject[]                 @relation("ProjectTaggedEmployees")
   announcements             Announcement[]
   auditLogs                 AuditLog[]
   certificates              Certificate[]
@@ -2949,6 +2951,7 @@ model WebsiteMonitor {
   updatedAt      DateTime            @updatedAt
   category       String?
   logs           WebsiteMonitorLog[]
+  itProjects     ITProject[]         @relation("WebsiteITProjects")
 }
 
 model WebsiteMonitorLog {
@@ -3236,6 +3239,11 @@ model ITProject {
   projectCode      String               @unique
   name             String
   description      String?
+  about            String?
+  details          String?
+  keywords         String[]
+  departmentId     String?
+  websiteId        String?
   category         ProjectCategory      @default(DEVELOPMENT)
   type             ProjectType          @default(SUPPORT)
   status           ProjectStatus        @default(PLANNING)
@@ -3271,12 +3279,17 @@ model ITProject {
   milestones       ITProjectMilestone[]
   tasks            ITTask[]
   timeEntries      ITTimeEntry[]
+  taggedEmployees  User[]               @relation("ProjectTaggedEmployees")
+  department       Department?          @relation("DepartmentITProjects", fields: [departmentId], references: [id])
+  website          WebsiteMonitor?      @relation("WebsiteITProjects", fields: [websiteId], references: [id])
 
   @@index([companyId])
   @@index([status])
   @@index([type])
   @@index([projectManagerId])
   @@index([isRevenueBased])
+  @@index([departmentId])
+  @@index([websiteId])
 }
 
 model ITTask {
@@ -3411,17 +3424,21 @@ model ITTaskStatusHistory {
 }
 
 model ITProjectComment {
-  id        String    @id @default(uuid())
+  id        String             @id @default(uuid())
   projectId String
   userId    String
   content   String
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  project   ITProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  user      User      @relation("ITProjectComments", fields: [userId], references: [id])
+  parentId  String?
+  createdAt DateTime           @default(now())
+  updatedAt DateTime           @updatedAt
+  project   ITProject          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user      User               @relation("ITProjectComments", fields: [userId], references: [id])
+  parent    ITProjectComment?  @relation("ITProjectCommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies   ITProjectComment[] @relation("ITProjectCommentReplies")
 
   @@index([projectId])
   @@index([userId])
+  @@index([parentId])
 }
 
 model ITTaskComment {
@@ -3538,15 +3555,15 @@ model RevenueTransaction {
   expenseAllocations  EmployeeExpenseAllocation[]
   claims              RevenueClaim[]
 
-  approvedBy          EmployeeProfile?            @relation("ApprovedRevenue", fields: [approvedByManagerId], references: [id])
-  claimedBy           EmployeeProfile?            @relation("ClaimedRevenue", fields: [claimedByEmployeeId], references: [id])
-  company             Company                     @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  customerProfile     CustomerProfile?            @relation(fields: [customerProfileId], references: [id])
-  department          Department?                 @relation(fields: [departmentId], references: [id])
-  institution         Institution?                @relation(fields: [institutionId], references: [id])
-  invoice             Invoice?                    @relation(fields: [invoiceId], references: [id])
-  payment             Payment?                    @relation(fields: [paymentId], references: [id])
-  workReport          WorkReport?                 @relation(fields: [workReportId], references: [id])
+  approvedBy      EmployeeProfile? @relation("ApprovedRevenue", fields: [approvedByManagerId], references: [id])
+  claimedBy       EmployeeProfile? @relation("ClaimedRevenue", fields: [claimedByEmployeeId], references: [id])
+  company         Company          @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  customerProfile CustomerProfile? @relation(fields: [customerProfileId], references: [id])
+  department      Department?      @relation(fields: [departmentId], references: [id])
+  institution     Institution?     @relation(fields: [institutionId], references: [id])
+  invoice         Invoice?         @relation(fields: [invoiceId], references: [id])
+  payment         Payment?         @relation(fields: [paymentId], references: [id])
+  workReport      WorkReport?      @relation(fields: [workReportId], references: [id])
 
   @@index([companyId])
   @@index([transactionNumber])

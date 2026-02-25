@@ -38,12 +38,20 @@ export default function EditProjectPage() {
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [users, setUsers] = useState<User[]>([]);
+    const [departments, setDepartments] = useState<any[]>([]);
+    const [websites, setWebsites] = useState<any[]>([]);
     const [errors, setErrors] = useState<Record<string, string>>({});
 
     // Form state
     const [formData, setFormData] = useState({
         name: '',
         description: '',
+        about: '',
+        details: '',
+        keywords: '',
+        departmentId: '',
+        websiteId: '',
+        taggedEmployeeIds: [] as string[],
         category: 'DEVELOPMENT',
         type: 'REVENUE',
         priority: 'MEDIUM',
@@ -62,23 +70,35 @@ export default function EditProjectPage() {
     const fetchInitialData = useCallback(async () => {
         try {
             setLoading(true);
-            const [projectRes, allProjectsRes, usersRes] = await Promise.all([
+            const [projectRes, allProjectsRes, usersRes, deptsRes, websRes] = await Promise.all([
                 fetch(`/api/it/projects/${projectId}`),
-                fetch('/api/it/projects?limit=100'), // Added to handle project pagination
-                fetch('/api/users?limit=100')
+                fetch('/api/it/projects?limit=100'),
+                fetch('/api/users?limit=100'),
+                fetch('/api/departments'),
+                fetch('/api/it/monitoring/websites')
             ]);
 
-            if (projectRes.ok && allProjectsRes.ok && usersRes.ok) {
+            if (projectRes.ok && usersRes.ok) {
                 const projectData = await projectRes.json();
-                // const allProjectsData = await allProjectsRes.json(); // This data is now available if needed
                 const usersData = await usersRes.json();
+                
+                const deptsData = deptsRes.ok ? await deptsRes.json() : [];
+                const websData = websRes.ok ? await websRes.json() : [];
 
                 setUsers(Array.isArray(usersData) ? usersData : (usersData.data || []));
+                setDepartments(Array.isArray(deptsData) ? deptsData : (deptsData.data || []));
+                setWebsites(Array.isArray(websData) ? websData : (websData.data || []));
 
                 // Pre-fill form
                 setFormData({
                     name: projectData.name || '',
                     description: projectData.description || '',
+                    about: projectData.about || '',
+                    details: projectData.details || '',
+                    keywords: projectData.keywords ? projectData.keywords.join(', ') : '',
+                    departmentId: projectData.department?.id || '',
+                    websiteId: projectData.website?.id || '',
+                    taggedEmployeeIds: projectData.taggedEmployees?.map((u: any) => u.id) || [],
                     category: projectData.category || 'DEVELOPMENT',
                     type: projectData.type || 'REVENUE',
                     priority: projectData.priority || 'MEDIUM',
@@ -165,6 +185,10 @@ export default function EditProjectPage() {
                     endDate: formData.endDate || null,
                     projectManagerId: formData.projectManagerId || null,
                     teamLeadId: formData.teamLeadId || null,
+                    departmentId: formData.departmentId || null,
+                    websiteId: formData.websiteId || null,
+                    keywords: formData.keywords ? formData.keywords.split(',').map(k => k.trim()).filter(Boolean) : [],
+                    taggedEmployeeIds: formData.taggedEmployeeIds,
                     milestones: milestones.map(m => ({
                         id: m.id.startsWith('temp-') ? undefined : m.id,
                         title: m.title,

@@ -51,6 +51,16 @@ export async function GET(
                         }
                     }
                 },
+                department: { select: { id: true, name: true } },
+                website: { select: { id: true, name: true, url: true } },
+                taggedEmployees: {
+                    select: {
+                        id: true,
+                        name: true,
+                        email: true,
+                        employeeProfile: { select: { profilePicture: true } }
+                    }
+                },
                 tasks: {
                     include: {
                         assignedTo: {
@@ -79,6 +89,7 @@ export async function GET(
                     take: 50
                 },
                 comments: {
+                    where: { parentId: null },
                     include: {
                         user: {
                             select: {
@@ -90,6 +101,18 @@ export async function GET(
                                     }
                                 }
                             }
+                        },
+                        replies: {
+                            include: {
+                                user: {
+                                    select: {
+                                        id: true,
+                                        name: true,
+                                        employeeProfile: { select: { profilePicture: true } }
+                                    }
+                                }
+                            },
+                            orderBy: { createdAt: 'asc' }
                         }
                     },
                     orderBy: { createdAt: 'desc' }
@@ -182,12 +205,12 @@ export async function PATCH(
 
             // Only allow certain fields to be updated
             const allowedFields = [
-                'name', 'description', 'category', 'type', 'status', 'priority',
-                'clientId', 'clientType', 'projectManagerId', 'teamLeadId',
+                'name', 'description', 'about', 'details', 'category', 'type', 'status', 'priority',
+                'clientId', 'clientType', 'projectManagerId', 'teamLeadId', 'departmentId', 'websiteId',
                 'startDate', 'endDate', 'estimatedHours', 'actualHours',
                 'isRevenueBased', 'estimatedRevenue', 'actualRevenue', 'currency',
                 'itDepartmentCut', 'itRevenueEarned', 'billingType', 'hourlyRate',
-                'isBilled', 'invoiceId', 'tags', 'attachments'
+                'isBilled', 'invoiceId', 'tags', 'keywords', 'attachments'
             ];
 
             for (const field of allowedFields) {
@@ -202,14 +225,19 @@ export async function PATCH(
                         // Logic fix: Allow 0 value explicitly, handle NaN
                         const val = parseFloat(body[field]?.toString());
                         updateData[field] = isNaN(val) ? null : val;
-                    } else if (field === 'projectManagerId') {
-                        updateData.projectManagerId = body[field] || null;
-                    } else if (field === 'teamLeadId') {
-                        updateData.teamLeadId = body[field] || null;
+                    } else if (field === 'projectManagerId' || field === 'teamLeadId' || field === 'departmentId' || field === 'websiteId') {
+                        updateData[field] = body[field] || null;
                     } else {
                         updateData[field] = body[field];
                     }
                 }
+            }
+
+            // Tagged Employees Handler
+            if (body.taggedEmployeeIds !== undefined) {
+                updateData.taggedEmployees = {
+                    set: Array.isArray(body.taggedEmployeeIds) ? body.taggedEmployeeIds.map((id: string) => ({ id })) : []
+                };
             }
 
             // Calculate IT revenue if actualRevenue or itDepartmentCut is updated
@@ -275,6 +303,15 @@ export async function PATCH(
                         }
                     },
                     teamLead: {
+                        select: {
+                            id: true,
+                            name: true,
+                            email: true,
+                        }
+                    },
+                    department: { select: { id: true, name: true } },
+                    website: { select: { id: true, name: true, url: true } },
+                    taggedEmployees: {
                         select: {
                             id: true,
                             name: true,

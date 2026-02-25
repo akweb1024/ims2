@@ -35,10 +35,19 @@ export default function NewProjectPage() {
     const [users, setUsers] = useState<User[]>([]);
     const [errors, setErrors] = useState<Record<string, string>>({});
 
+    const [departments, setDepartments] = useState<any[]>([]);
+    const [websites, setWebsites] = useState<any[]>([]);
+
     // Form state
     const [formData, setFormData] = useState({
         name: '',
         description: '',
+        about: '',
+        details: '',
+        keywords: '',
+        departmentId: '',
+        websiteId: '',
+        taggedEmployeeIds: [] as string[],
         category: 'DEVELOPMENT',
         type: 'REVENUE',
         priority: 'MEDIUM',
@@ -56,7 +65,33 @@ export default function NewProjectPage() {
 
     useEffect(() => {
         fetchUsers();
+        fetchDepartments();
+        fetchWebsites();
     }, []);
+
+    const fetchDepartments = async () => {
+        try {
+            const res = await fetch('/api/departments');
+            if (res.ok) {
+                const data = await res.json();
+                setDepartments(Array.isArray(data) ? data : data.data || []);
+            }
+        } catch (error) {
+            console.error('Failed to fetch departments:', error);
+        }
+    };
+
+    const fetchWebsites = async () => {
+        try {
+            const res = await fetch('/api/it/monitoring/websites');
+            if (res.ok) {
+                const data = await res.json();
+                setWebsites(Array.isArray(data) ? data : data.data || []);
+            }
+        } catch (error) {
+            console.error('Failed to fetch websites:', error);
+        }
+    };
 
     const fetchUsers = async () => {
         try {
@@ -123,6 +158,10 @@ export default function NewProjectPage() {
                     endDate: formData.endDate || null,
                     projectManagerId: formData.projectManagerId || null,
                     teamLeadId: formData.teamLeadId || null,
+                    departmentId: formData.departmentId || null,
+                    websiteId: formData.websiteId || null,
+                    keywords: formData.keywords ? formData.keywords.split(',').map(k => k.trim()).filter(Boolean) : [],
+                    taggedEmployeeIds: formData.taggedEmployeeIds,
                     milestones: milestones.map(m => ({
                         title: m.title,
                         description: m.description,
@@ -240,7 +279,91 @@ export default function NewProjectPage() {
                                 )}
                             </div>
 
-                            {/* Category */}
+                            {/* About (Short) */}
+                            <div className="md:col-span-2">
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                    About (Short Summary)
+                                </label>
+                                <input
+                                    type="text"
+                                    value={formData.about}
+                                    onChange={(e) =>
+                                        setFormData({ ...formData, about: e.target.value })
+                                    }
+                                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white border-gray-300 dark:border-gray-600"
+                                    placeholder="Brief summary of the project..."
+                                />
+                            </div>
+
+                            {/* Details (Rich Text Substitute) */}
+                            <div className="md:col-span-2">
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                    Details (Comprehensive Scope)
+                                </label>
+                                <textarea
+                                    value={formData.details}
+                                    onChange={(e) =>
+                                        setFormData({ ...formData, details: e.target.value })
+                                    }
+                                    rows={6}
+                                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white border-gray-300 dark:border-gray-600"
+                                    placeholder="Enter full comprehensive details of the project..."
+                                />
+                            </div>
+
+                            {/* Keywords */}
+                            <div className="md:col-span-2">
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                    Keywords (Comma separated)
+                                </label>
+                                <input
+                                    type="text"
+                                    value={formData.keywords}
+                                    onChange={(e) =>
+                                        setFormData({ ...formData, keywords: e.target.value })
+                                    }
+                                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white border-gray-300 dark:border-gray-600"
+                                    placeholder="e.g. web, api, integration..."
+                                />
+                            </div>
+
+                            {/* Department ID */}
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                    Department Focus
+                                </label>
+                                <select
+                                    value={formData.departmentId}
+                                    onChange={(e) =>
+                                        setFormData({ ...formData, departmentId: e.target.value })
+                                    }
+                                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                                >
+                                    <option value="">No specific department</option>
+                                    {departments.map(d => (
+                                        <option key={d.id} value={d.id}>{d.name}</option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            {/* Website Link */}
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                    Linked Website (Web Module)
+                                </label>
+                                <select
+                                    value={formData.websiteId}
+                                    onChange={(e) =>
+                                        setFormData({ ...formData, websiteId: e.target.value })
+                                    }
+                                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                                >
+                                    <option value="">No linked website</option>
+                                    {websites.map(w => (
+                                        <option key={w.id} value={w.id}>{w.name} ({w.url})</option>
+                                    ))}
+                                </select>
+                            </div>
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                     Category
@@ -523,6 +646,31 @@ export default function NewProjectPage() {
                                         </option>
                                     ))}
                                 </select>
+                            </div>
+                        </div>
+
+                        {/* Tagged Employees */}
+                        <div className="mt-6">
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                Tagged Employees (Followers/Participants)
+                            </label>
+                            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 max-h-60 overflow-y-auto border dark:border-gray-600 rounded-lg p-3 bg-gray-50 dark:bg-gray-700">
+                                {users.map(user => (
+                                    <label key={user.id} className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer">
+                                        <input
+                                            type="checkbox"
+                                            checked={formData.taggedEmployeeIds.includes(user.id)}
+                                            onChange={(e) => {
+                                                const newTags = e.target.checked
+                                                    ? [...formData.taggedEmployeeIds, user.id]
+                                                    : formData.taggedEmployeeIds.filter(id => id !== user.id);
+                                                setFormData({ ...formData, taggedEmployeeIds: newTags });
+                                            }}
+                                            className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+                                        />
+                                        <span className="truncate">{user.name}</span>
+                                    </label>
+                                ))}
                             </div>
                         </div>
                     </div>
