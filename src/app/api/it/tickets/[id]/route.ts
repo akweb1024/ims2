@@ -55,8 +55,8 @@ export async function PATCH(req: NextRequest, context: { params: Promise<{ id: s
                 status: body.status,
                 category: body.category,
                 resolution: body.resolution,
-                assignedToId: body.assignedToId || null,
-                assetId: body.assetId || null,
+                ...(body.assignedToId !== undefined ? { assignedTo: body.assignedToId ? { connect: { id: body.assignedToId } } : { disconnect: true } } : {}),
+                ...(body.assetId !== undefined ? { asset: body.assetId ? { connect: { id: body.assetId } } : { disconnect: true } } : {})
             }
         });
 

@@ -76,7 +76,7 @@ export async function PATCH(req: NextRequest) {
             where: { id },
             data: {
                 status: status,
-                assignedToId: assignedToId || undefined,
+                ...(assignedToId !== undefined ? { assignedTo: assignedToId ? { connect: { id: assignedToId } } : { disconnect: true } } : {}),
                 resolution: resolution || undefined
             }
         });
