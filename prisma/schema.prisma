@@ -92,6 +92,7 @@ model Company {
   projects                    Project[]
   issues                      Issue[]
   screeningTemplates          ScreeningTemplate[]
+  redGreenDiaries             RedGreenDiary[]
 }
 
 model Department {
@@ -242,6 +243,8 @@ model User {
   projectMemberships        ProjectMember[]
   screeningTemplatesCreated ScreeningTemplate[]
   screeningsSubmitted       InterviewScreening[]        @relation("ScreeningSubmitter")
+  redGreenEntriesTarget     RedGreenDiary[]             @relation("DiaryTarget")
+  redGreenEntriesRecorded   RedGreenDiary[]             @relation("DiaryRecorder")
 
   @@index([email])
   @@index([role])
@@ -4324,4 +4327,25 @@ model ScreeningResponse {
   screening InterviewScreening @relation(fields: [screeningId], references: [id], onDelete: Cascade)
 
   @@index([screeningId])
+}
+
+model RedGreenDiary {
+  id           String   @id @default(uuid())
+  companyId    String
+  userId       String
+  recordedById String
+  type         String // "RED" or "GREEN"
+  title        String
+  description  String
+  date         DateTime @default(now())
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  user       User    @relation("DiaryTarget", fields: [userId], references: [id], onDelete: Cascade)
+  recordedBy User    @relation("DiaryRecorder", fields: [recordedById], references: [id])
+  company    Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+  @@index([userId])
+  @@index([type])
 }
