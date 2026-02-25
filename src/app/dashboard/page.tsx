@@ -143,7 +143,7 @@ export default function DashboardPage() {
                 {/* HR Quick Stats for Staff */}
                 {data.hrStats && (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                        <div className="stat-card border-l-4 border-primary-500">
+                        <div className="stat-card">
                             <div className="flex items-center justify-between mb-2">
                                 <span className="text-2xl">🕒</span>
                                 <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${data.hrStats.hasCheckedIn ? 'bg-success-100 text-success-700' : 'bg-warning-100 text-warning-700'}`}>
@@ -153,21 +153,21 @@ export default function DashboardPage() {
                             <h3 className="text-secondary-500 text-xs font-bold uppercase tracking-wider">Attendance</h3>
                             <p className="text-2xl font-black text-secondary-900 mt-1">{data.hrStats.totalAttendance} Days</p>
                         </div>
-                        <div className="stat-card border-l-4 border-success-500">
+                        <div className="stat-card">
                             <div className="flex items-center justify-between mb-2">
                                 <span className="text-2xl">📝</span>
                             </div>
                             <h3 className="text-secondary-500 text-xs font-bold uppercase tracking-wider">Work Reports</h3>
                             <p className="text-2xl font-black text-secondary-900 mt-1">{data.hrStats.totalReports} Filed</p>
                         </div>
-                        <div className="stat-card border-l-4 border-warning-500">
+                        <div className="stat-card">
                             <div className="flex items-center justify-between mb-2">
                                 <span className="text-2xl">🏝️</span>
                             </div>
                             <h3 className="text-secondary-500 text-xs font-bold uppercase tracking-wider">Pending Leaves</h3>
                             <p className="text-2xl font-black text-secondary-900 mt-1">{data.hrStats.pendingLeaves} Requests</p>
                         </div>
-                        <div className="stat-card border-l-4 border-indigo-500">
+                        <div className="stat-card">
                             <div className="flex items-center justify-between mb-2">
                                 <span className="text-2xl">🎓</span>
                             </div>
