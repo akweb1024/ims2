@@ -226,12 +226,8 @@ export async function PATCH(
                         const val = parseFloat(body[field]?.toString());
                         updateData[field] = isNaN(val) ? null : val;
                     } else if (field === 'projectManagerId' || field === 'teamLeadId' || field === 'departmentId' || field === 'websiteId') {
-                        const relationName = field.replace('Id', '');
-                        if (body[field]) {
-                            updateData[relationName] = { connect: { id: body[field] } };
-                        } else {
-                            updateData[relationName] = { disconnect: true };
-                        }
+                        // Pass scalar ID fields directly — Prisma update does NOT support nested relation writes here
+                        updateData[field] = body[field] || null;
                     } else {
                         updateData[field] = body[field];
                     }
