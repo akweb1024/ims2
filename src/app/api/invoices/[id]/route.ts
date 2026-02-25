@@ -31,7 +31,17 @@ export async function GET(
                     }
                 },
                 customerProfile: true,
-                payments: true
+                payments: true,
+                company: {
+                    select: {
+                        id: true, name: true, legalEntityName: true, tagline: true,
+                        address: true, email: true, phone: true, website: true, logoUrl: true,
+                        gstin: true, stateCode: true, cinNo: true, panNo: true, iecCode: true,
+                        bankName: true, bankAccountHolder: true, bankAccountNumber: true,
+                        bankIfscCode: true, bankSwiftCode: true, paymentMode: true,
+                        currency: true
+                    }
+                }
             }
         });
 

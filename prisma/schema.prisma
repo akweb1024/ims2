@@ -21,6 +21,21 @@ model Company {
   currency                    String                       @default("INR")
   timezone                    String                       @default("Asia/Kolkata")
   employeeIdPrefix            String?
+  // Invoice / Billing Identity Fields
+  legalEntityName             String?
+  tagline                     String?
+  gstin                       String?
+  stateCode                   String?
+  cinNo                       String?
+  panNo                       String?
+  iecCode                     String?
+  // Bank Details for Invoice
+  bankName                    String?
+  bankAccountHolder           String?
+  bankAccountNumber           String?
+  bankIfscCode                String?
+  bankSwiftCode               String?
+  paymentMode                 String?
   createdAt                   DateTime                     @default(now())
   updatedAt                   DateTime                     @updatedAt
   latitude                    Float?

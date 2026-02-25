@@ -3,12 +3,14 @@
 import { useState, useEffect, useCallback } from 'react';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 
-type Tab = 'General' | 'Security' | 'Billing' | 'Notifications' | 'Allocations';
+type Tab = 'General' | 'Security' | 'Invoice Settings' | 'Notifications' | 'Allocations';
 
 export default function SettingsPage() {
     const [userRole, setUserRole] = useState('CUSTOMER');
     const [activeTab, setActiveTab] = useState<Tab>('General');
     const [loading, setLoading] = useState(false);
+    const [billingSaving, setBillingSaving] = useState(false);
+    const [billingSaved, setBillingSaved] = useState(false);
 
     // User Preferences
     const [theme, setTheme] = useState('light');
@@ -20,6 +22,28 @@ export default function SettingsPage() {
         supportEmail: '',
         defaultCurrency: 'INR',
         maintenanceMode: false
+    });
+
+    // Company Billing / Invoice Settings
+    const [billing, setBilling] = useState({
+        name: '',
+        legalEntityName: '',
+        tagline: '',
+        address: '',
+        email: '',
+        phone: '',
+        gstin: '',
+        stateCode: '',
+        cinNo: '',
+        panNo: '',
+        iecCode: '',
+        bankName: '',
+        bankAccountHolder: '',
+        bankAccountNumber: '',
+        bankIfscCode: '',
+        bankSwiftCode: '',
+        paymentMode: 'Online',
+        currency: 'INR',
     });
 
     const [departments, setDepartments] = useState<any[]>([]);
@@ -57,18 +81,30 @@ export default function SettingsPage() {
         }
     }, []);
 
+    const fetchBillingSettings = useCallback(async () => {
+        try {
+            const token = localStorage.getItem('token');
+            const res = await fetch('/api/settings/company-billing', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (res.ok) {
+                const data = await res.json();
+                setBilling(prev => ({ ...prev, ...data }));
+            }
+        } catch (err) {
+            console.error('Fetch billing settings error:', err);
+        }
+    }, []);
+
     const fetchAllocationData = useCallback(async () => {
         try {
             const token = localStorage.getItem('token');
-            // Fetch Departments
             const depRes = await fetch('/api/hr/departments', {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             if (depRes.ok) {
                 setDepartments(await depRes.json());
             }
-
-            // Fetch Existing Rules
             const ruleRes = await fetch('/api/settings/expense-allocations', {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
@@ -88,10 +124,11 @@ export default function SettingsPage() {
         }
         fetchUserSettings();
         fetchSystemSettings();
+        fetchBillingSettings();
         if (activeTab === 'Allocations') {
             fetchAllocationData();
         }
-    }, [fetchUserSettings, fetchSystemSettings, fetchAllocationData, activeTab]);
+    }, [fetchUserSettings, fetchSystemSettings, fetchBillingSettings, fetchAllocationData, activeTab]);
 
     const handleUpdateUserPref = async (updates: any) => {
         try {
@@ -140,33 +177,90 @@ export default function SettingsPage() {
         }
     };
 
+    const handleSaveBilling = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setBillingSaving(true);
+        setBillingSaved(false);
+        try {
+            const token = localStorage.getItem('token');
+            const res = await fetch('/api/settings/company-billing', {
+                method: 'PATCH',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(billing)
+            });
+            if (res.ok) {
+                setBillingSaved(true);
+                setTimeout(() => setBillingSaved(false), 3000);
+            } else {
+                const data = await res.json();
+                alert(data.error || 'Failed to save billing settings');
+            }
+        } catch (err) {
+            console.error('Save billing error:', err);
+        } finally {
+            setBillingSaving(false);
+        }
+    };
+
+    const isAdminRole = ['SUPER_ADMIN', 'FINANCE_ADMIN'].includes(userRole);
+
+    const tabs: Tab[] = [
+        'General',
+        'Security',
+        ...(isAdminRole ? ['Invoice Settings' as Tab] : []),
+        'Notifications',
+        ...(['SUPER_ADMIN', 'ADMIN', 'FINANCE_ADMIN'].includes(userRole) ? ['Allocations' as Tab] : [])
+    ];
+
+    const tabIcons: Record<Tab, string> = {
+        'General': '⚙️',
+        'Security': '🔐',
+        'Invoice Settings': '🧾',
+        'Notifications': '🔔',
+        'Allocations': '📊'
+    };
+
+    const Field = ({ label, children, hint }: { label: string; children: React.ReactNode; hint?: string }) => (
+        <div>
+            <label className="label mb-1">{label}</label>
+            {hint && <p className="text-xs text-secondary-400 mb-1">{hint}</p>}
+            {children}
+        </div>
+    );
+
     return (
         <DashboardLayout userRole={userRole}>
-            <div className="max-w-4xl mx-auto space-y-8">
+            <div className="max-w-5xl mx-auto space-y-8">
                 <div>
                     <h1 className="text-3xl font-bold text-secondary-900">Settings</h1>
                     <p className="text-secondary-600 mt-1">Manage your account preferences and system configurations</p>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
                     <div className="md:col-span-1">
                         <nav className="space-y-1">
-                            {['General', 'Security', 'Billing', 'Notifications', ...(userRole === 'SUPER_ADMIN' || userRole === 'ADMIN' || userRole === 'FINANCE_ADMIN' ? ['Allocations'] : [])].map((tab) => (
+                            {tabs.map((tab) => (
                                 <button
                                     key={tab}
-                                    onClick={() => setActiveTab(tab as Tab)}
-                                    className={`w-full text-left px-4 py-3 rounded-xl text-sm font-bold transition-all ${activeTab === tab
+                                    onClick={() => setActiveTab(tab)}
+                                    className={`w-full text-left px-4 py-3 rounded-xl text-sm font-bold transition-all flex items-center gap-2 ${activeTab === tab
                                         ? 'bg-primary-600 text-white shadow-lg shadow-primary-200'
                                         : 'text-secondary-500 hover:bg-secondary-100'
                                         }`}
                                 >
+                                    <span>{tabIcons[tab]}</span>
                                     {tab}
                                 </button>
                             ))}
                         </nav>
                     </div>
 
-                    <div className="md:col-span-2 space-y-6">
+                    <div className="md:col-span-3 space-y-6">
+
+                        {/* ─── GENERAL TAB ─── */}
                         {activeTab === 'General' && (
                             <>
                                 <section className="card-premium">
@@ -184,7 +278,6 @@ export default function SettingsPage() {
                                                 <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${theme === 'dark' ? 'translate-x-7' : 'translate-x-1'}`} />
                                             </button>
                                         </div>
-
                                         <div className="flex items-center justify-between">
                                             <div>
                                                 <p className="font-bold text-secondary-900">Push Notifications</p>
@@ -206,29 +299,18 @@ export default function SettingsPage() {
                                         <form className="space-y-4" onSubmit={handleUpdateSystemSettings}>
                                             <div>
                                                 <label className="label">Company Display Name</label>
-                                                <input
-                                                    type="text"
-                                                    className="input"
-                                                    value={systemSettings.companyName}
-                                                    onChange={(e) => setSystemSettings({ ...systemSettings, companyName: e.target.value })}
-                                                />
+                                                <input type="text" className="input" value={systemSettings.companyName}
+                                                    onChange={(e) => setSystemSettings({ ...systemSettings, companyName: e.target.value })} />
                                             </div>
                                             <div>
                                                 <label className="label">Support Email</label>
-                                                <input
-                                                    type="email"
-                                                    className="input"
-                                                    value={systemSettings.supportEmail}
-                                                    onChange={(e) => setSystemSettings({ ...systemSettings, supportEmail: e.target.value })}
-                                                />
+                                                <input type="email" className="input" value={systemSettings.supportEmail}
+                                                    onChange={(e) => setSystemSettings({ ...systemSettings, supportEmail: e.target.value })} />
                                             </div>
                                             <div>
                                                 <label className="label">Default Currency</label>
-                                                <select
-                                                    className="input"
-                                                    value={systemSettings.defaultCurrency}
-                                                    onChange={(e) => setSystemSettings({ ...systemSettings, defaultCurrency: e.target.value })}
-                                                >
+                                                <select className="input" value={systemSettings.defaultCurrency}
+                                                    onChange={(e) => setSystemSettings({ ...systemSettings, defaultCurrency: e.target.value })}>
                                                     <option value="INR">INR (₹)</option>
                                                     <option value="USD">USD ($)</option>
                                                     <option value="EUR">EUR (€)</option>
@@ -246,6 +328,7 @@ export default function SettingsPage() {
                             </>
                         )}
 
+                        {/* ─── SECURITY TAB ─── */}
                         {activeTab === 'Security' && (
                             <section className="card-premium">
                                 <h3 className="text-lg font-bold text-secondary-900 mb-6 border-b border-secondary-100 pb-4">Security Settings</h3>
@@ -269,6 +352,137 @@ export default function SettingsPage() {
                             </section>
                         )}
 
+                        {/* ─── INVOICE SETTINGS TAB ─── */}
+                        {activeTab === 'Invoice Settings' && (
+                            <form onSubmit={handleSaveBilling} className="space-y-6">
+                                {/* Company Identity */}
+                                <section className="card-premium">
+                                    <div className="flex items-center gap-2 mb-6 pb-4 border-b border-secondary-100">
+                                        <span className="text-2xl">🏢</span>
+                                        <h3 className="text-lg font-bold text-secondary-900">Company Identity</h3>
+                                    </div>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <Field label="Company Display Name" hint="Shown in large at the top of every invoice">
+                                            <input className="input" value={billing.name} onChange={e => setBilling({ ...billing, name: e.target.value })} placeholder="e.g. STM JOURNALS" />
+                                        </Field>
+                                        <Field label="Legal Entity Name" hint="Full registered company name">
+                                            <input className="input" value={billing.legalEntityName} onChange={e => setBilling({ ...billing, legalEntityName: e.target.value })} placeholder="e.g. Consortium e-Learning Network Pvt. Ltd." />
+                                        </Field>
+                                        <Field label="Tagline / Sub-name" hint="Shown in brackets below company name">
+                                            <input className="input" value={billing.tagline} onChange={e => setBilling({ ...billing, tagline: e.target.value })} placeholder="e.g. Scientific, Technical and Medical Journals" />
+                                        </Field>
+                                        <Field label="Default Currency">
+                                            <select className="input" value={billing.currency} onChange={e => setBilling({ ...billing, currency: e.target.value })}>
+                                                <option value="INR">INR (₹)</option>
+                                                <option value="USD">USD ($)</option>
+                                                <option value="EUR">EUR (€)</option>
+                                                <option value="GBP">GBP (£)</option>
+                                            </select>
+                                        </Field>
+                                        <div className="md:col-span-2">
+                                            <Field label="Registered Address" hint="Full address shown on invoice header">
+                                                <textarea className="input" rows={2} value={billing.address} onChange={e => setBilling({ ...billing, address: e.target.value })} placeholder="A-118, 1st Floor, Sector-63, Noida - 201 301 (U.P.), INDIA" />
+                                            </Field>
+                                        </div>
+                                        <Field label="Official Email">
+                                            <input className="input" type="email" value={billing.email} onChange={e => setBilling({ ...billing, email: e.target.value })} placeholder="finance@stmjournals.com" />
+                                        </Field>
+                                        <Field label="Phone">
+                                            <input className="input" type="tel" value={billing.phone} onChange={e => setBilling({ ...billing, phone: e.target.value })} placeholder="+91 XXXXX XXXXX" />
+                                        </Field>
+                                    </div>
+                                </section>
+
+                                {/* Tax Registration */}
+                                <section className="card-premium">
+                                    <div className="flex items-center gap-2 mb-6 pb-4 border-b border-secondary-100">
+                                        <span className="text-2xl">📋</span>
+                                        <h3 className="text-lg font-bold text-secondary-900">Tax & Registration Numbers</h3>
+                                    </div>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <Field label="GSTIN No." hint="Printed in the identity bar on every invoice">
+                                            <input className="input font-mono" value={billing.gstin} onChange={e => setBilling({ ...billing, gstin: e.target.value })} placeholder="e.g. 09AACCC6494M1Z1" maxLength={15} />
+                                        </Field>
+                                        <Field label="State Code" hint="2-digit GST state code">
+                                            <input className="input font-mono" value={billing.stateCode} onChange={e => setBilling({ ...billing, stateCode: e.target.value })} placeholder="e.g. 09" maxLength={2} />
+                                        </Field>
+                                        <Field label="CIN No." hint="Company Identification Number">
+                                            <input className="input font-mono" value={billing.cinNo} onChange={e => setBilling({ ...billing, cinNo: e.target.value })} placeholder="e.g. U80302DL2005PTC138759" />
+                                        </Field>
+                                        <Field label="PAN No." hint="Shown in invoice footer">
+                                            <input className="input font-mono" value={billing.panNo} onChange={e => setBilling({ ...billing, panNo: e.target.value })} placeholder="e.g. AACCC6494M" maxLength={10} />
+                                        </Field>
+                                        <Field label="IEC Code" hint="Import Export Code — for international invoices">
+                                            <input className="input font-mono" value={billing.iecCode} onChange={e => setBilling({ ...billing, iecCode: e.target.value })} placeholder="e.g. AACCC6494" />
+                                        </Field>
+                                    </div>
+                                </section>
+
+                                {/* Bank Details */}
+                                <section className="card-premium">
+                                    <div className="flex items-center gap-2 mb-6 pb-4 border-b border-secondary-100">
+                                        <span className="text-2xl">🏦</span>
+                                        <h3 className="text-lg font-bold text-secondary-900">Bank Account Details for Payment</h3>
+                                    </div>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <Field label="Bank Name">
+                                            <input className="input" value={billing.bankName} onChange={e => setBilling({ ...billing, bankName: e.target.value })} placeholder="e.g. HDFC BANK LIMITED" />
+                                        </Field>
+                                        <Field label="Account Holder Name">
+                                            <input className="input" value={billing.bankAccountHolder} onChange={e => setBilling({ ...billing, bankAccountHolder: e.target.value })} placeholder="e.g. Consortium eLearning Network Pvt. Ltd" />
+                                        </Field>
+                                        <Field label="IBAN / Account Number">
+                                            <input className="input font-mono" value={billing.bankAccountNumber} onChange={e => setBilling({ ...billing, bankAccountNumber: e.target.value })} placeholder="e.g. 03942000001153" />
+                                        </Field>
+                                        <Field label="IFSC Code">
+                                            <input className="input font-mono" value={billing.bankIfscCode} onChange={e => setBilling({ ...billing, bankIfscCode: e.target.value })} placeholder="e.g. HDFC0002649" maxLength={11} />
+                                        </Field>
+                                        <Field label="Swift Code" hint="For international wire transfers">
+                                            <input className="input font-mono" value={billing.bankSwiftCode} onChange={e => setBilling({ ...billing, bankSwiftCode: e.target.value })} placeholder="e.g. HDFCINBB" />
+                                        </Field>
+                                        <Field label="Payment Mode">
+                                            <select className="input" value={billing.paymentMode} onChange={e => setBilling({ ...billing, paymentMode: e.target.value })}>
+                                                <option value="Online">Online</option>
+                                                <option value="NEFT/RTGS">NEFT/RTGS</option>
+                                                <option value="Cheque/DD">Cheque/DD</option>
+                                                <option value="UPI">UPI</option>
+                                            </select>
+                                        </Field>
+                                    </div>
+                                </section>
+
+                                {/* Preview Banner */}
+                                <div className="card-premium bg-primary-50 border border-primary-100 p-5">
+                                    <div className="flex items-start gap-3">
+                                        <span className="text-2xl">🧾</span>
+                                        <div>
+                                            <p className="font-bold text-primary-900">These details appear on every Tax Invoice</p>
+                                            <p className="text-sm text-primary-700 mt-1">
+                                                The information above is used to populate the header, identity bar, receiver section, bank details, and footer of all generated Tax Invoices. Fill in as much detail as possible for compliance.
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="flex items-center gap-4 pt-2">
+                                    <button type="submit" disabled={billingSaving} className="btn btn-primary px-10 flex items-center gap-2">
+                                        {billingSaving ? (
+                                            <>
+                                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />
+                                                Saving...
+                                            </>
+                                        ) : '💾 Save Invoice Settings'}
+                                    </button>
+                                    {billingSaved && (
+                                        <span className="text-success-600 font-bold flex items-center gap-1">
+                                            ✅ Saved successfully!
+                                        </span>
+                                    )}
+                                </div>
+                            </form>
+                        )}
+
+                        {/* ─── NOTIFICATIONS TAB ─── */}
                         {activeTab === 'Notifications' && (
                             <section className="card-premium">
                                 <h3 className="text-lg font-bold text-secondary-900 mb-6 border-b border-secondary-100 pb-4">Notification Preferences</h3>
@@ -291,34 +505,11 @@ export default function SettingsPage() {
                             </section>
                         )}
 
-                        {activeTab === 'Billing' && (
-                            <section className="card-premium">
-                                <h3 className="text-lg font-bold text-secondary-900 mb-6 border-b border-secondary-100 pb-4">Billing & Invoicing</h3>
-                                <div className="space-y-4">
-                                    <div className="p-4 bg-secondary-50 rounded-xl">
-                                        <p className="text-sm font-bold text-secondary-900">Current Plan</p>
-                                        <p className="text-xs text-secondary-500">Enterprise Workspace</p>
-                                    </div>
-                                    <div>
-                                        <label className="label">Invoice Prefix</label>
-                                        <input type="text" className="input" defaultValue="STM-" />
-                                    </div>
-                                    <div>
-                                        <label className="label">Tax Percentage (%)</label>
-                                        <input type="number" className="input" defaultValue="18" />
-                                    </div>
-                                    <div className="pt-4">
-                                        <button type="button" className="btn btn-primary px-8">Save Invoicing Settings</button>
-                                    </div>
-                                </div>
-                            </section>
-                        )}
-
+                        {/* ─── ALLOCATIONS TAB ─── */}
                         {activeTab === 'Allocations' && (
                             <section className="card-premium">
                                 <h3 className="text-lg font-bold text-secondary-900 mb-2 border-b border-secondary-100 pb-4">Departmental Expense Allocation</h3>
-                                <p className="text-sm text-secondary-500 mb-6"> Configure what percentage of employee-generated revenue is dynamically allocated as departmental expenses.</p>
-
+                                <p className="text-sm text-secondary-500 mb-6">Configure what percentage of employee-generated revenue is dynamically allocated as departmental expenses.</p>
                                 <div className="space-y-4">
                                     {departments.map((dept) => {
                                         const rule = allocationRules.find(r => r.departmentId === dept.id);
@@ -349,9 +540,7 @@ export default function SettingsPage() {
                                             </div>
                                         );
                                     })}
-
                                     {departments.length === 0 && <p className="text-center text-secondary-400 italic py-8">No departments found.</p>}
-
                                     <div className="pt-6">
                                         <button
                                             onClick={async () => {
@@ -384,6 +573,7 @@ export default function SettingsPage() {
                             </section>
                         )}
 
+                        {/* Danger Zone / Logs */}
                         {userRole === 'SUPER_ADMIN' && activeTab === 'General' && (
                             <>
                                 <section className="card-premium border-danger-100">
@@ -402,20 +592,14 @@ export default function SettingsPage() {
                                         </button>
                                     </div>
                                 </section>
-
                                 <section className="card-premium mt-6 bg-secondary-900 text-white overflow-hidden relative">
-                                    <div className="absolute top-0 right-0 w-32 h-32 bg-primary-500/10 rounded-full blur-3xl -mr-16 -mt-16"></div>
+                                    <div className="absolute top-0 right-0 w-32 h-32 bg-primary-500/10 rounded-full blur-3xl -mr-16 -mt-16" />
                                     <div className="relative z-10 flex justify-between items-center">
                                         <div>
                                             <h3 className="text-lg font-bold mb-2">System Logs</h3>
-                                            <p className="text-secondary-300 text-xs max-w-sm">
-                                                View detailed logs of system emails, errors, and critical events for debugging.
-                                            </p>
+                                            <p className="text-secondary-300 text-xs max-w-sm">View detailed logs of system emails, errors, and critical events for debugging.</p>
                                         </div>
-                                        <a
-                                            href="/dashboard/settings/email-logs"
-                                            className="bg-white text-secondary-900 px-4 py-2 rounded-lg text-sm font-bold shadow hover:bg-secondary-100 transition-colors"
-                                        >
+                                        <a href="/dashboard/settings/email-logs" className="bg-white text-secondary-900 px-4 py-2 rounded-lg text-sm font-bold shadow hover:bg-secondary-100 transition-colors">
                                             View Logs
                                         </a>
                                     </div>
