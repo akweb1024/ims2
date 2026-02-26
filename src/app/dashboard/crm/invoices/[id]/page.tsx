@@ -340,40 +340,68 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
                             </div>
                         </div>
 
-                        {/* Details of Receiver */}
-                        <div style={{ borderTop: '1.5px solid #000', padding: '12px 15px', backgroundColor: '#fafafa' }}>
-                            <div style={{ fontWeight: '900', fontSize: '11px', marginBottom: '8px', color: '#555', textTransform: 'uppercase', letterSpacing: '1px' }}>Bill To (Details of Receiver):</div>
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
-                                <div>
-                                    <div style={{ fontWeight: '900', fontSize: '15px', color: '#000', marginBottom: '4px' }}>{customer.name || 'Unknown Buyer'}</div>
-                                    <div style={{ fontSize: '12px', lineHeight: '1.5', color: '#333', whiteSpace: 'pre-line' }}>
-                                        {customer.billingAddress || customer.shippingAddress || [customer.city, customer.state, customer.pincode, customer.country].filter(Boolean).join(', ') || 'No address provided'}
+                        {/* Details of Receiver (Bill To & Ship To) */}
+                        <div style={{ borderTop: '1.5px solid #000', backgroundColor: '#fafafa' }}>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', minHeight: '120px' }}>
+                                {/* Bill To */}
+                                <div style={{ padding: '10px 15px', borderRight: '1.5px solid #000' }}>
+                                    <div style={{ fontWeight: '900', fontSize: '10px', color: '#666', marginBottom: '4px', textTransform: 'uppercase' }}>Details of Receiver (Bill To):</div>
+                                    <div style={{ fontWeight: '900', fontSize: '14px', color: '#000', marginBottom: '2px' }}>{customer.name || 'Unknown Buyer'}</div>
+                                    <div style={{ fontSize: '11px', lineHeight: '1.4', color: '#111' }}>
+                                        {invoice.billingAddress || customer.billingAddress || 'No billing address'}
+                                        <br />
+                                        {(invoice.billingCity || customer.billingCity) && `${invoice.billingCity || customer.billingCity}, `}
+                                        {invoice.billingState || customer.billingState || customer.state} 
+                                        {` - ${invoice.billingPincode || customer.billingPincode || customer.pincode || ''}`}
+                                        <br />
+                                        {invoice.billingCountry || customer.billingCountry || customer.country || 'India'}
                                     </div>
-                                </div>
-                                <div style={{ fontSize: '12px' }}>
-                                    <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                                    <table style={{ width: '100%', marginTop: '6px', fontSize: '10px' }}>
                                         <tbody>
                                             <tr>
-                                                <td style={{ fontWeight: '700', padding: '2px 8px 2px 0', color: '#666' }}>GSTIN/Tax ID:</td>
-                                                <td style={{ fontWeight: '700' }}>{customer.gstVatTaxId || '—'}</td>
+                                                <td style={{ fontWeight: '700', color: '#555', width: '80px' }}>GSTIN/Tax ID:</td>
+                                                <td style={{ fontWeight: '800' }}>{invoice.gstNumber || customer.gstVatTaxId || '—'}</td>
                                             </tr>
                                             <tr>
-                                                <td style={{ fontWeight: '700', padding: '2px 8px 2px 0', color: '#666' }}>State:</td>
-                                                <td style={{ fontWeight: '600' }}>{customer.state || '—'}</td>
+                                                <td style={{ fontWeight: '700', color: '#555' }}>State Code:</td>
+                                                <td style={{ fontWeight: '700' }}>{invoice.billingStateCode || customer.billingStateCode || '—'}</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+
+                                {/* Ship To */}
+                                <div style={{ padding: '10px 15px' }}>
+                                    <div style={{ fontWeight: '900', fontSize: '10px', color: '#666', marginBottom: '4px', textTransform: 'uppercase' }}>Details of Consignee (Ship To):</div>
+                                    <div style={{ fontWeight: '900', fontSize: '14px', color: '#000', marginBottom: '2px' }}>{customer.name || 'Unknown Buyer'}</div>
+                                    <div style={{ fontSize: '11px', lineHeight: '1.4', color: '#111' }}>
+                                        {invoice.shippingAddress || customer.shippingAddress || customer.billingAddress || 'No shipping address'}
+                                        <br />
+                                        {(invoice.shippingCity || customer.shippingCity || customer.billingCity) && `${invoice.shippingCity || customer.shippingCity || customer.billingCity}, `}
+                                        {invoice.shippingState || customer.shippingState || customer.billingState || customer.state} 
+                                        {` - ${invoice.shippingPincode || customer.shippingPincode || customer.pincode || ''}`}
+                                        <br />
+                                        {invoice.shippingCountry || customer.shippingCountry || customer.country || 'India'}
+                                    </div>
+                                    <table style={{ width: '100%', marginTop: '6px', fontSize: '10px' }}>
+                                        <tbody>
+                                            <tr>
+                                                <td style={{ fontWeight: '700', color: '#555', width: '100px' }}>Place of Supply:</td>
+                                                <td style={{ fontWeight: '800', textTransform: 'uppercase' }}>
+                                                    {invoice.placeOfSupply || invoice.billingState || customer.billingState || customer.state || '—'}
+                                                    {invoice.placeOfSupplyCode && ` (${invoice.placeOfSupplyCode})`}
+                                                </td>
                                             </tr>
                                             <tr>
-                                                <td style={{ fontWeight: '700', padding: '2px 8px 2px 0', color: '#666' }}>Contact:</td>
-                                                <td>{customer.primaryPhone || '—'}</td>
-                                            </tr>
-                                            <tr>
-                                                <td style={{ fontWeight: '700', padding: '2px 8px 2px 0', color: '#666' }}>Email:</td>
-                                                <td style={{ color: '#2563eb' }}>{customer.primaryEmail || '—'}</td>
+                                                <td style={{ fontWeight: '700', color: '#555' }}>Contact:</td>
+                                                <td style={{ fontWeight: '600' }}>{customer.primaryPhone || '—'}</td>
                                             </tr>
                                         </tbody>
                                     </table>
                                 </div>
                             </div>
                         </div>
+
                     </div>
 
                     {/* === LINE ITEMS TABLE === */}

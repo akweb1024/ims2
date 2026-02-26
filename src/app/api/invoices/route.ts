@@ -139,7 +139,15 @@ export async function POST(req: NextRequest) {
         const count = await prisma.invoice.count();
         const invoiceNumber = `INV-${year}-${(count + 1).toString().padStart(5, '0')}`;
 
-        const newInvoice = await prisma.invoice.create({
+        const customer = await prisma.customerProfile.findUnique({
+            where: { id: customerProfileId }
+        });
+
+        if (!customer) {
+            return NextResponse.json({ error: 'Customer not found' }, { status: 404 });
+        }
+
+        const newInvoice = await (prisma.invoice as any).create({
             data: {
                 invoiceNumber,
                 customerProfileId,
@@ -147,6 +155,27 @@ export async function POST(req: NextRequest) {
                 amount: subtotal,
                 tax,
                 total,
+                taxRate: Number(taxRate),
+                gstNumber: (customer as any).gstVatTaxId,
+                
+                // Snapshots
+                billingAddress: (customer as any).billingAddress,
+                billingCity: (customer as any).billingCity,
+                billingState: (customer as any).billingState,
+                billingStateCode: (customer as any).billingStateCode,
+                billingPincode: (customer as any).billingPincode,
+                billingCountry: (customer as any).billingCountry || 'India',
+
+                shippingAddress: (customer as any).shippingAddress || (customer as any).billingAddress,
+                shippingCity: (customer as any).shippingCity || (customer as any).billingCity,
+                shippingState: (customer as any).shippingState || (customer as any).billingState,
+                shippingStateCode: (customer as any).shippingStateCode || (customer as any).billingStateCode,
+                shippingPincode: (customer as any).shippingPincode || (customer as any).billingPincode,
+                shippingCountry: (customer as any).shippingCountry || (customer as any).billingCountry || 'India',
+
+                placeOfSupply: (customer as any).shippingState || (customer as any).billingState,
+                placeOfSupplyCode: (customer as any).shippingStateCode || (customer as any).billingStateCode,
+
                 status: 'UNPAID',
                 description,
                 currency,
@@ -154,6 +183,8 @@ export async function POST(req: NextRequest) {
                 companyId: (decoded as any).companyId
             }
         });
+
+
 
         // --- Finance Automation ---
         try {

@@ -149,19 +149,38 @@ export async function POST(req: NextRequest) {
             customerType,
             primaryEmail,
             primaryPhone,
+            
+            // Structured Billing
             billingAddress,
+            billingCity,
+            billingState,
+            billingStateCode,
+            billingPincode,
+            billingCountry,
+
+            // Structured Shipping
+            shippingAddress,
+            shippingCity,
+            shippingState,
+            shippingStateCode,
+            shippingPincode,
+            shippingCountry,
+
+            // Legacy support
             city,
             state,
             country,
             pincode,
+
             gstVatTaxId,
             tags,
             institutionDetails,
-            institutionId, // New field
-            designation, // New field
-            assignedToUserId, // Optional override
-            companyId // Optional override for SUPER_ADMIN
+            institutionId, 
+            designation, 
+            assignedToUserId,
+            companyId 
         } = body;
+
 
         if (!name || !primaryEmail || !customerType) {
             return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
@@ -207,18 +226,37 @@ export async function POST(req: NextRequest) {
                     customerType,
                     primaryEmail,
                     primaryPhone: primaryPhone || '',
+                    
+                    // Structured Address Fields
                     billingAddress,
-                    city,
-                    state,
-                    country,
-                    pincode,
+                    billingCity,
+                    billingState,
+                    billingStateCode,
+                    billingPincode,
+                    billingCountry: billingCountry || country || 'India',
+
+                    shippingAddress: shippingAddress || billingAddress,
+                    shippingCity: shippingCity || billingCity || city,
+                    shippingState: shippingState || billingState || state,
+                    shippingStateCode: shippingStateCode || billingStateCode,
+                    shippingPincode: shippingPincode || billingPincode || pincode,
+                    shippingCountry: shippingCountry || billingCountry || country || 'India',
+
+                    // Legacy 
+                    city: city || billingCity,
+                    state: state || billingState,
+                    country: country || billingCountry || 'India',
+                    pincode: pincode || billingPincode,
+
                     gstVatTaxId,
                     tags,
                     institutionId: institutionId || null,
                     designation: designation || null,
                     leadStatus: null,
-                }
+                } as any
             });
+
+
 
             if (customerType === 'INSTITUTION' && institutionDetails) {
                 await tx.institutionDetails.create({

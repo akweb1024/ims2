@@ -135,6 +135,23 @@ export default function CustomerDetailPage({ params }: { params: Promise<{ id: s
             designation: formData.get('designation') || null,
             assignedToUserId: formData.get('assignedToUserId') || null,
             assignedToUserIds: formData.getAll('assignedToUserIds'),
+            
+            // Structured Fields
+            billingAddress: formData.get('billingAddress'),
+            billingCity: formData.get('billingCity'),
+            billingState: formData.get('billingState'),
+            billingStateCode: formData.get('billingStateCode'),
+            billingPincode: formData.get('billingPincode'),
+            billingCountry: formData.get('billingCountry') || 'India',
+
+            shippingAddress: formData.get('shippingAddress'),
+            shippingCity: formData.get('shippingCity'),
+            shippingState: formData.get('shippingState'),
+            shippingStateCode: formData.get('shippingStateCode'),
+            shippingPincode: formData.get('shippingPincode'),
+            shippingCountry: formData.get('shippingCountry') || 'India',
+
+            gstVatTaxId: formData.get('gstVatTaxId'),
         };
 
         if (customer.customerType === 'INSTITUTION') {
@@ -144,6 +161,7 @@ export default function CustomerDetailPage({ params }: { params: Promise<{ id: s
                 totalSeats: parseInt(formData.get('totalSeats') as string) || 0,
             };
         }
+
 
         try {
             await updateCustomer.mutateAsync(payload);
@@ -269,6 +287,71 @@ export default function CustomerDetailPage({ params }: { params: Promise<{ id: s
                                     <div className="md:col-span-2">
                                         <label className="label">Website</label>
                                         <input name="website" className="input" defaultValue={customer.website} placeholder="https://" />
+                                    </div>
+                                    
+                                    <div className="md:col-span-2 pt-4 border-t border-secondary-100">
+                                        <h4 className="font-bold text-secondary-900 mb-2">Detailed Address (Indian Law / Shipping)</h4>
+                                    </div>
+
+                                    <div>
+                                        <label className="label">GSTIN / VAT ID</label>
+                                        <input name="gstVatTaxId" className="input" defaultValue={customer.gstVatTaxId} placeholder="Optional" />
+                                    </div>
+
+                                    <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4 bg-secondary-50/50 p-4 rounded-2xl border border-secondary-100">
+                                        <div className="md:col-span-2 font-bold text-sm text-secondary-700">Billing Address</div>
+                                        <div className="md:col-span-2">
+                                            <label className="label">Street / Building</label>
+                                            <textarea name="billingAddress" className="input h-20" defaultValue={customer.billingAddress}></textarea>
+                                        </div>
+                                        <div>
+                                            <label className="label">Billing City</label>
+                                            <input name="billingCity" className="input" defaultValue={customer.billingCity} />
+                                        </div>
+                                        <div>
+                                            <label className="label">Billing State</label>
+                                            <input name="billingState" className="input" defaultValue={customer.billingState} />
+                                        </div>
+                                        <div>
+                                            <label className="label">State Code</label>
+                                            <input name="billingStateCode" className="input" defaultValue={customer.billingStateCode} />
+                                        </div>
+                                        <div>
+                                            <label className="label">Billing Pincode</label>
+                                            <input name="billingPincode" className="input" defaultValue={customer.billingPincode} />
+                                        </div>
+                                        <div>
+                                            <label className="label">Billing Country</label>
+                                            <input name="billingCountry" className="input" defaultValue={customer.billingCountry || 'India'} />
+                                        </div>
+                                    </div>
+
+                                    <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4 bg-primary-50/10 p-4 rounded-2xl border border-primary-100/20">
+                                        <div className="md:col-span-2 font-bold text-sm text-primary-700">Shipping Address</div>
+                                        <div className="md:col-span-2">
+                                            <label className="label">Street / Building</label>
+                                            <textarea name="shippingAddress" className="input h-20" defaultValue={customer.shippingAddress || customer.billingAddress}></textarea>
+                                        </div>
+                                        <div>
+                                            <label className="label">Shipping City</label>
+                                            <input name="shippingCity" className="input" defaultValue={customer.shippingCity || customer.billingCity} />
+                                        </div>
+                                        <div>
+                                            <label className="label">Shipping State</label>
+                                            <input name="shippingState" className="input" defaultValue={customer.shippingState || customer.billingState} />
+                                        </div>
+                                        <div>
+                                            <label className="label">State Code</label>
+                                            <input name="shippingStateCode" className="input" defaultValue={customer.shippingStateCode || customer.billingStateCode} />
+                                        </div>
+                                        <div>
+                                            <label className="label">Shipping Pincode</label>
+                                            <input name="shippingPincode" className="input" defaultValue={customer.shippingPincode || customer.billingPincode} />
+                                        </div>
+                                        <div>
+                                            <label className="label">Shipping Country</label>
+                                            <input name="shippingCountry" className="input" defaultValue={customer.shippingCountry || customer.billingCountry || 'India'} />
+                                        </div>
                                     </div>
 
                                     <div>
@@ -459,13 +542,28 @@ export default function CustomerDetailPage({ params }: { params: Promise<{ id: s
                                             <p className="font-medium text-secondary-900">{customer.country || 'N/A'}</p>
                                         </div>
                                         <div>
-                                            <label className="text-sm text-secondary-500">Phone</label>
-                                            <p className="font-medium text-secondary-900">{customer.primaryPhone}</p>
+                                            <label className="text-sm text-secondary-500">GSTIN / Tax ID</label>
+                                            <p className="font-bold text-primary-600">{customer.gstVatTaxId || 'N/A'}</p>
                                         </div>
-                                        <div>
-                                            <label className="text-sm text-secondary-500">Billing Address</label>
-                                            <p className="font-medium text-secondary-900">{customer.billingAddress || 'N/A'}</p>
+                                        <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <div className="bg-secondary-50 p-3 rounded-xl border border-secondary-100">
+                                                <label className="text-[10px] font-black uppercase text-secondary-400">Billing Address</label>
+                                                <p className="text-sm font-medium text-secondary-900 mt-1 whitespace-pre-line">
+                                                    {customer.billingAddress || 'N/A'}
+                                                    {customer.billingCity && `\n${customer.billingCity}, ${customer.billingState} - ${customer.billingPincode}`}
+                                                    {customer.billingCountry && `\n${customer.billingCountry}`}
+                                                </p>
+                                            </div>
+                                            <div className="bg-primary-50/50 p-3 rounded-xl border border-primary-100/50">
+                                                <label className="text-[10px] font-black uppercase text-primary-400">Shipping Address</label>
+                                                <p className="text-sm font-medium text-secondary-900 mt-1 whitespace-pre-line">
+                                                    {customer.shippingAddress || customer.billingAddress || 'N/A'}
+                                                    {(customer.shippingCity || customer.billingCity) && `\n${customer.shippingCity || customer.billingCity}, ${customer.shippingState || customer.billingState} - ${customer.shippingPincode || customer.billingPincode}`}
+                                                    {(customer.shippingCountry || customer.billingCountry) && `\n${customer.shippingCountry || customer.billingCountry}`}
+                                                </p>
+                                            </div>
                                         </div>
+
                                         <div>
                                             <label className="text-sm text-secondary-500">Account Manager(s)</label>
                                             <div className="flex flex-wrap gap-1 mt-1">

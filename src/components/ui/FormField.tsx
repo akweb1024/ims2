@@ -14,7 +14,9 @@ interface FormFieldProps {
     className?: string;
     helpText?: string;
     disabled?: boolean;
+    defaultValue?: string | number;
 }
+
 
 export default function FormField({
     label,
@@ -29,7 +31,9 @@ export default function FormField({
     className = '',
     helpText,
     disabled = false,
+    defaultValue,
 }: FormFieldProps) {
+
     const baseInputClasses = `
         w-full px-4 py-3 rounded-xl border-2 transition-all duration-200
         focus:outline-none focus:ring-2 focus:ring-offset-2
@@ -67,6 +71,7 @@ export default function FormField({
                     placeholder={placeholder}
                     rows={rows}
                     disabled={disabled}
+                    defaultValue={defaultValue}
                     className={inputClasses}
                     aria-invalid={error ? 'true' : 'false'}
                     aria-describedby={error ? errorId : helpText ? helpId : undefined}
@@ -94,6 +99,7 @@ export default function FormField({
                     {...register(name)}
                     placeholder={placeholder}
                     disabled={disabled}
+                    defaultValue={defaultValue}
                     className={inputClasses}
                     aria-invalid={error ? 'true' : 'false'}
                     aria-describedby={error ? errorId : helpText ? helpId : undefined}

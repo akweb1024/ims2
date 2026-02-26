@@ -341,12 +341,28 @@ model CustomerProfile {
   primaryPhone        String
   secondaryPhone      String?
   gstVatTaxId         String?
+  // Billing Address (Structured)
   billingAddress      String?
+  billingCity         String?
+  billingState        String?
+  billingStateCode    String?
+  billingPincode      String?
+  billingCountry      String? @default("India")
+
+  // Shipping Address (Structured)
   shippingAddress     String?
+  shippingCity        String?
+  shippingState       String?
+  shippingStateCode   String?
+  shippingPincode     String?
+  shippingCountry     String? @default("India")
+
+  // Legacy fields (keeping for compatibility, will migrate data)
   country             String?
   state               String?
   city                String?
   pincode             String?
+
   preferredChannel    String?
   notes               String?
   tags                String?
@@ -650,7 +666,28 @@ model Invoice {
   companyId           String?
   customerProfileId   String?
   description         String?
+  taxRate             Float?               @default(18.0)
+  gstNumber           String?
+  // Address Snapshots (Indian Law Compliance)
+  billingAddress      String?
+  billingCity         String?
+  billingState        String?
+  billingStateCode    String?
+  billingPincode      String?
+  billingCountry      String?              @default("India")
+  
+  shippingAddress     String?
+  shippingCity        String?
+  shippingState       String?
+  shippingStateCode   String?
+  shippingPincode     String?
+  shippingCountry     String?              @default("India")
+  
+  placeOfSupply       String?
+  placeOfSupplyCode   String?
+  
   lineItems           Json?
+
   company             Company?             @relation(fields: [companyId], references: [id])
   customerProfile     CustomerProfile?     @relation(fields: [customerProfileId], references: [id])
   subscription        Subscription?        @relation(fields: [subscriptionId], references: [id])

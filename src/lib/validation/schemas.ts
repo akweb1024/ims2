@@ -98,16 +98,31 @@ export const customerSchema = z.object({
     // Institution Link
     institutionId: z.string().optional(),
 
-    // Address
-    address: z.string().optional(),
-    city: z.string().optional(),
-    state: z.string().optional(),
-    country: z.string().optional(),
-    postalCode: z.string().optional(),
+    // GST / Tax Information
+    gstVatTaxId: z.string().optional(),
 
-    // Additional
+    // Billing Address (Indian Law / Standardized Structured)
+    billingAddress: z.string().optional(),
+    billingCity: z.string().optional(),
+    billingState: z.string().optional(),
+    billingStateCode: z.string().optional(),
+    billingPincode: z.string().optional(),
+    billingCountry: z.string().optional().default('India'),
+
+    // Shipping Address (Standardized / Indian GST Place of Supply compliant)
+    shippingAddress: z.string().optional(),
+    shippingCity: z.string().optional(),
+    shippingState: z.string().optional(),
+    shippingStateCode: z.string().optional(),
+    shippingPincode: z.string().optional(),
+    shippingCountry: z.string().optional().default('India'),
+
+    // Legacy / Convenience fields
     notes: z.string().optional(),
 });
+
+
+
 
 export type CustomerFormData = z.infer<typeof customerSchema>;
 

@@ -19,13 +19,60 @@ export default function NewCustomerPage() {
         register,
         handleSubmit,
         watch,
+        setValue,
         formState: { errors, isValid },
     } = useForm<CustomerFormData>({
-        resolver: zodResolver(customerSchema),
-        mode: 'onChange', // Validate on change for real-time feedback
+        resolver: zodResolver(customerSchema) as any,
+        mode: 'onChange',
+
+        defaultValues: {
+            name: '',
+            email: '',
+            phone: '',
+            secondaryPhone: '',
+            type: 'INDIVIDUAL',
+            organizationName: '',
+            designation: '',
+            institutionId: '',
+            gstVatTaxId: '',
+            billingAddress: '',
+            billingCity: '',
+            billingState: '',
+            billingStateCode: '',
+            billingPincode: '',
+            billingCountry: 'India',
+            shippingAddress: '',
+            shippingCity: '',
+            shippingState: '',
+            shippingStateCode: '',
+            shippingPincode: '',
+            shippingCountry: 'India',
+            notes: ''
+        }
     });
 
+
     const customerType = watch('type', 'INDIVIDUAL');
+
+    const handleSameAsBilling = (checked: boolean) => {
+        if (checked) {
+            const values = watch();
+            setValue('shippingAddress', values.billingAddress);
+            setValue('shippingCity', values.billingCity);
+            setValue('shippingState', values.billingState);
+            setValue('shippingStateCode', values.billingStateCode);
+            setValue('shippingPincode', values.billingPincode);
+            setValue('shippingCountry', values.billingCountry);
+        }
+    };
+
+    useEffect(() => {
+        if (customerType === 'AGENCY') {
+            setUserRole('AGENCY');
+        } else {
+            setUserRole('CUSTOMER');
+        }
+    }, [customerType]);
 
     useEffect(() => {
         const userData = localStorage.getItem('user');
@@ -68,13 +115,27 @@ export default function NewCustomerPage() {
                 organizationName: data.organizationName || null,
                 designation: data.designation || null,
                 institutionId: data.institutionId || null,
-                billingAddress: data.address || null,
-                city: data.city || null,
-                state: data.state || null,
-                country: data.country || null,
-                pincode: data.postalCode || null,
+                
+                // Structured Billing
+                billingAddress: data.billingAddress || null,
+                billingCity: data.billingCity || null,
+                billingState: data.billingState || null,
+                billingStateCode: data.billingStateCode || null,
+                billingPincode: data.billingPincode || null,
+                billingCountry: data.billingCountry || 'India',
+
+                // Structured Shipping
+                shippingAddress: data.shippingAddress || data.billingAddress || null,
+                shippingCity: data.shippingCity || data.billingCity || null,
+                shippingState: data.shippingState || data.billingState || null,
+                shippingStateCode: data.shippingStateCode || data.billingStateCode || null,
+                shippingPincode: data.shippingPincode || data.billingPincode || null,
+                shippingCountry: data.shippingCountry || data.billingCountry || 'India',
+
+                gstVatTaxId: data.gstVatTaxId || null,
                 notes: data.notes || null,
             };
+
 
             const res = await fetch('/api/customers', {
                 method: 'POST',
@@ -210,61 +271,85 @@ export default function NewCustomerPage() {
                         </div>
                     </div>
 
-                    {/* Address & Contact Details */}
+                    {/* Tax Information */}
+                    <div className="card-premium">
+                        <h3 className="text-lg font-bold text-secondary-900 mb-6 border-l-4 border-indigo-500 pl-4">
+                            Tax Information
+                        </h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <FormField
+                                label="GSTIN / VAT ID"
+                                name="gstVatTaxId"
+                                type="text"
+                                placeholder="e.g. 07AAAAA0000A1Z5"
+                                register={register}
+                                error={errors.gstVatTaxId}
+                                helpText="Required for Indian GST Tax Invoices"
+                            />
+                        </div>
+                    </div>
+
+                    {/* Billing Address */}
                     <div className="card-premium">
                         <h3 className="text-lg font-bold text-secondary-900 mb-6 border-l-4 border-secondary-400 pl-4">
-                            Address & Contact Details
+                            Billing Address
                         </h3>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div className="md:col-span-2">
                                 <FormField
-                                    label="Address"
-                                    name="address"
+                                    label="Street Address / Building"
+                                    name="billingAddress"
                                     type="textarea"
                                     placeholder="Street, Building, etc."
-                                    rows={3}
+                                    rows={2}
                                     register={register}
-                                    error={errors.address}
+                                    error={errors.billingAddress}
                                 />
                             </div>
-
-                            <FormField
-                                label="City"
-                                name="city"
-                                type="text"
-                                placeholder="e.g., New York"
-                                register={register}
-                                error={errors.city}
-                            />
-
-                            <FormField
-                                label="State / Province"
-                                name="state"
-                                type="text"
-                                placeholder="e.g., California"
-                                register={register}
-                                error={errors.state}
-                            />
-
-                            <FormField
-                                label="Country"
-                                name="country"
-                                type="text"
-                                placeholder="e.g., United States"
-                                register={register}
-                                error={errors.country}
-                            />
-
-                            <FormField
-                                label="Postal Code"
-                                name="postalCode"
-                                type="text"
-                                placeholder="e.g., 10001"
-                                register={register}
-                                error={errors.postalCode}
-                            />
+                            <FormField label="City" name="billingCity" type="text" register={register} error={errors.billingCity} />
+                            <FormField label="State" name="billingState" type="text" register={register} error={errors.billingState} />
+                            <FormField label="State Code" name="billingStateCode" type="text" placeholder="e.g. 07 (for Delhi)" register={register} error={errors.billingStateCode} />
+                            <FormField label="Pincode" name="billingPincode" type="text" register={register} error={errors.billingPincode} />
+                            <FormField label="Country" name="billingCountry" type="text" defaultValue="India" register={register} error={errors.billingCountry} />
                         </div>
                     </div>
+
+                    {/* Shipping Address */}
+                    <div className="card-premium">
+                        <div className="flex items-center justify-between mb-6">
+                            <h3 className="text-lg font-bold text-secondary-900 border-l-4 border-info-500 pl-4">
+                                Shipping Address
+                            </h3>
+                            <label className="flex items-center gap-2 cursor-pointer group">
+                                <input 
+                                    type="checkbox" 
+                                    className="rounded border-gray-300 text-primary-600 focus:ring-primary-500" 
+                                    onChange={(e) => handleSameAsBilling(e.target.checked)}
+                                />
+                                <span className="text-sm font-medium text-secondary-600 group-hover:text-primary-600">Same as Billing</span>
+                            </label>
+
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div className="md:col-span-2">
+                                <FormField
+                                    label="Street Address / Building"
+                                    name="shippingAddress"
+                                    type="textarea"
+                                    placeholder="Leave blank to use Billing Address"
+                                    rows={2}
+                                    register={register}
+                                    error={errors.shippingAddress}
+                                />
+                            </div>
+                            <FormField label="City" name="shippingCity" type="text" register={register} error={errors.shippingCity} />
+                            <FormField label="State" name="shippingState" type="text" register={register} error={errors.shippingState} />
+                            <FormField label="State Code" name="shippingStateCode" type="text" register={register} error={errors.shippingStateCode} />
+                            <FormField label="Pincode" name="shippingPincode" type="text" register={register} error={errors.shippingPincode} />
+                            <FormField label="Country" name="shippingCountry" type="text" defaultValue="India" register={register} error={errors.shippingCountry} />
+                        </div>
+                    </div>
+
 
                     {/* Additional Notes */}
                     <div className="card-premium">
