@@ -4,7 +4,7 @@ import { authorizedRoute } from '@/lib/middleware-auth';
 import { createErrorResponse } from '@/lib/api-utils';
 
 export const GET = authorizedRoute(
-    ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'EXECUTIVE', 'TEAM_LEADER'],
+    [],
     async (req: NextRequest, user) => {
         try {
             const { searchParams } = new URL(req.url);
