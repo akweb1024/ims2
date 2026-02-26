@@ -135,7 +135,9 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
         ? invoice.lineItems
         : (invoice.subscription?.items || []);
     const company = invoice.company || {};
-    const isIGST = customer.country !== 'India' || (customer.state && customer.state !== company.stateCode);
+    const invoiceCountry = invoice.billingCountry || customer.billingCountry || customer.country || 'India';
+    const isExport = invoiceCountry.toLowerCase() !== 'india';
+    const isIGST = isExport || (customer.state && customer.state !== company.stateCode);
     const taxLabel = invoice.currency !== 'INR' ? 'Tax (0%)' : (isIGST ? `IGST (${invoice.taxRate || 18}%)` : `CGST + SGST (${invoice.taxRate || 18}%)`);
     const subtotal = invoice.amount || 0;
     const taxAmt = invoice.tax || 0;
@@ -280,7 +282,7 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
                             backgroundColor: invoice.status === 'PAID' ? '#000' : '#4b5563' 
                         }}>
                             <div style={{ fontSize: '16px', fontWeight: '900', letterSpacing: '4px', color: '#fff' }}>
-                                {invoice.status === 'PAID' ? 'TAX INVOICE' : 'PROFORMA INVOICE'}
+                                {invoice.status === 'PAID' ? (isExport ? 'EXPORT INVOICE' : 'TAX INVOICE') : 'PROFORMA INVOICE'}
                             </div>
                         </div>
 
