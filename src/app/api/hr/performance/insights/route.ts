@@ -3,12 +3,19 @@ import { prisma } from '@/lib/prisma';
 import { authorizedRoute } from '@/lib/middleware-auth';
 import { createErrorResponse } from '@/lib/api-utils';
 
+// GET: Fetch insights for the company or a specific employee
 export const GET = authorizedRoute(
-    ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'MANAGER'],
+    ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'EXECUTIVE'],
     async (req: NextRequest, user) => {
         try {
             const { searchParams } = new URL(req.url);
-            const employeeId = searchParams.get('employeeId');
+            let employeeId = searchParams.get('employeeId');
+
+            if (user.role === 'EXECUTIVE') {
+                const profile = await prisma.employeeProfile.findFirst({ where: { userId: user.id } });
+                if (!profile) return NextResponse.json([]);
+                employeeId = profile.id;
+            }
 
             if (!employeeId) {
                 // Fetch general insights for the company
@@ -34,7 +41,7 @@ export const GET = authorizedRoute(
 );
 
 export const POST = authorizedRoute(
-    ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'MANAGER'],
+    ['SUPER_ADMIN', 'ADMIN', 'MANAGER'],
     async (req: NextRequest, user) => {
         try {
             const body = await req.json();

@@ -317,7 +317,7 @@ export const POST = authorizedRoute(['SUPER_ADMIN', 'ADMIN', 'HR_MANAGER', 'HR']
 });
 
 // GET: Retrieve performance snapshots
-export const GET = authorizedRoute(['SUPER_ADMIN', 'ADMIN', 'HR_MANAGER', 'HR', 'MANAGER'], async (req: NextRequest, user: any) => {
+export const GET = authorizedRoute(['SUPER_ADMIN', 'ADMIN', 'HR_MANAGER', 'HR', 'MANAGER', 'EXECUTIVE'], async (req: NextRequest, user: any) => {
     try {
         const { searchParams } = new URL(req.url);
         const month = searchParams.get('month');
@@ -326,11 +326,18 @@ export const GET = authorizedRoute(['SUPER_ADMIN', 'ADMIN', 'HR_MANAGER', 'HR', 
         const departmentId = searchParams.get('departmentId');
         const companyId = searchParams.get('companyId') || user.companyId;
 
+        let targetEmployeeId = employeeId;
+        if (targetEmployeeId === 'self' || user.role === 'EXECUTIVE') {
+            const profile = await prisma.employeeProfile.findFirst({ where: { userId: user.id } });
+            if (!profile) return NextResponse.json([]);
+            targetEmployeeId = profile.id;
+        }
+
         const where: any = { companyId };
 
         if (month) where.month = parseInt(month);
         if (year) where.year = parseInt(year);
-        if (employeeId) where.employeeId = employeeId;
+        if (targetEmployeeId) where.employeeId = targetEmployeeId;
         if (departmentId) where.departmentId = departmentId;
 
         const snapshots = await prisma.monthlyPerformanceSnapshot.findMany({

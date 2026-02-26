@@ -43,6 +43,7 @@ export default function StaffPortalPage() {
     const [documents, setDocuments] = useState<any>(null);
     const [snapshots, setSnapshots] = useState<any[]>([]); // Added for dynamic performance
     const [kpis, setKpis] = useState<any[]>([]); // Added for Active Goals widget
+    const [insights, setInsights] = useState<any[]>([]); // Added for performance insights
     const [fullProfile, setFullProfile] = useState<any>(null);
     const [compliance, setCompliance] = useState<any>({ isCompliant: true, pendingDocuments: [], pendingModules: [] });
     const [activeIncrement, setActiveIncrement] = useState<any>(null);
@@ -94,9 +95,10 @@ export default function StaffPortalPage() {
                 fetch('/api/hr/onboarding/compliance', { headers: { 'Authorization': `Bearer ${token}` } }),
                 fetch(`/api/hr/performance/monthly?employeeId=self&year=${new Date().getFullYear()}`, { headers: { 'Authorization': `Bearer ${token}` } }), // Fetch Snapshots
                 fetch('/api/hr/performance/kpis?employeeId=self', { headers: { 'Authorization': `Bearer ${token}` } }), // Fetch KPIs
+                fetch('/api/hr/performance/insights', { headers: { 'Authorization': `Bearer ${token}` } }), // Fetch Insights
             ]);
             
-            const [attendanceRes, reportsRes, slipsRes, leavesRes, perfRes, docsRes, profileRes, complRes, snapRes, kpisRes] = results;
+            const [attendanceRes, reportsRes, slipsRes, leavesRes, perfRes, docsRes, profileRes, complRes, snapRes, kpisRes, insightsRes] = results;
 
             if (complRes.ok) {
                 const complData = await complRes.json();
@@ -123,6 +125,7 @@ export default function StaffPortalPage() {
             if (perfRes.ok) setPerformance(await perfRes.json());
             if (snapRes.ok) setSnapshots(await snapRes.json());
             if (kpisRes && kpisRes.ok) setKpis(await kpisRes.json());
+            if (insightsRes && insightsRes.ok) setInsights(await insightsRes.json());
 
             const incRes = await fetch('/api/staff/performance/active-increment', { headers: { 'Authorization': `Bearer ${token}` } });
             if (incRes.ok) {
@@ -491,7 +494,12 @@ export default function StaffPortalPage() {
 
                     {activeTab === 'performance' && (
                         <div className="p-8">
-                            <EmployeeKPIView snapshots={snapshots} reviews={performance} />
+                            <EmployeeKPIView 
+                                snapshots={snapshots} 
+                                reviews={performance} 
+                                increments={fullProfile?.incrementHistory || []}
+                                insights={insights}
+                            />
                         </div>
                     )}
 

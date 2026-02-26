@@ -2,6 +2,7 @@
 
 import { useKPIs } from '@/hooks/useHR';
 import { Target, TrendingUp, BarChart3, Award, Star, Briefcase, Zap, AlertCircle } from 'lucide-react';
+import { formatToISTDate } from '@/lib/date-utils';
 import {
     Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer,
     BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip
@@ -10,9 +11,11 @@ import {
 interface EmployeeKPIViewProps {
     snapshots?: any[];
     reviews?: any[];
+    increments?: any[];
+    insights?: any[];
 }
 
-export default function EmployeeKPIView({ snapshots = [], reviews = [] }: EmployeeKPIViewProps) {
+export default function EmployeeKPIView({ snapshots = [], reviews = [], increments = [], insights = [] }: EmployeeKPIViewProps) {
     const { data: kpis, isLoading } = useKPIs();
 
     // Use latest snapshot for current metrics
@@ -43,8 +46,27 @@ export default function EmployeeKPIView({ snapshots = [], reviews = [] }: Employ
     })) || [];
 
     // Overall Rating (Using Manager Rating or Overall Score)
-    // Previous mock was 9.2/10. Let's use overallScore (0-100) scaled to 0-10
-    const overallRating = currentSnapshot ? (currentSnapshot.overallScore / 10).toFixed(1) : '0.0';
+    const overallRatingNum = currentSnapshot ? (currentSnapshot.overallScore / 10) : 0;
+    const overallRating = overallRatingNum.toFixed(1);
+
+    const getRatingTheme = (score: number) => {
+        if (score >= 9) return { color: 'from-emerald-600 to-teal-500', text: 'Outstanding', summary: 'You are an exceptional performer, exceeding all mission targets significantly.' };
+        if (score >= 8) return { color: 'from-indigo-600 to-blue-500', text: 'Strong', summary: 'Consistent performance with high quality. You are reliably meeting and exceeding most goals.' };
+        if (score >= 7) return { color: 'from-blue-600 to-indigo-500', text: 'Good', summary: 'Solid performance. You are meeting expectations and maintaining good consistency.' };
+        if (score >= 6) return { color: 'from-amber-600 to-orange-500', text: 'Fair', summary: 'Meeting basic requirements but there is room for growth in specific skills.' };
+        return { color: 'from-rose-600 to-red-500', text: 'Needs Improvement', summary: 'Performance is currently below target. Focus on consistency and peer collaboration.' };
+    };
+
+    const theme = getRatingTheme(overallRatingNum);
+    
+    const getChartColor = (score: number) => {
+        if (score >= 9) return { stroke: '#059669', fill: '#10b981' }; 
+        if (score >= 8) return { stroke: '#4f46e5', fill: '#6366f1' }; 
+        if (score >= 7) return { stroke: '#2563eb', fill: '#3b82f6' }; 
+        if (score >= 6) return { stroke: '#d97706', fill: '#f59e0b' }; 
+        return { stroke: '#e11d48', fill: '#f43f5e' }; 
+    };
+    const chartColors = getChartColor(overallRatingNum);
 
     if (isLoading) return (
         <div className="flex items-center justify-center p-20 text-indigo-500">
@@ -55,24 +77,22 @@ export default function EmployeeKPIView({ snapshots = [], reviews = [] }: Employ
     return (
         <div className="space-y-8 animate-in fade-in duration-500">
             {/* Header / Summary Card */}
-            <div className="relative bg-gradient-to-r from-violet-600 to-indigo-600 rounded-[2rem] p-8 text-white shadow-xl overflow-hidden">
+            <div className={`relative bg-gradient-to-r ${theme.color} rounded-[2rem] p-8 text-white shadow-xl overflow-hidden`}>
                 <div className="relative z-10 flex flex-col md:flex-row justify-between items-end gap-6">
                     <div>
                         <div className="flex items-center gap-2 mb-2">
-                            {Number(overallRating) >= 8 && (
+                            {overallRatingNum >= 8 && (
                                 <span className="bg-white/20 backdrop-blur-md px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider">
                                     Top Performer
                                 </span>
                             )}
-                            <span className="flex items-center gap-1 text-xs font-bold text-amber-300">
+                            <span className="flex items-center gap-1 text-xs font-bold text-white/80">
                                 <Award size={14} /> Performance Score
                             </span>
                         </div>
-                        <h1 className="text-4xl font-black mb-2">{Number(overallRating) >= 8 ? 'Excellent Performance' : Number(overallRating) >= 6 ? 'Good Performance' : 'Needs Improvement'}</h1>
-                        <p className="text-indigo-100 max-w-xl">
-                            {Number(overallRating) >= 8
-                                ? "You are currently performing in the top percentile. Keep up this velocity!"
-                                : "Focus on consistent reporting and task completion to improve your score."}
+                        <h1 className="text-4xl font-black mb-2">{theme.text}</h1>
+                        <p className="text-white/90 max-w-xl">
+                            {theme.summary}
                         </p>
                     </div>
                     <div className="text-right">
@@ -100,9 +120,9 @@ export default function EmployeeKPIView({ snapshots = [], reviews = [] }: Employ
                                 <Radar
                                     name="Me"
                                     dataKey="A"
-                                    stroke="#6366f1"
+                                    stroke={chartColors.stroke}
                                     strokeWidth={3}
-                                    fill="#818cf8"
+                                    fill={chartColors.fill}
                                     fillOpacity={0.3}
                                 />
                             </RadarChart>
@@ -111,6 +131,24 @@ export default function EmployeeKPIView({ snapshots = [], reviews = [] }: Employ
                     <p className="text-center text-xs text-gray-500 font-medium mt-2">
                         Based on monthly performance snapshots
                     </p>
+
+                    {insights.length > 0 && (
+                        <div className="mt-6 space-y-4">
+                            <h4 className="text-xs font-black text-gray-400 uppercase tracking-widest px-1">Performance Insights</h4>
+                            {insights.map((insight, idx) => (
+                                <div key={insight.id || idx} className={`p-4 rounded-2xl text-xs border ${
+                                    insight.type === 'STRENGTH' 
+                                    ? 'bg-emerald-50 border-emerald-100 text-emerald-800' 
+                                    : 'bg-amber-50 border-amber-100 text-amber-800'
+                                }`}>
+                                    <div className="flex items-center gap-2 mb-1 font-bold">
+                                        {insight.type === 'STRENGTH' ? '⭐ Strength' : '💡 Area for Growth'}
+                                    </div>
+                                    {insight.content}
+                                </div>
+                            ))}
+                        </div>
+                    )}
                 </div>
 
                 {/* KPI List */}
@@ -176,7 +214,7 @@ export default function EmployeeKPIView({ snapshots = [], reviews = [] }: Employ
                                         cursor={{ fill: '#f9fafb' }}
                                         contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)' }}
                                     />
-                                    <Bar dataKey="score" fill="#6366f1" radius={[6, 6, 0, 0]} barSize={40} />
+                                    <Bar dataKey="score" fill={chartColors.fill} radius={[6, 6, 0, 0]} barSize={40} />
                                 </BarChart>
                             </ResponsiveContainer>
                         ) : (
@@ -199,15 +237,35 @@ export default function EmployeeKPIView({ snapshots = [], reviews = [] }: Employ
                     </div>
 
                     <div className="relative pl-6 space-y-8 before:absolute before:left-2 before:top-2 before:bottom-2 before:w-0.5 before:bg-emerald-200">
-                        {/* Static for now as dynamic career path is complex */}
-                        <div className="relative">
-                            <div className="absolute -left-[29px] top-1 h-3 w-3 bg-emerald-500 rounded-full ring-4 ring-emerald-100"></div>
-                            <h4 className="font-bold text-emerald-900">Current Role</h4>
-                            <p className="text-xs text-emerald-600 mt-1">Focus on excelling in current KRA</p>
-                            <div className="mt-3 flex gap-2">
-                                <span className="bg-white px-2 py-1 rounded text-[10px] font-bold text-emerald-700 shadow-sm border border-emerald-100">Performance: {Number(overallRating) >= 8 ? 'High' : 'Normal'}</span>
+                        {/* Dynamic Career Path */}
+                        {increments.length > 0 ? increments.map((inc, idx) => (
+                            <div key={inc.id || idx} className="relative">
+                                <div className="absolute -left-[29px] top-1 h-3 w-3 bg-emerald-500 rounded-full ring-4 ring-emerald-100"></div>
+                                <h4 className="font-bold text-emerald-900">
+                                    {inc.type === 'PROMOTION' ? 'Promotion' : 'Salary Increment'}
+                                </h4>
+                                <p className="text-[10px] text-emerald-600 font-black uppercase">{formatToISTDate(inc.effectiveDate)}</p>
+                                <p className="text-xs text-emerald-600 mt-1">{inc.reason || 'Performance-based adjustment'}</p>
+                                {inc.newDesignation && (
+                                    <div className="mt-2 flex gap-2">
+                                        <span className="bg-white px-2 py-0.5 rounded text-[10px] font-bold text-emerald-700 shadow-sm border border-emerald-100">
+                                            New Role: {inc.newDesignation}
+                                        </span>
+                                    </div>
+                                )}
                             </div>
-                        </div>
+                        )) : (
+                            <div className="relative">
+                                <div className="absolute -left-[29px] top-1 h-3 w-3 bg-emerald-500 rounded-full ring-4 ring-emerald-100"></div>
+                                <h4 className="font-bold text-emerald-900">Current Role</h4>
+                                <p className="text-xs text-emerald-600 mt-1">Focus on excelling in current KRA</p>
+                                <div className="mt-3 flex gap-2">
+                                    <span className="bg-white px-2 py-1 rounded text-[10px] font-bold text-emerald-700 shadow-sm border border-emerald-100">
+                                        Performance: {Number(overallRating) >= 8 ? 'High' : 'Normal'}
+                                    </span>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>
