@@ -2,10 +2,11 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
+import { motion, AnimatePresence } from 'framer-motion';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import {
     ListTodo, FolderKanban, Clock, CheckCircle2, CircleDot,
-    AlertCircle, ArrowRight, BarChart3, RefreshCw, Eye, ChevronRight, Calendar, User, Tag,
+    AlertCircle, ArrowRight, BarChart3, RefreshCw, Eye, ChevronRight, Calendar, User, Tag, LayoutGrid, Zap, Sparkles, TrendingUp
 } from 'lucide-react';
 
 interface Task {
@@ -17,6 +18,7 @@ interface Task {
     createdBy?: { id: string; name: string; email: string };
     tags: string[];
 }
+
 interface Project {
     id: string; projectCode: string; name: string; status: string; priority: string; category: string;
     stats: { totalTasks: number; completedTasks: number; inProgressTasks: number; completionRate: number };
@@ -24,37 +26,27 @@ interface Project {
     teamLead?: { id: string; name: string; email: string };
 }
 
-const STATUS_CONFIG: Record<string, { label: string; color: string; icon: React.ReactNode }> = {
-    PENDING: { label: 'Pending', color: 'bg-secondary-100 text-secondary-600', icon: <Clock className="h-3.5 w-3.5" /> },
-    IN_PROGRESS: { label: 'In Progress', color: 'bg-primary-100 text-primary-700', icon: <CircleDot className="h-3.5 w-3.5" /> },
-    UNDER_REVIEW: { label: 'Under Review', color: 'bg-warning-100 text-warning-700', icon: <Eye className="h-3.5 w-3.5" /> },
-    COMPLETED: { label: 'Completed', color: 'bg-success-100 text-success-700', icon: <CheckCircle2 className="h-3.5 w-3.5" /> },
-    CANCELLED: { label: 'Cancelled', color: 'bg-danger-100 text-danger-700', icon: <AlertCircle className="h-3.5 w-3.5" /> },
+const STATUS_CONFIG: Record<string, { label: string; bg: string; text: string; dot: string }> = {
+    PENDING: { label: 'Pending', bg: 'bg-amber-50/50', text: 'text-amber-700', dot: 'bg-amber-500' },
+    IN_PROGRESS: { label: 'Active', bg: 'bg-blue-50/50', text: 'text-blue-700', dot: 'bg-blue-500' },
+    UNDER_REVIEW: { label: 'Review', bg: 'bg-purple-50/50', text: 'text-purple-700', dot: 'bg-purple-500' },
+    COMPLETED: { label: 'Settled', bg: 'bg-emerald-50/50', text: 'text-emerald-700', dot: 'bg-emerald-500' },
+    CANCELLED: { label: 'Aborted', bg: 'bg-rose-50/50', text: 'text-rose-700', dot: 'bg-rose-500' },
 };
 
-const PRIORITY_CONFIG: Record<string, { label: string; color: string }> = {
-    LOW: { label: 'Low', color: 'text-success-600' },
-    MEDIUM: { label: 'Medium', color: 'text-warning-600' },
-    HIGH: { label: 'High', color: 'text-orange-600' },
-    URGENT: { label: 'Critical', color: 'text-danger-600' },
-    CRITICAL: { label: 'Critical', color: 'text-danger-600' },
-};
-
-const PROJECT_STATUS_COLOR: Record<string, string> = {
-    PLANNING: 'bg-purple-100 text-purple-700',
-    ACTIVE: 'bg-primary-100 text-primary-700',
-    IN_PROGRESS: 'bg-primary-100 text-primary-700',
-    ON_HOLD: 'bg-warning-100 text-warning-700',
-    COMPLETED: 'bg-success-100 text-success-700',
-    CANCELLED: 'bg-danger-100 text-danger-700',
+const PRIORITY_CONFIG: Record<string, { label: string; text: string; bg: string }> = {
+    LOW: { label: 'Low', text: 'text-emerald-600', bg: 'bg-emerald-50' },
+    MEDIUM: { label: 'Medium', text: 'text-amber-600', bg: 'bg-amber-50' },
+    HIGH: { label: 'High', text: 'text-orange-600', bg: 'bg-orange-50' },
+    CRITICAL: { label: 'Critical', text: 'text-rose-600', bg: 'bg-rose-50' },
 };
 
 const STAT_FILTERS = [
-    { label: 'Total', filter: 'ALL', bgActive: 'bg-secondary-900', key: 'total' as const },
-    { label: 'Pending', filter: 'PENDING', bgActive: 'bg-warning-500', key: 'pending' as const },
-    { label: 'In Progress', filter: 'IN_PROGRESS', bgActive: 'bg-primary-600', key: 'inProgress' as const },
-    { label: 'Under Review', filter: 'UNDER_REVIEW', bgActive: 'bg-amber-500', key: 'underReview' as const },
-    { label: 'Completed', filter: 'COMPLETED', bgActive: 'bg-success-600', key: 'completed' as const },
+    { label: 'Total', filter: 'ALL', color: 'bg-slate-900', key: 'total' as const },
+    { label: 'Pending', filter: 'PENDING', color: 'bg-amber-500', key: 'pending' as const },
+    { label: 'Active', filter: 'IN_PROGRESS', color: 'bg-blue-600', key: 'inProgress' as const },
+    { label: 'In Review', filter: 'UNDER_REVIEW', color: 'bg-purple-500', key: 'underReview' as const },
+    { label: 'Settled', filter: 'COMPLETED', color: 'bg-emerald-600', key: 'completed' as const },
 ];
 
 export default function MyTasksPage() {
@@ -69,9 +61,9 @@ export default function MyTasksPage() {
         setLoading(true);
         try {
             const [tasksRes, projectsRes] = await Promise.all([fetch('/api/it/tasks?view=my'), fetch('/api/it/projects')]);
-            if (tasksRes.ok) { const d = await tasksRes.json(); setTasks(Array.isArray(d) ? d : []); }
-            if (projectsRes.ok) { const d = await projectsRes.json(); setProjects(Array.isArray(d) ? d : []); }
-        } catch (err) { console.error('Failed to fetch data:', err); }
+            if (tasksRes.ok) setTasks(await tasksRes.json());
+            if (projectsRes.ok) setProjects(await projectsRes.json());
+        } catch (err) { console.error('Failed to fetch workspace data:', err); }
         finally { setLoading(false); }
     }, []);
 
@@ -107,11 +99,9 @@ export default function MyTasksPage() {
     if (loading) {
         return (
             <DashboardLayout>
-                <div className="flex items-center justify-center min-h-[60vh]">
-                    <div className="text-center">
-                        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary-600 mx-auto mb-4"></div>
-                        <p className="text-secondary-500 text-sm">Loading your workspace...</p>
-                    </div>
+                <div className="min-h-[80vh] flex flex-col items-center justify-center space-y-4">
+                    <div className="h-12 w-12 border-4 border-purple-600/20 border-t-purple-600 rounded-full animate-spin" />
+                    <p className="font-black text-slate-400 uppercase tracking-widest text-xs">Synchronizing Workspace Intel...</p>
                 </div>
             </DashboardLayout>
         );
@@ -119,166 +109,190 @@ export default function MyTasksPage() {
 
     return (
         <DashboardLayout>
-            <div className="space-y-6">
-                {/* Header */}
-                <div className="flex items-center justify-between">
-                    <div>
-                        <h1 className="text-2xl font-bold text-secondary-900 flex items-center gap-3">
-                            <span className="w-9 h-9 rounded-xl bg-purple-50 flex items-center justify-center">
-                                <ListTodo className="h-5 w-5 text-purple-600" />
-                            </span>
-                            My Workspace
+            <div className="min-h-screen pb-20 space-y-10 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] bg-[length:200px] bg-repeat">
+                
+                {/* Modern Header */}
+                <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }}
+                    className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6"
+                >
+                    <div className="space-y-1">
+                        <div className="flex items-center gap-2 mb-2">
+                            <span className="px-2.5 py-1 bg-purple-600/10 text-purple-600 rounded-full text-[10px] font-black uppercase tracking-widest">Personal Operation</span>
+                            <span className="h-1 w-1 rounded-full bg-slate-200" />
+                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Active Workspace</span>
+                        </div>
+                        <h1 className="text-4xl font-black text-slate-900 tracking-tight flex items-center gap-4">
+                             Digital Mission Control
                         </h1>
-                        <p className="text-secondary-500 mt-1 text-sm">Your assigned tasks and projects at a glance</p>
                     </div>
-                    <button onClick={fetchData} className="px-4 py-2.5 rounded-xl border border-secondary-200 text-secondary-600 text-sm font-medium flex items-center gap-2 hover:bg-secondary-50 transition-colors">
-                        <RefreshCw className="h-4 w-4" /> Refresh
-                    </button>
-                </div>
 
-                {/* Summary Stats */}
-                <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-                    {STAT_FILTERS.map((s) => (
-                        <button key={s.filter} onClick={() => setActiveFilter(s.filter)}
-                            className={`card-premium p-4 text-left transition-all ${activeFilter === s.filter ? 'border-primary-300 shadow-md ring-2 ring-primary-100' : ''}`}>
-                            <p className="text-2xl font-bold text-secondary-900">{stats[s.key]}</p>
-                            <p className="text-xs text-secondary-500 mt-1 font-medium">{s.label}</p>
+                    <div className="flex items-center gap-4">
+                        <button onClick={fetchData} className="p-3.5 rounded-2xl bg-white border border-slate-200 text-slate-600 hover:text-purple-600 hover:bg-slate-50 transition-all shadow-sm">
+                            <RefreshCw className="h-5 w-5" />
                         </button>
+                    </div>
+                </motion.div>
+
+                {/* Status Hub */}
+                <div className="grid grid-cols-2 md:grid-cols-5 gap-6">
+                    {STAT_FILTERS.map((s, idx) => (
+                        <motion.button key={s.filter} initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: idx * 0.05 }}
+                            onClick={() => setActiveFilter(s.filter)}
+                            className={`group relative p-6 rounded-[2rem] border transition-all text-left overflow-hidden ${activeFilter === s.filter ? 'bg-white border-white shadow-xl ring-2 ring-purple-600/10' : 'bg-white/40 border-white/60 hover:bg-white/60 hover:border-white h-full'}`}
+                        >
+                            <div className="flex justify-between items-start mb-4">
+                                <div className={`h-2 w-2 rounded-full ${s.color}`} />
+                                {activeFilter === s.filter && <Sparkles className="h-4 w-4 text-purple-600" />}
+                            </div>
+                            <h3 className="text-3xl font-black text-slate-900 leading-none">{stats[s.key]}</h3>
+                            <p className="mt-2 text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none">{s.label}</p>
+                            {activeFilter === s.filter && <div className="absolute bottom-0 left-0 h-1 bg-purple-600 transition-all w-full" />}
+                        </motion.button>
                     ))}
                 </div>
 
-                {/* My Projects */}
+                {/* Mission Stream (Projects) */}
                 {projects.length > 0 && (
-                    <div>
-                        <div className="flex items-center justify-between mb-4">
-                            <h2 className="text-base font-bold text-secondary-900 flex items-center gap-2">
-                                <FolderKanban className="h-4 w-4 text-primary-600" /> My Projects
-                                <span className="text-xs font-semibold text-secondary-400 bg-secondary-100 px-2 py-0.5 rounded-full">{projects.length}</span>
-                            </h2>
-                            <button onClick={() => router.push('/dashboard/it-management/projects')} className="text-sm text-primary-600 hover:underline flex items-center gap-1">
-                                View All <ChevronRight className="h-4 w-4" />
-                            </button>
+                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.3 }} className="space-y-6">
+                        <div className="flex items-center justify-between px-2">
+                           <h2 className="text-xl font-black text-slate-900 uppercase tracking-widest flex items-center gap-3">
+                               <FolderKanban className="h-6 w-6 text-blue-600" /> Active Missions
+                           </h2>
+                           <button onClick={() => router.push('/dashboard/it-management/projects')} className="text-[10px] font-black text-blue-600 uppercase tracking-widest hover:underline flex items-center gap-1">
+                               All Assets <ChevronRight className="h-3 w-3" />
+                           </button>
                         </div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                            {projects.map((project) => (
-                                <div key={project.id} onClick={() => router.push(`/dashboard/it-management/projects/${project.id}`)}
-                                    className="card-premium cursor-pointer hover:border-primary-200 group">
-                                    <div className="flex items-start justify-between mb-3">
-                                        <div className="flex-1 min-w-0">
-                                            <p className="text-xs text-secondary-400 font-semibold mb-1">{project.projectCode}</p>
-                                            <h3 className="font-bold text-secondary-900 truncate group-hover:text-primary-600 transition-colors">{project.name}</h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {projects.map((project, idx) => (
+                                <motion.div key={project.id} initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.4 + (idx * 0.1) }}
+                                    onClick={() => router.push(`/dashboard/it-management/projects/${project.id}`)}
+                                    className="group bg-white/70 backdrop-blur-xl rounded-[2.5rem] p-8 border border-white/80 shadow-sm hover:shadow-2xl hover:shadow-blue-500/10 cursor-pointer transition-all border-b-4 hover:border-b-blue-500 overflow-hidden"
+                                >
+                                    <div className="flex justify-between items-start mb-6">
+                                        <div className="space-y-1">
+                                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{project.projectCode}</p>
+                                            <h3 className="text-lg font-black text-slate-900 group-hover:text-blue-600 transition-colors truncate">{project.name}</h3>
                                         </div>
-                                        <span className={`ml-2 shrink-0 px-2.5 py-1 rounded-lg text-xs font-semibold ${PROJECT_STATUS_COLOR[project.status] || 'bg-secondary-100 text-secondary-600'}`}>
-                                            {project.status.replace('_', ' ')}
-                                        </span>
+                                        <ArrowRight className="h-5 w-5 text-slate-300 group-hover:text-blue-600 transition-all transform group-hover:translate-x-1" />
                                     </div>
-                                    <div className="mb-3">
-                                        <div className="flex justify-between text-xs text-secondary-400 mb-1.5">
-                                            <span>{project.stats.completedTasks}/{project.stats.totalTasks} tasks done</span>
-                                            <span className="font-semibold text-primary-600">{project.stats.completionRate}%</span>
+                                    <div className="space-y-4 pt-4 border-t border-slate-100">
+                                        <div className="flex justify-between text-[10px] font-black uppercase tracking-widest">
+                                            <span className="text-slate-400">Tactical Progress</span>
+                                            <span className="text-blue-600">{project.stats.completionRate}%</span>
                                         </div>
-                                        <div className="h-1.5 bg-secondary-100 rounded-full">
-                                            <div className="h-1.5 bg-primary-500 rounded-full transition-all" style={{ width: `${project.stats.completionRate}%` }} />
+                                        <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
+                                            <motion.div initial={{ width: 0 }} animate={{ width: `${project.stats.completionRate}%` }} className="h-full bg-blue-600 rounded-full" />
+                                        </div>
+                                        <div className="flex justify-between items-center text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                                            <span className="flex items-center gap-1.5"><TrendingUp className="h-3 w-3" /> {project.stats.inProgressTasks} Active</span>
+                                            <span>{project.stats.completedTasks} Resolved</span>
                                         </div>
                                     </div>
-                                    <div className="flex items-center gap-2 text-xs text-secondary-400">
-                                        <BarChart3 className="h-3.5 w-3.5" />
-                                        <span>{project.stats.inProgressTasks} in progress</span>
-                                        <ArrowRight className="h-3 w-3 ml-auto opacity-0 group-hover:opacity-100 transition-opacity text-primary-500" />
-                                    </div>
-                                </div>
+                                </motion.div>
                             ))}
                         </div>
-                    </div>
+                    </motion.div>
                 )}
 
-                {/* My Tasks */}
-                <div>
-                    <div className="flex items-center justify-between mb-4">
-                        <h2 className="text-base font-bold text-secondary-900 flex items-center gap-2">
-                            <ListTodo className="h-4 w-4 text-purple-600" /> My Tasks
-                            {activeFilter !== 'ALL' && <span className="text-sm font-normal text-primary-600">— {STATUS_CONFIG[activeFilter]?.label}</span>}
-                            <span className="text-xs font-semibold text-secondary-400 bg-secondary-100 px-2 py-0.5 rounded-full">{filteredTasks.length}</span>
+                {/* Logic Queue (Tasks) */}
+                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }} className="space-y-6">
+                    <div className="flex items-center justify-between px-2">
+                        <h2 className="text-xl font-black text-slate-900 uppercase tracking-widest flex items-center gap-3">
+                            <ListTodo className="h-6 w-6 text-purple-600" /> Operational Queue
                         </h2>
                         {activeFilter !== 'ALL' && (
-                            <button onClick={() => setActiveFilter('ALL')} className="text-sm text-secondary-500 hover:text-secondary-700">Clear filter ×</button>
+                            <button onClick={() => setActiveFilter('ALL')} className="text-[10px] font-black text-rose-500 uppercase tracking-widest hover:underline">Reset Stream Filter ×</button>
                         )}
                     </div>
 
-                    {filteredTasks.length === 0 ? (
-                        <div className="card-premium flex flex-col items-center justify-center py-16 text-center">
-                            <div className="w-14 h-14 rounded-2xl bg-secondary-100 flex items-center justify-center mb-4">
-                                <ListTodo className="h-7 w-7 text-secondary-400" />
-                            </div>
-                            <h3 className="text-base font-semibold text-secondary-900 mb-1">No tasks found</h3>
-                            <p className="text-secondary-500 text-sm">
-                                {activeFilter === 'ALL' ? 'You have no tasks assigned yet.' : `No ${STATUS_CONFIG[activeFilter]?.label?.toLowerCase()} tasks at the moment.`}
-                            </p>
-                        </div>
-                    ) : (
-                        <div className="space-y-3">
-                            {filteredTasks.map((task) => {
-                                const statusCfg = STATUS_CONFIG[task.status] || STATUS_CONFIG.PENDING;
-                                const priorityCfg = PRIORITY_CONFIG[task.priority] || PRIORITY_CONFIG.MEDIUM;
-                                const overdue = isOverdue(task.dueDate) && task.status !== 'COMPLETED';
-                                return (
-                                    <div key={task.id} className={`card-premium transition-all ${overdue ? 'border-danger-200' : ''}`}>
-                                        <div className="flex items-start gap-4">
-                                            <div className="flex-1 min-w-0">
-                                                <div className="flex flex-wrap items-center gap-2 mb-2">
-                                                    <span className="text-xs text-secondary-400 font-mono">{task.taskCode}</span>
-                                                    <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold ${statusCfg.color}`}>
-                                                        {statusCfg.icon}{statusCfg.label}
-                                                    </span>
-                                                    <span className={`text-xs font-bold ${priorityCfg.color}`}>● {priorityCfg.label}</span>
-                                                    {overdue && (
-                                                        <span className="text-xs text-danger-600 font-semibold flex items-center gap-1">
-                                                            <AlertCircle className="h-3 w-3" /> Overdue
-                                                        </span>
-                                                    )}
-                                                </div>
-                                                <h3 className="font-bold text-secondary-900 mb-1.5">{task.title}</h3>
-                                                <div className="flex flex-wrap items-center gap-3 text-xs text-secondary-400 mb-3">
-                                                    {task.project && <span className="flex items-center gap-1"><FolderKanban className="h-3.5 w-3.5 text-primary-400" />{task.project.name}</span>}
-                                                    {task.dueDate && (
-                                                        <span className={`flex items-center gap-1 ${overdue ? 'text-danger-500' : ''}`}>
-                                                            <Calendar className="h-3.5 w-3.5" />Due {new Date(task.dueDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
-                                                        </span>
-                                                    )}
-                                                    {task.tags.length > 0 && <span className="flex items-center gap-1"><Tag className="h-3.5 w-3.5" />{task.tags.slice(0, 2).join(', ')}</span>}
-                                                    {task.createdBy && <span className="flex items-center gap-1"><User className="h-3.5 w-3.5" />By {task.createdBy.name}</span>}
-                                                </div>
-                                                <div className="flex items-center gap-3">
-                                                    <div className="flex-1 h-1.5 bg-secondary-100 rounded-full">
-                                                        <div className="h-1.5 bg-primary-500 rounded-full transition-all" style={{ width: `${task.progressPercent}%` }} />
-                                                    </div>
-                                                    <span className="text-xs text-secondary-500 w-10 text-right font-semibold">{task.progressPercent}%</span>
-                                                </div>
-                                            </div>
-                                            <div className="flex flex-col gap-2 shrink-0">
-                                                <select value={task.status} onChange={(e) => handleStatusUpdate(task.id, e.target.value)} disabled={updatingTaskId === task.id}
-                                                    className="text-xs border border-secondary-200 rounded-lg px-2 py-1.5 bg-white text-secondary-700 focus:ring-2 focus:ring-primary-500 focus:outline-none disabled:opacity-50 cursor-pointer" title="Update Status">
-                                                    <option value="PENDING">Pending</option>
-                                                    <option value="IN_PROGRESS">In Progress</option>
-                                                    <option value="UNDER_REVIEW">Under Review</option>
-                                                    <option value="COMPLETED">Completed</option>
-                                                </select>
-                                                <select value={Math.round(task.progressPercent / 10) * 10} onChange={(e) => handleProgressUpdate(task.id, parseInt(e.target.value))}
-                                                    className="text-xs border border-secondary-200 rounded-lg px-2 py-1.5 bg-white text-secondary-700 focus:ring-2 focus:ring-primary-500 focus:outline-none cursor-pointer" title="Update Progress">
-                                                    {[0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100].map(v => <option key={v} value={v}>{v}% done</option>)}
-                                                </select>
-                                                <button onClick={() => router.push(`/dashboard/it-management/tasks/${task.id}`)}
-                                                    className="flex items-center justify-center gap-1 text-xs text-primary-600 border border-primary-200 rounded-lg px-2 py-1.5 hover:bg-primary-50 transition-colors">
-                                                    <Eye className="h-3.5 w-3.5" /> View
-                                                </button>
-                                            </div>
-                                        </div>
+                    <div className="space-y-4">
+                        <AnimatePresence mode="popLayout">
+                            {filteredTasks.length === 0 ? (
+                                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="py-20 flex flex-col items-center justify-center text-center space-y-4">
+                                    <div className="h-20 w-20 rounded-[2.5rem] bg-slate-100 flex items-center justify-center text-slate-300">
+                                        <Sparkles className="h-10 w-10" />
                                     </div>
-                                );
-                            })}
-                        </div>
-                    )}
-                </div>
+                                    <div className="space-y-1">
+                                        <h3 className="text-xl font-black text-slate-900">Queue Clear</h3>
+                                        <p className="text-slate-500 text-xs font-medium uppercase tracking-widest">All selected vectors have been processed.</p>
+                                    </div>
+                                </motion.div>
+                            ) : (
+                                filteredTasks.map((task, idx) => {
+                                    const ui = STATUS_CONFIG[task.status] || STATUS_CONFIG.PENDING;
+                                    const prio = PRIORITY_CONFIG[task.priority as keyof typeof PRIORITY_CONFIG] || PRIORITY_CONFIG.MEDIUM;
+                                    const overdue = isOverdue(task.dueDate) && task.status !== 'COMPLETED';
+                                    return (
+                                        <motion.div key={task.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95 }} transition={{ delay: idx * 0.05 }}
+                                            className={`group relative bg-white/70 backdrop-blur-xl rounded-[2.5rem] p-6 border border-white/80 shadow-sm hover:shadow-xl transition-all ${overdue ? 'border-rose-100 ring-4 ring-rose-500/5' : ''}`}
+                                        >
+                                            <div className="flex flex-col lg:flex-row lg:items-center gap-6">
+                                                <div className="flex-1 space-y-4">
+                                                    <div className="flex flex-wrap items-center gap-3">
+                                                        <span className="px-3 py-1 bg-slate-100 text-slate-500 rounded-lg text-[10px] font-black uppercase tracking-widest">{task.taskCode}</span>
+                                                        <span className={`px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest border ${ui.bg} ${ui.text} border-current/10 flex items-center gap-1.5`}>
+                                                            <div className={`h-1.5 w-1.5 rounded-full ${ui.dot}`} /> {ui.label}
+                                                        </span>
+                                                        <span className={`px-2 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest ${prio.bg} ${prio.text}`}>
+                                                            {prio.label} Severity
+                                                        </span>
+                                                        {overdue && (
+                                                            <span className="px-2 py-1 bg-rose-600 text-white rounded-lg text-[10px] font-black uppercase tracking-widest animate-pulse flex items-center gap-1.5 shadow-lg shadow-rose-200">
+                                                                <AlertCircle className="h-3 w-3" /> Critical Delay
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                    
+                                                    <div className="space-y-1">
+                                                        <h3 className="text-xl font-black text-slate-900 leading-tight group-hover:text-purple-600 transition-colors cursor-pointer" onClick={() => router.push(`/dashboard/it-management/tasks/${task.id}`)}>
+                                                            {task.title}
+                                                        </h3>
+                                                        <div className="flex flex-wrap items-center gap-4 text-[10px] font-black uppercase tracking-widest text-slate-400">
+                                                            {task.project && <span className="flex items-center gap-1.5 text-blue-500"><LayoutGrid className="h-3.5 w-3.5" />{task.project.name}</span>}
+                                                            {task.dueDate && <span className={`flex items-center gap-1.5 ${overdue ? 'text-rose-500' : ''}`}><Calendar className="h-3.5 w-3.5" />Limit: {new Date(task.dueDate).toLocaleDateString()}</span>}
+                                                            {task.createdBy && <span className="flex items-center gap-1.5"><User className="h-3.5 w-3.5" />Origin: {task.createdBy.name}</span>}
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="flex items-center gap-4">
+                                                        <div className="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden">
+                                                            <motion.div initial={{ width: 0 }} animate={{ width: `${task.progressPercent}%` }} className={`h-full rounded-full ${task.progressPercent === 100 ? 'bg-emerald-500' : 'bg-purple-600'}`} />
+                                                        </div>
+                                                        <span className="text-[10px] font-black text-slate-900 w-10 text-right">{task.progressPercent}%</span>
+                                                    </div>
+                                                </div>
+
+                                                <div className="flex flex-row lg:flex-col gap-3 shrink-0 pt-4 lg:pt-0 lg:border-l border-slate-100 lg:pl-6">
+                                                    <div className="space-y-1">
+                                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Lifecycle</p>
+                                                        <select value={task.status} onChange={(e) => handleStatusUpdate(task.id, e.target.value)} disabled={updatingTaskId === task.id}
+                                                            className="w-full bg-white border-slate-200 rounded-xl px-3 py-2 text-xs font-black uppercase tracking-widest focus:ring-2 focus:ring-purple-500/20 cursor-pointer shadow-sm disabled:opacity-50">
+                                                            <option value="PENDING">Pending</option>
+                                                            <option value="IN_PROGRESS">Active</option>
+                                                            <option value="UNDER_REVIEW">Review</option>
+                                                            <option value="COMPLETED">Settled</option>
+                                                        </select>
+                                                    </div>
+                                                    <div className="space-y-1">
+                                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Percentile</p>
+                                                        <select value={Math.round(task.progressPercent / 5) * 5} onChange={(e) => handleProgressUpdate(task.id, parseInt(e.target.value))}
+                                                            className="w-full bg-white border-slate-200 rounded-xl px-3 py-2 text-xs font-black uppercase tracking-widest focus:ring-2 focus:ring-purple-500/20 cursor-pointer shadow-sm">
+                                                            {Array.from({ length: 21 }, (_, i) => i * 5).map(v => <option key={v} value={v}>{v}% Done</option>)}
+                                                        </select>
+                                                    </div>
+                                                    <button onClick={() => router.push(`/dashboard/it-management/tasks/${task.id}`)}
+                                                        className="flex-1 lg:flex-none flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-widest bg-slate-900 text-white rounded-xl px-4 py-3 hover:bg-slate-800 transition-all shadow-lg shadow-slate-200">
+                                                        <Eye className="h-4 w-4" /> Intel
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </motion.div>
+                                    );
+                                })
+                            )}
+                        </AnimatePresence>
+                    </div>
+                </motion.div>
             </div>
         </DashboardLayout>
     );

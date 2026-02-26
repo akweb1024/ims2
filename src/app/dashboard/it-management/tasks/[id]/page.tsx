@@ -2,10 +2,12 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
+import { motion, AnimatePresence } from 'framer-motion';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import {
     ListTodo, Edit, Trash2, Calendar, DollarSign, User, Clock,
     AlertCircle, ArrowLeft, FolderKanban, Plus, X, MessageSquare, Send, TrendingUp, CheckCircle2,
+    Activity, Zap, ShieldCheck, History, Timer, Info, MoreHorizontal
 } from 'lucide-react';
 
 interface Task {
@@ -21,25 +23,19 @@ interface Task {
     statusHistory: Array<{ id: string; fromStatus: string | null; toStatus: string; changedAt: string; changedBy: { name: string; }; }>;
 }
 
-const getStatusColor = (status: string) => {
-    switch (status) {
-        case 'COMPLETED': return 'bg-success-100 text-success-700';
-        case 'IN_PROGRESS': return 'bg-primary-100 text-primary-700';
-        case 'TESTING': return 'bg-purple-100 text-purple-700';
-        case 'PENDING': return 'bg-warning-100 text-warning-700';
-        case 'UNDER_REVIEW': return 'bg-amber-100 text-amber-700';
-        default: return 'bg-secondary-100 text-secondary-600';
-    }
+const STATUS_CONFIG: Record<string, { label: string; bg: string; text: string; dot: string }> = {
+    COMPLETED: { label: 'Settled', bg: 'bg-emerald-50/50', text: 'text-emerald-700', dot: 'bg-emerald-500' },
+    IN_PROGRESS: { label: 'Active', bg: 'bg-blue-50/50', text: 'text-blue-700', dot: 'bg-blue-500' },
+    TESTING: { label: 'Verification', bg: 'bg-purple-50/50', text: 'text-purple-700', dot: 'bg-purple-500' },
+    PENDING: { label: 'In Queue', bg: 'bg-amber-50/50', text: 'text-amber-700', dot: 'bg-amber-500' },
+    UNDER_REVIEW: { label: 'Audit', bg: 'bg-indigo-50/50', text: 'text-indigo-700', dot: 'bg-indigo-500' },
 };
 
-const getPriorityColor = (priority: string) => {
-    switch (priority) {
-        case 'CRITICAL': return 'text-danger-600';
-        case 'HIGH': return 'text-orange-600';
-        case 'MEDIUM': return 'text-warning-600';
-        case 'LOW': return 'text-success-600';
-        default: return 'text-secondary-500';
-    }
+const PRIORITY_CONFIG: Record<string, { label: string; text: string; bg: string }> = {
+    CRITICAL: { label: 'Critical', text: 'text-rose-600', bg: 'bg-rose-50' },
+    HIGH: { label: 'High', text: 'text-orange-600', bg: 'bg-orange-50' },
+    MEDIUM: { label: 'Medium', text: 'text-amber-600', bg: 'bg-amber-50' },
+    LOW: { label: 'Low', text: 'text-emerald-600', bg: 'bg-emerald-50' },
 };
 
 export default function TaskDetailPage() {
@@ -61,8 +57,8 @@ export default function TaskDetailPage() {
             setLoading(true);
             const response = await fetch(`/api/it/tasks/${taskId}`);
             if (response.ok) setTask(await response.json());
-            else { alert('Failed to load task'); router.push('/dashboard/it-management/tasks'); }
-        } catch { alert('Failed to load task'); }
+            else { alert('Vector location failed'); router.push('/dashboard/it-management/tasks'); }
+        } catch { alert('Data uplink lost'); }
         finally { setLoading(false); }
     }, [taskId, router]);
 
@@ -76,35 +72,25 @@ export default function TaskDetailPage() {
         try {
             const response = await fetch(`/api/it/tasks/${taskId}/time-entries`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(timeFormData) });
             if (response.ok) { setLogTimeOpen(false); setTimeFormData({ hours: '', description: '', date: new Date().toISOString().split('T')[0], isBillable: true }); fetchTask(); }
-            else alert('Failed to log time');
-        } catch { alert('Failed to log time'); }
+        } catch { alert('Chronology log failed'); }
         finally { setSubmittingTime(false); }
     };
 
     const handleDelete = async () => {
-        if (!confirm('Are you sure you want to delete this task? This action cannot be undone.')) return;
+        if (!confirm('Purge this task data? This action is permanent.')) return;
         setDeleting(true);
         try {
             const response = await fetch(`/api/it/tasks/${taskId}`, { method: 'DELETE' });
-            if (response.ok) { alert('Task deleted successfully'); router.push('/dashboard/it-management/tasks'); }
-            else { const error = await response.json(); alert(error.error || 'Failed to delete task'); }
-        } catch { alert('Failed to delete task'); }
+            if (response.ok) router.push('/dashboard/it-management/tasks');
+        } catch { alert('Decommissioning failed'); }
         finally { setDeleting(false); }
     };
 
-    const handleMarkForReview = async () => {
+    const handleUpdateStatus = async (status: string, reason: string) => {
         try {
-            const response = await fetch(`/api/it/tasks/${taskId}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status: 'UNDER_REVIEW', statusComment: 'Task completed by IT, awaiting requester acceptance.' }) });
-            if (response.ok) fetchTask(); else alert('Failed to update status');
-        } catch { console.error('Error updating status'); }
-    };
-
-    const handleAccept = async () => {
-        if (!confirm('Accept this service as completed? This will credit revenue points to the IT department.')) return;
-        try {
-            const response = await fetch(`/api/it/tasks/${taskId}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status: 'COMPLETED', statusComment: 'Service accepted by requester' }) });
-            if (response.ok) fetchTask(); else alert('Failed to accept service');
-        } catch { console.error('Error accepting service'); }
+            const response = await fetch(`/api/it/tasks/${taskId}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status, statusComment: reason }) });
+            if (response.ok) fetchTask();
+        } catch { console.error('Lifecycle update failed'); }
     };
 
     const handleSubmitComment = async (e: React.FormEvent) => {
@@ -113,320 +99,371 @@ export default function TaskDetailPage() {
         setSubmittingComment(true);
         try {
             const response = await fetch(`/api/it/tasks/${taskId}/comments`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ content: newComment }) });
-            if (response.ok) { setNewComment(''); fetchTask(); } else alert('Failed to add comment');
-        } catch { alert('Failed to add comment'); }
+            if (response.ok) { setNewComment(''); fetchTask(); }
+        } catch { alert('Intel posting failed'); }
         finally { setSubmittingComment(false); }
     };
 
     if (loading) {
         return (
             <DashboardLayout>
-                <div className="flex items-center justify-center min-h-[60vh]">
-                    <div className="text-center">
-                        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary-600 mx-auto mb-4"></div>
-                        <p className="text-secondary-500 text-sm">Loading task...</p>
-                    </div>
+                <div className="min-h-[80vh] flex flex-col items-center justify-center space-y-4">
+                    <div className="h-12 w-12 border-4 border-purple-600/20 border-t-purple-600 rounded-full animate-spin" />
+                    <p className="font-black text-slate-400 uppercase tracking-widest text-xs">Synchronizing Task Payload...</p>
                 </div>
             </DashboardLayout>
         );
     }
 
-    if (!task) {
-        return (
-            <DashboardLayout>
-                <div className="flex items-center justify-center min-h-[60vh]">
-                    <div className="text-center">
-                        <AlertCircle className="h-12 w-12 text-danger-400 mx-auto mb-4" />
-                        <p className="text-secondary-600">Task not found</p>
-                    </div>
-                </div>
-            </DashboardLayout>
-        );
-    }
+    if (!task) return null;
 
     const totalHours = task.timeEntries.reduce((sum, e) => sum + e.hours, 0);
     const billableHours = task.timeEntries.filter(e => e.isBillable).reduce((sum, e) => sum + e.hours, 0);
 
     return (
         <DashboardLayout>
-            <div className="space-y-6">
-                {/* Header */}
-                <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                        <button onClick={() => router.back()} className="p-2 hover:bg-secondary-100 rounded-xl transition-colors">
-                            <ArrowLeft className="h-5 w-5 text-secondary-500" />
+            <div className="min-h-screen pb-20 space-y-8 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] bg-[length:200px] bg-repeat">
+                
+                {/* Modern Header */}
+                <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }}
+                    className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6"
+                >
+                    <div className="flex items-center gap-6">
+                        <button onClick={() => router.back()} className="p-4 bg-white border border-slate-200 rounded-2xl text-slate-400 hover:text-purple-600 hover:shadow-lg transition-all">
+                            <ArrowLeft className="h-5 w-5" />
                         </button>
                         <div>
-                            <div className="flex items-center gap-3 mb-0.5">
-                                <span className="w-8 h-8 rounded-xl bg-purple-50 flex items-center justify-center">
-                                    <ListTodo className="h-4 w-4 text-purple-600" />
+                            <div className="flex items-center gap-3 mb-1">
+                                <span className="px-3 py-1 bg-purple-600/10 text-purple-600 rounded-lg text-[10px] font-black uppercase tracking-widest leading-none">
+                                    {task.taskCode}
                                 </span>
-                                <h1 className="text-2xl font-bold text-secondary-900">{task.title}</h1>
+                                <span className="h-1 w-1 rounded-full bg-slate-200" />
+                                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{task.type.replace('_', ' ')}</span>
                             </div>
-                            <p className="text-secondary-400 text-sm ml-11">{task.taskCode}</p>
+                            <h1 className="text-4xl font-black text-slate-900 tracking-tight">{task.title}</h1>
                         </div>
                     </div>
-                    <div className="flex items-center gap-2 flex-wrap justify-end">
+                    <div className="flex items-center gap-3 flex-wrap justify-end">
                         {task.type === 'SERVICE_REQUEST' && task.status !== 'COMPLETED' && (
                             task.status !== 'UNDER_REVIEW' ? (
-                                <button onClick={handleMarkForReview} className="btn border border-warning-300 text-warning-700 hover:bg-warning-50 text-sm">
-                                    <Clock className="h-4 w-4" /> Mark Finished
+                                <button onClick={() => handleUpdateStatus('UNDER_REVIEW', 'Awaiting validation.')} className="px-6 py-3.5 bg-amber-50 text-amber-600 rounded-2xl text-sm font-black uppercase tracking-widest hover:bg-amber-100 transition-all border border-amber-200 shadow-sm flex items-center gap-2">
+                                    <Clock className="h-4 w-4" /> End Ops
                                 </button>
                             ) : (
-                                <button onClick={handleAccept} className="btn bg-success-600 hover:bg-success-700 text-white text-sm animate-pulse">
-                                    <CheckCircle2 className="h-4 w-4" /> Accept &amp; Complete
+                                <button onClick={() => handleUpdateStatus('COMPLETED', 'Service accepted.')} className="px-6 py-3.5 bg-emerald-600 text-white rounded-2xl text-sm font-black uppercase tracking-widest hover:bg-emerald-700 transition-all shadow-xl shadow-emerald-200 flex items-center gap-2 animate-pulse">
+                                    <CheckCircle2 className="h-4 w-4" /> Execute Settlement
                                 </button>
                             )
                         )}
-                        <button onClick={() => router.push(`/dashboard/it-management/tasks/${taskId}/edit`)} className="btn btn-primary text-sm">
-                            <Edit className="h-4 w-4" /> Edit
+                        <button onClick={() => router.push(`/dashboard/it-management/tasks/${taskId}/edit`)} 
+                            className="px-6 py-3.5 rounded-2xl bg-white border border-slate-200 text-slate-600 text-sm font-bold flex items-center gap-2 hover:bg-slate-50 transition-all shadow-sm">
+                            <Edit className="h-4 w-4" /> Reconfigure
                         </button>
-                        <button onClick={handleDelete} disabled={deleting} className="btn border border-danger-200 text-danger-600 hover:bg-danger-50 text-sm disabled:opacity-50">
-                            <Trash2 className="h-4 w-4" /> {deleting ? 'Deleting...' : 'Delete'}
+                        <button onClick={handleDelete} disabled={deleting} 
+                            className="p-3.5 rounded-2xl bg-rose-50 text-rose-600 hover:bg-rose-100 transition-all disabled:opacity-50">
+                            <Trash2 className="h-5 w-5" />
                         </button>
                     </div>
+                </motion.div>
+
+                {/* Core Metrics Grid */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.1 }}
+                        className="bg-white/70 backdrop-blur-xl rounded-[2.5rem] p-6 border border-white/80 shadow-sm"
+                    >
+                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Operating Status</p>
+                        <div className="flex items-center gap-2">
+                            <div className={`h-2 w-2 rounded-full ${STATUS_CONFIG[task.status]?.dot || 'bg-slate-400'}`} />
+                            <span className="text-lg font-black text-slate-900 uppercase tracking-tight">
+                                {STATUS_CONFIG[task.status]?.label || task.status.replace('_', ' ')}
+                            </span>
+                        </div>
+                    </motion.div>
+                    <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.2 }}
+                        className="bg-white/70 backdrop-blur-xl rounded-[2.5rem] p-6 border border-white/80 shadow-sm"
+                    >
+                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Severity Rating</p>
+                        <span className={`text-lg font-black uppercase tracking-tight ${PRIORITY_CONFIG[task.priority as keyof typeof PRIORITY_CONFIG]?.text || 'text-slate-600'}`}>
+                            {task.priority} Alpha
+                        </span>
+                    </motion.div>
+                    <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.3 }}
+                        className="bg-white/70 backdrop-blur-xl rounded-[2.5rem] p-6 border border-white/80 shadow-sm"
+                    >
+                        <div className="flex justify-between items-center mb-3">
+                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Completion</p>
+                            <span className="text-lg font-black text-purple-600">{task.progressPercent}%</span>
+                        </div>
+                        <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
+                            <motion.div initial={{ width: 0 }} animate={{ width: `${task.progressPercent}%` }} className="h-full bg-purple-600 rounded-full" />
+                        </div>
+                    </motion.div>
+                    <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.4 }}
+                        className={`bg-white/70 backdrop-blur-xl rounded-[2.5rem] p-6 border border-white/80 shadow-sm ${task.isRevenueBased ? 'bg-emerald-50/50 border-emerald-100' : ''}`}
+                    >
+                        <p className={`text-[10px] font-black uppercase tracking-widest mb-3 ${task.isRevenueBased ? 'text-emerald-700' : 'text-slate-400'}`}>
+                            {task.isRevenueBased ? 'Asset Valuation' : 'Intelligence Original'}
+                        </p>
+                        <p className={`text-lg font-black uppercase tracking-tight ${task.isRevenueBased ? 'text-emerald-700' : 'text-slate-900'}`}>
+                            {task.isRevenueBased ? `₹${task.itRevenueEarned.toLocaleString()}` : task.category}
+                        </p>
+                    </motion.div>
                 </div>
 
-                {/* Overview Cards */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
-                    <div className="card-premium">
-                        <p className="text-xs font-semibold text-secondary-400 uppercase tracking-wider mb-2">Status</p>
-                        <span className={`inline-flex px-3 py-1.5 rounded-xl text-sm font-bold ${getStatusColor(task.status)}`}>{task.status.replace('_', ' ')}</span>
-                    </div>
-                    <div className="card-premium">
-                        <p className="text-xs font-semibold text-secondary-400 uppercase tracking-wider mb-2">Priority</p>
-                        <p className={`text-2xl font-bold ${getPriorityColor(task.priority)}`}>{task.priority}</p>
-                    </div>
-                    <div className="card-premium">
-                        <p className="text-xs font-semibold text-secondary-400 uppercase tracking-wider mb-2 flex items-center gap-1"><TrendingUp className="h-3.5 w-3.5" />Progress</p>
-                        <p className="text-2xl font-bold text-primary-600">{task.progressPercent}%</p>
-                        <div className="w-full bg-secondary-100 rounded-full h-1.5 mt-2">
-                            <div className="bg-primary-500 h-1.5 rounded-full" style={{ width: `${task.progressPercent}%` }}></div>
-                        </div>
-                    </div>
-                    {task.isRevenueBased ? (
-                        <div className="card-premium bg-success-50 border-success-200">
-                            <p className="text-xs font-semibold text-success-600 uppercase tracking-wider mb-2">IT Revenue</p>
-                            <p className="text-2xl font-bold text-success-700">₹{task.itRevenueEarned.toLocaleString()}</p>
-                            <p className="text-xs text-success-600 mt-1">{task.isPaid ? '✓ Paid' : '⏳ Unpaid'}</p>
-                        </div>
-                    ) : (
-                        <div className="card-premium">
-                            <p className="text-xs font-semibold text-secondary-400 uppercase tracking-wider mb-2">Type</p>
-                            <p className="text-lg font-bold text-secondary-900">{task.type}</p>
-                        </div>
-                    )}
-                </div>
+                {/* Main Intel Body */}
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    {/* Left Data Column */}
+                    <div className="lg:col-span-2 space-y-8">
+                        {/* Scope Deck */}
+                        <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.5 }}
+                            className="bg-white/70 backdrop-blur-xl rounded-[3rem] p-10 border border-white/80 shadow-sm"
+                        >
+                            <h3 className="text-2xl font-black text-slate-900 flex items-center gap-3 mb-8">
+                                <Activity className="h-6 w-6 text-purple-600" /> Operational Context
+                            </h3>
+                            <div className="bg-slate-50/50 p-8 rounded-[2rem] border border-slate-100">
+                                <p className="text-slate-600 text-sm leading-loose whitespace-pre-wrap">{task.description || 'Global mission parameters undefined.'}</p>
+                            </div>
+                        </motion.div>
 
-                {/* Main Content */}
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    {/* Left Column */}
-                    <div className="lg:col-span-2 space-y-5">
-                        {/* Description */}
-                        <div className="card-premium">
-                            <h2 className="text-sm font-bold text-secondary-900 uppercase tracking-wider mb-3">Description</h2>
-                            <p className="text-secondary-700 whitespace-pre-wrap text-sm">{task.description || 'No description provided'}</p>
-                        </div>
-
-                        {/* Time Entries */}
-                        <div className="card-premium">
-                            <div className="flex items-center justify-between mb-4">
-                                <h2 className="text-sm font-bold text-secondary-900 uppercase tracking-wider flex items-center gap-2">
-                                    <Clock className="h-4 w-4" /> Time Entries ({task.timeEntries.length})
-                                </h2>
-                                <div className="flex items-center gap-4">
-                                    <span className="text-xs text-secondary-400 font-semibold">Total: {totalHours}h ({billableHours}h billable)</span>
-                                    <button onClick={() => setLogTimeOpen(true)} className="btn btn-primary text-xs">
-                                        <Plus className="h-3.5 w-3.5" /> Log Time
-                                    </button>
+                        {/* Chronology Deck (Time Entries) */}
+                        <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.6 }}
+                            className="bg-white/70 backdrop-blur-xl rounded-[3rem] p-10 border border-white/80 shadow-sm"
+                        >
+                            <div className="flex items-center justify-between mb-10">
+                                <div className="space-y-1">
+                                    <h3 className="text-xl font-black text-slate-900 uppercase tracking-widest leading-none">Chronology Logs</h3>
+                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Calculated intensity: {totalHours}h Aggregate</p>
                                 </div>
+                                <button onClick={() => setLogTimeOpen(!logTimeOpen)}
+                                    className="p-3 bg-slate-900 text-white rounded-2xl hover:bg-slate-800 transition-all shadow-xl shadow-slate-200">
+                                    {logTimeOpen ? <X className="h-5 w-5" /> : <Plus className="h-5 w-5" />}
+                                </button>
                             </div>
 
-                            {logTimeOpen && (
-                                <div className="mb-5 p-4 border border-primary-200 bg-primary-50 rounded-xl">
-                                    <div className="flex items-center justify-between mb-3">
-                                        <h3 className="font-bold text-primary-900 text-sm">Log Hours</h3>
-                                        <button onClick={() => setLogTimeOpen(false)} className="p-1 hover:bg-primary-100 rounded-lg transition-colors"><X className="h-4 w-4 text-secondary-500" /></button>
-                                    </div>
-                                    <form onSubmit={handleLogTime} className="space-y-3">
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                            <div>
-                                                <label className="label-premium">Hours *</label>
-                                                <input type="number" step="0.5" value={timeFormData.hours} onChange={(e) => setTimeFormData({ ...timeFormData, hours: e.target.value })} className="input-premium" placeholder="0.0" title="Number of hours" required />
+                            <AnimatePresence>
+                                {logTimeOpen && (
+                                    <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden mb-10">
+                                        <form onSubmit={handleLogTime} className="bg-purple-600 group p-10 rounded-[2.5rem] shadow-2xl shadow-purple-200 space-y-8 relative">
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                                <div className="space-y-2">
+                                                    <label className="text-[10px] font-black text-white/60 uppercase tracking-widest ml-2">Temporal Duration (HRS)</label>
+                                                    <input type="number" step="0.5" value={timeFormData.hours} onChange={(e) => setTimeFormData({ ...timeFormData, hours: e.target.value })} 
+                                                        className="w-full bg-white/10 border-white/20 rounded-2xl px-6 py-4 text-white placeholder:text-white/30 focus:bg-white/20 transition-all outline-none" placeholder="0.0" required />
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <label className="text-[10px] font-black text-white/60 uppercase tracking-widest ml-2">Log Date</label>
+                                                    <input type="date" value={timeFormData.date} onChange={(e) => setTimeFormData({ ...timeFormData, date: e.target.value })} 
+                                                        className="w-full bg-white/10 border-white/20 rounded-2xl px-6 py-4 text-white focus:bg-white/20 transition-all outline-none ml-[-5px]" />
+                                                </div>
                                             </div>
-                                            <div>
-                                                <label className="label-premium">Date</label>
-                                                <input type="date" value={timeFormData.date} onChange={(e) => setTimeFormData({ ...timeFormData, date: e.target.value })} className="input-premium" title="Date of work" />
+                                            <div className="space-y-2">
+                                                <label className="text-[10px] font-black text-white/60 uppercase tracking-widest ml-2">Intel Narrative</label>
+                                                <textarea value={timeFormData.description} onChange={(e) => setTimeFormData({ ...timeFormData, description: e.target.value })} rows={2}
+                                                    className="w-full bg-white/10 border-white/20 rounded-2xl px-6 py-4 text-white placeholder:text-white/30 focus:bg-white/20 transition-all outline-none resize-none" placeholder="Mission details during this period..." />
                                             </div>
-                                        </div>
-                                        <div>
-                                            <label className="label-premium">Description</label>
-                                            <textarea value={timeFormData.description} onChange={(e) => setTimeFormData({ ...timeFormData, description: e.target.value })} rows={2} className="input-premium" placeholder="What did you work on?" title="Description of work" />
-                                        </div>
-                                        <div className="flex items-center justify-between">
-                                            <label className="flex items-center gap-2 cursor-pointer">
-                                                <input type="checkbox" id="isBillable" checked={timeFormData.isBillable} onChange={(e) => setTimeFormData({ ...timeFormData, isBillable: e.target.checked })} className="w-4 h-4 text-primary-600 rounded" />
-                                                <span className="text-sm text-secondary-700 font-medium">Billable hours</span>
-                                            </label>
-                                            <div className="flex items-center gap-2">
-                                                <button type="button" onClick={() => setLogTimeOpen(false)} className="px-3 py-1.5 text-sm text-secondary-600 hover:bg-secondary-100 rounded-lg transition-colors">Cancel</button>
-                                                <button type="submit" disabled={submittingTime} className="btn btn-primary text-sm disabled:opacity-50">
-                                                    {submittingTime ? 'Logging...' : 'Log Hours'}
+                                            <div className="flex items-center justify-between">
+                                                <label className="flex items-center gap-3 cursor-pointer group/check text-white">
+                                                    <input type="checkbox" checked={timeFormData.isBillable} onChange={(e) => setTimeFormData({ ...timeFormData, isBillable: e.target.checked })} 
+                                                        className="w-6 h-6 rounded-lg bg-white/10 border-white/20 text-white focus:ring-0 checked:bg-white" />
+                                                    <span className="text-[10px] font-black uppercase tracking-widest">Revenue Impact (Billable)</span>
+                                                </label>
+                                                <button type="submit" disabled={submittingTime} className="px-8 py-4 bg-white text-purple-600 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:scale-105 active:scale-95 transition-all shadow-xl">
+                                                    {submittingTime ? 'Synchronizing...' : 'Finalize Log'}
                                                 </button>
                                             </div>
-                                        </div>
-                                    </form>
-                                </div>
-                            )}
+                                        </form>
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
 
                             {task.timeEntries.length === 0 ? (
-                                <p className="text-secondary-400 text-center py-8 text-sm">No time entries logged yet</p>
+                                <div className="text-center py-10 border-2 border-dashed border-slate-100 rounded-[2rem]">
+                                    <Timer className="h-8 w-8 text-slate-200 mx-auto mb-2" />
+                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">No intensity logs found</p>
+                                </div>
                             ) : (
-                                <div className="space-y-2">
-                                    {task.timeEntries.map((entry) => (
-                                        <div key={entry.id} className="border border-secondary-200 rounded-xl p-4">
-                                            <div className="flex items-start justify-between mb-1">
-                                                <p className="font-semibold text-secondary-900 text-sm">{entry.hours}h — {entry.user.name}</p>
-                                                <span className={`text-xs px-2 py-1 rounded-lg ${entry.isBillable ? 'bg-success-100 text-success-700' : 'bg-secondary-100 text-secondary-500'}`}>
-                                                    {entry.isBillable ? 'Billable' : 'Non-billable'}
-                                                </span>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    {task.timeEntries.map((entry, idx) => (
+                                        <motion.div key={entry.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.05 }}
+                                            className="p-6 bg-white/50 border border-white hover:bg-white hover:shadow-xl hover:shadow-slate-200/50 transition-all rounded-[2rem] group"
+                                        >
+                                            <div className="flex justify-between items-start mb-4">
+                                                <div className="space-y-0.5">
+                                                    <h4 className="text-lg font-black text-slate-900 leading-none">{entry.hours} Hours</h4>
+                                                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">By {entry.user.name}</p>
+                                                </div>
+                                                <div className={`px-2 py-1 rounded-lg text-[8px] font-black uppercase tracking-widest border ${entry.isBillable ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-slate-50 text-slate-400 border-slate-100'}`}>
+                                                    {entry.isBillable ? 'Billable' : 'Internal'}
+                                                </div>
                                             </div>
-                                            {entry.description && <p className="text-sm text-secondary-500">{entry.description}</p>}
-                                            <p className="text-xs text-secondary-400 mt-1">{new Date(entry.date).toLocaleDateString()}</p>
-                                        </div>
+                                            {entry.description && <p className="text-slate-500 text-xs leading-relaxed italic mb-4 line-clamp-2">&quot;{entry.description}&quot;</p>}
+                                            <div className="flex items-center gap-2 text-[9px] font-black text-slate-400 uppercase tracking-widest pt-4 border-t border-slate-50">
+                                                <Calendar className="h-3 w-3" /> {new Date(entry.date).toLocaleDateString()}
+                                            </div>
+                                        </motion.div>
                                     ))}
                                 </div>
                             )}
-                        </div>
+                        </motion.div>
 
-                        {/* Comments */}
-                        <div className="card-premium">
-                            <h2 className="text-sm font-bold text-secondary-900 uppercase tracking-wider mb-4 flex items-center gap-2">
-                                <MessageSquare className="h-4 w-4" /> Comments ({task.comments.length})
-                            </h2>
-                            <form onSubmit={handleSubmitComment} className="mb-5">
-                                <textarea value={newComment} onChange={(e) => setNewComment(e.target.value)} placeholder="Add a comment..." rows={3} className="input-premium mb-3" title="Write a comment" />
-                                <button type="submit" disabled={submittingComment || !newComment.trim()} className="btn btn-primary text-sm disabled:opacity-50">
-                                    <Send className="h-4 w-4" /> {submittingComment ? 'Posting...' : 'Post Comment'}
+                        {/* Intelligence Feed (Comments) */}
+                        <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.7 }}
+                            className="bg-white/70 backdrop-blur-xl rounded-[3rem] p-10 border border-white/80 shadow-sm"
+                        >
+                            <h3 className="text-xl font-black text-slate-900 uppercase tracking-widest mb-10 flex items-center gap-3">
+                                <MessageSquare className="h-6 w-6 text-indigo-600" /> Intelligence Feed
+                            </h3>
+                            <form onSubmit={handleSubmitComment} className="mb-10 relative group">
+                                <textarea value={newComment} onChange={(e) => setNewComment(e.target.value)} placeholder="Contribute intel..." rows={3}
+                                    className="w-full bg-slate-50 border border-slate-200 rounded-[2rem] p-8 text-sm focus:bg-white focus:ring-4 focus:ring-indigo-600/5 focus:border-indigo-600/20 transition-all outline-none resize-none pr-32 mb-[-10px]" />
+                                <button type="submit" disabled={submittingComment || !newComment.trim()} 
+                                    className="absolute right-4 bottom-14 p-4 bg-indigo-600 text-white rounded-2xl hover:bg-indigo-700 transition-all shadow-lg disabled:opacity-50">
+                                    {submittingComment ? <div className="h-5 w-5 border-2 border-white/20 border-t-white animate-spin rounded-full" /> : <Send className="h-5 w-5" />}
                                 </button>
                             </form>
-                            {task.comments.length === 0 ? (
-                                <p className="text-secondary-400 text-center py-6 text-sm">No comments yet. Be the first to comment!</p>
-                            ) : (
-                                <div className="space-y-3">
-                                    {task.comments.map((comment) => (
-                                        <div key={comment.id} className="border border-secondary-200 rounded-xl p-4">
-                                            <div className="flex items-start justify-between mb-2">
-                                                <p className="font-bold text-secondary-900 text-sm">{comment.user.name}</p>
-                                                <p className="text-xs text-secondary-400">{new Date(comment.createdAt).toLocaleString()}</p>
-                                            </div>
-                                            <p className="text-secondary-700 text-sm whitespace-pre-wrap">{comment.content}</p>
+                            <div className="space-y-4">
+                                {task.comments.map((comment, idx) => (
+                                    <div key={comment.id} className="flex gap-6 group">
+                                        <div className="h-10 w-10 rounded-2xl bg-slate-100 flex items-center justify-center text-xs font-black text-slate-400 uppercase shrink-0">
+                                            {comment.user.name.charAt(0)}
                                         </div>
-                                    ))}
-                                </div>
-                            )}
-                        </div>
-
-                        {/* Status History */}
-                        <div className="card-premium">
-                            <h2 className="text-sm font-bold text-secondary-900 uppercase tracking-wider mb-4">Status History</h2>
-                            {task.statusHistory.length === 0 ? (
-                                <p className="text-secondary-400 text-center py-6 text-sm">No status changes yet</p>
-                            ) : (
-                                <div className="space-y-3">
-                                    {task.statusHistory.map((history, index) => (
-                                        <div key={history.id} className="flex items-start gap-3">
-                                            <div className="flex flex-col items-center">
-                                                <CheckCircle2 className="h-5 w-5 text-primary-500 shrink-0" />
-                                                {index < task.statusHistory.length - 1 && <div className="w-0.5 h-full bg-secondary-100 mt-1"></div>}
+                                        <div className="flex-1 space-y-2">
+                                            <div className="flex justify-between items-center">
+                                                <h5 className="text-[10px] font-black text-slate-900 uppercase tracking-widest">{comment.user.name}</h5>
+                                                <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{new Date(comment.createdAt).toLocaleTimeString()}</span>
                                             </div>
-                                            <div className="flex-1 pb-3">
-                                                <p className="text-sm text-secondary-900">
-                                                    {history.fromStatus ? (<>Changed from <span className="font-bold">{history.fromStatus}</span> to <span className="font-bold">{history.toStatus}</span></>) : (<>Created with status <span className="font-bold">{history.toStatus}</span></>)}
-                                                </p>
-                                                <p className="text-xs text-secondary-400 mt-0.5">By {history.changedBy.name} on {new Date(history.changedAt).toLocaleString()}</p>
+                                            <div className="bg-white/50 border border-white group-hover:bg-white group-hover:border-slate-100 p-6 rounded-[2rem] transition-all">
+                                                <p className="text-slate-600 text-xs leading-loose whitespace-pre-wrap">{comment.content}</p>
                                             </div>
                                         </div>
-                                    ))}
-                                </div>
-                            )}
-                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </motion.div>
                     </div>
 
-                    {/* Right Column */}
-                    <div className="space-y-5">
-                        <div className="card-premium">
-                            <h2 className="text-sm font-bold text-secondary-900 uppercase tracking-wider mb-4">Task Details</h2>
-                            <div className="space-y-4">
+                    {/* Right Parameters Sidebar */}
+                    <div className="space-y-8">
+                        {/* Task Specs */}
+                        <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.8 }}
+                            className="bg-white/70 backdrop-blur-xl rounded-[3rem] p-8 border border-white/80 shadow-sm space-y-8"
+                        >
+                            <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-3">
+                                <Info className="h-4 w-4 text-purple-600" /> Operational Specs
+                            </h3>
+                            <div className="space-y-8">
                                 {task.project && (
-                                    <div>
-                                        <p className="text-xs text-secondary-400 font-semibold uppercase tracking-wider flex items-center gap-1.5"><FolderKanban className="h-3.5 w-3.5" />Project</p>
-                                        <button onClick={() => router.push(`/dashboard/it-management/projects/${task.project?.id}`)} className="font-bold text-primary-600 hover:underline mt-0.5">{task.project.name}</button>
-                                        <p className="text-xs text-secondary-400">{task.project.projectCode}</p>
+                                    <div className="group cursor-pointer" onClick={() => router.push(`/dashboard/it-management/projects/${task.project?.id}`)}>
+                                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2 flex items-center gap-1.5"><FolderKanban className="h-3 w-3" /> Origin Project</p>
+                                        <div className="p-4 bg-blue-600/5 border border-blue-600/10 rounded-2xl group-hover:bg-blue-600/10 transition-all">
+                                            <p className="font-black text-blue-700 leading-tight mb-1">{task.project.name}</p>
+                                            <p className="text-[9px] font-black text-blue-600/40 uppercase tracking-widest">{task.project.projectCode}</p>
+                                        </div>
                                     </div>
                                 )}
-                                <div>
-                                    <p className="text-xs text-secondary-400 font-semibold uppercase tracking-wider">Category</p>
-                                    <p className="font-semibold text-secondary-900 mt-0.5">{task.category}</p>
-                                </div>
-                                <div>
-                                    <p className="text-xs text-secondary-400 font-semibold uppercase tracking-wider">Type</p>
-                                    <p className="font-semibold text-secondary-900 mt-0.5">{task.type}</p>
-                                </div>
                                 {task.assignedTo && (
                                     <div>
-                                        <p className="text-xs text-secondary-400 font-semibold uppercase tracking-wider flex items-center gap-1.5"><User className="h-3.5 w-3.5" />Assigned To</p>
-                                        <p className="font-bold text-secondary-900 mt-0.5">{task.assignedTo.name}</p>
-                                        <p className="text-xs text-secondary-400">{task.assignedTo.email}</p>
+                                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2 flex items-center gap-1.5"><User className="h-3 w-3" /> Active Personnel</p>
+                                        <div className="flex items-center gap-3 p-2">
+                                            <div className="h-10 w-10 rounded-xl bg-slate-900 flex items-center justify-center text-xs font-black text-white">
+                                                {task.assignedTo.name.charAt(0)}
+                                            </div>
+                                            <div>
+                                                <p className="font-black text-slate-900 leading-none mb-1">{task.assignedTo.name}</p>
+                                                <p className="text-[9px] font-black text-slate-400 uppercase">{task.assignedTo.email}</p>
+                                            </div>
+                                        </div>
                                     </div>
                                 )}
-                                {task.dueDate && (
+                                <div className="grid grid-cols-2 gap-6 pt-4 border-t border-slate-100">
                                     <div>
-                                        <p className="text-xs text-secondary-400 font-semibold uppercase tracking-wider flex items-center gap-1.5"><Calendar className="h-3.5 w-3.5" />Due Date</p>
-                                        <p className="font-semibold text-secondary-900 mt-0.5">{new Date(task.dueDate).toLocaleDateString()}</p>
+                                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Limit Cycle</p>
+                                        <p className="font-black text-slate-900 text-[11px] uppercase tracking-tight">{task.dueDate ? new Date(task.dueDate).toLocaleDateString() : 'N/A'}</p>
                                     </div>
-                                )}
-                                <div>
-                                    <p className="text-xs text-secondary-400 font-semibold uppercase tracking-wider flex items-center gap-1.5"><Clock className="h-3.5 w-3.5" />Created</p>
-                                    <p className="font-semibold text-secondary-900 mt-0.5">{new Date(task.createdAt).toLocaleDateString()}</p>
+                                    <div>
+                                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Created</p>
+                                        <p className="font-black text-slate-900 text-[11px] uppercase tracking-tight">{new Date(task.createdAt).toLocaleDateString()}</p>
+                                    </div>
                                 </div>
                                 {task.tags.length > 0 && (
-                                    <div>
-                                        <p className="text-xs text-secondary-400 font-semibold uppercase tracking-wider mb-2">Tags</p>
-                                        <div className="flex flex-wrap gap-1.5">
-                                            {task.tags.map((tag, i) => (
-                                                <span key={i} className="px-2 py-1 bg-purple-100 text-purple-700 rounded-lg text-xs font-semibold">{tag}</span>
+                                    <div className="pt-4 border-t border-slate-100">
+                                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-3">Logic Tags</p>
+                                        <div className="flex flex-wrap gap-2">
+                                            {task.tags.map(tag => (
+                                                <span key={tag} className="px-3 py-1 bg-white border border-slate-100 rounded-full text-[9px] font-black text-slate-500 uppercase tracking-widest">{tag}</span>
                                             ))}
                                         </div>
                                     </div>
                                 )}
                             </div>
-                        </div>
+                        </motion.div>
 
+                        {/* Revenue Map */}
                         {task.isRevenueBased && (
-                            <div className="card-premium bg-success-50 border-success-200">
-                                <h2 className="text-sm font-bold text-success-900 uppercase tracking-wider mb-4 flex items-center gap-1.5">
-                                    <DollarSign className="h-4 w-4 text-success-600" /> Revenue
-                                </h2>
-                                <div className="space-y-3">
-                                    <div className="flex items-center justify-between">
-                                        <span className="text-sm text-success-700">Estimated Value</span>
-                                        <span className="font-semibold text-success-900">₹{task.estimatedValue.toLocaleString()}</span>
+                            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.9 }}
+                                className="bg-emerald-600 rounded-[3rem] p-8 shadow-2xl relative overflow-hidden"
+                            >
+                                <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-3xl translate-x-10 translate-y-[-10px]" />
+                                <h3 className="text-white text-xs font-black uppercase tracking-widest mb-6 flex items-center gap-2">
+                                    <DollarSign className="h-4 w-4 text-emerald-300" /> Yield Protocol
+                                </h3>
+                                <div className="space-y-4 mb-10">
+                                    <div className="flex justify-between items-center bg-black/10 p-4 rounded-2xl">
+                                        <span className="text-[10px] font-black text-white/60 uppercase tracking-widest">Est. Flow</span>
+                                        <span className="text-white font-black">₹{task.estimatedValue.toLocaleString()}</span>
                                     </div>
-                                    <div className="flex items-center justify-between pt-3 border-t border-success-200">
-                                        <span className="text-sm font-bold text-success-900">IT Revenue Earned</span>
-                                        <span className="font-bold text-success-700">₹{task.itRevenueEarned.toLocaleString()}</span>
-                                    </div>
-                                    <div className="flex items-center justify-between">
-                                        <span className="text-sm text-success-700">Payment Status</span>
-                                        <span className={`text-sm font-bold ${task.isPaid ? 'text-success-700' : 'text-orange-600'}`}>{task.isPaid ? '✓ Paid' : '⏳ Unpaid'}</span>
+                                    <div className="flex items-center justify-between px-2">
+                                        <span className="text-[10px] font-black text-white/50 uppercase tracking-widest">Status</span>
+                                        <span className={`text-[10px] font-black uppercase tracking-widest px-2 py-1 rounded-lg ${task.isPaid ? 'bg-white text-emerald-600' : 'bg-white/10 text-white border border-white/20'}`}>
+                                            {task.isPaid ? 'Settled' : 'Awaiting'}
+                                        </span>
                                     </div>
                                 </div>
-                            </div>
+                                <div className="pt-8 border-t border-white/10 flex flex-col items-center">
+                                    <p className="text-[9px] font-black text-white/40 uppercase tracking-widest mb-2">Net Revenue Dividend</p>
+                                    <p className="text-4xl font-black text-white tracking-tighter">₹{task.itRevenueEarned.toLocaleString()}</p>
+                                </div>
+                            </motion.div>
                         )}
+
+                        {/* Lifecycle Stream */}
+                        <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 1.0 }}
+                            className="bg-white/70 backdrop-blur-xl rounded-[3rem] p-8 border border-white/80 shadow-sm space-y-6"
+                        >
+                            <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-3">
+                                <History className="h-4 w-4 text-slate-400" /> State Transitions
+                            </h3>
+                            <div className="space-y-6 relative">
+                                <div className="absolute left-[13px] top-2 bottom-2 w-0.5 bg-slate-100" />
+                                {task.statusHistory.map((history, idx) => (
+                                    <div key={history.id} className="relative pl-10">
+                                        <div className={`absolute left-0 top-0.5 w-7 h-7 rounded-lg border-4 border-white shadow-sm flex items-center justify-center transition-all ${idx === 0 ? 'bg-purple-600' : 'bg-slate-200'}`}>
+                                            <div className="h-1.5 w-1.5 rounded-full bg-white" />
+                                        </div>
+                                        <div className="space-y-1">
+                                            <p className="text-[10px] font-black text-slate-900 leading-tight uppercase tracking-tight">
+                                                {history.toStatus}
+                                            </p>
+                                            <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none">
+                                                By {history.changedBy.name} • {new Date(history.changedAt).toLocaleDateString()}
+                                            </p>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </motion.div>
                     </div>
                 </div>
             </div>
         </DashboardLayout>
     );
 }
+
+const Target = (props: any) => (
+    <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+);
+
+const Layers = (props: any) => (
+    <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.85a.49.49 0 0 0 0 .88L11.17 12.4a2 2 0 0 0 1.66 0l8.57-4.67a.49.49 0 0 0 0-.88Z"/><path d="m2.6 11.33 8.57 4.67a2 2 0 0 0 1.66 0l8.57-4.67"/><path d="m2.6 15.81 8.57 4.67a2 2 0 0 0 1.66 0l8.57-4.67"/></svg>
+);

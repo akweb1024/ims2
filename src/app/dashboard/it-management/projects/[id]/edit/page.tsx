@@ -2,33 +2,15 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
+import { motion, AnimatePresence } from 'framer-motion';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import {
-    FolderKanban,
-    Save,
-    X,
-    Calendar,
-    DollarSign,
-    Users,
-    AlertCircle,
-    Plus,
-    Trash2,
-    ArrowLeft,
+    FolderKanban, Save, X, Calendar, DollarSign, Users, AlertCircle, Plus, Trash2, 
+    ArrowLeft, Globe, Cpu, Shield, Layers, Tag, Briefcase, Zap, Eye
 } from 'lucide-react';
 
-interface User {
-    id: string;
-    name: string;
-    email: string;
-}
-
-interface Milestone {
-    id: string;
-    title: string;
-    description: string;
-    dueDate: string;
-    status: string;
-}
+interface User { id: string; name: string; email: string; }
+interface Milestone { id: string; title: string; description: string; dueDate: string; status: string; }
 
 export default function EditProjectPage() {
     const router = useRouter();
@@ -42,29 +24,12 @@ export default function EditProjectPage() {
     const [websites, setWebsites] = useState<any[]>([]);
     const [errors, setErrors] = useState<Record<string, string>>({});
 
-    // Form state
     const [formData, setFormData] = useState({
-        name: '',
-        description: '',
-        about: '',
-        details: '',
-        keywords: '',
-        departmentId: '',
-        websiteId: '',
-        taggedEmployeeIds: [] as string[],
-        category: 'DEVELOPMENT',
-        type: 'REVENUE',
-        priority: 'MEDIUM',
-        status: 'PLANNING',
-        isRevenueBased: true,
-        estimatedRevenue: 0,
-        itDepartmentCut: 30,
-        startDate: '',
-        endDate: '',
-        projectManagerId: '',
-        teamLeadId: '',
-        visibility: 'PRIVATE',
-        sharedWithIds: [] as string[],
+        name: '', description: '', about: '', details: '', keywords: '', departmentId: '',
+        websiteId: '', taggedEmployeeIds: [] as string[], category: 'DEVELOPMENT',
+        type: 'REVENUE', priority: 'MEDIUM', status: 'PLANNING', isRevenueBased: true,
+        estimatedRevenue: 0, itDepartmentCut: 30, startDate: '', endDate: '',
+        projectManagerId: '', teamLeadId: '', visibility: 'PRIVATE', sharedWithIds: [] as string[],
     });
 
     const [milestones, setMilestones] = useState<Milestone[]>([]);
@@ -72,9 +37,8 @@ export default function EditProjectPage() {
     const fetchInitialData = useCallback(async () => {
         try {
             setLoading(true);
-            const [projectRes, allProjectsRes, usersRes, deptsRes, websRes] = await Promise.all([
+            const [projectRes, usersRes, deptsRes, websRes] = await Promise.all([
                 fetch(`/api/it/projects/${projectId}`),
-                fetch('/api/it/projects?limit=100'),
                 fetch('/api/users?limit=100'),
                 fetch('/api/departments'),
                 fetch('/api/it/monitoring/websites')
@@ -83,15 +47,10 @@ export default function EditProjectPage() {
             if (projectRes.ok && usersRes.ok) {
                 const projectData = await projectRes.json();
                 const usersData = await usersRes.json();
-                
-                const deptsData = deptsRes.ok ? await deptsRes.json() : [];
-                const websData = websRes.ok ? await websRes.json() : [];
-
                 setUsers(Array.isArray(usersData) ? usersData : (usersData.data || []));
-                setDepartments(Array.isArray(deptsData) ? deptsData : (deptsData.data || []));
-                setWebsites(Array.isArray(websData) ? websData : (websData.data || []));
+                setDepartments(await deptsRes.json() || []);
+                setWebsites(await websRes.json() || []);
 
-                // Pre-fill form
                 setFormData({
                     name: projectData.name || '',
                     description: projectData.description || '',
@@ -126,61 +85,30 @@ export default function EditProjectPage() {
                     })));
                 }
             } else {
-                alert('Failed to load data');
                 router.push('/dashboard/it-management/projects');
             }
-        } catch (error) {
-            console.error('Error fetching project data:', error);
-            alert('An unexpected error occurred');
-        } finally {
-            setLoading(false);
-        }
+        } catch (error) { console.error('Data sync failure:', error); }
+        finally { setLoading(false); }
     }, [projectId, router]);
 
-    useEffect(() => {
-        if (projectId) {
-            fetchInitialData();
-        }
-    }, [projectId, fetchInitialData]);
+    useEffect(() => { if (projectId) fetchInitialData(); }, [projectId, fetchInitialData]);
 
     const validateForm = () => {
         const newErrors: Record<string, string> = {};
-
-        if (!formData.name.trim()) {
-            newErrors.name = 'Project name is required';
-        }
-
-        if (formData.isRevenueBased && formData.estimatedRevenue < 0) {
-            newErrors.estimatedRevenue = 'Estimated revenue cannot be negative';
-        }
-
-        if (formData.itDepartmentCut < 0 || formData.itDepartmentCut > 100) {
-            newErrors.itDepartmentCut = 'IT department cut must be between 0 and 100';
-        }
-
-        if (formData.startDate && formData.endDate && formData.startDate > formData.endDate) {
-            newErrors.endDate = 'End date must be after start date';
-        }
-
+        if (!formData.name.trim()) newErrors.name = 'Project moniker required';
+        if (formData.startDate && formData.endDate && formData.startDate > formData.endDate) newErrors.endDate = 'Chronology mismatch';
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-
-        if (!validateForm()) {
-            return;
-        }
-
+        if (!validateForm()) return;
         setSaving(true);
-
         try {
             const response = await fetch(`/api/it/projects/${projectId}`, {
                 method: 'PATCH',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     ...formData,
                     estimatedRevenue: parseFloat(formData.estimatedRevenue.toString()),
@@ -202,49 +130,21 @@ export default function EditProjectPage() {
                     })),
                 }),
             });
-
-            if (response.ok) {
-                router.push(`/dashboard/it-management/projects/${projectId}`);
-            } else {
-                const error = await response.json();
-                alert(error.error || 'Failed to update project');
-            }
-        } catch (error) {
-            console.error('Failed to update project:', error);
-            alert('Failed to update project');
-        } finally {
-            setSaving(false);
-        }
+            if (response.ok) router.push(`/dashboard/it-management/projects/${projectId}`);
+        } catch (error) { console.error('Transmission failed'); }
+        finally { setSaving(false); }
     };
 
     const addMilestone = () => {
-        setMilestones([
-            ...milestones,
-            {
-                id: `temp-${Date.now()}`,
-                title: '',
-                description: '',
-                dueDate: '',
-                status: 'PENDING',
-            },
-        ]);
-    };
-
-    const updateMilestone = (id: string, field: string, value: string) => {
-        setMilestones(
-            milestones.map(m => (m.id === id ? { ...m, [field]: value } : m))
-        );
-    };
-
-    const removeMilestone = (id: string) => {
-        setMilestones(milestones.filter(m => m.id !== id));
+        setMilestones([...milestones, { id: `temp-${Date.now()}`, title: '', description: '', dueDate: '', status: 'PENDING' }]);
     };
 
     if (loading) {
         return (
             <DashboardLayout>
-                <div className="flex items-center justify-center min-h-screen">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+                <div className="min-h-[80vh] flex flex-col items-center justify-center space-y-4">
+                    <div className="h-12 w-12 border-4 border-blue-600/20 border-t-blue-600 rounded-full animate-spin" />
+                    <p className="font-black text-slate-400 uppercase tracking-widest text-xs">Acessing Project Core...</p>
                 </div>
             </DashboardLayout>
         );
@@ -252,615 +152,228 @@ export default function EditProjectPage() {
 
     return (
         <DashboardLayout>
-            <div className="p-6 max-w-5xl mx-auto">
-                {/* Header */}
-                <div className="mb-6 flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                        <button
-                            onClick={() => router.back()}
-                            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-                        >
-                            <ArrowLeft className="h-5 w-5 text-gray-600 dark:text-gray-400" />
-                        </button>
-                        <div>
-                            <div className="flex items-center gap-3 mb-1">
-                                <FolderKanban className="h-8 w-8 text-blue-600" />
-                                <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-                                    Edit Project
-                                </h1>
-                            </div>
-                            <p className="text-gray-600 dark:text-gray-400">
-                                Update the details of your IT project
-                            </p>
-                        </div>
-                    </div>
-                </div>
-
-                <form onSubmit={handleSubmit} className="space-y-6">
-                    {/* Basic Information */}
-                    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
-                        <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
-                            Basic Information
-                        </h2>
-
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div className="md:col-span-2">
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                    Project Name *
-                                </label>
-                                <input
-                                    type="text"
-                                    value={formData.name}
-                                    onChange={(e) =>
-                                        setFormData({ ...formData, name: e.target.value })
-                                    }
-                                    className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white ${errors.name ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
-                                        }`}
-                                />
-                                {errors.name && (
-                                    <p className="mt-1 text-sm text-red-500 flex items-center gap-1">
-                                        <AlertCircle className="h-4 w-4" />
-                                        {errors.name}
-                                    </p>
-                                )}
-                            </div>
-
-                            <div className="md:col-span-2">
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                    Description
-                                </label>
-                                <textarea
-                                    value={formData.description}
-                                    onChange={(e) =>
-                                        setFormData({ ...formData, description: e.target.value })
-                                    }
-                                    rows={4}
-                                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
-                                />
-                            </div>
-
-                            <div className="md:col-span-2">
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                    About (Short Summary)
-                                </label>
-                                <input
-                                    type="text"
-                                    value={formData.about}
-                                    onChange={(e) =>
-                                        setFormData({ ...formData, about: e.target.value })
-                                    }
-                                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white border-gray-300 dark:border-gray-600"
-                                    placeholder="Brief summary of the project..."
-                                />
-                            </div>
-
-                            <div className="md:col-span-2">
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                    Details (Comprehensive Scope)
-                                </label>
-                                <textarea
-                                    value={formData.details}
-                                    onChange={(e) =>
-                                        setFormData({ ...formData, details: e.target.value })
-                                    }
-                                    rows={6}
-                                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white border-gray-300 dark:border-gray-600"
-                                    placeholder="Enter full comprehensive details of the project..."
-                                />
-                            </div>
-
-                            <div className="md:col-span-2">
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                    Keywords (Comma separated)
-                                </label>
-                                <input
-                                    type="text"
-                                    value={formData.keywords}
-                                    onChange={(e) =>
-                                        setFormData({ ...formData, keywords: e.target.value })
-                                    }
-                                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white border-gray-300 dark:border-gray-600"
-                                    placeholder="e.g. web, api, integration..."
-                                />
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                    Department Focus
-                                </label>
-                                <select
-                                    value={formData.departmentId}
-                                    onChange={(e) =>
-                                        setFormData({ ...formData, departmentId: e.target.value })
-                                    }
-                                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
-                                >
-                                    <option value="">No specific department</option>
-                                    {departments.map(d => (
-                                        <option key={d.id} value={d.id}>{d.name}</option>
-                                    ))}
-                                </select>
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                    Linked Website (Web Module)
-                                </label>
-                                <select
-                                    value={formData.websiteId}
-                                    onChange={(e) =>
-                                        setFormData({ ...formData, websiteId: e.target.value })
-                                    }
-                                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
-                                >
-                                    <option value="">No linked website</option>
-                                    {websites.map(w => (
-                                        <option key={w.id} value={w.id}>{w.name} ({w.url})</option>
-                                    ))}
-                                </select>
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                    Category
-                                </label>
-                                <select
-                                    value={formData.category}
-                                    onChange={(e) =>
-                                        setFormData({ ...formData, category: e.target.value })
-                                    }
-                                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
-                                >
-                                    <option value="DEVELOPMENT">Development</option>
-                                    <option value="INFRASTRUCTURE">Infrastructure</option>
-                                    <option value="SECURITY">Security</option>
-                                    <option value="SUPPORT">Support</option>
-                                    <option value="MAINTENANCE">Maintenance</option>
-                                    <option value="UPGRADE">Upgrade</option>
-                                    <option value="MIGRATION">Migration</option>
-                                    <option value="RESEARCH">Research</option>
-                                </select>
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                    Type
-                                </label>
-                                <select
-                                    value={formData.type}
-                                    onChange={(e) =>
-                                        setFormData({ ...formData, type: e.target.value })
-                                    }
-                                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
-                                >
-                                    <option value="REVENUE">Revenue</option>
-                                    <option value="SUPPORT">Support</option>
-                                    <option value="MAINTENANCE">Maintenance</option>
-                                    <option value="ENHANCEMENT">Enhancement</option>
-                                </select>
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                    Priority
-                                </label>
-                                <select
-                                    value={formData.priority}
-                                    onChange={(e) =>
-                                        setFormData({ ...formData, priority: e.target.value })
-                                    }
-                                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
-                                >
-                                    <option value="LOW">Low</option>
-                                    <option value="MEDIUM">Medium</option>
-                                    <option value="HIGH">High</option>
-                                    <option value="CRITICAL">Critical</option>
-                                </select>
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                    Status
-                                </label>
-                                <select
-                                    value={formData.status}
-                                    onChange={(e) =>
-                                        setFormData({ ...formData, status: e.target.value })
-                                    }
-                                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
-                                >
-                                    <option value="PLANNING">Planning</option>
-                                    <option value="IN_PROGRESS">In Progress</option>
-                                    <option value="ON_HOLD">On Hold</option>
-                                    <option value="TESTING">Testing</option>
-                                    <option value="COMPLETED">Completed</option>
-                                    <option value="CANCELLED">Cancelled</option>
-                                </select>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Revenue Settings */}
-                    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
-                        <div className="flex items-center gap-2 mb-4">
-                            <DollarSign className="h-5 w-5 text-green-600" />
-                            <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
-                                Revenue Settings
-                            </h2>
-                        </div>
-
-                        <div className="space-y-4">
-                            <div className="flex items-center gap-3">
-                                <input
-                                    type="checkbox"
-                                    id="isRevenueBased"
-                                    checked={formData.isRevenueBased}
-                                    onChange={(e) =>
-                                        setFormData({ ...formData, isRevenueBased: e.target.checked })
-                                    }
-                                    className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
-                                />
-                                <label
-                                    htmlFor="isRevenueBased"
-                                    className="text-sm font-medium text-gray-700 dark:text-gray-300"
-                                >
-                                    This is a revenue-generating project
-                                </label>
-                            </div>
-
-                            {formData.isRevenueBased && (
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4">
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                            Estimated Revenue (₹)
-                                        </label>
-                                        <input
-                                            type="number"
-                                            value={formData.estimatedRevenue}
-                                            onChange={(e) =>
-                                                setFormData({
-                                                    ...formData,
-                                                    estimatedRevenue: parseFloat(e.target.value) || 0,
-                                                })
-                                            }
-                                            className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
-                                        />
-                                    </div>
-
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                            IT Department Cut (%)
-                                        </label>
-                                        <input
-                                            type="number"
-                                            value={formData.itDepartmentCut}
-                                            onChange={(e) =>
-                                                setFormData({
-                                                    ...formData,
-                                                    itDepartmentCut: parseFloat(e.target.value) || 0,
-                                                })
-                                            }
-                                            className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
-                                            min="0"
-                                            max="100"
-                                        />
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-
-                    {/* Timeline */}
-                    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
-                        <div className="flex items-center gap-2 mb-4">
-                            <Calendar className="h-5 w-5 text-purple-600" />
-                            <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
-                                Timeline
-                            </h2>
-                        </div>
-
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                    Start Date
-                                </label>
-                                <input
-                                    type="date"
-                                    value={formData.startDate}
-                                    onChange={(e) =>
-                                        setFormData({ ...formData, startDate: e.target.value })
-                                    }
-                                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
-                                />
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                    End Date
-                                </label>
-                                <input
-                                    type="date"
-                                    value={formData.endDate}
-                                    onChange={(e) =>
-                                        setFormData({ ...formData, endDate: e.target.value })
-                                    }
-                                    className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white ${errors.endDate ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
-                                        }`}
-                                />
-                                {errors.endDate && (
-                                    <p className="mt-1 text-sm text-red-500 flex items-center gap-1">
-                                        <AlertCircle className="h-4 w-4" />
-                                        {errors.endDate}
-                                    </p>
-                                )}
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Team Assignment */}
-                    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
-                        <div className="flex items-center gap-2 mb-4">
-                            <Users className="h-5 w-5 text-blue-600" />
-                            <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
-                                Team Assignment
-                            </h2>
-                        </div>
-
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                    Project Manager
-                                </label>
-                                <select
-                                    value={formData.projectManagerId}
-                                    onChange={(e) =>
-                                        setFormData({ ...formData, projectManagerId: e.target.value })
-                                    }
-                                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
-                                >
-                                    <option value="">Select Project Manager</option>
-                                    {users?.map((user) => (
-                                        <option key={user.id} value={user.id}>
-                                            {user.name} ({user.email})
-                                        </option>
-                                    ))}
-                                </select>
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                    Team Lead
-                                </label>
-                                <select
-                                    value={formData.teamLeadId}
-                                    onChange={(e) =>
-                                        setFormData({ ...formData, teamLeadId: e.target.value })
-                                    }
-                                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
-                                >
-                                    <option value="">Select Team Lead</option>
-                                    {users?.map((user) => (
-                                        <option key={user.id} value={user.id}>
-                                            {user.name} ({user.email})
-                                        </option>
-                                    ))}
-                                </select>
-                            </div>
-                        </div>
-                        {/* Tagged Employees */}
-                        <div className="mt-6">
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                Tagged Employees (Followers/Participants)
-                            </label>
-                            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 max-h-60 overflow-y-auto border dark:border-gray-600 rounded-lg p-3 bg-gray-50 dark:bg-gray-700">
-                                {users.map(user => (
-                                    <label key={user.id} className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer">
-                                        <input
-                                            type="checkbox"
-                                            checked={formData.taggedEmployeeIds.includes(user.id)}
-                                            onChange={(e) => {
-                                                const newTags = e.target.checked
-                                                    ? [...formData.taggedEmployeeIds, user.id]
-                                                    : formData.taggedEmployeeIds.filter(id => id !== user.id);
-                                                setFormData({ ...formData, taggedEmployeeIds: newTags });
-                                            }}
-                                            className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
-                                        />
-                                        <span className="truncate">{user.name}</span>
-                                    </label>
-                                ))}
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Visibility and Sharing */}
-                    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
-                        <div className="flex items-center gap-2 mb-4">
-                            <Users className="h-5 w-5 text-indigo-600" />
-                            <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
-                                Visibility & Sharing
-                            </h2>
-                        </div>
-
-                        <div className="space-y-6">
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                    Project Visibility
-                                </label>
-                                <select
-                                    value={formData.visibility}
-                                    onChange={(e) =>
-                                        setFormData({ ...formData, visibility: e.target.value })
-                                    }
-                                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
-                                >
-                                    <option value="PRIVATE">Private (Company Only)</option>
-                                    <option value="PUBLIC">Public (Accessible via link, can receive suggestions)</option>
-                                    <option value="INDIVIDUALS">Individuals (Private, but shared with specific users)</option>
-                                </select>
-                                <p className="mt-2 text-xs text-gray-500">
-                                    {formData.visibility === 'PUBLIC' && "Public projects can be viewed by anyone with the link. They can also leave suggestions and comments even if they don't have an account."}
-                                    {formData.visibility === 'PRIVATE' && "Only employees within your company can view this project."}
-                                    {formData.visibility === 'INDIVIDUALS' && "Only selected individuals below can view this project in addition to the project team."}
-                                </p>
-                            </div>
-
-                            {formData.visibility === 'INDIVIDUALS' && (
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                        Shared With (Specific Individuals)
-                                    </label>
-                                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 max-h-60 overflow-y-auto border dark:border-gray-600 rounded-lg p-3 bg-gray-50 dark:bg-gray-700">
-                                        {users.map(user => (
-                                            <label key={user.id} className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer">
-                                                <input
-                                                    type="checkbox"
-                                                    checked={formData.sharedWithIds.includes(user.id)}
-                                                    onChange={(e) => {
-                                                        const newShared = e.target.checked
-                                                            ? [...formData.sharedWithIds, user.id]
-                                                            : formData.sharedWithIds.filter(id => id !== user.id);
-                                                        setFormData({ ...formData, sharedWithIds: newShared });
-                                                    }}
-                                                    className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
-                                                />
-                                                <span className="truncate">{user.name}</span>
-                                            </label>
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-
-                    {/* Milestones */}
-                    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
-                        <div className="flex items-center justify-between mb-4">
-                            <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
-                                Milestones
-                            </h2>
-                            <button
-                                type="button"
-                                onClick={addMilestone}
-                                className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
-                            >
-                                <Plus className="h-4 w-4" />
-                                Add Milestone
+            <div className="min-h-screen pb-20 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] bg-[length:250px] bg-repeat">
+                <div className="max-w-5xl mx-auto space-y-12">
+                    
+                    {/* Header */}
+                    <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="flex items-center justify-between">
+                        <div className="flex items-center gap-6">
+                            <button onClick={() => router.back()} className="p-4 bg-white border border-slate-200 rounded-2xl text-slate-400 hover:text-blue-600 transition-all shadow-sm">
+                                <ArrowLeft className="h-5 w-5" />
                             </button>
+                            <div>
+                                <h1 className="text-4xl font-black text-slate-900 tracking-tight mb-1">Re-architect Project</h1>
+                                <p className="text-xs font-black text-slate-400 uppercase tracking-[0.2em]">Operational Correction Protocol</p>
+                            </div>
                         </div>
+                    </motion.div>
 
-                        <div className="space-y-4">
-                            {milestones.map((milestone) => (
-                                <div
-                                    key={milestone.id}
-                                    className="border border-gray-200 dark:border-gray-700 rounded-lg p-4"
-                                >
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                                Title
-                                            </label>
-                                            <input
-                                                type="text"
-                                                value={milestone.title}
-                                                onChange={(e) =>
-                                                    updateMilestone(milestone.id, 'title', e.target.value)
-                                                }
-                                                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
-                                            />
-                                        </div>
+                    <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                        
+                        {/* Main Interaction Column */}
+                        <div className="lg:col-span-2 space-y-8">
+                            
+                            {/* Identity Deck */}
+                            <motion.div initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.1 }}
+                                className="bg-white/80 backdrop-blur-xl rounded-[3rem] p-10 border border-white shadow-xl shadow-slate-200/50"
+                            >
+                                <h2 className="text-sm font-black text-slate-900 uppercase tracking-widest mb-8 flex items-center gap-3">
+                                    <div className="p-2 bg-blue-600 rounded-lg"><Cpu className="h-4 w-4 text-white" /></div> Identity Reconfig
+                                </h2>
+                                <div className="space-y-8">
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Project Moniker *</label>
+                                        <input type="text" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} 
+                                            className={`w-full bg-slate-50 border ${errors.name ? 'border-rose-300' : 'border-slate-100'} rounded-[1.5rem] px-8 py-5 text-lg font-black text-slate-900 focus:bg-white focus:ring-4 focus:ring-blue-600/5 transition-all outline-none`}
+                                        />
+                                        {errors.name && <p className="text-[10px] font-black text-rose-500 uppercase tracking-widest ml-4">{errors.name}</p>}
+                                    </div>
 
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                                Due Date
-                                            </label>
-                                            <input
-                                                type="date"
-                                                value={milestone.dueDate}
-                                                onChange={(e) =>
-                                                    updateMilestone(milestone.id, 'dueDate', e.target.value)
-                                                }
-                                                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
-                                            />
-                                        </div>
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">About (Short Intel)</label>
+                                        <input type="text" value={formData.about} onChange={(e) => setFormData({ ...formData, about: e.target.value })}
+                                            className="w-full bg-slate-50 border border-slate-100 rounded-[1.5rem] px-8 py-4 text-sm font-black text-slate-600 focus:bg-white transition-all outline-none shadow-inner" />
+                                    </div>
 
-                                        <div className="md:col-span-2">
-                                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                                Description
-                                            </label>
-                                            <textarea
-                                                value={milestone.description}
-                                                onChange={(e) =>
-                                                    updateMilestone(milestone.id, 'description', e.target.value)
-                                                }
-                                                rows={2}
-                                                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
-                                            />
-                                        </div>
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Scope Intel (Details)</label>
+                                        <textarea value={formData.details} onChange={(e) => setFormData({ ...formData, details: e.target.value })} rows={6}
+                                            className="w-full bg-slate-50 border border-slate-100 rounded-[1.5rem] px-8 py-5 text-sm leading-relaxed text-slate-600 focus:bg-white focus:ring-4 focus:ring-blue-600/5 transition-all outline-none resize-none shadow-sm"
+                                        />
+                                    </div>
 
-                                        <div className="md:col-span-2">
-                                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                                Status
-                                            </label>
-                                            <select
-                                                value={milestone.status}
-                                                onChange={(e) =>
-                                                    updateMilestone(milestone.id, 'status', e.target.value)
-                                                }
-                                                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                        <div className="space-y-2">
+                                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Class</label>
+                                            <select value={formData.category} onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                                                className="w-full bg-slate-50 border border-slate-100 rounded-[1.2rem] px-6 py-4 text-xs font-black text-slate-900 uppercase focus:bg-white outline-none"
                                             >
-                                                <option value="PENDING">Pending</option>
-                                                <option value="IN_PROGRESS">In Progress</option>
-                                                <option value="COMPLETED">Completed</option>
-                                                <option value="CANCELLED">Cancelled</option>
+                                                <option value="DEVELOPMENT">Development</option>
+                                                <option value="INFRASTRUCTURE">Infrastructure</option>
+                                                <option value="SECURITY">Security</option>
                                             </select>
                                         </div>
-
-                                        <div className="md:col-span-2 flex justify-end">
-                                            <button
-                                                type="button"
-                                                onClick={() => removeMilestone(milestone.id)}
-                                                className="flex items-center gap-2 px-3 py-1 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors text-sm"
+                                        <div className="space-y-2">
+                                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">State</label>
+                                            <select value={formData.status} onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+                                                className="w-full bg-slate-50 border border-slate-100 rounded-[1.2rem] px-6 py-4 text-xs font-black text-slate-900 uppercase focus:bg-white outline-none"
                                             >
-                                                <Trash2 className="h-4 w-4" />
-                                                Remove Milestone
-                                            </button>
+                                                <option value="PLANNING">Planning</option>
+                                                <option value="IN_PROGRESS">Active</option>
+                                                <option value="TESTING">Testing</option>
+                                                <option value="COMPLETED">Settled</option>
+                                            </select>
                                         </div>
                                     </div>
                                 </div>
-                            ))}
-                        </div>
-                    </div>
+                            </motion.div>
 
-                    {/* Action Buttons */}
-                    <div className="flex items-center justify-end gap-4">
-                        <button
-                            type="button"
-                            onClick={() => router.back()}
-                            className="flex items-center gap-2 px-6 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-                        >
-                            <X className="h-5 w-5" />
-                            Cancel
-                        </button>
-                        <button
-                            type="submit"
-                            disabled={saving}
-                            className="flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium shadow-lg hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                            {saving ? (
-                                <>
-                                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                                    Saving...
-                                </>
-                            ) : (
-                                <>
-                                    <Save className="h-5 w-5" />
-                                    Save Changes
-                                </>
-                            )}
-                        </button>
-                    </div>
-                </form>
+                            {/* Milestone Array */}
+                            <motion.div initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.3 }}
+                                className="bg-white/80 backdrop-blur-xl rounded-[3rem] p-10 border border-white shadow-xl shadow-slate-200/50"
+                            >
+                                <div className="flex items-center justify-between mb-10">
+                                    <h2 className="text-sm font-black text-slate-900 uppercase tracking-widest flex items-center gap-3">
+                                        <div className="p-2 bg-emerald-600 rounded-lg"><Zap className="h-4 w-4 text-white" /></div> Target Milestones
+                                    </h2>
+                                    <button type="button" onClick={addMilestone} className="p-3 bg-slate-900 text-white rounded-xl hover:scale-105 active:scale-95 transition-all">
+                                        <Plus className="h-5 w-5" />
+                                    </button>
+                                </div>
+
+                                <div className="space-y-6">
+                                    <AnimatePresence>
+                                        {milestones.map((m, i) => (
+                                            <motion.div key={m.id} initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, scale: 0.9 }}
+                                                className="p-8 bg-slate-50/50 border border-slate-100 rounded-[2rem] group"
+                                            >
+                                                <div className="flex items-center gap-6 mb-6">
+                                                    <input type="text" value={m.title} onChange={(e) => setMilestones(milestones.map(ms => ms.id === m.id ? { ...ms, title: e.target.value } : ms))}
+                                                        className="flex-1 bg-white border border-slate-100 rounded-xl px-6 py-3 text-xs font-black text-slate-900 focus:ring-4 focus:ring-emerald-600/5 outline-none" />
+                                                    <input type="date" value={m.dueDate} onChange={(e) => setMilestones(milestones.map(ms => ms.id === m.id ? { ...ms, dueDate: e.target.value } : ms))}
+                                                        className="w-40 bg-white border border-slate-100 rounded-xl px-6 py-3 text-[10px] font-black text-slate-900" />
+                                                    <button type="button" onClick={() => setMilestones(milestones.filter(ms => ms.id !== m.id))} className="p-3 text-rose-400 hover:text-rose-600">
+                                                        <Trash2 className="h-5 w-5" />
+                                                    </button>
+                                                </div>
+                                                <textarea value={m.description} onChange={(e) => setMilestones(milestones.map(ms => ms.id === m.id ? { ...ms, description: e.target.value } : ms))}
+                                                    rows={2} className="w-full bg-white border border-slate-100 rounded-xl px-6 py-4 text-xs text-slate-500 outline-none resize-none shadow-sm" />
+                                            </motion.div>
+                                        ))}
+                                    </AnimatePresence>
+                                </div>
+                            </motion.div>
+                        </div>
+
+                        {/* Right Sidebar Assets */}
+                        <div className="space-y-8">
+                            
+                            {/* Command Personnel */}
+                            <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.4 }}
+                                className="bg-slate-900 rounded-[3rem] p-10 shadow-2xl text-white relative overflow-hidden"
+                            >
+                                <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full blur-3xl" />
+                                <h3 className="text-[10px] font-black text-white/40 uppercase tracking-widest mb-10 flex items-center gap-3">
+                                    <Users className="h-4 w-4 text-blue-400" /> Operational Team
+                                </h3>
+                                <div className="space-y-8">
+                                    <div className="space-y-3">
+                                        <label className="text-[9px] font-black text-white/30 uppercase tracking-widest ml-1">Prime Director</label>
+                                        <select value={formData.projectManagerId} onChange={(e) => setFormData({ ...formData, projectManagerId: e.target.value })}
+                                            className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 text-xs font-black text-white focus:bg-white/10 outline-none transition-all"
+                                        >
+                                            <option value="" className="bg-slate-900">Select PM</option>
+                                            {users.map(u => <option key={u.id} value={u.id} className="bg-slate-900">{u.name}</option>)}
+                                        </select>
+                                    </div>
+                                    <div className="space-y-3">
+                                        <label className="text-[9px] font-black text-white/30 uppercase tracking-widest ml-1">Tactical Lead</label>
+                                        <select value={formData.teamLeadId} onChange={(e) => setFormData({ ...formData, teamLeadId: e.target.value })}
+                                            className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 text-xs font-black text-white focus:bg-white/10 outline-none transition-all"
+                                        >
+                                            <option value="" className="bg-slate-900">Select Lead</option>
+                                            {users.map(u => <option key={u.id} value={u.id} className="bg-slate-900">{u.name}</option>)}
+                                        </select>
+                                    </div>
+                                </div>
+                            </motion.div>
+
+                            {/* Visibility Partition */}
+                            <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.5 }}
+                                className="bg-indigo-600 rounded-[3rem] p-10 shadow-2xl text-white relative"
+                            >
+                                <h3 className="text-[10px] font-black text-white/40 uppercase tracking-widest mb-8 flex items-center gap-3">
+                                    <Eye className="h-4 w-4 text-indigo-300" /> Visibility Matrix
+                                </h3>
+                                <div className="space-y-6">
+                                    <select value={formData.visibility} onChange={(e) => setFormData({ ...formData, visibility: e.target.value })}
+                                            className="w-full bg-black/10 border border-white/20 rounded-2xl px-6 py-4 text-xs font-black text-white focus:bg-black/20 outline-none transition-all"
+                                    >
+                                        <option value="PRIVATE" className="bg-indigo-700">Company Only (Private)</option>
+                                        <option value="PUBLIC" className="bg-indigo-700">Public Protocol</option>
+                                        <option value="INDIVIDUALS" className="bg-indigo-700">Specific Agents</option>
+                                    </select>
+                                    {formData.visibility === 'INDIVIDUALS' && (
+                                        <div className="space-y-4 max-h-48 overflow-y-auto pr-2 custom-scrollbar">
+                                            {users.map(u => (
+                                                <label key={u.id} className="flex items-center gap-3 cursor-pointer group">
+                                                    <input type="checkbox" checked={formData.sharedWithIds.includes(u.id)}
+                                                        onChange={(e) => {
+                                                            const newIds = e.target.checked ? [...formData.sharedWithIds, u.id] : formData.sharedWithIds.filter(id => id !== u.id);
+                                                            setFormData({ ...formData, sharedWithIds: newIds });
+                                                        }}
+                                                        className="w-4 h-4 rounded-md border-white/20 bg-white/10 text-white focus:ring-0" />
+                                                    <span className="text-[10px] font-black uppercase text-white/60 group-hover:text-white transition-colors">{u.name}</span>
+                                                </label>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            </motion.div>
+
+                            {/* Revenue Dividend */}
+                            <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.6 }}
+                                className="bg-emerald-600 rounded-[3rem] p-10 shadow-2xl text-white relative"
+                            >
+                                <h3 className="text-[10px] font-black text-white/40 uppercase tracking-widest mb-8 flex items-center gap-3">
+                                    <DollarSign className="h-4 w-4 text-emerald-300" /> Yield Partition
+                                </h3>
+                                <div className="space-y-8">
+                                    <div className="space-y-2">
+                                        <label className="text-[9px] font-black text-white/30 uppercase tracking-widest">Revenue Goal (₹)</label>
+                                        <input type="number" value={formData.estimatedRevenue} onChange={(e) => setFormData({ ...formData, estimatedRevenue: parseFloat(e.target.value) || 0 })} 
+                                            className="w-full bg-black/10 border border-white/20 rounded-[1.2rem] px-6 py-5 text-2xl font-black text-white outline-none transition-all shadow-inner" />
+                                    </div>
+                                    <div className="flex justify-between items-center px-2">
+                                        <span className="text-[10px] font-black text-white/40 uppercase tracking-widest">Dept %</span>
+                                        <input type="number" value={formData.itDepartmentCut} onChange={(e) => setFormData({ ...formData, itDepartmentCut: parseFloat(e.target.value) || 0 })}
+                                            className="w-16 bg-transparent text-right font-black text-white outline-none" />
+                                    </div>
+                                    <div className="pt-6 border-t border-white/10 text-center">
+                                        <p className="text-3xl font-black text-white">₹{((formData.estimatedRevenue * formData.itDepartmentCut) / 100).toLocaleString()}</p>
+                                    </div>
+                                </div>
+                            </motion.div>
+
+                            {/* Action Control */}
+                            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.7 }}
+                                className="bg-white/80 backdrop-blur-xl rounded-[3rem] p-8 border border-white shadow-xl flex flex-col gap-4"
+                            >
+                                <button type="submit" disabled={saving}
+                                    className="w-full py-6 bg-slate-900 text-white rounded-[2rem] font-black text-xs uppercase tracking-[0.2em] shadow-2xl shadow-slate-300 hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50"
+                                >
+                                    {saving ? 'Syncing...' : 'Update Architecture'}
+                                </button>
+                                <button type="button" onClick={() => router.back()}
+                                    className="w-full py-4 bg-slate-50 text-slate-400 rounded-[1.5rem] font-black text-[10px] uppercase tracking-widest hover:bg-slate-100 transition-all"
+                                >
+                                    Abort protocol
+                                </button>
+                            </motion.div>
+
+                        </div>
+                    </form>
+                </div>
             </div>
         </DashboardLayout>
     );

@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { X, Calendar, User, AlignLeft, CheckSquare, Clock, AlertCircle, Link as LinkIcon, Save, Trash2 } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { X, Calendar, User, AlignLeft, CheckSquare, Clock, AlertCircle, Link as LinkIcon, Save, Trash2, Rocket, Zap, ShieldCheck } from 'lucide-react';
 
 interface Task {
     id: string;
@@ -22,27 +23,27 @@ interface Task {
 interface TaskDetailModalProps {
     isOpen: boolean;
     onClose: () => void;
-    taskId?: string; // If provided, load task data. If not, it's a new task (optional support)
-    task?: Task; // Pass task object directly to avoid initial fetch delay
+    taskId?: string;
+    task?: Task;
     onSuccess: () => void;
     allUsers: any[];
     allProjects: any[];
-    otherTasks?: Task[]; // For dependency selection
+    otherTasks?: Task[];
 }
 
 const STATUSES = [
-    { value: 'PENDING', label: 'To Do' },
-    { value: 'IN_PROGRESS', label: 'In Progress' },
-    { value: 'UNDER_REVIEW', label: 'Review' },
-    { value: 'COMPLETED', label: 'Done' },
-    { value: 'CANCELLED', label: 'Cancelled' },
+    { value: 'PENDING', label: 'To Do', color: 'bg-slate-400' },
+    { value: 'IN_PROGRESS', label: 'In Progress', color: 'bg-blue-500' },
+    { value: 'UNDER_REVIEW', label: 'Review', color: 'bg-amber-500' },
+    { value: 'COMPLETED', label: 'Done', color: 'bg-emerald-500' },
+    { value: 'CANCELLED', label: 'Cancelled', color: 'bg-rose-500' },
 ];
 
 const PRIORITIES = [
-    { value: 'LOW', label: 'Low', color: 'text-green-600' },
-    { value: 'MEDIUM', label: 'Medium', color: 'text-yellow-600' },
-    { value: 'HIGH', label: 'High', color: 'text-orange-600' },
-    { value: 'CRITICAL', label: 'Critical', color: 'text-red-600' },
+    { value: 'LOW', label: 'Low', color: 'text-emerald-600 bg-emerald-50' },
+    { value: 'MEDIUM', label: 'Medium', color: 'text-amber-600 bg-amber-50' },
+    { value: 'HIGH', label: 'High', color: 'text-orange-600 bg-orange-50' },
+    { value: 'CRITICAL', label: 'Critical', color: 'text-rose-600 bg-rose-50' },
 ];
 
 export default function TaskDetailModal({
@@ -145,7 +146,6 @@ export default function TaskDetailModal({
         }
     };
 
-    // Toggle dependency
     const toggleDependency = (depId: string) => {
         if (selectedDependencies.includes(depId)) {
             setSelectedDependencies(selectedDependencies.filter(id => id !== depId));
@@ -154,211 +154,260 @@ export default function TaskDetailModal({
         }
     };
 
-    if (!isOpen) return null;
-
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm transition-all text-left">
-            <div className="bg-white dark:bg-gray-800 w-full max-w-4xl rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+        <AnimatePresence>
+            {isOpen && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 overflow-hidden">
+                    {/* Backdrop */}
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        onClick={onClose}
+                        className="absolute inset-0 bg-slate-900/40 backdrop-blur-xl"
+                    />
 
-                {/* Header */}
-                <div className="flex items-center justify-between p-4 border-b border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50">
-                    <div className="flex items-center gap-3">
-                        <div className="bg-blue-100 dark:bg-blue-900/30 p-2 rounded-lg text-blue-600 dark:text-blue-400">
-                            <CheckSquare className="h-5 w-5" />
-                        </div>
-                        <div>
-                            <h2 className="text-sm font-bold text-gray-500 dark:text-gray-400">
-                                {task?.taskCode || 'Edit Task'}
-                            </h2>
-                            <h1 className="text-lg font-bold text-gray-900 dark:text-white truncate max-w-md">
-                                {title}
-                            </h1>
-                        </div>
-                    </div>
-                    <button onClick={onClose} className="p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-full transition-colors">
-                        <X className="h-5 w-5 text-gray-500" />
-                    </button>
-                </div>
-
-                {loading ? (
-                    <div className="p-12 flex justify-center">
-                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-                    </div>
-                ) : (
-                    <div className="flex-1 overflow-y-auto p-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
-
-                        {/* Left Column: Form Fields */}
-                        <div className="lg:col-span-2 space-y-6">
-
-                            {/* Title & Description */}
-                            <div className="space-y-4">
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Task Title</label>
-                                    <input
-                                        type="text"
-                                        value={title}
-                                        onChange={(e) => setTitle(e.target.value)}
-                                        className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white text-lg font-semibold"
-                                    />
+                    {/* Modal Content */}
+                    <motion.div
+                        initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                        exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                        className="relative w-full max-w-5xl bg-white/90 backdrop-blur-2xl rounded-[2.5rem] shadow-2xl border border-white/50 overflow-hidden flex flex-col max-h-[90vh]"
+                    >
+                        {/* Header Section */}
+                        <div className="p-8 border-b border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-6 bg-slate-50/50">
+                            <div className="flex items-center gap-5">
+                                <div className="p-4 bg-blue-600 rounded-2xl shadow-xl shadow-blue-200">
+                                    <Rocket className="h-6 w-6 text-white" />
                                 </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 flex items-center gap-2">
-                                        <AlignLeft className="h-4 w-4" /> Description
-                                    </label>
-                                    <textarea
-                                        value={description}
-                                        onChange={(e) => setDescription(e.target.value)}
-                                        rows={5}
-                                        className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
-                                        placeholder="Add more details to this task..."
-                                    />
-                                </div>
-                            </div>
-
-                            {/* Dependencies Section */}
-                            <div className="bg-gray-50 dark:bg-gray-900/30 rounded-xl p-4 border border-gray-100 dark:border-gray-700">
-                                <h3 className="text-sm font-bold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
-                                    <LinkIcon className="h-4 w-4 text-gray-500" /> Dependencies
-                                </h3>
-
-                                {selectedDependencies.length > 0 && (
-                                    <div className="flex flex-wrap gap-2 mb-3">
-                                        {selectedDependencies.map(depId => {
-                                            const depTask = otherTasks.find(t => t.id === depId);
-                                            return (
-                                                <div key={depId} className="flex items-center gap-1 bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-400 px-2 py-1 rounded text-xs font-medium">
-                                                    <AlertCircle className="h-3 w-3" />
-                                                    {depTask ? depTask.taskCode : depId.substring(0, 6)}
-                                                    <button onClick={() => toggleDependency(depId)} className="hover:text-red-500">
-                                                        <X className="h-3 w-3" />
-                                                    </button>
-                                                </div>
-                                            );
-                                        })}
+                                <div className="space-y-1">
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Engineering Task</span>
+                                        <span className="h-1 w-1 rounded-full bg-slate-300" />
+                                        <span className="text-[10px] font-black uppercase tracking-widest text-blue-600">{task?.taskCode || 'ID-PENDING'}</span>
                                     </div>
-                                )}
-
-                                <div className="relative">
-                                    <select
-                                        className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white"
-                                        onChange={(e) => {
-                                            if (e.target.value) toggleDependency(e.target.value);
-                                            e.target.value = '';
-                                        }}
-                                    >
-                                        <option value="">+ Add Dependency (Blocks this task)</option>
-                                        {otherTasks
-                                            .filter(t => t.id !== task?.id && !selectedDependencies.includes(t.id))
-                                            .map(t => (
-                                                <option key={t.id} value={t.id}>
-                                                    {t.taskCode} - {t.title.substring(0, 30)}...
-                                                </option>
-                                            ))
-                                        }
-                                    </select>
+                                    <h2 className="text-2xl font-black text-slate-900 tracking-tight leading-none">
+                                        {title || 'Untranslated Mission'}
+                                    </h2>
                                 </div>
                             </div>
-
-                            <button
-                                onClick={handleSubmit}
-                                disabled={saving}
-                                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl shadow-lg shadow-blue-500/20 transition-all flex items-center justify-center gap-2"
+                            <button 
+                                onClick={onClose}
+                                className="absolute top-8 right-8 p-2 hover:bg-white hover:shadow-lg rounded-xl transition-all text-slate-400 hover:text-slate-900"
                             >
-                                {saving ? 'Saving...' : <><Save className="h-5 w-5" /> Save Changes</>}
+                                <X className="h-5 w-5" />
                             </button>
-
                         </div>
 
-                        {/* Right Column: Meta & Settings */}
-                        <div className="space-y-6">
+                        {loading ? (
+                            <div className="flex-1 flex flex-col items-center justify-center p-20 space-y-4">
+                                <div className="h-10 w-10 border-4 border-blue-600/20 border-t-blue-600 rounded-full animate-spin" />
+                                <p className="font-black text-slate-400 uppercase tracking-widest text-xs">Decrypting Task Data...</p>
+                            </div>
+                        ) : (
+                            <div className="flex-1 overflow-y-auto p-8 grid grid-cols-1 lg:grid-cols-12 gap-10">
+                                {/* Main Editor Column */}
+                                <div className="lg:col-span-8 space-y-8">
+                                    <div className="space-y-3">
+                                        <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-2">
+                                            <Zap className="h-3 w-3" /> Mission Definition
+                                        </label>
+                                        <input
+                                            type="text"
+                                            value={title}
+                                            onChange={(e) => setTitle(e.target.value)}
+                                            className="w-full bg-slate-100/50 border-none rounded-2xl px-6 py-4 text-lg font-bold text-slate-900 focus:ring-2 focus:ring-blue-500/20 placeholder:text-slate-300 transition-all"
+                                            placeholder="Enter task heading..."
+                                        />
+                                    </div>
 
-                            {/* Status & Priority */}
-                            <div className="bg-gray-50 dark:bg-gray-700/30 rounded-xl p-4 space-y-4">
-                                <div>
-                                    <label className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1 block">Status</label>
-                                    <select
-                                        value={status}
-                                        onChange={(e) => setStatus(e.target.value)}
-                                        className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm font-medium"
-                                    >
-                                        {STATUSES.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
-                                    </select>
+                                    <div className="space-y-3">
+                                        <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-2">
+                                            <AlignLeft className="h-3 w-3" /> Detailed Intelligence
+                                        </label>
+                                        <textarea
+                                            value={description}
+                                            onChange={(e) => setDescription(e.target.value)}
+                                            rows={8}
+                                            className="w-full bg-slate-100/50 border-none rounded-2xl px-6 py-4 text-sm font-medium text-slate-600 focus:ring-2 focus:ring-blue-500/20 placeholder:text-slate-300 transition-all resize-none"
+                                            placeholder="Document technical requirements and scope..."
+                                        />
+                                    </div>
+
+                                    {/* Dependencies Section */}
+                                    <div className="bg-slate-50 border border-slate-100 rounded-[2rem] p-6 space-y-4">
+                                        <div className="flex items-center justify-between">
+                                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-2">
+                                                <LinkIcon className="h-3 w-3" /> System Dependencies
+                                            </label>
+                                            <span className="text-[10px] font-bold text-slate-400">{selectedDependencies.length} Linked</span>
+                                        </div>
+
+                                        <div className="flex flex-wrap gap-2">
+                                            {selectedDependencies.map(depId => {
+                                                const depTask = otherTasks.find(t => t.id === depId);
+                                                return (
+                                                    <motion.div 
+                                                        layout
+                                                        key={depId} 
+                                                        className="flex items-center gap-2 bg-white border border-slate-200 px-3 py-1.5 rounded-xl shadow-sm"
+                                                    >
+                                                        <ShieldCheck className="h-3 w-3 text-emerald-500" />
+                                                        <span className="text-[10px] font-black text-slate-700">{depTask?.taskCode || 'TASK'}</span>
+                                                        <button onClick={() => toggleDependency(depId)} className="p-0.5 hover:bg-slate-100 rounded text-slate-400 hover:text-rose-500">
+                                                            <X className="h-3 w-3" />
+                                                        </button>
+                                                    </motion.div>
+                                                );
+                                            })}
+                                            <select
+                                                className="bg-blue-50 border-none text-[10px] font-black text-blue-600 rounded-xl px-3 py-1.5 focus:ring-0 cursor-pointer"
+                                                onChange={(e) => {
+                                                    if (e.target.value) toggleDependency(e.target.value);
+                                                    e.target.value = '';
+                                                }}
+                                            >
+                                                <option value="">+ Link Dependency</option>
+                                                {otherTasks
+                                                    .filter(t => t.id !== task?.id && !selectedDependencies.includes(t.id))
+                                                    .map(t => (
+                                                        <option key={t.id} value={t.id}>
+                                                            {t.taskCode}: {t.title.substring(0, 20)}...
+                                                        </option>
+                                                    ))
+                                                }
+                                            </select>
+                                        </div>
+                                    </div>
                                 </div>
-                                <div>
-                                    <label className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1 block">Priority</label>
-                                    <select
-                                        value={priority}
-                                        onChange={(e) => setPriority(e.target.value)}
-                                        className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm font-medium"
-                                    >
-                                        {PRIORITIES.map(p => <option key={p.value} value={p.value}>{p.label}</option>)}
-                                    </select>
+
+                                {/* sidebar settings Column */}
+                                <div className="lg:col-span-4 space-y-8">
+                                    {/* Operational Status */}
+                                    <div className="bg-slate-900 rounded-[2rem] p-8 shadow-xl shadow-slate-200 space-y-6">
+                                        <div className="space-y-4">
+                                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-500">Task Lifecycle</label>
+                                            <div className="grid grid-cols-1 gap-2">
+                                                {STATUSES.map(s => (
+                                                    <button
+                                                        key={s.value}
+                                                        type="button"
+                                                        onClick={() => setStatus(s.value)}
+                                                        className={`flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-black transition-all ${status === s.value ? 'bg-white text-slate-900 shadow-lg scale-[1.02]' : 'bg-white/5 text-slate-400 hover:bg-white/10'}`}
+                                                    >
+                                                        <div className={`h-2 w-2 rounded-full ${s.color}`} />
+                                                        {s.label}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+
+                                        <div className="space-y-4">
+                                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-500">Prioritization</label>
+                                            <div className="flex flex-wrap gap-2">
+                                                {PRIORITIES.map(p => (
+                                                    <button
+                                                        key={p.value}
+                                                        type="button"
+                                                        onClick={() => setPriority(p.value)}
+                                                        className={`px-3 py-1.5 rounded-lg text-[10px] font-black transition-all border ${priority === p.value ? `${p.color} border-current ring-2 ring-current/20` : 'bg-slate-800 border-transparent text-slate-500 hover:text-slate-300'}`}
+                                                    >
+                                                        {p.label}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Resource & Timeline */}
+                                    <div className="space-y-6 px-2">
+                                        <div className="space-y-3">
+                                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-2">
+                                                <User className="h-3 w-3" /> Personnel
+                                            </label>
+                                            <select
+                                                value={assignedToId}
+                                                onChange={(e) => setAssignedToId(e.target.value)}
+                                                className="w-full bg-white border-slate-200 rounded-xl px-4 py-3 text-xs font-bold text-slate-700 shadow-sm focus:ring-blue-500/20"
+                                            >
+                                                <option value="">Unassigned</option>
+                                                {allUsers.map(u => (
+                                                    <option key={u.id} value={u.id}>{u.name}</option>
+                                                ))}
+                                            </select>
+                                        </div>
+
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div className="space-y-3">
+                                                <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-2">
+                                                    <Calendar className="h-3 w-3" /> Deadline
+                                                </label>
+                                                <input
+                                                    type="date"
+                                                    value={dueDate}
+                                                    onChange={(e) => setDueDate(e.target.value)}
+                                                    className="w-full bg-white border-slate-200 rounded-xl px-4 py-3 text-xs font-bold text-slate-700 shadow-sm focus:ring-blue-500/20"
+                                                />
+                                            </div>
+                                            <div className="space-y-3">
+                                                <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-2">
+                                                    <Clock className="h-3 w-3" /> Capacity (Hrs)
+                                                </label>
+                                                <input
+                                                    type="number"
+                                                    value={estimatedHours}
+                                                    onChange={(e) => setEstimatedHours(e.target.value)}
+                                                    placeholder="0.0"
+                                                    className="w-full bg-white border-slate-200 rounded-xl px-4 py-3 text-xs font-bold text-slate-700 shadow-sm focus:ring-blue-500/20"
+                                                />
+                                            </div>
+                                        </div>
+
+                                        <div className="space-y-3">
+                                            <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest text-slate-400">
+                                                <span>Mission Progress</span>
+                                                <span className="text-blue-600">{progressPercent}%</span>
+                                            </div>
+                                            <div className="relative h-6 flex items-center">
+                                                <input
+                                                    type="range"
+                                                    min="0"
+                                                    max="100"
+                                                    step="5"
+                                                    value={progressPercent}
+                                                    onChange={(e) => setProgressPercent(e.target.value)}
+                                                    className="w-full h-1.5 bg-slate-100 rounded-full appearance-none cursor-pointer accent-blue-600"
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Action Buttons */}
+                                    <div className="pt-4 space-y-3">
+                                        <button
+                                            onClick={handleSubmit}
+                                            disabled={saving}
+                                            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-black py-4 rounded-[1.5rem] shadow-xl shadow-blue-200 transition-all flex items-center justify-center gap-3 active:scale-[0.98] disabled:opacity-50"
+                                        >
+                                            {saving ? (
+                                                <div className="h-5 w-5 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+                                            ) : (
+                                                <><Save className="h-5 w-5" /> Commit Changes</>
+                                            )}
+                                        </button>
+                                        <button
+                                            onClick={onClose}
+                                            className="w-full bg-white border border-slate-200 text-slate-600 font-black py-4 rounded-[1.5rem] hover:bg-slate-50 transition-all"
+                                        >
+                                            Abort
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
-
-                            {/* Assignments */}
-                            <div className="space-y-4">
-                                <div>
-                                    <label className="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center gap-2 mb-1">
-                                        <User className="h-4 w-4" /> Assignee
-                                    </label>
-                                    <select
-                                        value={assignedToId}
-                                        onChange={(e) => setAssignedToId(e.target.value)}
-                                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white"
-                                    >
-                                        <option value="">Unassigned</option>
-                                        {allUsers.map(u => (
-                                            <option key={u.id} value={u.id}>{u.name}</option>
-                                        ))}
-                                    </select>
-                                </div>
-
-                                <div>
-                                    <label className="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center gap-2 mb-1">
-                                        <Calendar className="h-4 w-4" /> Due Date
-                                    </label>
-                                    <input
-                                        type="date"
-                                        value={dueDate}
-                                        onChange={(e) => setDueDate(e.target.value)}
-                                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white"
-                                    />
-                                </div>
-
-                                <div>
-                                    <label className="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center gap-2 mb-1">
-                                        <Clock className="h-4 w-4" /> Est. Hours
-                                    </label>
-                                    <input
-                                        type="number"
-                                        value={estimatedHours}
-                                        onChange={(e) => setEstimatedHours(e.target.value)}
-                                        placeholder="0"
-                                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white"
-                                    />
-                                </div>
-
-                                <div>
-                                    <label className="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center gap-2 mb-1">
-                                        Progress ({progressPercent}%)
-                                    </label>
-                                    <input
-                                        type="range"
-                                        min="0"
-                                        max="100"
-                                        step="10"
-                                        value={progressPercent}
-                                        onChange={(e) => setProgressPercent(e.target.value)}
-                                        className="w-full accent-blue-600"
-                                    />
-                                </div>
-                            </div>
-                        </div>
-
-                    </div>
-                )}
-            </div>
-        </div>
+                        )}
+                    </motion.div>
+                </div>
+            )}
+        </AnimatePresence>
     );
 }
