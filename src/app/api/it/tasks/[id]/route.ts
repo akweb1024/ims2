@@ -169,9 +169,13 @@ export async function PATCH(req: NextRequest, context: { params: Promise<{ id: s
                 if (field.includes('Date') && body[field]) {
                     updateData[field] = new Date(body[field]);
                 } else if (field.includes('Hours') || field.includes('Value') || field.includes('Cut') || field === 'progressPercent') {
-                    // Logic fix: Allow 0 value explicitly, handle NaN
                     const val = parseFloat(body[field]?.toString());
-                    updateData[field] = isNaN(val) ? (field === 'progressPercent' ? 0 : null) : val;
+                    const nonNullableFields = ['actualHours', 'estimatedValue', 'actualValue', 'itDepartmentCut', 'itRevenueEarned', 'progressPercent'];
+                    if (isNaN(val)) {
+                        updateData[field] = nonNullableFields.includes(field) ? 0 : null;
+                    } else {
+                        updateData[field] = val;
+                    }
                 } else if (['projectId', 'assignedToId', 'reporterId', 'serviceId'].includes(field)) {
                     const relationName = field.replace('Id', '');
                     if (body[field]) {

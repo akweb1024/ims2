@@ -162,6 +162,7 @@ model User {
   allowedModules            String[]                    @default(["CORE"])
   roles                     UserRole[]                  @default([EXECUTIVE])
   taggedITProjects          ITProject[]                 @relation("ProjectTaggedEmployees")
+  itProjectSuggestions      ITProjectSuggestion[]
   announcements             Announcement[]
   auditLogs                 AuditLog[]
   certificates              Certificate[]
@@ -3280,6 +3281,8 @@ model ITProject {
   currency         String               @default("INR")
   itDepartmentCut  Float                @default(0)
   itRevenueEarned  Float                @default(0)
+  visibility       ProjectVisibility    @default(PRIVATE)
+  sharedWithIds    String[]
   billingType      BillingType?
   hourlyRate       Float?
   isBilled         Boolean              @default(false)
@@ -3295,6 +3298,7 @@ model ITProject {
   comments         ITProjectComment[]
   documents        ITProjectDocument[]
   milestones       ITProjectMilestone[]
+  suggestions      ITProjectSuggestion[]
   tasks            ITTask[]
   timeEntries      ITTimeEntry[]
   taggedEmployees  User[]               @relation("ProjectTaggedEmployees")
@@ -4363,4 +4367,35 @@ model RedGreenDiary {
   @@index([companyId])
   @@index([userId])
   @@index([type])
+}
+
+enum ProjectVisibility {
+  PRIVATE
+  PUBLIC
+  INDIVIDUALS
+}
+
+enum SuggestionStatus {
+  PENDING
+  RESOLVED
+  FAILED
+  HOLD
+}
+
+model ITProjectSuggestion {
+  id          String           @id @default(uuid())
+  projectId   String
+  authorName  String?
+  authorEmail String?
+  userId      String?          
+  content     String
+  status      SuggestionStatus @default(PENDING)
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  
+  project     ITProject        @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user        User?            @relation(fields: [userId], references: [id])
+
+  @@index([projectId])
+  @@index([status])
 }

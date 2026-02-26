@@ -63,6 +63,8 @@ export default function EditProjectPage() {
         endDate: '',
         projectManagerId: '',
         teamLeadId: '',
+        visibility: 'PRIVATE',
+        sharedWithIds: [] as string[],
     });
 
     const [milestones, setMilestones] = useState<Milestone[]>([]);
@@ -110,6 +112,8 @@ export default function EditProjectPage() {
                     endDate: projectData.endDate ? projectData.endDate.split('T')[0] : '',
                     projectManagerId: projectData.projectManagerId || '',
                     teamLeadId: projectData.teamLeadId || '',
+                    visibility: projectData.visibility || 'PRIVATE',
+                    sharedWithIds: projectData.sharedWithIds || [],
                 });
 
                 if (projectData.milestones) {
@@ -643,7 +647,6 @@ export default function EditProjectPage() {
                                 </select>
                             </div>
                         </div>
-
                         {/* Tagged Employees */}
                         <div className="mt-6">
                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -667,6 +670,66 @@ export default function EditProjectPage() {
                                     </label>
                                 ))}
                             </div>
+                        </div>
+                    </div>
+
+                    {/* Visibility and Sharing */}
+                    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
+                        <div className="flex items-center gap-2 mb-4">
+                            <Users className="h-5 w-5 text-indigo-600" />
+                            <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+                                Visibility & Sharing
+                            </h2>
+                        </div>
+
+                        <div className="space-y-6">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                    Project Visibility
+                                </label>
+                                <select
+                                    value={formData.visibility}
+                                    onChange={(e) =>
+                                        setFormData({ ...formData, visibility: e.target.value })
+                                    }
+                                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                                >
+                                    <option value="PRIVATE">Private (Company Only)</option>
+                                    <option value="PUBLIC">Public (Accessible via link, can receive suggestions)</option>
+                                    <option value="INDIVIDUALS">Individuals (Private, but shared with specific users)</option>
+                                </select>
+                                <p className="mt-2 text-xs text-gray-500">
+                                    {formData.visibility === 'PUBLIC' && "Public projects can be viewed by anyone with the link. They can also leave suggestions and comments even if they don't have an account."}
+                                    {formData.visibility === 'PRIVATE' && "Only employees within your company can view this project."}
+                                    {formData.visibility === 'INDIVIDUALS' && "Only selected individuals below can view this project in addition to the project team."}
+                                </p>
+                            </div>
+
+                            {formData.visibility === 'INDIVIDUALS' && (
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                        Shared With (Specific Individuals)
+                                    </label>
+                                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 max-h-60 overflow-y-auto border dark:border-gray-600 rounded-lg p-3 bg-gray-50 dark:bg-gray-700">
+                                        {users.map(user => (
+                                            <label key={user.id} className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={formData.sharedWithIds.includes(user.id)}
+                                                    onChange={(e) => {
+                                                        const newShared = e.target.checked
+                                                            ? [...formData.sharedWithIds, user.id]
+                                                            : formData.sharedWithIds.filter(id => id !== user.id);
+                                                        setFormData({ ...formData, sharedWithIds: newShared });
+                                                    }}
+                                                    className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+                                                />
+                                                <span className="truncate">{user.name}</span>
+                                            </label>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     </div>
 

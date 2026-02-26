@@ -76,6 +76,14 @@ export async function GET(
                 milestones: {
                     orderBy: { dueDate: 'asc' }
                 },
+                suggestions: {
+                    include: {
+                        user: {
+                            select: { id: true, name: true, employeeProfile: { select: { profilePicture: true } } }
+                        }
+                    },
+                    orderBy: { createdAt: 'desc' }
+                },
                 timeEntries: {
                     include: {
                         user: {
@@ -131,12 +139,15 @@ export async function GET(
         }
 
         // Calculate statistics
-        const totalTasks = project.tasks.length;
-        const completedTasks = project.tasks.filter(t => t.status === 'COMPLETED').length;
-        const inProgressTasks = project.tasks.filter(t => t.status === 'IN_PROGRESS').length;
-        const pendingTasks = project.tasks.filter(t => t.status === 'PENDING').length;
-        const totalTimeLogged = project.timeEntries.reduce((sum, entry) => sum + entry.hours, 0);
-        const billableHours = project.timeEntries.filter(e => e.isBillable).reduce((sum, e) => sum + e.hours, 0);
+        const totalTasks = (project as any).tasks.length;
+        const completedTasks = (project as any).tasks.filter((t: any) => t.status === 'COMPLETED').length;
+        const inProgressTasks = (project as any).tasks.filter((t: any) => t.status === 'IN_PROGRESS').length;
+        const pendingTasks = (project as any).tasks.filter((t: any) => t.status === 'PENDING').length;
+        const totalTimeLogged = (project as any).timeEntries.reduce((sum: number, entry: any) => sum + entry.hours, 0);
+        const billableHours = (project as any).timeEntries.filter((e: any) => e.isBillable).reduce((sum: number, e: any) => sum + e.hours, 0);
+
+        const pendingSuggestions = (project as any).suggestions?.filter((s: any) => s.status === 'PENDING').length || 0;
+        const holdSuggestions = (project as any).suggestions?.filter((s: any) => s.status === 'HOLD').length || 0;
 
         const projectWithStats = {
             ...project,
@@ -145,6 +156,8 @@ export async function GET(
                 completedTasks,
                 inProgressTasks,
                 pendingTasks,
+                pendingSuggestions,
+                holdSuggestions,
                 completionRate: totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0,
                 totalTimeLogged: Math.round(totalTimeLogged * 10) / 10,
                 billableHours: Math.round(billableHours * 10) / 10,
@@ -210,21 +223,32 @@ export async function PATCH(
                 'startDate', 'endDate', 'estimatedHours', 'actualHours',
                 'isRevenueBased', 'estimatedRevenue', 'actualRevenue', 'currency',
                 'itDepartmentCut', 'itRevenueEarned', 'billingType', 'hourlyRate',
-                'isBilled', 'invoiceId', 'tags', 'keywords', 'attachments'
+                'isBilled', 'invoiceId', 'tags', 'keywords', 'attachments',
+                'visibility', 'sharedWithIds', 'taggedEmployeeIds'
             ];
 
             for (const field of allowedFields) {
                 if (body[field] !== undefined) {
-                    if (field.includes('Date')) {
+                    if (field === 'taggedEmployeeIds') {
+                        if (Array.isArray(body[field])) {
+                            updateData.taggedEmployees = {
+                                set: body[field].map((id: string) => ({ id }))
+                            };
+                        }
+                    } else if (field.includes('Date')) {
                         if (body[field]) {
                             updateData[field] = new Date(body[field]);
                         } else {
                             updateData[field] = null;
                         }
                     } else if (field.includes('Hours') || field.includes('Revenue') || field.includes('Cut') || field.includes('Rate')) {
-                        // Logic fix: Allow 0 value explicitly, handle NaN
                         const val = parseFloat(body[field]?.toString());
-                        updateData[field] = isNaN(val) ? null : val;
+                        const nonNullableFields = ['actualHours', 'estimatedRevenue', 'actualRevenue', 'itDepartmentCut', 'itRevenueEarned'];
+                        if (isNaN(val)) {
+                            updateData[field] = nonNullableFields.includes(field) ? 0 : null;
+                        } else {
+                            updateData[field] = val;
+                        }
                     } else if (field === 'projectManagerId' || field === 'teamLeadId' || field === 'departmentId' || field === 'websiteId') {
                         // Pass scalar ID fields directly — Prisma update does NOT support nested relation writes here
                         updateData[field] = body[field] || null;

@@ -12,7 +12,8 @@ import MilestoneModal from '@/components/dashboard/it/MilestoneModal';
 import ITDocumentManager from '@/components/dashboard/it/ITDocumentManager';
 import ProjectTimeline from '@/components/dashboard/it/ProjectTimeline';
 import ProjectComments from '@/components/dashboard/it/ProjectComments';
-import { LayoutDashboard, FileText as FileIcon, GanttChart, Globe, Building2, Tag } from 'lucide-react';
+import ProjectSuggestions from '@/components/dashboard/it/ProjectSuggestions';
+import { LayoutDashboard, FileText as FileIcon, GanttChart, Globe, Building2, Tag, MessageSquare, AlertTriangle } from 'lucide-react';
 
 interface Project {
     id: string; projectCode: string; name: string; description: string | null;
@@ -26,9 +27,20 @@ interface Project {
     taggedEmployees?: Array<{ id: string; name: string; email: string; employeeProfile: { profilePicture: string | null } | null }>;
     projectManager: { id: string; name: string; email: string; } | null;
     teamLead: { id: string; name: string; email: string; } | null;
+    visibility: 'PRIVATE' | 'PUBLIC' | 'INDIVIDUALS';
+    sharedWithIds: string[];
     milestones: Array<{ id: string; name: string; description: string | null; dueDate: string; status: string; completedAt: string | null; paymentAmount: number | null; isPaid: boolean; }>;
     tasks: Array<{ id: string; taskCode: string; title: string; status: string; priority: string; type: string; progressPercent: number; assignedTo: { id: string; name: string; } | null; }>;
-    stats: { totalTasks: number; completedTasks: number; inProgressTasks: number; completionRate: number; };
+    suggestions: Array<{ id: string; content: string; status: 'PENDING' | 'RESOLVED' | 'FAILED' | 'HOLD'; authorName: string | null; createdAt: string; userId: string | null; user?: { id: string; name: string; employeeProfile?: { profilePicture: string | null } } }>;
+    stats: { 
+        totalTasks: number; 
+        completedTasks: number; 
+        inProgressTasks: number; 
+        pendingTasks: number;
+        pendingSuggestions: number;
+        holdSuggestions: number;
+        completionRate: number; 
+    };
 }
 
 const getStatusColor = (status: string) => {
@@ -67,7 +79,7 @@ export default function ProjectDetailPage() {
     const [deleting, setDeleting] = useState(false);
     const [showMilestoneModal, setShowMilestoneModal] = useState(false);
     const [selectedMilestone, setSelectedMilestone] = useState<Milestone | null>(null);
-    const [activeTab, setActiveTab] = useState<'overview' | 'timeline' | 'documents'>('overview');
+    const [activeTab, setActiveTab] = useState<'overview' | 'timeline' | 'documents' | 'suggestions'>('overview');
 
     const fetchProject = useCallback(async () => {
         try {
@@ -147,6 +159,24 @@ export default function ProjectDetailPage() {
                     </div>
                 </div>
 
+                {/* Pending Items Indicator */}
+                {(project.stats.pendingTasks > 0 || project.stats.pendingSuggestions > 0) && (
+                    <div className="mb-6 flex flex-wrap gap-4">
+                        {project.stats.pendingTasks > 0 && (
+                            <div className="flex items-center gap-2 px-4 py-2 bg-orange-50 border border-orange-200 rounded-xl text-orange-700 animate-pulse">
+                                <AlertTriangle className="h-4 w-4" />
+                                <span className="text-sm font-bold">{project.stats.pendingTasks} Pending Tasks</span>
+                            </div>
+                        )}
+                        {project.stats.pendingSuggestions > 0 && (
+                            <div className="flex items-center gap-2 px-4 py-2 bg-blue-50 border border-blue-200 rounded-xl text-blue-700 animate-pulse">
+                                <MessageSquare className="h-4 w-4" />
+                                <span className="text-sm font-bold">{project.stats.pendingSuggestions} New Suggestions</span>
+                            </div>
+                        )}
+                    </div>
+                )}
+
                 {/* Overview Cards */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
                     <div className="card-premium">
@@ -184,10 +214,13 @@ export default function ProjectDetailPage() {
                         { key: 'overview', label: 'Project Overview', icon: <LayoutDashboard className="h-4 w-4" /> },
                         { key: 'timeline', label: 'Timeline', icon: <GanttChart className="h-4 w-4" /> },
                         { key: 'documents', label: 'Documents & Assets', icon: <FileIcon className="h-4 w-4" /> },
+                        { key: 'suggestions', label: 'Suggestions', icon: <MessageSquare className="h-4 w-4" />, count: project.stats.pendingSuggestions },
                     ].map(tab => (
                         <button key={tab.key} onClick={() => setActiveTab(tab.key as any)}
                             className={`flex items-center gap-2 px-5 py-3 text-sm font-bold transition-all border-b-2 ${activeTab === tab.key ? 'border-primary-600 text-primary-600' : 'border-transparent text-secondary-400 hover:text-secondary-700'}`}>
-                            {tab.icon} {tab.label}
+                            {tab.icon} 
+                            {tab.label}
+                            {tab.count ? <span className="ml-1 px-1.5 py-0.5 bg-primary-100 text-primary-600 rounded-full text-[10px]">{tab.count}</span> : null}
                         </button>
                     ))}
                 </div>
@@ -333,6 +366,13 @@ export default function ProjectDetailPage() {
                             </>
                         ) : activeTab === 'timeline' ? (
                             <ProjectTimeline startDate={project.startDate} endDate={project.endDate} milestones={project.milestones} tasks={project.tasks} />
+                        ) : activeTab === 'suggestions' ? (
+                            <ProjectSuggestions 
+                                projectId={projectId} 
+                                suggestions={project.suggestions} 
+                                onUpdate={fetchProject}
+                                canManage={true} 
+                            />
                         ) : (
                             <div className="card-premium">
                                 <ITDocumentManager projectId={projectId} />
