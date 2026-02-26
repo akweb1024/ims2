@@ -263,8 +263,8 @@ export async function PATCH(
                 const toDelete = existingProject.milestones.filter(m => !incomingIds.includes(m.id)).map(m => m.id);
 
                 const toCreate = body.milestones.filter((m: any) => !m.id).map((m: any) => ({
-                    name: m.title || m.name, // Handle both title from UI and name from schema
-                    description: m.description,
+                    name: m.title || m.name || 'Untitled Milestone', // Handle both title from UI and name from schema
+                    description: m.description || '',
                     dueDate: m.dueDate ? new Date(m.dueDate) : new Date(),
                     status: m.status || 'PENDING'
                 }));
@@ -272,7 +272,7 @@ export async function PATCH(
                 const toUpdate = body.milestones.filter((m: any) => m.id).map((m: any) => ({
                     where: { id: m.id },
                     data: {
-                        name: m.title || m.name,
+                        name: m.title || m.name || undefined,
                         description: m.description,
                         dueDate: m.dueDate ? new Date(m.dueDate) : undefined,
                         status: m.status
@@ -324,9 +324,8 @@ export async function PATCH(
             });
 
             return NextResponse.json(project);
-        } catch (error) {
+        } catch (error: any) {
             console.error('Update IT Project Error:', error);
-            // Log the update data for debugging
             console.error('Update data that caused error:', JSON.stringify(updateData, null, 2));
             return createErrorResponse(error);
         }

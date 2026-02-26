@@ -115,7 +115,7 @@ export default function EditProjectPage() {
                 if (projectData.milestones) {
                     setMilestones(projectData.milestones.map((m: any) => ({
                         id: m.id,
-                        title: m.title,
+                        title: m.name || m.title || '',
                         description: m.description || '',
                         dueDate: m.dueDate ? m.dueDate.split('T')[0] : '',
                         status: m.status || 'PENDING',

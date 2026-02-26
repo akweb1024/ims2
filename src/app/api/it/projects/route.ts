@@ -201,8 +201,8 @@ export async function POST(req: NextRequest) {
                 } : undefined,
                 milestones: body.milestones && Array.isArray(body.milestones) ? {
                     create: body.milestones.map((m: any) => ({
-                        name: m.title || m.name,
-                        description: m.description,
+                        name: m.title || m.name || 'Untitled Milestone',
+                        description: m.description || '',
                         dueDate: m.dueDate ? new Date(m.dueDate) : new Date(),
                         status: m.status || 'PENDING'
                     }))

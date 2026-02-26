@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element */
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -30,6 +31,7 @@ export default function ProjectComments({ projectId }: { projectId: string }) {
         if (projectId) {
             fetchComments();
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [projectId]);
 
     const fetchComments = async () => {
