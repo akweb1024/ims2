@@ -25,6 +25,7 @@ export default function CustomerDetailPage({ params }: { params: Promise<{ id: s
     const [staffList, setStaffList] = useState<any[]>([]);
     const [institutions, setInstitutions] = useState<any[]>([]);
     const [activeFollowUpId, setActiveFollowUpId] = useState<string | null>(null);
+    const [isShippingSame, setIsShippingSame] = useState(true);
 
     const formRef = useRef<HTMLDivElement>(null);
 
@@ -44,6 +45,14 @@ export default function CustomerDetailPage({ params }: { params: Promise<{ id: s
             fetch('/api/institutions', { headers: { 'Authorization': `Bearer ${token}` } })
                 .then(res => res.json())
                 .then(data => setInstitutions(Array.isArray(data) ? data : (data.data || [])));
+            
+            // Set initial same as billing state
+            const isSame = !customer.shippingAddress || (
+                customer.shippingAddress === customer.billingAddress &&
+                customer.shippingCity === customer.billingCity &&
+                customer.shippingPincode === customer.billingPincode
+            );
+            setIsShippingSame(isSame);
         }
     }, [showEditModal, userRole]);
 
@@ -144,12 +153,12 @@ export default function CustomerDetailPage({ params }: { params: Promise<{ id: s
             billingPincode: formData.get('billingPincode'),
             billingCountry: formData.get('billingCountry') || 'India',
 
-            shippingAddress: formData.get('shippingAddress'),
-            shippingCity: formData.get('shippingCity'),
-            shippingState: formData.get('shippingState'),
-            shippingStateCode: formData.get('shippingStateCode'),
-            shippingPincode: formData.get('shippingPincode'),
-            shippingCountry: formData.get('shippingCountry') || 'India',
+            shippingAddress: isShippingSame ? formData.get('billingAddress') : formData.get('shippingAddress'),
+            shippingCity: isShippingSame ? formData.get('billingCity') : formData.get('shippingCity'),
+            shippingState: isShippingSame ? formData.get('billingState') : formData.get('shippingState'),
+            shippingStateCode: isShippingSame ? formData.get('billingStateCode') : formData.get('shippingStateCode'),
+            shippingPincode: isShippingSame ? formData.get('billingPincode') : formData.get('shippingPincode'),
+            shippingCountry: isShippingSame ? (formData.get('billingCountry') || 'India') : (formData.get('shippingCountry') || 'India'),
 
             gstVatTaxId: formData.get('gstVatTaxId'),
         };
@@ -327,31 +336,52 @@ export default function CustomerDetailPage({ params }: { params: Promise<{ id: s
                                     </div>
 
                                     <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4 bg-primary-50/10 p-4 rounded-2xl border border-primary-100/20">
-                                        <div className="md:col-span-2 font-bold text-sm text-primary-700">Shipping Address</div>
-                                        <div className="md:col-span-2">
-                                            <label className="label">Street / Building</label>
-                                            <textarea name="shippingAddress" className="input h-20" defaultValue={customer.shippingAddress || customer.billingAddress}></textarea>
+                                        <div className="md:col-span-2 flex items-center justify-between">
+                                            <div className="font-bold text-sm text-primary-700">Shipping Address</div>
+                                            <button
+                                                type="button"
+                                                onClick={() => setIsShippingSame(!isShippingSame)}
+                                                className={`flex items-center gap-2 group transition-all duration-300 ${isShippingSame ? 'text-primary-600' : 'text-secondary-400 hover:text-primary-500'}`}
+                                            >
+                                                <div className={`w-8 h-4 rounded-full relative transition-colors duration-300 ${isShippingSame ? 'bg-primary-600' : 'bg-secondary-200'}`}>
+                                                    <div className={`absolute top-0.5 w-3 h-3 bg-white rounded-full transition-all duration-300 ${isShippingSame ? 'left-4.5' : 'left-0.5'}`}></div>
+                                                </div>
+                                                <span className="text-[10px] font-black uppercase tracking-tight">Same as Billing</span>
+                                            </button>
                                         </div>
-                                        <div>
-                                            <label className="label">Shipping City</label>
-                                            <input name="shippingCity" className="input" defaultValue={customer.shippingCity || customer.billingCity} />
-                                        </div>
-                                        <div>
-                                            <label className="label">Shipping State</label>
-                                            <input name="shippingState" className="input" defaultValue={customer.shippingState || customer.billingState} />
-                                        </div>
-                                        <div>
-                                            <label className="label">State Code</label>
-                                            <input name="shippingStateCode" className="input" defaultValue={customer.shippingStateCode || customer.billingStateCode} />
-                                        </div>
-                                        <div>
-                                            <label className="label">Shipping Pincode</label>
-                                            <input name="shippingPincode" className="input" defaultValue={customer.shippingPincode || customer.billingPincode} />
-                                        </div>
-                                        <div>
-                                            <label className="label">Shipping Country</label>
-                                            <input name="shippingCountry" className="input" defaultValue={customer.shippingCountry || customer.billingCountry || 'India'} />
-                                        </div>
+                                        
+                                        {!isShippingSame ? (
+                                            <>
+                                                <div className="md:col-span-2 animate-in fade-in slide-in-from-top-1 duration-200">
+                                                    <label className="label">Street / Building</label>
+                                                    <textarea name="shippingAddress" className="input h-20" defaultValue={customer.shippingAddress || customer.billingAddress}></textarea>
+                                                </div>
+                                                <div>
+                                                    <label className="label">Shipping City</label>
+                                                    <input name="shippingCity" className="input" defaultValue={customer.shippingCity || customer.billingCity} />
+                                                </div>
+                                                <div>
+                                                    <label className="label">Shipping State</label>
+                                                    <input name="shippingState" className="input" defaultValue={customer.shippingState || customer.billingState} />
+                                                </div>
+                                                <div>
+                                                    <label className="label">State Code</label>
+                                                    <input name="shippingStateCode" className="input" defaultValue={customer.shippingStateCode || customer.billingStateCode} />
+                                                </div>
+                                                <div>
+                                                    <label className="label">Shipping Pincode</label>
+                                                    <input name="shippingPincode" className="input" defaultValue={customer.shippingPincode || customer.billingPincode} />
+                                                </div>
+                                                <div>
+                                                    <label className="label">Shipping Country</label>
+                                                    <input name="shippingCountry" className="input" defaultValue={customer.shippingCountry || customer.billingCountry || 'India'} />
+                                                </div>
+                                            </>
+                                        ) : (
+                                            <div className="md:col-span-2 py-4 text-center">
+                                                <p className="text-xs text-primary-600 font-bold italic">Synchronized with Billing Address</p>
+                                            </div>
+                                        )}
                                     </div>
 
                                     <div>

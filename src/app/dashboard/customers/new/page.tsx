@@ -14,6 +14,7 @@ export default function NewCustomerPage() {
     const [userRole, setUserRole] = useState('CUSTOMER');
     const [loading, setLoading] = useState(false);
     const [institutions, setInstitutions] = useState<any[]>([]);
+    const [isShippingSame, setIsShippingSame] = useState(true);
 
     const {
         register,
@@ -53,9 +54,11 @@ export default function NewCustomerPage() {
 
 
     const customerType = watch('type', 'INDIVIDUAL');
+    const billingAddress = watch('billingAddress');
 
-    const handleSameAsBilling = (checked: boolean) => {
-        if (checked) {
+    // Effect to sync shipping if 'Same as' is checked
+    useEffect(() => {
+        if (isShippingSame) {
             const values = watch();
             setValue('shippingAddress', values.billingAddress);
             setValue('shippingCity', values.billingCity);
@@ -64,7 +67,7 @@ export default function NewCustomerPage() {
             setValue('shippingPincode', values.billingPincode);
             setValue('shippingCountry', values.billingCountry);
         }
-    };
+    }, [isShippingSame, billingAddress, watch, setValue]);
 
     useEffect(() => {
         if (customerType === 'AGENCY') {
@@ -320,34 +323,43 @@ export default function NewCustomerPage() {
                             <h3 className="text-lg font-bold text-secondary-900 border-l-4 border-info-500 pl-4">
                                 Shipping Address
                             </h3>
-                            <label className="flex items-center gap-2 cursor-pointer group">
-                                <input 
-                                    type="checkbox" 
-                                    className="rounded border-gray-300 text-primary-600 focus:ring-primary-500" 
-                                    onChange={(e) => handleSameAsBilling(e.target.checked)}
-                                />
-                                <span className="text-sm font-medium text-secondary-600 group-hover:text-primary-600">Same as Billing</span>
-                            </label>
-
+                            <button
+                                type="button"
+                                onClick={() => setIsShippingSame(!isShippingSame)}
+                                className={`flex items-center gap-2 group transition-all duration-300 ${isShippingSame ? 'text-primary-600' : 'text-secondary-400 hover:text-primary-500'}`}
+                            >
+                                <div className={`w-10 h-5 rounded-full relative transition-colors duration-300 ${isShippingSame ? 'bg-primary-600' : 'bg-secondary-200'}`}>
+                                    <div className={`absolute top-1 w-3 h-3 bg-white rounded-full transition-all duration-300 ${isShippingSame ? 'left-6' : 'left-1'}`}></div>
+                                </div>
+                                <span className="text-sm font-bold uppercase tracking-tight">Same as Billing</span>
+                            </button>
                         </div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div className="md:col-span-2">
-                                <FormField
-                                    label="Street Address / Building"
-                                    name="shippingAddress"
-                                    type="textarea"
-                                    placeholder="Leave blank to use Billing Address"
-                                    rows={2}
-                                    register={register}
-                                    error={errors.shippingAddress}
-                                />
+                        
+                        {!isShippingSame ? (
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 animate-in fade-in slide-in-from-top-2 duration-300">
+                                <div className="md:col-span-2">
+                                    <FormField
+                                        label="Street Address / Building"
+                                        name="shippingAddress"
+                                        type="textarea"
+                                        placeholder="Enter shipping address"
+                                        rows={2}
+                                        register={register}
+                                        error={errors.shippingAddress}
+                                    />
+                                </div>
+                                <FormField label="City" name="shippingCity" type="text" register={register} error={errors.shippingCity} />
+                                <FormField label="State" name="shippingState" type="text" register={register} error={errors.shippingState} />
+                                <FormField label="State Code" name="shippingStateCode" type="text" register={register} error={errors.shippingStateCode} />
+                                <FormField label="Pincode" name="shippingPincode" type="text" register={register} error={errors.shippingPincode} />
+                                <FormField label="Country" name="shippingCountry" type="text" defaultValue="India" register={register} error={errors.shippingCountry} />
                             </div>
-                            <FormField label="City" name="shippingCity" type="text" register={register} error={errors.shippingCity} />
-                            <FormField label="State" name="shippingState" type="text" register={register} error={errors.shippingState} />
-                            <FormField label="State Code" name="shippingStateCode" type="text" register={register} error={errors.shippingStateCode} />
-                            <FormField label="Pincode" name="shippingPincode" type="text" register={register} error={errors.shippingPincode} />
-                            <FormField label="Country" name="shippingCountry" type="text" defaultValue="India" register={register} error={errors.shippingCountry} />
-                        </div>
+                        ) : (
+                            <div className="bg-primary-50/50 p-4 rounded-xl border border-primary-100 border-dashed text-center">
+                                <p className="text-sm text-primary-600 font-medium">Shipping address is synchronized with billing information.</p>
+                                <p className="text-[10px] text-primary-400 mt-1 uppercase font-bold">Safe for logistics and tax calculation</p>
+                            </div>
+                        )}
                     </div>
 
 

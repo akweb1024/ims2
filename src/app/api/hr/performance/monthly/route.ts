@@ -103,7 +103,30 @@ async function calculateEmployeePerformance(employeeId: string, month: number, y
         ? workReports.filter(r => r.managerRating).reduce((sum, r) => sum + (r.managerRating || 0), 0) / workReports.filter(r => r.managerRating).length
         : 0;
 
+    // Aggregate sub-metrics from evaluations (-3..3 scale)
+    const validEvals = workReports.filter(r => r.evaluation && typeof r.evaluation === 'object');
+    const avgWorkQuality = validEvals.length > 0
+        ? validEvals.reduce((sum, r) => sum + ((r.evaluation as any).workQuality || 0), 0) / validEvals.length
+        : 0;
+    const avgEfficiency = validEvals.length > 0
+        ? validEvals.reduce((sum, r) => sum + ((r.evaluation as any).efficiency || 0), 0) / validEvals.length
+        : 0;
+
+    // Composite Quality Score (normalized to 1-10)
+    // Map -3..3 eval to 0..10 and blend with managerRating
+    const normalizedEvalQuality = (avgWorkQuality + 3) * (10 / 6);
+    const normalizedEfficiency = (avgEfficiency + 3) * (10 / 6);
+    
+    const compositeQuality = averageManagerRating > 0
+        ? (averageManagerRating * 0.6) + (normalizedEvalQuality * 0.4)
+        : normalizedEvalQuality;
+
     const tasksCompleted = workReports.reduce((sum, r) => sum + (r.tasksCompleted || 0), 0);
+    const tasksAssigned = workReports.reduce((sum, r) => {
+        const snapshot = r.tasksSnapshot as any[];
+        return sum + (snapshot?.length || 0);
+    }, 0);
+    const taskCompletionRate = tasksAssigned > 0 ? (tasksCompleted / tasksAssigned) * 100 : 0;
 
     // Calculate Verified Revenue from Claims
     const approvedClaims = await prisma.revenueClaim.findMany({
@@ -117,17 +140,29 @@ async function calculateEmployeePerformance(employeeId: string, month: number, y
     });
     const totalRevenueGenerated = approvedClaims.reduce((sum, c) => sum + c.claimAmount, 0);
 
-    // Communication Score (based on work report metrics)
+    // Communication Score (based on work report metrics + evaluation)
     const totalCalls = workReports.reduce((sum, r) => sum + (r.followUpsCompleted || 0), 0);
     const totalChats = workReports.reduce((sum, r) => sum + (r.chatsHandled || 0), 0);
-    const communicationScore = Math.min(100, (totalCalls + totalChats) / 10);
+    
+    // Extract communication from evaluations if present (avg of 1-5 scales mapped to 1-100)
+    const evaluationComm = workReports
+        .filter(r => (r.evaluation as any)?.communication !== undefined)
+        .map(r => (r.evaluation as any).communication);
+    const avgEvalComm = evaluationComm.length > 0 
+        ? (evaluationComm.reduce((a, b) => a + b, 0) / evaluationComm.length + 3) * (100 / 6) // Map -3..3 to 0..100
+        : 0;
+
+    const communicationScore = Math.min(100, 
+        avgEvalComm > 0 ? avgEvalComm : ((totalCalls + totalChats) / 10)
+    );
 
     // Calculate Overall Score (weighted composite)
     const overallScore = (
         (attendanceScore * 0.25) +           // 25% attendance
-        (Math.min(100, totalPointsEarned / 10) * 0.30) + // 30% points/tasks
+        (Math.min(100, totalPointsEarned / 10) * 0.25) + // 25% points/tasks
         (reportSubmissionRate * 0.15) +      // 15% report submission
-        (averageManagerRating * 10 * 0.20) + // 20% manager rating
+        (averageManagerRating * 10 * 0.15) + // 15% manager rating
+        (taskCompletionRate * 0.10) +        // 10% task completion
         (communicationScore * 0.10)          // 10% communication
     );
 
@@ -193,9 +228,9 @@ async function calculateEmployeePerformance(employeeId: string, month: number, y
         // Tasks & Points
         totalPointsEarned,
         tasksCompleted,
-        tasksAssigned: 0, // Can be enhanced if we track assigned tasks
-        taskCompletionRate: 0,
-        averageTaskQuality: averageManagerRating,
+        tasksAssigned,
+        taskCompletionRate,
+        averageTaskQuality: compositeQuality,
 
         // Reports & Ratings
         reportsSubmitted,
@@ -203,17 +238,11 @@ async function calculateEmployeePerformance(employeeId: string, month: number, y
         reportSubmissionRate,
         averageSelfRating,
         averageManagerRating,
-
-        // Revenue & Targets
         totalRevenueGenerated,
-        revenueTarget: employee.monthlyTarget || 0,
-        revenueAchievement: (employee.monthlyTarget && employee.monthlyTarget > 0)
-            ? (totalRevenueGenerated / employee.monthlyTarget) * 100
-            : 0,
-
-        // Commitment
-        deadlinesMet: 0, // Can be enhanced
-        deadlinesMissed: 0,
+        revenueTarget: 0,
+        revenueAchievement: 0,
+        deadlinesMet: tasksCompleted,
+        deadlinesMissed: tasksAssigned - tasksCompleted,
         initiativesCount: 0,
         improvementScore,
 
