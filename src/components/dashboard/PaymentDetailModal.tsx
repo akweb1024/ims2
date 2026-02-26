@@ -26,8 +26,25 @@ export default function PaymentDetailModal({ payment, onClose }: PaymentDetailMo
     const inrValue = payment.amount * rate;
 
     return (
-        <div className="fixed inset-0 bg-secondary-900/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4 overflow-y-auto">
-            <div className="bg-white w-full max-w-2xl rounded-3xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
+        <div className="fixed inset-0 bg-secondary-900/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4 overflow-y-auto no-print-bg">
+            <style>{`
+                @media print {
+                    body * { visibility: hidden; }
+                    .print-section, .print-section * { visibility: visible; }
+                    .print-section { 
+                        position: absolute; 
+                        left: 0; 
+                        top: 0; 
+                        width: 100%; 
+                        margin: 0; 
+                        padding: 20mm;
+                        -webkit-print-color-adjust: exact;
+                        print-color-adjust: exact;
+                    }
+                    .no-print { display: none !important; }
+                }
+            `}</style>
+            <div className="bg-white w-full max-w-2xl rounded-3xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200 print-section">
                 <div className="p-6 border-b border-secondary-100 flex justify-between items-center bg-secondary-50/50">
                     <div>
                         <h2 className="text-xl font-black text-secondary-900 tracking-tight">Transaction Details</h2>
@@ -35,7 +52,7 @@ export default function PaymentDetailModal({ payment, onClose }: PaymentDetailMo
                             {payment.razorpayPaymentId ? (payment.razorpayPaymentId.slice(0, -4) + '****') : 'N/A'}
                         </p>
                     </div>
-                    <button onClick={onClose} className="p-2 hover:bg-secondary-200 rounded-full transition-colors">
+                    <button onClick={onClose} className="p-2 hover:bg-secondary-200 rounded-full transition-colors no-print">
                         <X size={20} className="text-secondary-500" />
                     </button>
                 </div>
@@ -98,7 +115,7 @@ export default function PaymentDetailModal({ payment, onClose }: PaymentDetailMo
                     )}
                 </div>
 
-                <div className="p-6 bg-secondary-50 border-t border-secondary-100 flex justify-end gap-3">
+                <div className="p-6 bg-secondary-50 border-t border-secondary-100 flex justify-end gap-3 no-print">
                     <button
                         onClick={() => window.print()}
                         className="px-6 py-2 bg-white border border-secondary-200 text-secondary-600 font-black text-[10px] uppercase rounded-xl hover:bg-secondary-50 transition-all shadow-sm"
