@@ -135,6 +135,7 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
         ? invoice.lineItems
         : (invoice.subscription?.items || []);
     const company = invoice.company || {};
+    const brand = invoice.brand || null;
     const invoiceCountry = invoice.billingCountry || customer.billingCountry || customer.country || 'India';
     const isExport = invoiceCountry.toLowerCase() !== 'india';
     const isIGST = isExport || (customer.state && customer.state !== company.stateCode);
@@ -240,23 +241,38 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
                     {/* === HEADER SECTION === */}
                     <div className="inv-section" style={{ border: '1.5px solid #000', marginBottom: '-1px' }}>
                         <div style={{ display: 'flex', alignItems: 'center', padding: '20px 24px', gap: '24px' }}>
-                            {company.logoUrl && (
-                                <div style={{ flexShrink: 0 }}>
-                                    <img src={company.logoUrl} alt="Logo" style={{ height: '70px', maxWidth: '180px', objectFit: 'contain' }} />
+                            {/* Brand Logo */}
+                            {(brand?.logoUrl || company.logoUrl) && (
+                                <div style={{ flexShrink: 0, display: 'flex', alignItems: 'center', gap: '15px' }}>
+                                    {brand?.logoUrl && (
+                                        <img src={brand.logoUrl} alt="Brand Logo" style={{ height: '70px', maxWidth: '140px', objectFit: 'contain' }} />
+                                    )}
+                                    {/* Company Logo (smaller or as requested) */}
+                                    {(brand?.companyLogoUrl || company.logoUrl) && (
+                                        <div style={{ borderLeft: brand?.logoUrl ? '1px solid #ddd' : 'none', paddingLeft: brand?.logoUrl ? '15px' : '0' }}>
+                                            <img src={brand?.companyLogoUrl || company.logoUrl} alt="Company Logo" style={{ height: brand?.logoUrl ? '40px' : '70px', maxWidth: '140px', objectFit: 'contain' }} />
+                                        </div>
+                                    )}
                                 </div>
                             )}
-                            <div style={{ flexGrow: 1, textAlign: company.logoUrl ? 'left' : 'center' }}>
-                                <div style={{ fontSize: '24px', fontWeight: '900', letterSpacing: '0.5px', color: '#000', textTransform: 'uppercase' }}>
-                                    {company.name || 'STM JOURNALS'}
+                            <div style={{ flexGrow: 1, textAlign: (brand?.logoUrl || company.logoUrl) ? 'left' : 'center' }}>
+                                <div style={{ fontSize: '28px', fontWeight: '900', letterSpacing: '-0.5px', color: '#000', lineHeight: '1.1' }}>
+                                    {brand?.name || company.name || 'STM JOURNALS'}
                                 </div>
-                                {company.tagline && (
-                                    <div style={{ fontSize: '13px', color: '#555', fontWeight: '500', marginTop: '2px' }}>{company.tagline}</div>
+                                {brand ? (
+                                    <div style={{ fontSize: '10px', color: '#666', fontWeight: '800', textTransform: 'uppercase', marginTop: '4px', letterSpacing: '1px' }}>
+                                        — A Brand of {company.name || 'Consortium eLearning Network Pvt Ltd'} —
+                                    </div>
+                                ) : (
+                                    company.tagline && (
+                                        <div style={{ fontSize: '13px', color: '#555', fontWeight: '500', marginTop: '2px' }}>{company.tagline}</div>
+                                    )
                                 )}
-                                <div style={{ fontSize: '12px', color: '#333', marginTop: '4px', maxWidth: '500px', margin: company.logoUrl ? '4px 0 0' : '4px auto 0' }}>
-                                    {company.address}
+                                <div style={{ fontSize: '12px', color: '#444', marginTop: '8px', maxWidth: '500px', lineHeight: '1.4', margin: (brand?.logoUrl || company.logoUrl) ? '8px 0 0' : '8px auto 0' }}>
+                                    {brand?.address || company.address}
                                 </div>
-                                <div style={{ fontSize: '11px', color: '#666', marginTop: '2px' }}>
-                                    Email: {company.email} | web: {company.website}
+                                <div style={{ fontSize: '11px', color: '#777', marginTop: '4px', fontWeight: '500' }}>
+                                    Email: <span style={{ color: '#000' }}>{brand?.email || company.email}</span> | Web: <span style={{ color: '#000' }}>{brand?.website || company.website}</span>
                                 </div>
                             </div>
                         </div>

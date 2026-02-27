@@ -41,7 +41,8 @@ export async function GET(
                         bankIfscCode: true, bankSwiftCode: true, paymentMode: true,
                         currency: true
                     }
-                }
+                },
+                brand: true
             }
         });
 

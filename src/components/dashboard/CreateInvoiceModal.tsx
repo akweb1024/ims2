@@ -19,6 +19,8 @@ export default function CreateInvoiceModal({ isOpen, onClose, onSuccess }: Creat
     const [customers, setCustomers] = useState<any[]>([]);
     const [selectedCustomer, setSelectedCustomer] = useState<any>(null);
     const [searching, setSearching] = useState(false);
+    const [brands, setBrands] = useState<any[]>([]);
+    const [selectedBrandId, setSelectedBrandId] = useState<string>('');
 
     // Step 2: Invoice Details
     const [dueDate, setDueDate] = useState('');
@@ -87,6 +89,24 @@ export default function CreateInvoiceModal({ isOpen, onClose, onSuccess }: Creat
         return () => clearTimeout(timer);
     }, [customerSearch]);
 
+    useEffect(() => {
+        const fetchBrands = async () => {
+            try {
+                const token = localStorage.getItem('token');
+                const res = await fetch('/api/brands', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    setBrands(data || []);
+                }
+            } catch (err) {
+                console.error('Failed to fetch brands', err);
+            }
+        };
+        if (isOpen) fetchBrands();
+    }, [isOpen]);
+
     const handleAddItem = () => {
         setItems([...items, { id: Date.now(), description: '', quantity: 1, price: 0 }]);
     };
@@ -126,7 +146,8 @@ export default function CreateInvoiceModal({ isOpen, onClose, onSuccess }: Creat
                     description,
                     lineItems: items.map(({ id, description, quantity, price }) => ({ id, description, quantity, price })),
                     taxRate,
-                    currency
+                    currency,
+                    brandId: selectedBrandId || null
                 })
             });
 
@@ -233,6 +254,23 @@ export default function CreateInvoiceModal({ isOpen, onClose, onSuccess }: Creat
                                         className="input-premium"
                                     />
                                 </div>
+                            </div>
+
+                            <div>
+                                <label className="label">Select Brand (Optional)</label>
+                                <select 
+                                    className="input-premium"
+                                    value={selectedBrandId}
+                                    onChange={(e) => setSelectedBrandId(e.target.value)}
+                                >
+                                    <option value="">No Brand (Default Company)</option>
+                                    {brands.map(b => (
+                                        <option key={b.id} value={b.id}>{b.name}</option>
+                                    ))}
+                                </select>
+                                <p className="text-[10px] text-gray-500 mt-1">
+                                    Selecting a brand will show the brand logo and name on the invoice.
+                                </p>
                             </div>
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

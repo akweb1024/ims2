@@ -177,6 +177,7 @@ export default function InvoicesPage() {
                                     <th className="px-6 py-4 text-xs font-bold text-secondary-500 uppercase tracking-wider">Due Date</th>
                                     <th className="px-6 py-4 text-xs font-bold text-secondary-500 uppercase tracking-wider">Total Amount</th>
                                     <th className="px-6 py-4 text-xs font-bold text-secondary-500 uppercase tracking-wider">Status</th>
+                                    <th className="px-6 py-4 text-xs font-bold text-secondary-500 uppercase tracking-wider">Brand</th>
                                     <th className="px-6 py-4 text-xs font-bold text-secondary-500 uppercase tracking-wider text-right">Actions</th>
                                 </tr>
                             </thead>
@@ -233,6 +234,15 @@ export default function InvoicesPage() {
                                                 <span className={`badge ${getStatusBadgeClass(inv.status)}`}>
                                                     {inv.status.replace('_', ' ')}
                                                 </span>
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap">
+                                                {inv.brand ? (
+                                                    <span className="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded-full border border-blue-100">
+                                                        {inv.brand.name}
+                                                    </span>
+                                                ) : (
+                                                    <span className="text-xs text-gray-400">—</span>
+                                                )}
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-right">
                                                 <Link

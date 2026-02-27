@@ -78,6 +78,7 @@ model Company {
   institutions                Institution[]
   internships                 Internship[]
   invoices                    Invoice[]
+  brands                      Brand[]
   jobPostings                 JobPosting[]
   journalEntries              JournalEntry[]
   leaveLedgers                LeaveLedger[]
@@ -664,6 +665,7 @@ model Invoice {
   createdAt           DateTime             @default(now())
   updatedAt           DateTime             @updatedAt
   companyId           String?
+  brandId             String?
   customerProfileId   String?
   description         String?
   taxRate             Float?               @default(18.0)
@@ -689,6 +691,7 @@ model Invoice {
   lineItems           Json?
 
   company             Company?             @relation(fields: [companyId], references: [id])
+  brand               Brand?               @relation(fields: [brandId], references: [id])
   customerProfile     CustomerProfile?     @relation(fields: [customerProfileId], references: [id])
   subscription        Subscription?        @relation(fields: [subscriptionId], references: [id])
   payments            Payment[]
@@ -698,6 +701,26 @@ model Invoice {
   @@index([customerProfileId])
   @@index([status])
   @@index([invoiceNumber])
+  @@index([companyId])
+  @@index([brandId])
+}
+
+model Brand {
+  id              String   @id @default(uuid())
+  name            String
+  companyId       String
+  logoUrl         String?
+  companyLogoUrl  String?
+  description     String?
+  address         String?
+  email           String?
+  website         String?
+  tagline         String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  company         Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  invoices        Invoice[]
+
   @@index([companyId])
 }
 
