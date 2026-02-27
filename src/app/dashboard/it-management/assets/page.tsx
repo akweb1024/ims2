@@ -98,7 +98,7 @@ export default function ITAssetsPage() {
             type: asset.type,
             serialNumber: asset.serialNumber || '',
             status: asset.status,
-            assignedToId: asset.assignedToId || '',
+            assignedToId: asset.assignedToId || '',  // This is already a User.id from the DB
             details: asset.details || '',
             value: asset.value?.toString() || '',
             purchaseDate: asset.purchaseDate ? new Date(asset.purchaseDate).toISOString().split('T')[0] : ''
@@ -388,7 +388,9 @@ export default function ITAssetsPage() {
                                         value={formData.assignedToId} onChange={e => setFormData({ ...formData, assignedToId: e.target.value })}>
                                         <option value="">-- No Agent Assigned --</option>
                                         {employees.map(emp => (
-                                            <option key={emp.id} value={emp.id}>{emp.name} ({emp.employeeId || 'EXT'})</option>
+                                            <option key={emp.user?.id || emp.id} value={emp.user?.id || emp.userId}>
+                                                {emp.user?.name || emp.name} ({emp.employeeId || 'EXT'})
+                                            </option>
                                         ))}
                                     </select>
                                 </div>
