@@ -1,9 +1,10 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { Calendar, Clock, ChevronLeft, ChevronRight, Plus, CheckCircle2, AlertCircle, Eye, User, Target, Link as LinkIcon, Edit, Briefcase, CheckSquare } from 'lucide-react';
+import { Calendar, Clock, ChevronLeft, ChevronRight, Plus, CheckCircle2, AlertCircle, Eye, User, Target, Link as LinkIcon, Edit, Briefcase, CheckSquare, Zap, ChevronDown, ChevronUp, Award } from 'lucide-react';
 import CreateWorkPlanModal from './CreateWorkPlanModal';
 import EditWorkPlanModal from './EditWorkPlanModal';
+import { toast } from 'react-hot-toast';
 
 interface WorkPlan {
     id: string;
@@ -48,10 +49,15 @@ export default function WorkAgendaPlanner({ employeeId, isOwnAgenda = false }: W
     const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [editingPlan, setEditingPlan] = useState<WorkPlan | null>(null);
+    const [kpiDefaults, setKpiDefaults] = useState<any[]>([]);
+    const [kpiPanelOpen, setKpiPanelOpen] = useState(true);
+    const [addingKpi, setAddingKpi] = useState<string | null>(null);
+    const [kpiFiscalYear, setKpiFiscalYear] = useState<string>('');
 
     const fetchWorkPlans = useCallback(async () => {
         try {
             setLoading(true);
+            const token = localStorage.getItem('token');
             const params = new URLSearchParams();
             if (employeeId) params.append('employeeId', employeeId);
 
@@ -65,7 +71,9 @@ export default function WorkAgendaPlanner({ employeeId, isOwnAgenda = false }: W
             params.append('startDate', startOfWeek.toISOString().split('T')[0]);
             params.append('endDate', endOfWeek.toISOString().split('T')[0]);
 
-            const res = await fetch(`/api/work-agenda?${params.toString()}`);
+            const res = await fetch(`/api/work-agenda?${params.toString()}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
             if (res.ok) {
                 const data = await res.json();
                 setWorkPlans(data);
@@ -76,6 +84,63 @@ export default function WorkAgendaPlanner({ employeeId, isOwnAgenda = false }: W
             setLoading(false);
         }
     }, [employeeId, selectedDate]);
+
+    // Fetch KPI defaults from active increment
+    useEffect(() => {
+        const fetchKpiDefaults = async () => {
+            try {
+                const token = localStorage.getItem('token');
+                const params = new URLSearchParams();
+                if (employeeId) params.append('employeeId', employeeId);
+                const res = await fetch(`/api/work-agenda/kpi-defaults?${params.toString()}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    setKpiDefaults(data.kpiTasks || []);
+                    setKpiFiscalYear(data.fiscalYear || '');
+                }
+            } catch (error) {
+                console.error('Error fetching KPI defaults:', error);
+            }
+        };
+        fetchKpiDefaults();
+    }, [employeeId]);
+
+    // Quick-add a KPI as a work plan for the given date
+    const handleAddKpiToAgenda = async (kpi: any, date: string) => {
+        if (!isOwnAgenda) return;
+        setAddingKpi(kpi.id + date);
+        try {
+            const token = localStorage.getItem('token');
+            const user = JSON.parse(localStorage.getItem('user') || '{}');
+            const res = await fetch('/api/work-agenda', {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    employeeId: employeeId || user.employeeId,
+                    date,
+                    agenda: kpi.title,
+                    strategy: `KPI Task • ${kpi.points} pts${kpi.calculationType === 'SCALED' ? ' (Scaled)' : ''}`,
+                    priority: 'HIGH',
+                    visibility: 'MANAGER',
+                }),
+            });
+            if (!res.ok) {
+                const err = await res.json();
+                throw new Error(err.message || 'Failed');
+            }
+            toast.success(`"${kpi.title}" added to agenda`);
+            fetchWorkPlans();
+        } catch (error: any) {
+            toast.error(error.message);
+        } finally {
+            setAddingKpi(null);
+        }
+    };
 
     useEffect(() => {
         fetchWorkPlans();
@@ -145,6 +210,69 @@ export default function WorkAgendaPlanner({ employeeId, isOwnAgenda = false }: W
                     </button>
                 )}
             </div>
+
+            {/* KPI Defaults Panel */}
+            {kpiDefaults.length > 0 && (
+                <div className="card-premium border-l-4 border-warning-400 bg-gradient-to-br from-white to-warning-50/20">
+                    <button
+                        className="w-full p-4 flex justify-between items-center"
+                        onClick={() => setKpiPanelOpen(v => !v)}
+                    >
+                        <div className="flex items-center gap-3">
+                            <div className="h-8 w-8 rounded-lg bg-warning-100 flex items-center justify-center">
+                                <Award size={16} className="text-warning-600" />
+                            </div>
+                            <div className="text-left">
+                                <h3 className="font-black text-secondary-900 text-sm">Daily KPI Defaults</h3>
+                                <p className="text-[11px] text-secondary-500">
+                                    FY{kpiFiscalYear} • {kpiDefaults.length} KPI tasks — click <Zap size={10} className="inline text-warning-500" /> to add to today&apos;s agenda
+                                </p>
+                            </div>
+                        </div>
+                        {kpiPanelOpen ? <ChevronUp size={18} className="text-secondary-500" /> : <ChevronDown size={18} className="text-secondary-500" />}
+                    </button>
+
+                    {kpiPanelOpen && (
+                        <div className="px-4 pb-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                            {kpiDefaults.map((kpi) => {
+                                const todayKey = kpi.id + selectedDate;
+                                const alreadyAdded = workPlans.some(p =>
+                                    p.date.split('T')[0] === selectedDate && p.agenda === kpi.title
+                                );
+                                return (
+                                    <div key={kpi.id} className="bg-white rounded-xl border border-secondary-100 p-3 flex items-center justify-between gap-3 hover:border-warning-300 hover:shadow-sm transition-all">
+                                        <div className="flex-1 min-w-0">
+                                            <p className="text-sm font-bold text-secondary-900 truncate">{kpi.title}</p>
+                                            <div className="flex items-center gap-2 mt-0.5">
+                                                <span className="text-[10px] font-bold text-warning-700 bg-warning-50 px-1.5 py-0.5 rounded">
+                                                    {kpi.points} pts
+                                                </span>
+                                                <span className="text-[10px] text-secondary-400 uppercase">{kpi.calculationType}</span>
+                                            </div>
+                                        </div>
+                                        {isOwnAgenda && (
+                                            <button
+                                                title={alreadyAdded ? 'Already added today' : `Add to ${selectedDate}`}
+                                                disabled={!!addingKpi || alreadyAdded}
+                                                onClick={() => handleAddKpiToAgenda(kpi, selectedDate)}
+                                                className={`h-8 w-8 rounded-lg flex items-center justify-center shrink-0 transition-all ${
+                                                    alreadyAdded
+                                                        ? 'bg-success-50 text-success-600 cursor-default'
+                                                        : addingKpi === todayKey
+                                                        ? 'bg-warning-100 text-warning-600 animate-pulse'
+                                                        : 'bg-warning-500 text-white hover:bg-warning-600 shadow-sm'
+                                                }`}
+                                            >
+                                                {alreadyAdded ? <CheckCircle2 size={14} /> : addingKpi === todayKey ? <Clock size={14} /> : <Zap size={14} />}
+                                            </button>
+                                        )}
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    )}
+                </div>
+            )}
 
             {/* Week Navigation */}
             <div className="card-premium p-4">
