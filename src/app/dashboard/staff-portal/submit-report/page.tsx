@@ -99,6 +99,7 @@ export default function SubmitReportPage() {
     const [prodActivity, setProdActivity] = useState<any>(null);
     const [workPlans, setWorkPlans] = useState<any[]>([]);
     const [loadingWorkPlans, setLoadingWorkPlans] = useState(false);
+    const [checkInTime, setCheckInTime] = useState<Date | null>(null);
 
     const [availableTasks, setAvailableTasks] = useState<any[]>([]);
     const [completedTaskIds, setCompletedTaskIds] = useState<string[]>([]);
@@ -160,7 +161,7 @@ export default function SubmitReportPage() {
                     }
                 });
 
-            // Fetch today's attendance to calculate hours
+            // Fetch today's attendance to calculate hours from check-in
             fetch('/api/hr/attendance', { headers: { 'Authorization': `Bearer ${token}` } })
                 .then(res => res.json())
                 .then(data => {
@@ -168,10 +169,12 @@ export default function SubmitReportPage() {
                     const record = data.find((a: any) => a.date.startsWith(today));
                     if (record && record.checkIn) {
                         const checkIn = new Date(record.checkIn);
-                        const checkOut = record.checkOut ? new Date(record.checkOut) : new Date();
-                        const diffMs = checkOut.getTime() - checkIn.getTime();
+                        setCheckInTime(checkIn);
+                        // Initial calculation
+                        const now = new Date();
+                        const diffMs = now.getTime() - checkIn.getTime();
                         const hours = Math.round((diffMs / (1000 * 60 * 60)) * 2) / 2;
-                        setCommonData(prev => ({ ...prev, hoursSpent: hours }));
+                        setCommonData(prev => ({ ...prev, hoursSpent: Math.max(0, hours) }));
                     }
                 })
                 .catch(err => console.error("Error fetching attendance", err));
@@ -264,6 +267,18 @@ export default function SubmitReportPage() {
             fetchWorkPlans();
         }
     }, [commonData.date]);
+
+    // Live-update hoursSpent every minute from check-in time
+    useEffect(() => {
+        if (!checkInTime) return;
+        const interval = setInterval(() => {
+            const now = new Date();
+            const diffMs = now.getTime() - checkInTime.getTime();
+            const hours = Math.round((diffMs / (1000 * 60 * 60)) * 2) / 2;
+            setCommonData(prev => ({ ...prev, hoursSpent: Math.max(0, hours) }));
+        }, 60000); // update every minute
+        return () => clearInterval(interval);
+    }, [checkInTime]);
 
     // Calculate points and derive metrics from tasks with validation
     useEffect(() => {
@@ -588,9 +603,21 @@ export default function SubmitReportPage() {
                             {isEditMode ? 'Modifying your submission for today' : 'Track your daily impact through task completion'}
                         </p>
                     </div>
-                    <div className="bg-gradient-to-r from-indigo-500 to-purple-600 text-white px-6 py-3 rounded-2xl shadow-lg">
-                        <span className="text-xs font-bold uppercase tracking-wider block">Today&apos;s Score</span>
-                        <div className="text-3xl font-black">{currentPoints} <span className="text-sm">pts</span></div>
+                    <div className="flex items-center gap-3">
+                        {checkInTime && (
+                            <div className="bg-gradient-to-r from-teal-500 to-emerald-600 text-white px-5 py-3 rounded-2xl shadow-lg flex flex-col items-center">
+                                <span className="text-[10px] font-bold uppercase tracking-wider opacity-80">Hours Worked</span>
+                                <div className="text-2xl font-black">
+                                    {Math.floor(commonData.hoursSpent)}h
+                                    <span className="text-sm font-bold opacity-80">{commonData.hoursSpent % 1 !== 0 ? ' 30m' : ''}</span>
+                                </div>
+                                <span className="text-[9px] opacity-60 mt-0.5">since {checkInTime.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}</span>
+                            </div>
+                        )}
+                        <div className="bg-gradient-to-r from-indigo-500 to-purple-600 text-white px-6 py-3 rounded-2xl shadow-lg">
+                            <span className="text-xs font-bold uppercase tracking-wider block">Today&apos;s Score</span>
+                            <div className="text-3xl font-black">{currentPoints} <span className="text-sm">pts</span></div>
+                        </div>
                     </div>
                 </div>
 
@@ -909,11 +936,6 @@ export default function SubmitReportPage() {
                                             onChange={e => !isEditMode && setCommonData({ ...commonData, date: e.target.value })}
                                         />
                                         {isEditMode && <p className="text-[10px] text-secondary-400 mt-1">Date cannot be changed once submitted</p>}
-                                    </div>
-                                    <div>
-                                        <label className="label">Hours Spent</label>
-                                        <input type="number" step="0.5" title="Hours Spent" required className="input"
-                                            value={commonData.hoursSpent} onChange={e => setCommonData({ ...commonData, hoursSpent: parseFloat(e.target.value) })} />
                                     </div>
                                 </div>
 
