@@ -7,7 +7,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import {
     Plus, Search, Filter, ListTodo, DollarSign, Clock, User, AlertCircle, BookOpen,
-    ChevronRight, MoreVertical, LayoutGrid, Kanban, Target, CheckCircle2, AlertTriangle
+    ChevronRight, MoreVertical, LayoutGrid, Kanban, Target, CheckCircle2, AlertTriangle,
+    Zap, TrendingUp, Activity
 } from 'lucide-react';
 import TaskDetailModal from '@/components/dashboard/it/TaskDetailModal';
 
@@ -23,11 +24,26 @@ interface Task {
 }
 
 const STATUSES = [
-    { value: 'PENDING', label: 'To Do', bg: 'bg-slate-50/50', dot: 'bg-slate-400', accent: 'border-slate-200', text: 'text-slate-700' },
-    { value: 'IN_PROGRESS', label: 'In Progress', bg: 'bg-blue-50/50', dot: 'bg-blue-500', accent: 'border-blue-200', text: 'text-blue-700' },
-    { value: 'UNDER_REVIEW', label: 'In Review', bg: 'bg-amber-50/50', dot: 'bg-amber-500', accent: 'border-amber-200', text: 'text-amber-700' },
-    { value: 'COMPLETED', label: 'Completed', bg: 'bg-emerald-50/50', dot: 'bg-emerald-500', accent: 'border-emerald-200', text: 'text-emerald-700' },
+    { value: 'PENDING', label: 'To Do', bg: 'bg-slate-800/60', dot: 'bg-slate-400', accent: 'border-slate-600/30', text: 'text-slate-400', headerBg: 'bg-slate-700/30', countBg: 'bg-slate-600/40' },
+    { value: 'IN_PROGRESS', label: 'In Progress', bg: 'bg-blue-950/60', dot: 'bg-blue-400', accent: 'border-blue-600/30', text: 'text-blue-400', headerBg: 'bg-blue-900/30', countBg: 'bg-blue-700/30' },
+    { value: 'UNDER_REVIEW', label: 'In Review', bg: 'bg-amber-950/60', dot: 'bg-amber-400', accent: 'border-amber-700/30', text: 'text-amber-400', headerBg: 'bg-amber-900/30', countBg: 'bg-amber-700/30' },
+    { value: 'COMPLETED', label: 'Done', bg: 'bg-emerald-950/60', dot: 'bg-emerald-400', accent: 'border-emerald-700/30', text: 'text-emerald-400', headerBg: 'bg-emerald-900/30', countBg: 'bg-emerald-700/30' },
 ];
+
+const PRIORITY_STYLE: Record<string, { bg: string; text: string; border: string }> = {
+    CRITICAL: { bg: 'bg-rose-500/10', text: 'text-rose-400', border: 'border-rose-500/20' },
+    HIGH: { bg: 'bg-orange-500/10', text: 'text-orange-400', border: 'border-orange-500/20' },
+    MEDIUM: { bg: 'bg-amber-500/10', text: 'text-amber-400', border: 'border-amber-500/20' },
+    LOW: { bg: 'bg-emerald-500/10', text: 'text-emerald-400', border: 'border-emerald-500/20' },
+};
+
+const TYPE_COLOR: Record<string, { bg: string; text: string }> = {
+    REVENUE: { bg: 'bg-emerald-500/10', text: 'text-emerald-400' },
+    SUPPORT: { bg: 'bg-blue-500/10', text: 'text-blue-400' },
+    MAINTENANCE: { bg: 'bg-slate-500/10', text: 'text-slate-400' },
+    URGENT: { bg: 'bg-rose-500/10', text: 'text-rose-400' },
+    SERVICE_REQUEST: { bg: 'bg-cyan-500/10', text: 'text-cyan-400' },
+};
 
 export default function TasksPage() {
     const router = useRouter();
@@ -90,20 +106,10 @@ export default function TasksPage() {
     const handleDragStart = (e: React.DragEvent, taskId: string) => {
         e.dataTransfer.setData('taskId', taskId);
         e.dataTransfer.effectAllowed = 'move';
-        // Add visual feedback to the dragged element
-        const element = e.currentTarget as HTMLElement;
-        element.style.opacity = '0.5';
+        (e.currentTarget as HTMLElement).style.opacity = '0.4';
     };
-
-    const handleDragEnd = (e: React.DragEvent) => {
-        const element = e.currentTarget as HTMLElement;
-        element.style.opacity = '1';
-    };
-
-    const handleDragOver = (e: React.DragEvent) => {
-        e.preventDefault();
-        e.dataTransfer.dropEffect = 'move';
-    };
+    const handleDragEnd = (e: React.DragEvent) => { (e.currentTarget as HTMLElement).style.opacity = '1'; };
+    const handleDragOver = (e: React.DragEvent) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; };
 
     const handleDrop = async (e: React.DragEvent, newStatus: string) => {
         e.preventDefault();
@@ -118,314 +124,242 @@ export default function TasksPage() {
                 method: 'PATCH', headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ status: newStatus }),
             });
-            if (!response.ok) { setTasks(originalTasks); alert('Failed to update status'); }
-        } catch {
-            setTasks(originalTasks); alert('Failed to update status');
-        }
+            if (!response.ok) { setTasks(originalTasks); }
+        } catch { setTasks(originalTasks); }
     };
 
-    const getPriorityStyle = (priority: string) => {
-        switch (priority) {
-            case 'CRITICAL': return 'bg-rose-50 text-rose-700 border-rose-100';
-            case 'HIGH': return 'bg-orange-50 text-orange-700 border-orange-100';
-            case 'MEDIUM': return 'bg-amber-50 text-amber-700 border-amber-100';
-            case 'LOW': return 'bg-emerald-50 text-emerald-700 border-emerald-100';
-            default: return 'bg-slate-50 text-slate-700 border-slate-100';
-        }
-    };
+    const TaskCard = ({ task }: { task: Task }) => {
+        const pri = PRIORITY_STYLE[task.priority] || PRIORITY_STYLE.LOW;
+        const typ = TYPE_COLOR[task.type] || { bg: 'bg-slate-500/10', text: 'text-slate-400' };
+        const isOverdue = task.dueDate && new Date(task.dueDate) < new Date() && task.status !== 'COMPLETED';
 
-    const getTypeColor = (type: string) => {
-        switch (type) {
-            case 'REVENUE': return 'bg-blue-100 text-blue-800';
-            case 'SUPPORT': return 'bg-purple-100 text-purple-800';
-            case 'MAINTENANCE': return 'bg-slate-200 text-slate-800';
-            case 'URGENT': return 'bg-rose-100 text-rose-800';
-            case 'SERVICE_REQUEST': return 'bg-cyan-100 text-cyan-800';
-            default: return 'bg-slate-100 text-slate-600';
-        }
-    };
+        return (
+            <div
+                draggable
+                onDragStart={(e) => handleDragStart(e, task.id)}
+                onDragEnd={handleDragEnd}
+                onClick={() => { setSelectedTask(task); setShowTaskModal(true); }}
+                className="cursor-grab active:cursor-grabbing"
+            >
+                <motion.div
+                    layout
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.95 }}
+                    whileHover={{ y: -2, boxShadow: '0 8px 32px rgba(0,0,0,0.3)' }}
+                    className="group relative bg-slate-800/50 hover:bg-slate-800/80 backdrop-blur-sm rounded-xl border border-white/5 hover:border-white/10 p-4 transition-all overflow-hidden"
+                >
+                    {/* Priority left-bar */}
+                    <div className={`absolute left-0 top-0 bottom-0 w-0.5 rounded-l-xl ${task.priority === 'CRITICAL' ? 'bg-rose-500' : task.priority === 'HIGH' ? 'bg-orange-500' : task.priority === 'MEDIUM' ? 'bg-amber-400' : 'bg-emerald-400'}`} />
 
-    const TaskCard = ({ task }: { task: Task }) => (
-        <div
-            draggable
-            onDragStart={(e) => handleDragStart(e, task.id)}
-            onDragEnd={handleDragEnd}
-            onClick={() => { setSelectedTask(task); setShowTaskModal(true); }}
-            className="cursor-grab active:cursor-grabbing"
-        >
-        <motion.div
-            layout
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95 }}
-            whileHover={{ y: -4, boxShadow: '0 12px 24px -10px rgba(0,0,0,0.1)' }}
-            className="group relative bg-white/80 backdrop-blur-md rounded-2xl border border-slate-200/60 p-4 transition-all overflow-hidden"
-        >
-            {/* Top Bar with Priority Indicator */}
-            <div className="flex items-center justify-between mb-3">
-                <div className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-tight border ${getPriorityStyle(task.priority)}`}>
-                    {task.priority}
-                </div>
-                <div className="flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button className="p-1 hover:bg-slate-100 rounded-lg text-slate-400">
-                        <MoreVertical className="h-3.5 w-3.5" />
-                    </button>
-                </div>
-            </div>
-
-            <h4 className="font-bold text-slate-900 text-sm mb-2 line-clamp-2 leading-tight group-hover:text-blue-600 transition-colors">
-                {task.title}
-            </h4>
-
-            {/* Tags & Metadata */}
-            <div className="flex flex-wrap gap-1.5 mb-4">
-                <span className={`inline-flex items-center px-1.5 py-0.5 rounded-lg text-[10px] font-bold ${getTypeColor(task.type)}`}>
-                    {task.type}
-                </span>
-                {task.isRevenueBased && (
-                    <span className="inline-flex items-center px-1.5 py-0.5 rounded-lg text-[10px] font-black bg-emerald-100 text-emerald-800">
-                        <DollarSign className="h-2.5 w-2.5 mr-0.5" /> ₹{task.itRevenueEarned.toLocaleString()}
-                    </span>
-                )}
-            </div>
-
-            {/* Context Info */}
-            <div className="space-y-2 mb-4">
-                {task.project && (
-                    <div className="flex items-center gap-1.5 text-[10px] text-slate-500 font-medium">
-                        <LayoutGrid className="h-3 w-3" />
-                        <span className="truncate">{task.project.name}</span>
-                    </div>
-                )}
-                {task.dueDate && (
-                    <div className="flex items-center gap-1.5 text-[10px] text-slate-500 font-medium">
-                        <Clock className="h-3 w-3" />
-                        <span>Due: {new Date(task.dueDate).toLocaleDateString()}</span>
-                    </div>
-                )}
-            </div>
-
-            {/* Progress Bar (Visual Only if > 0) */}
-            {task.progressPercent > 0 && (
-                <div className="mb-4">
-                    <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
-                        <motion.div 
-                            initial={{ width: 0 }}
-                            animate={{ width: `${task.progressPercent}%` }}
-                            className={`h-full rounded-full ${task.progressPercent === 100 ? 'bg-emerald-500' : 'bg-blue-500'}`}
-                        />
-                    </div>
-                </div>
-            )}
-
-            {/* Footer */}
-            <div className="flex items-center justify-between pt-3 border-t border-slate-100">
-                <div className="flex -space-x-1.5">
-                    {task.assignedTo ? (
-                         <div className="h-6 w-6 rounded-full bg-blue-600 border-2 border-white flex items-center justify-center text-[10px] font-bold text-white shadow-sm" title={task.assignedTo.name}>
-                            {task.assignedTo.name.charAt(0)}
-                         </div>
-                    ) : (
-                        <div className="h-6 w-6 rounded-full bg-slate-100 border-2 border-white flex items-center justify-center text-slate-400" title="Unassigned">
-                            <User className="h-3 w-3" />
+                    <div className="pl-1.5">
+                        <div className="flex items-center justify-between mb-2.5">
+                            <div className={`px-2 py-0.5 rounded-md text-[9px] font-black uppercase tracking-widest border ${pri.bg} ${pri.text} ${pri.border}`}>
+                                {task.priority}
+                            </div>
+                            {isOverdue && (
+                                <span className="text-[9px] font-black text-rose-400 uppercase tracking-widest flex items-center gap-1">
+                                    <AlertTriangle className="h-2.5 w-2.5" /> Overdue
+                                </span>
+                            )}
                         </div>
-                    )}
-                </div>
-                
-                <div className="flex items-center gap-2.5 text-[10px] font-bold text-slate-400">
-                    <span className="flex items-center gap-1">💬 {task._count.comments}</span>
-                    <span className="text-slate-300 font-light">|</span>
-                    <span className="text-slate-600">#{task.taskCode}</span>
-                </div>
+
+                        <h4 className="font-bold text-slate-200 text-sm mb-2 line-clamp-2 leading-tight group-hover:text-white transition-colors">
+                            {task.title}
+                        </h4>
+
+                        <div className="flex flex-wrap gap-1.5 mb-3">
+                            <span className={`inline-flex items-center px-1.5 py-0.5 rounded-md text-[9px] font-bold ${typ.bg} ${typ.text}`}>
+                                {task.type.replace('_', ' ')}
+                            </span>
+                            {task.isRevenueBased && (
+                                <span className="inline-flex items-center px-1.5 py-0.5 rounded-md text-[9px] font-black bg-emerald-500/10 text-emerald-400">
+                                    <DollarSign className="h-2.5 w-2.5 mr-0.5" />₹{task.itRevenueEarned.toLocaleString()}
+                                </span>
+                            )}
+                        </div>
+
+                        {task.project && (
+                            <div className="flex items-center gap-1 text-[9px] text-slate-600 font-medium mb-2">
+                                <LayoutGrid className="h-2.5 w-2.5" />
+                                <span className="truncate">{task.project.name}</span>
+                            </div>
+                        )}
+
+                        {task.progressPercent > 0 && (
+                            <div className="mb-3">
+                                <div className="h-1 w-full bg-white/5 rounded-full overflow-hidden">
+                                    <motion.div initial={{ width: 0 }} animate={{ width: `${task.progressPercent}%` }}
+                                        className={`h-full rounded-full ${task.progressPercent === 100 ? 'bg-emerald-400' : 'bg-blue-400'}`}
+                                    />
+                                </div>
+                            </div>
+                        )}
+
+                        <div className="flex items-center justify-between pt-2.5 border-t border-white/5">
+                            <div>
+                                {task.assignedTo ? (
+                                    <div className="h-6 w-6 rounded-lg bg-blue-600 border border-blue-500/30 flex items-center justify-center text-[10px] font-bold text-white" title={task.assignedTo.name}>
+                                        {task.assignedTo.name.charAt(0)}
+                                    </div>
+                                ) : (
+                                    <div className="h-6 w-6 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center text-slate-600" title="Unassigned">
+                                        <User className="h-3 w-3" />
+                                    </div>
+                                )}
+                            </div>
+                            <div className="flex items-center gap-2 text-[9px] font-bold text-slate-600">
+                                {task.dueDate && (
+                                    <span className="flex items-center gap-0.5">
+                                        <Clock className="h-2.5 w-2.5" />{new Date(task.dueDate).toLocaleDateString('en', { month: 'short', day: 'numeric' })}
+                                    </span>
+                                )}
+                                <span>💬 {task._count.comments}</span>
+                                <span className="text-slate-700">#{task.taskCode}</span>
+                            </div>
+                        </div>
+                    </div>
+                </motion.div>
             </div>
-        </motion.div>
-        </div>
-    );
+        );
+    };
 
     return (
         <DashboardLayout>
-            <div className="min-h-screen pb-20 space-y-8 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] bg-[length:200px] bg-repeat">
-                {/* Modern Header */}
-                <motion.div 
-                    initial={{ opacity: 0, y: -20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6"
-                >
-                    <div className="space-y-1">
-                        <h1 className="text-4xl font-black text-slate-900 tracking-tight flex items-center gap-4">
-                            <div className="p-3 bg-blue-600 rounded-2xl shadow-xl shadow-blue-200">
-                                <Kanban className="h-6 w-6 text-white" />
-                            </div>
-                            Task Engineering
-                        </h1>
-                        <p className="text-slate-500 font-medium ml-1">Orchestrating IT workflows and revenue-driven engineering.</p>
-                    </div>
+            <div className="min-h-screen pb-24 space-y-8">
 
-                    <div className="flex items-center gap-4">
-                        <button
-                            onClick={() => router.push('/dashboard/it-management/tasks/guidelines')}
-                            className="px-6 py-3 rounded-2xl bg-white border border-slate-200 text-slate-600 text-sm font-bold flex items-center gap-2 hover:bg-slate-50 hover:shadow-lg transition-all"
-                        >
-                            <BookOpen className="h-4 w-4" /> Guidelines
-                        </button>
-                        {!isEmployee && (
-                            <button
-                                onClick={() => router.push('/dashboard/it-management/tasks/new')}
-                                className="px-6 py-3 rounded-2xl bg-blue-600 text-white text-sm font-bold flex items-center gap-2 hover:bg-blue-700 shadow-xl shadow-blue-200 transition-all active:scale-95"
-                            >
-                                <Plus className="h-4 w-4" /> New Task
+                {/* ── HEADER ──────────────────────────────────── */}
+                <motion.div initial={{ opacity: 0, y: -16 }} animate={{ opacity: 1, y: 0 }}
+                    className="relative rounded-2xl overflow-hidden"
+                >
+                    <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-violet-950 to-slate-900" />
+                    <div className="absolute inset-0 opacity-20"
+                        style={{ backgroundImage: 'radial-gradient(ellipse at 80% 50%, rgba(139,92,246,0.5) 0%, transparent 60%)' }} />
+
+                    <div className="relative p-8 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+                        <div className="flex items-center gap-3">
+                            <div className="p-2.5 bg-violet-500/20 border border-violet-500/30 rounded-xl">
+                                <Kanban className="h-5 w-5 text-violet-400" />
+                            </div>
+                            <div>
+                                <h1 className="text-3xl font-black text-white tracking-tight">Task Engineering</h1>
+                                <p className="text-slate-400 text-sm font-medium">Orchestrating IT workflows with drag-and-drop precision.</p>
+                            </div>
+                        </div>
+                        <div className="flex items-center gap-3 flex-wrap">
+                            <button onClick={() => router.push('/dashboard/it-management/tasks/guidelines')}
+                                className="flex items-center gap-2 px-5 py-2.5 bg-white/5 border border-white/10 text-white text-xs font-black uppercase tracking-widest rounded-xl hover:bg-white/10 transition-all">
+                                <BookOpen className="h-4 w-4 text-slate-400" /> Guidelines
                             </button>
-                        )}
+                            {!isEmployee && (
+                                <button onClick={() => router.push('/dashboard/it-management/tasks/new')}
+                                    className="flex items-center gap-2 px-5 py-2.5 bg-violet-600 text-white text-xs font-black uppercase tracking-widest rounded-xl hover:bg-violet-500 shadow-lg shadow-violet-500/25 transition-all active:scale-95">
+                                    <Plus className="h-4 w-4" /> New Task
+                                </button>
+                            )}
+                        </div>
                     </div>
                 </motion.div>
 
-                {/* Glass Search & Filters */}
-                <motion.div 
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: 0.1 }}
-                    className="p-1 bg-white/40 backdrop-blur-xl rounded-[2rem] border border-white/60 shadow-inner group"
+                {/* ── FILTERS ─────────────────────────────────── */}
+                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.1 }}
+                    className="bg-white/[0.03] backdrop-blur-xl border border-white/10 rounded-2xl overflow-hidden"
                 >
-                    <div className="p-6 space-y-6">
-                        <div className="flex flex-col md:flex-row gap-4">
-                            {/* View Switcher */}
-                            <div className="flex bg-slate-200/50 p-1 rounded-2xl">
-                                <button onClick={() => setView('my')}
-                                    className={`px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${view === 'my' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>
-                                    Personal
-                                </button>
-                                {!isEmployee && (
-                                    <button onClick={() => setView('team')}
-                                        className={`px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${view === 'team' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>
-                                        Squad
-                                    </button>
-                                )}
-                                {canManage && (
-                                    <button onClick={() => setView('all')}
-                                        className={`px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${view === 'all' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>
-                                        Global
-                                    </button>
-                                )}
-                            </div>
-
-                            <div className="flex-1 relative">
-                                <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400 group-focus-within:text-blue-500 transition-colors" />
-                                <input type="text" placeholder="Trace task ID, title or keyword..."
-                                    value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)}
-                                    className="w-full bg-white/50 border-none rounded-2xl pl-12 pr-4 py-3 text-sm font-bold focus:ring-2 focus:ring-blue-500/20 placeholder:text-slate-400" />
-                            </div>
-
-                            <button onClick={() => setShowFilters(!showFilters)}
-                                className={`px-5 py-3 rounded-2xl border text-xs font-black uppercase tracking-widest flex items-center gap-2 transition-all ${showFilters ? 'bg-blue-600 border-blue-600 text-white shadow-lg shadow-blue-200' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'}`}>
-                                <Filter className="h-4 w-4" /> Filters
+                    <div className="p-5 flex flex-col md:flex-row gap-3">
+                        {/* View switcher */}
+                        <div className="flex bg-white/5 border border-white/10 p-1 rounded-xl gap-1 shrink-0">
+                            <button onClick={() => setView('my')} className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${view === 'my' ? 'bg-violet-600 text-white shadow-lg' : 'text-slate-400 hover:text-white'}`}>
+                                Personal
                             </button>
+                            {!isEmployee && (
+                                <button onClick={() => setView('team')} className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${view === 'team' ? 'bg-violet-600 text-white shadow-lg' : 'text-slate-400 hover:text-white'}`}>
+                                    Squad
+                                </button>
+                            )}
+                            {canManage && (
+                                <button onClick={() => setView('all')} className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${view === 'all' ? 'bg-violet-600 text-white shadow-lg' : 'text-slate-400 hover:text-white'}`}>
+                                    Global
+                                </button>
+                            )}
                         </div>
 
-                        <AnimatePresence>
-                            {showFilters && (
-                                <motion.div 
-                                    initial={{ height: 0, opacity: 0 }}
-                                    animate={{ height: 'auto', opacity: 1 }}
-                                    exit={{ height: 0, opacity: 0 }}
-                                    className="overflow-hidden"
-                                >
-                                    <div className="pt-6 border-t border-slate-100 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                                        <div className="space-y-2">
-                                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-2">
-                                                <Target className="h-3 w-3" /> Category
-                                            </label>
-                                            <select value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)} className="w-full bg-white border-slate-200 rounded-xl py-2 text-xs font-bold" title="Category Filter">
-                                                <option value="">All Streams</option>
-                                                <option value="REVENUE">Revenue-Linked</option>
-                                                <option value="SUPPORT">Internal Support</option>
-                                                <option value="MAINTENANCE">Maintenance</option>
-                                                <option value="URGENT">Emergency Fix</option>
-                                                <option value="SERVICE_REQUEST">Service Request</option>
-                                            </select>
-                                        </div>
-                                        <div className="space-y-2">
-                                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-2">
-                                                <AlertTriangle className="h-3 w-3" /> Priority
-                                            </label>
-                                            <select value={priorityFilter} onChange={(e) => setPriorityFilter(e.target.value)} className="w-full bg-white border-slate-200 rounded-xl py-2 text-xs font-bold" title="Priority Filter">
-                                                <option value="">All Severity</option>
-                                                <option value="HIGH">High Priority</option>
-                                                <option value="MEDIUM">Standard</option>
-                                                <option value="LOW">Low</option>
-                                            </select>
-                                        </div>
-                                        <div className="space-y-2">
-                                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-2">
-                                                <LayoutGrid className="h-3 w-3" /> Project
-                                            </label>
-                                            <select value={projectFilter} onChange={(e) => setProjectFilter(e.target.value)} className="w-full bg-white border-slate-200 rounded-xl py-2 text-xs font-bold" title="Project Filter">
-                                                <option value="">All Missions</option>
-                                                {Array.isArray(allProjects) && allProjects.map(p => (
-                                                    <option key={p.id} value={p.id}>{p.name}</option>
-                                                ))}
-                                            </select>
-                                        </div>
-                                        <div className="space-y-2">
-                                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-2">
-                                                <User className="h-3 w-3" /> Assigned To
-                                            </label>
-                                            <select value={assignedToFilter} onChange={(e) => setAssignedToFilter(e.target.value)} className="w-full bg-white border-slate-200 rounded-xl py-2 text-xs font-bold" title="Assignee Filter">
-                                                <option value="">Full Roster</option>
-                                                {Array.isArray(allUsers) && allUsers.map(u => (
-                                                    <option key={u.id} value={u.id}>{u.name}</option>
-                                                ))}
-                                            </select>
-                                        </div>
-                                    </div>
-                                </motion.div>
-                            )}
-                        </AnimatePresence>
+                        <div className="flex-1 relative">
+                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
+                            <input type="text" placeholder="Search by task code, title or keyword..."
+                                value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)}
+                                className="w-full bg-white/5 border border-white/10 rounded-xl pl-11 pr-4 py-3 text-sm font-medium text-white placeholder:text-slate-600 focus:outline-none focus:border-violet-500/50 transition-colors" />
+                        </div>
+
+                        <button onClick={() => setShowFilters(!showFilters)}
+                            className={`flex items-center gap-2 px-5 py-3 rounded-xl border text-xs font-black uppercase tracking-widest transition-all shrink-0 ${showFilters ? 'bg-violet-600 border-violet-600 text-white' : 'bg-white/5 border-white/10 text-slate-400 hover:text-white'}`}>
+                            <Filter className="h-4 w-4" /> Filters
+                        </button>
                     </div>
+
+                    <AnimatePresence>
+                        {showFilters && (
+                            <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
+                                <div className="px-5 pb-5 border-t border-white/10 grid grid-cols-2 lg:grid-cols-4 gap-4 pt-5">
+                                    {[
+                                        { label: 'Category', value: typeFilter, onChange: setTypeFilter, options: [['', 'All Streams'], ['REVENUE', 'Revenue'], ['SUPPORT', 'Support'], ['MAINTENANCE', 'Maintenance'], ['URGENT', 'Emergency'], ['SERVICE_REQUEST', 'Service Req']] },
+                                        { label: 'Priority', value: priorityFilter, onChange: setPriorityFilter, options: [['', 'All Severity'], ['CRITICAL', 'Critical'], ['HIGH', 'High'], ['MEDIUM', 'Standard'], ['LOW', 'Low']] },
+                                        { label: 'Project', value: projectFilter, onChange: setProjectFilter, options: [['', 'All Projects'], ...allProjects.map(p => [p.id, p.name])] },
+                                        { label: 'Assigned To', value: assignedToFilter, onChange: setAssignedToFilter, options: [['', 'All Members'], ...allUsers.map(u => [u.id, u.name])] },
+                                    ].map((f) => (
+                                        <div key={f.label} className="space-y-1.5">
+                                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-600">{f.label}</label>
+                                            <select value={f.value} onChange={(e) => f.onChange(e.target.value)}
+                                                className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-xs font-bold text-white focus:outline-none focus:border-violet-500/50" title={f.label}>
+                                                {f.options.map(([val, lbl]) => (
+                                                    <option key={val} value={val} className="bg-slate-900">{lbl}</option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                    ))}
+                                </div>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
                 </motion.div>
 
-                {/* Kanban Board with Layout Animations */}
+                {/* ── KANBAN BOARD ────────────────────────────── */}
                 {loading ? (
-                    <div className="flex flex-col items-center justify-center py-32 space-y-4">
-                        <div className="h-10 w-10 border-4 border-blue-600/20 border-t-blue-600 rounded-full animate-spin" />
-                        <p className="font-black text-slate-400 uppercase tracking-widest text-xs">Synchronizing Task Data...</p>
+                    <div className="flex flex-col items-center justify-center py-32 gap-4">
+                        <div className="h-10 w-10 border-4 border-violet-500/20 border-t-violet-500 rounded-full animate-spin" />
+                        <p className="text-[10px] font-black text-slate-600 uppercase tracking-widest">Loading board...</p>
                     </div>
                 ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 items-start">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 items-start">
                         {STATUSES.map((status, statusIndex) => {
                             const statusTasks = getTasksByStatus(status.value);
                             return (
-                                <motion.div 
-                                    key={status.value}
-                                    initial={{ opacity: 0, x: 20 }}
-                                    animate={{ opacity: 1, x: 0 }}
-                                    transition={{ delay: 0.1 * statusIndex }}
-                                    className={`relative rounded-[2.5rem] ${status.bg} border border-white/50 p-5 shadow-sm group/col min-h-[600px] flex flex-col`}
-                                    onDragOver={handleDragOver} 
+                                <motion.div key={status.value}
+                                    initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.1 * statusIndex }}
+                                    className={`relative rounded-2xl ${status.bg} border ${status.accent} backdrop-blur-sm min-h-[500px] flex flex-col overflow-hidden`}
+                                    onDragOver={handleDragOver}
                                     onDrop={(e) => handleDrop(e, status.value)}
                                 >
-                                    <div className="flex items-center justify-between mb-6 px-1">
-                                        <div className="flex items-center gap-3">
-                                            <div className={`h-2.5 w-2.5 rounded-full ${status.dot} shadow-[0_0_12px_rgba(0,0,0,0.1)]`} />
+                                    {/* Column header */}
+                                    <div className={`${status.headerBg} border-b ${status.accent} p-4 flex items-center justify-between`}>
+                                        <div className="flex items-center gap-2.5">
+                                            <div className={`h-2 w-2 rounded-full ${status.dot} shadow-[0_0_8px_currentColor]`} />
                                             <h3 className={`font-black uppercase tracking-widest text-xs ${status.text}`}>{status.label}</h3>
                                         </div>
-                                        <span className="bg-white/80 backdrop-blur shadow-sm text-slate-600 text-[10px] font-black px-2.5 py-1 rounded-full border border-slate-100">
+                                        <span className={`${status.countBg} ${status.text} text-[10px] font-black px-2.5 py-1 rounded-lg border ${status.accent}`}>
                                             {statusTasks.length}
                                         </span>
                                     </div>
 
-                                    <div className="flex-1 space-y-4 min-h-[400px]">
+                                    {/* Cards */}
+                                    <div className="flex-1 p-3 space-y-3 min-h-[400px]">
                                         <AnimatePresence mode="popLayout">
                                             {statusTasks.length === 0 ? (
-                                                <motion.div 
-                                                    initial={{ opacity: 0 }}
-                                                    animate={{ opacity: 1 }}
-                                                    className="flex flex-col items-center justify-center py-12 px-6 border-2 border-dashed border-slate-200/50 rounded-3xl"
+                                                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+                                                    className="flex flex-col items-center justify-center py-16 border border-dashed border-white/5 rounded-xl mt-2"
                                                 >
-                                                    <div className="h-12 w-12 rounded-full bg-slate-100 flex items-center justify-center mb-3 text-slate-300">
-                                                        <Kanban className="h-6 w-6" />
-                                                    </div>
-                                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest text-center leading-relaxed">
-                                                        Drag tasks here to change status
+                                                    <Kanban className="h-6 w-6 text-slate-700 mb-2" />
+                                                    <p className="text-[9px] font-bold text-slate-700 uppercase tracking-widest text-center leading-relaxed">
+                                                        Drop tasks here
                                                     </p>
                                                 </motion.div>
                                             ) : (
@@ -433,45 +367,33 @@ export default function TasksPage() {
                                             )}
                                         </AnimatePresence>
                                     </div>
-                                    
-                                    {/* Column Decorative Bottom Brush */}
-                                    <div className={`mt-4 h-1.5 w-12 self-center rounded-full opacity-20 ${status.dot}`} />
                                 </motion.div>
                             );
                         })}
                     </div>
                 )}
 
-                {/* Visual Summary Footer */}
+                {/* ── BOARD ANALYTICS FOOTER ──────────────────── */}
                 <AnimatePresence>
                     {!loading && filteredTasks.length > 0 && (
-                        <motion.div 
-                            initial={{ opacity: 0, y: 30 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            className="bg-white/60 backdrop-blur-xl rounded-[2.5rem] border border-white/80 p-8 shadow-2xl"
+                        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
+                            className="bg-white/[0.03] backdrop-blur-xl border border-white/10 rounded-2xl p-6"
                         >
-                            <div className="flex items-center gap-4 mb-8">
-                                <div className="h-10 w-10 rounded-2xl bg-slate-900 flex items-center justify-center">
-                                    <ListTodo className="h-5 w-5 text-white" />
+                            <div className="flex items-center gap-3 mb-6">
+                                <div className="p-2.5 bg-violet-500/10 rounded-xl border border-violet-500/20">
+                                    <Activity className="h-4 w-4 text-violet-400" />
                                 </div>
-                                <h3 className="text-xl font-black text-slate-900 tracking-tight">Board Analytics</h3>
+                                <h3 className="font-black text-white">Board Analytics</h3>
                             </div>
-                            
-                            <div className="grid grid-cols-2 md:grid-cols-5 gap-8">
-                                <div className="space-y-2">
-                                    <div className="flex items-baseline gap-2">
-                                        <p className="text-4xl font-black text-slate-900">{filteredTasks.length}</p>
-                                        <div className="h-1.5 w-1.5 rounded-full bg-blue-500" />
-                                    </div>
-                                    <p className="text-[10px] text-slate-500 font-black uppercase tracking-widest">Aggregate Tasks</p>
+                            <div className="grid grid-cols-2 md:grid-cols-5 gap-6">
+                                <div className="space-y-1 text-center">
+                                    <p className="text-3xl font-black text-white">{filteredTasks.length}</p>
+                                    <p className="text-[9px] font-black text-slate-600 uppercase tracking-widest">Total Tasks</p>
                                 </div>
                                 {STATUSES.map((status) => (
-                                    <div key={status.value} className="space-y-2">
-                                        <div className="flex items-baseline gap-2">
-                                            <p className="text-4xl font-black text-slate-900">{getTasksByStatus(status.value).length}</p>
-                                            <div className={`h-1.5 w-1.5 rounded-full ${status.dot}`} />
-                                        </div>
-                                        <p className="text-[10px] text-slate-500 font-black uppercase tracking-widest">{status.label}</p>
+                                    <div key={status.value} className="space-y-1 text-center">
+                                        <p className={`text-3xl font-black ${status.text}`}>{getTasksByStatus(status.value).length}</p>
+                                        <p className="text-[9px] font-black text-slate-600 uppercase tracking-widest">{status.label}</p>
                                     </div>
                                 ))}
                             </div>

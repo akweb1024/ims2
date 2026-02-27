@@ -1,4 +1,3 @@
-/* eslint-disable @next/next/no-img-element */
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
@@ -50,47 +49,12 @@ interface Project {
     };
 }
 
-const STATUS_CONFIG: Record<string, { label: string; bg: string; text: string; dot: string; shadow: string; gradient: string }> = {
-    COMPLETED: { 
-        label: 'Settled', 
-        bg: 'bg-emerald-500/10', 
-        text: 'text-emerald-500', 
-        dot: 'bg-emerald-500', 
-        shadow: 'shadow-emerald-500/20',
-        gradient: 'from-emerald-600 to-emerald-400'
-    },
-    IN_PROGRESS: { 
-        label: 'Active', 
-        bg: 'bg-blue-500/10', 
-        text: 'text-blue-500', 
-        dot: 'bg-blue-500', 
-        shadow: 'shadow-blue-500/20',
-        gradient: 'from-blue-600 to-cyan-400'
-    },
-    ON_HOLD: { 
-        label: 'On Hold', 
-        bg: 'bg-amber-500/10', 
-        text: 'text-amber-500', 
-        dot: 'bg-amber-500', 
-        shadow: 'shadow-amber-500/20',
-        gradient: 'from-amber-600 to-yellow-400'
-    },
-    PLANNING: { 
-        label: 'Planning', 
-        bg: 'bg-indigo-500/10', 
-        text: 'text-indigo-500', 
-        dot: 'bg-indigo-500', 
-        shadow: 'shadow-indigo-500/20',
-        gradient: 'from-indigo-600 to-purple-400'
-    },
-    TESTING: { 
-        label: 'Testing', 
-        bg: 'bg-rose-500/10', 
-        text: 'text-rose-500', 
-        dot: 'bg-rose-500', 
-        shadow: 'shadow-rose-500/20',
-        gradient: 'from-rose-600 to-pink-400'
-    },
+const STATUS_CONFIG: Record<string, { label: string; bg: string; text: string; dot: string; shadow: string; border: string }> = {
+    COMPLETED: { label: 'Settled', bg: 'bg-emerald-500/10', text: 'text-emerald-400', dot: 'bg-emerald-400', shadow: 'shadow-emerald-500/20', border: 'border-emerald-500/20' },
+    IN_PROGRESS: { label: 'Active', bg: 'bg-blue-500/10', text: 'text-blue-400', dot: 'bg-blue-400', shadow: 'shadow-blue-500/20', border: 'border-blue-500/20' },
+    ON_HOLD: { label: 'On Hold', bg: 'bg-amber-500/10', text: 'text-amber-400', dot: 'bg-amber-400', shadow: 'shadow-amber-500/20', border: 'border-amber-500/20' },
+    PLANNING: { label: 'Planning', bg: 'bg-indigo-500/10', text: 'text-indigo-400', dot: 'bg-indigo-400', shadow: 'shadow-indigo-500/20', border: 'border-indigo-500/20' },
+    TESTING: { label: 'Testing', bg: 'bg-rose-500/10', text: 'text-rose-400', dot: 'bg-rose-400', shadow: 'shadow-rose-500/20', border: 'border-rose-500/20' },
 };
 
 export default function ProjectDetailPage() {
@@ -134,14 +98,14 @@ export default function ProjectDetailPage() {
             <DashboardLayout>
                 <div className="min-h-[80vh] flex flex-col items-center justify-center space-y-8">
                     <div className="relative">
-                        <div className="h-24 w-24 border-8 border-blue-600/10 border-t-blue-600 rounded-full animate-spin" />
+                        <div className="h-24 w-24 border-8 border-blue-500/20 border-t-blue-500 rounded-full animate-spin" />
                         <div className="absolute inset-0 flex items-center justify-center">
-                            <Cpu className="h-8 w-8 text-blue-600 animate-pulse" />
+                            <Cpu className="h-8 w-8 text-blue-400 animate-pulse" />
                         </div>
                     </div>
                     <div className="text-center space-y-2">
-                        <p className="font-black text-slate-900 uppercase tracking-[0.4em] text-sm">Synchronizing Project Matrix</p>
-                        <p className="text-slate-400 text-[10px] font-bold uppercase tracking-widest">Accessing Secure Data Cluser: IMS-IT-01</p>
+                        <p className="font-black text-white uppercase tracking-[0.4em] text-sm">Synchronizing Project Matrix</p>
+                        <p className="text-slate-500 text-[10px] font-bold uppercase tracking-widest">Accessing Secure Data Cluster: IMS-IT-01</p>
                     </div>
                 </div>
             </DashboardLayout>
@@ -152,129 +116,134 @@ export default function ProjectDetailPage() {
         return (
             <DashboardLayout>
                 <div className="min-h-[80vh] flex items-center justify-center">
-                    <div className="p-16 bg-white rounded-[4rem] border border-slate-100 shadow-[0_32px_128px_rgba(0,0,0,0.08)] text-center max-w-xl space-y-10 relative overflow-hidden">
+                    <div className="p-16 bg-white/[0.03] backdrop-blur-xl rounded-[4rem] border border-white/10 shadow-[0_32px_128px_rgba(0,0,0,0.5)] text-center max-w-xl space-y-10 relative overflow-hidden">
                         <div className="absolute top-0 left-0 w-full h-2 bg-rose-500" />
-                        <div className="h-24 w-24 rounded-[2.5rem] bg-rose-50 flex items-center justify-center mx-auto text-rose-500 shadow-xl shadow-rose-500/10">
+                        <div className="h-24 w-24 rounded-[2.5rem] bg-rose-500/10 border border-rose-500/20 flex items-center justify-center mx-auto text-rose-400 shadow-xl shadow-rose-500/10">
                             <ShieldAlert className="h-12 w-12" />
                         </div>
                         <div className="space-y-4">
-                            <h3 className="text-4xl font-black text-slate-900 tracking-tighter leading-none">Mission ID Not Found</h3>
-                            <p className="text-slate-500 font-medium text-lg px-8">The specified project parameters have been purged or are currently off-grid.</p>
+                            <h3 className="text-4xl font-black text-white tracking-tighter leading-none">Mission Not Found</h3>
+                            <p className="text-slate-400 font-medium text-lg px-8">The specified project parameters have been purged or are currently off-grid.</p>
                         </div>
-                        <button onClick={() => router.push('/dashboard/it-management/projects')} className="px-12 py-5 bg-slate-900 text-white font-black text-[10px] uppercase tracking-[0.3em] rounded-[1.5rem] hover:bg-slate-800 hover:scale-105 active:scale-95 transition-all shadow-2xl">Return to Fleet Command</button>
+                        <button onClick={() => router.push('/dashboard/it-management/projects')} className="px-12 py-5 bg-white/5 border border-white/10 text-white font-black text-[10px] uppercase tracking-[0.3em] rounded-2xl hover:bg-white/10 hover:scale-105 active:scale-95 transition-all shadow-2xl">Return to Fleet Command</button>
                     </div>
                 </div>
             </DashboardLayout>
         );
     }
 
+    const stConf = STATUS_CONFIG[project.status] || { label: project.status, bg: 'bg-slate-500/10', text: 'text-slate-400', dot: 'bg-slate-400', shadow: '', border: 'border-slate-500/20' };
+
     return (
         <DashboardLayout>
-            <div className="min-h-screen pb-32 space-y-12 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] bg-[length:150px] bg-repeat selection:bg-blue-600 selection:text-white">
+            <div className="min-h-screen pb-32 space-y-8">
                 
                 {/* Visual Decorative Grid */}
-                <div className="fixed inset-0 pointer-events-none opacity-[0.03] overflow-hidden">
-                    <div className="absolute inset-0" style={{ backgroundImage: 'linear-gradient(#000 1px, transparent 1px), linear-gradient(90deg, #000 1px, transparent 1px)', backgroundSize: '100px 100px' }} />
+                <div className="fixed inset-0 pointer-events-none opacity-[0.02] overflow-hidden">
+                    <div className="absolute inset-0" style={{ backgroundImage: 'linear-gradient(#fff 1px, transparent 1px), linear-gradient(90deg, #fff 1px, transparent 1px)', backgroundSize: '100px 100px' }} />
                 </div>
 
-                {/* Ultra-Premium Header */}
-                <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }}
-                    className="relative flex flex-col lg:flex-row lg:items-end lg:justify-between gap-12 pb-12"
+                {/* ── HEADER ──────────────────────────────────── */}
+                 <motion.div initial={{ opacity: 0, y: -16 }} animate={{ opacity: 1, y: 0 }}
+                    className="relative rounded-[2.5rem] overflow-hidden border border-white/5"
                 >
-                    <div className="flex items-start gap-10">
-                        <button onClick={() => router.back()} className="mt-4 p-5 bg-white border border-slate-200 rounded-[2rem] text-slate-400 hover:text-blue-600 hover:border-blue-200 hover:shadow-[0_20px_40px_rgba(37,99,235,0.1)] transition-all group active:scale-90">
-                            <ArrowLeft className="h-6 w-6 group-hover:-translate-x-1 transition-transform" />
-                        </button>
-                        <div className="space-y-4">
-                            <div className="flex items-center gap-4">
-                                <motion.span initial={{ scale: 0.8 }} animate={{ scale: 1 }} className="px-5 py-2 bg-slate-900 text-white rounded-[1rem] text-[10px] font-black uppercase tracking-[0.3em] leading-none shadow-2xl">
-                                    {project.projectCode || `ID-${project.id.slice(0, 4)}`}
-                                </motion.span>
-                                <motion.div initial={{ x: -10, opacity: 0 }} animate={{ x: 0, opacity: 1 }} transition={{ delay: 0.2 }}
-                                    className={`px-5 py-2 ${STATUS_CONFIG[project.status]?.bg || 'bg-slate-100'} ${STATUS_CONFIG[project.status]?.text || 'text-slate-600'} rounded-[1rem] text-[10px] font-black uppercase tracking-[0.3em] leading-none border border-current/10 flex items-center gap-3 shadow-sm`}
-                                >
-                                    <div className={`h-2 w-2 rounded-full ${STATUS_CONFIG[project.status]?.dot || 'bg-slate-400'} animate-pulse`} />
-                                    {STATUS_CONFIG[project.status]?.label || project.status}
-                                </motion.div>
-                            </div>
-                            <div>
-                                <h1 className="text-7xl font-black text-slate-900 tracking-tighter mb-4 leading-none bg-clip-text text-transparent bg-gradient-to-br from-slate-900 via-slate-800 to-slate-500">
-                                    {project.name}
-                                </h1>
-                                <div className="flex flex-wrap items-center gap-6 px-1">
-                                    <div className="flex items-center gap-3 text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] leading-none bg-white/40 border border-slate-100 px-4 py-2.5 rounded-2xl backdrop-blur-sm">
-                                        <Layers className="h-4 w-4 text-blue-600" />
-                                        <span>{project.category}</span>
+                    <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900" />
+                    <div className="absolute inset-0 opacity-20" style={{ backgroundImage: 'radial-gradient(ellipse at 10% 50%, rgba(59,130,246,0.5) 0%, transparent 60%)' }} />
+
+                    <div className="relative p-10 flex flex-col lg:flex-row lg:items-end lg:justify-between gap-12">
+                        <div className="flex items-start gap-8">
+                            <button onClick={() => router.back()} className="mt-2 p-4 bg-white/5 border border-white/10 rounded-2xl text-slate-400 hover:text-blue-400 hover:border-blue-500/30 transition-all shrink-0">
+                                <ArrowLeft className="h-6 w-6" />
+                            </button>
+                            <div className="space-y-4">
+                                <div className="flex items-center gap-4">
+                                    <span className="px-4 py-1.5 bg-blue-500/20 border border-blue-500/30 text-blue-400 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] shadow-lg">
+                                        {project.projectCode || `ID-${project.id.slice(0, 4)}`}
+                                    </span>
+                                    <div className={`px-4 py-1.5 ${stConf.bg} ${stConf.text} rounded-xl text-[10px] font-black uppercase tracking-[0.2em] border ${stConf.border} flex items-center gap-2.5`}>
+                                        <div className={`h-2 w-2 rounded-full ${stConf.dot} animate-pulse`} />
+                                        {stConf.label}
                                     </div>
-                                    <div className="flex items-center gap-3 text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] leading-none bg-white/40 border border-slate-100 px-4 py-2.5 rounded-2xl backdrop-blur-sm">
-                                        <Building2 className="h-4 w-4 text-emerald-600" />
-                                        <span>{project.department?.name || 'Global HQ'}</span>
-                                    </div>
-                                    <div className="flex items-center gap-3 text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] leading-none bg-white/40 border border-slate-100 px-4 py-2.5 rounded-2xl backdrop-blur-sm">
-                                        <Calendar className="h-4 w-4 text-amber-600" />
-                                        <span>Updated {new Date(project.updatedAt).toLocaleDateString()}</span>
+                                </div>
+                                <div>
+                                    <h1 className="text-5xl lg:text-6xl font-black text-white tracking-tighter mb-4 leading-tight">
+                                        {project.name}
+                                    </h1>
+                                    <div className="flex flex-wrap items-center gap-4">
+                                        <div className="flex items-center gap-2 text-[10px] font-black text-slate-300 uppercase tracking-widest bg-white/[0.03] border border-white/5 px-4 py-2 rounded-xl backdrop-blur-sm">
+                                            <Layers className="h-3.5 w-3.5 text-blue-400" />
+                                            <span>{project.category}</span>
+                                        </div>
+                                        <div className="flex items-center gap-2 text-[10px] font-black text-slate-300 uppercase tracking-widest bg-white/[0.03] border border-white/5 px-4 py-2 rounded-xl backdrop-blur-sm">
+                                            <Building2 className="h-3.5 w-3.5 text-emerald-400" />
+                                            <span>{project.department?.name || 'Global HQ'}</span>
+                                        </div>
+                                        <div className="flex items-center gap-2 text-[10px] font-black text-slate-300 uppercase tracking-widest bg-white/[0.03] border border-white/5 px-4 py-2 rounded-xl backdrop-blur-sm">
+                                            <Calendar className="h-3.5 w-3.5 text-amber-400" />
+                                            <span>Updated {new Date(project.updatedAt).toLocaleDateString()}</span>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
-                    </div>
-                    
-                    <div className="flex items-center gap-5">
-                        <div className="hidden xl:flex flex-col items-end mr-8">
-                            <div className="flex items-center gap-2 mb-1">
-                                <Sparkles className="h-3 w-3 text-blue-500 animate-spin-slow" />
-                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em]">Quantum Registry</p>
+                        
+                        <div className="flex flex-col lg:items-end gap-5">
+                            <div className="hidden lg:flex flex-col items-end mr-2">
+                                <div className="flex items-center gap-2 mb-1">
+                                    <Sparkles className="h-3 w-3 text-blue-400 animate-pulse" />
+                                    <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Quantum Registry</p>
+                                </div>
+                                <p className="text-xs font-black text-slate-400 tracking-wider font-mono">{project.id.toUpperCase()}</p>
                             </div>
-                            <p className="text-sm font-black text-slate-900 tracking-tight font-mono">{project.id.toUpperCase()}</p>
-                        </div>
-                        <div className="flex gap-3">
-                            <Link href={`/dashboard/it-management/projects/${projectId}/edit`}>
-                                <button className="px-10 py-5 rounded-[1.75rem] bg-slate-900 text-white text-[11px] font-black uppercase tracking-[0.2em] flex items-center gap-4 hover:bg-black hover:-translate-y-1 transition-all shadow-[0_20px_40px_rgba(0,0,0,0.15)] active:scale-95">
-                                    <Edit className="h-4 w-4 text-blue-400" /> Refine Parameters
+                            <div className="flex flex-wrap items-center gap-3">
+                                <Link href={`/dashboard/it-management/projects/${projectId}/edit`}>
+                                    <button className="flex items-center gap-3 px-6 py-3 bg-blue-600 text-white text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-blue-500 transition-all shadow-lg shadow-blue-500/25">
+                                        <Edit className="h-4 w-4" /> Refine Setup
+                                    </button>
+                                </Link>
+                                <button className="p-3 bg-white/5 border border-white/10 rounded-xl text-slate-300 hover:text-white hover:bg-white/10 transition-all">
+                                    <Share2 className="h-4 w-4" />
                                 </button>
-                            </Link>
-                            <button className="p-5 rounded-[1.75rem] bg-white border border-slate-200 text-slate-400 hover:text-blue-600 hover:border-blue-200 hover:shadow-xl transition-all active:scale-95">
-                                <Share2 className="h-5 w-5" />
-                            </button>
-                            <button onClick={handleDelete} disabled={deleting} 
-                                className="p-5 rounded-[1.75rem] bg-rose-50 text-rose-500 border border-rose-100 hover:bg-rose-500 hover:text-white transition-all disabled:opacity-50 active:scale-95 shadow-lg shadow-rose-500/5">
-                                <Trash2 className="h-5 w-5" />
-                            </button>
+                                <button onClick={handleDelete} disabled={deleting} 
+                                    className="p-3 bg-rose-500/10 border border-rose-500/20 rounded-xl text-rose-400 hover:bg-rose-500/20 transition-all disabled:opacity-50">
+                                    <Trash2 className="h-4 w-4" />
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </motion.div>
 
-                {/* High-Impact Analytics Matrix */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+                {/* ── METRICS GRID ─────────────────────────── */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                     {[
-                        { label: 'Lifecycle State', val: project.status, icon: Activity, color: STATUS_CONFIG[project.status]?.text || 'text-blue-600', trend: 'STABLE' },
-                        { label: 'Criticality Level', val: project.priority, icon: ShieldAlert, color: project.priority === 'CRITICAL' ? 'text-rose-600' : 'text-amber-500', trend: 'WATCH' },
-                        { label: 'Efficiency Rate', val: `${project.stats.completionRate}%`, icon: Zap, color: 'text-emerald-600', trend: '+12.4%', progress: project.stats.completionRate },
-                        { label: project.isRevenueBased ? 'Revenue Yield' : 'Mission Stream', val: project.isRevenueBased ? `₹${(project.itRevenueEarned / 1000).toFixed(1)}K` : project.type, icon: Binary, color: 'text-blue-500', trend: 'ACTIVE' },
+                        { label: 'Lifecycle State', val: project.status, icon: Activity, color: stConf.text, trend: 'STABLE' },
+                        { label: 'Criticality Level', val: project.priority, icon: ShieldAlert, color: project.priority === 'CRITICAL' ? 'text-rose-400' : 'text-amber-400', trend: 'WATCH' },
+                        { label: 'Efficiency Rate', val: `${project.stats.completionRate}%`, icon: Zap, color: 'text-emerald-400', trend: '+12.4%', progress: project.stats.completionRate },
+                        { label: project.isRevenueBased ? 'Revenue Yield' : 'Mission Stream', val: project.isRevenueBased ? `₹${(project.itRevenueEarned / 1000).toFixed(1)}K` : project.type, icon: Binary, color: 'text-blue-400', trend: 'ACTIVE' },
                     ].map((stat, i) => (
-                        <motion.div key={i} initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: i * 0.1 }}
-                            className="bg-white p-10 rounded-[3.5rem] border border-slate-100 shadow-[0_16px_48px_rgba(0,0,0,0.04)] relative overflow-hidden group hover:shadow-2xl hover:shadow-slate-200/50 transition-all duration-500"
+                        <motion.div key={i} initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: i * 0.1 }}
+                            className="bg-white/[0.03] backdrop-blur-xl border border-white/10 p-6 rounded-2xl relative overflow-hidden group hover:bg-white/[0.06] hover:border-white/20 transition-all duration-300"
                         >
-                            <div className="absolute top-0 right-0 p-8 transform rotate-12 opacity-[0.03] group-hover:rotate-0 transition-transform duration-700">
-                                <stat.icon className="h-24 w-24" />
+                            <div className="absolute top-0 right-0 p-6 transform rotate-12 opacity-[0.05] group-hover:rotate-0 transition-transform duration-700 pointer-events-none">
+                                <stat.icon className={`h-16 w-16 ${stat.color}`} />
                             </div>
-                            <div className="relative space-y-6">
+                            <div className="relative space-y-4">
                                 <div className="flex items-center justify-between">
-                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] leading-none mb-1">{stat.label}</p>
-                                    <div className="px-2 py-1 bg-slate-50 rounded-lg text-[8px] font-black tracking-widest text-slate-400 border border-slate-100">{stat.trend}</div>
+                                    <p className="text-[9px] font-black text-slate-500 uppercase tracking-[0.2em]">{stat.label}</p>
+                                    <div className="px-2 py-0.5 bg-white/5 rounded text-[8px] font-black tracking-widest text-slate-400 border border-white/5">{stat.trend}</div>
                                 </div>
-                                <div>
-                                    <span className={`text-4xl font-black tracking-tighter ${stat.color} uppercase italic`}>{stat.val}</span>
+                                <div className="py-1">
+                                    <span className={`text-2xl font-black tracking-tight ${stat.color} uppercase italic`}>{stat.val}</span>
                                 </div>
                                 {stat.progress !== undefined ? (
-                                    <div className="h-1.5 w-full bg-slate-50 rounded-full overflow-hidden border border-slate-100">
+                                    <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden border border-white/5">
                                         <motion.div initial={{ width: 0 }} animate={{ width: `${stat.progress}%` }} transition={{ duration: 1.5, ease: "circOut" }}
-                                            className="h-full bg-gradient-to-r from-emerald-600 to-emerald-400"
+                                            className="h-full bg-emerald-500"
                                         />
                                     </div>
                                 ) : (
-                                    <div className="flex gap-1.5">
-                                        {[1,2,3,4,5].map(j => <div key={j} className={`h-1 flex-1 rounded-full ${j*20 <= (i+1)*25 ? 'bg-slate-900' : 'bg-slate-100'}`} />)}
+                                    <div className="flex gap-1">
+                                        {[1,2,3,4,5].map(j => <div key={j} className={`h-1 flex-1 rounded-full ${j*20 <= (i+1)*25 ? 'bg-slate-500' : 'bg-white/5'}`} />)}
                                     </div>
                                 )}
                             </div>
@@ -282,69 +251,69 @@ export default function ProjectDetailPage() {
                     ))}
                 </div>
 
-                {/* Tactical Navigation Interface */}
-                <div className="flex items-center gap-3 p-2 bg-white/80 backdrop-blur-2xl rounded-[2.5rem] w-fit border border-white shadow-[0_20px_50px_rgba(0,0,0,0.05)] mx-auto lg:mx-0">
+                {/* ── TABS ───────────────────────────────────── */}
+                <div className="flex items-center gap-2 p-1.5 bg-white/[0.03] backdrop-blur-xl rounded-2xl w-fit border border-white/10 mx-auto lg:mx-0 overflow-x-auto">
                     {[
-                        { key: 'overview', label: 'Architecture', icon: Command, color: 'text-blue-600' },
-                        { key: 'timeline', label: 'Chronology', icon: GanttChart, color: 'text-amber-600' },
-                        { key: 'documents', label: 'Assets', icon: Database, color: 'text-emerald-600' },
-                        { key: 'suggestions', label: 'Feedback', icon: MessageSquare, color: 'text-indigo-600', count: project.stats.pendingSuggestions },
+                        { key: 'overview', label: 'Architecture', icon: Command, color: 'text-blue-400' },
+                        { key: 'timeline', label: 'Chronology', icon: GanttChart, color: 'text-amber-400' },
+                        { key: 'documents', label: 'Assets', icon: Database, color: 'text-emerald-400' },
+                        { key: 'suggestions', label: 'Feedback', icon: MessageSquare, color: 'text-indigo-400', count: project.stats.pendingSuggestions },
                     ].map(tab => (
-                        <button key={tab.key} onClick={() => setActiveTab(tab.key as any)}
-                            className={`flex items-center gap-4 px-8 py-4 rounded-[1.75rem] text-[11px] font-black uppercase tracking-[0.2em] transition-all relative group
-                            ${activeTab === tab.key ? 'bg-slate-900 text-white shadow-2xl' : 'text-slate-400 hover:text-slate-900 hover:bg-slate-50'}`}>
-                            <tab.icon className={`h-4 w-4 ${activeTab === tab.key ? 'text-white' : tab.color} group-hover:scale-110 transition-transform`} /> 
+                        <button key={tab.key} onClick={() => setActiveTab(tab.key as 'overview')}
+                            className={`flex items-center gap-3 px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition-all relative group whitespace-nowrap
+                            ${activeTab === tab.key ? 'bg-slate-800 text-white shadow-lg border border-white/10' : 'text-slate-400 hover:text-white hover:bg-white/5'}`}>
+                            <tab.icon className={`h-4 w-4 ${activeTab === tab.key ? 'text-white' : tab.color}`} /> 
                             {tab.label}
                             {tab.count ? (
-                                <span className={`ml-2 px-2 py-0.5 rounded-lg text-[9px] ${activeTab === tab.key ? 'bg-white text-slate-900' : 'bg-blue-600 text-white'}`}>
+                                <span className={`ml-1 px-1.5 py-0.5 rounded-lg text-[9px] ${activeTab === tab.key ? 'bg-white text-slate-900' : 'bg-blue-500/20 text-blue-400'}`}>
                                     {tab.count}
                                 </span>
                             ) : null}
-                            {activeTab === tab.key && <motion.div layoutId="tab-active" className="absolute -bottom-1 left-8 right-8 h-1 bg-blue-500 rounded-full" />}
+                            {activeTab === tab.key && <motion.div layoutId="tab-underline" className="absolute -bottom-1.5 left-6 right-6 h-0.5 bg-blue-500 rounded-full" />}
                         </button>
                     ))}
                 </div>
 
-                {/* Main Mission Control Layout */}
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
-                    {/* Primary Intelligence Core */}
-                    <div className="lg:col-span-8 space-y-12">
+                {/* ── MAIN CONTENT ───────────────────────────── */}
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                    {/* Left Data Column */}
+                    <div className="lg:col-span-8 space-y-8">
                         <AnimatePresence mode="wait">
-                            <motion.div key={activeTab} initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.98 }} transition={{ duration: 0.4 }}>
+                            <motion.div key={activeTab} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.3 }}>
                                 {activeTab === 'overview' ? (
-                                    <div className="space-y-12">
-                                        {/* Executive Brief Card */}
-                                        <div className="bg-white rounded-[4rem] p-16 border border-slate-100 shadow-[0_32px_96px_rgba(0,0,0,0.04)] relative overflow-hidden group">
-                                            <div className="absolute top-0 right-0 p-16 opacity-[0.02] group-hover:scale-110 transition-transform duration-1000">
-                                                <Target className="h-64 w-64 text-slate-900" />
+                                    <div className="space-y-8">
+                                        {/* Briefing Card */}
+                                        <div className="bg-white/[0.03] backdrop-blur-xl rounded-[2.5rem] p-8 lg:p-12 border border-white/10 relative overflow-hidden group">
+                                            <div className="absolute top-0 right-0 p-12 opacity-[0.02] group-hover:scale-110 transition-transform duration-1000 pointer-events-none">
+                                                <Target className="h-64 w-64 text-white" />
                                             </div>
-                                            <div className="relative space-y-12">
-                                                <div className="space-y-6">
-                                                    <h3 className="text-3xl font-black text-slate-900 flex items-center gap-5 tracking-tighter">
-                                                        <div className="p-4 bg-blue-50 text-blue-600 rounded-[1.5rem]"><Terminal className="h-7 w-7" /></div> 
+                                            <div className="relative space-y-10">
+                                                <div className="space-y-5">
+                                                    <h3 className="text-xl font-black text-white flex items-center gap-3 tracking-tight">
+                                                        <div className="p-2.5 bg-blue-500/10 text-blue-400 rounded-xl"><Terminal className="h-5 w-5" /></div> 
                                                         Strategic Definition
                                                     </h3>
-                                                    <div className="bg-slate-50/50 p-12 rounded-[3.5rem] border border-slate-100/50 relative">
-                                                        <p className="text-xl text-slate-600 font-medium leading-[1.7] italic">
+                                                    <div className="bg-slate-900/50 p-8 rounded-3xl border border-white/5 relative">
+                                                        <p className="text-sm text-slate-400 font-medium leading-loose italic">
                                                             {project.about || 'Operational briefing pending master encryption...'}
                                                         </p>
-                                                        <div className="absolute top-6 right-8 text-4xl text-slate-200">&quot;</div>
+                                                        <div className="absolute top-4 right-6 text-4xl text-slate-700">&quot;</div>
                                                     </div>
                                                 </div>
                                                 
-                                                <div className="space-y-8">
+                                                <div className="space-y-6">
                                                     <div className="flex items-center justify-between">
-                                                        <h3 className="text-[11px] font-black text-slate-900 uppercase tracking-[0.4em] mb-6 flex items-center gap-4">
-                                                            <Network className="h-5 w-5 text-indigo-500" /> Architectural Scope
+                                                        <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-3">
+                                                            <Network className="h-4 w-4 text-indigo-400" /> Architectural Scope
                                                         </h3>
-                                                        <div className="h-px flex-1 mx-8 bg-slate-100" />
+                                                        <div className="h-px flex-1 mx-6 bg-white/5" />
                                                     </div>
-                                                    <p className="text-slate-600 text-lg leading-relaxed whitespace-pre-wrap px-2">{project.description}</p>
+                                                    <p className="text-slate-300 text-sm leading-relaxed whitespace-pre-wrap">{project.description}</p>
 
                                                     {project.keywords && project.keywords.length > 0 && (
-                                                        <div className="flex flex-wrap gap-3 pt-6">
+                                                        <div className="flex flex-wrap gap-2 pt-4">
                                                             {project.keywords.map(kw => (
-                                                                <span key={kw} className="px-5 py-3 bg-white border border-slate-200 text-slate-500 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] flex items-center gap-3 hover:border-blue-400 hover:text-blue-600 transition-all cursor-default">
+                                                                <span key={kw} className="px-4 py-2 bg-white/5 border border-white/10 text-slate-400 rounded-xl text-[9px] font-black uppercase tracking-widest flex items-center gap-2 hover:border-blue-500/50 hover:text-blue-400 transition-all">
                                                                     <div className="h-1.5 w-1.5 rounded-full bg-blue-500" /> {kw}
                                                                 </span>
                                                             ))}
@@ -354,72 +323,70 @@ export default function ProjectDetailPage() {
                                             </div>
                                         </div>
 
-                                        {/* Tactical Center: Linked Infrastructure Terminal */}
+                                        {/* Linked Web Terminal */}
                                         {project.website && (
-                                            <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }}
-                                                className="bg-slate-900 rounded-[4rem] p-16 shadow-[0_64px_128px_-32px_rgba(0,0,0,0.5)] relative overflow-hidden group border border-slate-800"
+                                            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
+                                                className="bg-slate-900 rounded-[2.5rem] p-8 lg:p-10 border border-slate-800 relative overflow-hidden group shadow-2xl"
                                             >
-                                                <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-blue-600/10 rounded-full blur-[120px] -mr-[300px] -mt-[300px] animate-pulse" />
-                                                <div className="absolute bottom-0 left-0 w-96 h-96 bg-emerald-500/5 rounded-full blur-[100px] -ml-48 -mb-48" />
+                                                <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-blue-500/10 rounded-full blur-[100px] -mr-[200px] -mt-[200px] animate-pulse pointer-events-none" />
                                                 
-                                                {/* Scanning Line Animation */}
                                                 <motion.div animate={{ top: ['0%', '100%', '0%'] }} transition={{ duration: 10, repeat: Infinity, ease: 'linear' }}
-                                                    className="absolute left-0 right-0 h-px bg-white/5 z-0" />
+                                                    className="absolute left-0 right-0 h-px bg-white/10 z-0 pointer-events-none" />
 
-                                                <div className="relative z-10 space-y-12">
-                                                    <div className="flex flex-col md:flex-row items-center justify-between gap-12">
-                                                        <div className="flex items-center gap-10">
+                                                <div className="relative z-10 space-y-8">
+                                                    <div className="flex flex-col md:flex-row items-center justify-between gap-8">
+                                                        <div className="flex items-center gap-6">
                                                             <div className="relative">
-                                                                <div className={`p-8 rounded-[3rem] ${project.website.status === 'UP' ? 'bg-emerald-500 shadow-[0_0_80px_rgba(16,185,129,0.3)]' : 'bg-rose-500 shadow-[0_0_80px_rgba(244,63,94,0.3)]'} transition-transform duration-700 group-hover:scale-110`}>
-                                                                    <Globe className="h-14 w-14 text-white" />
+                                                                <div className={`p-6 rounded-[2rem] ${project.website.status === 'UP' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-rose-500/20 text-rose-400 border border-rose-500/30'} transition-transform duration-700 group-hover:scale-110`}>
+                                                                    <Globe className="h-10 w-10" />
                                                                 </div>
-                                                                <div className="absolute -bottom-4 -right-4 h-14 w-14 bg-slate-900 rounded-[2rem] flex items-center justify-center border-8 border-slate-800 shadow-2xl">
-                                                                    <Activity className={`h-6 w-6 ${project.website.status === 'UP' ? 'text-emerald-500' : 'text-rose-500'} animate-pulse`} />
+                                                                <div className="absolute -bottom-2 -right-2 h-10 w-10 bg-slate-900 rounded-xl flex items-center justify-center border-4 border-slate-800">
+                                                                    <Activity className={`h-4 w-4 ${project.website.status === 'UP' ? 'text-emerald-500' : 'text-rose-500'} animate-pulse`} />
                                                                 </div>
                                                             </div>
-                                                            <div className="space-y-4 text-center md:text-left">
-                                                                <div className="flex items-center gap-4 justify-center md:justify-start">
-                                                                    <span className="px-4 py-1.5 bg-blue-600/30 text-blue-400 rounded-full text-[9px] font-black uppercase tracking-[0.3em] border border-blue-400/20">Infrastructure Terminal</span>
-                                                                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-[0.4em] flex items-center gap-2">
+                                                            <div className="space-y-2 text-center md:text-left">
+                                                                <div className="flex flex-wrap items-center gap-3 justify-center md:justify-start">
+                                                                    <span className="px-3 py-1 bg-blue-500/10 text-blue-400 rounded-lg text-[9px] font-black uppercase tracking-widest border border-blue-500/20">Infra Node</span>
+                                                                    <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-1.5">
                                                                         <Fingerprint className="h-3 w-3" /> Core v4.0.2
                                                                     </span>
                                                                 </div>
-                                                                <h3 className="text-5xl font-black text-white uppercase tracking-tighter leading-none">{project.website.name}</h3>
+                                                                <h3 className="text-3xl font-black text-white uppercase tracking-tighter">{project.website.name}</h3>
                                                             </div>
                                                         </div>
 
-                                                        <div className="flex flex-col sm:flex-row gap-6 w-full md:w-auto">
-                                                            <div className="bg-white/5 border border-white/10 rounded-[2.5rem] p-8 space-y-2 min-w-[240px]">
-                                                                <div className="flex items-center justify-between">
-                                                                    <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] mb-1">Live Telemetry</p>
-                                                                    <Radar className={`h-4 w-4 ${project.website.status === 'UP' ? 'text-emerald-500' : 'text-rose-500'}`} />
+                                                        <div className="flex flex-col sm:flex-row gap-4 w-full md:w-auto">
+                                                            <div className="bg-white/5 border border-white/10 rounded-2xl p-5 w-full md:w-48">
+                                                                <div className="flex items-center justify-between mb-2">
+                                                                    <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Telemetry</span>
+                                                                    <Radar className={`h-3 w-3 ${project.website.status === 'UP' ? 'text-emerald-400' : 'text-rose-400'}`} />
                                                                 </div>
-                                                                <div className="flex items-end gap-3">
-                                                                    <p className={`text-4xl font-black italic tracking-tighter ${project.website.status === 'UP' ? 'text-emerald-400' : 'text-rose-400'}`}>
-                                                                        {project.website.status === 'UP' ? '99.9%' : 'OFFLINE'}
+                                                                <div className="flex items-end gap-2">
+                                                                    <p className={`text-3xl font-black italic tracking-tighter leading-none ${project.website.status === 'UP' ? 'text-emerald-400' : 'text-rose-400'}`}>
+                                                                        {project.website.status === 'UP' ? '99.9%' : 'OFF'}
                                                                     </p>
-                                                                    <p className="text-[10px] font-black text-white/40 mb-2 uppercase">Uptime</p>
+                                                                    <p className="text-[9px] font-black text-slate-600 mb-1 uppercase">Uptime</p>
                                                                 </div>
                                                             </div>
                                                             <button onClick={() => setShowFleetAudit(true)} 
-                                                                className="px-10 py-8 bg-blue-600 text-white rounded-[2.5rem] font-black text-[11px] uppercase tracking-[0.3em] hover:bg-blue-500 hover:scale-[1.02] active:scale-95 transition-all shadow-[0_32px_64px_rgba(37,99,235,0.3)] flex flex-col items-center justify-center gap-3 group/btn">
-                                                                <RefreshCcw className="h-6 w-6 text-white group-hover/btn:rotate-180 transition-transform duration-700" />
-                                                                Run Fleet Audit
+                                                                className="px-6 py-4 bg-blue-600/10 text-blue-400 border border-blue-500/30 rounded-2xl font-black text-[9px] uppercase tracking-widest hover:bg-blue-600/20 active:scale-95 transition-all flex flex-col items-center justify-center gap-2 group/btn">
+                                                                <RefreshCcw className="h-5 w-5 group-hover/btn:rotate-180 transition-transform duration-700" />
+                                                                Fleet Audit
                                                             </button>
                                                         </div>
                                                     </div>
                                                     
-                                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-1 px-4 py-8 bg-white/5 rounded-3xl border border-white/5 divide-x divide-white/5">
+                                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-1 px-4 py-5 bg-white/[0.02] border border-white/[0.05] rounded-xl divide-x divide-white/[0.05]">
                                                         {[
                                                             { label: 'Network URL', value: project.website.url, icon: ArrowUpRight, color: 'text-blue-400' },
                                                             { label: 'Latency Pulse', value: '42ms', icon: Activity, color: 'text-emerald-400' },
                                                             { label: 'Secure SSL', value: 'Verified', icon: ShieldCheck, color: 'text-indigo-400' }
                                                         ].map((item, i) => (
-                                                            <div key={i} className="px-8 space-y-2 first:pl-0 last:pr-0">
-                                                                <p className="text-[9px] font-black text-slate-500 uppercase tracking-[0.3em] flex items-center gap-2">
+                                                            <div key={i} className="px-6 space-y-1.5 first:pl-0 last:pr-0">
+                                                                <p className="text-[8px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-1.5">
                                                                     <item.icon className={`h-3 w-3 ${item.color}`} /> {item.label}
                                                                 </p>
-                                                                <p className="text-sm font-black text-white truncate font-mono">{item.value}</p>
+                                                                <p className="text-xs font-black text-white truncate font-mono">{item.value}</p>
                                                             </div>
                                                         ))}
                                                     </div>
@@ -428,80 +395,74 @@ export default function ProjectDetailPage() {
                                         )}
 
                                         {/* Milestones Registry */}
-                                        <div className="bg-white rounded-[4rem] p-16 border border-slate-100 shadow-[0_32px_96px_rgba(0,0,0,0.04)]">
-                                            <div className="flex flex-col md:flex-row md:items-center justify-between gap-8 mb-16">
-                                                <div className="flex items-center gap-6">
-                                                    <div className="h-20 w-20 rounded-[2.5rem] bg-indigo-900 flex items-center justify-center shadow-2xl">
-                                                        <GanttChart className="h-10 w-10 text-white" />
+                                        <div className="bg-white/[0.03] backdrop-blur-xl rounded-[2.5rem] p-8 lg:p-12 border border-white/10">
+                                            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-10">
+                                                <div className="flex items-center gap-5">
+                                                    <div className="p-4 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 shadow-inner text-indigo-400">
+                                                        <GanttChart className="h-6 w-6" />
                                                     </div>
                                                     <div>
-                                                        <h3 className="text-3xl font-black text-slate-900 tracking-tighter leading-none mb-2">Milestone Log</h3>
-                                                        <p className="text-[11px] font-black text-slate-400 uppercase tracking-[0.3em]">Temporal Progression Map</p>
+                                                        <h3 className="text-xl font-black text-white tracking-tight mb-1">Milestone Log</h3>
+                                                        <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Progression Map</p>
                                                     </div>
                                                 </div>
                                                 <button onClick={() => { setSelectedMilestone(null); setShowMilestoneModal(true); }} 
-                                                    className="px-10 py-5 bg-slate-900 text-white rounded-[1.75rem] font-black text-[10px] uppercase tracking-[0.2em] hover:bg-black hover:scale-105 active:scale-95 transition-all shadow-2xl flex items-center gap-4">
-                                                    <Plus className="h-5 w-5 text-emerald-400" /> Deploy Milestone
+                                                    className="px-6 py-3 bg-white/5 border border-white/10 text-white rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-white/10 transition-all flex items-center gap-2">
+                                                    <Plus className="h-4 w-4 text-emerald-400" /> New Phase
                                                 </button>
                                             </div>
 
                                             {project.milestones.length === 0 ? (
-                                                <div className="text-center py-32 border-4 border-dashed border-slate-50 rounded-[4rem] space-y-6">
-                                                    <div className="h-24 w-24 rounded-full bg-slate-50 flex items-center justify-center mx-auto">
-                                                        <Calendar className="h-10 w-10 text-slate-200" />
-                                                    </div>
-                                                    <div className="space-y-2">
-                                                        <p className="text-[11px] font-black text-slate-400 uppercase tracking-[0.4em]">Chronology Empty</p>
-                                                        <p className="text-slate-300 font-bold italic">No strategic data points detected in timeline.</p>
-                                                    </div>
+                                                <div className="text-center py-16 border border-dashed border-white/10 rounded-3xl space-y-4 bg-white/[0.01]">
+                                                    <Calendar className="h-8 w-8 text-slate-600 mx-auto" />
+                                                    <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">No strategic points plotted</p>
                                                 </div>
                                             ) : (
-                                                <div className="relative space-y-12 pl-12">
-                                                    <div className="absolute left-[20px] top-4 bottom-4 w-1.5 bg-slate-100 rounded-full" />
+                                                <div className="relative space-y-8 pl-10 border-l border-white/10 ml-6">
                                                     {project.milestones.map((ms, idx) => (
                                                         <motion.div key={ms.id} initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: idx * 0.1 }}
                                                             className="group relative"
                                                         >
-                                                            <div className={`absolute -left-[54px] top-6 z-10 w-14 h-14 rounded-full border-8 border-white shadow-xl flex items-center justify-center transition-all duration-500 group-hover:scale-110 ${ms.status === 'COMPLETED' ? 'bg-emerald-500' : 'bg-slate-900'}`}>
-                                                                {ms.status === 'COMPLETED' ? <CheckCircle2 className="h-5 w-5 text-white" /> : <div className="h-2 w-2 rounded-full bg-blue-500 animate-ping" />}
+                                                            <div className={`absolute -left-[54px] top-6 z-10 w-7 h-7 rounded-sm border-2 border-slate-900 shadow-sm flex items-center justify-center transition-all duration-500 group-hover:scale-110 ${ms.status === 'COMPLETED' ? 'bg-emerald-500' : 'bg-slate-700'}`}>
+                                                                {ms.status === 'COMPLETED' ? <CheckCircle2 className="h-4 w-4 text-white" /> : <div className="h-1.5 w-1.5 rounded-full bg-blue-400 animate-pulse" />}
                                                             </div>
-                                                            <div className="bg-slate-50/50 border border-slate-100/50 hover:bg-white hover:shadow-2xl hover:border-blue-200 p-12 rounded-[3.5rem] transition-all duration-700 group-hover:-translate-y-2">
-                                                                <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-8 mb-8">
-                                                                    <div className="space-y-4">
-                                                                        <div className="flex items-center gap-4">
-                                                                            <span className="text-[10px] font-black text-blue-500 uppercase tracking-[0.3em] font-mono">STEP_{idx + 1}</span>
-                                                                            <div className="h-px w-10 bg-blue-100" />
-                                                                            <span className={`px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest ${ms.status === 'COMPLETED' ? 'bg-emerald-100 text-emerald-600' : 'bg-slate-900 text-white'}`}>
+                                                            <div className="bg-white/[0.03] border border-white/5 hover:bg-white/[0.06] hover:border-white/10 p-8 rounded-3xl transition-all duration-300">
+                                                                <div className="flex flex-col xl:flex-row xl:items-start justify-between gap-6 mb-4">
+                                                                    <div className="space-y-3">
+                                                                        <div className="flex items-center gap-3">
+                                                                            <span className="text-[9px] font-black text-blue-400 uppercase tracking-widest font-mono">PHASE_{idx + 1}</span>
+                                                                            <span className={`px-2 py-1 rounded text-[8px] font-black uppercase tracking-widest ${ms.status === 'COMPLETED' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-white/10 text-slate-300 border border-white/20'}`}>
                                                                                 {ms.status}
                                                                             </span>
                                                                         </div>
-                                                                        <h4 className="text-3xl font-black text-slate-900 leading-none group-hover:text-blue-600 transition-colors tracking-tighter">{ms.name}</h4>
+                                                                        <h4 className="text-xl font-black text-white leading-none">{ms.name}</h4>
                                                                     </div>
-                                                                    <div className="flex items-center gap-4">
-                                                                        <div className="text-right px-6 py-3 border-r border-slate-200">
-                                                                            <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Due Cycle</p>
-                                                                            <p className="text-sm font-black text-slate-900">{new Date(ms.dueDate).toLocaleDateString()}</p>
+                                                                    <div className="flex items-center gap-3">
+                                                                        <div className="text-right px-4">
+                                                                            <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-0.5">Due Cycle</p>
+                                                                            <p className="text-xs font-black text-slate-300">{new Date(ms.dueDate).toLocaleDateString()}</p>
                                                                         </div>
-                                                                        <button onClick={() => { setSelectedMilestone(ms); setShowMilestoneModal(true); }} className="p-4 bg-white border border-slate-200 rounded-2xl text-slate-400 hover:text-blue-600 hover:border-blue-200 hover:shadow-xl transition-all active:scale-95">
-                                                                            <Edit className="h-5 w-5" />
+                                                                        <button onClick={() => { setSelectedMilestone(ms); setShowMilestoneModal(true); }} 
+                                                                            className="p-3 bg-white/5 border border-white/10 rounded-xl text-slate-400 hover:text-white hover:bg-white/10 transition-all">
+                                                                            <Edit className="h-4 w-4" />
                                                                         </button>
                                                                     </div>
                                                                 </div>
-                                                                {ms.description && <p className="text-slate-500 text-lg leading-relaxed mb-10 italic max-w-2xl">&quot;{ms.description}&quot;</p>}
+                                                                {ms.description && <p className="text-slate-400 text-sm leading-relaxed mb-6 italic">&quot;{ms.description}&quot;</p>}
                                                                 {ms.paymentAmount && ms.paymentAmount > 0 ? (
-                                                                    <div className={`p-8 rounded-[2.5rem] flex items-center justify-between ${ms.isPaid ? 'bg-emerald-50 text-emerald-700 border border-emerald-100 shadow-sm' : 'bg-slate-900 text-white shadow-2xl shadow-slate-200'}`}>
-                                                                        <div className="flex items-center gap-5">
-                                                                            <div className={`p-3 rounded-2xl ${ms.isPaid ? 'bg-emerald-500 text-white' : 'bg-white/10 text-white'}`}>
-                                                                                <DollarSign className="h-6 w-6" />
+                                                                    <div className={`p-4 rounded-2xl flex items-center justify-between border ${ms.isPaid ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-white/5 text-white border-white/10'}`}>
+                                                                        <div className="flex items-center gap-3">
+                                                                            <div className={`p-2 rounded-xl bg-white/5 ${ms.isPaid ? 'text-emerald-400' : 'text-slate-400'}`}>
+                                                                                <DollarSign className="h-4 w-4" />
                                                                             </div>
                                                                             <div>
-                                                                                <p className={`text-[10px] font-black uppercase tracking-[0.3em] mb-1 ${ms.isPaid ? 'text-emerald-600' : 'text-slate-400'}`}>Fiscal Allocation</p>
-                                                                                <p className="text-2xl font-black tracking-tight">₹{ms.paymentAmount.toLocaleString()}</p>
+                                                                                <p className={`text-[9px] font-black uppercase tracking-widest leading-none ${ms.isPaid ? 'text-emerald-500' : 'text-slate-500'}`}>Fiscal Call</p>
+                                                                                <p className="text-sm font-black tracking-tight">₹{ms.paymentAmount.toLocaleString()}</p>
                                                                             </div>
                                                                         </div>
-                                                                        <div className="flex items-center gap-3">
-                                                                            <div className={`h-2 w-2 rounded-full ${ms.isPaid ? 'bg-emerald-500' : 'bg-amber-400 animate-pulse'}`} />
-                                                                            <span className="text-[10px] font-black uppercase tracking-widest">{ms.isPaid ? 'VAL_SETTLED' : 'VAL_PENDING'}</span>
+                                                                        <div className="flex items-center gap-2">
+                                                                            <div className={`h-1.5 w-1.5 rounded-full ${ms.isPaid ? 'bg-emerald-400' : 'bg-amber-400 animate-pulse'}`} />
+                                                                            <span className="text-[8px] font-black uppercase tracking-widest">{ms.isPaid ? 'VAL_SETTLED' : 'VAL_PENDING'}</span>
                                                                         </div>
                                                                     </div>
                                                                 ) : null}
@@ -519,7 +480,7 @@ export default function ProjectDetailPage() {
                                 ) : activeTab === 'suggestions' ? (
                                     <ProjectSuggestions projectId={projectId} suggestions={project.suggestions} onUpdate={fetchProject} canManage={true} />
                                 ) : (
-                                    <div className="bg-white rounded-[4rem] p-16 border border-slate-100 shadow-[0_32px_96px_rgba(0,0,0,0.04)]">
+                                    <div className="bg-white/[0.03] backdrop-blur-xl rounded-[2.5rem] p-8 border border-white/10">
                                         <ITDocumentManager projectId={projectId} />
                                     </div>
                                 )}
@@ -527,43 +488,39 @@ export default function ProjectDetailPage() {
                         </AnimatePresence>
                     </div>
 
-                    {/* Technical Command Sidebar */}
-                    <div className="lg:col-span-4 space-y-12">
-                        {/* Operational Integrity Profile */}
+                    {/* Right Specs Column */}
+                    <div className="lg:col-span-4 space-y-8">
+                        {/* Parameters */}
                         <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.2 }}
-                            className="bg-white rounded-[4rem] p-12 border border-slate-100 shadow-[0_24px_64px_rgba(0,0,0,0.04)] relative overflow-hidden"
+                            className="bg-white/[0.03] backdrop-blur-xl rounded-[2.5rem] p-8 border border-white/10 relative overflow-hidden"
                         >
-                            <div className="absolute top-0 right-0 w-32 h-32 bg-blue-50 rounded-full blur-3xl opacity-50" />
-                            <h3 className="text-[11px] font-black text-slate-900 uppercase tracking-[0.4em] mb-12 flex items-center gap-4">
-                                <Settings className="h-4 w-4 text-blue-600" /> System Params
+                            <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-8 flex items-center gap-3">
+                                <Settings className="h-4 w-4 text-blue-400" /> System Params
                             </h3>
-                            <div className="space-y-12">
-                                <div className="space-y-6">
-                                    <div className="flex items-center justify-between px-2">
-                                        <div className="flex items-center gap-3">
-                                            <Shield className="h-4 w-4 text-slate-400" />
-                                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Priority Index</span>
-                                        </div>
-                                        <span className={`text-[11px] font-black uppercase tracking-widest ${project.priority === 'CRITICAL' ? 'text-rose-600' : 'text-amber-500'}`}>{project.priority}</span>
+                            <div className="space-y-8">
+                                <div className="space-y-4">
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-2"><Shield className="h-3 w-3" /> Priority Index</span>
+                                        <span className={`text-[10px] font-black uppercase tracking-widest ${project.priority === 'CRITICAL' ? 'text-rose-400' : 'text-amber-400'}`}>{project.priority}</span>
                                     </div>
-                                    <div className="h-2 bg-slate-50 rounded-full overflow-hidden border border-slate-100 p-0.5">
-                                        <motion.div initial={{ width: 0 }} animate={{ width: project.priority === 'CRITICAL' ? '100%' : project.priority === 'HIGH' ? '75%' : '50%' }} className="h-full rounded-full bg-slate-900" />
+                                    <div className="h-1.5 bg-white/5 rounded-full overflow-hidden border border-white/5">
+                                        <motion.div initial={{ width: 0 }} animate={{ width: project.priority === 'CRITICAL' ? '100%' : project.priority === 'HIGH' ? '75%' : '50%' }} className={`h-full rounded-full ${project.priority === 'CRITICAL' ? 'bg-rose-500' : 'bg-amber-500'}`} />
                                     </div>
                                 </div>
 
-                                <div className="grid grid-cols-1 gap-6">
+                                <div className="space-y-3">
                                     {[
-                                        { label: 'Deployment State', val: project.status, icon: Radar, color: 'text-blue-500' },
-                                        { label: 'Initiation Date', val: project.startDate ? new Date(project.startDate).toLocaleDateString() : 'N/A', icon: CheckCircle2, color: 'text-emerald-500' },
-                                        { label: 'Target Finality', val: project.endDate ? new Date(project.endDate).toLocaleDateString() : 'ACTIVE', icon: Clock, color: 'text-amber-500' }
+                                        { label: 'Lifecycle', val: project.status, icon: Radar, color: 'text-blue-400' },
+                                        { label: 'Initiation', val: project.startDate ? new Date(project.startDate).toLocaleDateString() : 'N/A', icon: CheckCircle2, color: 'text-emerald-400' },
+                                        { label: 'Finality', val: project.endDate ? new Date(project.endDate).toLocaleDateString() : 'ACTIVE', icon: Clock, color: 'text-amber-400' }
                                     ].map((spec, i) => (
-                                        <div key={i} className="flex items-center gap-6 p-6 bg-slate-50/50 rounded-[2rem] border border-slate-100 group hover:bg-white hover:shadow-xl transition-all duration-500">
-                                            <div className="p-4 bg-white rounded-2xl text-slate-400 shadow-sm group-hover:bg-slate-900 group-hover:text-white transition-all">
-                                                <spec.icon className="h-5 w-5" />
+                                        <div key={i} className="flex items-center gap-4 p-4 bg-white/5 rounded-2xl border border-white/10 group hover:bg-white/10 transition-colors">
+                                            <div className="p-2.5 bg-white/5 rounded-xl text-slate-400 group-hover:text-white transition-colors">
+                                                <spec.icon className="h-4 w-4" />
                                             </div>
-                                            <div className="space-y-1">
-                                                <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.3em] leading-none mb-1">{spec.label}</p>
-                                                <p className="text-sm font-black text-slate-900 uppercase tracking-tight">{spec.val}</p>
+                                            <div>
+                                                <p className="text-[8px] font-black text-slate-500 uppercase tracking-widest mb-0.5">{spec.label}</p>
+                                                <p className="text-xs font-black text-white uppercase">{spec.val}</p>
                                             </div>
                                         </div>
                                     ))}
@@ -571,60 +528,49 @@ export default function ProjectDetailPage() {
                             </div>
                         </motion.div>
 
-                        {/* Personnel Deck Terminal */}
+                        {/* Team */}
                         <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.3 }}
-                            className="bg-slate-900 rounded-[4rem] p-12 shadow-[0_32px_80px_rgba(0,0,0,0.3)] text-white relative overflow-hidden group"
+                            className="bg-white/[0.03] backdrop-blur-xl rounded-[2.5rem] p-8 border border-white/10 relative overflow-hidden"
                         >
-                            <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full blur-[80px] opacity-20 group-hover:bg-blue-600/10 transition-all duration-1000" />
-                            <h3 className="text-[11px] font-black text-white/40 uppercase tracking-[0.4em] mb-12 flex items-center gap-4">
+                            <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-8 flex items-center gap-3">
                                 <Users className="h-4 w-4 text-blue-400" /> Team Topology
                             </h3>
-                            <div className="space-y-10">
+                            <div className="space-y-6">
                                 {[
                                     { role: 'Mission Director', person: project.projectManager, badge: 'LEAD' },
                                     { role: 'Tactical Lead', person: project.teamLead, badge: 'CORE' }
                                 ].map((node, i) => (
-                                    <div key={i} className="flex items-center gap-6 group/item relative">
-                                        <div className="relative">
-                                            <div className="absolute inset-0 bg-blue-500 rounded-[1.75rem] blur-xl opacity-0 group-hover/item:opacity-20 transition-opacity" />
-                                            {node.person?.employeeProfile?.profilePicture ? (
-                                                <img src={node.person.employeeProfile.profilePicture} alt="" className="relative w-16 h-16 rounded-[1.75rem] object-cover ring-4 ring-white/5 group-hover/item:ring-blue-500 transition-all duration-500" />
-                                            ) : (
-                                                <div className="relative w-16 h-16 rounded-[1.75rem] bg-white/5 flex items-center justify-center text-white/60 font-black text-xl border border-white/10 group-hover/item:border-blue-500/50 transition-all">
-                                                    {node.person?.name.charAt(0) || '?'}
-                                                </div>
-                                            )}
-                                        </div>
-                                        <div className="space-y-1">
-                                            <div className="flex items-center gap-3">
-                                                <p className="text-[10px] font-black text-white/30 uppercase tracking-[0.3em] mb-1">{node.role}</p>
-                                                <span className="text-[8px] font-black bg-blue-600/20 text-blue-400 px-2 rounded-full border border-blue-400/20 uppercase tracking-widest">{node.badge}</span>
+                                    <div key={i} className="flex items-center gap-4 group/item relative">
+                                        {node.person?.employeeProfile?.profilePicture ? (
+                                            <img src={node.person.employeeProfile.profilePicture} alt="" className="w-12 h-12 rounded-xl object-cover ring-2 ring-white/10" />
+                                        ) : (
+                                            <div className="w-12 h-12 rounded-xl bg-white/10 flex items-center justify-center text-white/50 font-black border border-white/10">
+                                                {node.person?.name.charAt(0) || '?'}
                                             </div>
-                                            <p className="text-lg font-black tracking-tight">{node.person?.name || 'NODE UNASSIGNED'}</p>
+                                        )}
+                                        <div className="space-y-1">
+                                            <div className="flex items-center gap-2">
+                                                <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest">{node.role}</p>
+                                                <span className="text-[7px] font-black bg-blue-500/20 text-blue-400 px-1.5 py-0.5 rounded border border-blue-500/30 uppercase">{node.badge}</span>
+                                            </div>
+                                            <p className="text-sm font-black text-white">{node.person?.name || 'UNASSIGNED'}</p>
                                         </div>
                                     </div>
                                 ))}
 
                                 {project.taggedEmployees && project.taggedEmployees.length > 0 && (
-                                    <div className="pt-10 border-t border-white/5">
-                                        <div className="flex items-center justify-between mb-6 px-1">
-                                            <p className="text-[9px] font-black text-white/20 uppercase tracking-[0.3em]">Field Agents</p>
-                                            <span className="text-[10px] font-black text-blue-400 font-mono tracking-tighter">{project.taggedEmployees.length} NODES</span>
-                                        </div>
-                                        <div className="flex -space-x-4 overflow-hidden p-1">
+                                    <div className="pt-6 border-t border-white/10">
+                                        <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-4">Field Agents</p>
+                                        <div className="flex -space-x-2 overflow-hidden px-1">
                                             {project.taggedEmployees.slice(0, 5).map((emp, j) => (
-                                                <motion.div key={emp.id} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.5 + j*0.05 }}
-                                                    className="inline-block h-12 w-12 rounded-[1rem] ring-4 ring-slate-900 bg-slate-800 flex items-center justify-center text-xs font-black text-white border border-white/10 hover:-translate-y-2 transition-transform cursor-pointer overflow-hidden shadow-xl"
-                                                >
+                                                <div key={emp.id} className="inline-block h-8 w-8 rounded-lg outline outline-2 outline-slate-900 bg-slate-800 flex items-center justify-center text-[10px] font-black text-white" title={emp.name}>
                                                     {emp.employeeProfile?.profilePicture ? (
-                                                        <img src={emp.employeeProfile.profilePicture} className="h-full w-full object-cover" alt="" />
-                                                    ) : (
-                                                        emp.name.charAt(0)
-                                                    )}
-                                                </motion.div>
+                                                        <img src={emp.employeeProfile.profilePicture} className="h-full w-full object-cover rounded-lg" alt="" />
+                                                    ) : emp.name.charAt(0)}
+                                                </div>
                                             ))}
                                             {project.taggedEmployees.length > 5 && (
-                                                <div className="flex items-center justify-center h-12 w-12 rounded-[1rem] ring-4 ring-slate-900 bg-blue-600 text-[10px] font-black text-white border border-white/10 shadow-xl">
+                                                <div className="flex items-center justify-center h-8 w-8 rounded-lg outline outline-2 outline-slate-900 bg-blue-600/50 text-[9px] font-black text-white">
                                                     +{project.taggedEmployees.length - 5}
                                                 </div>
                                             )}
@@ -634,32 +580,27 @@ export default function ProjectDetailPage() {
                             </div>
                         </motion.div>
 
-                        {/* Fiscal Impact Map */}
+                        {/* Fiscal Impact */}
                         {project.isRevenueBased && (
-                            <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.4 }}
-                                className="bg-gradient-to-br from-emerald-600 to-emerald-500 rounded-[4rem] p-12 shadow-[0_32px_80px_rgba(16,185,129,0.3)] text-white relative overflow-hidden"
+                            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.4 }}
+                                className="bg-gradient-to-br from-emerald-900 to-teal-950 rounded-[2.5rem] p-8 border border-emerald-500/20 text-white relative overflow-hidden shadow-2xl"
                             >
-                                <div className="absolute top-0 right-0 w-48 h-48 bg-white/20 rounded-full blur-[60px] opacity-20" />
-                                <Lock className="absolute bottom-12 right-12 h-24 w-24 text-white opacity-[0.05] -rotate-12" />
-                                
-                                <h3 className="text-[11px] font-black text-white/40 uppercase tracking-[0.4em] mb-12 flex items-center gap-4">
-                                    <DollarSign className="h-4 w-4 text-emerald-300" /> Fiscal Yield
+                                <h3 className="text-[10px] font-black text-emerald-400 uppercase tracking-widest mb-6 flex items-center gap-3">
+                                    <DollarSign className="h-4 w-4" /> Fiscal Yield
                                 </h3>
-                                <div className="space-y-12">
-                                    <div className="text-center bg-white/10 py-10 rounded-[2.5rem] border border-white/10 backdrop-blur-md">
-                                        <p className="text-[10px] font-black text-white/40 uppercase tracking-[0.4em] mb-4">Gross Strategic Value</p>
-                                        <div className="flex items-center justify-center gap-3">
-                                            <span className="text-5xl font-black tracking-tighter">₹{project.estimatedRevenue?.toLocaleString()}</span>
-                                        </div>
+                                <div className="space-y-6">
+                                    <div className="text-center bg-black/20 py-6 rounded-2xl border border-white/5">
+                                        <p className="text-[9px] font-black text-white/50 uppercase tracking-widest mb-2">Estimated Value</p>
+                                        <span className="text-3xl font-black tracking-tighter">₹{project.estimatedRevenue?.toLocaleString()}</span>
                                     </div>
-                                    <div className="grid grid-cols-2 gap-6">
-                                        <div className="bg-slate-900/40 p-6 rounded-[1.75rem] border border-white/5">
-                                            <p className="text-[9px] font-black text-white/30 uppercase mb-2 tracking-widest leading-none">Dept Allocation</p>
-                                            <p className="text-2xl font-black tracking-tight">{project.itDepartmentCut}%</p>
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <div className="bg-white/5 p-4 rounded-xl text-center border border-white/5">
+                                            <p className="text-[8px] font-black text-white/40 uppercase mb-1 tracking-widest">IT Cut</p>
+                                            <p className="text-sm font-black text-white">{project.itDepartmentCut}%</p>
                                         </div>
-                                        <div className="bg-white/10 p-6 rounded-[1.75rem] border border-white/5 text-center">
-                                            <p className="text-[9px] font-black text-white/30 uppercase mb-2 tracking-widest leading-none">Net Impact</p>
-                                            <p className="text-2xl font-black text-emerald-200 tracking-tight">₹{((project.estimatedRevenue * (project.itDepartmentCut || 0)) / 100).toLocaleString()}</p>
+                                        <div className="bg-white/5 p-4 rounded-xl text-center border border-emerald-500/30">
+                                            <p className="text-[8px] font-black text-emerald-300/50 uppercase mb-1 tracking-widest">Net Revenue</p>
+                                            <p className="text-sm font-black text-emerald-400">₹{((project.estimatedRevenue * (project.itDepartmentCut || 0)) / 100).toLocaleString()}</p>
                                         </div>
                                     </div>
                                 </div>

@@ -158,9 +158,9 @@ export const PUT = authorizedRoute(
                     ...(estimatedHours !== undefined && { estimatedHours: estimatedHours ? parseFloat(estimatedHours) : null }),
                     ...(actualHours !== undefined && { actualHours: actualHours ? parseFloat(actualHours) : null }),
                     ...(completionStatus && { completionStatus }),
-                    ...(linkedGoalId !== undefined && { linkedGoalId: linkedGoalId || null }),
-                    ...(projectId !== undefined && { projectId: projectId || null }),
-                    ...(taskId !== undefined && { taskId: taskId || null }),
+                    ...(linkedGoalId !== undefined && { linkedGoalId: (linkedGoalId && linkedGoalId !== 'null') ? linkedGoalId : null }),
+                    ...(projectId !== undefined && { projectId: (projectId && projectId !== 'null') ? projectId : null }),
+                    ...(taskId !== undefined && { taskId: (taskId && taskId !== 'null') ? taskId : null }),
                     ...(visibility && { visibility })
                 } as any,
                 include: {

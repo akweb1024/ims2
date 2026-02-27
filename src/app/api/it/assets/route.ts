@@ -64,10 +64,10 @@ export async function POST(req: NextRequest) {
                 type,
                 serialNumber,
                 status: status || 'AVAILABLE',
-                value: value ? parseFloat(value) : null,
+                value: (value && value !== 'null' && !isNaN(parseFloat(value))) ? parseFloat(value) : null,
                 assignedToId: assignedToId || null,
                 details: details || '',
-                purchaseDate: purchaseDate ? new Date(purchaseDate) : null
+                purchaseDate: (purchaseDate && purchaseDate !== 'null' && purchaseDate !== 'undefined') ? new Date(purchaseDate) : null
             }
         });
 

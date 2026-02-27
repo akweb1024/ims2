@@ -79,11 +79,11 @@ export async function PATCH(req: NextRequest, context: { params: Promise<{ id: s
                 type: body.type,
                 serialNumber: body.serialNumber || null,
                 status: body.status,
-                value: body.value ? parseFloat(body.value) : null,
+                value: (body.value && body.value !== 'null' && !isNaN(parseFloat(body.value))) ? parseFloat(body.value) : null,
                 assignedToId,
                 details: body.details || null,
-                purchaseDate: body.purchaseDate ? new Date(body.purchaseDate) : null,
-                warrantyExpiry: body.warrantyExpiry ? new Date(body.warrantyExpiry) : null,
+                purchaseDate: (body.purchaseDate && body.purchaseDate !== 'null' && body.purchaseDate !== 'undefined') ? new Date(body.purchaseDate) : null,
+                warrantyExpiry: (body.warrantyExpiry && body.warrantyExpiry !== 'null' && body.warrantyExpiry !== 'undefined') ? new Date(body.warrantyExpiry) : null,
             }
         });
 

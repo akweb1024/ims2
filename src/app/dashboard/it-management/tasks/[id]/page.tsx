@@ -122,154 +122,158 @@ export default function TaskDetailPage() {
 
     return (
         <DashboardLayout>
-            <div className="min-h-screen pb-20 space-y-8 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] bg-[length:200px] bg-repeat">
+            <div className="min-h-screen pb-20 space-y-8">
                 
-                {/* Modern Header */}
-                <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }}
-                    className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6"
+                {/* ── HEADER ──────────────────────────────────── */}
+                <motion.div initial={{ opacity: 0, y: -16 }} animate={{ opacity: 1, y: 0 }}
+                    className="relative rounded-2xl overflow-hidden"
                 >
-                    <div className="flex items-center gap-6">
-                        <button onClick={() => router.back()} className="p-4 bg-white border border-slate-200 rounded-2xl text-slate-400 hover:text-purple-600 hover:shadow-lg transition-all">
-                            <ArrowLeft className="h-5 w-5" />
-                        </button>
-                        <div>
-                            <div className="flex items-center gap-3 mb-1">
-                                <span className="px-3 py-1 bg-purple-600/10 text-purple-600 rounded-lg text-[10px] font-black uppercase tracking-widest leading-none">
-                                    {task.taskCode}
-                                </span>
-                                <span className="h-1 w-1 rounded-full bg-slate-200" />
-                                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{task.type.replace('_', ' ')}</span>
+                    <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-violet-950 to-slate-900" />
+                    <div className="absolute inset-0 opacity-15" style={{ backgroundImage: 'radial-gradient(ellipse at 10% 50%, rgba(139,92,246,0.4) 0%, transparent 60%)' }} />
+
+                    <div className="relative p-8 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+                        <div className="flex items-start gap-5">
+                            <button onClick={() => router.back()} className="mt-1 p-3 bg-white/5 border border-white/10 rounded-xl text-slate-400 hover:text-violet-400 hover:border-violet-500/30 transition-all shrink-0">
+                                <ArrowLeft className="h-5 w-5" />
+                            </button>
+                            <div>
+                                <div className="flex items-center gap-3 mb-2">
+                                    <span className="px-3 py-1 bg-violet-500/20 border border-violet-500/30 text-violet-400 rounded-lg text-[10px] font-black uppercase tracking-widest">
+                                        {task.taskCode}
+                                    </span>
+                                    <span className="h-1 w-1 rounded-full bg-slate-700" />
+                                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{task.type.replace('_', ' ')}</span>
+                                </div>
+                                <h1 className="text-3xl font-black text-white tracking-tight">{task.title}</h1>
                             </div>
-                            <h1 className="text-4xl font-black text-slate-900 tracking-tight">{task.title}</h1>
                         </div>
-                    </div>
-                    <div className="flex items-center gap-3 flex-wrap justify-end">
-                        {task.type === 'SERVICE_REQUEST' && task.status !== 'COMPLETED' && (
-                            task.status !== 'UNDER_REVIEW' ? (
-                                <button onClick={() => handleUpdateStatus('UNDER_REVIEW', 'Awaiting validation.')} className="px-6 py-3.5 bg-amber-50 text-amber-600 rounded-2xl text-sm font-black uppercase tracking-widest hover:bg-amber-100 transition-all border border-amber-200 shadow-sm flex items-center gap-2">
-                                    <Clock className="h-4 w-4" /> End Ops
-                                </button>
-                            ) : (
-                                <button onClick={() => handleUpdateStatus('COMPLETED', 'Service accepted.')} className="px-6 py-3.5 bg-emerald-600 text-white rounded-2xl text-sm font-black uppercase tracking-widest hover:bg-emerald-700 transition-all shadow-xl shadow-emerald-200 flex items-center gap-2 animate-pulse">
-                                    <CheckCircle2 className="h-4 w-4" /> Execute Settlement
-                                </button>
-                            )
-                        )}
-                        <button onClick={() => router.push(`/dashboard/it-management/tasks/${taskId}/edit`)} 
-                            className="px-6 py-3.5 rounded-2xl bg-white border border-slate-200 text-slate-600 text-sm font-bold flex items-center gap-2 hover:bg-slate-50 transition-all shadow-sm">
-                            <Edit className="h-4 w-4" /> Reconfigure
-                        </button>
-                        <button onClick={handleDelete} disabled={deleting} 
-                            className="p-3.5 rounded-2xl bg-rose-50 text-rose-600 hover:bg-rose-100 transition-all disabled:opacity-50">
-                            <Trash2 className="h-5 w-5" />
-                        </button>
+                        <div className="flex items-center gap-3 flex-wrap">
+                            {task.type === 'SERVICE_REQUEST' && task.status !== 'COMPLETED' && (
+                                task.status !== 'UNDER_REVIEW' ? (
+                                    <button onClick={() => handleUpdateStatus('UNDER_REVIEW', 'Awaiting validation.')} className="px-5 py-2.5 bg-amber-500/10 text-amber-400 border border-amber-500/20 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-amber-500/20 transition-all flex items-center gap-2">
+                                        <Clock className="h-4 w-4" /> End Ops
+                                    </button>
+                                ) : (
+                                    <button onClick={() => handleUpdateStatus('COMPLETED', 'Service accepted.')} className="px-5 py-2.5 bg-emerald-600 text-white rounded-xl text-xs font-black uppercase tracking-widest hover:bg-emerald-500 transition-all shadow-lg shadow-emerald-500/25 flex items-center gap-2">
+                                        <CheckCircle2 className="h-4 w-4" /> Settle Task
+                                    </button>
+                                )
+                            )}
+                            <button onClick={() => router.push(`/dashboard/it-management/tasks/${taskId}/edit`)}
+                                className="flex items-center gap-2 px-5 py-2.5 bg-white/5 border border-white/10 text-slate-300 text-xs font-black uppercase tracking-widest rounded-xl hover:bg-white/10 transition-all">
+                                <Edit className="h-4 w-4" /> Edit
+                            </button>
+                            <button onClick={handleDelete} disabled={deleting}
+                                className="p-3 bg-rose-500/10 border border-rose-500/20 text-rose-400 rounded-xl hover:bg-rose-500/20 transition-all disabled:opacity-50">
+                                <Trash2 className="h-4 w-4" />
+                            </button>
+                        </div>
                     </div>
                 </motion.div>
 
-                {/* Core Metrics Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                {/* ── METRICS GRID ─────────────────────────── */}
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                     <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.1 }}
-                        className="bg-white/70 backdrop-blur-xl rounded-[2.5rem] p-6 border border-white/80 shadow-sm"
+                        className="bg-white/[0.03] border border-white/10 rounded-2xl p-5"
                     >
-                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Operating Status</p>
+                        <p className="text-[10px] font-black text-slate-600 uppercase tracking-widest mb-3">Status</p>
                         <div className="flex items-center gap-2">
-                            <div className={`h-2 w-2 rounded-full ${STATUS_CONFIG[task.status]?.dot || 'bg-slate-400'}`} />
-                            <span className="text-lg font-black text-slate-900 uppercase tracking-tight">
+                            <div className={`h-2 w-2 rounded-full ${STATUS_CONFIG[task.status]?.dot || 'bg-slate-400'} animate-pulse`} />
+                            <span className={`text-base font-black uppercase tracking-tight ${STATUS_CONFIG[task.status]?.text || 'text-slate-400'}`}>
                                 {STATUS_CONFIG[task.status]?.label || task.status.replace('_', ' ')}
                             </span>
                         </div>
                     </motion.div>
-                    <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.2 }}
-                        className="bg-white/70 backdrop-blur-xl rounded-[2.5rem] p-6 border border-white/80 shadow-sm"
+                    <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.15 }}
+                        className="bg-white/[0.03] border border-white/10 rounded-2xl p-5"
                     >
-                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Severity Rating</p>
-                        <span className={`text-lg font-black uppercase tracking-tight ${PRIORITY_CONFIG[task.priority as keyof typeof PRIORITY_CONFIG]?.text || 'text-slate-600'}`}>
-                            {task.priority} Alpha
+                        <p className="text-[10px] font-black text-slate-600 uppercase tracking-widest mb-3">Priority</p>
+                        <span className={`text-base font-black uppercase tracking-tight ${PRIORITY_CONFIG[task.priority as keyof typeof PRIORITY_CONFIG]?.text || 'text-slate-400'}`}>
+                            {task.priority}
                         </span>
                     </motion.div>
-                    <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.3 }}
-                        className="bg-white/70 backdrop-blur-xl rounded-[2.5rem] p-6 border border-white/80 shadow-sm"
+                    <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.2 }}
+                        className="bg-white/[0.03] border border-white/10 rounded-2xl p-5"
                     >
                         <div className="flex justify-between items-center mb-3">
-                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Completion</p>
-                            <span className="text-lg font-black text-purple-600">{task.progressPercent}%</span>
+                            <p className="text-[10px] font-black text-slate-600 uppercase tracking-widest">Completion</p>
+                            <span className="text-base font-black text-violet-400">{task.progressPercent}%</span>
                         </div>
-                        <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
-                            <motion.div initial={{ width: 0 }} animate={{ width: `${task.progressPercent}%` }} className="h-full bg-purple-600 rounded-full" />
+                        <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
+                            <motion.div initial={{ width: 0 }} animate={{ width: `${task.progressPercent}%` }} className="h-full bg-violet-500 rounded-full" />
                         </div>
                     </motion.div>
-                    <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.4 }}
-                        className={`bg-white/70 backdrop-blur-xl rounded-[2.5rem] p-6 border border-white/80 shadow-sm ${task.isRevenueBased ? 'bg-emerald-50/50 border-emerald-100' : ''}`}
+                    <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.25 }}
+                        className={`border rounded-2xl p-5 ${task.isRevenueBased ? 'bg-emerald-500/10 border-emerald-500/20' : 'bg-white/[0.03] border-white/10'}`}
                     >
-                        <p className={`text-[10px] font-black uppercase tracking-widest mb-3 ${task.isRevenueBased ? 'text-emerald-700' : 'text-slate-400'}`}>
-                            {task.isRevenueBased ? 'Asset Valuation' : 'Intelligence Original'}
+                        <p className={`text-[10px] font-black uppercase tracking-widest mb-3 ${task.isRevenueBased ? 'text-emerald-500' : 'text-slate-600'}`}>
+                            {task.isRevenueBased ? 'Revenue Yield' : 'Category'}
                         </p>
-                        <p className={`text-lg font-black uppercase tracking-tight ${task.isRevenueBased ? 'text-emerald-700' : 'text-slate-900'}`}>
+                        <p className={`text-base font-black uppercase tracking-tight ${task.isRevenueBased ? 'text-emerald-400' : 'text-slate-300'}`}>
                             {task.isRevenueBased ? `₹${task.itRevenueEarned.toLocaleString()}` : task.category}
                         </p>
                     </motion.div>
                 </div>
 
-                {/* Main Intel Body */}
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                    {/* Left Data Column */}
-                    <div className="lg:col-span-2 space-y-8">
-                        {/* Scope Deck */}
-                        <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.5 }}
-                            className="bg-white/70 backdrop-blur-xl rounded-[3rem] p-10 border border-white/80 shadow-sm"
+                {/* ── MAIN BODY ─────────────────────────────── */}
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    {/* Left Column */}
+                    <div className="lg:col-span-2 space-y-6">
+                        {/* Description */}
+                        <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.4 }}
+                            className="bg-white/[0.03] backdrop-blur-xl border border-white/10 rounded-2xl p-7"
                         >
-                            <h3 className="text-2xl font-black text-slate-900 flex items-center gap-3 mb-8">
-                                <Activity className="h-6 w-6 text-purple-600" /> Operational Context
+                            <h3 className="text-base font-black text-white flex items-center gap-3 mb-5">
+                                <Activity className="h-5 w-5 text-violet-400" /> Description
                             </h3>
-                            <div className="bg-slate-50/50 p-8 rounded-[2rem] border border-slate-100">
-                                <p className="text-slate-600 text-sm leading-loose whitespace-pre-wrap">{task.description || 'Global mission parameters undefined.'}</p>
+                            <div className="bg-white/[0.03] rounded-xl p-5 border border-white/5">
+                                <p className="text-slate-400 text-sm leading-loose whitespace-pre-wrap">{task.description || 'No description provided.'}</p>
                             </div>
                         </motion.div>
 
-                        {/* Chronology Deck (Time Entries) */}
-                        <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.6 }}
-                            className="bg-white/70 backdrop-blur-xl rounded-[3rem] p-10 border border-white/80 shadow-sm"
+                        {/* Time Entries */}
+                        <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.5 }}
+                            className="bg-white/[0.03] backdrop-blur-xl border border-white/10 rounded-2xl p-7"
                         >
-                            <div className="flex items-center justify-between mb-10">
-                                <div className="space-y-1">
-                                    <h3 className="text-xl font-black text-slate-900 uppercase tracking-widest leading-none">Chronology Logs</h3>
-                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Calculated intensity: {totalHours}h Aggregate</p>
+                            <div className="flex items-center justify-between mb-7">
+                                <div>
+                                    <h3 className="font-black text-white">Time Logs</h3>
+                                    <p className="text-[10px] font-bold text-slate-600 uppercase tracking-widest">{totalHours}h total · {billableHours}h billable</p>
                                 </div>
                                 <button onClick={() => setLogTimeOpen(!logTimeOpen)}
-                                    className="p-3 bg-slate-900 text-white rounded-2xl hover:bg-slate-800 transition-all shadow-xl shadow-slate-200">
-                                    {logTimeOpen ? <X className="h-5 w-5" /> : <Plus className="h-5 w-5" />}
+                                    className="p-2.5 bg-white/5 border border-white/10 rounded-xl text-slate-400 hover:text-white hover:border-white/20 transition-all">
+                                    {logTimeOpen ? <X className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
                                 </button>
                             </div>
 
                             <AnimatePresence>
                                 {logTimeOpen && (
-                                    <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden mb-10">
-                                        <form onSubmit={handleLogTime} className="bg-purple-600 group p-10 rounded-[2.5rem] shadow-2xl shadow-purple-200 space-y-8 relative">
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                                <div className="space-y-2">
-                                                    <label className="text-[10px] font-black text-white/60 uppercase tracking-widest ml-2">Temporal Duration (HRS)</label>
-                                                    <input type="number" step="0.5" value={timeFormData.hours} onChange={(e) => setTimeFormData({ ...timeFormData, hours: e.target.value })} 
-                                                        className="w-full bg-white/10 border-white/20 rounded-2xl px-6 py-4 text-white placeholder:text-white/30 focus:bg-white/20 transition-all outline-none" placeholder="0.0" required />
+                                    <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden mb-7">
+                                        <form onSubmit={handleLogTime} className="bg-violet-600/10 border border-violet-500/20 p-6 rounded-xl space-y-5">
+                                            <div className="grid grid-cols-2 gap-5">
+                                                <div className="space-y-1.5">
+                                                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Hours</label>
+                                                    <input type="number" step="0.5" value={timeFormData.hours} onChange={(e) => setTimeFormData({ ...timeFormData, hours: e.target.value })}
+                                                        className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white text-sm font-bold placeholder:text-slate-600 focus:outline-none focus:border-violet-500/50" placeholder="0.0" required />
                                                 </div>
-                                                <div className="space-y-2">
-                                                    <label className="text-[10px] font-black text-white/60 uppercase tracking-widest ml-2">Log Date</label>
-                                                    <input type="date" value={timeFormData.date} onChange={(e) => setTimeFormData({ ...timeFormData, date: e.target.value })} 
-                                                        className="w-full bg-white/10 border-white/20 rounded-2xl px-6 py-4 text-white focus:bg-white/20 transition-all outline-none ml-[-5px]" />
+                                                <div className="space-y-1.5">
+                                                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Date</label>
+                                                    <input type="date" value={timeFormData.date} onChange={(e) => setTimeFormData({ ...timeFormData, date: e.target.value })}
+                                                        className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white text-sm font-bold focus:outline-none focus:border-violet-500/50" />
                                                 </div>
                                             </div>
-                                            <div className="space-y-2">
-                                                <label className="text-[10px] font-black text-white/60 uppercase tracking-widest ml-2">Intel Narrative</label>
+                                            <div className="space-y-1.5">
+                                                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Description</label>
                                                 <textarea value={timeFormData.description} onChange={(e) => setTimeFormData({ ...timeFormData, description: e.target.value })} rows={2}
-                                                    className="w-full bg-white/10 border-white/20 rounded-2xl px-6 py-4 text-white placeholder:text-white/30 focus:bg-white/20 transition-all outline-none resize-none" placeholder="Mission details during this period..." />
+                                                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white text-sm font-medium placeholder:text-slate-600 focus:outline-none focus:border-violet-500/50 resize-none" placeholder="What did you work on?" />
                                             </div>
                                             <div className="flex items-center justify-between">
-                                                <label className="flex items-center gap-3 cursor-pointer group/check text-white">
-                                                    <input type="checkbox" checked={timeFormData.isBillable} onChange={(e) => setTimeFormData({ ...timeFormData, isBillable: e.target.checked })} 
-                                                        className="w-6 h-6 rounded-lg bg-white/10 border-white/20 text-white focus:ring-0 checked:bg-white" />
-                                                    <span className="text-[10px] font-black uppercase tracking-widest">Revenue Impact (Billable)</span>
+                                                <label className="flex items-center gap-2.5 cursor-pointer text-slate-300">
+                                                    <input type="checkbox" checked={timeFormData.isBillable} onChange={(e) => setTimeFormData({ ...timeFormData, isBillable: e.target.checked })} className="w-4 h-4 rounded" />
+                                                    <span className="text-[10px] font-black uppercase tracking-widest">Billable</span>
                                                 </label>
-                                                <button type="submit" disabled={submittingTime} className="px-8 py-4 bg-white text-purple-600 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:scale-105 active:scale-95 transition-all shadow-xl">
-                                                    {submittingTime ? 'Synchronizing...' : 'Finalize Log'}
+                                                <button type="submit" disabled={submittingTime} className="px-6 py-2.5 bg-violet-600 text-white rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-violet-500 transition-all shadow-lg shadow-violet-500/25 disabled:opacity-50">
+                                                    {submittingTime ? 'Saving...' : 'Log Time'}
                                                 </button>
                                             </div>
                                         </form>
@@ -278,27 +282,27 @@ export default function TaskDetailPage() {
                             </AnimatePresence>
 
                             {task.timeEntries.length === 0 ? (
-                                <div className="text-center py-10 border-2 border-dashed border-slate-100 rounded-[2rem]">
-                                    <Timer className="h-8 w-8 text-slate-200 mx-auto mb-2" />
-                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">No intensity logs found</p>
+                                <div className="text-center py-10 border border-dashed border-white/5 rounded-xl">
+                                    <Timer className="h-7 w-7 text-slate-700 mx-auto mb-2" />
+                                    <p className="text-[10px] font-black text-slate-700 uppercase tracking-widest">No time logs yet</p>
                                 </div>
                             ) : (
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                                     {task.timeEntries.map((entry, idx) => (
-                                        <motion.div key={entry.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.05 }}
-                                            className="p-6 bg-white/50 border border-white hover:bg-white hover:shadow-xl hover:shadow-slate-200/50 transition-all rounded-[2rem] group"
+                                        <motion.div key={entry.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.05 }}
+                                            className="p-4 bg-white/[0.03] border border-white/5 hover:border-white/10 transition-all rounded-xl group"
                                         >
-                                            <div className="flex justify-between items-start mb-4">
-                                                <div className="space-y-0.5">
-                                                    <h4 className="text-lg font-black text-slate-900 leading-none">{entry.hours} Hours</h4>
-                                                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">By {entry.user.name}</p>
+                                            <div className="flex justify-between items-start mb-3">
+                                                <div>
+                                                    <h4 className="text-base font-black text-white leading-none">{entry.hours}h</h4>
+                                                    <p className="text-[9px] font-black text-slate-600 uppercase tracking-widest mt-0.5">By {entry.user.name}</p>
                                                 </div>
-                                                <div className={`px-2 py-1 rounded-lg text-[8px] font-black uppercase tracking-widest border ${entry.isBillable ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-slate-50 text-slate-400 border-slate-100'}`}>
+                                                <div className={`px-2 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest border ${entry.isBillable ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-slate-500/10 text-slate-600 border-slate-500/20'}`}>
                                                     {entry.isBillable ? 'Billable' : 'Internal'}
                                                 </div>
                                             </div>
-                                            {entry.description && <p className="text-slate-500 text-xs leading-relaxed italic mb-4 line-clamp-2">&quot;{entry.description}&quot;</p>}
-                                            <div className="flex items-center gap-2 text-[9px] font-black text-slate-400 uppercase tracking-widest pt-4 border-t border-slate-50">
+                                            {entry.description && <p className="text-slate-600 text-xs italic mb-3 line-clamp-2">{entry.description}</p>}
+                                            <div className="flex items-center gap-1.5 text-[9px] font-black text-slate-700 uppercase tracking-widest">
                                                 <Calendar className="h-3 w-3" /> {new Date(entry.date).toLocaleDateString()}
                                             </div>
                                         </motion.div>
@@ -307,34 +311,34 @@ export default function TaskDetailPage() {
                             )}
                         </motion.div>
 
-                        {/* Intelligence Feed (Comments) */}
-                        <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.7 }}
-                            className="bg-white/70 backdrop-blur-xl rounded-[3rem] p-10 border border-white/80 shadow-sm"
+                        {/* Comments */}
+                        <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.6 }}
+                            className="bg-white/[0.03] backdrop-blur-xl border border-white/10 rounded-2xl p-7"
                         >
-                            <h3 className="text-xl font-black text-slate-900 uppercase tracking-widest mb-10 flex items-center gap-3">
-                                <MessageSquare className="h-6 w-6 text-indigo-600" /> Intelligence Feed
+                            <h3 className="font-black text-white flex items-center gap-3 mb-6">
+                                <MessageSquare className="h-5 w-5 text-indigo-400" /> Intelligence Feed
                             </h3>
-                            <form onSubmit={handleSubmitComment} className="mb-10 relative group">
-                                <textarea value={newComment} onChange={(e) => setNewComment(e.target.value)} placeholder="Contribute intel..." rows={3}
-                                    className="w-full bg-slate-50 border border-slate-200 rounded-[2rem] p-8 text-sm focus:bg-white focus:ring-4 focus:ring-indigo-600/5 focus:border-indigo-600/20 transition-all outline-none resize-none pr-32 mb-[-10px]" />
-                                <button type="submit" disabled={submittingComment || !newComment.trim()} 
-                                    className="absolute right-4 bottom-14 p-4 bg-indigo-600 text-white rounded-2xl hover:bg-indigo-700 transition-all shadow-lg disabled:opacity-50">
-                                    {submittingComment ? <div className="h-5 w-5 border-2 border-white/20 border-t-white animate-spin rounded-full" /> : <Send className="h-5 w-5" />}
+                            <form onSubmit={handleSubmitComment} className="mb-6 relative">
+                                <textarea value={newComment} onChange={(e) => setNewComment(e.target.value)} placeholder="Add a comment..." rows={3}
+                                    className="w-full bg-white/5 border border-white/10 rounded-xl p-4 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-indigo-500/50 transition-colors resize-none pr-16" />
+                                <button type="submit" disabled={submittingComment || !newComment.trim()}
+                                    className="absolute right-3 bottom-3 p-2.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-500 transition-all shadow-lg disabled:opacity-50">
+                                    {submittingComment ? <div className="h-4 w-4 border-2 border-white/20 border-t-white animate-spin rounded-full" /> : <Send className="h-4 w-4" />}
                                 </button>
                             </form>
-                            <div className="space-y-4">
-                                {task.comments.map((comment, idx) => (
-                                    <div key={comment.id} className="flex gap-6 group">
-                                        <div className="h-10 w-10 rounded-2xl bg-slate-100 flex items-center justify-center text-xs font-black text-slate-400 uppercase shrink-0">
+                            <div className="space-y-3">
+                                {task.comments.map((comment) => (
+                                    <div key={comment.id} className="flex gap-4 group">
+                                        <div className="h-8 w-8 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-xs font-black text-indigo-400 uppercase shrink-0">
                                             {comment.user.name.charAt(0)}
                                         </div>
-                                        <div className="flex-1 space-y-2">
-                                            <div className="flex justify-between items-center">
-                                                <h5 className="text-[10px] font-black text-slate-900 uppercase tracking-widest">{comment.user.name}</h5>
-                                                <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{new Date(comment.createdAt).toLocaleTimeString()}</span>
+                                        <div className="flex-1">
+                                            <div className="flex justify-between items-center mb-1.5">
+                                                <h5 className="text-[10px] font-black text-slate-300 uppercase tracking-widest">{comment.user.name}</h5>
+                                                <span className="text-[9px] font-bold text-slate-700">{new Date(comment.createdAt).toLocaleTimeString()}</span>
                                             </div>
-                                            <div className="bg-white/50 border border-white group-hover:bg-white group-hover:border-slate-100 p-6 rounded-[2rem] transition-all">
-                                                <p className="text-slate-600 text-xs leading-loose whitespace-pre-wrap">{comment.content}</p>
+                                            <div className="bg-white/[0.03] border border-white/5 p-4 rounded-xl">
+                                                <p className="text-slate-400 text-xs leading-loose whitespace-pre-wrap">{comment.content}</p>
                                             </div>
                                         </div>
                                     </div>
@@ -343,55 +347,56 @@ export default function TaskDetailPage() {
                         </motion.div>
                     </div>
 
-                    {/* Right Parameters Sidebar */}
-                    <div className="space-y-8">
+                    {/* ── SIDEBAR ──────────────────────────────── */}
+                    <div className="space-y-5">
                         {/* Task Specs */}
-                        <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.8 }}
-                            className="bg-white/70 backdrop-blur-xl rounded-[3rem] p-8 border border-white/80 shadow-sm space-y-8"
+                        <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.7 }}
+                            className="bg-white/[0.03] backdrop-blur-xl border border-white/10 rounded-2xl p-6 space-y-6"
                         >
-                            <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-3">
-                                <Info className="h-4 w-4 text-purple-600" /> Operational Specs
+                            <h3 className="text-xs font-black text-slate-500 uppercase tracking-widest flex items-center gap-3">
+                                <Info className="h-4 w-4 text-violet-400" /> Task Details
                             </h3>
-                            <div className="space-y-8">
+                            <div className="space-y-5">
                                 {task.project && (
-                                    <div className="group cursor-pointer" onClick={() => router.push(`/dashboard/it-management/projects/${task.project?.id}`)}>
-                                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2 flex items-center gap-1.5"><FolderKanban className="h-3 w-3" /> Origin Project</p>
-                                        <div className="p-4 bg-blue-600/5 border border-blue-600/10 rounded-2xl group-hover:bg-blue-600/10 transition-all">
-                                            <p className="font-black text-blue-700 leading-tight mb-1">{task.project.name}</p>
-                                            <p className="text-[9px] font-black text-blue-600/40 uppercase tracking-widest">{task.project.projectCode}</p>
+                                    <div className="group cursor-pointer" onClick={() => router.push(`/dashboard/it-management/projects/${task.project?.id}`)}
+                                    >
+                                        <p className="text-[9px] font-black text-slate-600 uppercase tracking-widest mb-2 flex items-center gap-1.5"><FolderKanban className="h-3 w-3" /> Project</p>
+                                        <div className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-xl hover:bg-blue-500/20 transition-all">
+                                            <p className="font-black text-blue-400 text-xs">{task.project.name}</p>
+                                            <p className="text-[9px] font-black text-blue-600 uppercase tracking-widest mt-0.5">{task.project.projectCode}</p>
                                         </div>
                                     </div>
                                 )}
                                 {task.assignedTo && (
                                     <div>
-                                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2 flex items-center gap-1.5"><User className="h-3 w-3" /> Active Personnel</p>
-                                        <div className="flex items-center gap-3 p-2">
-                                            <div className="h-10 w-10 rounded-xl bg-slate-900 flex items-center justify-center text-xs font-black text-white">
+                                        <p className="text-[9px] font-black text-slate-600 uppercase tracking-widest mb-2 flex items-center gap-1.5"><User className="h-3 w-3" /> Assigned</p>
+                                        <div className="flex items-center gap-3">
+                                            <div className="h-8 w-8 rounded-xl bg-violet-600 flex items-center justify-center text-xs font-black text-white">
                                                 {task.assignedTo.name.charAt(0)}
                                             </div>
                                             <div>
-                                                <p className="font-black text-slate-900 leading-none mb-1">{task.assignedTo.name}</p>
-                                                <p className="text-[9px] font-black text-slate-400 uppercase">{task.assignedTo.email}</p>
+                                                <p className="font-black text-white text-sm">{task.assignedTo.name}</p>
+                                                <p className="text-[9px] text-slate-600 uppercase tracking-widest">{task.assignedTo.email}</p>
                                             </div>
                                         </div>
                                     </div>
                                 )}
-                                <div className="grid grid-cols-2 gap-6 pt-4 border-t border-slate-100">
+                                <div className="grid grid-cols-2 gap-4 pt-4 border-t border-white/5">
                                     <div>
-                                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Limit Cycle</p>
-                                        <p className="font-black text-slate-900 text-[11px] uppercase tracking-tight">{task.dueDate ? new Date(task.dueDate).toLocaleDateString() : 'N/A'}</p>
+                                        <p className="text-[9px] font-black text-slate-600 uppercase tracking-widest mb-1">Due Date</p>
+                                        <p className="font-black text-slate-300 text-xs uppercase">{task.dueDate ? new Date(task.dueDate).toLocaleDateString() : 'N/A'}</p>
                                     </div>
                                     <div>
-                                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Created</p>
-                                        <p className="font-black text-slate-900 text-[11px] uppercase tracking-tight">{new Date(task.createdAt).toLocaleDateString()}</p>
+                                        <p className="text-[9px] font-black text-slate-600 uppercase tracking-widest mb-1">Created</p>
+                                        <p className="font-black text-slate-300 text-xs uppercase">{new Date(task.createdAt).toLocaleDateString()}</p>
                                     </div>
                                 </div>
                                 {task.tags.length > 0 && (
-                                    <div className="pt-4 border-t border-slate-100">
-                                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-3">Logic Tags</p>
-                                        <div className="flex flex-wrap gap-2">
+                                    <div className="pt-4 border-t border-white/5">
+                                        <p className="text-[9px] font-black text-slate-600 uppercase tracking-widest mb-2">Tags</p>
+                                        <div className="flex flex-wrap gap-1.5">
                                             {task.tags.map(tag => (
-                                                <span key={tag} className="px-3 py-1 bg-white border border-slate-100 rounded-full text-[9px] font-black text-slate-500 uppercase tracking-widest">{tag}</span>
+                                                <span key={tag} className="px-2.5 py-1 bg-white/5 border border-white/10 rounded-lg text-[9px] font-black text-slate-500 uppercase tracking-widest">{tag}</span>
                                             ))}
                                         </div>
                                     </div>
@@ -399,59 +404,58 @@ export default function TaskDetailPage() {
                             </div>
                         </motion.div>
 
-                        {/* Revenue Map */}
+                        {/* Revenue Card */}
                         {task.isRevenueBased && (
-                            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.9 }}
-                                className="bg-emerald-600 rounded-[3rem] p-8 shadow-2xl relative overflow-hidden"
+                            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.8 }}
+                                className="bg-gradient-to-br from-emerald-600 to-teal-600 rounded-2xl p-6 shadow-2xl shadow-emerald-500/20"
                             >
-                                <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-3xl translate-x-10 translate-y-[-10px]" />
-                                <h3 className="text-white text-xs font-black uppercase tracking-widest mb-6 flex items-center gap-2">
+                                <h3 className="text-white text-xs font-black uppercase tracking-widest mb-5 flex items-center gap-2">
                                     <DollarSign className="h-4 w-4 text-emerald-300" /> Yield Protocol
                                 </h3>
-                                <div className="space-y-4 mb-10">
-                                    <div className="flex justify-between items-center bg-black/10 p-4 rounded-2xl">
-                                        <span className="text-[10px] font-black text-white/60 uppercase tracking-widest">Est. Flow</span>
+                                <div className="space-y-3 mb-6">
+                                    <div className="flex justify-between items-center bg-black/10 p-3.5 rounded-xl">
+                                        <span className="text-[10px] font-black text-white/60 uppercase tracking-widest">Estimated</span>
                                         <span className="text-white font-black">₹{task.estimatedValue.toLocaleString()}</span>
                                     </div>
-                                    <div className="flex items-center justify-between px-2">
+                                    <div className="flex items-center justify-between px-1">
                                         <span className="text-[10px] font-black text-white/50 uppercase tracking-widest">Status</span>
-                                        <span className={`text-[10px] font-black uppercase tracking-widest px-2 py-1 rounded-lg ${task.isPaid ? 'bg-white text-emerald-600' : 'bg-white/10 text-white border border-white/20'}`}>
-                                            {task.isPaid ? 'Settled' : 'Awaiting'}
+                                        <span className={`text-[10px] font-black uppercase tracking-widest px-2.5 py-1 rounded-lg ${task.isPaid ? 'bg-white text-emerald-600' : 'bg-white/10 text-white border border-white/20'}`}>
+                                            {task.isPaid ? 'Settled' : 'Pending'}
                                         </span>
                                     </div>
                                 </div>
-                                <div className="pt-8 border-t border-white/10 flex flex-col items-center">
-                                    <p className="text-[9px] font-black text-white/40 uppercase tracking-widest mb-2">Net Revenue Dividend</p>
-                                    <p className="text-4xl font-black text-white tracking-tighter">₹{task.itRevenueEarned.toLocaleString()}</p>
+                                <div className="pt-5 border-t border-white/10 text-center">
+                                    <p className="text-[9px] font-black text-white/40 uppercase tracking-widest mb-1">Net Revenue</p>
+                                    <p className="text-3xl font-black text-white">₹{task.itRevenueEarned.toLocaleString()}</p>
                                 </div>
                             </motion.div>
                         )}
 
-                        {/* Lifecycle Stream */}
-                        <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 1.0 }}
-                            className="bg-white/70 backdrop-blur-xl rounded-[3rem] p-8 border border-white/80 shadow-sm space-y-6"
+                        {/* Status History */}
+                        <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.9 }}
+                            className="bg-white/[0.03] backdrop-blur-xl border border-white/10 rounded-2xl p-6 space-y-4"
                         >
-                            <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-3">
-                                <History className="h-4 w-4 text-slate-400" /> State Transitions
+                            <h3 className="text-xs font-black text-slate-500 uppercase tracking-widest flex items-center gap-3">
+                                <History className="h-4 w-4 text-slate-600" /> Status History
                             </h3>
-                            <div className="space-y-6 relative">
-                                <div className="absolute left-[13px] top-2 bottom-2 w-0.5 bg-slate-100" />
-                                {task.statusHistory.map((history, idx) => (
-                                    <div key={history.id} className="relative pl-10">
-                                        <div className={`absolute left-0 top-0.5 w-7 h-7 rounded-lg border-4 border-white shadow-sm flex items-center justify-center transition-all ${idx === 0 ? 'bg-purple-600' : 'bg-slate-200'}`}>
-                                            <div className="h-1.5 w-1.5 rounded-full bg-white" />
+                            {task.statusHistory.length === 0 ? (
+                                <p className="text-[10px] text-slate-700 uppercase tracking-widest font-bold">No transitions yet</p>
+                            ) : (
+                                <div className="space-y-4 relative">
+                                    <div className="absolute left-3 top-2 bottom-2 w-0.5 bg-white/5" />
+                                    {task.statusHistory.map((history, idx) => (
+                                        <div key={history.id} className="relative pl-9">
+                                            <div className={`absolute left-0 top-1 w-6 h-6 rounded-lg border-2 border-slate-900 flex items-center justify-center ${idx === 0 ? 'bg-violet-600 border-violet-500' : 'bg-slate-800 border-slate-700'}`}>
+                                                <div className="h-1.5 w-1.5 rounded-full bg-white" />
+                                            </div>
+                                            <div>
+                                                <p className="text-[10px] font-black text-slate-300 uppercase tracking-tight">{history.toStatus}</p>
+                                                <p className="text-[9px] font-bold text-slate-700 uppercase tracking-widest">{history.changedBy.name} · {new Date(history.changedAt).toLocaleDateString()}</p>
+                                            </div>
                                         </div>
-                                        <div className="space-y-1">
-                                            <p className="text-[10px] font-black text-slate-900 leading-tight uppercase tracking-tight">
-                                                {history.toStatus}
-                                            </p>
-                                            <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none">
-                                                By {history.changedBy.name} • {new Date(history.changedAt).toLocaleDateString()}
-                                            </p>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
+                                    ))}
+                                </div>
+                            )}
                         </motion.div>
                     </div>
                 </div>

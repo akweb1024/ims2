@@ -199,9 +199,9 @@ export const POST = authorizedRoute(
                     priority: priority || 'MEDIUM',
                     estimatedHours: estimatedHours ? parseFloat(estimatedHours) : null,
                     completionStatus: 'PLANNED',
-                    linkedGoalId: linkedGoalId || null,
-                    projectId: projectId || null,
-                    taskId: taskId || null,
+                    linkedGoalId: (linkedGoalId && linkedGoalId !== 'null') ? linkedGoalId : null,
+                    projectId: (projectId && projectId !== 'null') ? projectId : null,
+                    taskId: (taskId && taskId !== 'null') ? taskId : null,
                     visibility: visibility || 'MANAGER',
                     status: 'SHARED',
                     companyId: user.companyId || undefined
