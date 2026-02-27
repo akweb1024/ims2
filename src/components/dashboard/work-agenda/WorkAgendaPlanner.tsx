@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { Calendar, Clock, Plus, CheckCircle, XCircle, Edit, Link as LinkIcon } from 'lucide-react';
+import { Calendar, Clock, ChevronLeft, ChevronRight, Plus, CheckCircle2, AlertCircle, Eye, User, Target, Link as LinkIcon, Edit, Briefcase, CheckSquare } from 'lucide-react';
 import CreateWorkPlanModal from './CreateWorkPlanModal';
 import EditWorkPlanModal from './EditWorkPlanModal';
 
@@ -18,6 +18,15 @@ interface WorkPlan {
         id: string;
         title: string;
         type: string;
+    };
+    project?: {
+        id: string;
+        title: string;
+    };
+    task?: {
+        id: string;
+        title: string;
+        status: string;
     };
     employee: {
         user: {
@@ -225,7 +234,7 @@ export default function WorkAgendaPlanner({ employeeId, isOwnAgenda = false }: W
                                                             {plan.estimatedHours}h
                                                         </span>
                                                     )}
-                                                    {plan.linkedGoal && (
+                                                    {(plan.linkedGoal || plan.project || plan.task) && (
                                                         <LinkIcon size={10} className="text-primary-600" />
                                                     )}
                                                 </div>
@@ -283,10 +292,22 @@ export default function WorkAgendaPlanner({ employeeId, isOwnAgenda = false }: W
                                     {plan.actualHours && (
                                         <span>Actual: {plan.actualHours}h</span>
                                     )}
-                                    {plan.linkedGoal && (
+                                    {plan.project && (
                                         <span className="flex items-center gap-1 text-primary-600">
+                                            <Briefcase size={12} />
+                                            Project: {plan.project.title}
+                                        </span>
+                                    )}
+                                    {plan.task && (
+                                        <span className="flex items-center gap-1 text-indigo-600">
+                                            <CheckSquare size={12} />
+                                            Task: {plan.task.title}
+                                        </span>
+                                    )}
+                                    {plan.linkedGoal && (
+                                        <span className="flex items-center gap-1 text-success-600">
                                             <LinkIcon size={12} />
-                                            Linked to: {plan.linkedGoal.title}
+                                            Goal: {plan.linkedGoal.title}
                                         </span>
                                     )}
                                 </div>

@@ -835,6 +835,7 @@ model Task {
   company               Company?   @relation(fields: [companyId], references: [id])
   user                  User       @relation(fields: [userId], references: [id])
   assignedBy            User?      @relation("TaskAssigner", fields: [assignedById], references: [id])
+  workPlans             WorkPlan[]
 
   @@index([userId])
   @@index([assignedById])
@@ -1698,11 +1699,17 @@ model WorkPlan {
   company          Company?          @relation(fields: [companyId], references: [id])
   employee         EmployeeProfile   @relation(fields: [employeeId], references: [id], onDelete: Cascade)
   linkedGoal       EmployeeGoal?     @relation("GoalWorkPlans", fields: [linkedGoalId], references: [id])
+  projectId        String?
+  taskId           String?
+  project          Project?          @relation(fields: [projectId], references: [id])
+  task             Task?             @relation(fields: [taskId], references: [id])
   comments         WorkPlanComment[]
 
   @@unique([employeeId, date])
   @@index([companyId])
   @@index([linkedGoalId])
+  @@index([projectId])
+  @@index([taskId])
   @@index([completionStatus])
   @@index([date])
 }
@@ -4292,6 +4299,7 @@ model Project {
   members     ProjectMember[]
   tasks       Task[]
   issues      Issue[]
+  workPlans   WorkPlan[]
   createdAt   DateTime        @default(now())
   updatedAt   DateTime        @updatedAt
 

@@ -92,6 +92,19 @@ export const GET = authorizedRoute(
                             type: true
                         }
                     },
+                    project: {
+                        select: {
+                            id: true,
+                            title: true
+                        }
+                    },
+                    task: {
+                        select: {
+                            id: true,
+                            title: true,
+                            status: true
+                        }
+                    },
                     comments: {
                         include: {
                             user: {
@@ -129,6 +142,8 @@ export const POST = authorizedRoute(
                 priority,
                 estimatedHours,
                 linkedGoalId,
+                projectId,
+                taskId,
                 visibility
             } = body;
 
@@ -185,6 +200,8 @@ export const POST = authorizedRoute(
                     estimatedHours: estimatedHours ? parseFloat(estimatedHours) : null,
                     completionStatus: 'PLANNED',
                     linkedGoalId: linkedGoalId || null,
+                    projectId: projectId || null,
+                    taskId: taskId || null,
                     visibility: visibility || 'MANAGER',
                     status: 'SHARED',
                     companyId: user.companyId || undefined
@@ -204,6 +221,17 @@ export const POST = authorizedRoute(
                         select: {
                             title: true,
                             type: true
+                        }
+                    },
+                    project: {
+                        select: {
+                            title: true
+                        }
+                    },
+                    task: {
+                        select: {
+                            title: true,
+                            status: true
                         }
                     }
                 } as any

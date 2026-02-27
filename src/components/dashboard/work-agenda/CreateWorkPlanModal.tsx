@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { X, Calendar, Clock, Target, Flag, Eye, Save } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { X, Calendar, Clock, Target, Flag, Eye, Save, Briefcase, CheckSquare } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 
 interface CreateWorkPlanModalProps {
@@ -19,7 +19,30 @@ export default function CreateWorkPlanModal({ onClose, onSuccess, employeeId }: 
         priority: 'MEDIUM',
         estimatedHours: '',
         visibility: 'MANAGER',
+        projectId: '',
+        taskId: '',
     });
+
+    const [projects, setProjects] = useState<any[]>([]);
+    const [tasks, setTasks] = useState<any[]>([]);
+
+    useEffect(() => {
+        const fetchData = async () => {
+            const token = localStorage.getItem('token');
+            try {
+                const [projRes, taskRes] = await Promise.all([
+                    fetch('/api/projects', { headers: { 'Authorization': `Bearer ${token}` } }),
+                    fetch('/api/tasks', { headers: { 'Authorization': `Bearer ${token}` } }),
+                ]);
+
+                if (projRes.ok) setProjects(await projRes.json());
+                if (taskRes.ok) setTasks(await taskRes.json());
+            } catch (error) {
+                console.error('Failed to fetch projects/tasks', error);
+            }
+        };
+        fetchData();
+    }, []);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -150,6 +173,44 @@ export default function CreateWorkPlanModal({ onClose, onSuccess, employeeId }: 
                                     <option value="MANAGER">Manager Only</option>
                                     <option value="public">Public (Team)</option>
                                     <option value="PRIVATE">Private</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-6">
+                        <div className="space-y-2">
+                            <label className="text-xs font-bold text-secondary-600 uppercase tracking-widest">Project (Optional)</label>
+                            <div className="relative">
+                                <Briefcase className="absolute left-3 top-1/2 -translate-y-1/2 text-secondary-400" size={16} />
+                                <select
+                                    className="w-full pl-10 pr-4 py-3 rounded-xl border border-secondary-200 focus:ring-2 focus:ring-primary-500 outline-none transition-all font-medium text-secondary-900 bg-white"
+                                    value={formData.projectId}
+                                    onChange={(e) => setFormData({ ...formData, projectId: e.target.value, taskId: '' })}
+                                >
+                                    <option value="">None</option>
+                                    {projects.map(p => (
+                                        <option key={p.id} value={p.id}>{p.title}</option>
+                                    ))}
+                                </select>
+                            </div>
+                        </div>
+
+                        <div className="space-y-2">
+                            <label className="text-xs font-bold text-secondary-600 uppercase tracking-widest">Linked Task (Optional)</label>
+                            <div className="relative">
+                                <CheckSquare className="absolute left-3 top-1/2 -translate-y-1/2 text-secondary-400" size={16} />
+                                <select
+                                    className="w-full pl-10 pr-4 py-3 rounded-xl border border-secondary-200 focus:ring-2 focus:ring-primary-500 outline-none transition-all font-medium text-secondary-900 bg-white"
+                                    value={formData.taskId}
+                                    onChange={(e) => setFormData({ ...formData, taskId: e.target.value })}
+                                >
+                                    <option value="">None</option>
+                                    {tasks
+                                        .filter(t => !formData.projectId || t.projectId === formData.projectId)
+                                        .map(t => (
+                                            <option key={t.id} value={t.id}>{t.title}</option>
+                                        ))}
                                 </select>
                             </div>
                         </div>

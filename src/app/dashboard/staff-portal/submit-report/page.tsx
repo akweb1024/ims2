@@ -97,6 +97,8 @@ export default function SubmitReportPage() {
     });
 
     const [prodActivity, setProdActivity] = useState<any>(null);
+    const [workPlans, setWorkPlans] = useState<any[]>([]);
+    const [loadingWorkPlans, setLoadingWorkPlans] = useState(false);
 
     const [availableTasks, setAvailableTasks] = useState<any[]>([]);
     const [completedTaskIds, setCompletedTaskIds] = useState<string[]>([]);
@@ -241,8 +243,27 @@ export default function SubmitReportPage() {
                 })
                 .catch(err => console.error("Error checking existing report", err))
                 .finally(() => setIsCheckingExisting(false));
+            
+            // FETCH WORK AGENDA (Plans) for the current date
+            const fetchWorkPlans = async () => {
+                setLoadingWorkPlans(true);
+                try {
+                    const res = await fetch(`/api/work-agenda?date=${commonData.date}`, {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+                    if (res.ok) {
+                        const data = await res.json();
+                        setWorkPlans(data);
+                    }
+                } catch (error) {
+                    console.error('Failed to fetch work plans', error);
+                } finally {
+                    setLoadingWorkPlans(false);
+                }
+            };
+            fetchWorkPlans();
         }
-    }, []);
+    }, [commonData.date]);
 
     // Calculate points and derive metrics from tasks with validation
     useEffect(() => {
@@ -647,6 +668,59 @@ export default function SubmitReportPage() {
                             )}
                         </div>
                         <p className="text-xs text-indigo-600 mt-4 italic text-center">✨ Metrics automatically calculated from your task checklist</p>
+                    </div>
+                )}
+
+                {/* Work Agenda Checkpoints */}
+                {workPlans.length > 0 && (
+                    <div className="card-premium p-6 border-t-4 border-primary-500 bg-gradient-to-br from-white to-primary-50/30">
+                        <div className="flex items-center justify-between mb-4">
+                            <div className="flex items-center gap-2">
+                                <FileText className="text-primary-600" size={24} />
+                                <h3 className="font-bold text-lg text-secondary-900">Today&apos;s Planned Agenda (Checkpoints)</h3>
+                            </div>
+                            <span className="text-xs font-bold text-primary-600 bg-primary-50 px-3 py-1 rounded-full uppercase tracking-wider">
+                                {workPlans.length} Planned Items
+                            </span>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            {workPlans.map((plan) => (
+                                <div key={plan.id} className="bg-white p-4 rounded-xl border border-secondary-100 flex items-start gap-4 hover:shadow-md transition-shadow">
+                                    <div className={`mt-1 h-5 w-5 rounded-full border-2 flex items-center justify-center shrink-0 ${
+                                        plan.completionStatus === 'COMPLETED' 
+                                        ? 'bg-success-500 border-success-500 text-white' 
+                                        : 'border-secondary-300'
+                                    }`}>
+                                        {plan.completionStatus === 'COMPLETED' && <CheckCircle size={12} />}
+                                    </div>
+                                    <div className="flex-1">
+                                        <h4 className="font-bold text-sm text-secondary-900">{plan.agenda}</h4>
+                                        <div className="flex flex-wrap gap-2 mt-2">
+                                            {plan.project && (
+                                                <span className="flex items-center gap-1 text-[10px] font-bold text-primary-600 bg-primary-50 px-2 py-0.5 rounded">
+                                                    <Briefcase size={10} /> {plan.project.title}
+                                                </span>
+                                            )}
+                                            {plan.task && (
+                                                <span className="flex items-center gap-1 text-[10px] font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded">
+                                                    <TrendingUp size={10} /> {plan.task.title}
+                                                </span>
+                                            )}
+                                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase ${
+                                                plan.priority === 'HIGH' ? 'bg-danger-50 text-danger-600' :
+                                                plan.priority === 'MEDIUM' ? 'bg-warning-50 text-warning-600' :
+                                                'bg-secondary-50 text-secondary-600'
+                                            }`}>
+                                                {plan.priority}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                        <p className="text-[10px] text-secondary-400 mt-4 italic">
+                            💡 Use these checkpoints to ensure all planned items are covered in your report submission below.
+                        </p>
                     </div>
                 )}
 

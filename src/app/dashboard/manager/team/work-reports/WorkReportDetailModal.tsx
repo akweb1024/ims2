@@ -2,7 +2,8 @@
 
 import { useState } from 'react';
 import { format } from 'date-fns';
-import { X, MessageSquare, CheckCircle, XCircle, User, Calendar, Building, Clock } from 'lucide-react';
+import { X, MessageSquare, CheckCircle, XCircle, User, Calendar, Building, Clock, Briefcase, TrendingUp, FileText } from 'lucide-react';
+import { useEffect } from 'react';
 import { updateWorkReportStatus, addWorkReportComment } from './actions';
 
 interface WorkReportComment {
@@ -24,6 +25,7 @@ interface WorkReport {
     tasksCompleted: number;
     companyName: string;
     employee: {
+        id: string;
         user: {
             name: string | null;
             email: string | null;
@@ -45,6 +47,32 @@ export default function WorkReportDetailModal({
 }: WorkReportDetailModalProps) {
     const [comment, setComment] = useState('');
     const [loading, setLoading] = useState(false);
+    const [workPlans, setWorkPlans] = useState<any[]>([]);
+    const [loadingPlans, setLoadingPlans] = useState(false);
+
+    useEffect(() => {
+        if (isOpen && report) {
+            const fetchPlans = async () => {
+                setLoadingPlans(true);
+                try {
+                    const token = localStorage.getItem('token');
+                    const dateStr = format(new Date(report.date), 'yyyy-MM-dd');
+                    const res = await fetch(`/api/work-agenda?employeeId=${report.employee.id}&date=${dateStr}`, {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+                    if (res.ok) {
+                        const data = await res.json();
+                        setWorkPlans(data);
+                    }
+                } catch (error) {
+                    console.error('Failed to fetch work plans', error);
+                } finally {
+                    setLoadingPlans(false);
+                }
+            };
+            fetchPlans();
+        }
+    }, [isOpen, report]);
 
     if (!isOpen || !report) return null;
 
@@ -139,6 +167,55 @@ export default function WorkReportDetailModal({
                         <div className="bg-gray-50 p-4 rounded-xl border border-gray-200 text-gray-700 whitespace-pre-wrap leading-relaxed">
                             {report.content || 'No content provided.'}
                         </div>
+                    </div>
+
+                    {/* Planned Agenda (Verification Checkpoint) */}
+                    <div>
+                        <h3 className="text-sm font-bold text-gray-900 mb-2 uppercase tracking-wider flex items-center gap-2">
+                            <FileText size={16} className="text-primary-600" />
+                            Planned Agenda for this Day
+                        </h3>
+                        {loadingPlans ? (
+                            <div className="text-sm text-gray-400 animate-pulse">Loading planned agenda...</div>
+                        ) : workPlans.length > 0 ? (
+                            <div className="grid grid-cols-1 gap-3">
+                                {workPlans.map((plan) => (
+                                    <div key={plan.id} className="bg-primary-50/30 p-3 rounded-lg border border-primary-100 flex items-start gap-3">
+                                        <div className={`mt-0.5 h-4 w-4 rounded-full border flex items-center justify-center shrink-0 ${
+                                            plan.completionStatus === 'COMPLETED' 
+                                            ? 'bg-success-500 border-success-500 text-white' 
+                                            : 'bg-white border-gray-300'
+                                        }`}>
+                                            {plan.completionStatus === 'COMPLETED' && <CheckCircle size={10} />}
+                                        </div>
+                                        <div className="flex-1">
+                                            <p className="text-sm font-semibold text-gray-800">{plan.agenda}</p>
+                                            <div className="flex flex-wrap gap-2 mt-1">
+                                                {plan.project && (
+                                                    <span className="flex items-center gap-1 text-[10px] font-bold text-primary-700">
+                                                        <Briefcase size={10} /> {plan.project.title}
+                                                    </span>
+                                                )}
+                                                {plan.task && (
+                                                    <span className="flex items-center gap-1 text-[10px] font-bold text-indigo-700">
+                                                        <TrendingUp size={10} /> {plan.task.title}
+                                                    </span>
+                                                )}
+                                                <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
+                                                    plan.completionStatus === 'COMPLETED' ? 'bg-success-100 text-success-700' :
+                                                    plan.completionStatus === 'IN_PROGRESS' ? 'bg-blue-100 text-blue-700' :
+                                                    'bg-gray-100 text-gray-600'
+                                                }`}>
+                                                    {plan.completionStatus}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <p className="text-sm text-gray-400 italic">No agenda was planned for this day.</p>
+                        )}
                     </div>
 
                     {/* Comments Section */}
