@@ -6,9 +6,11 @@ import { createErrorResponse } from '@/lib/api-utils';
 /**
  * GET /api/work-agenda/kpi-defaults?employeeId=xxx
  *
- * Fetches the KPI task templates from the employee's active salary increment.
- * These are used to display "default KPI items" in the Work Agenda planner,
- * allowing employees to quickly add their daily KPI tasks without re-typing them.
+ * Fetches:
+ *  1. KPI task templates from the employee's active salary increment
+ *  2. Monthly revenue target + actual revenue earned this month
+ *
+ * These are used to display "default KPI items" and "revenue target" in the Work Agenda planner.
  */
 export const GET = authorizedRoute(
     ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'TEAM_LEADER', 'HR_MANAGER', 'HR', 'EXECUTIVE'],
@@ -28,7 +30,41 @@ export const GET = authorizedRoute(
                 profileId = profile.id;
             }
 
-            // Fetch the latest approved increment for this employee
+            // 1. Fetch employee profile for revenue target
+            const employeeProfile = await prisma.employeeProfile.findUnique({
+                where: { id: profileId },
+                select: {
+                    monthlyTarget: true,
+                    yearlyTarget: true,
+                }
+            });
+
+            // 2. Fetch actual revenue earned this month (approved claims)
+            const now = new Date();
+            const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+            const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
+
+            const approvedClaims = await prisma.revenueClaim.findMany({
+                where: {
+                    employeeId: profileId,
+                    status: 'APPROVED',
+                    revenueTransaction: {
+                        paymentDate: {
+                            gte: startOfMonth,
+                            lte: endOfMonth,
+                        }
+                    }
+                },
+                select: { claimAmount: true }
+            });
+
+            const actualRevenue = approvedClaims.reduce((sum, c) => sum + c.claimAmount, 0);
+            const monthlyTarget = employeeProfile?.monthlyTarget || 0;
+            const achievementPct = monthlyTarget > 0
+                ? Math.min(100, Math.round((actualRevenue / monthlyTarget) * 100))
+                : null;
+
+            // 3. Fetch the latest approved increment for KPI tasks
             const increment = await prisma.salaryIncrementRecord.findFirst({
                 where: {
                     employeeProfileId: profileId,
@@ -42,31 +78,37 @@ export const GET = authorizedRoute(
                 }
             });
 
-            if (!increment) {
-                return NextResponse.json({ kpiTasks: [], message: 'No active approved increment found.' });
-            }
-
             // Extract linkedTaskTemplates from the KPI JSON
             let kpiTasks: { id: string; title: string; points: number; designation?: string | null; calculationType?: string }[] = [];
-            try {
-                const kpiData = increment.newKPI as any;
-                if (kpiData && typeof kpiData === 'object' && Array.isArray(kpiData.linkedTaskTemplates)) {
-                    kpiTasks = kpiData.linkedTaskTemplates.map((t: any) => ({
-                        id: t.id,
-                        title: t.title,
-                        points: t.points || 0,
-                        designation: t.designation || null,
-                        calculationType: t.calculationType || 'FLAT',
-                    }));
+            if (increment) {
+                try {
+                    const kpiData = increment.newKPI as any;
+                    if (kpiData && typeof kpiData === 'object' && Array.isArray(kpiData.linkedTaskTemplates)) {
+                        kpiTasks = kpiData.linkedTaskTemplates.map((t: any) => ({
+                            id: t.id,
+                            title: t.title,
+                            points: t.points || 0,
+                            designation: t.designation || null,
+                            calculationType: t.calculationType || 'FLAT',
+                        }));
+                    }
+                } catch {
+                    // Invalid JSON or no templates
                 }
-            } catch {
-                // Invalid JSON or no templates
             }
 
             return NextResponse.json({
-                incrementId: increment.id,
-                fiscalYear: increment.fiscalYear,
+                incrementId: increment?.id || null,
+                fiscalYear: increment?.fiscalYear || null,
                 kpiTasks,
+                revenueTarget: {
+                    monthly: monthlyTarget,
+                    yearly: employeeProfile?.yearlyTarget || 0,
+                    actualThisMonth: actualRevenue,
+                    achievementPct,
+                    month: now.toLocaleString('default', { month: 'long' }),
+                    year: now.getFullYear(),
+                },
             });
 
         } catch (error: any) {

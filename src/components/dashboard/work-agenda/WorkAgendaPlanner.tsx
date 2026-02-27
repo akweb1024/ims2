@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { Calendar, Clock, ChevronLeft, ChevronRight, Plus, CheckCircle2, AlertCircle, Eye, User, Target, Link as LinkIcon, Edit, Briefcase, CheckSquare, Zap, ChevronDown, ChevronUp, Award } from 'lucide-react';
+import { Calendar, Clock, ChevronLeft, ChevronRight, Plus, CheckCircle2, AlertCircle, Eye, User, Target, Link as LinkIcon, Edit, Briefcase, CheckSquare, Zap, ChevronDown, ChevronUp, Award, TrendingUp, DollarSign } from 'lucide-react';
 import CreateWorkPlanModal from './CreateWorkPlanModal';
 import EditWorkPlanModal from './EditWorkPlanModal';
 import { toast } from 'react-hot-toast';
@@ -53,6 +53,14 @@ export default function WorkAgendaPlanner({ employeeId, isOwnAgenda = false }: W
     const [kpiPanelOpen, setKpiPanelOpen] = useState(true);
     const [addingKpi, setAddingKpi] = useState<string | null>(null);
     const [kpiFiscalYear, setKpiFiscalYear] = useState<string>('');
+    const [revenueTarget, setRevenueTarget] = useState<{
+        monthly: number;
+        yearly: number;
+        actualThisMonth: number;
+        achievementPct: number | null;
+        month: string;
+        year: number;
+    } | null>(null);
 
     const fetchWorkPlans = useCallback(async () => {
         try {
@@ -85,7 +93,7 @@ export default function WorkAgendaPlanner({ employeeId, isOwnAgenda = false }: W
         }
     }, [employeeId, selectedDate]);
 
-    // Fetch KPI defaults from active increment
+    // Fetch KPI defaults + revenue target from active increment
     useEffect(() => {
         const fetchKpiDefaults = async () => {
             try {
@@ -99,6 +107,9 @@ export default function WorkAgendaPlanner({ employeeId, isOwnAgenda = false }: W
                     const data = await res.json();
                     setKpiDefaults(data.kpiTasks || []);
                     setKpiFiscalYear(data.fiscalYear || '');
+                    if (data.revenueTarget && data.revenueTarget.monthly > 0) {
+                        setRevenueTarget(data.revenueTarget);
+                    }
                 }
             } catch (error) {
                 console.error('Error fetching KPI defaults:', error);
@@ -210,6 +221,59 @@ export default function WorkAgendaPlanner({ employeeId, isOwnAgenda = false }: W
                     </button>
                 )}
             </div>
+
+            {/* Revenue Target Panel */}
+            {revenueTarget && revenueTarget.monthly > 0 && (
+                <div className="card-premium border-l-4 border-success-400 bg-gradient-to-br from-white to-success-50/20 p-5">
+                    <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center gap-3">
+                            <div className="h-8 w-8 rounded-lg bg-success-100 flex items-center justify-center">
+                                <DollarSign size={16} className="text-success-600" />
+                            </div>
+                            <div>
+                                <h3 className="font-black text-secondary-900 text-sm">Revenue Target</h3>
+                                <p className="text-[11px] text-secondary-500">{revenueTarget.month} {revenueTarget.year}</p>
+                            </div>
+                        </div>
+                        <div className="text-right">
+                            <p className="text-[10px] text-secondary-400 uppercase font-bold tracking-wider">Monthly Target</p>
+                            <p className="text-xl font-black text-secondary-900">₹{revenueTarget.monthly.toLocaleString('en-IN')}</p>
+                        </div>
+                    </div>
+
+                    {/* Progress Bar */}
+                    <div className="space-y-2">
+                        <div className="flex justify-between text-xs font-bold">
+                            <span className="text-secondary-600">
+                                Achieved: <span className="text-success-700">₹{revenueTarget.actualThisMonth.toLocaleString('en-IN')}</span>
+                            </span>
+                            <span className={`${
+                                (revenueTarget.achievementPct || 0) >= 100 ? 'text-success-600' :
+                                (revenueTarget.achievementPct || 0) >= 75 ? 'text-warning-600' : 'text-danger-600'
+                            }`}>
+                                {revenueTarget.achievementPct ?? 0}%
+                            </span>
+                        </div>
+                        <div className="h-3 bg-secondary-100 rounded-full overflow-hidden">
+                            <div
+                                className={`h-full rounded-full transition-all duration-700 ${
+                                    (revenueTarget.achievementPct || 0) >= 100 ? 'bg-success-500' :
+                                    (revenueTarget.achievementPct || 0) >= 75 ? 'bg-warning-500' : 'bg-danger-500'
+                                }`}
+                                style={{ width: `${Math.min(100, revenueTarget.achievementPct || 0)}%` }}
+                            />
+                        </div>
+                        <div className="flex justify-between text-[10px] text-secondary-400">
+                            <span>₹0</span>
+                            <span className="flex items-center gap-1">
+                                <TrendingUp size={10} />
+                                Gap: ₹{Math.max(0, revenueTarget.monthly - revenueTarget.actualThisMonth).toLocaleString('en-IN')}
+                            </span>
+                            <span>₹{revenueTarget.monthly.toLocaleString('en-IN')}</span>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* KPI Defaults Panel */}
             {kpiDefaults.length > 0 && (
