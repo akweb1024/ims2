@@ -142,7 +142,7 @@ function NewTaskForm() {
                                     />
                                 </div>
 
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
                                     <div className="space-y-2">
                                         <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Logic Class</label>
                                         <select value={formData.category} onChange={(e) => setFormData({ ...formData, category: e.target.value })}
@@ -163,6 +163,19 @@ function NewTaskForm() {
                                             <option value="MEDIUM">Medium</option>
                                             <option value="HIGH">High</option>
                                             <option value="URGENT">Critical</option>
+                                        </select>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Type</label>
+                                        <select value={formData.type} onChange={(e) => setFormData({ ...formData, type: e.target.value })}
+                                            className="w-full bg-slate-50 border border-slate-100 rounded-[1.2rem] px-6 py-4 text-xs font-black text-slate-900 uppercase focus:bg-white outline-none"
+                                        >
+                                            <option value="SUPPORT">Support</option>
+                                            <option value="MAINTENANCE">Maintenance</option>
+                                            <option value="DEPLOYMENT">Deployment</option>
+                                            <option value="TROUBLESHOOTING">Troubleshooting</option>
+                                            <option value="SERVICE_REQUEST">Service Request</option>
+                                            <option value="REVENUE">Revenue</option>
                                         </select>
                                     </div>
                                     <div className="space-y-2">

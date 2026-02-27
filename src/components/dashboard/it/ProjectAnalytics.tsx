@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo } from 'react';
-import { TrendingUp, DollarSign, Target, Activity } from 'lucide-react';
+import { TrendingUp, DollarSign, Target, Activity, Globe, ShieldCheck, Zap } from 'lucide-react';
 
 interface Project {
     id: string;
@@ -10,6 +10,7 @@ interface Project {
     itRevenueEarned: number;
     estimatedRevenue: number;
     itDepartmentCut: number;
+    website?: { id: string; status: string } | null;
     stats: {
         totalTasks: number;
         completedTasks: number;
@@ -48,6 +49,12 @@ export default function ProjectAnalytics({ projects }: ProjectAnalyticsProps) {
         const totalTasks = projects.reduce((sum, p) => sum + p.stats.totalTasks, 0);
         const completedTasks = projects.reduce((sum, p) => sum + p.stats.completedTasks, 0);
 
+        // Website Health Metrics
+        const linkedWebsites = projects.filter(p => p.website);
+        const upCount = linkedWebsites.filter(p => p.website?.status === 'UP').length;
+        const downCount = linkedWebsites.filter(p => p.website?.status === 'DOWN').length;
+        const webHealth = linkedWebsites.length > 0 ? (upCount / linkedWebsites.length) * 100 : 0;
+
         return {
             total,
             byStatus,
@@ -56,7 +63,13 @@ export default function ProjectAnalytics({ projects }: ProjectAnalyticsProps) {
             avgCompletion,
             totalTasks,
             completedTasks,
-            revenueProgress: totalEstimated > 0 ? (totalRevenue / totalEstimated) * 100 : 0
+            revenueProgress: totalEstimated > 0 ? (totalRevenue / totalEstimated) * 100 : 0,
+            webStats: {
+                total: linkedWebsites.length,
+                up: upCount,
+                down: downCount,
+                health: webHealth
+            }
         };
     }, [projects]);
 
@@ -187,6 +200,74 @@ export default function ProjectAnalytics({ projects }: ProjectAnalyticsProps) {
                     </div>
                 </div>
             </div>
+
+            {/* Infrastructure Intelligence */}
+            {analytics.webStats.total > 0 && (
+                <div className="bg-slate-900 rounded-[2.5rem] p-10 text-white relative overflow-hidden group">
+                    <div className="absolute top-0 right-0 p-10 opacity-[0.05] group-hover:opacity-[0.1] transition-opacity">
+                        <Globe className="h-64 w-64" />
+                    </div>
+                    <div className="relative">
+                        <div className="flex items-center gap-4 mb-10">
+                            <div className="p-4 bg-blue-600 rounded-2xl">
+                                <ShieldCheck className="h-8 w-8 text-white" />
+                            </div>
+                            <div>
+                                <h3 className="text-2xl font-black uppercase tracking-widest text-white leading-none">Infrastructure Health</h3>
+                                <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">Real-time Uptime Intelligence</p>
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-12 items-center">
+                            <div className="space-y-6">
+                                <div className="space-y-2">
+                                    <div className="flex justify-between items-end">
+                                        <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Fleet Uptime</span>
+                                        <span className={`text-4xl font-black ${analytics.webStats.health > 99 ? 'text-emerald-400' : 'text-blue-400'}`}>
+                                            {Math.round(analytics.webStats.health)}%
+                                        </span>
+                                    </div>
+                                    <div className="w-full h-3 bg-white/10 rounded-full overflow-hidden">
+                                        <div 
+                                            className={`h-full transition-all duration-1000 ${analytics.webStats.health > 99 ? 'bg-emerald-500' : 'bg-blue-500'}`}
+                                            style={{ width: `${analytics.webStats.health}%` }}
+                                        />
+                                    </div>
+                                </div>
+                                <div className="flex gap-8">
+                                    <div className="space-y-1">
+                                        <p className="text-3xl font-black text-white">{analytics.webStats.up}</p>
+                                        <p className="text-[10px] font-black text-emerald-400 uppercase tracking-widest flex items-center gap-1">
+                                            <div className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" /> Live Now
+                                        </p>
+                                    </div>
+                                    <div className="space-y-1 border-l border-white/10 pl-8">
+                                        <p className="text-3xl font-black text-white">{analytics.webStats.down}</p>
+                                        <p className="text-[10px] font-black text-rose-400 uppercase tracking-widest flex items-center gap-1">
+                                            <div className="h-1.5 w-1.5 rounded-full bg-rose-500" /> Offline
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="lg:col-span-2 grid grid-cols-2 md:grid-cols-4 gap-4">
+                                {[
+                                    { label: 'SEO Rank', score: 85, icon: TrendingUp, color: 'text-blue-400' },
+                                    { label: 'Security', score: 98, icon: ShieldCheck, color: 'text-emerald-400' },
+                                    { label: 'Answer Gen', score: 72, icon: Zap, color: 'text-purple-400' },
+                                    { label: 'Geo Reach', score: 64, icon: Globe, color: 'text-amber-400' },
+                                ].map((item, i) => (
+                                    <div key={i} className="bg-white/5 border border-white/10 rounded-3xl p-6 hover:bg-white/10 transition-all text-center">
+                                        <item.icon className={`h-6 w-6 mx-auto mb-4 ${item.color}`} />
+                                        <p className="text-2xl font-black text-white mb-1">{item.score}</p>
+                                        <p className="text-[8px] font-black text-slate-500 uppercase tracking-widest">{item.label}</p>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

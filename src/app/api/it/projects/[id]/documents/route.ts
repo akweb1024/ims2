@@ -37,31 +37,42 @@ export async function POST(req: NextRequest, context: { params: Promise<{ id: st
 
         const projectId = id;
         const formData = await req.formData();
-        const file = formData.get('file') as File;
+        const file = formData.get('file') as File | null;
         const name = formData.get('name') as string;
         const description = formData.get('description') as string;
+        const content = formData.get('content') as string | null;
         const category = formData.get('category') as string || 'GENERAL';
 
-        if (!file) {
-            return NextResponse.json({ error: 'No file provided' }, { status: 400 });
+        if (!file && !content) {
+            return NextResponse.json({ error: 'No file or text content provided' }, { status: 400 });
         }
 
-        // Save file using StorageService
-        const bytes = await file.arrayBuffer();
-        const { url, path } = await StorageService.saveFile(
-            Buffer.from(bytes),
-            file.name,
-            'documents'
-        );
+        let url = null;
+        let fileType = content ? 'text/html' : 'application/octet-stream';
+        let fileSize = content ? content.length : 0;
+
+        if (file && file.size > 0) {
+            // Save file using StorageService
+            const bytes = await file.arrayBuffer();
+            const storageResult = await StorageService.saveFile(
+                Buffer.from(bytes),
+                file.name,
+                'documents'
+            );
+            url = storageResult.url;
+            fileType = file.type || originalFileType(file.name);
+            fileSize = file.size;
+        }
 
         const document = await (prisma as any).iTProjectDocument.create({
             data: {
                 projectId,
-                name: name || file.name,
+                name: name || (file ? file.name : 'Untitled Text'),
                 description,
+                content,
                 url,
-                fileType: file.type || originalFileType(file.name),
-                fileSize: file.size,
+                fileType,
+                fileSize,
                 category
             }
         });

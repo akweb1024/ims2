@@ -166,9 +166,30 @@ export async function PATCH(req: NextRequest, context: { params: Promise<{ id: s
 
         for (const field of allowedFields) {
             if (body[field] !== undefined) {
-                if (field.includes('Date') && body[field]) {
-                    updateData[field] = new Date(body[field]);
-                } else if (field.includes('Hours') || field.includes('Value') || field.includes('Cut') || field === 'progressPercent') {
+                // 1. Handle relations
+                if (['projectId', 'assignedToId', 'reporterId', 'serviceId'].includes(field)) {
+                    const relationName = field.replace('Id', '');
+                    if (body[field]) {
+                        updateData[relationName] = { connect: { id: body[field] } };
+                    } else if ((existingTask as any)[field]) {
+                        updateData[relationName] = { disconnect: true };
+                    }
+                } 
+                // 2. Handle Dates
+                else if (field.includes('Date')) {
+                    updateData[field] = body[field] ? new Date(body[field]) : null;
+                } 
+                // 3. Handle Booleans (Non-nullable)
+                else if (field === 'isRevenueBased' || field === 'isPaid') {
+                    updateData[field] = Boolean(body[field]);
+                }
+                // 4. Handle Numbers
+                else if (
+                    field.includes('Hours') || 
+                    field.includes('Value') || 
+                    field.includes('Cut') || 
+                    field === 'progressPercent'
+                ) {
                     const val = parseFloat(body[field]?.toString());
                     const nonNullableFields = ['actualHours', 'estimatedValue', 'actualValue', 'itDepartmentCut', 'itRevenueEarned', 'progressPercent'];
                     if (isNaN(val)) {
@@ -176,15 +197,9 @@ export async function PATCH(req: NextRequest, context: { params: Promise<{ id: s
                     } else {
                         updateData[field] = val;
                     }
-                } else if (['projectId', 'assignedToId', 'reporterId', 'serviceId'].includes(field)) {
-                    const relationName = field.replace('Id', '');
-                    if (body[field]) {
-                        updateData[relationName] = { connect: { id: body[field] } };
-                    } else {
-                        updateData[relationName] = { disconnect: true };
-                    }
-                    continue;
-                } else {
+                } 
+                // 5. Default
+                else {
                     updateData[field] = body[field];
                 }
             }

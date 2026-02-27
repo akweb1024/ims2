@@ -3411,9 +3411,10 @@ model ITProjectDocument {
   projectId   String
   name        String
   description String?
-  url         String
-  fileType    String
-  fileSize    Int
+  content     String?   @db.Text
+  url         String?
+  fileType    String?
+  fileSize    Int?      @default(0)
   category    String    @default("GENERAL")
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt

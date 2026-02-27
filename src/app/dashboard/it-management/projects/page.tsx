@@ -7,9 +7,10 @@ import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import {
     Plus, Search, Filter, FolderKanban, Calendar, DollarSign, Users, Clock,
     TrendingUp, CheckCircle2, AlertCircle, Pause, LayoutGrid, PieChart, ChevronRight,
-    ArrowUpRight, Target, ShieldCheck, Zap
+    ArrowUpRight, Target, ShieldCheck, Zap, Globe
 } from 'lucide-react';
 import ProjectAnalytics from '@/components/dashboard/it/ProjectAnalytics';
+import FleetAuditModal from '@/components/dashboard/it/FleetAuditModal';
 
 interface Project {
     id: string; projectCode: string; name: string; description: string | null;
@@ -19,6 +20,7 @@ interface Project {
     endDate: string | null;
     projectManager: { id: string; name: string; email: string; } | null;
     teamLead: { id: string; name: string; email: string; } | null;
+    website?: { id: string; name: string; url: string; status: string } | null;
     stats: { totalTasks: number; completedTasks: number; inProgressTasks: number; completionRate: number; };
 }
 
@@ -39,6 +41,7 @@ export default function ProjectsPage() {
     const [typeFilter, setTypeFilter] = useState<string>('');
     const [showFilters, setShowFilters] = useState(false);
     const [viewMode, setViewMode] = useState<'grid' | 'analytics'>('grid');
+    const [showFleetAudit, setShowFleetAudit] = useState(false);
 
     const fetchProjects = useCallback(async () => {
         try {
@@ -101,6 +104,12 @@ export default function ProjectsPage() {
                             className="px-6 py-3 rounded-2xl bg-blue-600 text-white text-sm font-bold flex items-center gap-2 hover:bg-blue-700 shadow-xl shadow-blue-200 transition-all active:scale-95"
                         >
                             <Plus className="h-4 w-4" /> New Mission
+                        </button>
+                        <button
+                            onClick={() => setShowFleetAudit(true)}
+                            className="px-6 py-3 rounded-2xl bg-slate-900 text-white text-sm font-bold flex items-center gap-2 hover:bg-slate-800 shadow-xl shadow-slate-200 transition-all active:scale-95"
+                        >
+                            <ShieldCheck className="h-4 w-4 text-blue-400" /> Fleet Audit
                         </button>
                     </div>
                 </motion.div>
@@ -229,6 +238,11 @@ export default function ProjectsPage() {
                                                     <DollarSign className="h-2.5 w-2.5" /> Revenue
                                                 </span>
                                             )}
+                                            {p.website && (
+                                                <span className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border flex items-center gap-1 ${p.website.status === 'UP' ? 'bg-blue-50 text-blue-700 border-blue-100' : 'bg-rose-50 text-rose-700 border-rose-100'}`}>
+                                                    <Globe className="h-2.5 w-2.5" /> Web: {p.website.status}
+                                                </span>
+                                            )}
                                         </div>
 
                                         <div className="space-y-4">
@@ -327,6 +341,12 @@ export default function ProjectsPage() {
                         </div>
                     </motion.div>
                 )}
+                
+                <FleetAuditModal 
+                    isOpen={showFleetAudit} 
+                    onClose={() => setShowFleetAudit(false)} 
+                    projects={projects}
+                />
             </div>
         </DashboardLayout>
     );

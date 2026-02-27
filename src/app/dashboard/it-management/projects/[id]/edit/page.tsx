@@ -8,6 +8,7 @@ import {
     FolderKanban, Save, X, Calendar, DollarSign, Users, AlertCircle, Plus, Trash2, 
     ArrowLeft, Globe, Cpu, Shield, Layers, Tag, Briefcase, Zap, Eye
 } from 'lucide-react';
+import WebsiteQuickAddModal from '@/components/dashboard/it/WebsiteQuickAddModal';
 
 interface User { id: string; name: string; email: string; }
 interface Milestone { id: string; title: string; description: string; dueDate: string; status: string; }
@@ -23,6 +24,7 @@ export default function EditProjectPage() {
     const [departments, setDepartments] = useState<any[]>([]);
     const [websites, setWebsites] = useState<any[]>([]);
     const [errors, setErrors] = useState<Record<string, string>>({});
+    const [showQuickAddWebsite, setShowQuickAddWebsite] = useState(false);
 
     const [formData, setFormData] = useState({
         name: '', description: '', about: '', details: '', keywords: '', departmentId: '',
@@ -130,8 +132,16 @@ export default function EditProjectPage() {
                     })),
                 }),
             });
-            if (response.ok) router.push(`/dashboard/it-management/projects/${projectId}`);
-        } catch (error) { console.error('Transmission failed'); }
+            if (response.ok) {
+                router.push(`/dashboard/it-management/projects/${projectId}`);
+            } else {
+                const errData = await response.json();
+                alert(errData.error || 'Transmission failed');
+            }
+        } catch (error) { 
+            console.error(error);
+            alert('Transmission failed - Connection error');
+        }
         finally { setSaving(false); }
     };
 
@@ -202,7 +212,7 @@ export default function EditProjectPage() {
                                         />
                                     </div>
 
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
                                         <div className="space-y-2">
                                             <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Class</label>
                                             <select value={formData.category} onChange={(e) => setFormData({ ...formData, category: e.target.value })}
@@ -222,6 +232,19 @@ export default function EditProjectPage() {
                                                 <option value="IN_PROGRESS">Active</option>
                                                 <option value="TESTING">Testing</option>
                                                 <option value="COMPLETED">Settled</option>
+                                                <option value="ON_HOLD">On Hold</option>
+                                            </select>
+                                        </div>
+                                        <div className="space-y-2">
+                                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Type</label>
+                                            <select value={formData.type} onChange={(e) => setFormData({ ...formData, type: e.target.value })}
+                                                className="w-full bg-slate-50 border border-slate-100 rounded-[1.2rem] px-6 py-4 text-xs font-black text-slate-900 uppercase focus:bg-white outline-none"
+                                            >
+                                                <option value="SUPPORT">Support</option>
+                                                <option value="DEPLOYMENT">Deployment</option>
+                                                <option value="MAINTENANCE">Maintenance</option>
+                                                <option value="REVENUE">Revenue</option>
+                                                <option value="SERVICE_REQUEST">Service Request</option>
                                             </select>
                                         </div>
                                     </div>
@@ -349,11 +372,46 @@ export default function EditProjectPage() {
                                         <input type="number" value={formData.itDepartmentCut} onChange={(e) => setFormData({ ...formData, itDepartmentCut: parseFloat(e.target.value) || 0 })}
                                             className="w-16 bg-transparent text-right font-black text-white outline-none" />
                                     </div>
+                                    <div className="flex items-center gap-3 px-2">
+                                        <input type="checkbox" id="isRevenueBased" checked={formData.isRevenueBased} onChange={(e) => setFormData({ ...formData, isRevenueBased: e.target.checked })}
+                                            className="w-5 h-5 rounded-lg bg-white/10 border-white/20 text-emerald-500 focus:ring-0" />
+                                        <label htmlFor="isRevenueBased" className="text-[10px] font-black uppercase tracking-widest text-white/80 cursor-pointer">Revenue Generation Active</label>
+                                    </div>
                                     <div className="pt-6 border-t border-white/10 text-center">
                                         <p className="text-3xl font-black text-white">₹{((formData.estimatedRevenue * formData.itDepartmentCut) / 100).toLocaleString()}</p>
                                     </div>
                                 </div>
                             </motion.div>
+
+                            {/* Digital Footprint (Website) */}
+                            <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.65 }}
+                                className="bg-white/80 backdrop-blur-xl rounded-[3rem] p-10 border border-white shadow-xl shadow-slate-200/50"
+                            >
+                                <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-10 flex items-center gap-3">
+                                    <Globe className="h-4 w-4 text-blue-600" /> Linked Infrastructure
+                                </h3>
+                                <div className="space-y-4">
+                                    <div className="flex gap-2">
+                                        <select value={formData.websiteId} onChange={(e) => setFormData({ ...formData, websiteId: e.target.value })}
+                                            className="flex-1 bg-slate-50 border border-slate-100 rounded-2xl px-6 py-4 text-xs font-black text-slate-900 focus:bg-white outline-none transition-all"
+                                        >
+                                            <option value="">No Active Monitor</option>
+                                            {websites.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
+                                        </select>
+                                        <button 
+                                            type="button"
+                                            onClick={() => setShowQuickAddWebsite(true)}
+                                            className="p-4 bg-slate-900 text-white rounded-2xl hover:bg-slate-800 transition-all flex items-center justify-center group"
+                                            title="Add New Website"
+                                        >
+                                            <Plus className="h-4 w-4 group-hover:rotate-90 transition-transform" />
+                                        </button>
+                                    </div>
+                                    <p className="text-[9px] font-medium text-slate-400 italic px-2 leading-relaxed">Sync project status with live website uptime and performance metrics.</p>
+                                </div>
+                            </motion.div>
+
+
 
                             {/* Action Control */}
                             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.7 }}
@@ -373,6 +431,14 @@ export default function EditProjectPage() {
 
                         </div>
                     </form>
+                    <WebsiteQuickAddModal 
+                        isOpen={showQuickAddWebsite}
+                        onClose={() => setShowQuickAddWebsite(false)}
+                        onSuccess={(newWeb) => {
+                            setWebsites(prev => [newWeb, ...prev]);
+                            setFormData(prev => ({ ...prev, websiteId: newWeb.id }));
+                        }}
+                    />
                 </div>
             </div>
         </DashboardLayout>

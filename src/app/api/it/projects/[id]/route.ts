@@ -52,7 +52,7 @@ export async function GET(
                     }
                 },
                 department: { select: { id: true, name: true } },
-                website: { select: { id: true, name: true, url: true } },
+                website: { select: { id: true, name: true, url: true, status: true } },
                 taggedEmployees: {
                     select: {
                         id: true,
@@ -229,19 +229,39 @@ export async function PATCH(
 
             for (const field of allowedFields) {
                 if (body[field] !== undefined) {
-                    if (field === 'taggedEmployeeIds') {
+                    // 1. Handle specialized relational fields
+                    if (field === 'projectManagerId' || field === 'teamLeadId' || field === 'departmentId' || field === 'websiteId') {
+                        const relationName = field.replace('Id', '');
+                        if (body[field]) {
+                            updateData[relationName] = { connect: { id: body[field] } };
+                        } else if ((existingProject as any)[field]) {
+                            updateData[relationName] = { disconnect: true };
+                        }
+                    } 
+                    // 2. Handle many-to-many tagged employees
+                    else if (field === 'taggedEmployeeIds') {
                         if (Array.isArray(body[field])) {
                             updateData.taggedEmployees = {
                                 set: body[field].map((id: string) => ({ id }))
                             };
                         }
-                    } else if (field.includes('Date')) {
-                        if (body[field]) {
-                            updateData[field] = new Date(body[field]);
-                        } else {
-                            updateData[field] = null;
-                        }
-                    } else if (field.includes('Hours') || field.includes('Revenue') || field.includes('Cut') || field.includes('Rate')) {
+                    } 
+                    // 3. Handle specific data types: Dates
+                    else if (field.includes('Date') || field === 'startDate' || field === 'endDate') {
+                        updateData[field] = body[field] ? new Date(body[field]) : null;
+                    } 
+                    // 4. Handle specific data types: Booleans (Non-nullable)
+                    else if (field === 'isRevenueBased' || field === 'isBilled') {
+                        updateData[field] = Boolean(body[field]);
+                    }
+                    // 5. Handle specific data types: Numbers (Floats)
+                    else if (
+                        field.includes('Hours') || 
+                        field.includes('Revenue') || 
+                        field.includes('Cut') || 
+                        field.includes('Rate') ||
+                        field.includes('Value')
+                    ) {
                         const val = parseFloat(body[field]?.toString());
                         const nonNullableFields = ['actualHours', 'estimatedRevenue', 'actualRevenue', 'itDepartmentCut', 'itRevenueEarned'];
                         if (isNaN(val)) {
@@ -249,10 +269,9 @@ export async function PATCH(
                         } else {
                             updateData[field] = val;
                         }
-                    } else if (field === 'projectManagerId' || field === 'teamLeadId' || field === 'departmentId' || field === 'websiteId') {
-                        // Pass scalar ID fields directly — Prisma update does NOT support nested relation writes here
-                        updateData[field] = body[field] || null;
-                    } else {
+                    } 
+                    // 6. Default: Direct assignment
+                    else {
                         updateData[field] = body[field];
                     }
                 }
@@ -265,11 +284,13 @@ export async function PATCH(
                 };
             }
 
-            // Calculate IT revenue if actualRevenue or itDepartmentCut is updated
-            const revenue = updateData.actualRevenue !== undefined ? updateData.actualRevenue : existingProject.actualRevenue;
+            // Calculate IT revenue based on available revenue numbers
+            const actualRev = updateData.actualRevenue !== undefined ? updateData.actualRevenue : existingProject.actualRevenue;
+            const estRev = updateData.estimatedRevenue !== undefined ? updateData.estimatedRevenue : existingProject.estimatedRevenue;
+            const revenue = actualRev || estRev || 0;
             const cut = updateData.itDepartmentCut !== undefined ? updateData.itDepartmentCut : existingProject.itDepartmentCut;
 
-            if (updateData.actualRevenue !== undefined || updateData.itDepartmentCut !== undefined) {
+            if (updateData.actualRevenue !== undefined || updateData.estimatedRevenue !== undefined || updateData.itDepartmentCut !== undefined) {
                 updateData.itRevenueEarned = (revenue * cut) / 100;
             }
 
@@ -335,7 +356,7 @@ export async function PATCH(
                         }
                     },
                     department: { select: { id: true, name: true } },
-                    website: { select: { id: true, name: true, url: true } },
+                    website: { select: { id: true, name: true, url: true, status: true } },
                     taggedEmployees: {
                         select: {
                             id: true,

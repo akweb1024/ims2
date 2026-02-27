@@ -74,6 +74,7 @@ export async function GET(req: NextRequest) {
                         status: true,
                     }
                 },
+                website: { select: { id: true, name: true, url: true, status: true } },
                 _count: {
                     select: {
                         tasks: true,
