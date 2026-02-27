@@ -499,6 +499,7 @@ export default function StaffPortalPage() {
                                 reviews={performance} 
                                 increments={fullProfile?.incrementHistory || []}
                                 insights={insights}
+                                kpis={kpis}
                             />
                         </div>
                     )}

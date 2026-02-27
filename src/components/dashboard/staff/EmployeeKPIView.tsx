@@ -1,7 +1,7 @@
 'use client';
 
 import { useKPIs } from '@/hooks/useHR';
-import { Target, TrendingUp, BarChart3, Award, Star, Briefcase, Zap, AlertCircle } from 'lucide-react';
+import { Target, TrendingUp, BarChart3, Award, Star, Briefcase, Zap, AlertCircle, CheckCircle2, Clock, Activity } from 'lucide-react';
 import { formatToISTDate } from '@/lib/date-utils';
 import {
     Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer,
@@ -13,13 +13,16 @@ interface EmployeeKPIViewProps {
     reviews?: any[];
     increments?: any[];
     insights?: any[];
+    kpis?: any[];  // Pass KPIs from parent to avoid auth issues in hook
 }
 
-export default function EmployeeKPIView({ snapshots = [], reviews = [], increments = [], insights = [] }: EmployeeKPIViewProps) {
-    const { data: kpis, isLoading } = useKPIs();
+export default function EmployeeKPIView({ snapshots = [], reviews = [], increments = [], insights = [], kpis: kpisProp }: EmployeeKPIViewProps) {
+    const { data: kpisHook, isLoading } = useKPIs();
+    // Prefer prop-passed KPIs (from self-scoped API call) over hook's company-wide query
+    const kpis = (kpisProp && kpisProp.length > 0) ? kpisProp : (kpisHook || []);
 
-    // Use latest snapshot for current metrics
-    const currentSnapshot = snapshots && snapshots.length > 0 ? snapshots[snapshots.length - 1] : null;
+    // API returns monthly snapshots sorted desc (newest first), so index 0 is the MOST RECENT
+    const currentSnapshot = snapshots && snapshots.length > 0 ? snapshots[0] : null;
 
     // Derived Data for Radar Chart
     const skillsData = currentSnapshot ? [
@@ -39,11 +42,25 @@ export default function EmployeeKPIView({ snapshots = [], reviews = [], incremen
         { subject: 'Punctuality', A: 0, fullMark: 100 },
     ];
 
-    // Data for Trend Chart (Last 6 months)
-    const performanceHistory = snapshots?.slice(-6).map(s => ({
-        month: new Date(s.year, s.month - 1).toLocaleString('default', { month: 'short' }),
-        score: parseFloat(s.overallScore?.toFixed(1) || '0') / 10 // Map 0-100 to 0-10 for chart consistency or keep 100? Chart axis was 0-10 previously
-    })) || [];
+    // Data for Trend Chart (Last 6 months — already sorted desc, reverse to show oldest→newest)
+    const performanceHistory = (snapshots?.length > 0
+        ? [...snapshots].reverse().slice(-6)
+        : []
+    ).map(s => ({
+        month: new Date(s.year, s.month - 1).toLocaleString('default', { month: 'short' }) + ` '${String(s.year).slice(-2)}`,
+        score: parseFloat((s.overallScore / 10).toFixed(1)),
+        rawScore: parseFloat((s.overallScore || 0).toFixed(1)),
+    }));
+
+    // Quick metric chips for header
+    const metricChips = currentSnapshot ? [
+        { label: 'Attendance', value: `${currentSnapshot.daysPresent || 0}/${currentSnapshot.totalWorkingDays || 0}d`, ok: (currentSnapshot.attendanceScore || 0) >= 70 },
+        { label: 'Reports Filed', value: `${currentSnapshot.reportsSubmitted || 0}/${currentSnapshot.reportsExpected || 0}`, ok: (currentSnapshot.reportSubmissionRate || 0) >= 70 },
+        { label: 'Tasks Done', value: `${currentSnapshot.tasksCompleted || 0}/${currentSnapshot.tasksAssigned || 0}`, ok: (currentSnapshot.taskCompletionRate || 0) >= 70 },
+        { label: 'Pts Earned', value: `${currentSnapshot.totalPointsEarned || 0} pts`, ok: (currentSnapshot.totalPointsEarned || 0) > 0 },
+        { label: 'Avg Rating', value: currentSnapshot.averageManagerRating > 0 ? `${currentSnapshot.averageManagerRating.toFixed(1)}/10` : 'N/A', ok: currentSnapshot.averageManagerRating >= 6 },
+        { label: 'Grade', value: currentSnapshot.performanceGrade || 'N/A', ok: !['F', 'D'].includes(currentSnapshot.performanceGrade || 'F') },
+    ] : [];
 
     // Overall Rating (Using Manager Rating or Overall Score)
     const overallRatingNum = currentSnapshot ? (currentSnapshot.overallScore / 10) : 0;
@@ -68,11 +85,24 @@ export default function EmployeeKPIView({ snapshots = [], reviews = [], incremen
     };
     const chartColors = getChartColor(overallRatingNum);
 
-    if (isLoading) return (
+    if (isLoading && !currentSnapshot) return (
         <div className="flex items-center justify-center p-20 text-indigo-500">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-current"></div>
         </div>
     );
+
+    // No data at all
+    if (!currentSnapshot && snapshots.length === 0) {
+        return (
+            <div className="text-center py-20 space-y-4">
+                <div className="text-6xl">📊</div>
+                <h3 className="text-xl font-black text-secondary-700">No Performance Data Yet</h3>
+                <p className="text-secondary-500 text-sm max-w-sm mx-auto">
+                    Your monthly performance snapshot will appear here once it has been calculated by HR. Keep submitting daily reports!
+                </p>
+            </div>
+        );
+    }
 
     return (
         <div className="space-y-8 animate-in fade-in duration-500">
@@ -91,13 +121,29 @@ export default function EmployeeKPIView({ snapshots = [], reviews = [], incremen
                             </span>
                         </div>
                         <h1 className="text-4xl font-black mb-2">{theme.text}</h1>
-                        <p className="text-white/90 max-w-xl">
-                            {theme.summary}
-                        </p>
+                        <p className="text-white/90 max-w-xl">{theme.summary}</p>
+                        {/* Metric Chips */}
+                        {metricChips.length > 0 && (
+                            <div className="flex flex-wrap gap-2 mt-4">
+                                {metricChips.map((chip, i) => (
+                                    <span key={i} className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wide ${
+                                        chip.ok ? 'bg-white/20 text-white' : 'bg-red-500/30 text-white border border-red-300/40'
+                                    }`}>
+                                        {chip.ok ? <CheckCircle2 size={10} /> : <AlertCircle size={10} />}
+                                        {chip.label}: {chip.value}
+                                    </span>
+                                ))}
+                            </div>
+                        )}
                     </div>
-                    <div className="text-right">
+                    <div className="text-right shrink-0">
                         <p className="text-xs uppercase tracking-widest opacity-80 font-bold">Overall Rating</p>
                         <div className="text-5xl font-black mt-1">{overallRating}<span className="text-2xl opacity-60">/10</span></div>
+                        {currentSnapshot && (
+                            <p className="text-[10px] text-white/70 mt-1 font-bold">
+                                {new Date(currentSnapshot.year, currentSnapshot.month - 1).toLocaleString('default', { month: 'long', year: 'numeric' })}
+                            </p>
+                        )}
                     </div>
                 </div>
                 {/* Decorative Elements */}
@@ -208,18 +254,20 @@ export default function EmployeeKPIView({ snapshots = [], reviews = [], incremen
                             <ResponsiveContainer width="100%" height="100%">
                                 <BarChart data={performanceHistory}>
                                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
-                                    <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fill: '#9ca3af', fontSize: 12 }} />
-                                    <YAxis domain={[0, 10]} axisLine={false} tickLine={false} tick={{ fill: '#9ca3af', fontSize: 12 }} />
+                                    <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fill: '#9ca3af', fontSize: 11 }} />
+                                    <YAxis domain={[0, 10]} axisLine={false} tickLine={false} tick={{ fill: '#9ca3af', fontSize: 11 }} />
                                     <RechartsTooltip
                                         cursor={{ fill: '#f9fafb' }}
                                         contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)' }}
+                                        formatter={(value: any) => [`${value}/10`, 'Score']}
                                     />
                                     <Bar dataKey="score" fill={chartColors.fill} radius={[6, 6, 0, 0]} barSize={40} />
                                 </BarChart>
                             </ResponsiveContainer>
                         ) : (
-                            <div className="flex h-full items-center justify-center text-gray-400">
-                                No history available yet
+                            <div className="flex h-full flex-col items-center justify-center text-gray-400 gap-2">
+                                <Activity size={32} className="opacity-30" />
+                                <p className="text-sm">No snapshot history yet</p>
                             </div>
                         )}
                     </div>

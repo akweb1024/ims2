@@ -5,13 +5,14 @@ import { createErrorResponse } from '@/lib/api-utils';
 
 // GET: Fetch insights for the company or a specific employee
 export const GET = authorizedRoute(
-    ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'EXECUTIVE'],
+    ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'TEAM_LEADER', 'HR_MANAGER', 'HR', 'EXECUTIVE'],
     async (req: NextRequest, user) => {
         try {
             const { searchParams } = new URL(req.url);
             let employeeId = searchParams.get('employeeId');
 
-            if (user.role === 'EXECUTIVE') {
+            // Resolve self for any employee role
+            if (employeeId === 'self' || (!employeeId && ['EXECUTIVE', 'TEAM_LEADER'].includes(user.role))) {
                 const profile = await prisma.employeeProfile.findFirst({ where: { userId: user.id } });
                 if (!profile) return NextResponse.json([]);
                 employeeId = profile.id;

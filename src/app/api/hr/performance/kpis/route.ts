@@ -5,7 +5,7 @@ import { createErrorResponse } from '@/lib/api-utils';
 
 // GET: Fetch KPIs for the company or a specific employee
 export const GET = authorizedRoute(
-    ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'EXECUTIVE'],
+    ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'TEAM_LEADER', 'HR_MANAGER', 'HR', 'EXECUTIVE'],
     async (req: NextRequest, user) => {
         try {
             const { searchParams } = new URL(req.url);
@@ -14,7 +14,8 @@ export const GET = authorizedRoute(
             const where: any = {};
             if (user.companyId) where.companyId = user.companyId;
 
-            if (user.role === 'EXECUTIVE' || employeeId === 'self') {
+            // Resolve 'self' OR any non-privileged role viewing their own data
+            if (employeeId === 'self' || (!employeeId && ['EXECUTIVE', 'TEAM_LEADER'].includes(user.role))) {
                 const profile = await prisma.employeeProfile.findUnique({ where: { userId: user.id } });
                 if (!profile) return NextResponse.json([]);
                 where.employeeId = profile.id;
