@@ -72,9 +72,13 @@ export default function EditWorkPlanModal({ plan, onClose, onSuccess }: EditWork
                 estimatedHours: formData.estimatedHours ? parseFloat(formData.estimatedHours.toString()) : null,
             };
 
+            const token = localStorage.getItem('token');
             const res = await fetch(`/api/work-agenda/${plan.id}`, {
                 method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
                 body: JSON.stringify(payload),
             });
 
@@ -98,8 +102,12 @@ export default function EditWorkPlanModal({ plan, onClose, onSuccess }: EditWork
         if (!confirm('Are you sure you want to delete this work plan?')) return;
         try {
             setLoading(true);
+            const token = localStorage.getItem('token');
             const res = await fetch(`/api/work-agenda/${plan.id}`, {
                 method: 'DELETE',
+                headers: { 
+                    'Authorization': `Bearer ${token}`
+                },
             });
 
             if (!res.ok) {

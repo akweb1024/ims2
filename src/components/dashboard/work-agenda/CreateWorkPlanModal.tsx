@@ -55,9 +55,13 @@ export default function CreateWorkPlanModal({ onClose, onSuccess, employeeId }: 
                 employeeId: employeeId || user.employeeId, // Fallback to current user if not provided
             };
 
+            const token = localStorage.getItem('token');
             const res = await fetch('/api/work-agenda', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
                 body: JSON.stringify(payload),
             });
 
