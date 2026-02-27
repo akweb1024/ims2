@@ -961,8 +961,8 @@ export default function EmployeeProfilePage() {
                                                                 <h4 className="text-xs font-black text-secondary-900 uppercase tracking-widest mb-4 flex items-center gap-2">
                                                                     <Shield size={16} className="text-primary-500" /> Current KRA (Increment Specific)
                                                                 </h4>
-                                                                <div className="text-sm text-secondary-700 leading-relaxed bg-secondary-50/50 p-4 rounded-xl border border-secondary-100 italic whitespace-pre-wrap">
-                                                                    {activeIncrement.newKRA || 'No specific KRA defined in this increment.'}
+                                                                <div className="prose prose-sm max-w-none text-secondary-700 leading-relaxed bg-secondary-50/50 p-4 rounded-xl border border-secondary-100 max-h-[300px] overflow-y-auto">
+                                                                    <SafeHTML html={activeIncrement.newKRA || '<p class="text-secondary-400 italic">No specific KRA defined in this increment cycle.</p>'} />
                                                                 </div>
                                                             </div>
 
@@ -1014,9 +1014,25 @@ export default function EmployeeProfilePage() {
                                                             <div className="grid grid-cols-1 gap-3">
                                                                 {activeIncrement.newKPI && typeof activeIncrement.newKPI === 'object' ? (
                                                                     Object.entries(activeIncrement.newKPI).map(([k, v]: [string, any]) => (
-                                                                        <div key={k} className="flex justify-between items-center p-4 bg-white rounded-2xl border border-secondary-100 shadow-sm hover:border-primary-200 transition-colors">
-                                                                            <span className="text-xs font-bold text-secondary-600">{k}</span>
-                                                                            <span className="text-sm font-black text-primary-700">{String(v)}</span>
+                                                                        <div key={k} className="flex flex-col gap-2 p-4 bg-white rounded-2xl border border-secondary-100 shadow-sm hover:border-primary-200 transition-colors">
+                                                                            <span className="text-[10px] font-black text-secondary-400 uppercase tracking-widest">{k.replace(/([A-Z])/g, ' $1').trim()}</span>
+                                                                            <div className="text-sm font-black text-primary-700">
+                                                                                {Array.isArray(v) ? (
+                                                                                    <div className="flex flex-wrap gap-1">
+                                                                                        {v.map((item: any, idx: number) => (
+                                                                                            <span key={idx} className="bg-primary-50 px-2 py-0.5 rounded border border-primary-100 text-[10px]">
+                                                                                                {typeof item === 'object' ? (item.title || item.name || item.agenda || JSON.stringify(item)) : String(item)}
+                                                                                            </span>
+                                                                                        ))}
+                                                                                    </div>
+                                                                                ) : (
+                                                                                    typeof v === 'object' && v !== null ? (
+                                                                                        <span className="bg-secondary-50 px-2 py-0.5 rounded text-[10px]">
+                                                                                            {v.title || v.name || v.agenda || JSON.stringify(v)}
+                                                                                        </span>
+                                                                                    ) : String(v)
+                                                                                )}
+                                                                            </div>
                                                                         </div>
                                                                     ))
                                                                 ) : (
