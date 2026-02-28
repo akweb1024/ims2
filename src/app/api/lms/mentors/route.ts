@@ -8,7 +8,7 @@ export async function GET(req: Request) {
         const mentorId = searchParams.get('mentorId');
         const workshopId = searchParams.get('workshopId');
 
-        let whereClause: any = {};
+        const whereClause: any = {};
         if (mentorId) whereClause.mentorId = mentorId;
         if (workshopId) whereClause.workshopId = workshopId;
 

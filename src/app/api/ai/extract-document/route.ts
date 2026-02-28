@@ -91,9 +91,9 @@ export async function POST(req: NextRequest) {
         const responseText = result.response.text();
 
         // Strip markdown backticks if the model decided to wrap the JSON
-        let cleanJson = responseText.replace(/```json/gi, '').replace(/```/g, '').trim();
+        const cleanJson = responseText.replace(/```json/gi, '').replace(/```/g, '').trim();
 
-        let parsedData;
+        let parsedData: any;
         try {
             parsedData = JSON.parse(cleanJson);
         } catch (e) {
