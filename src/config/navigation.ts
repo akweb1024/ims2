@@ -171,9 +171,10 @@ export const ALL_MODULES: NavModule[] = [
                 ]
             },
             {
-                title: 'Engagement',
+                title: 'Engagement & Marketing',
                 items: [
                     { name: 'Communications', href: '/dashboard/communications', icon: '📞', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'TEAM_LEADER', 'EXECUTIVE'] },
+                    { name: 'Active Campaigns', href: '/dashboard/crm/campaigns', icon: '🚀', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER'] },
                     { name: 'Follow-ups', href: '/dashboard/follow-ups', icon: '📅', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'TEAM_LEADER', 'EXECUTIVE'] },
                 ]
             }

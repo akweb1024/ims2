@@ -115,6 +115,9 @@ model Company {
   inventoryItems              InventoryItem[]
   productionOrders            ProductionOrder[]
   integrations                CompanyIntegration[]
+  marketingCampaigns          MarketingCampaign[]
+  emailTemplates              EmailTemplate[]
+  campaignAudiences           CampaignAudience[]
 }
 
 model CompanyIntegration {
@@ -3421,8 +3424,14 @@ model EmailTemplate {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  designState Json?
+  companyId   String?
+  company     Company?            @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  campaigns   MarketingCampaign[]
+
   @@index([category])
   @@index([isActive])
+  @@index([companyId])
 }
 
 model CoAuthorInvitation {
@@ -4646,4 +4655,45 @@ model AnonymousFeedback {
   performanceReview   PerformanceReview @relation(fields: [performanceReviewId], references: [id], onDelete: Cascade)
 
   @@index([performanceReviewId])
+}
+
+// ----------------------------------------------------------------------------
+// 📈 Phase 5: CRM & Marketing Automation
+// ----------------------------------------------------------------------------
+
+model MarketingCampaign {
+  id             String            @id @default(uuid())
+  name           String
+  description    String?
+  status         String            @default("DRAFT") // DRAFT, SCHEDULED, ACTIVE, COMPLETED, CANCELLED
+  type           String            @default("EMAIL")
+  startDate      DateTime?
+  endDate        DateTime?
+  audienceId     String?
+  templateId     String?
+  companyId      String?
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+  
+  audience       CampaignAudience? @relation(fields: [audienceId], references: [id])
+  template       EmailTemplate?    @relation(fields: [templateId], references: [id])
+  company        Company?          @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+  @@index([status])
+}
+
+model CampaignAudience {
+  id             String            @id @default(uuid())
+  name           String
+  description    String?
+  queryFilter    Json?             // Stores the dynamic filter rules (e.g. tag: "VIP")
+  companyId      String?
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+  
+  company        Company?          @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  campaigns      MarketingCampaign[]
+
+  @@index([companyId])
 }
