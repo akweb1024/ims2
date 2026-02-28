@@ -29,6 +29,7 @@ interface ITDocument {
 
 interface ITDocumentManagerProps {
     projectId: string;
+    canManage?: boolean;
 }
 
 const getFileIcon = (type: string) => {
@@ -49,7 +50,7 @@ const formatFileSize = (bytes: number) => {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
 };
 
-export default function ITDocumentManager({ projectId }: ITDocumentManagerProps) {
+export default function ITDocumentManager({ projectId, canManage = false }: ITDocumentManagerProps) {
     const [documents, setDocuments] = useState<ITDocument[]>([]);
     const [loading, setLoading] = useState(true);
     const [uploading, setUploading] = useState(false);
@@ -177,13 +178,15 @@ export default function ITDocumentManager({ projectId }: ITDocumentManagerProps)
                         </button>
                     ))}
                 </div>
-                <button
-                    onClick={() => setShowUploadModal(true)}
-                    className="flex items-center justify-center gap-3 px-8 py-4 bg-blue-600 text-white rounded-[1.25rem] font-black text-[10px] uppercase tracking-widest hover:scale-[1.02] active:scale-95 transition-all shadow-xl shadow-blue-200"
-                >
-                    <Plus className="h-4 w-4" />
-                    New Asset Node
-                </button>
+                {canManage && (
+                    <button
+                        onClick={() => setShowUploadModal(true)}
+                        className="flex items-center justify-center gap-3 px-8 py-4 bg-blue-600 text-white rounded-[1.25rem] font-black text-[10px] uppercase tracking-widest hover:scale-[1.02] active:scale-95 transition-all shadow-xl shadow-blue-200"
+                    >
+                        <Plus className="h-4 w-4" />
+                        New Asset Node
+                    </button>
+                )}
             </div>
 
             {loading ? (
@@ -228,12 +231,14 @@ export default function ITDocumentManager({ projectId }: ITDocumentManagerProps)
                                             <Eye className="h-4 w-4" />
                                         </button>
                                     )}
-                                    <button
-                                        onClick={() => handleDelete(doc.id)}
-                                        className="p-3 bg-rose-50 text-rose-600 rounded-xl hover:bg-rose-600 hover:text-white transition-all shadow-sm"
-                                    >
-                                        <Trash2 className="h-4 w-4" />
-                                    </button>
+                                    {canManage && (
+                                        <button
+                                            onClick={() => handleDelete(doc.id)}
+                                            className="p-3 bg-rose-50 text-rose-600 rounded-xl hover:bg-rose-600 hover:text-white transition-all shadow-sm"
+                                        >
+                                            <Trash2 className="h-4 w-4" />
+                                        </button>
+                                    )}
                                 </div>
                             </div>
 

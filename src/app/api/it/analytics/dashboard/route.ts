@@ -50,6 +50,7 @@ export async function GET(req: NextRequest) {
             projectWhere.OR = [
                 { projectManagerId: user.id },
                 { teamLeadId: user.id },
+                { visibility: 'PUBLIC' }
             ];
         } else if (view === 'my') {
             taskWhere.OR = [
@@ -61,6 +62,7 @@ export async function GET(req: NextRequest) {
             projectWhere.OR = [
                 { projectManagerId: user.id },
                 { teamLeadId: user.id },
+                { visibility: 'PUBLIC' }
             ];
         }
 

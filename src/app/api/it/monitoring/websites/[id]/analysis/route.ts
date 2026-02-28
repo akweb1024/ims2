@@ -16,12 +16,20 @@ export async function GET(
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
+        // Check if user has access to WEB_MONITOR module
+        if (user.role !== 'SUPER_ADMIN' && !user.allowedModules?.includes('WEB_MONITOR')) {
+            return NextResponse.json({ error: 'Access Denied: Web Monitor module not granted' }, { status: 403 });
+        }
+
         const website = await prisma.websiteMonitor.findUnique({
-            where: { id }
+            where: { 
+                id,
+                ...(user.companyId ? { companyId: user.companyId } : {})
+            }
         });
 
         if (!website) {
-            return NextResponse.json({ error: 'Website monitor not found' }, { status: 404 });
+            return NextResponse.json({ error: 'Website monitor not found or access denied' }, { status: 404 });
         }
 
         // Generate high-fidelity mock audit data

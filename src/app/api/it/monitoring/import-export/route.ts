@@ -8,11 +8,17 @@ export const GET = authorizedRoute(
     ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'IT_ADMIN'],
     async (req: NextRequest, user) => {
         try {
+            // Check if user has access to WEB_MONITOR module
+            if (user.role !== 'SUPER_ADMIN' && !user.allowedModules?.includes('WEB_MONITOR')) {
+                return NextResponse.json({ error: 'Access Denied: Web Monitor module not granted' }, { status: 403 });
+            }
+
             const monitors = await prisma.websiteMonitor.findMany({
                 where: user.companyId ? { companyId: user.companyId } : {},
                 select: {
                     name: true,
                     url: true,
+                    category: true,
                     frequency: true,
                     notifyEmail: true,
                     notifyWhatsapp: true
@@ -20,10 +26,11 @@ export const GET = authorizedRoute(
             });
 
             // Manual CSV generation
-            const header = ['name', 'url', 'frequency', 'notifyEmail', 'notifyWhatsapp'];
+            const header = ['name', 'url', 'category', 'frequency', 'notifyEmail', 'notifyWhatsapp'];
             const rows = monitors.map(m => [
                 `"${m.name.replace(/"/g, '""')}"`,
                 `"${m.url.replace(/"/g, '""')}"`,
+                m.category ? `"${m.category.replace(/"/g, '""')}"` : '""',
                 m.frequency,
                 m.notifyEmail,
                 m.notifyWhatsapp
@@ -47,6 +54,11 @@ export const POST = authorizedRoute(
     ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'IT_ADMIN'],
     async (req: NextRequest, user) => {
         try {
+            // Check if user has access to WEB_MONITOR module
+            if (user.role !== 'SUPER_ADMIN' && !user.allowedModules?.includes('WEB_MONITOR')) {
+                return NextResponse.json({ error: 'Access Denied: Web Monitor module not granted' }, { status: 403 });
+            }
+
             // we assume the body is the CSV text provided as a file or raw text
             // In a real file upload, we usually get FormData. 
             // Let's support JSON { csvContent: string } or raw text for simplicity if handled by frontend
@@ -82,6 +94,7 @@ export const POST = authorizedRoute(
                         data: {
                             name: rec.name,
                             url: rec.url,
+                            category: rec.category || null,
                             frequency: parseInt(rec.frequency) || 5,
                             notifyEmail: rec.notifyEmail === 'true' || rec.notifyEmail === true,
                             notifyWhatsapp: rec.notifyWhatsapp === 'true' || rec.notifyWhatsapp === true,

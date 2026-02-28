@@ -138,6 +138,20 @@ export async function GET(
             return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
         }
 
+        // Access Rule:
+        // 1. Manager/Admin of IT module can see any project in their company
+        // 2. Project Manager/Team Lead/Task Assignees can see their projects
+        // 3. Any employee in company can see PUBLIC projects
+        const isManager = canManageProjects(user.role);
+        const isInvolved = project.projectManagerId === user.id || 
+                          project.teamLeadId === user.id || 
+                          project.tasks.some(t => t.assignedToId === user.id);
+        const isPublic = project.visibility === 'PUBLIC';
+
+        if (!isManager && !isInvolved && !isPublic) {
+            return NextResponse.json({ error: 'Access Denied' }, { status: 403 });
+        }
+
         // Calculate statistics
         const totalTasks = (project as any).tasks.length;
         const completedTasks = (project as any).tasks.filter((t: any) => t.status === 'COMPLETED').length;

@@ -16,7 +16,13 @@ export const GET = authorizedRoute(
             const limit = parseInt(url.searchParams.get('limit') || '50');
 
             const where: any = {};
-            if (monitorId) where.monitorId = monitorId;
+            if (monitorId) {
+                where.monitorId = monitorId;
+            }
+            // Enforce company isolation
+            if (user.companyId) {
+                where.monitor = { companyId: user.companyId };
+            }
 
             const logs = await prisma.websiteMonitorLog.findMany({
                 where,
@@ -24,7 +30,7 @@ export const GET = authorizedRoute(
                 take: limit,
                 include: {
                     monitor: {
-                        select: { name: true, url: true }
+                        select: { name: true, url: true, companyId: true }
                     }
                 }
             });

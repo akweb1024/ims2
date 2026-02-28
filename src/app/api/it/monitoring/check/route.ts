@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { createErrorResponse } from '@/lib/api-utils';
 import { logger } from '@/lib/logger';
+import { getAuthenticatedUser } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 
@@ -62,8 +63,21 @@ async function checkSiteGet(url: string, timeout = 10000) {
 
 export async function POST(req: NextRequest) {
     try {
+        const user = await getAuthenticatedUser();
+        if (!user) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
+
+        // Check if user has access to WEB_MONITOR module
+        if (user.role !== 'SUPER_ADMIN' && !user.allowedModules?.includes('WEB_MONITOR')) {
+            return NextResponse.json({ error: 'Access Denied: Web Monitor module not granted' }, { status: 403 });
+        }
+
         const monitors = await prisma.websiteMonitor.findMany({
-            where: { isPaused: false }
+            where: { 
+                isPaused: false,
+                ...(user.companyId ? { companyId: user.companyId } : {})
+            }
         });
 
         const results = [];

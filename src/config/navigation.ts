@@ -413,7 +413,13 @@ export function getNavigationModules(role: string, allowedModules: string[] = ['
         'IT_SUPPORT': ['CORE', 'IT'],
     };
 
-    const defaultMods = defaultModulesByRole[role] || ['CORE'];
+    const rawMods = defaultModulesByRole[role] || ['CORE', 'IT'];
+    const defaultMods = [...rawMods];
+
+    // Ensure IT is in everyone's list if they are an internal role
+    if (!defaultMods.includes('IT') && !defaultMods.includes('*')) {
+        defaultMods.push('IT');
+    }
 
     return ALL_MODULES
         .filter(mod => {

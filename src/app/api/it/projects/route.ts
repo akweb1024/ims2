@@ -37,12 +37,15 @@ export async function GET(req: NextRequest) {
         // Build where clause based on user role
         const where: any = { companyId };
 
-        // If not admin/IT manager, only show projects where user is involved
+        // If not admin/IT manager, only show projects where:
+        // 1. User is involved (Manager, Lead, or assigned task)
+        // 2. OR project is PUBLIC
         if (!canViewAllProjects(user.role)) {
             where.OR = [
                 { projectManagerId: user.id },
                 { teamLeadId: user.id },
-                { tasks: { some: { assignedToId: user.id } } }
+                { tasks: { some: { assignedToId: user.id } } },
+                { visibility: 'PUBLIC' }
             ];
         }
 
@@ -156,6 +159,8 @@ export async function POST(req: NextRequest) {
             departmentId,
             websiteId,
             taggedEmployeeIds,
+            visibility,
+            sharedWithIds,
         } = body;
 
         // Validate required fields
@@ -200,6 +205,8 @@ export async function POST(req: NextRequest) {
                 taggedEmployees: taggedEmployeeIds && Array.isArray(taggedEmployeeIds) ? {
                     connect: taggedEmployeeIds.map((id: string) => ({ id }))
                 } : undefined,
+                visibility: visibility || 'PRIVATE',
+                sharedWithIds: sharedWithIds && Array.isArray(sharedWithIds) ? sharedWithIds : [],
                 milestones: body.milestones && Array.isArray(body.milestones) ? {
                     create: body.milestones.map((m: any) => ({
                         name: m.title || m.name || 'Untitled Milestone',

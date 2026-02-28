@@ -57,7 +57,10 @@ const STATUS_CONFIG: Record<string, { label: string; bg: string; text: string; d
     TESTING: { label: 'Testing', bg: 'bg-rose-500/10', text: 'text-rose-400', dot: 'bg-rose-400', shadow: 'shadow-rose-500/20', border: 'border-rose-500/20' },
 };
 
+import { useSession } from 'next-auth/react';
+
 export default function ProjectDetailPage() {
+    const { data: session } = useSession();
     const router = useRouter();
     const params = useParams();
     const projectId = params.id as string;
@@ -133,6 +136,11 @@ export default function ProjectDetailPage() {
     }
 
     const stConf = STATUS_CONFIG[project.status] || { label: project.status, bg: 'bg-slate-500/10', text: 'text-slate-400', dot: 'bg-slate-400', shadow: '', border: 'border-slate-500/20' };
+    const userRole = (session?.user as any)?.role;
+    const isAuthorized = userRole && ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'IT_MANAGER', 'IT_ADMIN'].includes(userRole);
+    const isProjectManager = project.projectManager?.id === (session?.user as any)?.id;
+    const isTeamLead = project.teamLead?.id === (session?.user as any)?.id;
+    const canManageProject = isAuthorized || isProjectManager || isTeamLead;
 
     return (
         <DashboardLayout>
@@ -164,6 +172,12 @@ export default function ProjectDetailPage() {
                                         <div className={`h-2 w-2 rounded-full ${stConf.dot} animate-pulse`} />
                                         {stConf.label}
                                     </div>
+                                    {project.visibility === 'PUBLIC' && (
+                                        <div className="px-4 py-1.5 bg-blue-500/10 text-blue-400 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] border border-blue-500/20 flex items-center gap-2.5">
+                                            <Globe className="h-3.5 w-3.5" />
+                                            Public Insight
+                                        </div>
+                                    )}
                                 </div>
                                 <div>
                                     <h1 className="text-5xl lg:text-6xl font-black text-white tracking-tighter mb-4 leading-tight">
@@ -196,17 +210,23 @@ export default function ProjectDetailPage() {
                                 <p className="text-xs font-black text-slate-400 tracking-wider font-mono">{project.id.toUpperCase()}</p>
                             </div>
                             <div className="flex flex-wrap items-center gap-3">
-                                <Link href={`/dashboard/it-management/projects/${projectId}/edit`}>
-                                    <button className="flex items-center gap-3 px-6 py-3 bg-blue-600 text-white text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-blue-500 transition-all shadow-lg shadow-blue-500/25">
-                                        <Edit className="h-4 w-4" /> Refine Setup
-                                    </button>
-                                </Link>
+                                {canManageProject && (
+                                    <>
+                                        <Link href={`/dashboard/it-management/projects/${projectId}/edit`}>
+                                            <button className="flex items-center gap-3 px-6 py-3 bg-blue-600 text-white text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-blue-500 transition-all shadow-lg shadow-blue-500/25">
+                                                <Edit className="h-4 w-4" /> Refine Setup
+                                            </button>
+                                        </Link>
+                                        {userRole === 'SUPER_ADMIN' || userRole === 'ADMIN' || isProjectManager ? (
+                                            <button onClick={handleDelete} disabled={deleting} 
+                                                className="p-3 bg-rose-500/10 border border-rose-500/20 rounded-xl text-rose-400 hover:bg-rose-500/20 transition-all disabled:opacity-50">
+                                                <Trash2 className="h-4 w-4" />
+                                            </button>
+                                        ) : null}
+                                    </>
+                                )}
                                 <button className="p-3 bg-slate-700/50 border border-white/10 rounded-xl text-slate-300 hover:text-white hover:bg-slate-600/80 transition-all">
                                     <Share2 className="h-4 w-4" />
-                                </button>
-                                <button onClick={handleDelete} disabled={deleting} 
-                                    className="p-3 bg-rose-500/10 border border-rose-500/20 rounded-xl text-rose-400 hover:bg-rose-500/20 transition-all disabled:opacity-50">
-                                    <Trash2 className="h-4 w-4" />
                                 </button>
                             </div>
                         </div>
@@ -413,10 +433,12 @@ export default function ProjectDetailPage() {
                                                         <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Progression Map</p>
                                                     </div>
                                                 </div>
-                                                <button onClick={() => { setSelectedMilestone(null); setShowMilestoneModal(true); }} 
-                                                    className="px-6 py-3 bg-slate-700/50 border border-white/10 text-white rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-slate-600/80 transition-all flex items-center gap-2">
-                                                    <Plus className="h-4 w-4 text-emerald-400" /> New Phase
-                                                </button>
+                                                {canManageProject && (
+                                                    <button onClick={() => { setSelectedMilestone(null); setShowMilestoneModal(true); }} 
+                                                        className="px-6 py-3 bg-slate-700/50 border border-white/10 text-white rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-slate-600/80 transition-all flex items-center gap-2">
+                                                        <Plus className="h-4 w-4 text-emerald-400" /> New Phase
+                                                    </button>
+                                                )}
                                             </div>
 
                                             {project.milestones.length === 0 ? (
@@ -444,16 +466,18 @@ export default function ProjectDetailPage() {
                                                                         </div>
                                                                         <h4 className="text-xl font-black text-white leading-none">{ms.name}</h4>
                                                                     </div>
-                                                                    <div className="flex items-center gap-3">
-                                                                        <div className="text-right px-4">
-                                                                            <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-0.5">Due Cycle</p>
-                                                                            <p className="text-xs font-black text-slate-300">{new Date(ms.dueDate).toLocaleDateString()}</p>
+                                                                        <div className="flex items-center gap-3">
+                                                                            <div className="text-right px-4">
+                                                                                <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-0.5">Due Cycle</p>
+                                                                                <p className="text-xs font-black text-slate-300">{new Date(ms.dueDate).toLocaleDateString()}</p>
+                                                                            </div>
+                                                                            {canManageProject && (
+                                                                                <button onClick={() => { setSelectedMilestone(ms); setShowMilestoneModal(true); }} 
+                                                                                    className="p-3 bg-slate-700/50 border border-white/10 rounded-xl text-slate-400 hover:text-white hover:bg-slate-600/80 transition-all">
+                                                                                    <Edit className="h-4 w-4" />
+                                                                                </button>
+                                                                            )}
                                                                         </div>
-                                                                        <button onClick={() => { setSelectedMilestone(ms); setShowMilestoneModal(true); }} 
-                                                                            className="p-3 bg-slate-700/50 border border-white/10 rounded-xl text-slate-400 hover:text-white hover:bg-slate-600/80 transition-all">
-                                                                            <Edit className="h-4 w-4" />
-                                                                        </button>
-                                                                    </div>
                                                                 </div>
                                                                 {ms.description && <p className="text-slate-400 text-sm leading-relaxed mb-6 italic">&quot;{ms.description}&quot;</p>}
                                                                 {ms.paymentAmount && ms.paymentAmount > 0 ? (
@@ -576,10 +600,10 @@ export default function ProjectDetailPage() {
                                 ) : activeTab === 'timeline' ? (
                                     <ProjectTimeline startDate={project.startDate} endDate={project.endDate} milestones={project.milestones} tasks={project.tasks} />
                                 ) : activeTab === 'suggestions' ? (
-                                    <ProjectSuggestions projectId={projectId} suggestions={project.suggestions} onUpdate={fetchProject} canManage={true} />
+                                    <ProjectSuggestions projectId={projectId} suggestions={project.suggestions} onUpdate={fetchProject} canManage={canManageProject} />
                                 ) : (
                                     <div className="bg-slate-800/80 backdrop-blur-xl rounded-[2.5rem] p-8 border border-white/10">
-                                        <ITDocumentManager projectId={projectId} />
+                                        <ITDocumentManager projectId={projectId} canManage={canManageProject} />
                                     </div>
                                 )}
                             </motion.div>

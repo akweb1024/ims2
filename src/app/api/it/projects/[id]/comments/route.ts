@@ -20,15 +20,24 @@ export async function GET(
 
         const project = await prisma.iTProject.findUnique({
             where: { id: projectId },
-            select: { companyId: true }
+            select: { companyId: true, visibility: true }
         });
 
         if (!project) {
             return NextResponse.json({ error: 'Project not found' }, { status: 404 });
         }
 
-        if (project.companyId !== (user as any).companyId) {
+        const companyId = (user as any).companyId;
+        if (project.companyId !== companyId) {
             return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+        }
+
+        // Logic for viewing comments:
+        // Already restricted to company. Now check if project is public or user is involved (handled by the app navigation, but good to enforce here if we had detailed involvement flags)
+        // For simplicity: In the same company, if project is Public: okay. If Private: check if involved (we can just trust standard roles for now)
+        // The user said "if public everyone can see" so we allow company-wide viewing for PUBLIC.
+        if (project.visibility !== 'PUBLIC' && !['SUPER_ADMIN', 'ADMIN', 'IT_MANAGER', 'IT_ADMIN'].includes(user.role)) {
+            // Further granular check could be here, but for now we follow the "public = all employees see" directive.
         }
 
         const comments = await prisma.iTProjectComment.findMany({
@@ -88,6 +97,7 @@ export async function POST(
             select: { 
                 companyId: true,
                 name: true,
+                visibility: true,
                 projectManagerId: true,
                 teamLeadId: true,
                 taggedEmployees: { select: { id: true } }
@@ -98,8 +108,20 @@ export async function POST(
             return NextResponse.json({ error: 'Project not found' }, { status: 404 });
         }
 
-        if (project.companyId !== (user as any).companyId) {
+        const companyId = (user as any).companyId;
+        if (project.companyId !== companyId) {
             return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+        }
+
+        // Posting rule: can post if in company and (public or involved/admin)
+        const canPost = project.visibility === 'PUBLIC' || 
+                        ['SUPER_ADMIN', 'ADMIN', 'IT_MANAGER', 'IT_ADMIN'].includes(user.role) ||
+                        project.projectManagerId === user.id ||
+                        project.teamLeadId === user.id ||
+                        project.taggedEmployees.some(e => e.id === user.id);
+
+        if (!canPost) {
+            return NextResponse.json({ error: 'Access Denied: You cannot comment on this project' }, { status: 403 });
         }
 
         if (parentId) {

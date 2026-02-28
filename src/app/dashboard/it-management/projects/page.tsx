@@ -18,6 +18,7 @@ interface Project {
     isRevenueBased: boolean; estimatedRevenue: number; actualRevenue: number;
     itRevenueEarned: number; itDepartmentCut: number; startDate: string | null;
     endDate: string | null;
+    visibility: string;
     projectManager: { id: string; name: string; email: string; } | null;
     teamLead: { id: string; name: string; email: string; } | null;
     website?: { id: string; name: string; url: string; status: string } | null;
@@ -39,7 +40,10 @@ const PRIORITY_STYLES: Record<string, string> = {
     LOW:      'bg-emerald-500/20 text-emerald-300 border-emerald-500/30',
 };
 
+import { useSession } from 'next-auth/react';
+
 export default function ProjectsPage() {
+    const { data: session } = useSession();
     const router = useRouter();
     const [projects, setProjects]       = useState<Project[]>([]);
     const [loading, setLoading]         = useState(true);
@@ -135,14 +139,18 @@ export default function ProjectsPage() {
                                     <PieChart className="h-3.5 w-3.5" /> Analytics
                                 </button>
                             </div>
-                            <button onClick={() => router.push('/dashboard/it-management/projects/new')}
-                                className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white text-xs font-bold rounded-xl hover:bg-blue-500 shadow-lg shadow-blue-500/30 transition-all active:scale-95">
-                                <Plus className="h-4 w-4" /> New Project
-                            </button>
-                            <button onClick={() => setShowFleetAudit(true)}
-                                className="flex items-center gap-2 px-4 py-2.5 bg-slate-700/60 border border-white/10 text-slate-200 text-xs font-bold rounded-xl hover:bg-slate-600/80 transition-all">
-                                <ShieldCheck className="h-4 w-4 text-blue-400" /> Audit
-                            </button>
+                            {(session?.user as any)?.role && ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'IT_MANAGER', 'IT_ADMIN'].includes((session?.user as any)?.role) && (
+                                <>
+                                    <button onClick={() => router.push('/dashboard/it-management/projects/new')}
+                                        className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white text-xs font-bold rounded-xl hover:bg-blue-500 shadow-lg shadow-blue-500/30 transition-all active:scale-95">
+                                        <Plus className="h-4 w-4" /> New Project
+                                    </button>
+                                    <button onClick={() => setShowFleetAudit(true)}
+                                        className="flex items-center gap-2 px-4 py-2.5 bg-slate-700/60 border border-white/10 text-slate-200 text-xs font-bold rounded-xl hover:bg-slate-600/80 transition-all">
+                                        <ShieldCheck className="h-4 w-4 text-blue-400" /> Audit
+                                    </button>
+                                </>
+                            )}
                         </div>
                     </div>
                 </motion.div>
@@ -293,6 +301,11 @@ export default function ProjectsPage() {
                                             <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wide border ${ui.badgeBg} ${ui.badgeText} ${ui.badgeBorder}`}>
                                                 <ui.icon className="h-2.5 w-2.5" /> {ui.label}
                                             </span>
+                                            {p.visibility === 'PUBLIC' && (
+                                                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wide border bg-blue-500/10 text-blue-400 border-blue-500/20">
+                                                    <Globe className="h-2.5 w-2.5" /> Public
+                                                </span>
+                                            )}
                                             <span className={`px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wide border ${pri}`}>
                                                 {p.priority}
                                             </span>

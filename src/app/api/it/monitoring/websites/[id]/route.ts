@@ -26,7 +26,10 @@ export const PATCH = authorizedRoute(
             }
 
             const monitor = await prisma.websiteMonitor.update({
-                where: { id },
+                where: { 
+                    id,
+                    ...(user.companyId ? { companyId: user.companyId } : {})
+                },
                 data: {
                     name,
                     url,
@@ -57,7 +60,10 @@ export const DELETE = authorizedRoute(
             const urlPath = req.nextUrl.pathname.split('/');
             const id = urlPath[urlPath.length - 1];
             await prisma.websiteMonitor.delete({
-                where: { id }
+                where: { 
+                    id,
+                    ...(user.companyId ? { companyId: user.companyId } : {})
+                }
             });
 
             return NextResponse.json({ success: true });

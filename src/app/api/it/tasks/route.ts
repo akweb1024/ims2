@@ -61,14 +61,16 @@ export async function GET(req: NextRequest) {
             where.OR = [
                 { assignedToId: user.id },
                 { assignedToId: { in: subordinateIds } },
-                { createdById: user.id }
+                { createdById: user.id },
+                { project: { visibility: 'PUBLIC' } }
             ];
         } else {
             // Default: my tasks
             where.OR = [
                 { assignedToId: user.id },
                 { createdById: user.id },
-                { reporterId: user.id }
+                { reporterId: user.id },
+                { project: { visibility: 'PUBLIC' } }
             ];
         }
 

@@ -26,7 +26,7 @@ export default function NewProjectPage() {
         websiteId: '', taggedEmployeeIds: [] as string[], category: 'DEVELOPMENT',
         type: 'REVENUE', priority: 'MEDIUM', status: 'PLANNING', isRevenueBased: true,
         estimatedRevenue: 0, itDepartmentCut: 30, startDate: '', endDate: '',
-        projectManagerId: '', teamLeadId: '',
+        projectManagerId: '', teamLeadId: '', visibility: 'PRIVATE', sharedWithIds: [] as string[],
     });
 
     const [milestones, setMilestones] = useState<Milestone[]>([]);
@@ -98,6 +98,8 @@ export default function NewProjectPage() {
                     websiteId: formData.websiteId || null,
                     keywords: formData.keywords ? formData.keywords.split(',').map(k => k.trim()).filter(Boolean) : [],
                     taggedEmployeeIds: formData.taggedEmployeeIds,
+                    visibility: formData.visibility,
+                    sharedWithIds: formData.sharedWithIds,
                     milestones: milestones.map(m => ({ title: m.title, description: m.description, dueDate: m.dueDate, status: m.status })),
                 }),
             });
@@ -304,6 +306,39 @@ export default function NewProjectPage() {
                                             {users.map(u => <option key={u.id} value={u.id} className="bg-slate-900">{u.name}</option>)}
                                         </select>
                                     </div>
+                                </div>
+                            </motion.div>
+
+                            {/* Visibility Matrix */}
+                            <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.45 }}
+                                className="bg-indigo-600 rounded-[3rem] p-10 shadow-2xl text-white relative"
+                            >
+                                <h3 className="text-[10px] font-black text-white/40 uppercase tracking-widest mb-8 flex items-center gap-3">
+                                    <Shield className="h-4 w-4 text-indigo-300" /> Visibility Matrix
+                                </h3>
+                                <div className="space-y-6">
+                                    <select value={formData.visibility} onChange={(e) => setFormData({ ...formData, visibility: e.target.value })}
+                                            className="w-full bg-black/10 border border-white/20 rounded-2xl px-6 py-4 text-xs font-black text-white focus:bg-black/20 outline-none transition-all"
+                                    >
+                                        <option value="PRIVATE" className="bg-indigo-700">Company Only (Private)</option>
+                                        <option value="PUBLIC" className="bg-indigo-700">Public Protocol</option>
+                                        <option value="INDIVIDUALS" className="bg-indigo-700">Specific Agents</option>
+                                    </select>
+                                    {formData.visibility === 'INDIVIDUALS' && (
+                                        <div className="space-y-4 max-h-48 overflow-y-auto pr-2 custom-scrollbar">
+                                            {users.map(u => (
+                                                <label key={u.id} className="flex items-center gap-3 cursor-pointer group">
+                                                    <input type="checkbox" checked={formData.sharedWithIds.includes(u.id)}
+                                                        onChange={(e) => {
+                                                            const newIds = e.target.checked ? [...formData.sharedWithIds, u.id] : formData.sharedWithIds.filter(id => id !== u.id);
+                                                            setFormData({ ...formData, sharedWithIds: newIds });
+                                                        }}
+                                                        className="w-4 h-4 rounded-md border-white/20 bg-white/10 text-white focus:ring-0" />
+                                                    <span className="text-[10px] font-black uppercase text-white/60 group-hover:text-white transition-colors">{u.name}</span>
+                                                </label>
+                                            ))}
+                                        </div>
+                                    )}
                                 </div>
                             </motion.div>
 
