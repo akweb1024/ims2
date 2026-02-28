@@ -114,6 +114,22 @@ model Company {
   warehouses                  Warehouse[]
   inventoryItems              InventoryItem[]
   productionOrders            ProductionOrder[]
+  integrations                CompanyIntegration[]
+}
+
+model CompanyIntegration {
+  id               String   @id @default(uuid())
+  companyId        String
+  provider         String   // E.g. 'GEMINI', 'OPENAI', 'PLAGIARISM_SCANNER', 'AWS_SES'
+  key              String   @db.Text
+  value            String?  @db.Text
+  isActive         Boolean  @default(true)
+  company          Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@unique([companyId, provider])
+  @@index([companyId])
 }
 
 model Department {

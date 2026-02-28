@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { X, Upload, Loader2, Link as LinkIcon, FileText, CheckCircle2 } from 'lucide-react';
+import { X, Upload, Loader2, Link as LinkIcon, FileText, CheckCircle2, Sparkles } from 'lucide-react';
+import toast from 'react-hot-toast';
 
 interface AddCandidateModalProps {
     jobs: any[]; // List of active jobs to select from
@@ -19,10 +20,47 @@ export default function AddCandidateModal({ jobs, onClose, onSubmit }: AddCandid
         resumeFile: null as File | null
     });
 
-    // Mock File Upload
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files[0]) {
             setFormData({ ...formData, resumeFile: e.target.files[0] });
+        }
+    };
+
+    const [isExtracting, setIsExtracting] = useState(false);
+
+    const handleAIExtract = async () => {
+        if (!formData.resumeFile) return toast.error("Please upload a resume first.");
+        
+        setIsExtracting(true);
+        const toastId = toast.loading("Analyzing Document with AI...");
+        const payload = new FormData();
+        payload.append('file', formData.resumeFile);
+        payload.append('type', 'RESUME');
+
+        try {
+            const res = await fetch('/api/ai/extract-document', {
+                method: 'POST',
+                body: payload
+            });
+            const result = await res.json();
+
+            if (res.ok && result.success) {
+                const data = result.data;
+                setFormData({
+                    ...formData,
+                    name: data.firstName ? `${data.firstName} ${data.lastName}`.trim() : formData.name,
+                    email: data.email || formData.email,
+                    phone: data.phone || formData.phone,
+                });
+                toast.success("AI Successfully Extracted Resume Data!", { id: toastId });
+            } else {
+                toast.error(result.error || "AI engine failed to parse this document.", { id: toastId });
+            }
+        } catch (err: any) {
+            console.error(err);
+            toast.error("Network error talking to AI engine.", { id: toastId });
+        } finally {
+            setIsExtracting(false);
         }
     };
 
@@ -144,18 +182,28 @@ export default function AddCandidateModal({ jobs, onClose, onSubmit }: AddCandid
                                         onChange={handleFileChange}
                                     />
                                     {formData.resumeFile ? (
-                                        <div className="flex flex-col items-center text-success-600 animate-in zoom-in">
+                                        <div className="flex flex-col items-center text-success-600 animate-in zoom-in w-full relative z-10">
                                             <CheckCircle2 size={32} className="mb-2" />
-                                            <span className="font-bold text-sm">{formData.resumeFile.name}</span>
+                                            <span className="font-bold text-sm bg-white/50 px-2 rounded-md truncate max-w-[200px]">{formData.resumeFile.name}</span>
                                             <span className="text-xs opacity-70">{(formData.resumeFile.size / 1024 / 1024).toFixed(2)} MB</span>
+                                            
+                                            <button 
+                                                type="button" 
+                                                onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleAIExtract(); }}
+                                                disabled={isExtracting}
+                                                className="mt-4 bg-primary-600 hover:bg-primary-700 text-white shadow-lg px-4 py-2 rounded-full font-bold text-xs flex items-center gap-2 transition-transform hover:scale-105"
+                                            >
+                                                {isExtracting ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} fill="currentColor" />}
+                                                Auto-Fill via AI
+                                            </button>
                                         </div>
                                     ) : (
                                         <>
-                                            <div className="bg-primary-50 text-primary-600 p-3 rounded-full mb-3 group-hover:scale-110 transition-transform">
+                                            <div className="bg-primary-50 text-primary-600 p-3 rounded-full mb-3 group-hover:scale-110 transition-transform relative z-10">
                                                 <Upload size={20} />
                                             </div>
-                                            <p className="text-xs font-bold text-secondary-600">Click to upload resume</p>
-                                            <p className="text-[10px] text-secondary-400 mt-1">PDF, DOCX up to 10MB</p>
+                                            <p className="text-xs font-bold text-secondary-600 relative z-10">Click to upload resume</p>
+                                            <p className="text-[10px] text-secondary-400 mt-1 relative z-10">PDF, image up to 10MB</p>
                                         </>
                                     )}
                                 </div>

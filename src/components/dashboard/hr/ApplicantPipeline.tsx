@@ -138,6 +138,13 @@ export default function ApplicantPipeline() {
                             </select>
                             <Filter className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4 pointer-events-none" />
                         </div>
+                        <button
+                            onClick={() => setShowAddCandidateModal(true)}
+                            className="bg-primary-600 hover:bg-primary-700 text-white shadow-lg shadow-primary-500/20 px-6 py-3 rounded-xl font-bold flex items-center gap-2 transition-all hover:-translate-y-0.5"
+                        >
+                            <Plus size={18} />
+                            <span>Add Candidate</span>
+                        </button>
                     </div>
                 </div>
 

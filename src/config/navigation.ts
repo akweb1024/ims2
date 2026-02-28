@@ -342,6 +342,7 @@ export const ALL_MODULES: NavModule[] = [
                 items: [
                     { name: 'Data Hub', href: '/dashboard/data-hub', icon: '📂', roles: ['SUPER_ADMIN'] },
                     { name: 'Configurations', href: '/dashboard/settings/configurations', icon: '🔐', roles: ['SUPER_ADMIN', 'ADMIN'] },
+                    { name: 'Integrations', href: '/dashboard/settings/integrations', icon: '🔌', roles: ['SUPER_ADMIN', 'ADMIN'] },
                     { name: 'System Settings', href: '/dashboard/settings', icon: '⚙️', roles: ['SUPER_ADMIN'] },
                     { name: 'Audit Logs', href: '/dashboard/super-admin/audit-logs', icon: '📝', roles: ['SUPER_ADMIN'] },
                 ]
