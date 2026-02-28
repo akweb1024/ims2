@@ -68,7 +68,7 @@ export default function ProjectDetailPage() {
     const [showMilestoneModal, setShowMilestoneModal] = useState(false);
     const [selectedMilestone, setSelectedMilestone] = useState<any | null>(null);
     const [showFleetAudit, setShowFleetAudit] = useState(false);
-    const [activeTab, setActiveTab] = useState<'overview' | 'timeline' | 'documents' | 'suggestions'>('overview');
+    const [activeTab, setActiveTab] = useState<'overview' | 'timeline' | 'tasks' | 'documents' | 'suggestions'>('overview');
 
     const fetchProject = useCallback(async () => {
         try {
@@ -116,7 +116,7 @@ export default function ProjectDetailPage() {
         return (
             <DashboardLayout>
                 <div className="min-h-[80vh] flex items-center justify-center">
-                    <div className="p-16 bg-white/[0.03] backdrop-blur-xl rounded-[4rem] border border-white/10 shadow-[0_32px_128px_rgba(0,0,0,0.5)] text-center max-w-xl space-y-10 relative overflow-hidden">
+                    <div className="p-16 bg-slate-800/80 backdrop-blur-xl rounded-[4rem] border border-white/10 shadow-[0_32px_128px_rgba(0,0,0,0.5)] text-center max-w-xl space-y-10 relative overflow-hidden">
                         <div className="absolute top-0 left-0 w-full h-2 bg-rose-500" />
                         <div className="h-24 w-24 rounded-[2.5rem] bg-rose-500/10 border border-rose-500/20 flex items-center justify-center mx-auto text-rose-400 shadow-xl shadow-rose-500/10">
                             <ShieldAlert className="h-12 w-12" />
@@ -125,7 +125,7 @@ export default function ProjectDetailPage() {
                             <h3 className="text-4xl font-black text-white tracking-tighter leading-none">Mission Not Found</h3>
                             <p className="text-slate-400 font-medium text-lg px-8">The specified project parameters have been purged or are currently off-grid.</p>
                         </div>
-                        <button onClick={() => router.push('/dashboard/it-management/projects')} className="px-12 py-5 bg-white/5 border border-white/10 text-white font-black text-[10px] uppercase tracking-[0.3em] rounded-2xl hover:bg-white/10 hover:scale-105 active:scale-95 transition-all shadow-2xl">Return to Fleet Command</button>
+                        <button onClick={() => router.push('/dashboard/it-management/projects')} className="px-12 py-5 bg-slate-700/50 border border-white/10 text-white font-black text-[10px] uppercase tracking-[0.3em] rounded-2xl hover:bg-slate-600/80 hover:scale-105 active:scale-95 transition-all shadow-2xl">Return to Fleet Command</button>
                     </div>
                 </div>
             </DashboardLayout>
@@ -145,14 +145,14 @@ export default function ProjectDetailPage() {
 
                 {/* ── HEADER ──────────────────────────────────── */}
                  <motion.div initial={{ opacity: 0, y: -16 }} animate={{ opacity: 1, y: 0 }}
-                    className="relative rounded-[2.5rem] overflow-hidden border border-white/5"
+                    className="relative rounded-[2.5rem] overflow-hidden border border-white/10"
                 >
                     <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900" />
                     <div className="absolute inset-0 opacity-20" style={{ backgroundImage: 'radial-gradient(ellipse at 10% 50%, rgba(59,130,246,0.5) 0%, transparent 60%)' }} />
 
                     <div className="relative p-10 flex flex-col lg:flex-row lg:items-end lg:justify-between gap-12">
                         <div className="flex items-start gap-8">
-                            <button onClick={() => router.back()} className="mt-2 p-4 bg-white/5 border border-white/10 rounded-2xl text-slate-400 hover:text-blue-400 hover:border-blue-500/30 transition-all shrink-0">
+                            <button onClick={() => router.back()} className="mt-2 p-4 bg-slate-700/50 border border-white/10 rounded-2xl text-slate-400 hover:text-blue-400 hover:border-blue-500/30 transition-all shrink-0">
                                 <ArrowLeft className="h-6 w-6" />
                             </button>
                             <div className="space-y-4">
@@ -170,15 +170,15 @@ export default function ProjectDetailPage() {
                                         {project.name}
                                     </h1>
                                     <div className="flex flex-wrap items-center gap-4">
-                                        <div className="flex items-center gap-2 text-[10px] font-black text-slate-300 uppercase tracking-widest bg-white/[0.03] border border-white/5 px-4 py-2 rounded-xl backdrop-blur-sm">
+                                        <div className="flex items-center gap-2 text-[10px] font-black text-slate-300 uppercase tracking-widest bg-slate-800/80 border border-white/10 px-4 py-2 rounded-xl backdrop-blur-sm">
                                             <Layers className="h-3.5 w-3.5 text-blue-400" />
                                             <span>{project.category}</span>
                                         </div>
-                                        <div className="flex items-center gap-2 text-[10px] font-black text-slate-300 uppercase tracking-widest bg-white/[0.03] border border-white/5 px-4 py-2 rounded-xl backdrop-blur-sm">
+                                        <div className="flex items-center gap-2 text-[10px] font-black text-slate-300 uppercase tracking-widest bg-slate-800/80 border border-white/10 px-4 py-2 rounded-xl backdrop-blur-sm">
                                             <Building2 className="h-3.5 w-3.5 text-emerald-400" />
                                             <span>{project.department?.name || 'Global HQ'}</span>
                                         </div>
-                                        <div className="flex items-center gap-2 text-[10px] font-black text-slate-300 uppercase tracking-widest bg-white/[0.03] border border-white/5 px-4 py-2 rounded-xl backdrop-blur-sm">
+                                        <div className="flex items-center gap-2 text-[10px] font-black text-slate-300 uppercase tracking-widest bg-slate-800/80 border border-white/10 px-4 py-2 rounded-xl backdrop-blur-sm">
                                             <Calendar className="h-3.5 w-3.5 text-amber-400" />
                                             <span>Updated {new Date(project.updatedAt).toLocaleDateString()}</span>
                                         </div>
@@ -201,7 +201,7 @@ export default function ProjectDetailPage() {
                                         <Edit className="h-4 w-4" /> Refine Setup
                                     </button>
                                 </Link>
-                                <button className="p-3 bg-white/5 border border-white/10 rounded-xl text-slate-300 hover:text-white hover:bg-white/10 transition-all">
+                                <button className="p-3 bg-slate-700/50 border border-white/10 rounded-xl text-slate-300 hover:text-white hover:bg-slate-600/80 transition-all">
                                     <Share2 className="h-4 w-4" />
                                 </button>
                                 <button onClick={handleDelete} disabled={deleting} 
@@ -222,7 +222,7 @@ export default function ProjectDetailPage() {
                         { label: project.isRevenueBased ? 'Revenue Yield' : 'Mission Stream', val: project.isRevenueBased ? `₹${(project.itRevenueEarned / 1000).toFixed(1)}K` : project.type, icon: Binary, color: 'text-blue-400', trend: 'ACTIVE' },
                     ].map((stat, i) => (
                         <motion.div key={i} initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: i * 0.1 }}
-                            className="bg-white/[0.03] backdrop-blur-xl border border-white/10 p-6 rounded-2xl relative overflow-hidden group hover:bg-white/[0.06] hover:border-white/20 transition-all duration-300"
+                            className="bg-slate-800/80 backdrop-blur-xl border border-white/10 p-6 rounded-2xl relative overflow-hidden group hover:bg-slate-800 hover:border-white/20 transition-all duration-300"
                         >
                             <div className="absolute top-0 right-0 p-6 transform rotate-12 opacity-[0.05] group-hover:rotate-0 transition-transform duration-700 pointer-events-none">
                                 <stat.icon className={`h-16 w-16 ${stat.color}`} />
@@ -230,20 +230,20 @@ export default function ProjectDetailPage() {
                             <div className="relative space-y-4">
                                 <div className="flex items-center justify-between">
                                     <p className="text-[9px] font-black text-slate-500 uppercase tracking-[0.2em]">{stat.label}</p>
-                                    <div className="px-2 py-0.5 bg-white/5 rounded text-[8px] font-black tracking-widest text-slate-400 border border-white/5">{stat.trend}</div>
+                                    <div className="px-2 py-0.5 bg-slate-700/50 rounded text-[8px] font-black tracking-widest text-slate-400 border border-white/10">{stat.trend}</div>
                                 </div>
                                 <div className="py-1">
                                     <span className={`text-2xl font-black tracking-tight ${stat.color} uppercase italic`}>{stat.val}</span>
                                 </div>
                                 {stat.progress !== undefined ? (
-                                    <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden border border-white/5">
+                                    <div className="h-1.5 w-full bg-slate-700/50 rounded-full overflow-hidden border border-white/10">
                                         <motion.div initial={{ width: 0 }} animate={{ width: `${stat.progress}%` }} transition={{ duration: 1.5, ease: "circOut" }}
                                             className="h-full bg-emerald-500"
                                         />
                                     </div>
                                 ) : (
                                     <div className="flex gap-1">
-                                        {[1,2,3,4,5].map(j => <div key={j} className={`h-1 flex-1 rounded-full ${j*20 <= (i+1)*25 ? 'bg-slate-500' : 'bg-white/5'}`} />)}
+                                        {[1,2,3,4,5].map(j => <div key={j} className={`h-1 flex-1 rounded-full ${j*20 <= (i+1)*25 ? 'bg-slate-500' : 'bg-slate-700/50'}`} />)}
                                     </div>
                                 )}
                             </div>
@@ -252,16 +252,17 @@ export default function ProjectDetailPage() {
                 </div>
 
                 {/* ── TABS ───────────────────────────────────── */}
-                <div className="flex items-center gap-2 p-1.5 bg-white/[0.03] backdrop-blur-xl rounded-2xl w-fit border border-white/10 mx-auto lg:mx-0 overflow-x-auto">
+                <div className="flex items-center gap-2 p-1.5 bg-slate-800/80 backdrop-blur-xl rounded-2xl w-fit border border-white/10 mx-auto lg:mx-0 overflow-x-auto">
                     {[
                         { key: 'overview', label: 'Architecture', icon: Command, color: 'text-blue-400' },
+                        { key: 'tasks', label: 'Tasks', icon: ListTodo, color: 'text-violet-400', count: project.stats.inProgressTasks },
                         { key: 'timeline', label: 'Chronology', icon: GanttChart, color: 'text-amber-400' },
                         { key: 'documents', label: 'Assets', icon: Database, color: 'text-emerald-400' },
                         { key: 'suggestions', label: 'Feedback', icon: MessageSquare, color: 'text-indigo-400', count: project.stats.pendingSuggestions },
                     ].map(tab => (
                         <button key={tab.key} onClick={() => setActiveTab(tab.key as 'overview')}
                             className={`flex items-center gap-3 px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition-all relative group whitespace-nowrap
-                            ${activeTab === tab.key ? 'bg-slate-800 text-white shadow-lg border border-white/10' : 'text-slate-400 hover:text-white hover:bg-white/5'}`}>
+                            ${activeTab === tab.key ? 'bg-slate-800 text-white shadow-lg border border-white/10' : 'text-slate-400 hover:text-white hover:bg-slate-700/50'}`}>
                             <tab.icon className={`h-4 w-4 ${activeTab === tab.key ? 'text-white' : tab.color}`} /> 
                             {tab.label}
                             {tab.count ? (
@@ -283,43 +284,49 @@ export default function ProjectDetailPage() {
                                 {activeTab === 'overview' ? (
                                     <div className="space-y-8">
                                         {/* Briefing Card */}
-                                        <div className="bg-white/[0.03] backdrop-blur-xl rounded-[2.5rem] p-8 lg:p-12 border border-white/10 relative overflow-hidden group">
-                                            <div className="absolute top-0 right-0 p-12 opacity-[0.02] group-hover:scale-110 transition-transform duration-1000 pointer-events-none">
+                                        <div className="bg-slate-800 backdrop-blur-xl rounded-[2rem] p-8 lg:p-10 border border-white/10 relative overflow-hidden group">
+                                            <div className="absolute top-0 right-0 p-12 opacity-[0.03] group-hover:scale-110 transition-transform duration-1000 pointer-events-none">
                                                 <Target className="h-64 w-64 text-white" />
                                             </div>
-                                            <div className="relative space-y-10">
-                                                <div className="space-y-5">
-                                                    <h3 className="text-xl font-black text-white flex items-center gap-3 tracking-tight">
-                                                        <div className="p-2.5 bg-blue-500/10 text-blue-400 rounded-xl"><Terminal className="h-5 w-5" /></div> 
+                                            <div className="relative space-y-8">
+                                                {/* Strategic Definition */}
+                                                <div className="space-y-4">
+                                                    <h3 className="text-base font-black text-white flex items-center gap-3">
+                                                        <div className="p-2 bg-blue-500/20 text-blue-300 rounded-xl"><Terminal className="h-4 w-4" /></div>
                                                         Strategic Definition
                                                     </h3>
-                                                    <div className="bg-slate-900/50 p-8 rounded-3xl border border-white/5 relative">
-                                                        <p className="text-sm text-slate-400 font-medium leading-loose italic">
-                                                            {project.about || 'Operational briefing pending master encryption...'}
+                                                    <div className="bg-slate-800/80 p-6 rounded-2xl border border-white/10 relative">
+                                                        <div className="absolute top-3 right-5 text-3xl text-slate-600 font-serif leading-none">&quot;</div>
+                                                        <p className="text-sm text-slate-200 font-medium leading-loose pr-6">
+                                                            {project.description || project.about || 'Operational briefing pending master encryption...'}
                                                         </p>
-                                                        <div className="absolute top-4 right-6 text-4xl text-slate-700">&quot;</div>
                                                     </div>
                                                 </div>
-                                                
-                                                <div className="space-y-6">
-                                                    <div className="flex items-center justify-between">
-                                                        <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-3">
-                                                            <Network className="h-4 w-4 text-indigo-400" /> Architectural Scope
-                                                        </h3>
-                                                        <div className="h-px flex-1 mx-6 bg-white/5" />
-                                                    </div>
-                                                    <p className="text-slate-300 text-sm leading-relaxed whitespace-pre-wrap">{project.description}</p>
 
-                                                    {project.keywords && project.keywords.length > 0 && (
-                                                        <div className="flex flex-wrap gap-2 pt-4">
-                                                            {project.keywords.map(kw => (
-                                                                <span key={kw} className="px-4 py-2 bg-white/5 border border-white/10 text-slate-400 rounded-xl text-[9px] font-black uppercase tracking-widest flex items-center gap-2 hover:border-blue-500/50 hover:text-blue-400 transition-all">
-                                                                    <div className="h-1.5 w-1.5 rounded-full bg-blue-500" /> {kw}
-                                                                </span>
-                                                            ))}
+                                                {/* Architectural Scope */}
+                                                {(project.details || project.about) && (
+                                                    <div className="space-y-3">
+                                                        <div className="flex items-center gap-3">
+                                                            <Network className="h-3.5 w-3.5 text-indigo-400 shrink-0" />
+                                                            <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest">Architectural Scope</span>
+                                                            <div className="h-px flex-1 bg-white/10" />
                                                         </div>
-                                                    )}
-                                                </div>
+                                                        <p className="text-slate-200 text-sm leading-relaxed whitespace-pre-wrap pl-1">
+                                                            {project.details || project.about}
+                                                        </p>
+                                                    </div>
+                                                )}
+
+                                                {/* Keywords */}
+                                                {project.keywords && project.keywords.length > 0 && (
+                                                    <div className="flex flex-wrap gap-2 pt-2">
+                                                        {project.keywords.map(kw => (
+                                                            <span key={kw} className="px-3 py-1.5 bg-slate-700/50 border border-white/10 text-slate-300 rounded-xl text-[9px] font-black uppercase tracking-widest flex items-center gap-2 hover:border-blue-500/50 hover:text-blue-300 transition-all">
+                                                                <div className="h-1.5 w-1.5 rounded-full bg-blue-400" />{kw}
+                                                            </span>
+                                                        ))}
+                                                    </div>
+                                                )}
                                             </div>
                                         </div>
 
@@ -356,7 +363,7 @@ export default function ProjectDetailPage() {
                                                         </div>
 
                                                         <div className="flex flex-col sm:flex-row gap-4 w-full md:w-auto">
-                                                            <div className="bg-white/5 border border-white/10 rounded-2xl p-5 w-full md:w-48">
+                                                            <div className="bg-slate-700/50 border border-white/10 rounded-2xl p-5 w-full md:w-48">
                                                                 <div className="flex items-center justify-between mb-2">
                                                                     <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Telemetry</span>
                                                                     <Radar className={`h-3 w-3 ${project.website.status === 'UP' ? 'text-emerald-400' : 'text-rose-400'}`} />
@@ -376,7 +383,7 @@ export default function ProjectDetailPage() {
                                                         </div>
                                                     </div>
                                                     
-                                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-1 px-4 py-5 bg-white/[0.02] border border-white/[0.05] rounded-xl divide-x divide-white/[0.05]">
+                                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-1 px-4 py-5 bg-slate-800/60 border border-white/[0.05] rounded-xl divide-x divide-white/10">
                                                         {[
                                                             { label: 'Network URL', value: project.website.url, icon: ArrowUpRight, color: 'text-blue-400' },
                                                             { label: 'Latency Pulse', value: '42ms', icon: Activity, color: 'text-emerald-400' },
@@ -395,7 +402,7 @@ export default function ProjectDetailPage() {
                                         )}
 
                                         {/* Milestones Registry */}
-                                        <div className="bg-white/[0.03] backdrop-blur-xl rounded-[2.5rem] p-8 lg:p-12 border border-white/10">
+                                        <div className="bg-slate-800/80 backdrop-blur-xl rounded-[2.5rem] p-8 lg:p-12 border border-white/10">
                                             <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-10">
                                                 <div className="flex items-center gap-5">
                                                     <div className="p-4 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 shadow-inner text-indigo-400">
@@ -407,13 +414,13 @@ export default function ProjectDetailPage() {
                                                     </div>
                                                 </div>
                                                 <button onClick={() => { setSelectedMilestone(null); setShowMilestoneModal(true); }} 
-                                                    className="px-6 py-3 bg-white/5 border border-white/10 text-white rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-white/10 transition-all flex items-center gap-2">
+                                                    className="px-6 py-3 bg-slate-700/50 border border-white/10 text-white rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-slate-600/80 transition-all flex items-center gap-2">
                                                     <Plus className="h-4 w-4 text-emerald-400" /> New Phase
                                                 </button>
                                             </div>
 
                                             {project.milestones.length === 0 ? (
-                                                <div className="text-center py-16 border border-dashed border-white/10 rounded-3xl space-y-4 bg-white/[0.01]">
+                                                <div className="text-center py-16 border border-dashed border-white/10 rounded-3xl space-y-4 bg-slate-900/60">
                                                     <Calendar className="h-8 w-8 text-slate-600 mx-auto" />
                                                     <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">No strategic points plotted</p>
                                                 </div>
@@ -426,7 +433,7 @@ export default function ProjectDetailPage() {
                                                             <div className={`absolute -left-[54px] top-6 z-10 w-7 h-7 rounded-sm border-2 border-slate-900 shadow-sm flex items-center justify-center transition-all duration-500 group-hover:scale-110 ${ms.status === 'COMPLETED' ? 'bg-emerald-500' : 'bg-slate-700'}`}>
                                                                 {ms.status === 'COMPLETED' ? <CheckCircle2 className="h-4 w-4 text-white" /> : <div className="h-1.5 w-1.5 rounded-full bg-blue-400 animate-pulse" />}
                                                             </div>
-                                                            <div className="bg-white/[0.03] border border-white/5 hover:bg-white/[0.06] hover:border-white/10 p-8 rounded-3xl transition-all duration-300">
+                                                            <div className="bg-slate-800/80 border border-white/10 hover:bg-slate-800 hover:border-white/10 p-8 rounded-3xl transition-all duration-300">
                                                                 <div className="flex flex-col xl:flex-row xl:items-start justify-between gap-6 mb-4">
                                                                     <div className="space-y-3">
                                                                         <div className="flex items-center gap-3">
@@ -443,16 +450,16 @@ export default function ProjectDetailPage() {
                                                                             <p className="text-xs font-black text-slate-300">{new Date(ms.dueDate).toLocaleDateString()}</p>
                                                                         </div>
                                                                         <button onClick={() => { setSelectedMilestone(ms); setShowMilestoneModal(true); }} 
-                                                                            className="p-3 bg-white/5 border border-white/10 rounded-xl text-slate-400 hover:text-white hover:bg-white/10 transition-all">
+                                                                            className="p-3 bg-slate-700/50 border border-white/10 rounded-xl text-slate-400 hover:text-white hover:bg-slate-600/80 transition-all">
                                                                             <Edit className="h-4 w-4" />
                                                                         </button>
                                                                     </div>
                                                                 </div>
                                                                 {ms.description && <p className="text-slate-400 text-sm leading-relaxed mb-6 italic">&quot;{ms.description}&quot;</p>}
                                                                 {ms.paymentAmount && ms.paymentAmount > 0 ? (
-                                                                    <div className={`p-4 rounded-2xl flex items-center justify-between border ${ms.isPaid ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-white/5 text-white border-white/10'}`}>
+                                                                    <div className={`p-4 rounded-2xl flex items-center justify-between border ${ms.isPaid ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-slate-700/50 text-white border-white/10'}`}>
                                                                         <div className="flex items-center gap-3">
-                                                                            <div className={`p-2 rounded-xl bg-white/5 ${ms.isPaid ? 'text-emerald-400' : 'text-slate-400'}`}>
+                                                                            <div className={`p-2 rounded-xl bg-slate-700/50 ${ms.isPaid ? 'text-emerald-400' : 'text-slate-400'}`}>
                                                                                 <DollarSign className="h-4 w-4" />
                                                                             </div>
                                                                             <div>
@@ -475,12 +482,103 @@ export default function ProjectDetailPage() {
                                         
                                         <ProjectComments projectId={projectId} />
                                     </div>
+                                ) : activeTab === 'tasks' ? (
+                                    <div className="bg-slate-800/80 backdrop-blur-xl rounded-[2.5rem] p-8 border border-white/10 space-y-6">
+                                        <div className="flex items-center justify-between">
+                                            <h3 className="text-lg font-black text-white flex items-center gap-3">
+                                                <div className="p-2.5 bg-violet-500/10 text-violet-400 rounded-xl"><ListTodo className="h-5 w-5" /></div>
+                                                Task Manifest
+                                            </h3>
+                                            <div className="flex items-center gap-3">
+                                                {[
+                                                    { label: 'Total', val: project.stats.totalTasks, color: 'text-white' },
+                                                    { label: 'Active', val: project.stats.inProgressTasks, color: 'text-blue-400' },
+                                                    { label: 'Done', val: project.stats.completedTasks, color: 'text-emerald-400' },
+                                                ].map(s => (
+                                                    <div key={s.label} className="text-center px-3 py-2 bg-slate-700/50 rounded-xl border border-white/10">
+                                                        <p className={`text-base font-black ${s.color}`}>{s.val}</p>
+                                                        <p className="text-[8px] font-black text-slate-500 uppercase tracking-widest">{s.label}</p>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+
+                                        {project.tasks.length === 0 ? (
+                                            <div className="py-16 border border-dashed border-white/10 rounded-3xl text-center space-y-3">
+                                                <ListTodo className="h-8 w-8 text-slate-600 mx-auto" />
+                                                <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">No tasks deployed yet</p>
+                                            </div>
+                                        ) : (
+                                            <div className="space-y-2">
+                                                {project.tasks.map((task: any, idx: number) => {
+                                                    const TASK_STATUS: Record<string, { bg: string; text: string; dot: string }> = {
+                                                        COMPLETED: { bg: 'bg-emerald-500/10', text: 'text-emerald-400', dot: 'bg-emerald-400' },
+                                                        IN_PROGRESS: { bg: 'bg-blue-500/10', text: 'text-blue-400', dot: 'bg-blue-400' },
+                                                        PENDING: { bg: 'bg-slate-500/10', text: 'text-slate-400', dot: 'bg-slate-500' },
+                                                        ON_HOLD: { bg: 'bg-amber-500/10', text: 'text-amber-400', dot: 'bg-amber-400' },
+                                                        CANCELLED: { bg: 'bg-rose-500/10', text: 'text-rose-400', dot: 'bg-rose-400' },
+                                                    };
+                                                    const TASK_PRI: Record<string, string> = {
+                                                        CRITICAL: 'text-rose-400 bg-rose-500/10 border-rose-500/20',
+                                                        HIGH: 'text-orange-400 bg-orange-500/10 border-orange-500/20',
+                                                        MEDIUM: 'text-amber-400 bg-amber-500/10 border-amber-500/20',
+                                                        LOW: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20',
+                                                    };
+                                                    const tsCfg = TASK_STATUS[task.status] || TASK_STATUS.PENDING;
+                                                    const priCfg = TASK_PRI[task.priority] || TASK_PRI.LOW;
+                                                    const progress = task.progressPercent || 0;
+                                                    return (
+                                                        <motion.div key={task.id}
+                                                            initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: idx * 0.03 }}
+                                                            className="flex flex-col md:flex-row md:items-center gap-4 p-5 bg-slate-800/80 hover:bg-slate-800 border border-white/10 hover:border-white/20 rounded-2xl transition-all group"
+                                                        >
+                                                            {/* Status dot + code */}
+                                                            <div className="flex items-center gap-3 min-w-0 flex-1">
+                                                                <div className={`w-2 h-2 rounded-full shrink-0 ${tsCfg.dot} animate-pulse`} />
+                                                                <div className="min-w-0">
+                                                                    <p className="text-[8px] font-black text-slate-600 uppercase tracking-widest font-mono">{task.taskCode}</p>
+                                                                    <p className="text-sm font-black text-white group-hover:text-blue-300 transition-colors truncate">{task.title}</p>
+                                                                </div>
+                                                            </div>
+                                                            {/* Progress bar */}
+                                                            <div className="w-24 shrink-0">
+                                                                <div className="flex justify-between text-[8px] font-black text-slate-600 mb-1">
+                                                                    <span>Progress</span><span className="text-slate-400">{progress}%</span>
+                                                                </div>
+                                                                <div className="h-1 bg-slate-700/50 rounded-full overflow-hidden">
+                                                                    <div style={{ width: `${progress}%` }} className="h-full bg-blue-500 rounded-full" />
+                                                                </div>
+                                                            </div>
+                                                            {/* Badges */}
+                                                            <div className="flex items-center gap-2 shrink-0">
+                                                                <span className={`px-2 py-1 rounded-lg text-[8px] font-black uppercase tracking-widest border ${priCfg}`}>{task.priority}</span>
+                                                                <span className={`px-2 py-1 rounded-lg text-[8px] font-black uppercase tracking-widest ${tsCfg.bg} ${tsCfg.text}`}>{task.status.replace('_', ' ')}</span>
+                                                            </div>
+                                                            {/* Assignee */}
+                                                            <div className="flex items-center gap-2 shrink-0">
+                                                                {task.assignedTo ? (
+                                                                    <>
+                                                                        <div className="w-6 h-6 rounded-lg bg-blue-600/50 flex items-center justify-center text-[9px] font-black text-white">
+                                                                            {task.assignedTo.name.charAt(0)}
+                                                                        </div>
+                                                                        <span className="text-[9px] font-black text-slate-500 uppercase hidden md:block">{task.assignedTo.name.split(' ')[0]}</span>
+                                                                    </>
+                                                                ) : (
+                                                                    <span className="text-[9px] font-black text-slate-700 uppercase">Unassigned</span>
+                                                                )}
+                                                            </div>
+                                                        </motion.div>
+                                                    );
+                                                })}
+                                            </div>
+                                        )}
+                                    </div>
                                 ) : activeTab === 'timeline' ? (
                                     <ProjectTimeline startDate={project.startDate} endDate={project.endDate} milestones={project.milestones} tasks={project.tasks} />
                                 ) : activeTab === 'suggestions' ? (
                                     <ProjectSuggestions projectId={projectId} suggestions={project.suggestions} onUpdate={fetchProject} canManage={true} />
                                 ) : (
-                                    <div className="bg-white/[0.03] backdrop-blur-xl rounded-[2.5rem] p-8 border border-white/10">
+                                    <div className="bg-slate-800/80 backdrop-blur-xl rounded-[2.5rem] p-8 border border-white/10">
                                         <ITDocumentManager projectId={projectId} />
                                     </div>
                                 )}
@@ -492,7 +590,7 @@ export default function ProjectDetailPage() {
                     <div className="lg:col-span-4 space-y-8">
                         {/* Parameters */}
                         <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.2 }}
-                            className="bg-white/[0.03] backdrop-blur-xl rounded-[2.5rem] p-8 border border-white/10 relative overflow-hidden"
+                            className="bg-slate-800/80 backdrop-blur-xl rounded-[2.5rem] p-8 border border-white/10 relative overflow-hidden"
                         >
                             <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-8 flex items-center gap-3">
                                 <Settings className="h-4 w-4 text-blue-400" /> System Params
@@ -503,7 +601,7 @@ export default function ProjectDetailPage() {
                                         <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-2"><Shield className="h-3 w-3" /> Priority Index</span>
                                         <span className={`text-[10px] font-black uppercase tracking-widest ${project.priority === 'CRITICAL' ? 'text-rose-400' : 'text-amber-400'}`}>{project.priority}</span>
                                     </div>
-                                    <div className="h-1.5 bg-white/5 rounded-full overflow-hidden border border-white/5">
+                                    <div className="h-1.5 bg-slate-700/50 rounded-full overflow-hidden border border-white/10">
                                         <motion.div initial={{ width: 0 }} animate={{ width: project.priority === 'CRITICAL' ? '100%' : project.priority === 'HIGH' ? '75%' : '50%' }} className={`h-full rounded-full ${project.priority === 'CRITICAL' ? 'bg-rose-500' : 'bg-amber-500'}`} />
                                     </div>
                                 </div>
@@ -514,8 +612,8 @@ export default function ProjectDetailPage() {
                                         { label: 'Initiation', val: project.startDate ? new Date(project.startDate).toLocaleDateString() : 'N/A', icon: CheckCircle2, color: 'text-emerald-400' },
                                         { label: 'Finality', val: project.endDate ? new Date(project.endDate).toLocaleDateString() : 'ACTIVE', icon: Clock, color: 'text-amber-400' }
                                     ].map((spec, i) => (
-                                        <div key={i} className="flex items-center gap-4 p-4 bg-white/5 rounded-2xl border border-white/10 group hover:bg-white/10 transition-colors">
-                                            <div className="p-2.5 bg-white/5 rounded-xl text-slate-400 group-hover:text-white transition-colors">
+                                        <div key={i} className="flex items-center gap-4 p-4 bg-slate-700/50 rounded-2xl border border-white/10 group hover:bg-slate-600/80 transition-colors">
+                                            <div className="p-2.5 bg-slate-700/50 rounded-xl text-slate-400 group-hover:text-white transition-colors">
                                                 <spec.icon className="h-4 w-4" />
                                             </div>
                                             <div>
@@ -530,7 +628,7 @@ export default function ProjectDetailPage() {
 
                         {/* Team */}
                         <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.3 }}
-                            className="bg-white/[0.03] backdrop-blur-xl rounded-[2.5rem] p-8 border border-white/10 relative overflow-hidden"
+                            className="bg-slate-800/80 backdrop-blur-xl rounded-[2.5rem] p-8 border border-white/10 relative overflow-hidden"
                         >
                             <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-8 flex items-center gap-3">
                                 <Users className="h-4 w-4 text-blue-400" /> Team Topology
@@ -589,16 +687,16 @@ export default function ProjectDetailPage() {
                                     <DollarSign className="h-4 w-4" /> Fiscal Yield
                                 </h3>
                                 <div className="space-y-6">
-                                    <div className="text-center bg-black/20 py-6 rounded-2xl border border-white/5">
+                                    <div className="text-center bg-black/20 py-6 rounded-2xl border border-white/10">
                                         <p className="text-[9px] font-black text-white/50 uppercase tracking-widest mb-2">Estimated Value</p>
                                         <span className="text-3xl font-black tracking-tighter">₹{project.estimatedRevenue?.toLocaleString()}</span>
                                     </div>
                                     <div className="grid grid-cols-2 gap-3">
-                                        <div className="bg-white/5 p-4 rounded-xl text-center border border-white/5">
+                                        <div className="bg-slate-700/50 p-4 rounded-xl text-center border border-white/10">
                                             <p className="text-[8px] font-black text-white/40 uppercase mb-1 tracking-widest">IT Cut</p>
                                             <p className="text-sm font-black text-white">{project.itDepartmentCut}%</p>
                                         </div>
-                                        <div className="bg-white/5 p-4 rounded-xl text-center border border-emerald-500/30">
+                                        <div className="bg-slate-700/50 p-4 rounded-xl text-center border border-emerald-500/30">
                                             <p className="text-[8px] font-black text-emerald-300/50 uppercase mb-1 tracking-widest">Net Revenue</p>
                                             <p className="text-sm font-black text-emerald-400">₹{((project.estimatedRevenue * (project.itDepartmentCut || 0)) / 100).toLocaleString()}</p>
                                         </div>

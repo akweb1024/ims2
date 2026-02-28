@@ -44,15 +44,20 @@ export default function EditWorkPlanModal({ plan, onClose, onSuccess }: EditWork
 
     useEffect(() => {
         const fetchData = async () => {
-            const token = localStorage.getItem('token');
             try {
                 const [projRes, taskRes] = await Promise.all([
-                    fetch('/api/projects', { headers: { 'Authorization': `Bearer ${token}` } }),
-                    fetch('/api/tasks', { headers: { 'Authorization': `Bearer ${token}` } }),
+                    fetch('/api/it/projects'),
+                    fetch('/api/it/tasks?view=my'),
                 ]);
 
-                if (projRes.ok) setProjects(await projRes.json());
-                if (taskRes.ok) setTasks(await taskRes.json());
+                if (projRes.ok) {
+                    const data = await projRes.json();
+                    setProjects(Array.isArray(data) ? data : (data.data || []));
+                }
+                if (taskRes.ok) {
+                    const data = await taskRes.json();
+                    setTasks(Array.isArray(data) ? data : (data.data || []));
+                }
             } catch (error) {
                 console.error('Failed to fetch projects/tasks', error);
             }
@@ -64,7 +69,6 @@ export default function EditWorkPlanModal({ plan, onClose, onSuccess }: EditWork
         e.preventDefault();
         try {
             setLoading(true);
-            const user = JSON.parse(localStorage.getItem('user') || '{}');
 
             const payload = {
                 id: plan.id,
@@ -72,13 +76,9 @@ export default function EditWorkPlanModal({ plan, onClose, onSuccess }: EditWork
                 estimatedHours: formData.estimatedHours ? parseFloat(formData.estimatedHours.toString()) : null,
             };
 
-            const token = localStorage.getItem('token');
             const res = await fetch(`/api/work-agenda/${plan.id}`, {
                 method: 'PUT',
-                headers: { 
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload),
             });
 
@@ -102,12 +102,8 @@ export default function EditWorkPlanModal({ plan, onClose, onSuccess }: EditWork
         if (!confirm('Are you sure you want to delete this work plan?')) return;
         try {
             setLoading(true);
-            const token = localStorage.getItem('token');
             const res = await fetch(`/api/work-agenda/${plan.id}`, {
                 method: 'DELETE',
-                headers: { 
-                    'Authorization': `Bearer ${token}`
-                },
             });
 
             if (!res.ok) {
@@ -234,7 +230,7 @@ export default function EditWorkPlanModal({ plan, onClose, onSuccess }: EditWork
                                 >
                                     <option value="">None</option>
                                     {projects.map(p => (
-                                        <option key={p.id} value={p.id}>{p.title}</option>
+                                        <option key={p.id} value={p.id}>{p.name || p.title || p.projectCode}</option>
                                     ))}
                                 </select>
                             </div>
@@ -253,7 +249,9 @@ export default function EditWorkPlanModal({ plan, onClose, onSuccess }: EditWork
                                     {tasks
                                         .filter(t => !formData.projectId || t.projectId === formData.projectId)
                                         .map(t => (
-                                            <option key={t.id} value={t.id}>{t.title}</option>
+                                            <option key={t.id} value={t.id}>
+                                                {t.taskCode ? `[${t.taskCode}] ` : ''}{t.title}
+                                            </option>
                                         ))}
                                 </select>
                             </div>

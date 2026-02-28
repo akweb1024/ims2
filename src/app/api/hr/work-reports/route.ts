@@ -367,6 +367,35 @@ export const POST = authorizedRoute(
                 });
             }
 
+            // Sync Work Agenda Checkpoint Completion Status
+            if (body.completedAgendaIds && Array.isArray(body.completedAgendaIds)) {
+                const reportDateOnly = body.date ? new Date(body.date) : new Date();
+                reportDateOnly.setHours(0, 0, 0, 0);
+                const reportDateEnd = new Date(reportDateOnly);
+                reportDateEnd.setHours(23, 59, 59, 999);
+
+                // Mark checked items as COMPLETED
+                if (body.completedAgendaIds.length > 0) {
+                    await prisma.workPlan.updateMany({
+                        where: {
+                            id: { in: body.completedAgendaIds },
+                            employeeId: profile.id
+                        },
+                        data: { completionStatus: 'COMPLETED' }
+                    });
+                }
+
+                // Mark unchecked items (same employee & date) back to PLANNED
+                await prisma.workPlan.updateMany({
+                    where: {
+                        employeeId: profile.id,
+                        date: { gte: reportDateOnly, lte: reportDateEnd },
+                        id: { notIn: body.completedAgendaIds.length > 0 ? body.completedAgendaIds : ['__none__'] }
+                    },
+                    data: { completionStatus: 'PLANNED' }
+                });
+            }
+
             return NextResponse.json(report);
         } catch (error) {
             return createErrorResponse(error);
@@ -426,6 +455,33 @@ export const PUT = authorizedRoute(
                     selfRating: typeof updateData.selfRating === 'number' ? updateData.selfRating : undefined,
                 }
             });
+
+            // Sync Work Agenda Checkpoint Completion Status on Edit
+            if (updateData.completedAgendaIds && Array.isArray(updateData.completedAgendaIds)) {
+                const reportDateOnly = new Date(existing.date);
+                reportDateOnly.setHours(0, 0, 0, 0);
+                const reportDateEnd = new Date(reportDateOnly);
+                reportDateEnd.setHours(23, 59, 59, 999);
+
+                if (updateData.completedAgendaIds.length > 0) {
+                    await prisma.workPlan.updateMany({
+                        where: {
+                            id: { in: updateData.completedAgendaIds },
+                            employeeId: existing.employeeId
+                        },
+                        data: { completionStatus: 'COMPLETED' }
+                    });
+                }
+
+                await prisma.workPlan.updateMany({
+                    where: {
+                        employeeId: existing.employeeId,
+                        date: { gte: reportDateOnly, lte: reportDateEnd },
+                        id: { notIn: updateData.completedAgendaIds.length > 0 ? updateData.completedAgendaIds : ['__none__'] }
+                    },
+                    data: { completionStatus: 'PLANNED' }
+                });
+            }
 
             return NextResponse.json(updated);
         } catch (error) {

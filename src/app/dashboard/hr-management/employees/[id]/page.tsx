@@ -21,6 +21,7 @@ import SafeHTML from '@/components/common/SafeHTML';
 import GoalManagementDashboard from '@/components/dashboard/goals/GoalManagementDashboard';
 import WorkAgendaPlanner from '@/components/dashboard/work-agenda/WorkAgendaPlanner';
 import WorkAssignmentManager from '@/components/dashboard/assignments/WorkAssignmentManager';
+import AttendanceCalendarView from '@/components/dashboard/hr/AttendanceCalendarView';
 
 export default function EmployeeProfilePage() {
     const params = useParams();
@@ -1115,42 +1116,7 @@ export default function EmployeeProfilePage() {
                         {/* Attendance Tab */}
                         {activeTab === 'attendance' && (
                             <div className="space-y-6">
-                                <h3 className="font-bold text-lg text-secondary-900">Attendance History (Last 30 Days)</h3>
-                                <div className="card-premium overflow-hidden p-0">
-                                    <table className="table">
-                                        <thead className="bg-secondary-50">
-                                            <tr>
-                                                <th className="px-6 py-4 text-left text-xs font-bold text-secondary-500 uppercase">Date</th>
-                                                <th className="px-6 py-4 text-left text-xs font-bold text-secondary-500 uppercase">Check In</th>
-                                                <th className="px-6 py-4 text-left text-xs font-bold text-secondary-500 uppercase">Check Out</th>
-                                                <th className="px-6 py-4 text-left text-xs font-bold text-secondary-500 uppercase">Status</th>
-                                                <th className="px-6 py-4 text-left text-xs font-bold text-secondary-500 uppercase">Work Loc</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody className="divide-y divide-secondary-100">
-                                            {employee.attendance?.sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime()).map((rec: any) => (
-                                                <tr key={rec.id} className="hover:bg-secondary-50">
-                                                    <td className="px-6 py-4 text-sm font-medium"><FormattedDate date={rec.date} /></td>
-                                                    <td className="px-6 py-4 text-sm text-secondary-900 font-bold">
-                                                        {rec.checkIn ? new Date(rec.checkIn).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '-'}
-                                                    </td>
-                                                    <td className="px-6 py-4 text-sm text-secondary-900 font-bold">
-                                                        {rec.checkOut ? new Date(rec.checkOut).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '-'}
-                                                    </td>
-                                                    <td className="px-6 py-4">
-                                                        <span className={`px-2 py-1 rounded text-[10px] font-bold uppercase ${rec.status === 'PRESENT' ? 'bg-success-100 text-success-700' : 'bg-warning-100 text-warning-700'}`}>
-                                                            {rec.status}
-                                                        </span>
-                                                    </td>
-                                                    <td className="px-6 py-4 text-sm text-secondary-500 uppercase font-medium">{rec.workFrom}</td>
-                                                </tr>
-                                            ))}
-                                            {(!employee.attendance || employee.attendance.length === 0) && (
-                                                <tr><td colSpan={5} className="p-8 text-center text-secondary-400">No attendance records found.</td></tr>
-                                            )}
-                                        </tbody>
-                                    </table>
-                                </div>
+                                <AttendanceCalendarView attendance={employee.attendance || []} />
                             </div>
                         )}
 

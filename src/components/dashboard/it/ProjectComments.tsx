@@ -95,18 +95,18 @@ export default function ProjectComments({ projectId }: { projectId: string }) {
             className={`flex gap-4 ${isReply ? 'mt-4 ml-12 border-l-2 border-slate-100 pl-6 pb-2' : 'mt-8 bg-white border border-slate-100 p-6 rounded-[2rem] shadow-sm hover:shadow-md transition-shadow'}`}
         >
             <div className="flex-shrink-0">
-                {comment.user.employeeProfile?.profilePicture ? (
+                {comment.user?.employeeProfile?.profilePicture ? (
                     <img src={comment.user.employeeProfile.profilePicture} alt="" className="w-10 h-10 rounded-2xl object-cover ring-2 ring-slate-50 ring-offset-2 shadow-sm" />
                 ) : (
                     <div className="w-10 h-10 rounded-2xl bg-slate-100 flex items-center justify-center text-slate-600 font-black text-xs">
-                        {comment.user.name.charAt(0)}
+                        {comment.user?.name?.charAt(0) ?? '?'}
                     </div>
                 )}
             </div>
             <div className="flex-1">
                 <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-3">
-                        <span className="font-black text-[10px] text-slate-900 uppercase tracking-widest">{comment.user.name}</span>
+                        <span className="font-black text-[10px] text-slate-900 uppercase tracking-widest">{comment.user?.name ?? 'Unknown'}</span>
                         <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">
                             {formatDistanceToNow(new Date(comment.createdAt), { addSuffix: true })}
                         </span>

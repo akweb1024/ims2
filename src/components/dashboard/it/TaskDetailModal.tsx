@@ -105,6 +105,7 @@ export default function TaskDetailModal({
         if (isOpen && taskId && !initialTask) {
             fetchTaskDetails();
         } else if (isOpen && initialTask) {
+            setTask(initialTask);        // ← this was missing — causes task?.id = undefined
             populateForm(initialTask);
         }
     }, [isOpen, taskId, initialTask, fetchTaskDetails, populateForm]);
@@ -126,7 +127,15 @@ export default function TaskDetailModal({
                 dependencies: selectedDependencies
             };
 
-            const res = await fetch(`/api/it/tasks/${task?.id}`, {
+        // Resolve the ID — prefer the task state, fall back to taskId prop
+        const resolvedId = task?.id || taskId;
+        if (!resolvedId) {
+            alert('Unable to identify task. Please close and reopen the task.');
+            setSaving(false);
+            return;
+        }
+
+        const res = await fetch(`/api/it/tasks/${resolvedId}`, {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload),

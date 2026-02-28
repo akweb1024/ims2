@@ -28,15 +28,20 @@ export default function CreateWorkPlanModal({ onClose, onSuccess, employeeId }: 
 
     useEffect(() => {
         const fetchData = async () => {
-            const token = localStorage.getItem('token');
             try {
                 const [projRes, taskRes] = await Promise.all([
-                    fetch('/api/projects', { headers: { 'Authorization': `Bearer ${token}` } }),
-                    fetch('/api/tasks', { headers: { 'Authorization': `Bearer ${token}` } }),
+                    fetch('/api/it/projects'),
+                    fetch('/api/it/tasks?view=my'),
                 ]);
 
-                if (projRes.ok) setProjects(await projRes.json());
-                if (taskRes.ok) setTasks(await taskRes.json());
+                if (projRes.ok) {
+                    const data = await projRes.json();
+                    setProjects(Array.isArray(data) ? data : (data.data || []));
+                }
+                if (taskRes.ok) {
+                    const data = await taskRes.json();
+                    setTasks(Array.isArray(data) ? data : (data.data || []));
+                }
             } catch (error) {
                 console.error('Failed to fetch projects/tasks', error);
             }
@@ -48,20 +53,15 @@ export default function CreateWorkPlanModal({ onClose, onSuccess, employeeId }: 
         e.preventDefault();
         try {
             setLoading(true);
-            const user = JSON.parse(localStorage.getItem('user') || '{}');
 
             const payload = {
                 ...formData,
-                employeeId: employeeId || user.employeeId, // Fallback to current user if not provided
+                employeeId: employeeId || undefined,
             };
 
-            const token = localStorage.getItem('token');
             const res = await fetch('/api/work-agenda', {
                 method: 'POST',
-                headers: { 
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload),
             });
 
@@ -194,7 +194,7 @@ export default function CreateWorkPlanModal({ onClose, onSuccess, employeeId }: 
                                 >
                                     <option value="">None</option>
                                     {projects.map(p => (
-                                        <option key={p.id} value={p.id}>{p.title}</option>
+                                        <option key={p.id} value={p.id}>{p.name || p.title || p.projectCode}</option>
                                     ))}
                                 </select>
                             </div>
@@ -213,7 +213,9 @@ export default function CreateWorkPlanModal({ onClose, onSuccess, employeeId }: 
                                     {tasks
                                         .filter(t => !formData.projectId || t.projectId === formData.projectId)
                                         .map(t => (
-                                            <option key={t.id} value={t.id}>{t.title}</option>
+                                            <option key={t.id} value={t.id}>
+                                                {t.taskCode ? `[${t.taskCode}] ` : ''}{t.title}
+                                            </option>
                                         ))}
                                 </select>
                             </div>

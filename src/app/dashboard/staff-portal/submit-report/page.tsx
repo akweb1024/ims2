@@ -99,6 +99,7 @@ export default function SubmitReportPage() {
     const [prodActivity, setProdActivity] = useState<any>(null);
     const [workPlans, setWorkPlans] = useState<any[]>([]);
     const [loadingWorkPlans, setLoadingWorkPlans] = useState(false);
+    const [completedAgendaIds, setCompletedAgendaIds] = useState<string[]>([]);
     const [checkInTime, setCheckInTime] = useState<Date | null>(null);
 
     const [availableTasks, setAvailableTasks] = useState<any[]>([]);
@@ -257,6 +258,11 @@ export default function SubmitReportPage() {
                     if (res.ok) {
                         const data = await res.json();
                         setWorkPlans(data);
+                        // Pre-populate completed agenda IDs from plans already marked COMPLETED
+                        const preCompleted = data
+                            .filter((p: any) => p.completionStatus === 'COMPLETED')
+                            .map((p: any) => p.id);
+                        setCompletedAgendaIds(preCompleted);
                     }
                 } catch (error) {
                     console.error('Failed to fetch work plans', error);
@@ -520,6 +526,7 @@ export default function SubmitReportPage() {
                 taskQuantities: scaledTaskValues,
                 chatsHandled: derivedMetrics.whatsapp,
                 followUpsCompleted: derivedMetrics.calls,
+                completedAgendaIds,
                 revenueClaims: selectedRevenueClaims.map(c => ({
                     transactionId: c.transactionId,
                     amount: c.amount,
@@ -604,16 +611,27 @@ export default function SubmitReportPage() {
                         </p>
                     </div>
                     <div className="flex items-center gap-3">
-                        {checkInTime && (
-                            <div className="bg-gradient-to-r from-teal-500 to-emerald-600 text-white px-5 py-3 rounded-2xl shadow-lg flex flex-col items-center">
-                                <span className="text-[10px] font-bold uppercase tracking-wider opacity-80">Hours Worked</span>
-                                <div className="text-2xl font-black">
-                                    {Math.floor(commonData.hoursSpent)}h
-                                    <span className="text-sm font-bold opacity-80">{commonData.hoursSpent % 1 !== 0 ? ' 30m' : ''}</span>
-                                </div>
-                                <span className="text-[9px] opacity-60 mt-0.5">since {checkInTime.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}</span>
+                        {/* Working Hours — always visible, live-counted from check-in */}
+                        <div className="bg-gradient-to-r from-teal-500 to-emerald-600 text-white px-5 py-3 rounded-2xl shadow-lg flex flex-col items-center min-w-[100px]">
+                            <span className="text-[10px] font-bold uppercase tracking-wider opacity-80">Working Hours</span>
+                            <div className="text-2xl font-black">
+                                {checkInTime ? (
+                                    <>
+                                        {Math.floor(commonData.hoursSpent)}h
+                                        <span className="text-sm font-bold opacity-80">
+                                            {commonData.hoursSpent % 1 !== 0 ? ' 30m' : ''}
+                                        </span>
+                                    </>
+                                ) : (
+                                    <span className="text-lg opacity-70">—</span>
+                                )}
                             </div>
-                        )}
+                            <span className="text-[9px] opacity-60 mt-0.5">
+                                {checkInTime
+                                    ? `since ${checkInTime.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}`
+                                    : 'Not checked in'}
+                            </span>
+                        </div>
                         <div className="bg-gradient-to-r from-indigo-500 to-purple-600 text-white px-6 py-3 rounded-2xl shadow-lg">
                             <span className="text-xs font-bold uppercase tracking-wider block">Today&apos;s Score</span>
                             <div className="text-3xl font-black">{currentPoints} <span className="text-sm">pts</span></div>
@@ -711,17 +729,31 @@ export default function SubmitReportPage() {
                             </span>
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                            {workPlans.map((plan) => (
-                                <div key={plan.id} className="bg-white p-4 rounded-xl border border-secondary-100 flex items-start gap-4 hover:shadow-md transition-shadow">
-                                    <div className={`mt-1 h-5 w-5 rounded-full border-2 flex items-center justify-center shrink-0 ${
-                                        plan.completionStatus === 'COMPLETED' 
-                                        ? 'bg-success-500 border-success-500 text-white' 
-                                        : 'border-secondary-300'
+                            {workPlans.map((plan) => {
+                                const isChecked = completedAgendaIds.includes(plan.id);
+                                return (
+                                <div
+                                    key={plan.id}
+                                    onClick={() => {
+                                        setCompletedAgendaIds(prev =>
+                                            isChecked ? prev.filter(id => id !== plan.id) : [...prev, plan.id]
+                                        );
+                                    }}
+                                    className={`cursor-pointer p-4 rounded-xl border-2 flex items-start gap-4 transition-all duration-200 select-none ${
+                                        isChecked
+                                            ? 'bg-success-50/60 border-success-400 shadow-md'
+                                            : 'bg-white border-secondary-100 hover:border-primary-300 hover:shadow-md'
+                                    }`}
+                                >
+                                    <div className={`mt-1 h-5 w-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors ${
+                                        isChecked
+                                            ? 'bg-success-500 border-success-500 text-white'
+                                            : 'border-secondary-300 group-hover:border-primary-400'
                                     }`}>
-                                        {plan.completionStatus === 'COMPLETED' && <CheckCircle size={12} />}
+                                        {isChecked && <CheckCircle size={12} />}
                                     </div>
                                     <div className="flex-1">
-                                        <h4 className="font-bold text-sm text-secondary-900">{plan.agenda}</h4>
+                                        <h4 className={`font-bold text-sm ${ isChecked ? 'text-success-900 line-through opacity-70' : 'text-secondary-900' }`}>{plan.agenda}</h4>
                                         <div className="flex flex-wrap gap-2 mt-2">
                                             {plan.project && (
                                                 <span className="flex items-center gap-1 text-[10px] font-bold text-primary-600 bg-primary-50 px-2 py-0.5 rounded">
@@ -743,10 +775,11 @@ export default function SubmitReportPage() {
                                         </div>
                                     </div>
                                 </div>
-                            ))}
+                                );
+                            })}
                         </div>
                         <p className="text-[10px] text-secondary-400 mt-4 italic">
-                            💡 Use these checkpoints to ensure all planned items are covered in your report submission below.
+                            💡 Click each item to mark it as completed. Checked items will be saved with your report.
                         </p>
                     </div>
                 )}
