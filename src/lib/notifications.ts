@@ -1,61 +1,68 @@
-import { prisma } from './prisma';
+import { prisma } from '@/lib/prisma';
 
-interface NotificationData {
-    userId: string;
-    title: string;
-    message: string;
-    type: 'INFO' | 'SUCCESS' | 'WARNING' | 'ERROR';
-    link?: string;
-}
-
-export async function createNotification(data: NotificationData) {
+/**
+ * Creates a permanent Audit Log entry for accountability.
+ */
+export async function createAuditLog({
+    userId,
+    action,
+    entity,
+    entityId,
+    changes,
+    ipAddress = 'SYSTEM',
+}: {
+    userId?: string;
+    action: string;
+    entity: string;
+    entityId: string;
+    changes?: any;
+    ipAddress?: string;
+}) {
     try {
-        await prisma.notification.create({
+        await prisma.auditLog.create({
             data: {
-                userId: data.userId,
-                title: data.title,
-                message: data.message,
-                type: data.type,
-                link: data.link
+                userId,
+                action,
+                entity,
+                entityId,
+                changes: changes || {},
+                ipAddress,
             }
         });
     } catch (error) {
-        console.error('Failed to create notification:', error);
-        // Don't throw - notifications are non-critical
+        console.error('Failed to write Audit Log:', error);
     }
 }
 
-export async function markAsRead(notificationId: string) {
+/**
+ * Pushes a real-time Notification to a specific user.
+ */
+export async function pushNotification({
+    userId,
+    title,
+    message,
+    type = 'INFO',
+    link
+}: {
+    userId: string;
+    title: string;
+    message: string;
+    type?: 'INFO' | 'WARNING' | 'SUCCESS' | 'DANGER' | 'ERROR';
+    link?: string;
+}) {
     try {
-        await prisma.notification.update({
-            where: { id: notificationId },
-            data: { isRead: true }
+        return await prisma.notification.create({
+            data: {
+                userId,
+                title,
+                message,
+                type: type === 'ERROR' ? 'DANGER' : type,
+                link,
+            }
         });
     } catch (error) {
-        console.error('Failed to mark notification as read:', error);
+        console.error('Failed to push Notification:', error);
     }
 }
-
-export async function getUserNotifications(userId: string, limit = 20) {
-    try {
-        return await prisma.notification.findMany({
-            where: { userId },
-            orderBy: { createdAt: 'desc' },
-            take: limit
-        });
-    } catch (error) {
-        console.error('Failed to fetch notifications:', error);
-        return [];
-    }
-}
-
-export async function getUnreadCount(userId: string) {
-    try {
-        return await prisma.notification.count({
-            where: { userId, isRead: false }
-        });
-    } catch (error) {
-        console.error('Failed to get unread count:', error);
-        return 0;
-    }
-}
+// ALIAS for legacy code
+export const createNotification = pushNotification;

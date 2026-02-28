@@ -284,13 +284,26 @@ export const ALL_MODULES: NavModule[] = [
     },
     {
         id: 'LOGISTIC',
-        name: 'Logistics',
+        name: 'Supply Chain',
         icon: '🚚',
         categories: [
             {
-                title: 'Supply Chain',
+                title: 'Procurement',
                 items: [
-                    { name: 'Logistics Hub', href: '/dashboard/logistics', icon: '🚚', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'EXECUTIVE'] },
+                    { name: 'Vendors', href: '/dashboard/supply-chain/vendors', icon: '🏪', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER'] },
+                    { name: 'Purchase Orders', href: '/dashboard/supply-chain/purchase-orders', icon: '🧾', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'FINANCE_ADMIN'] },
+                ]
+            },
+            {
+                title: 'Inventory',
+                items: [
+                    { name: 'Inventory Ledger', href: '/dashboard/logistics/inventory', icon: '📦', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'EXECUTIVE'] },
+                ]
+            },
+            {
+                title: 'Logistics Hub',
+                items: [
+                    { name: 'Dispatch Hub', href: '/dashboard/logistics', icon: '🚚', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'EXECUTIVE'] },
                     { name: 'Track Orders', href: '/dashboard/follow-ups', icon: '🗓️', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'TEAM_LEADER', 'EXECUTIVE'] },
                 ]
             }
@@ -330,7 +343,7 @@ export const ALL_MODULES: NavModule[] = [
                     { name: 'Data Hub', href: '/dashboard/data-hub', icon: '📂', roles: ['SUPER_ADMIN'] },
                     { name: 'Configurations', href: '/dashboard/settings/configurations', icon: '🔐', roles: ['SUPER_ADMIN', 'ADMIN'] },
                     { name: 'System Settings', href: '/dashboard/settings', icon: '⚙️', roles: ['SUPER_ADMIN'] },
-                    { name: 'System Logs', href: '/dashboard/admin/logs', icon: '📜', roles: ['SUPER_ADMIN'] },
+                    { name: 'Audit Logs', href: '/dashboard/super-admin/audit-logs', icon: '📝', roles: ['SUPER_ADMIN'] },
                 ]
             }
         ]

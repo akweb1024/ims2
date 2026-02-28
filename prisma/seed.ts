@@ -740,12 +740,13 @@ async function main() {
     for (const item of inventoryItems) {
         await prisma.inventoryItem.create({
             data: {
+                companyId: company.id,
                 name: item.name,
                 sku: item.sku,
-                currentStock: item.stock,
-                minThreshold: item.min,
+                quantity: item.stock,
+                minStockLevel: item.min,
                 category: item.cat,
-                price: item.price
+                unitPrice: item.price
             }
         });
     }

@@ -39,8 +39,51 @@ export default function DashboardLayout({ children, userRole: propUserRole = 'CU
         return () => window.removeEventListener('resize', handleResize);
     }, []);
 
-    const fetchNotifications = useCallback(async () => {
-        if (typeof document !== 'undefined' && document.visibilityState !== 'visible') return;
+    const fetchNotifications = useCallback(() => {
+        // We set up SSE event source for real-time notifications
+        try {
+            const eventSource = new EventSource('/api/notifications/stream');
+            
+            eventSource.onmessage = (event) => {
+                try {
+                    const data = JSON.parse(event.data);
+                    // Standardize read status explicitly just in case
+                    setNotifications(prev => {
+                        // Merge logic: Add new, update existing, don't overwrite if read in frontend
+                        const merged = [...prev];
+                        data.forEach((newNotif: any) => {
+                            const existsIndex = merged.findIndex(n => n.id === newNotif.id);
+                            if (existsIndex >= 0) {
+                                if (merged[existsIndex].isRead === false) {
+                                    merged[existsIndex] = newNotif;
+                                }
+                            } else {
+                                merged.push(newNotif);
+                            }
+                        });
+                        return merged.sort((a,b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+                    });
+                } catch (e) {
+                    console.error("Failed to parse SSE notification:", e);
+                }
+            };
+            
+            eventSource.onerror = () => {
+                eventSource.close();
+                // Optionally retry after delay or just rely on fallback fetch
+                setTimeout(fetchNotificationsFallback, 10000);
+            };
+
+            return () => {
+                eventSource.close();
+            };
+        } catch (err) {
+            console.error('SSE initialization error:', err);
+            fetchNotificationsFallback();
+        }
+    }, []);
+
+    const fetchNotificationsFallback = async () => {
         try {
             const res = await fetch('/api/notifications');
             if (res.ok) {
@@ -48,9 +91,9 @@ export default function DashboardLayout({ children, userRole: propUserRole = 'CU
                 setNotifications(data);
             }
         } catch (err) {
-            console.error('Fetch notifications error:', err);
+            console.error('Fallback fetch error:', err);
         }
-    }, []);
+    };
 
     const fetchUserContext = useCallback(async () => {
         try {
@@ -68,8 +111,10 @@ export default function DashboardLayout({ children, userRole: propUserRole = 'CU
 
     useEffect(() => {
         setMounted(true);
+        let cleanupSSE: (() => void) | undefined;
+        
         if (status === 'authenticated') {
-            fetchNotifications();
+            cleanupSSE = fetchNotifications();
             fetchUserContext();
             registerPush();
         }
@@ -84,22 +129,13 @@ export default function DashboardLayout({ children, userRole: propUserRole = 'CU
 
         const interval = setInterval(() => {
             if (document.visibilityState === 'visible' && status === 'authenticated') {
-                fetchNotifications();
                 fetch('/api/it/monitoring/check', { method: 'POST' }).catch(() => { });
             }
         }, 60000);
 
-        const handleVisibilityChange = () => {
-            if (document.visibilityState === 'visible' && status === 'authenticated') {
-                fetchNotifications();
-            }
-        };
-
-        document.addEventListener('visibilitychange', handleVisibilityChange);
-
         return () => {
             clearInterval(interval);
-            document.removeEventListener('visibilitychange', handleVisibilityChange);
+            if (cleanupSSE) cleanupSSE();
         };
     }, [fetchNotifications, fetchUserContext, status, router]);
 
