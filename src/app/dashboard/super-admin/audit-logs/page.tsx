@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation';
 import { Activity, Search, Filter, ShieldCheck, User } from 'lucide-react';
 import AuditLogClient from '@/components/dashboard/super-admin/AuditLogClient';
 
+export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Audit Logs | STM Dashboard' };
 
 export default async function AuditLogsPage() {
