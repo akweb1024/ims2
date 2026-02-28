@@ -8,7 +8,7 @@ export async function GET(req: Request) {
         const search = searchParams.get('search') || '';
         const limit = parseInt(searchParams.get('limit') || '50');
 
-        const workshops = await prisma.workshop.findMany({
+        const workshops = await (prisma as any).workshop.findMany({
             where: {
                 title: { contains: search, mode: 'insensitive' },
             },
@@ -18,7 +18,8 @@ export async function GET(req: Request) {
                 },
                 _count: {
                     select: { enrollments: true }
-                }
+                },
+                sessions: true
             },
             take: limit,
             orderBy: { createdAt: 'desc' }
@@ -42,7 +43,7 @@ export async function POST(req: Request) {
             if (mentor) resolvedMentorId = mentor.id;
         }
 
-        const workshop = await prisma.workshop.create({
+        const workshop = await (prisma as any).workshop.create({
             data: {
                 title,
                 description,

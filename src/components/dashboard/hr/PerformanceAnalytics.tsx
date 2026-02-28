@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useEmployees, useKPIs, useKPIMutations, useHRInsights, usePerformanceReviews, usePerformanceReviewMutation } from '@/hooks/useHR';
 import PerformanceReviewModal from './PerformanceReviewModal';
 import {
@@ -22,6 +22,16 @@ export default function PerformanceAnalytics() {
     const reviewMutation = usePerformanceReviewMutation();
     const [showReviewModal, setShowReviewModal] = useState(false);
     const [activeTab, setActiveTab] = useState<'kpi' | 'reviews'>('kpi');
+    const [feedback360, setFeedback360] = useState<any>(null);
+
+    // Fetch 360 Feedback on employee hit
+    useEffect(() => {
+        if (!selectedEmployee) return;
+        fetch(`/api/hr/feedback?employeeId=${selectedEmployee}`)
+            .then(res => res.json())
+            .then(data => setFeedback360(data))
+            .catch(console.error);
+    }, [selectedEmployee]);
 
     const [showKPIModal, setShowKPIModal] = useState(false);
     const [newKPI, setNewKPI] = useState({
@@ -282,6 +292,61 @@ export default function PerformanceAnalytics() {
                                             </div>
                                         ))}
                                     </div>
+
+                                    {/* 360-Degree Feedback Integration */}
+                                    {feedback360 && (
+                                        <div className="mt-8 pt-8 border-t border-secondary-100/50">
+                                            <h4 className="text-lg font-black text-secondary-900 mb-4 flex items-center gap-2">
+                                                <BrainCircuit size={18} className="text-primary-500" />
+                                                360° Anonymous & Peer Intel
+                                            </h4>
+                                            
+                                            {feedback360.peerReviews?.length > 0 && (
+                                                <div className="mb-6">
+                                                    <h5 className="text-[10px] uppercase font-black tracking-widest text-secondary-400 mb-2">Peer Reviews</h5>
+                                                    <div className="space-y-3">
+                                                    {feedback360.peerReviews.map((peer: any) => (
+                                                        <div key={peer.id} className="p-4 bg-primary-50 rounded-xl border border-primary-100 flex gap-4">
+                                                             <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center font-bold text-xs text-primary-600 shadow-sm shrink-0">
+                                                                {(peer.peer?.name || 'P')[0]}
+                                                            </div>
+                                                            <div>
+                                                                <div className="flex gap-1 mb-1 text-primary-500 text-sm">
+                                                                     {[1, 2, 3, 4, 5].map(s => <span key={s} className={s <= peer.rating ? 'opacity-100' : 'opacity-30'}>★</span>)}
+                                                                </div>
+                                                                <p className="text-secondary-700 text-sm italic">&ldquo;{peer.feedback}&rdquo;</p>
+                                                                <p className="text-[10px] font-bold text-secondary-400 mt-2 uppercase">{peer.peer?.name || 'Unknown Peer'} • {new Date(peer.createdAt).toLocaleDateString()}</p>
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            {feedback360.anonymousFeedback?.length > 0 && (
+                                                <div>
+                                                    <h5 className="text-[10px] uppercase font-black tracking-widest text-secondary-400 mb-2">Anonymous Drops</h5>
+                                                    <div className="space-y-3">
+                                                    {feedback360.anonymousFeedback.map((anon: any) => (
+                                                        <div key={anon.id} className="p-4 bg-secondary-100 rounded-xl flex gap-4 border border-secondary-200">
+                                                            <div className="text-xl">🕵️‍♀️</div>
+                                                            <div>
+                                                                 <p className="text-secondary-800 text-sm italic font-medium leading-relaxed">&ldquo;{anon.feedback}&rdquo;</p>
+                                                                 <p className="text-[10px] font-black text-secondary-400 mt-2 uppercase">{anon.category} • {new Date(anon.createdAt).toLocaleDateString()}</p>
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                    </div>
+                                                </div>
+                                            )}
+                                            
+                                            {(!feedback360.peerReviews?.length && !feedback360.anonymousFeedback?.length) && (
+                                                 <div className="text-center p-6 bg-secondary-50 rounded-2xl border border-secondary-100/50">
+                                                      <p className="text-xs font-bold text-secondary-400 uppercase tracking-widest">No 360 Feedback Recorded Yet.</p>
+                                                 </div>
+                                            )}
+                                        </div>
+                                    )}
                                 </div>
                             )}
                         </div>

@@ -137,11 +137,17 @@ export default function WorkshopsPage() {
                                         <User size={14} />
                                         <span>{workshop.mentor?.name || 'No Mentor'}</span>
                                     </div>
-                                    <div className="flex items-center gap-2">
-                                        <DollarSign size={14} />
-                                        <span className="font-bold text-secondary-900">
-                                            {workshop.price === 0 ? 'Free' : `${workshop.currency} ${workshop.price}`}
-                                        </span>
+                                    <div className="flex items-center justify-between gap-2 border-t border-secondary-100 pt-3 mt-3">
+                                        <div className="flex items-center gap-2">
+                                            <DollarSign size={14} />
+                                            <span className="font-bold text-secondary-900">
+                                                {workshop.price === 0 ? 'Free' : `${workshop.currency} ${workshop.price}`}
+                                            </span>
+                                        </div>
+                                        <div className="flex items-center gap-1.5 bg-primary-50 text-primary-700 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest border border-primary-200">
+                                            <Video size={10} />
+                                            {workshop.sessions?.length || 0} Sessions
+                                        </div>
                                     </div>
                                 </div>
                             </div>

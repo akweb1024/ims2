@@ -278,6 +278,8 @@ model User {
   assignedIssues            Issue[]                     @relation("IssueAssignee")
   reportedIssues            Issue[]                     @relation("IssueReporter")
   issueFollowUps            IssueFollowUp[]
+  peerReviewsGiven          PeerReview[]                @relation("PeerReviewer")
+  mentorSessions            MentorSession[]             @relation("SessionMentor")
   projectMemberships        ProjectMember[]
   screeningTemplatesCreated ScreeningTemplate[]
   screeningsSubmitted       InterviewScreening[]        @relation("ScreeningSubmitter")
@@ -1745,6 +1747,8 @@ model PerformanceReview {
   reviewer                User                   @relation("Reviewer", fields: [reviewerId], references: [id])
   salaryIncrementRecordId String?
   salaryIncrementRecord   SalaryIncrementRecord? @relation(fields: [salaryIncrementRecordId], references: [id])
+  peerReviews             PeerReview[]
+  anonymousFeedback       AnonymousFeedback[]
 
   @@index([companyId])
   @@index([salaryIncrementRecordId])
@@ -2520,6 +2524,7 @@ model Workshop {
   company      Company?             @relation(fields: [companyId], references: [id])
   mentor       User?                @relation("WorkshopMentor", fields: [mentorId], references: [id])
   enrollments  WorkshopEnrollment[]
+  sessions     MentorSession[]
 }
 
 model WorkshopEnrollment {
@@ -4589,4 +4594,56 @@ model ITProjectSuggestion {
 
   @@index([projectId])
   @@index([status])
+}
+
+// ----------------------------------------------------------------------------
+// 🎓 LMS Expansion & 360° HR
+// ----------------------------------------------------------------------------
+
+model MentorSession {
+  id           String      @id @default(uuid())
+  workshopId   String
+  mentorId     String
+  title        String
+  scheduledAt  DateTime
+  durationMins Int         @default(60)
+  meetingLink  String?
+  notes        String?     @db.Text
+  status       String      @default("SCHEDULED") // SCHEDULED, COMPLETED, CANCELLED
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+  
+  workshop     Workshop    @relation(fields: [workshopId], references: [id], onDelete: Cascade)
+  mentor       User        @relation("SessionMentor", fields: [mentorId], references: [id])
+
+  @@index([workshopId])
+  @@index([mentorId])
+}
+
+model PeerReview {
+  id                  String            @id @default(uuid())
+  performanceReviewId String
+  peerId              String
+  rating              Int               // 1-5 scale
+  feedback            String?           @db.Text
+  createdAt           DateTime          @default(now())
+  
+  performanceReview   PerformanceReview @relation(fields: [performanceReviewId], references: [id], onDelete: Cascade)
+  peer                User              @relation("PeerReviewer", fields: [peerId], references: [id])
+
+  @@index([performanceReviewId])
+  @@index([peerId])
+  @@unique([performanceReviewId, peerId])
+}
+
+model AnonymousFeedback {
+  id                  String            @id @default(uuid())
+  performanceReviewId String
+  feedback            String            @db.Text
+  category            String            @default("GENERAL") // STRENGTH, IMPROVEMENT, GENERAL
+  createdAt           DateTime          @default(now())
+  
+  performanceReview   PerformanceReview @relation(fields: [performanceReviewId], references: [id], onDelete: Cascade)
+
+  @@index([performanceReviewId])
 }
