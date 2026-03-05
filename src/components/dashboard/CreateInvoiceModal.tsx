@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import Link from 'next/link';
 import { X, Plus, Trash2, Search, User, Ticket } from 'lucide-react';
 import { CustomerType } from '@/types';
 import GuidelineHelp from './GuidelineHelp';
@@ -60,23 +61,75 @@ export default function CreateInvoiceModal({ isOpen, onClose, onSuccess }: Creat
         }
     };
 
-    const searchJournals = async (itemId: number, query: string) => {
+    const [showProductModal, setShowProductModal] = useState(false);
+    const [productResults, setProductResults] = useState<{ [key: number]: any[] }>({});
+    const [catSearch, setCatSearch] = useState('');
+    const [catProducts, setCatProducts] = useState<any[]>([]);
+    const [catLoading, setCatLoading] = useState(false);
+
+    const searchCatalogue = async (itemId: number, query: string) => {
         if (searchTimeout.current) clearTimeout(searchTimeout.current);
 
         searchTimeout.current = setTimeout(async () => {
             try {
                 const token = localStorage.getItem('token');
-                const res = await fetch(`/api/journals?search=${query}&limit=5`, {
+                const res = await fetch(`/api/invoice-products?q=${encodeURIComponent(query)}&isActive=true&pageSize=5`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 if (res.ok) {
                     const data = await res.json();
-                    setJournalResults(prev => ({ ...prev, [itemId]: data || [] }));
+                    setProductResults(prev => ({ ...prev, [itemId]: data.data || [] }));
                 }
             } catch (err) {
                 console.error(err);
             }
         }, 300);
+    };
+
+    const fetchCatalogue = useCallback(async (query = '') => {
+        setCatLoading(true);
+        try {
+            const token = localStorage.getItem('token');
+            const res = await fetch(`/api/invoice-products?q=${encodeURIComponent(query)}&isActive=true&pageSize=10`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const data = await res.json();
+            setCatProducts(data.data || []);
+        } catch (e) {
+            console.error('Failed to fetch catalogue', e);
+        } finally {
+            setCatLoading(false);
+        }
+    }, []);
+
+    useEffect(() => {
+        if (showProductModal) fetchCatalogue(catSearch);
+    }, [showProductModal, catSearch, fetchCatalogue]);
+
+    const handleSelectFromCatalogue = (p: any) => {
+        const price = currency === 'USD' ? p.priceUSD : p.priceINR;
+        const newItem = {
+            id: Date.now(),
+            description: p.sku ? `${p.name} (${p.sku})` : p.name,
+            quantity: p.minQuantity || 1,
+            price: price,
+            productId: p.id
+        };
+
+        setItems(prev => {
+            if (prev.length === 1 && !prev[0].description && prev[0].price === 0) {
+                return [newItem];
+            }
+            return [...prev, newItem];
+        });
+
+        if (p.taxRate && p.taxRate !== taxRate) {
+            if (confirm(`Product "${p.name}" has standard tax of ${p.taxRate}%. Update invoice tax rate?`)) {
+                setTaxRate(p.taxRate);
+            }
+        }
+        setShowProductModal(false);
+        setCatSearch('');
     };
 
     useEffect(() => {
@@ -239,7 +292,13 @@ export default function CreateInvoiceModal({ isOpen, onClose, onSuccess }: Creat
                     customerProfileId: selectedCustomer.id,
                     dueDate,
                     description,
-                    lineItems: items.map(({ id, description, quantity, price }) => ({ id, description, quantity, price })),
+                    lineItems: items.map(({ id, description, quantity, price, productId }: any) => ({ 
+                        id, 
+                        description, 
+                        quantity, 
+                        price, 
+                        productId: productId || null 
+                    })),
                     taxRate,
                     currency,
                     brandId: selectedBrandId || null,
@@ -272,6 +331,75 @@ export default function CreateInvoiceModal({ isOpen, onClose, onSuccess }: Creat
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
             <div className="bg-white rounded-3xl w-full max-w-2xl max-h-[90vh] overflow-hidden shadow-2xl flex flex-col">
+                {/* Product Catalogue Modal (Nested Overlay) */}
+                {showProductModal && (
+                    <div className="absolute inset-0 z-[60] bg-white animate-slideIn">
+                        <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50">
+                            <div>
+                                <h3 className="text-lg font-black text-gray-900 flex items-center gap-2">
+                                    🗂️ Browse Product Catalogue
+                                </h3>
+                                <p className="text-xs text-gray-500 uppercase font-bold tracking-wider">Select a pre-configured product</p>
+                            </div>
+                            <button onClick={() => setShowProductModal(false)} className="p-2 hover:bg-gray-100 rounded-full">
+                                <X size={20} className="text-gray-400" />
+                            </button>
+                        </div>
+                        <div className="p-6">
+                            <div className="relative mb-6">
+                                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
+                                <input 
+                                    className="input-premium pl-12 w-full"
+                                    placeholder="Search products by name, SKU or HSN..."
+                                    autoFocus
+                                    value={catSearch}
+                                    onChange={e => setCatSearch(e.target.value)}
+                                />
+                            </div>
+
+                            <div className="space-y-3 max-h-[50vh] overflow-y-auto pr-2 custom-scrollbar">
+                                {catLoading ? (
+                                    <div className="flex flex-col items-center py-12">
+                                        <div className="animate-spin h-8 w-8 border-b-2 border-primary-600 rounded-full mb-4" />
+                                        <p className="text-xs text-gray-500 font-black uppercase">Fetching Catalogue...</p>
+                                    </div>
+                                ) : catProducts.length === 0 ? (
+                                    <div className="text-center py-12 text-gray-400">
+                                        <p className="italic text-sm">No products found matching &ldquo;{catSearch}&rdquo;</p>
+                                    </div>
+                                ) : (
+                                    catProducts.map(p => (
+                                        <button
+                                            key={p.id}
+                                            onClick={() => handleSelectFromCatalogue(p)}
+                                            className="w-full text-left p-4 rounded-2xl border border-gray-100 hover:border-primary-500 hover:bg-primary-50 transition-all flex items-center justify-between group"
+                                        >
+                                            <div className="min-w-0 flex-1">
+                                                <div className="flex items-center gap-2">
+                                                    <span className="font-bold text-gray-900 group-hover:text-primary-700 transition-colors">{p.name}</span>
+                                                    <span className="text-[9px] bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded uppercase font-black">{p.category.replace('_', ' ')}</span>
+                                                </div>
+                                                <p className="text-[10px] text-gray-400 font-mono mt-0.5">{p.sku || 'No SKU'} · {p.hsnCode || 'No HSN'}</p>
+                                            </div>
+                                            <div className="text-right">
+                                                <p className="font-black text-gray-900">
+                                                    {currency === 'USD' ? '$' : '₹'}
+                                                    {(currency === 'USD' ? p.priceUSD : p.priceINR)?.toLocaleString()}
+                                                </p>
+                                                <p className="text-[9px] text-primary-600 font-bold uppercase">Add to Invoice →</p>
+                                            </div>
+                                        </button>
+                                    ))
+                                )}
+                            </div>
+                        </div>
+                        <div className="p-6 border-t border-gray-100 flex justify-between items-center text-[10px] text-gray-400 font-black uppercase tracking-widest bg-gray-50">
+                            <span>Showing {catProducts.length} Results</span>
+                            <Link href="/dashboard/crm/invoice-products" className="text-primary-600 hover:underline">Manage Catalogue ↗</Link>
+                        </div>
+                    </div>
+                )}
+
                 <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gradient-to-r from-gray-50 to-white">
                     <div>
                         <h2 className="text-xl font-bold text-gray-900">Create New Invoice</h2>
@@ -535,12 +663,21 @@ export default function CreateInvoiceModal({ isOpen, onClose, onSuccess }: Creat
                             <div className="space-y-3">
                                 <div className="flex justify-between items-center">
                                     <div className="flex items-center gap-2">
-                                        <label className="label mb-0">Line Items</label>
+                                        <label className="label mb-0 uppercase tracking-widest text-[10px] font-black text-gray-400">Line Items</label>
                                         <GuidelineHelp category="BILLING" search="Items" />
                                     </div>
-                                    <button onClick={handleAddItem} className="text-xs font-bold text-primary-600 flex items-center gap-1 hover:bg-primary-50 px-2 py-1 rounded-lg transition-colors">
-                                        <Plus size={14} /> Add Item
-                                    </button>
+                                    <div className="flex items-center gap-3">
+                                        <button 
+                                            type="button" 
+                                            onClick={() => setShowProductModal(true)}
+                                            className="text-[11px] font-bold text-primary-700 bg-primary-50 px-2 py-1 rounded-lg border border-primary-100 hover:bg-primary-100 transition-colors flex items-center gap-1.5"
+                                        >
+                                            🗂️ Browse Catalogue
+                                        </button>
+                                        <button onClick={handleAddItem} className="text-xs font-bold text-primary-600 flex items-center gap-1 hover:bg-primary-50 px-2 py-1 rounded-lg transition-colors">
+                                            <Plus size={14} /> Add Item
+                                        </button>
+                                    </div>
                                 </div>
                                 {items.map((item, index) => (
                                     <div key={item.id} className="space-y-2">
@@ -554,36 +691,54 @@ export default function CreateInvoiceModal({ isOpen, onClose, onSuccess }: Creat
                                                     onBlur={() => {
                                                         // Small delay to allow clicking suggestions
                                                         setTimeout(() => {
-                                                            setJournalResults(prev => ({ ...prev, [item.id]: [] }));
+                                                            setProductResults(prev => ({ ...prev, [item.id]: [] }));
                                                         }, 200);
                                                     }}
                                                     onChange={e => {
                                                         const val = e.target.value;
                                                         updateItem(item.id, 'description', val);
                                                         if (val.length >= 2) {
-                                                            searchJournals(item.id, val);
+                                                            searchCatalogue(item.id, val);
                                                         } else {
-                                                            setJournalResults(prev => ({ ...prev, [item.id]: [] }));
+                                                            setProductResults(prev => ({ ...prev, [item.id]: [] }));
                                                         }
                                                     }}
                                                 />
                                                 
-                                                {/* Journal Search Results Dropdown */}
-                                                {journalResults[item.id] && journalResults[item.id].length > 0 && (
+                                                {/* Product Search Results Dropdown */}
+                                                {productResults[item.id] && productResults[item.id].length > 0 && (
                                                     <div className="absolute z-50 left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-xl max-h-48 overflow-y-auto overflow-x-hidden">
-                                                        {journalResults[item.id].map((journal: any) => (
+                                                        {productResults[item.id].map((p: any) => (
                                                             <button
-                                                                key={journal.id}
+                                                                key={p.id}
                                                                 type="button"
                                                                 onClick={() => {
-                                                                    updateItem(item.id, 'description', journal.name);
-                                                                    updateItem(item.id, 'price', journal.priceINR || 0);
-                                                                    setJournalResults(prev => ({ ...prev, [item.id]: [] }));
+                                                                    const price = currency === 'USD' ? (p.priceUSD || 0) : (p.priceINR || 0);
+                                                                    updateItem(item.id, 'description', p.sku ? `${p.name} (${p.sku})` : p.name);
+                                                                    updateItem(item.id, 'price', price);
+                                                                    updateItem(item.id, 'productId', p.id);
+                                                                    setProductResults(prev => ({ ...prev, [item.id]: [] }));
+                                                                    if (p.taxRate && p.taxRate !== taxRate) {
+                                                                        if (confirm(`Product "${p.name}" has standard tax of ${p.taxRate}%. Update invoice tax rate?`)) {
+                                                                            setTaxRate(p.taxRate);
+                                                                        }
+                                                                    }
                                                                 }}
                                                                 className="w-full text-left px-4 py-2 hover:bg-primary-50 transition-colors border-b border-gray-50 last:border-0"
                                                             >
-                                                                <p className="text-sm font-bold text-gray-900 truncate">{journal.name}</p>
-                                                                <p className="text-[10px] text-primary-600 font-bold">Standard Price: ₹{journal.priceINR?.toLocaleString()}</p>
+                                                                <div className="flex justify-between items-start">
+                                                                    <div className="min-w-0 flex-1">
+                                                                        <p className="text-sm font-bold text-gray-900 truncate">{p.name}</p>
+                                                                        <p className="text-[9px] text-gray-400 font-mono">{p.sku || 'No SKU'}</p>
+                                                                    </div>
+                                                                    <div className="text-right ml-3">
+                                                                        <p className="text-xs font-black text-primary-600">
+                                                                            {currency === 'USD' ? '$' : '₹'}
+                                                                            {(currency === 'USD' ? p.priceUSD : p.priceINR)?.toLocaleString()}
+                                                                        </p>
+                                                                        <p className="text-[9px] text-gray-400 uppercase font-black tracking-widest">{p.category.replace('_', ' ')}</p>
+                                                                    </div>
+                                                                </div>
                                                             </button>
                                                         ))}
                                                     </div>
@@ -602,7 +757,7 @@ export default function CreateInvoiceModal({ isOpen, onClose, onSuccess }: Creat
                                             <div className="w-28">
                                                 <input
                                                     type="number"
-                                                    className="input-premium text-sm text-right"
+                                                    className="input-premium text-sm text-right font-mono"
                                                     placeholder="Price"
                                                     min="0"
                                                     value={item.price}
@@ -620,6 +775,7 @@ export default function CreateInvoiceModal({ isOpen, onClose, onSuccess }: Creat
                                     </div>
                                 ))}
                             </div>
+
 
                             {/* Coupon / Discount */}
                             <div className="space-y-2">

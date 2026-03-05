@@ -702,6 +702,7 @@ model InvoiceProduct {
   updatedByUserId String?
   createdAt       DateTime                @default(now())
   updatedAt       DateTime                @updatedAt
+  subscriptionItems SubscriptionItem[]
 
   @@index([companyId, category])
   @@index([isActive])
@@ -859,6 +860,7 @@ model SubscriptionItem {
   courseId       String?
   workshopId     String?
   productId      String?
+  invoiceProductId String?
   quantity       Int          @default(1)
   seats          Int?
   price          Float
@@ -869,6 +871,7 @@ model SubscriptionItem {
   course         Course?      @relation(fields: [courseId], references: [id])
   workshop       Workshop?    @relation(fields: [workshopId], references: [id])
   product        Product?     @relation(fields: [productId], references: [id])
+  invoiceProduct InvoiceProduct? @relation(fields: [invoiceProductId], references: [id])
   subscription   Subscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
 
   @@index([subscriptionId])

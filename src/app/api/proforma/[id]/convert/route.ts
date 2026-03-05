@@ -138,7 +138,8 @@ export const POST = authorizedRoute(
                         planId: item.planId || null,
                         courseId: item.courseId || null,
                         workshopId: item.workshopId || null,
-                        productId: item.productId || null,
+                        productId: item.productId && !item.invoiceProductId ? null : (item.productId || null), // Legacy Product model
+                        invoiceProductId: item.productId || item.invoiceProductId || null, // New InvoiceProduct model
                         quantity: Number(item.quantity) || 1,
                         price: Number(item.unitPrice || item.price) || 0,
                     }));

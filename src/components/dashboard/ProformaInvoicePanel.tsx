@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 
 // ─── Types ─────────────────────────────────────────────────────────────────
 interface LineItem {
@@ -189,11 +189,10 @@ export default function ProformaInvoicePanel({
     const [hardDelete, setHardDelete] = useState(false);
 
     const token = typeof window !== 'undefined' ? localStorage.getItem('token') : '';
-
-    const authHeaders = {
+    const authHeaders = useMemo(() => ({
         'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json',
-    };
+    }), [token]);
 
     const fetchProformas = useCallback(async () => {
         setLoading(true);
@@ -208,7 +207,7 @@ export default function ProformaInvoicePanel({
         } finally {
             setLoading(false);
         }
-    }, [customerId]);
+    }, [customerId, authHeaders]);
 
     useEffect(() => { fetchProformas(); }, [fetchProformas]);
 
@@ -410,6 +409,120 @@ export default function ProformaInvoicePanel({
     const canConvert = (pf: ProformaInvoice) => pf.status === 'PAYMENT_PENDING' && ['SUPER_ADMIN', 'MANAGER'].includes(userRole);
 
     // ── Form Modal (shared create + edit) ──────────────────────────────────
+    // ─── Product Catalogue Selection ──────────────────────────────────────────
+    const [showProductModal, setShowProductModal] = useState(false);
+    const [catProducts, setCatProducts] = useState<any[]>([]);
+    const [catSearch, setCatSearch] = useState('');
+    const [catLoading, setCatLoading] = useState(false);
+
+    const fetchCatalogue = useCallback(async (query = '') => {
+        setCatLoading(true);
+        try {
+            const res = await fetch(`/api/invoice-products?q=${encodeURIComponent(query)}&isActive=true&pageSize=10`, { headers: authHeaders });
+            const data = await res.json();
+            setCatProducts(data.data || []);
+        } catch (e) {
+            console.error('Failed to fetch catalogue', e);
+        } finally {
+            setCatLoading(false);
+        }
+    }, [authHeaders]);
+
+    useEffect(() => {
+        if (showProductModal) fetchCatalogue(catSearch);
+    }, [showProductModal, catSearch, fetchCatalogue]);
+
+    const handleSelectProduct = (p: any) => {
+        const price = pfCurrency === 'USD' ? p.priceUSD : p.priceINR;
+        const newItem: LineItem = {
+            description: p.sku ? `${p.name} (${p.sku})` : p.name,
+            quantity: p.minQuantity || 1,
+            unitPrice: price,
+            total: price * (p.minQuantity || 1),
+            productId: p.id,
+        };
+
+        setLineItems(prev => {
+            // If the first item is empty, replace it
+            if (prev.length === 1 && !prev[0].description && prev[0].unitPrice === 0) {
+                return [newItem];
+            }
+            return [...prev, newItem];
+        });
+
+        // Proactively set tax rate if it matches (optional convenience)
+        if (p.taxRate && p.taxRate !== taxRate) {
+            if (confirm(`Product "${p.name}" has a tax rate of ${p.taxRate}%. Update proforma tax rate?`)) {
+                setTaxRate(p.taxRate);
+            }
+        }
+
+        setShowProductModal(false);
+        setCatSearch('');
+    };
+
+    const ProductSearchModal = () => (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-md p-4">
+            <div className="bg-white rounded-2xl w-full max-w-lg shadow-2xl flex flex-col max-h-[80vh]">
+                <div className="p-4 border-b border-gray-100 flex items-center justify-between">
+                    <h3 className="font-bold text-gray-900 flex items-center gap-2">
+                        🗂️ Product Catalogue
+                    </h3>
+                    <button onClick={() => setShowProductModal(false)} className="text-gray-400 hover:text-gray-600">✕</button>
+                </div>
+                <div className="p-4 border-b border-gray-100">
+                    <div className="relative">
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">🔍</span>
+                        <input
+                            className="input pl-9 text-sm"
+                            placeholder="Search catalogue by name or SKU..."
+                            autoFocus
+                            value={catSearch}
+                            onChange={e => setCatSearch(e.target.value)}
+                        />
+                    </div>
+                </div>
+                <div className="flex-1 overflow-y-auto p-2 space-y-1">
+                    {catLoading ? (
+                        <div className="flex justify-center p-8">
+                            <div className="animate-spin h-6 w-6 border-b-2 border-primary-600 rounded-full" />
+                        </div>
+                    ) : catProducts.length === 0 ? (
+                        <div className="text-center p-8 text-gray-400 text-sm italic">
+                            No active products found matching &ldquo;{catSearch}&rdquo;
+                        </div>
+                    ) : (
+                        catProducts.map(p => (
+                            <button
+                                key={p.id}
+                                onClick={() => handleSelectProduct(p)}
+                                className="w-full text-left p-3 hover:bg-primary-50 rounded-xl transition-colors border border-transparent hover:border-primary-100 group"
+                            >
+                                <div className="flex justify-between items-start">
+                                    <div className="min-w-0 flex-1">
+                                        <p className="font-bold text-gray-900 group-hover:text-primary-700 truncate">{p.name}</p>
+                                        <p className="text-[10px] text-gray-400 font-mono mt-0.5">{p.sku || 'No SKU'}</p>
+                                    </div>
+                                    <div className="text-right ml-4">
+                                        <p className="font-black text-gray-900">
+                                            {FMT(pfCurrency === 'USD' ? p.priceUSD : p.priceINR, pfCurrency)}
+                                        </p>
+                                        <p className="text-[10px] text-gray-400 uppercase font-bold">{p.category.replace('_', ' ')}</p>
+                                    </div>
+                                </div>
+                                {p.shortDesc && <p className="text-xs text-gray-500 mt-1 line-clamp-1">{p.shortDesc}</p>}
+                            </button>
+                        ))
+                    )}
+                </div>
+                <div className="p-4 border-t border-gray-100 flex justify-between items-center text-[10px] text-gray-400 uppercase font-black tracking-widest">
+                    <span>{catProducts.length} Results</span>
+                    <a href="/dashboard/crm/invoice-products" target="_blank" className="text-primary-600 hover:underline">Manage Catalogue ↗</a>
+                </div>
+            </div>
+        </div>
+    );
+
     const FormModal = ({ mode }: { mode: 'create' | 'edit' }) => (
         <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/50 backdrop-blur-sm p-4 overflow-y-auto">
             <div className="bg-white rounded-2xl w-full max-w-3xl shadow-2xl my-8">
@@ -425,7 +538,11 @@ export default function ProformaInvoicePanel({
                                 : 'Update draft terms — changes will be logged in audit trail'}
                         </p>
                     </div>
-                    <button onClick={() => { mode === 'create' ? setShowCreateModal(false) : setEditingProforma(null); resetForm(); }}
+                    <button onClick={() => { 
+                        if (mode === 'create') setShowCreateModal(false); 
+                        else setEditingProforma(null); 
+                        resetForm(); 
+                    }}
                         className="p-2 rounded-full hover:bg-gray-100 text-gray-400 hover:text-gray-600">✕</button>
                 </div>
 
@@ -488,11 +605,17 @@ export default function ProformaInvoicePanel({
                     {/* Line Items */}
                     <div>
                         <div className="flex items-center justify-between mb-3">
-                            <label className="label mb-0">Line Items</label>
-                            <button type="button" onClick={addLineItem}
-                                className="text-sm text-primary-600 font-bold hover:text-primary-800 flex items-center gap-1">
-                                + Add Item
-                            </button>
+                            <label className="label mb-0 uppercase tracking-widest text-[10px] font-black text-gray-400">Line Items</label>
+                            <div className="flex items-center gap-3">
+                                <button type="button" onClick={() => setShowProductModal(true)}
+                                    className="text-xs text-primary-700 bg-primary-50 px-3 py-1.5 rounded-lg border border-primary-100 font-bold hover:bg-primary-100 transition-colors flex items-center gap-1.5">
+                                    🗂️ Browse Catalogue
+                                </button>
+                                <button type="button" onClick={addLineItem}
+                                    className="text-xs text-primary-600 font-bold hover:text-primary-800 flex items-center gap-1">
+                                    + Add Item
+                                </button>
+                            </div>
                         </div>
                         <div className="space-y-2">
                             <div className="grid grid-cols-12 gap-2 text-[10px] font-black uppercase text-gray-400 px-1">
@@ -502,19 +625,22 @@ export default function ProformaInvoicePanel({
                                 <div className="col-span-1" />
                             </div>
                             {lineItems.map((item, i) => (
-                                <div key={i} className="grid grid-cols-12 gap-2 items-center bg-gray-50 p-2 rounded-xl border border-gray-100">
+                                <div key={i} className="grid grid-cols-12 gap-2 items-center bg-gray-50 p-2 rounded-xl border border-gray-100 group">
                                     <div className="col-span-6">
                                         <input
-                                            className="input text-sm !py-1.5"
+                                            className="input text-sm !py-1.5 bg-white border-transparent focus:border-primary-400"
                                             placeholder="e.g. Journal Subscription — Physics"
                                             value={item.description}
                                             onChange={e => updateLineItem(i, 'description', e.target.value)}
                                         />
+                                        {item.productId && (
+                                            <p className="text-[9px] text-primary-500 font-bold mt-0.5 ml-1">✓ Linked to Catalogue Product</p>
+                                        )}
                                     </div>
                                     <div className="col-span-2">
                                         <input
                                             type="number" min="1"
-                                            className="input text-sm !py-1.5 text-right"
+                                            className="input text-sm !py-1.5 text-right bg-white border-transparent focus:border-primary-400"
                                             value={item.quantity}
                                             onChange={e => updateLineItem(i, 'quantity', parseInt(e.target.value) || 1)}
                                         />
@@ -522,7 +648,7 @@ export default function ProformaInvoicePanel({
                                     <div className="col-span-3">
                                         <input
                                             type="number" min="0" step="0.01"
-                                            className="input text-sm !py-1.5 text-right"
+                                            className="input text-sm !py-1.5 text-right bg-white border-transparent focus:border-primary-400"
                                             value={item.unitPrice}
                                             onChange={e => updateLineItem(i, 'unitPrice', parseFloat(e.target.value) || 0)}
                                         />
@@ -530,7 +656,7 @@ export default function ProformaInvoicePanel({
                                     <div className="col-span-1 flex justify-center">
                                         {lineItems.length > 1 && (
                                             <button type="button" onClick={() => removeLineItem(i)}
-                                                className="text-red-400 hover:text-red-600 text-sm font-bold">✕</button>
+                                                className="text-red-400 hover:text-red-600 text-sm font-bold opacity-0 group-hover:opacity-100 transition-opacity">✕</button>
                                         )}
                                     </div>
                                 </div>
@@ -595,7 +721,11 @@ export default function ProformaInvoicePanel({
 
                 {/* Footer */}
                 <div className="p-6 border-t border-gray-100 flex justify-end gap-3">
-                    <button onClick={() => { mode === 'create' ? setShowCreateModal(false) : setEditingProforma(null); resetForm(); }}
+                    <button onClick={() => { 
+                        if (mode === 'create') setShowCreateModal(false); 
+                        else setEditingProforma(null); 
+                        resetForm(); 
+                    }}
                         className="btn btn-secondary">Cancel</button>
                     <button
                         onClick={mode === 'create' ? handleCreate : handleUpdate}
@@ -605,6 +735,7 @@ export default function ProformaInvoicePanel({
                     </button>
                 </div>
             </div>
+            {showProductModal && <ProductSearchModal />}
         </div>
     );
 
@@ -661,7 +792,10 @@ export default function ProformaInvoicePanel({
                                 <tbody>
                                     {items.map((item, i) => (
                                         <tr key={i} className="border-b border-gray-100">
-                                            <td className="p-3 text-gray-800">{item.description}</td>
+                                            <td className="p-3 text-gray-800">
+                                                {item.description}
+                                                {item.productId && <span className="text-[9px] bg-primary-100 text-primary-600 px-1 rounded ml-2">Product</span>}
+                                            </td>
                                             <td className="p-3 text-right text-gray-600">{item.quantity}</td>
                                             <td className="p-3 text-right text-gray-600">{FMT(item.unitPrice, pf.currency)}</td>
                                             <td className="p-3 text-right font-bold text-gray-800">{FMT(item.total || item.unitPrice * item.quantity, pf.currency)}</td>
@@ -723,6 +857,7 @@ export default function ProformaInvoicePanel({
             </div>
         );
     };
+
 
     // ── Conversion Modal ────────────────────────────────────────────────────
     const ConvertModal = () => {
