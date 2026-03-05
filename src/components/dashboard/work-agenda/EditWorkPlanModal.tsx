@@ -15,8 +15,12 @@ interface WorkPlan {
     visibility: string;
     projectId?: string;
     taskId?: string;
+    itProjectId?: string;
+    itTaskId?: string;
     project?: { id: string; title: string };
     task?: { id: string; title: string };
+    itProject?: { id: string; name: string };
+    itTask?: { id: string; title: string };
 }
 
 interface EditWorkPlanModalProps {
@@ -35,8 +39,8 @@ export default function EditWorkPlanModal({ plan, onClose, onSuccess }: EditWork
         estimatedHours: plan.estimatedHours || '',
         completionStatus: plan.completionStatus,
         visibility: plan.visibility || 'MANAGER',
-        projectId: plan.projectId || '',
-        taskId: plan.taskId || '',
+        itProjectId: plan.itProjectId || '',
+        itTaskId: plan.itTaskId || '',
     });
 
     const [projects, setProjects] = useState<any[]>([]);
@@ -225,8 +229,8 @@ export default function EditWorkPlanModal({ plan, onClose, onSuccess }: EditWork
                                 <Briefcase className="absolute left-3 top-1/2 -translate-y-1/2 text-secondary-400" size={16} />
                                 <select
                                     className="w-full pl-10 pr-4 py-3 rounded-xl border border-secondary-200 focus:ring-2 focus:ring-primary-500 outline-none transition-all font-medium text-secondary-900 bg-white"
-                                    value={formData.projectId}
-                                    onChange={(e) => setFormData({ ...formData, projectId: e.target.value, taskId: '' })}
+                                    value={formData.itProjectId}
+                                    onChange={(e) => setFormData({ ...formData, itProjectId: e.target.value, itTaskId: '' })}
                                 >
                                     <option value="">None</option>
                                     {projects.map(p => (
@@ -242,12 +246,12 @@ export default function EditWorkPlanModal({ plan, onClose, onSuccess }: EditWork
                                 <CheckSquare className="absolute left-3 top-1/2 -translate-y-1/2 text-secondary-400" size={16} />
                                 <select
                                     className="w-full pl-10 pr-4 py-3 rounded-xl border border-secondary-200 focus:ring-2 focus:ring-primary-500 outline-none transition-all font-medium text-secondary-900 bg-white"
-                                    value={formData.taskId}
-                                    onChange={(e) => setFormData({ ...formData, taskId: e.target.value })}
+                                    value={formData.itTaskId}
+                                    onChange={(e) => setFormData({ ...formData, itTaskId: e.target.value })}
                                 >
                                     <option value="">None</option>
                                     {tasks
-                                        .filter(t => !formData.projectId || t.projectId === formData.projectId)
+                                        .filter(t => !formData.itProjectId || t.projectId === formData.itProjectId)
                                         .map(t => (
                                             <option key={t.id} value={t.id}>
                                                 {t.taskCode ? `[${t.taskCode}] ` : ''}{t.title}

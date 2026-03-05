@@ -64,10 +64,57 @@ export async function POST(
 
             // Update Subscription Status if fully paid and currently pending
             if (newStatus === 'PAID' && invoice.subscription?.status === 'PENDING_PAYMENT') {
+                const subscriptionId = invoice.subscriptionId;
                 await tx.subscription.update({
-                    where: { id: invoice.subscriptionId },
+                    where: { id: subscriptionId },
                     data: { status: 'ACTIVE' }
                 });
+
+                // Auto-Enrollment for Courses and Workshops
+                const subItems = await tx.subscriptionItem.findMany({
+                    where: { subscriptionId },
+                    include: { subscription: { select: { customerProfileId: true } } }
+                });
+
+                const customer = await tx.customerProfile.findUnique({
+                    where: { id: subItems[0]?.subscription?.customerProfileId },
+                    select: { userId: true, customerType: true }
+                });
+
+                if (customer?.userId) {
+                    for (const item of subItems) {
+                        if (item.courseId) {
+                            await tx.courseEnrollment.upsert({
+                                where: { 
+                                    courseId_userId: { 
+                                        courseId: item.courseId, 
+                                        userId: customer.userId 
+                                    } 
+                                },
+                                update: {},
+                                create: {
+                                    courseId: item.courseId,
+                                    userId: customer.userId
+                                }
+                            }).catch((e: any) => console.error('Auto-enroll error course:', e));
+                        }
+                        if (item.workshopId) {
+                            await tx.workshopEnrollment.upsert({
+                                where: {
+                                    workshopId_userId: {
+                                        workshopId: item.workshopId,
+                                        userId: customer.userId
+                                    }
+                                },
+                                update: {},
+                                create: {
+                                    workshopId: item.workshopId,
+                                    userId: customer.userId
+                                }
+                            }).catch((e: any) => console.error('Auto-enroll error workshop:', e));
+                        }
+                    }
+                }
             }
 
             // Audit Log

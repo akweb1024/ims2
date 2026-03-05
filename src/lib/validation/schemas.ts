@@ -293,6 +293,95 @@ export const courseSchema = z.object({
 export type CourseFormData = z.infer<typeof courseSchema>;
 
 // ============================================================================
+// IT Module Schemas
+// ============================================================================
+
+export const itProjectSchema = z.object({
+    name: z.string().min(3, 'Project name must be at least 3 characters'),
+    description: z.string().optional(),
+    about: z.string().optional(),
+    details: z.string().optional(),
+    category: z.enum(['DEVELOPMENT', 'INFRASTRUCTURE', 'SECURITY', 'SUPPORT', 'MAINTENANCE', 'UPGRADE', 'MIGRATION', 'TRAINING', 'CONSULTING', 'RESEARCH']).optional().default('DEVELOPMENT'),
+    type: z.enum(['REVENUE', 'SUPPORT', 'MAINTENANCE', 'ENHANCEMENT']).optional().default('SUPPORT'),
+    status: z.enum(['PLANNING', 'IN_PROGRESS', 'ON_HOLD', 'TESTING', 'COMPLETED', 'CANCELLED', 'ARCHIVED']).optional().default('PLANNING'),
+    priority: z.enum(['LOW', 'MEDIUM', 'HIGH', 'URGENT']).default('MEDIUM'),
+    clientId: z.string().optional().nullable(),
+    clientType: z.enum(['INTERNAL', 'EXTERNAL', 'CUSTOMER']).optional().nullable(),
+    projectManagerId: z.string().optional().nullable(),
+    teamLeadId: z.string().optional().nullable(),
+    departmentId: z.string().optional().nullable(),
+    websiteId: z.string().optional().nullable(),
+    startDate: z.string().optional().nullable(),
+    endDate: z.string().optional().nullable(),
+    estimatedHours: z.number().optional().nullable().or(z.string().optional()),
+    isRevenueBased: z.boolean().optional().default(false),
+    estimatedRevenue: z.number().optional().default(0).or(z.string().optional()),
+    currency: z.string().optional().default('INR'),
+    itDepartmentCut: z.number().optional().default(0).or(z.string().optional()),
+    billingType: z.enum(['FIXED', 'HOURLY', 'MILESTONE', 'RETAINER']).optional().nullable(),
+    hourlyRate: z.number().optional().nullable().or(z.string().optional()),
+    tags: z.array(z.string()).optional().default([]),
+    keywords: z.array(z.string()).optional().default([]),
+    taggedEmployeeIds: z.array(z.string()).optional().default([]),
+    visibility: z.enum(['PRIVATE', 'PUBLIC', 'INDIVIDUALS']).default('PRIVATE'),
+    sharedWithIds: z.array(z.string()).optional().default([]),
+    milestones: z.array(z.object({
+        name: z.string(),
+        description: z.string().optional(),
+        dueDate: z.string().optional(),
+        status: z.string().optional(),
+    })).optional(),
+});
+
+export type ITProjectFormData = z.infer<typeof itProjectSchema>;
+
+export const itTaskSchema = z.object({
+    projectId: z.string().optional().nullable(),
+    title: z.string().min(3, 'Task title must be at least 3 characters'),
+    description: z.string().optional(),
+    category: z.enum(['BUG_FIX', 'FEATURE', 'ENHANCEMENT', 'SUPPORT', 'DOCUMENTATION', 'TESTING', 'DEPLOYMENT', 'RESEARCH', 'GENERAL', 'SERVICE_REQUEST']).optional().default('GENERAL'),
+    type: z.enum(['REVENUE', 'SUPPORT', 'MAINTENANCE', 'URGENT', 'SERVICE_REQUEST']).optional().default('SUPPORT'),
+    priority: z.enum(['LOW', 'MEDIUM', 'HIGH', 'URGENT']).default('MEDIUM'),
+    status: z.enum(['PENDING', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED', 'UNDER_REVIEW']).optional().default('PENDING'),
+    assignedToId: z.string().optional().nullable(),
+    reporterId: z.string().optional().nullable(),
+    startDate: z.string().optional().nullable(),
+    dueDate: z.string().optional().nullable(),
+    estimatedHours: z.number().optional().nullable().or(z.string().optional()),
+    isRevenueBased: z.boolean().optional().default(false),
+    estimatedValue: z.number().optional().default(0).or(z.string().optional()),
+    currency: z.string().optional().default('INR'),
+    itDepartmentCut: z.number().optional().default(0).or(z.string().optional()),
+    tags: z.array(z.string()).optional().default([]),
+    dependencies: z.array(z.string()).optional().default([]),
+    serviceId: z.string().optional().nullable(),
+    progressPercent: z.number().optional().default(0).or(z.string().optional()),
+});
+
+export type ITTaskFormData = z.infer<typeof itTaskSchema>;
+
+// ============================================================================
+// Work Plan / Agenda Schemas
+// ============================================================================
+
+export const workPlanSchema = z.object({
+    employeeId: z.string().optional(),
+    date: z.string().min(1, 'Date is required'),
+    agenda: z.string().min(3, 'Agenda must be at least 3 characters'),
+    strategy: z.string().optional(),
+    priority: z.enum(['LOW', 'MEDIUM', 'HIGH']).default('MEDIUM'),
+    estimatedHours: z.string().optional().or(z.number().optional()),
+    linkedGoalId: z.string().optional().nullable(),
+    projectId: z.string().optional().nullable(),
+    taskId: z.string().optional().nullable(),
+    itProjectId: z.string().optional().nullable(),
+    itTaskId: z.string().optional().nullable(),
+    visibility: z.enum(['SELF', 'MANAGER', 'ADMIN', 'ALL']).default('MANAGER'),
+});
+
+export type WorkPlanFormData = z.infer<typeof workPlanSchema>;
+
+// ============================================================================
 // Helper Functions
 // ============================================================================
 

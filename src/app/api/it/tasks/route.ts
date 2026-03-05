@@ -1,270 +1,192 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { getAuthenticatedUser } from '@/lib/auth-legacy';
-import { createErrorResponse } from '@/lib/api-utils';
+import { authorizedRoute } from '@/lib/middleware-auth';
+import { handleApiError, AuthorizationError, ValidationError } from '@/lib/error-handler';
+import { logger } from '@/lib/logger';
+import { itTaskSchema } from '@/lib/validation/schemas';
 
 export const dynamic = 'force-dynamic';
 
-// Helper function to check if user can view all tasks
-function canViewAllTasks(role: string): boolean {
-    return ['SUPER_ADMIN', 'ADMIN', 'IT_MANAGER', 'IT_ADMIN'].includes(role);
-}
-
-// Helper function to check if user is a manager
-function isManager(role: string): boolean {
-    return ['SUPER_ADMIN', 'ADMIN', 'IT_MANAGER', 'IT_ADMIN', 'MANAGER'].includes(role);
-}
+const IT_MANAGER_ROLES = ['SUPER_ADMIN', 'ADMIN', 'IT_MANAGER', 'IT_ADMIN', 'IT_SUPPORT', 'MANAGER'];
+const ALL_ACCESS_ROLES = ['SUPER_ADMIN', 'ADMIN', 'IT_MANAGER', 'IT_ADMIN'];
 
 // GET /api/it/tasks - List tasks based on user role and view type
-export async function GET(req: NextRequest) {
-    try {
-        const user = await getAuthenticatedUser();
-        if (!user) {
-            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-        }
+export const GET = authorizedRoute(
+    ['SUPER_ADMIN', 'ADMIN', 'IT_MANAGER', 'IT_ADMIN', 'IT_SUPPORT', 'MANAGER', 'EXECUTIVE'],
+    async (req: NextRequest, user) => {
+        try {
+            const companyId = user.companyId;
+            if (!companyId) throw new ValidationError('Company context is required');
 
-        const companyId = (user as any).companyId;
-        if (!companyId) {
-            return NextResponse.json({ error: 'Company ID required' }, { status: 400 });
-        }
+            const { searchParams } = new URL(req.url);
+            const view = searchParams.get('view') || 'my';
+            const status = searchParams.get('status');
+            const type = searchParams.get('type');
+            const priority = searchParams.get('priority');
+            const isRevenueBased = searchParams.get('isRevenueBased');
+            const projectId = searchParams.get('projectId');
 
-        const { searchParams } = new URL(req.url);
-        const view = searchParams.get('view') || 'my'; // my, team, all
-        const status = searchParams.get('status');
-        const type = searchParams.get('type');
-        const priority = searchParams.get('priority');
-        const isRevenueBased = searchParams.get('isRevenueBased');
-        const projectId = searchParams.get('projectId');
+            const where: any = { companyId };
 
-        // Build where clause based on view type and user role
-        const where: any = { companyId };
+            if (view === 'all') {
+                if (!ALL_ACCESS_ROLES.includes(user.role)) {
+                    throw new AuthorizationError('Forbidden: Admin access required for "all" view');
+                }
+            } else if (view === 'team') {
+                if (!IT_MANAGER_ROLES.includes(user.role)) {
+                    throw new AuthorizationError('Forbidden: Manager access required for "team" view');
+                }
 
-        if (view === 'all') {
-            // Only IT admins can view all tasks
-            if (!canViewAllTasks(user.role)) {
-                return NextResponse.json({ error: 'Forbidden - Admin access required' }, { status: 403 });
+                const subordinates = await prisma.user.findMany({
+                    where: { managerId: user.id },
+                    select: { id: true }
+                });
+                const subordinateIds = subordinates.map(s => s.id);
+
+                where.OR = [
+                    { assignedToId: user.id },
+                    { assignedToId: { in: subordinateIds } },
+                    { createdById: user.id },
+                    { project: { visibility: 'PUBLIC' } }
+                ];
+            } else {
+                // view === 'my'
+                where.OR = [
+                    { assignedToId: user.id },
+                    { createdById: user.id },
+                    { reporterId: user.id },
+                    { project: { visibility: 'PUBLIC' } }
+                ];
             }
-            // No additional filters needed for all tasks
-        } else if (view === 'team') {
-            // Managers can view their team's tasks
-            if (!isManager(user.role)) {
-                return NextResponse.json({ error: 'Forbidden - Manager access required' }, { status: 403 });
-            }
 
-            // Get subordinates
-            const subordinates = await prisma.user.findMany({
-                where: { managerId: user.id },
-                select: { id: true }
+            if (status) where.status = status;
+            if (type) where.type = type;
+            if (priority) where.priority = priority;
+            if (isRevenueBased !== null) where.isRevenueBased = isRevenueBased === 'true';
+            if (projectId) where.projectId = projectId;
+
+            const tasks = await prisma.iTTask.findMany({
+                where,
+                include: {
+                    project: { select: { id: true, name: true, projectCode: true } },
+                    assignedTo: {
+                        select: {
+                            id: true,
+                            name: true,
+                            email: true,
+                            employeeProfile: { select: { profilePicture: true } }
+                        }
+                    },
+                    createdBy: { select: { id: true, name: true, email: true } },
+                    reporter: { select: { id: true, name: true, email: true } },
+                    _count: { select: { comments: true, timeEntries: true } }
+                },
+                orderBy: [
+                    { priority: 'desc' },
+                    { createdAt: 'desc' }
+                ]
             });
 
-            const subordinateIds = subordinates.map(s => s.id);
-            where.OR = [
-                { assignedToId: user.id },
-                { assignedToId: { in: subordinateIds } },
-                { createdById: user.id },
-                { project: { visibility: 'PUBLIC' } }
-            ];
-        } else {
-            // Default: my tasks
-            where.OR = [
-                { assignedToId: user.id },
-                { createdById: user.id },
-                { reporterId: user.id },
-                { project: { visibility: 'PUBLIC' } }
-            ];
+            return NextResponse.json(tasks);
+        } catch (error) {
+            return handleApiError(error, req.nextUrl.pathname);
         }
-
-        // Apply filters
-        if (status) where.status = status;
-        if (type) where.type = type;
-        if (priority) where.priority = priority;
-        if (isRevenueBased !== null) where.isRevenueBased = isRevenueBased === 'true';
-        if (projectId) where.projectId = projectId;
-
-        const tasks = await prisma.iTTask.findMany({
-            where,
-            include: {
-                project: {
-                    select: {
-                        id: true,
-                        name: true,
-                        projectCode: true,
-                    }
-                },
-                assignedTo: {
-                    select: {
-                        id: true,
-                        name: true,
-                        email: true,
-                        employeeProfile: {
-                            select: {
-                                profilePicture: true,
-                            }
-                        }
-                    }
-                },
-                createdBy: {
-                    select: {
-                        id: true,
-                        name: true,
-                        email: true,
-                    }
-                },
-                reporter: {
-                    select: {
-                        id: true,
-                        name: true,
-                        email: true,
-                    }
-                },
-                _count: {
-                    select: {
-                        comments: true,
-                        timeEntries: true,
-                    }
-                }
-            },
-            orderBy: [
-                { priority: 'desc' },
-                { createdAt: 'desc' }
-            ]
-        });
-
-        return NextResponse.json(tasks);
-    } catch (error) {
-        console.error('Fetch IT Tasks Error:', error);
-        return createErrorResponse(error);
     }
-}
+);
 
 // POST /api/it/tasks - Create new task
-export async function POST(req: NextRequest) {
-    try {
-        const user = await getAuthenticatedUser();
-        if (!user) {
-            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-        }
+export const POST = authorizedRoute(
+    ['SUPER_ADMIN', 'ADMIN', 'IT_MANAGER', 'IT_ADMIN', 'IT_SUPPORT', 'MANAGER', 'EXECUTIVE'],
+    async (req: NextRequest, user) => {
+        try {
+            const companyId = user.companyId;
+            if (!companyId) throw new ValidationError('Company context is required');
 
-        const companyId = (user as any).companyId;
-        if (!companyId) {
-            return NextResponse.json({ error: 'Company ID required' }, { status: 400 });
-        }
+            const body = await req.json();
+            const validatedData = itTaskSchema.parse(body);
 
-        const body = await req.json();
-        const {
-            projectId,
-            title,
-            description,
-            category,
-            type,
-            priority,
-            status,
-            assignedToId,
-            reporterId,
-            startDate,
-            dueDate,
-            estimatedHours,
-            isRevenueBased,
-            estimatedValue,
-            currency,
-            itDepartmentCut,
-            tags,
-            dependencies,
-            serviceId,
-        } = body;
+            // Access control for specific types if needed
+            if (validatedData.type === 'SERVICE_REQUEST' && user.role === 'EXECUTIVE') {
+                // Executives can create service requests
+            } else if (!IT_MANAGER_ROLES.includes(user.role)) {
+                 // Non-IT managers might have restricted task creation but let's follow existing logic which allowed it
+            }
 
-        // Auto-set 100% IT cut for service requests
-        const effectiveItCut = type === 'SERVICE_REQUEST' ? 100 : (!isNaN(parseFloat(itDepartmentCut)) ? parseFloat(itDepartmentCut) : 0);
+            // Auto-set 100% IT cut for service requests
+            const effectiveItCut = validatedData.type === 'SERVICE_REQUEST' ? 100 : (!isNaN(parseFloat(validatedData.itDepartmentCut?.toString() || '0')) 
+                ? parseFloat(validatedData.itDepartmentCut!.toString()) : 0);
 
-        // Auto-calculate Due Date based on Service SLA if not provided
-        let calculatedDueDate = dueDate ? new Date(dueDate) : null;
-        if (serviceId && !calculatedDueDate) {
-            const serviceDef = await prisma.iTServiceDefinition.findUnique({
-                where: { id: serviceId }
+            // Auto-calculate Due Date based on Service SLA if not provided
+            let calculatedDueDate = validatedData.dueDate ? new Date(validatedData.dueDate) : null;
+            if (validatedData.serviceId && !calculatedDueDate) {
+                const serviceDef = await prisma.iTServiceDefinition.findUnique({
+                    where: { id: validatedData.serviceId }
+                });
+                if (serviceDef?.estimatedDays) {
+                    calculatedDueDate = new Date();
+                    calculatedDueDate.setDate(calculatedDueDate.getDate() + serviceDef.estimatedDays);
+                }
+            }
+
+            const taskCount = await prisma.iTTask.count({ where: { companyId } });
+            const taskCode = `TSK-${new Date().getFullYear()}-${String(taskCount + 1).padStart(5, '0')}`;
+
+            const task = await prisma.iTTask.create({
+                data: {
+                    company: { connect: { id: companyId } },
+                    project: validatedData.projectId ? { connect: { id: validatedData.projectId } } : undefined,
+                    taskCode,
+                    title: validatedData.title,
+                    description: validatedData.description,
+                    category: validatedData.category,
+                    type: validatedData.type,
+                    priority: validatedData.priority,
+                    status: validatedData.status,
+                    progressPercent: !isNaN(parseInt(validatedData.progressPercent?.toString() || '0')) 
+                        ? parseInt(validatedData.progressPercent!.toString()) : 0,
+                    assignedTo: validatedData.assignedToId ? { connect: { id: validatedData.assignedToId } } : undefined,
+                    createdBy: { connect: { id: user.id } },
+                    reporter: validatedData.reporterId ? { connect: { id: validatedData.reporterId } } : undefined,
+                    startDate: validatedData.startDate ? new Date(validatedData.startDate) : null,
+                    dueDate: calculatedDueDate,
+                    estimatedHours: validatedData.estimatedHours ? parseFloat(validatedData.estimatedHours.toString()) : null,
+                    isRevenueBased: validatedData.isRevenueBased,
+                    estimatedValue: !isNaN(parseFloat(validatedData.estimatedValue?.toString() || '0')) 
+                        ? parseFloat(validatedData.estimatedValue!.toString()) : 0,
+                    currency: validatedData.currency,
+                    itDepartmentCut: effectiveItCut as any,
+                    tags: validatedData.tags,
+                    dependencies: validatedData.dependencies,
+                    service: validatedData.serviceId ? { connect: { id: validatedData.serviceId } } : undefined,
+                },
+                include: {
+                    project: { select: { id: true, name: true, projectCode: true } },
+                    assignedTo: { select: { id: true, name: true, email: true } },
+                    createdBy: { select: { id: true, name: true, email: true } },
+                }
             });
-            if (serviceDef?.estimatedDays) {
-                calculatedDueDate = new Date();
-                calculatedDueDate.setDate(calculatedDueDate.getDate() + serviceDef.estimatedDays);
-            }
-        }
 
-        // Validate required fields
-        if (!title) {
-            return NextResponse.json({ error: 'Task title is required' }, { status: 400 });
-        }
+            // Create initial status history entry
+            await prisma.iTTaskStatusHistory.create({
+                data: {
+                    taskId: task.id,
+                    changedById: user.id,
+                    previousStatus: 'PENDING',
+                    newStatus: task.status,
+                    comment: 'Task created',
+                }
+            });
 
-        // Generate unique task code
-        const taskCount = await prisma.iTTask.count({ where: { companyId } });
-        const taskCode = `TSK-${new Date().getFullYear()}-${String(taskCount + 1).padStart(5, '0')}`;
-
-        // Create task
-        const task = await prisma.iTTask.create({
-            data: {
-                company: { connect: { id: companyId } },
-                project: projectId ? { connect: { id: projectId } } : undefined,
-                taskCode,
-                title,
-                description,
-                category: category || 'GENERAL',
-                type: type || 'SUPPORT',
-                priority: priority || 'MEDIUM',
-                status: status || 'PENDING',
-                progressPercent: !isNaN(parseInt(body.progressPercent)) ? parseInt(body.progressPercent) : 0,
-                assignedTo: assignedToId ? { connect: { id: assignedToId } } : undefined,
-                createdBy: { connect: { id: user.id } },
-                reporter: reporterId ? { connect: { id: reporterId } } : undefined,
-                startDate: startDate ? new Date(startDate) : null,
-                dueDate: calculatedDueDate,
-                estimatedHours: !isNaN(parseFloat(estimatedHours)) ? parseFloat(estimatedHours) : null,
-                isRevenueBased: isRevenueBased || false,
-                estimatedValue: !isNaN(parseFloat(estimatedValue)) ? parseFloat(estimatedValue) : 0,
-                itRevenueEarned: !isNaN(parseFloat(body.itRevenueEarned)) ? parseFloat(body.itRevenueEarned) : 0,
-                isPaid: body.isPaid || false,
-                currency: currency || 'INR',
-                itDepartmentCut: effectiveItCut,
-                tags: tags || [],
-                dependencies: dependencies || [],
-                service: serviceId ? { connect: { id: serviceId } } : undefined,
-            },
-            include: {
-                project: {
-                    select: {
-                        id: true,
-                        name: true,
-                        projectCode: true,
-                    }
-                },
-                assignedTo: {
-                    select: {
-                        id: true,
-                        name: true,
-                        email: true,
-                    }
-                },
-                createdBy: {
-                    select: {
-                        id: true,
-                        name: true,
-                        email: true,
-                    }
-                },
-            }
-        });
-
-        // Create initial status history entry
-        await prisma.iTTaskStatusHistory.create({
-            data: {
+            logger.info('IT task created successfully', {
                 taskId: task.id,
-                changedById: user.id,
-                previousStatus: 'PENDING',
-                newStatus: task.status,
-                comment: 'Task created',
-            }
-        });
+                taskCode,
+                createdBy: user.id
+            });
 
-        return NextResponse.json(task, { status: 201 });
-    } catch (error) {
-        console.error('Create IT Task Error:', error);
-        return createErrorResponse(error);
+            return NextResponse.json(task, { status: 201 });
+        } catch (error) {
+            return handleApiError(error, req.nextUrl.pathname);
+        }
     }
-}
+);
+

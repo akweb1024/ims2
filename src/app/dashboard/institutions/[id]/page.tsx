@@ -93,8 +93,8 @@ export default function InstitutionDetailPage() {
                         </div>
                     </div>
                     {['SUPER_ADMIN', 'ADMIN', 'MANAGER'].includes(userRole) && (
-                        <Link href={`/dashboard/institutions`} className="btn btn-secondary">
-                            Manage Institutions
+                        <Link href={`/dashboard/crm/partners?tab=institutions`} className="btn btn-secondary">
+                            Manage Partners
                         </Link>
                     )}
                 </div>

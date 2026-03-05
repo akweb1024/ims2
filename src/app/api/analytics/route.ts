@@ -54,13 +54,14 @@ export async function GET(req: NextRequest) {
             where: subscriptionFilter
         });
 
-        const journals = await prisma.journal.findMany({
-            where: { id: { in: journalStats.map(j => j.journalId) } },
+        const journalIds = journalStats.map(j => j.journalId).filter((id): id is string => !!id);
+        const journals = await (prisma.journal as any).findMany({
+            where: { id: { in: journalIds } },
             select: { id: true, name: true }
         });
 
         const topJournals = journalStats.map(stat => {
-            const journal = journals.find(j => j.id === stat.journalId);
+            const journal = journals.find((j: any) => j.id === stat.journalId);
             return {
                 name: journal?.name || 'Unknown',
                 count: stat._count.id,

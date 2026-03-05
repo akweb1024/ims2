@@ -48,7 +48,8 @@ export async function PATCH(req: NextRequest) {
             'name', 'legalEntityName', 'tagline', 'address', 'email', 'phone', 'website', 'logoUrl',
             'gstin', 'stateCode', 'cinNo', 'panNo', 'iecCode',
             'bankName', 'bankAccountHolder', 'bankAccountNumber',
-            'bankIfscCode', 'bankSwiftCode', 'paymentMode', 'currency'
+            'bankIfscCode', 'bankSwiftCode', 'paymentMode', 'currency',
+            'brandRelationType', 'invoiceCompanyLogoUrl'
         ];
 
         const data: any = {};
@@ -64,7 +65,8 @@ export async function PATCH(req: NextRequest) {
                 address: true, email: true, phone: true, website: true, logoUrl: true,
                 gstin: true, stateCode: true, cinNo: true, panNo: true, iecCode: true,
                 bankName: true, bankAccountHolder: true, bankAccountNumber: true,
-                bankIfscCode: true, bankSwiftCode: true, paymentMode: true, currency: true
+                bankIfscCode: true, bankSwiftCode: true, paymentMode: true, currency: true,
+                brandRelationType: true, invoiceCompanyLogoUrl: true
             }
         });
 

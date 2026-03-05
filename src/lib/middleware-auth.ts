@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSessionUser } from '@/lib/session';
 import { TokenPayload } from '@/lib/auth-legacy';
-import { createErrorResponse } from '@/lib/api-utils';
+import { handleApiError, AuthorizationError, AuthenticationError } from '@/lib/error-handler';
 
 type ProtectedRouteHandler = (req: NextRequest, user: TokenPayload, context?: any) => Promise<NextResponse>;
 
@@ -18,16 +18,17 @@ export const authorizedRoute = (allowedRoles: string[] = [], handler: ProtectedR
             const user = await getSessionUser();
 
             if (!user) {
-                return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+                throw new AuthenticationError('Unauthorized: Session not found');
             }
 
             if (allowedRoles.length > 0 && !allowedRoles.includes(user.role)) {
-                return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+                throw new AuthorizationError('Forbidden: Insufficient permissions');
             }
 
             return await handler(req, user, context);
         } catch (error) {
-            return createErrorResponse(error);
+            return handleApiError(error, req.nextUrl.pathname);
         }
     };
 };
+

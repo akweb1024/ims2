@@ -18,7 +18,7 @@ function LoginForm() {
     const [showCompanySelection, setShowCompanySelection] = useState(false);
     const [availableCompanies, setAvailableCompanies] = useState<any[]>([]);
 
-    const redirectUrl = searchParams.get('redirect_url') || '/dashboard';
+    const redirectUrl = searchParams.get('redirect_url') || '/dashboard/staff-portal';
 
     const handleSelectCompany = async (companyId: string) => {
         setLoading(true);
@@ -74,15 +74,24 @@ function LoginForm() {
             if (meRes.ok) {
                 const { user, availableCompanies } = meData;
 
-                // Determine if selection is needed
-                const isInternalRole = ['SUPER_ADMIN', 'ADMIN', 'MANAGER'].includes(user.role);
-                const requiresSelection = isInternalRole && availableCompanies.length > 1 && !user.companyId;
+                // 3. Determine final destination
+                const userRole = user.role;
+                const isStaff = !['CUSTOMER', 'AGENCY'].includes(userRole);
+                
+                // If the redirectUrl is one of the defaults, adjust it based on role
+                let finalDestination = redirectUrl;
+                if (redirectUrl === '/dashboard' || redirectUrl === '/dashboard/staff-portal') {
+                    finalDestination = isStaff ? '/dashboard/staff-portal' : '/dashboard';
+                }
+
+                // Requires company selection if user has access to multiple companies
+                const requiresSelection = Array.isArray(availableCompanies) && availableCompanies.length > 1 && !user.companyId;
 
                 if (requiresSelection) {
                     setAvailableCompanies(availableCompanies);
                     setShowCompanySelection(true);
                 } else {
-                    window.location.href = redirectUrl;
+                    window.location.href = finalDestination;
                 }
             } else {
                 window.location.href = redirectUrl;

@@ -29,6 +29,15 @@ interface WorkPlan {
         title: string;
         status: string;
     };
+    itProject?: {
+        id: string;
+        name: string;
+    };
+    itTask?: {
+        id: string;
+        title: string;
+        status: string;
+    };
     employee: {
         user: {
             name: string;
@@ -109,6 +118,8 @@ export default function WorkAgendaPlanner({ employeeId, isOwnAgenda = false }: W
                     setKpiFiscalYear(data.fiscalYear || '');
                     if (data.revenueTarget && data.revenueTarget.monthly > 0) {
                         setRevenueTarget(data.revenueTarget);
+                    } else {
+                        setRevenueTarget(null);
                     }
                 }
             } catch (error) {
@@ -426,7 +437,7 @@ export default function WorkAgendaPlanner({ employeeId, isOwnAgenda = false }: W
                                                             {plan.estimatedHours}h
                                                         </span>
                                                     )}
-                                                    {(plan.linkedGoal || plan.project || plan.task) && (
+                                                    {(plan.linkedGoal || plan.project || plan.task || plan.itProject || plan.itTask) && (
                                                         <LinkIcon size={10} className="text-primary-600" />
                                                     )}
                                                 </div>
@@ -477,23 +488,23 @@ export default function WorkAgendaPlanner({ employeeId, isOwnAgenda = false }: W
                                 {plan.strategy && (
                                     <p className="text-xs text-secondary-600 mb-2">{plan.strategy}</p>
                                 )}
-                                <div className="flex items-center gap-4 text-xs text-secondary-500">
+                                <div className="flex items-center gap-4 text-xs text-secondary-500 flex-wrap">
                                     {plan.estimatedHours && (
                                         <span>Estimated: {plan.estimatedHours}h</span>
                                     )}
                                     {plan.actualHours && (
                                         <span>Actual: {plan.actualHours}h</span>
                                     )}
-                                    {plan.project && (
+                                    {(plan.project || plan.itProject) && (
                                         <span className="flex items-center gap-1 text-primary-600">
                                             <Briefcase size={12} />
-                                            Project: {plan.project.title}
+                                            Project: {plan.project?.title || plan.itProject?.name}
                                         </span>
                                     )}
-                                    {plan.task && (
+                                    {(plan.task || plan.itTask) && (
                                         <span className="flex items-center gap-1 text-indigo-600">
                                             <CheckSquare size={12} />
-                                            Task: {plan.task.title}
+                                            Task: {plan.task?.title || plan.itTask?.title}
                                         </span>
                                     )}
                                     {plan.linkedGoal && (

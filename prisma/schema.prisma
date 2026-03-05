@@ -11,7 +11,8 @@ model Company {
   id                          String                       @id @default(uuid())
   name                        String
   registrationNumber          String?
-  domain                      String?
+  domain              String?
+  universityId        String?
   address                     String?
   phone                       String?
   email                       String?
@@ -36,6 +37,8 @@ model Company {
   bankIfscCode                String?
   bankSwiftCode               String?
   paymentMode                 String?
+  brandRelationType           String?                      @default("A Brand of")
+  invoiceCompanyLogoUrl       String?                      @map("invoiceCompanyLogoUrl")
   createdAt                   DateTime                     @default(now())
   updatedAt                   DateTime                     @updatedAt
   latitude                    Float?
@@ -79,6 +82,7 @@ model Company {
   internships                 Internship[]
   invoices                    Invoice[]
   brands                      Brand[]
+  coupons                     Coupon[]
   jobPostings                 JobPosting[]
   journalEntries              JournalEntry[]
   leaveLedgers                LeaveLedger[]
@@ -403,12 +407,15 @@ model CustomerProfile {
   companyId           String?
   designation         CustomerDesignation?
   institutionId       String?
+  agencyId            String?
   agencyDetails       AgencyDetails?
   communications      CommunicationLog[]
   assignments         CustomerAssignment[]
   assignedTo          User?                @relation("AssignedCustomers", fields: [assignedToUserId], references: [id])
   company             Company?             @relation(fields: [companyId], references: [id])
-  institution         Institution?         @relation(fields: [institutionId], references: [id])
+  institution         Institution?         @relation("InstitutionToCustomers", fields: [institutionId], references: [id])
+  agencyPartner       CustomerProfile?     @relation("AgencyToSubCustomers", fields: [agencyId], references: [id])
+  subCustomers        CustomerProfile[]    @relation("AgencyToSubCustomers")
   user                User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
   agencyInstitutions  Institution[]        @relation("AgencyInstitutions")
   institutionDetails  InstitutionDetails?
@@ -423,6 +430,7 @@ model CustomerProfile {
   @@index([primaryEmail])
   @@index([companyId])
   @@index([institutionId])
+  @@index([agencyId])
   @@index([designation])
 }
 
@@ -459,6 +467,8 @@ model AgencyDetails {
   createdAt          DateTime           @default(now())
   updatedAt          DateTime           @updatedAt
   discountRate       Float              @default(0)
+  discountTier       String?           @default("GOLD") // GOLD, SILVER, BRONZE, CUSTOM
+  tierMetadata       Json?             // Tiers can have fixed percentages based on product types
   customerProfile    CustomerProfile    @relation(fields: [customerProfileId], references: [id], onDelete: Cascade)
   performance        AgencyPerformance?
   subscriptions      Subscription[]
@@ -513,11 +523,14 @@ model Institution {
   companyId           String?
   assignedToUserId    String?
   domain              String?
+  universityId        String?
   agencyId            String?
   communications      CommunicationLog[]
-  customers           CustomerProfile[]
+  customers           CustomerProfile[]    @relation("InstitutionToCustomers")
   agency              CustomerProfile?     @relation("AgencyInstitutions", fields: [agencyId], references: [id])
   assignedTo          User?                @relation("InstitutionOwner", fields: [assignedToUserId], references: [id])
+  university          Institution?       @relation("UniversityToAffiliate", fields: [universityId], references: [id])
+  affiliates          Institution[]     @relation("UniversityToAffiliate")
   company             Company?             @relation(fields: [companyId], references: [id])
   revenueTransactions RevenueTransaction[]
   subscriptions       Subscription[]
@@ -571,6 +584,8 @@ model Journal {
   domainId          String?
   hIndex            Int?
   impactFactor      Float?
+  frequencyTrack    String?       @default("TRACK_A") // TRACK_A (3 issues), TRACK_B (2 issues), MODULAR
+  subscriptionYear  Int?
   journalManagerId  String?
   publisherId       String?
   abbreviation      String?                   @unique
@@ -665,15 +680,21 @@ model Subscription {
 model SubscriptionItem {
   id             String       @id @default(uuid())
   subscriptionId String
-  journalId      String
-  planId         String
+  journalId      String?
+  planId         String?
+  courseId       String?
+  workshopId     String?
+  productId      String?
   quantity       Int          @default(1)
   seats          Int?
   price          Float
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
-  journal        Journal      @relation(fields: [journalId], references: [id])
-  plan           Plan         @relation(fields: [planId], references: [id])
+  journal        Journal?     @relation(fields: [journalId], references: [id])
+  plan           Plan?        @relation(fields: [planId], references: [id])
+  course         Course?      @relation(fields: [courseId], references: [id])
+  workshop       Workshop?    @relation(fields: [workshopId], references: [id])
+  product        Product?     @relation(fields: [productId], references: [id])
   subscription   Subscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
 
   @@index([subscriptionId])
@@ -715,11 +736,33 @@ model Invoice {
 
   placeOfSupply     String?
   placeOfSupplyCode String?
+  companyStateCode  String?
+  cgst              Float?        @default(0)
+  sgst              Float?        @default(0)
+  igst              Float?        @default(0)
+  cgstRate          Float?        @default(0)
+  sgstRate          Float?        @default(0)
+  igstRate          Float?        @default(0)
+
+  couponId          String?
+  couponCode        String?
+  discountType      String?
+  discountValue     Float?        @default(0)
+  discountAmount    Float?        @default(0)
 
   lineItems Json?
 
+  // Branding Snapshots (From Brand/Company Settings)
+  brandRelationType  String?   @default("A Brand of")
+  brandLogoUrl       String?
+  companyLogoUrl     String?   @map("brandCompanyLogoUrl")
+  brandAddress       String?
+  brandEmail         String?   @map("invoiceBrandEmail")
+  brandWebsite       String?   @map("invoiceBrandWebsite")
+
   company             Company?             @relation(fields: [companyId], references: [id])
   brand               Brand?               @relation(fields: [brandId], references: [id])
+  coupon              Coupon?              @relation(fields: [couponId], references: [id])
   customerProfile     CustomerProfile?     @relation(fields: [customerProfileId], references: [id])
   subscription        Subscription?        @relation(fields: [subscriptionId], references: [id])
   payments            Payment[]
@@ -731,23 +774,52 @@ model Invoice {
   @@index([invoiceNumber])
   @@index([companyId])
   @@index([brandId])
+  @@index([couponId])
+}
+
+model Coupon {
+  id               String    @id @default(uuid())
+  code             String    @unique
+  description      String?
+  discountType     String    // 'PERCENTAGE' | 'FIXED'
+  discountValue    Float
+  minOrderValue    Float?    @default(0)
+  maxDiscountCap   Float?    // max discount allowed for PERCENTAGE type
+  usageLimit       Int?      // null = unlimited
+  usedCount        Int       @default(0)
+  validFrom        DateTime  @default(now())
+  validUntil       DateTime?
+  isActive         Boolean   @default(true)
+  companyId        String
+  brandId          String?   // null = applies to all brands
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  company          Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  brand            Brand?    @relation(fields: [brandId], references: [id])
+  invoices         Invoice[]
+
+  @@index([code])
+  @@index([companyId])
+  @@index([isActive])
 }
 
 model Brand {
-  id             String    @id @default(uuid())
-  name           String
-  companyId      String
-  logoUrl        String?
-  companyLogoUrl String?
-  description    String?
-  address        String?
-  email          String?
-  website        String?
-  tagline        String?
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
-  company        Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  invoices       Invoice[]
+  id                 String    @id @default(uuid())
+  name               String
+  companyId          String
+  logoUrl            String?
+  companyLogoUrl     String?
+  description        String?
+  address            String?
+  email              String?
+  website            String?
+  tagline            String?
+  brandRelationType  String?   @default("A Brand of")
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+  company            Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  invoices           Invoice[]
+  coupons            Coupon[]
 
   @@index([companyId])
 }
@@ -1340,7 +1412,7 @@ model Attendance {
   shiftId      String?
   remarks      String?
   company      Company?        @relation(fields: [companyId], references: [id])
-  employee     EmployeeProfile @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  employee   EmployeeProfile @relation(fields: [employeeId], references: [id], onDelete: Cascade)
   shift        Shift?          @relation(fields: [shiftId], references: [id])
 
   @@unique([employeeId, date])
@@ -1830,8 +1902,12 @@ model WorkPlan {
   linkedGoal       EmployeeGoal?     @relation("GoalWorkPlans", fields: [linkedGoalId], references: [id])
   projectId        String?
   taskId           String?
+  itProjectId      String?
+  itTaskId         String?
   project          Project?          @relation(fields: [projectId], references: [id])
   task             Task?             @relation(fields: [taskId], references: [id])
+  itProject        ITProject?        @relation(fields: [itProjectId], references: [id])
+  itTask           ITTask?           @relation(fields: [itTaskId], references: [id])
   comments         WorkPlanComment[]
 
   @@unique([employeeId, date])
@@ -1839,6 +1915,8 @@ model WorkPlan {
   @@index([linkedGoalId])
   @@index([projectId])
   @@index([taskId])
+  @@index([itProjectId])
+  @@index([itTaskId])
   @@index([completionStatus])
   @@index([date])
 }
@@ -2502,6 +2580,7 @@ model Course {
   discussions    CourseDiscussion[]
   enrollments    CourseEnrollment[]
   modules        CourseModule[]
+  subscriptionItems SubscriptionItem[]
 }
 
 model Workshop {
@@ -2528,6 +2607,7 @@ model Workshop {
   mentor       User?                @relation("WorkshopMentor", fields: [mentorId], references: [id])
   enrollments  WorkshopEnrollment[]
   sessions     MentorSession[]
+  subscriptionItems SubscriptionItem[]
 }
 
 model WorkshopEnrollment {
@@ -3504,6 +3584,7 @@ model ITProject {
   suggestions      ITProjectSuggestion[]
   tasks            ITTask[]
   timeEntries      ITTimeEntry[]
+  workPlans   WorkPlan[]
   taggedEmployees  User[]                @relation("ProjectTaggedEmployees")
   department       Department?           @relation("DepartmentITProjects", fields: [departmentId], references: [id])
   website          WebsiteMonitor?       @relation("WebsiteITProjects", fields: [websiteId], references: [id])
@@ -3561,6 +3642,7 @@ model ITTask {
   comments        ITTaskComment[]
   statusHistory   ITTaskStatusHistory[]
   timeEntries     ITTimeEntry[]
+  workPlans       WorkPlan[]
 
   @@index([companyId])
   @@index([projectId])
@@ -4696,4 +4778,28 @@ model CampaignAudience {
   campaigns      MarketingCampaign[]
 
   @@index([companyId])
+}
+
+model ProductCategory {
+  id          String    @id @default(uuid())
+  name        String    @unique
+  description String?
+  products    Product[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model Product {
+  id                String             @id @default(uuid())
+  name              String
+  type              String             // e.g. "DOI", "APC", "RAPID_PUB", "CERTIFICATE"
+  categoryId        String?
+  category          ProductCategory?   @relation(fields: [categoryId], references: [id])
+  priceINR          Float              @default(0)
+  priceUSD          Float              @default(0)
+  isActive          Boolean            @default(true)
+  metadata          Json?              // Extensible attributes
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  subscriptionItems SubscriptionItem[]
 }

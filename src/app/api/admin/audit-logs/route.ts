@@ -1,24 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { getAuthenticatedUser } from '@/lib/auth-legacy';
+import { authorizedRoute } from '@/lib/middleware-auth';
+import { handleApiError } from '@/lib/error-handler';
 
-export async function GET(_req: NextRequest) {
-    try {
-        const user = await getAuthenticatedUser();
-        if (!user || user.role !== 'SUPER_ADMIN') {
-            return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+export const GET = authorizedRoute(
+    ['SUPER_ADMIN'],
+    async (_req: NextRequest, _user) => {
+        try {
+            const logs = await prisma.auditLog.findMany({
+                take: 100,
+                orderBy: { createdAt: 'desc' },
+                include: {
+                    user: { select: { email: true } }
+                }
+            });
+
+            return NextResponse.json(logs);
+        } catch (error) {
+            return handleApiError(error, '/api/admin/audit-logs');
         }
-
-        const logs = await prisma.auditLog.findMany({
-            take: 100,
-            orderBy: { createdAt: 'desc' },
-            include: {
-                user: { select: { email: true } }
-            }
-        });
-
-        return NextResponse.json(logs);
-    } catch (error) {
-        return NextResponse.json({ error: error instanceof Error ? error.message : 'Unknown error' }, { status: 500 });
     }
-}
+);

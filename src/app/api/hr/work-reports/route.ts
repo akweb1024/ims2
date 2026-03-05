@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { authorizedRoute } from '@/lib/middleware-auth';
-import { createErrorResponse } from '@/lib/api-utils';
+import { handleApiError, NotFoundError, AuthorizationError, ValidationError } from '@/lib/error-handler';
+import { logger } from '@/lib/logger';
 import { getDownlineUserIds } from '@/lib/hierarchy';
 
 
@@ -116,7 +117,7 @@ export const GET = authorizedRoute(
 
             return NextResponse.json(reports);
         } catch (error) {
-            return createErrorResponse(error);
+            return handleApiError(error, req.nextUrl.pathname);
         }
     }
 );
@@ -125,7 +126,7 @@ export const POST = authorizedRoute(
     [],
     async (req: NextRequest, user) => {
         try {
-            if (!user.companyId) return createErrorResponse('Members of companies only', 403);
+            if (!user.companyId) throw new ValidationError('Company membership is required to submit work reports');
 
             const body = await req.json();
 
@@ -396,9 +397,11 @@ export const POST = authorizedRoute(
                 });
             }
 
+            logger.info('Work report submitted', { reportId: report.id, employeeId: profile.id, pointsEarned });
+
             return NextResponse.json(report);
         } catch (error) {
-            return createErrorResponse(error);
+            return handleApiError(error, req.nextUrl.pathname);
         }
     }
 );
@@ -415,17 +418,17 @@ export const PUT = authorizedRoute(
                 include: { employee: true }
             });
 
-            if (!existing) return createErrorResponse('Report not found', 404);
+            if (!existing) throw new NotFoundError('Work report');
 
             // Access Control: Admin/Manager OR the employee themselves if status is SUBMITTED
             const isOwner = existing.employee.userId === user.id;
             const isManager = ['SUPER_ADMIN', 'ADMIN', 'MANAGER'].includes(user.role);
 
-            if (!isManager && !isOwner) return createErrorResponse('Unauthorized', 403);
+            if (!isManager && !isOwner) throw new AuthorizationError('You are not authorized to edit this report');
 
             if (isOwner && !isManager) {
                 if (existing.status !== 'SUBMITTED') {
-                    return createErrorResponse('Cannot modify after review/approval', 400);
+                    throw new ValidationError('Cannot modify a report after it has been reviewed or approved');
                 }
 
                 // Check if editing on the same day as the report date
@@ -435,7 +438,7 @@ export const PUT = authorizedRoute(
                 reportDate.setHours(0, 0, 0, 0);
 
                 if (today.getTime() !== reportDate.getTime()) {
-                    return createErrorResponse('Work reports can only be edited on the same day they were submitted.', 400);
+                    throw new ValidationError('Work reports can only be edited on the same day they were submitted');
                 }
             }
 
@@ -483,9 +486,11 @@ export const PUT = authorizedRoute(
                 });
             }
 
+            logger.info('Work report updated', { reportId: updated.id, updatedBy: user.id });
+
             return NextResponse.json(updated);
         } catch (error) {
-            return createErrorResponse(error);
+            return handleApiError(error, req.nextUrl.pathname);
         }
     }
 );
@@ -501,13 +506,13 @@ export const PATCH = authorizedRoute(
                 include: { employee: true }
             });
 
-            if (!existing) return createErrorResponse('Report not found', 404);
+            if (!existing) throw new NotFoundError('Work report');
 
             // Access Control: Manager/TL can only review their own team
             if (['MANAGER', 'TEAM_LEADER'].includes(user.role)) {
                 const subIds = await getDownlineUserIds(user.id, user.companyId || undefined);
                 if (!subIds.includes(existing.employee.userId)) {
-                    return createErrorResponse('Forbidden: Not in your team', 403);
+                    throw new AuthorizationError('Forbidden: This employee is not in your team');
                 }
             }
 
@@ -559,9 +564,11 @@ export const PATCH = authorizedRoute(
                 }
             });
 
+            logger.info('Work report reviewed', { reportId: updated.id, status, reviewedBy: user.id });
+
             return NextResponse.json(updated);
         } catch (error) {
-            return createErrorResponse(error);
+            return handleApiError(error, req.nextUrl.pathname);
         }
     }
 );

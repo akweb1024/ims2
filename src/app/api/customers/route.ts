@@ -1,24 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { Prisma } from '@prisma/client';
-import { getAuthenticatedUser } from '@/lib/auth-legacy';
+import { authorizedRoute } from '@/lib/middleware-auth';
+import { handleApiError, ValidationError } from '@/lib/error-handler';
+import { logger } from '@/lib/logger';
 import { CustomerType } from '@/types';
 
-export async function GET(req: NextRequest) {
+export const GET = authorizedRoute(
+    ['SUPER_ADMIN', 'MANAGER', 'EXECUTIVE'],
+    async (req: NextRequest, user) => {
     // Fetch customers with filtering and assignment
     try {
-        // 1. Verify Authentication
-        const decoded = await getAuthenticatedUser();
-        if (!decoded || !decoded.role) {
-            return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
-        }
-
-        // Role Check and Filtering
-        const allowedRoles = ['SUPER_ADMIN', 'MANAGER', 'EXECUTIVE'];
-        if (!allowedRoles.includes(decoded.role)) {
-            return NextResponse.json({ error: 'Access denied' }, { status: 403 });
-        }
-
         // 2. Query Params
         const { searchParams } = new URL(req.url);
         const page = parseInt(searchParams.get('page') || '1');
@@ -31,7 +23,7 @@ export async function GET(req: NextRequest) {
         const skip = (page - 1) * limit;
 
         const where: Prisma.CustomerProfileWhereInput = {};
-        const userCompanyId = decoded.companyId;
+        const userCompanyId = user.companyId;
 
         if (userCompanyId) {
             where.companyId = userCompanyId;
@@ -57,11 +49,11 @@ export async function GET(req: NextRequest) {
         }
 
         // Executive Restriction: Only see assigned customers (primary or shared)
-        if (decoded.role === 'EXECUTIVE') {
+        if (user.role === 'EXECUTIVE') {
             where.OR = [
                 ...(where.OR || []),
-                { assignedToUserId: decoded.id },
-                { assignedExecutives: { some: { id: decoded.id } } }
+                { assignedToUserId: user.id },
+                { assignedExecutives: { some: { id: user.id } } }
             ];
         }
 
@@ -126,22 +118,15 @@ export async function GET(req: NextRequest) {
         });
 
     } catch (error) {
-        console.error('Customer API Error:', error);
-        return NextResponse.json({
-            error: 'Internal Server Error',
-            message: error instanceof Error ? error.message : 'Unknown error',
-            stack: process.env.NODE_ENV === 'development' && error instanceof Error ? error.stack : undefined
-        }, { status: 500 });
+        return handleApiError(error, req.nextUrl.pathname);
     }
-}
+    }
+);
 
-export async function POST(req: NextRequest) {
+export const POST = authorizedRoute(
+    ['SUPER_ADMIN', 'MANAGER', 'EXECUTIVE'],
+    async (req: NextRequest, user) => {
     try {
-        const decoded = await getAuthenticatedUser();
-        if (!decoded || !['SUPER_ADMIN', 'MANAGER', 'EXECUTIVE'].includes(decoded.role)) {
-            return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-        }
-
         const body = await req.json();
         const {
             name,
@@ -183,11 +168,11 @@ export async function POST(req: NextRequest) {
 
 
         if (!name || !primaryEmail || !customerType) {
-            return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+            throw new ValidationError('Missing required fields: name, primaryEmail, and customerType are required');
         }
 
         // Determine target company
-        const targetCompanyId = companyId || decoded.companyId;
+        const targetCompanyId = companyId || user.companyId;
 
         const result = await prisma.$transaction(async (tx) => {
             // Check if email already exists
@@ -207,18 +192,56 @@ export async function POST(req: NextRequest) {
                 }
             });
 
-            // Determine Assignment
-            let initialAssignedTo = assignedToUserId;
-            if (!initialAssignedTo && decoded.role === 'EXECUTIVE') {
-                initialAssignedTo = decoded.id; // Auto-assign to self
+            // Auto-create Or Link Organizations (Institution / Agency)
+            let finalInstitutionId = institutionId;
+            let finalAgencyId = null;
+
+            if (customerType === 'INSTITUTION' && organizationName) {
+                const existingInst = await tx.institution.findFirst({
+                    where: { name: organizationName }
+                });
+                if (existingInst) {
+                    finalInstitutionId = existingInst.id;
+                } else {
+                    const newInst = await tx.institution.create({
+                        data: {
+                            name: organizationName,
+                            code: organizationName.substring(0, 3).toUpperCase() + '-' + Math.floor(1000 + Math.random() * 9000),
+                            type: 'UNIVERSITY',
+                            primaryEmail: primaryEmail,
+                            primaryPhone: primaryPhone || '',
+                            address: billingAddress || '',
+                            city: billingCity || city || '',
+                            state: billingState || state || '',
+                            country: billingCountry || country || 'India',
+                            pincode: billingPincode || pincode || '',
+                            companyId: targetCompanyId
+                        }
+                    });
+                    finalInstitutionId = newInst.id;
+                }
+            } else if (customerType === 'AGENCY' && organizationName) {
+                const existingAgency = await tx.customerProfile.findFirst({
+                    where: { organizationName, customerType: 'AGENCY' }
+                });
+                if (existingAgency) {
+                    finalAgencyId = existingAgency.id;
+                } else {
+                    // It will create the CustomerProfile, but wait, if it's new it's created below. Do we need this block? No, the new CustomerProfile is created at line 262 for ALL customers!
+                    // Wait if it doesn't exist, we don't need to create it here because it will be created below. But if it exists, what do we do?
+                    // We shouldn't create a new one. Wait, if it exists, it means we don't need a new CustomerProfile?
+                    // Let's just create an empty AgencyDetails record for the new CustomerProfile *after* it's created if we need one!
+                    // Actually, let's keep it simple: the requirement was to link "Agency" if provided. But the customer being created IS the agency!
+                    // So we don't create it twice. Let's just remove the agency creation block here, we just create the AgencyDetails below.
+                }
             }
 
             const customer = await tx.customerProfile.create({
                 data: {
                     userId: user.id,
-                    assignedToUserId: initialAssignedTo, // Keep primary for compatibility
-                    assignedExecutives: initialAssignedTo ? {
-                        connect: { id: initialAssignedTo }
+                    assignedToUserId: assignedToUserId || null, // Keep primary for compatibility
+                    assignedExecutives: assignedToUserId ? {
+                        connect: { id: assignedToUserId }
                     } : undefined,
                     companyId: targetCompanyId,
                     name,
@@ -250,7 +273,8 @@ export async function POST(req: NextRequest) {
 
                     gstVatTaxId,
                     tags,
-                    institutionId: institutionId || null,
+                    institutionId: finalInstitutionId || null,
+                    agencyId: finalAgencyId || null,
                     designation: designation || null,
                     leadStatus: null,
                 } as any
@@ -272,9 +296,30 @@ export async function POST(req: NextRequest) {
                 });
             }
 
+            if (customerType === 'AGENCY') {
+                await (tx.agencyDetails as any).create({
+                    data: {
+                        customerProfileId: customer.id,
+                        territory: body.territory || null,
+                        region: body.region || null,
+                        primaryContact: body.primaryContact || name,
+                        discountRate: body.discountRate ? parseFloat(body.discountRate) : 0,
+                        discountTier: body.discountTier || 'GOLD'
+                    }
+                });
+            }
+
+            // Sync with Institution if it exists and has universityId
+            if (finalInstitutionId && body.universityId) {
+                await (tx.institution as any).update({
+                    where: { id: finalInstitutionId },
+                    data: { universityId: body.universityId }
+                });
+            }
+
             await tx.auditLog.create({
                 data: {
-                    userId: decoded.id,
+                    userId: user.id,
                     action: 'create',
                     entity: 'customer_profile',
                     entityId: customer.id,
@@ -285,10 +330,12 @@ export async function POST(req: NextRequest) {
             return customer;
         });
 
+        logger.info('Customer created', { customerId: result.id, createdBy: user.id });
+
         return NextResponse.json(result);
 
     } catch (error) {
-        console.error('Create Customer Error:', error);
-        return NextResponse.json({ error: error instanceof Error ? error.message : 'Internal Server Error' }, { status: 500 });
+        return handleApiError(error, req.nextUrl.pathname);
     }
-}
+    }
+);

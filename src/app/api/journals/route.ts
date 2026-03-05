@@ -72,11 +72,12 @@ export async function POST(req: NextRequest) {
             apcOpenAccessINR, apcOpenAccessUSD,
             apcRapidINR, apcRapidUSD,
             apcWoSINR, apcWoSUSD,
-            apcOtherINR, apcOtherUSD
+            apcOtherINR, apcOtherUSD,
+            frequencyTrack, subscriptionYear
         } = body;
 
         // 3. Create Journal and Plans
-        const journal = await prisma.journal.create({
+        const journal = await (prisma.journal as any).create({
             data: {
                 name,
                 abbreviation,
@@ -96,6 +97,8 @@ export async function POST(req: NextRequest) {
                 apcWoSUSD: parseFloat(apcWoSUSD || '0'),
                 apcOtherINR: parseFloat(apcOtherINR || '0'),
                 apcOtherUSD: parseFloat(apcOtherUSD || '0'),
+                frequencyTrack: frequencyTrack || 'TRACK_A',
+                subscriptionYear: subscriptionYear ? parseInt(subscriptionYear) : new Date().getFullYear(),
                 plans: {
                     create: (plans || []).map((plan: any) => ({
                         planType: plan.planType,

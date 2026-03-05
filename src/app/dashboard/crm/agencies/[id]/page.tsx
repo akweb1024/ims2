@@ -428,7 +428,7 @@ export default function AgencyDetailPage({ params }: { params: Promise<{ id: str
                                                 </span>
                                             </div>
                                             <Link
-                                                href={`/dashboard/institutions`}
+                                                href={`/dashboard/crm/partners?tab=institutions`}
                                                 className="text-primary-600 font-bold text-sm hover:underline"
                                             >
                                                 View in List →
@@ -508,13 +508,12 @@ export default function AgencyDetailPage({ params }: { params: Promise<{ id: str
                                                 </tr>
                                             </thead>
                                             <tbody>
-                                                {(customer.agencyDetails?.subscriptions || []).flatMap((s: any) => s.invoices).length === 0 ? (
+                                                {(!customer.invoices || customer.invoices.length === 0) ? (
                                                     <tr>
                                                         <td colSpan={6} className="text-center py-8 text-secondary-500">No invoices found for this agency.</td>
                                                     </tr>
                                                 ) : (
-                                                    (customer.agencyDetails?.subscriptions || [])
-                                                        .flatMap((s: any) => s.invoices)
+                                                    customer.invoices
                                                         .sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
                                                         .map((invoice: any) => (
                                                             <tr key={invoice.id} className="hover:bg-secondary-50">

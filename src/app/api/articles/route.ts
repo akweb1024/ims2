@@ -1,53 +1,42 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { getAuthenticatedUser } from '@/lib/auth-legacy';
+import { authorizedRoute } from '@/lib/middleware-auth';
+import { handleApiError } from '@/lib/error-handler';
 
 export const dynamic = 'force-dynamic';
 
-export async function GET(req: NextRequest) {
-    try {
-        const user = await getAuthenticatedUser();
-        if (!user) {
-            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-        }
+export const GET = authorizedRoute(
+    [],
+    async (req: NextRequest, _user) => {
+        try {
+            const { searchParams } = new URL(req.url);
+            const status = searchParams.get('status');
+            const search = searchParams.get('search');
 
-        const { searchParams } = new URL(req.url);
-        const status = searchParams.get('status');
-        const search = searchParams.get('search');
+            const whereClause: any = {};
 
-        const whereClause: any = {};
+            if (status && status !== 'ALL') {
+                whereClause.status = status;
+            }
 
-        if (status && status !== 'ALL') {
-            whereClause.status = status;
-        }
+            if (search) {
+                whereClause.title = { contains: search, mode: 'insensitive' };
+            }
 
-        if (search) {
-            whereClause.title = { contains: search, mode: 'insensitive' };
-        }
-
-        const articles = await prisma.article.findMany({
-            where: whereClause,
-            include: {
-                journal: {
-                    select: { name: true }
+            const articles = await prisma.article.findMany({
+                where: whereClause,
+                include: {
+                    journal: { select: { name: true } },
+                    authors: { where: { isCorresponding: true }, take: 1 },
+                    issue: { select: { volumeId: true, issueNumber: true } }
                 },
-                authors: {
-                    where: { isCorresponding: true },
-                    take: 1
-                },
-                issue: {
-                    select: { volumeId: true, issueNumber: true }
-                }
-            },
-            orderBy: {
-                createdAt: 'desc'
-            },
-            take: 50
-        });
+                orderBy: { createdAt: 'desc' },
+                take: 50
+            });
 
-        return NextResponse.json(articles);
-    } catch (error) {
-        console.error('Error fetching articles:', error);
-        return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+            return NextResponse.json(articles);
+        } catch (error) {
+            return handleApiError(error, req.nextUrl.pathname);
+        }
     }
-}
+);

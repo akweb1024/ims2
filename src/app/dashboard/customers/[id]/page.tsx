@@ -823,12 +823,12 @@ export default function CustomerDetailPage({ params }: { params: Promise<{ id: s
                                                 </tr>
                                             </thead>
                                             <tbody>
-                                                {customer.subscriptions.flatMap((s: any) => s.invoices).length === 0 ? (
+                                                {(!customer.invoices || customer.invoices.length === 0) ? (
                                                     <tr>
                                                         <td colSpan={6} className="text-center py-8 text-secondary-500">No invoices found for this customer.</td>
                                                     </tr>
                                                 ) : (
-                                                    customer.subscriptions.flatMap((s: any) => s.invoices)
+                                                    customer.invoices
                                                         .sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
                                                         .map((invoice: any) => (
                                                             <tr key={invoice.id} className="hover:bg-secondary-50">

@@ -136,10 +136,14 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
         : (invoice.subscription?.items || []);
     const company = invoice.company || {};
     const brand = invoice.brand || null;
-    const invoiceCountry = invoice.billingCountry || customer.billingCountry || customer.country || 'India';
+    const invoiceCountry = invoice.shippingCountry || invoice.billingCountry || customer.shippingCountry || customer.billingCountry || customer.country || 'India';
     const isExport = invoiceCountry.toLowerCase() !== 'india';
-    const isIGST = isExport || (customer.state && customer.state !== company.stateCode);
-    const taxLabel = invoice.currency !== 'INR' ? 'Tax (0%)' : (isIGST ? `IGST (${invoice.taxRate || 18}%)` : `CGST + SGST (${invoice.taxRate || 18}%)`);
+    const isIGST = invoice.igst > 0 || isExport || (
+        invoice.placeOfSupplyCode 
+            ? (invoice.placeOfSupplyCode !== (invoice.companyStateCode || company.stateCode))
+            : (customer.shippingStateCode || customer.billingStateCode || customer.state) !== company.stateCode
+    );
+    const taxLabel = invoice.currency !== 'INR' ? 'Tax (0%)' : (isIGST ? `IGST (${invoice.igstRate || invoice.taxRate || 18}%)` : `CGST + SGST (${(invoice.cgstRate ? invoice.cgstRate * 2 : invoice.taxRate) || 18}%)`);
     const subtotal = invoice.amount || 0;
     const taxAmt = invoice.tax || 0;
     const grandTotal = invoice.total || 0;
@@ -242,37 +246,37 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
                     <div className="inv-section" style={{ border: '1.5px solid #000', marginBottom: '-1px' }}>
                         <div style={{ display: 'flex', alignItems: 'center', padding: '20px 24px', gap: '24px' }}>
                             {/* Brand Logo */}
-                            {(brand?.logoUrl || company.logoUrl) && (
+                            {(invoice.brandLogoUrl || brand?.logoUrl || invoice.companyLogoUrl || company.logoUrl) && (
                                 <div style={{ flexShrink: 0, display: 'flex', alignItems: 'center', gap: '15px' }}>
-                                    {brand?.logoUrl && (
-                                        <img src={brand.logoUrl} alt="Brand Logo" style={{ height: '70px', maxWidth: '140px', objectFit: 'contain' }} />
+                                    {(invoice.brandLogoUrl || brand?.logoUrl) && (
+                                        <img src={invoice.brandLogoUrl || brand?.logoUrl} alt="Brand Logo" style={{ height: '70px', maxWidth: '140px', objectFit: 'contain' }} />
                                     )}
                                     {/* Company Logo (smaller or as requested) */}
-                                    {(brand?.companyLogoUrl || company.logoUrl) && (
-                                        <div style={{ borderLeft: brand?.logoUrl ? '1px solid #ddd' : 'none', paddingLeft: brand?.logoUrl ? '15px' : '0' }}>
-                                            <img src={brand?.companyLogoUrl || company.logoUrl} alt="Company Logo" style={{ height: brand?.logoUrl ? '40px' : '70px', maxWidth: '140px', objectFit: 'contain' }} />
+                                    {(invoice.companyLogoUrl || brand?.companyLogoUrl || company.logoUrl) && (
+                                        <div style={{ borderLeft: (invoice.brandLogoUrl || brand?.logoUrl) ? '1px solid #ddd' : 'none', paddingLeft: (invoice.brandLogoUrl || brand?.logoUrl) ? '15px' : '0' }}>
+                                            <img src={invoice.companyLogoUrl || brand?.companyLogoUrl || company.logoUrl} alt="Company Logo" style={{ height: (invoice.brandLogoUrl || brand?.logoUrl) ? '40px' : '70px', maxWidth: '140px', objectFit: 'contain' }} />
                                         </div>
                                     )}
                                 </div>
                             )}
-                            <div style={{ flexGrow: 1, textAlign: (brand?.logoUrl || company.logoUrl) ? 'left' : 'center' }}>
+                            <div style={{ flexGrow: 1, textAlign: (invoice.brandLogoUrl || brand?.logoUrl || invoice.companyLogoUrl || company.logoUrl) ? 'left' : 'center' }}>
                                 <div style={{ fontSize: '28px', fontWeight: '900', letterSpacing: '-0.5px', color: '#000', lineHeight: '1.1' }}>
                                     {brand?.name || company.name || 'STM JOURNALS'}
                                 </div>
                                 {brand ? (
                                     <div style={{ fontSize: '10px', color: '#666', fontWeight: '800', textTransform: 'uppercase', marginTop: '4px', letterSpacing: '1px' }}>
-                                        — A Brand of {company.name || 'Consortium eLearning Network Pvt Ltd'} —
+                                        — {invoice.brandRelationType || brand.brandRelationType || 'A Brand of'} {company.name || 'Consortium eLearning Network Pvt Ltd'} —
                                     </div>
                                 ) : (
                                     company.tagline && (
                                         <div style={{ fontSize: '13px', color: '#555', fontWeight: '500', marginTop: '2px' }}>{company.tagline}</div>
                                     )
                                 )}
-                                <div style={{ fontSize: '12px', color: '#444', marginTop: '8px', maxWidth: '500px', lineHeight: '1.4', margin: (brand?.logoUrl || company.logoUrl) ? '8px 0 0' : '8px auto 0' }}>
-                                    {brand?.address || company.address}
+                                <div style={{ fontSize: '12px', color: '#444', marginTop: '8px', maxWidth: '500px', lineHeight: '1.4', margin: (invoice.brandLogoUrl || brand?.logoUrl || invoice.companyLogoUrl || company.logoUrl) ? '8px 0 0' : '8px auto 0' }}>
+                                    {invoice.brandAddress || brand?.address || company.address}
                                 </div>
                                 <div style={{ fontSize: '11px', color: '#777', marginTop: '4px', fontWeight: '500' }}>
-                                    Email: <span style={{ color: '#000' }}>{brand?.email || company.email}</span> | Web: <span style={{ color: '#000' }}>{brand?.website || company.website}</span>
+                                    Email: <span style={{ color: '#000' }}>{invoice.brandEmail || brand?.email || company.email}</span> | Web: <span style={{ color: '#000' }}>{invoice.brandWebsite || brand?.website || company.website}</span>
                                 </div>
                             </div>
                         </div>
@@ -506,42 +510,58 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
 
                                 {/* Totals rows */}
                                 <tr style={{ backgroundColor: '#f9f9f9' }}>
-                                    <td colSpan={7} rowSpan={isIGST ? 3 : 4} style={{ verticalAlign: 'top', padding: '12px', border: '1.5px solid #000', borderLeft: 'none' }}>
+                                    <td colSpan={7} rowSpan={isIGST ? (invoice.discountAmount > 0 ? 4 : 3) : (invoice.discountAmount > 0 ? 5 : 4)} style={{ verticalAlign: 'top', padding: '12px', border: '1.5px solid #000', borderLeft: 'none' }}>
                                         <div style={{ fontWeight: '900', fontSize: '11px', color: '#555', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Amount in Words:</div>
                                         <div style={{ fontSize: '13px', fontWeight: '800', lineHeight: '1.4', color: '#000' }}>
                                             {invoice.currency || 'INR'} {numberToWords(grandTotal)}
                                         </div>
+                                        {invoice.discountAmount > 0 && invoice.couponCode && (
+                                            <div style={{ marginTop: '10px', fontSize: '10px', color: '#16a34a', fontWeight: '700', letterSpacing: '0.5px', textTransform: 'uppercase' }}>
+                                                🎟️ Coupon Applied: {invoice.couponCode}
+                                                {invoice.discountType === 'PERCENTAGE' ? ` (${invoice.discountValue}% off)` : ''}
+                                            </div>
+                                        )}
                                     </td>
                                     <td colSpan={2} style={{ fontWeight: '700', textAlign: 'right', padding: '6px 10px', border: '1.5px solid #000', borderRight: 'none' }}>Taxable Value</td>
                                     <td style={{ textAlign: 'right', fontWeight: '700', padding: '6px 10px', border: '1.5px solid #000', borderLeft: 'none' }}>
                                         {subtotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                                     </td>
                                 </tr>
+                                {invoice.discountAmount > 0 && (
+                                    <tr style={{ backgroundColor: '#f0fdf4' }}>
+                                        <td colSpan={2} style={{ fontWeight: '700', textAlign: 'right', padding: '6px 10px', border: '1.5px solid #000', borderRight: 'none', borderTop: 'none', color: '#16a34a' }}>
+                                            Coupon Discount {invoice.couponCode ? `(${invoice.couponCode})` : ''}
+                                        </td>
+                                        <td style={{ textAlign: 'right', fontWeight: '700', padding: '6px 10px', border: '1.5px solid #000', borderTop: 'none', borderLeft: 'none', color: '#16a34a' }}>
+                                            − {invoice.discountAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                                        </td>
+                                    </tr>
+                                )}
                                 {isIGST ? (
                                     <tr style={{ backgroundColor: '#f9f9f9' }}>
                                         <td colSpan={2} style={{ fontWeight: '700', textAlign: 'right', padding: '6px 10px', border: '1.5px solid #000', borderRight: 'none', borderTop: 'none' }}>
-                                            IGST ({invoice.taxRate || 18}%)
+                                            IGST ({invoice.igstRate || invoice.taxRate || 18}%)
                                         </td>
                                         <td style={{ textAlign: 'right', fontWeight: '700', padding: '6px 10px', border: '1.5px solid #000', borderTop: 'none', borderLeft: 'none' }}>
-                                            {taxAmt.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                                            {(invoice.igst || taxAmt).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                                         </td>
                                     </tr>
                                 ) : (
                                     <>
                                         <tr style={{ backgroundColor: '#f9f9f9' }}>
                                             <td colSpan={2} style={{ fontWeight: '700', textAlign: 'right', padding: '6px 10px', border: '1.5px solid #000', borderRight: 'none', borderTop: 'none' }}>
-                                                CGST ({(invoice.taxRate || 18) / 2}%)
+                                                CGST ({invoice.cgstRate || (invoice.taxRate || 18) / 2}%)
                                             </td>
                                             <td style={{ textAlign: 'right', fontWeight: '700', padding: '6px 10px', border: '1.5px solid #000', borderTop: 'none', borderLeft: 'none' }}>
-                                                {(taxAmt / 2).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                                                {(invoice.cgst || taxAmt / 2).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                                             </td>
                                         </tr>
                                         <tr style={{ backgroundColor: '#f9f9f9' }}>
                                             <td colSpan={2} style={{ fontWeight: '700', textAlign: 'right', padding: '6px 10px', border: '1.5px solid #000', borderRight: 'none', borderTop: 'none' }}>
-                                                SGST ({(invoice.taxRate || 18) / 2}%)
+                                                SGST ({invoice.sgstRate || (invoice.taxRate || 18) / 2}%)
                                             </td>
                                             <td style={{ textAlign: 'right', fontWeight: '700', padding: '6px 10px', border: '1.5px solid #000', borderTop: 'none', borderLeft: 'none' }}>
-                                                {(taxAmt / 2).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                                                {(invoice.sgst || taxAmt / 2).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                                             </td>
                                         </tr>
                                     </>

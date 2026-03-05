@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
 import { Prisma } from '@prisma/client';
+import { logger } from './logger';
+import { isProduction } from './env-validation';
 
 /**
  * Standard error response format
@@ -10,6 +12,7 @@ export interface ErrorResponse {
     statusCode: number;
     timestamp: string;
     path?: string;
+    requestId?: string;
     details?: any;
 }
 
@@ -73,7 +76,10 @@ export class RateLimitError extends AppError {
  * Global error handler for API routes
  */
 export function handleApiError(error: unknown, path?: string): NextResponse<ErrorResponse> {
-    console.error('API Error:', error);
+    const timestamp = new Date().toISOString();
+    
+    // Log the error using our structured logger
+    logger.error(`API Error on ${path || 'unknown path'}`, error, { path });
 
     // Handle custom app errors
     if (error instanceof AppError) {
@@ -82,7 +88,7 @@ export function handleApiError(error: unknown, path?: string): NextResponse<Erro
                 error: error.name,
                 message: error.message,
                 statusCode: error.statusCode,
-                timestamp: new Date().toISOString(),
+                timestamp,
                 path,
                 details: error.details,
             },
@@ -101,7 +107,7 @@ export function handleApiError(error: unknown, path?: string): NextResponse<Erro
                 error: 'ValidationError',
                 message: 'Invalid data provided',
                 statusCode: 400,
-                timestamp: new Date().toISOString(),
+                timestamp,
                 path,
             },
             { status: 400 }
@@ -116,7 +122,7 @@ export function handleApiError(error: unknown, path?: string): NextResponse<Erro
                 error: 'ValidationError',
                 message: 'Validation failed',
                 statusCode: 400,
-                timestamp: new Date().toISOString(),
+                timestamp,
                 path,
                 details: zodError.errors,
             },
@@ -126,15 +132,12 @@ export function handleApiError(error: unknown, path?: string): NextResponse<Erro
 
     // Handle generic errors
     if (error instanceof Error) {
-        // Don't expose internal error details in production
-        const isProduction = process.env.NODE_ENV === 'production';
-
         return NextResponse.json(
             {
                 error: 'InternalServerError',
                 message: isProduction ? 'An unexpected error occurred' : error.message,
                 statusCode: 500,
-                timestamp: new Date().toISOString(),
+                timestamp,
                 path,
                 details: isProduction ? undefined : { stack: error.stack },
             },
@@ -148,7 +151,7 @@ export function handleApiError(error: unknown, path?: string): NextResponse<Erro
             error: 'UnknownError',
             message: 'An unknown error occurred',
             statusCode: 500,
-            timestamp: new Date().toISOString(),
+            timestamp,
             path,
         },
         { status: 500 }

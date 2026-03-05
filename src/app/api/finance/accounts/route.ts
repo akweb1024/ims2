@@ -1,52 +1,54 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { getAuthenticatedUser } from '@/lib/auth-legacy';
+import { authorizedRoute } from '@/lib/middleware-auth';
+import { handleApiError, ValidationError } from '@/lib/error-handler';
+import { logger } from '@/lib/logger';
 
-export async function GET(req: NextRequest) {
-    try {
-        const user = await getAuthenticatedUser();
-        if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+export const GET = authorizedRoute(
+    ['SUPER_ADMIN', 'ADMIN', 'FINANCE_ADMIN', 'MANAGER'],
+    async (req: NextRequest, user) => {
+        try {
+            const companyId = user.companyId;
+            if (!companyId) throw new ValidationError('No associated company');
 
-        // Use user.companyId if available, else 400
-        const companyId = user.companyId;
-        if (!companyId) return NextResponse.json({ error: 'No associated company' }, { status: 400 });
+            const accounts = await prisma.account.findMany({
+                where: { companyId },
+                include: { parentAccount: true },
+                orderBy: { code: 'asc' }
+            });
 
-        const company = { id: companyId }; // Mock object to keep structure strict
-
-
-        const accounts = await prisma.account.findMany({
-            where: { companyId: company.id },
-            include: { parentAccount: true },
-            orderBy: { code: 'asc' }
-        });
-
-        return NextResponse.json(accounts);
-    } catch (error) {
-        console.error('Error fetching accounts:', error);
-        return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+            return NextResponse.json(accounts);
+        } catch (error) {
+            return handleApiError(error, req.nextUrl.pathname);
+        }
     }
-}
+);
 
-export async function POST(req: NextRequest) {
-    try {
-        const data = await req.json();
-        const company = await prisma.company.findFirst(); // Replace with actual auth
-        if (!company) return NextResponse.json({ error: 'No company found' }, { status: 404 });
+export const POST = authorizedRoute(
+    ['SUPER_ADMIN', 'ADMIN', 'FINANCE_ADMIN'],
+    async (req: NextRequest, user) => {
+        try {
+            const companyId = user.companyId;
+            if (!companyId) throw new ValidationError('No associated company');
 
-        const account = await prisma.account.create({
-            data: {
-                companyId: company.id,
-                code: data.code,
-                name: data.name,
-                type: data.type,
-                description: data.description,
-                parentAccountId: data.parentAccountId || null,
-            }
-        });
+            const data = await req.json();
 
-        return NextResponse.json(account);
-    } catch (error) {
-        console.error('Error creating account:', error);
-        return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+            const account = await prisma.account.create({
+                data: {
+                    companyId,
+                    code: data.code,
+                    name: data.name,
+                    type: data.type,
+                    description: data.description,
+                    parentAccountId: data.parentAccountId || null,
+                }
+            });
+
+            logger.info('Account created', { accountId: account.id, createdBy: user.id });
+
+            return NextResponse.json(account, { status: 201 });
+        } catch (error) {
+            return handleApiError(error, req.nextUrl.pathname);
+        }
     }
-}
+);

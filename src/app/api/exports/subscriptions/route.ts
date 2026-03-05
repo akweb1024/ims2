@@ -9,13 +9,16 @@ export async function GET(req: NextRequest) {
             return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
         }
 
-        const subscriptions = await prisma.subscription.findMany({
+        const subscriptions = await (prisma.subscription as any).findMany({
             include: {
                 customerProfile: true,
                 items: {
                     include: {
                         journal: true,
-                        plan: true
+                        plan: true,
+                        course: true,
+                        workshop: true,
+                        product: true
                     }
                 }
             },
@@ -24,7 +27,7 @@ export async function GET(req: NextRequest) {
 
         // Generate CSV
         const headers = ['ID', 'Customer', 'Email', 'Organization', 'Status', 'Total', 'Currency', 'Start Date', 'End Date', 'Items'];
-        const rows = subscriptions.map(sub => [
+        const rows = subscriptions.map((sub: any) => [
             sub.id,
             sub.customerProfile.name,
             sub.customerProfile.primaryEmail,
@@ -34,12 +37,18 @@ export async function GET(req: NextRequest) {
             sub.currency,
             sub.startDate.toISOString().split('T')[0],
             sub.endDate.toISOString().split('T')[0],
-            sub.items.map(item => `${item.journal.name} (${item.plan.planType})`).join('; ')
+            sub.items.map((item: any) => {
+                if (item.journal) return `${item.journal.name} (${item.plan?.planType || 'N/A'})`;
+                if (item.course) return `Course: ${item.course.title}`;
+                if (item.workshop) return `Workshop: ${item.workshop.title}`;
+                if (item.product) return `Other: ${item.product.name}`;
+                return 'N/A';
+            }).join('; ')
         ]);
 
         const csvContent = [
             headers.join(','),
-            ...rows.map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','))
+            ...rows.map((row: any[]) => row.map((cell: any) => `"${String(cell).replace(/"/g, '""')}"`).join(','))
         ].join('\n');
 
         return new NextResponse(csvContent, {

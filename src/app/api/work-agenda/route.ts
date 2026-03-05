@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { authorizedRoute } from '@/lib/middleware-auth';
-import { createErrorResponse } from '@/lib/api-utils';
+import { handleApiError, AuthorizationError, NotFoundError } from '@/lib/error-handler';
 import { getDownlineUserIds } from '@/lib/hierarchy';
+import { logger } from '@/lib/logger';
+import { workPlanSchema } from '@/lib/validation/schemas';
 
 // GET: Get work plans (by date, employee)
 export const GET = authorizedRoute(
@@ -21,7 +23,7 @@ export const GET = authorizedRoute(
                 companyId: user.companyId || undefined,
             };
 
-            // Role-based filtering
+            // Role-based filtering logic
             if (['EXECUTIVE'].includes(user.role)) {
                 const profile = await prisma.employeeProfile.findUnique({
                     where: { userId: user.id },
@@ -29,30 +31,23 @@ export const GET = authorizedRoute(
                 });
                 where.employeeId = profile?.id;
             } else if (['MANAGER', 'TEAM_LEADER'].includes(user.role)) {
-                if (employeeId) {
-                    const downlineIds = await getDownlineUserIds(user.id, user.companyId || undefined);
-                    const employeeProfiles = await prisma.employeeProfile.findMany({
-                        where: { userId: { in: downlineIds } },
-                        select: { id: true }
-                    });
-                    const profileIds = employeeProfiles.map(p => p.id);
+                const downlineIds = await getDownlineUserIds(user.id, user.companyId || undefined);
+                const employeeProfiles = await prisma.employeeProfile.findMany({
+                    where: { userId: { in: downlineIds } },
+                    select: { id: true }
+                });
+                const profileIds = employeeProfiles.map(p => p.id);
 
+                if (employeeId) {
                     if (!profileIds.includes(employeeId)) {
-                        return createErrorResponse('Forbidden: Not in your team', 403);
+                        throw new AuthorizationError('Forbidden: Employee not in your team');
                     }
                     where.employeeId = employeeId;
                 } else {
-                    const downlineIds = await getDownlineUserIds(user.id, user.companyId || undefined);
-                    const employeeProfiles = await prisma.employeeProfile.findMany({
-                        where: { userId: { in: downlineIds } },
-                        select: { id: true }
-                    });
-                    where.employeeId = { in: employeeProfiles.map(p => p.id) };
+                    where.employeeId = { in: profileIds };
                 }
-            } else {
-                if (employeeId) {
-                    where.employeeId = employeeId;
-                }
+            } else if (employeeId) {
+                where.employeeId = employeeId;
             }
 
             // Date filtering
@@ -92,27 +87,13 @@ export const GET = authorizedRoute(
                             type: true
                         }
                     },
-                    project: {
-                        select: {
-                            id: true,
-                            title: true
-                        }
-                    },
-                    task: {
-                        select: {
-                            id: true,
-                            title: true,
-                            status: true
-                        }
-                    },
+                    project: { select: { id: true, title: true } },
+                    task: { select: { id: true, title: true, status: true } },
+                    itProject: { select: { id: true, name: true } },
+                    itTask: { select: { id: true, title: true, status: true } },
                     comments: {
                         include: {
-                            user: {
-                                select: {
-                                    name: true,
-                                    email: true
-                                }
-                            }
+                            user: { select: { name: true, email: true } }
                         },
                         orderBy: { createdAt: 'desc' }
                     }
@@ -121,9 +102,8 @@ export const GET = authorizedRoute(
             });
 
             return NextResponse.json(workPlans);
-        } catch (error: any) {
-            console.error('Error fetching work plans:', error);
-            return createErrorResponse(error.message, 500);
+        } catch (error) {
+            return handleApiError(error, req.nextUrl.pathname);
         }
     }
 );
@@ -134,20 +114,11 @@ export const POST = authorizedRoute(
     async (req: NextRequest, user) => {
         try {
             const body = await req.json();
-            const {
-                employeeId,
-                date,
-                agenda,
-                strategy,
-                priority,
-                estimatedHours,
-                linkedGoalId,
-                projectId,
-                taskId,
-                visibility
-            } = body;
-
-            let targetEmployeeId = employeeId;
+            
+            // Centralized Zod Validation
+            const validatedData = workPlanSchema.parse(body);
+            
+            let targetEmployeeId = validatedData.employeeId;
 
             // If no employeeId provided, infer from current user
             if (!targetEmployeeId) {
@@ -155,92 +126,70 @@ export const POST = authorizedRoute(
                     where: { userId: user.id },
                     select: { id: true }
                 });
-                if (!profile) return createErrorResponse('Employee profile not found', 404);
+                if (!profile) throw new NotFoundError('Employee profile');
                 targetEmployeeId = profile.id;
             }
 
-            // Validation
-            if (!date || !agenda) {
-                return createErrorResponse('Missing required fields (date, agenda)', 400);
-            }
-
-            // Check permissions
+            // Authorization Checks
             if (['EXECUTIVE'].includes(user.role)) {
                 const profile = await prisma.employeeProfile.findUnique({
                     where: { userId: user.id },
                     select: { id: true }
                 });
                 if (targetEmployeeId !== profile?.id) {
-                    return createErrorResponse('Forbidden: Can only create your own work plans', 403);
+                    throw new AuthorizationError('Forbidden: Can only create your own work plans');
                 }
             } else if (['MANAGER', 'TEAM_LEADER'].includes(user.role)) {
                 const downlineIds = await getDownlineUserIds(user.id, user.companyId || undefined);
-                const employeeProfiles = await prisma.employeeProfile.findMany({
-                    where: { userId: { in: (await getDownlineUserIds(user.id, user.companyId || undefined)).concat([user.id]) } }, // Allow self + team
+                const teamProfiles = await prisma.employeeProfile.findMany({
+                    where: { userId: { in: [...downlineIds, user.id] } },
                     select: { id: true }
                 });
-                const profileIds = employeeProfiles.map(p => p.id);
+                const allowedIds = teamProfiles.map(p => p.id);
 
-                if (!profileIds.includes(targetEmployeeId)) {
-                    // Check if it is self?
-                    const myProfile = await prisma.employeeProfile.findUnique({ where: { userId: user.id }, select: { id: true } });
-                    if (myProfile?.id !== targetEmployeeId) {
-                        return createErrorResponse('Forbidden: Not in your team', 403);
-                    }
+                if (!allowedIds.includes(targetEmployeeId)) {
+                    throw new AuthorizationError('Forbidden: Employee not in your team');
                 }
             }
 
             const workPlan = await prisma.workPlan.create({
                 data: {
                     employeeId: targetEmployeeId,
-                    date: new Date(date),
-                    agenda,
-                    strategy,
-                    priority: priority || 'MEDIUM',
-                    estimatedHours: estimatedHours ? parseFloat(estimatedHours) : null,
+                    date: new Date(validatedData.date),
+                    agenda: validatedData.agenda,
+                    strategy: validatedData.strategy,
+                    priority: validatedData.priority,
+                    estimatedHours: validatedData.estimatedHours ? parseFloat(validatedData.estimatedHours.toString()) : null,
                     completionStatus: 'PLANNED',
-                    linkedGoalId: (linkedGoalId && linkedGoalId !== 'null') ? linkedGoalId : null,
-                    projectId: (projectId && projectId !== 'null') ? projectId : null,
-                    taskId: (taskId && taskId !== 'null') ? taskId : null,
-                    visibility: visibility || 'MANAGER',
+                    linkedGoalId: validatedData.linkedGoalId === 'null' ? null : validatedData.linkedGoalId,
+                    projectId: validatedData.projectId === 'null' ? null : validatedData.projectId,
+                    taskId: validatedData.taskId === 'null' ? null : validatedData.taskId,
+                    itProjectId: validatedData.itProjectId === 'null' ? null : validatedData.itProjectId,
+                    itTaskId: validatedData.itTaskId === 'null' ? null : validatedData.itTaskId,
+                    visibility: validatedData.visibility,
                     status: 'SHARED',
                     companyId: user.companyId || undefined
                 } as any,
                 include: {
-                    employee: {
-                        select: {
-                            user: {
-                                select: {
-                                    name: true,
-                                    email: true
-                                }
-                            }
-                        }
-                    },
-                    linkedGoal: {
-                        select: {
-                            title: true,
-                            type: true
-                        }
-                    },
-                    project: {
-                        select: {
-                            title: true
-                        }
-                    },
-                    task: {
-                        select: {
-                            title: true,
-                            status: true
-                        }
-                    }
+                    employee: { select: { user: { select: { name: true, email: true } } } },
+                    linkedGoal: { select: { title: true, type: true } },
+                    project: { select: { title: true } },
+                    task: { select: { title: true, status: true } },
+                    itProject: { select: { name: true } },
+                    itTask: { select: { title: true, status: true } }
                 } as any
             });
 
-            return NextResponse.json(workPlan);
-        } catch (error: any) {
-            console.error('Error creating work plan:', error);
-            return createErrorResponse(error.message, 500);
+            logger.info('Work plan created successfully', { 
+                workPlanId: workPlan.id, 
+                employeeId: targetEmployeeId,
+                createdBy: user.id 
+            });
+
+            return NextResponse.json(workPlan, { status: 201 });
+        } catch (error) {
+            return handleApiError(error, req.nextUrl.pathname);
         }
     }
 );
+

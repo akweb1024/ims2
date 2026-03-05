@@ -76,6 +76,9 @@ export async function GET(
                     },
                     orderBy: { date: 'desc' }
                 },
+                invoices: {
+                    orderBy: { createdAt: 'desc' }
+                },
                 agencyInstitutions: {
                     select: {
                         id: true,

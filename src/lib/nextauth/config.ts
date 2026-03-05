@@ -9,14 +9,33 @@ export const authConfig = {
             const isLoggedIn = !!auth?.user;
             const isDashboard = nextUrl.pathname.startsWith("/dashboard");
             const isAuthPage = nextUrl.pathname.startsWith("/login") || nextUrl.pathname.startsWith("/register");
+            const userRole = (auth?.user as any)?.role;
+            const isStaff = isLoggedIn && !['CUSTOMER', 'AGENCY'].includes(userRole);
+
+            if (isAuthPage) {
+                if (isLoggedIn) {
+                    const destination = isStaff ? "/dashboard/staff-portal" : "/dashboard";
+                    return Response.redirect(new URL(destination, nextUrl));
+                }
+                return true;
+            }
 
             if (isDashboard) {
-                if (isLoggedIn) return true;
-                return false; // Redirect to login
-            } else if (isAuthPage) {
-                if (isLoggedIn) {
-                    return Response.redirect(new URL("/dashboard", nextUrl));
+                if (!isLoggedIn) return false; // Redirect to login
+
+                // If accessing dashboard root, redirect staff to staff portal
+                if (nextUrl.pathname === "/dashboard" && isStaff) {
+                    return Response.redirect(new URL("/dashboard/staff-portal", nextUrl));
                 }
+
+                // Route guards for specific dashboard paths
+                if (nextUrl.pathname.startsWith("/dashboard/staff-portal")) {
+                    if (!isStaff) {
+                        // Redirect non-staff away from staff portal to their appropriate dashboard
+                        return Response.redirect(new URL("/dashboard", nextUrl));
+                    }
+                }
+                
                 return true;
             }
             return true;

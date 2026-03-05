@@ -32,6 +32,8 @@ export default function SettingsPage() {
         address: '',
         email: '',
         phone: '',
+        website: '',
+        logoUrl: '',
         gstin: '',
         stateCode: '',
         cinNo: '',
@@ -44,6 +46,8 @@ export default function SettingsPage() {
         bankSwiftCode: '',
         paymentMode: 'Online',
         currency: 'INR',
+        brandRelationType: 'A Brand of',
+        invoiceCompanyLogoUrl: '',
     });
 
     const [departments, setDepartments] = useState<any[]>([]);
@@ -390,6 +394,30 @@ export default function SettingsPage() {
                                         <Field label="Phone">
                                             <input className="input" type="tel" value={billing.phone} onChange={e => setBilling({ ...billing, phone: e.target.value })} placeholder="+91 XXXXX XXXXX" />
                                         </Field>
+                                        <Field label="Website" hint="Shown in invoice header">
+                                            <input className="input" type="url" value={billing.website} onChange={e => setBilling({ ...billing, website: e.target.value })} placeholder="https://www.stmjournals.com" />
+                                        </Field>
+                                         <Field label="Company Logo URL" hint="System-wide logo (used in sidebar and reports)">
+                                            <input className="input" value={billing.logoUrl} onChange={e => setBilling({ ...billing, logoUrl: e.target.value })} placeholder="https://cdn.yoursite.com/main-logo.png" />
+                                        </Field>
+                                        <Field label="Relationship Label on Invoice" hint="e.g. 'A Brand of', 'An imprint of', 'Published by'">
+                                            <select className="input" value={(billing as any).brandRelationType || 'A Brand of'} onChange={e => setBilling({ ...billing, brandRelationType: e.target.value })}>
+                                                <option value="A Brand of">A Brand of</option>
+                                                <option value="An imprint of">An imprint of</option>
+                                                <option value="Published by">Published by</option>
+                                                <option value="A Subsidiary of">A Subsidiary of</option>
+                                                <option value="A Unit of">A Unit of</option>
+                                            </select>
+                                        </Field>
+                                        <Field label="Parent Company Logo URL (Optional)" hint="Logo for use as the parent reference on invoices">
+                                            <input className="input" value={(billing as any).invoiceCompanyLogoUrl || ''} onChange={e => setBilling({ ...billing, invoiceCompanyLogoUrl: e.target.value })} placeholder="https://cdn.yoursite.com/parent-logo.png" />
+                                            {((billing as any).invoiceCompanyLogoUrl || billing.logoUrl) && (
+                                                <div className="mt-2 flex items-center gap-3 p-3 bg-secondary-50 rounded-xl border border-secondary-100">
+                                                    <img src={(billing as any).invoiceCompanyLogoUrl || billing.logoUrl} alt="Logo preview" className="h-10 max-w-[120px] object-contain" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                                                    <span className="text-xs text-secondary-500">Invoice Reference Logo Preview</span>
+                                                </div>
+                                            )}
+                                        </Field>
                                     </div>
                                 </section>
 
@@ -455,11 +483,15 @@ export default function SettingsPage() {
                                 <div className="card-premium bg-primary-50 border border-primary-100 p-5">
                                     <div className="flex items-start gap-3">
                                         <span className="text-2xl">🧾</span>
-                                        <div>
-                                            <p className="font-bold text-primary-900">These details appear on every Tax Invoice</p>
+                                        <div className="flex-1">
+                                            <p className="font-bold text-primary-900">These are your Company-Level Invoice Defaults</p>
                                             <p className="text-sm text-primary-700 mt-1">
-                                                The information above is used to populate the header, identity bar, receiver section, bank details, and footer of all generated Tax Invoices. Fill in as much detail as possible for compliance.
+                                                These details populate the header, identity bar, and footer of all invoices. 
+                                                When an invoice is associated with a <strong>Brand</strong>, the brand&apos;s own Address, Email, Website, and Logo will override these defaults — while GSTIN, CIN, and bank details always come from the company (legal requirement).
                                             </p>
+                                            <a href="/dashboard/company?tab=BRANDS" className="inline-flex items-center gap-1.5 mt-3 text-sm font-bold text-primary-700 hover:text-primary-900 underline underline-offset-2">
+                                                🏷️ Manage Brand Overrides →
+                                            </a>
                                         </div>
                                     </div>
                                 </div>

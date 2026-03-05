@@ -19,8 +19,8 @@ export default function CreateWorkPlanModal({ onClose, onSuccess, employeeId }: 
         priority: 'MEDIUM',
         estimatedHours: '',
         visibility: 'MANAGER',
-        projectId: '',
-        taskId: '',
+        itProjectId: '',
+        itTaskId: '',
     });
 
     const [projects, setProjects] = useState<any[]>([]);
@@ -189,8 +189,8 @@ export default function CreateWorkPlanModal({ onClose, onSuccess, employeeId }: 
                                 <Briefcase className="absolute left-3 top-1/2 -translate-y-1/2 text-secondary-400" size={16} />
                                 <select
                                     className="w-full pl-10 pr-4 py-3 rounded-xl border border-secondary-200 focus:ring-2 focus:ring-primary-500 outline-none transition-all font-medium text-secondary-900 bg-white"
-                                    value={formData.projectId}
-                                    onChange={(e) => setFormData({ ...formData, projectId: e.target.value, taskId: '' })}
+                                    value={formData.itProjectId}
+                                    onChange={(e) => setFormData({ ...formData, itProjectId: e.target.value, itTaskId: '' })}
                                 >
                                     <option value="">None</option>
                                     {projects.map(p => (
@@ -206,12 +206,12 @@ export default function CreateWorkPlanModal({ onClose, onSuccess, employeeId }: 
                                 <CheckSquare className="absolute left-3 top-1/2 -translate-y-1/2 text-secondary-400" size={16} />
                                 <select
                                     className="w-full pl-10 pr-4 py-3 rounded-xl border border-secondary-200 focus:ring-2 focus:ring-primary-500 outline-none transition-all font-medium text-secondary-900 bg-white"
-                                    value={formData.taskId}
-                                    onChange={(e) => setFormData({ ...formData, taskId: e.target.value })}
+                                    value={formData.itTaskId}
+                                    onChange={(e) => setFormData({ ...formData, itTaskId: e.target.value })}
                                 >
                                     <option value="">None</option>
                                     {tasks
-                                        .filter(t => !formData.projectId || t.projectId === formData.projectId)
+                                        .filter(t => !formData.itProjectId || t.projectId === formData.itProjectId)
                                         .map(t => (
                                             <option key={t.id} value={t.id}>
                                                 {t.taskCode ? `[${t.taskCode}] ` : ''}{t.title}

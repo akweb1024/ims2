@@ -14,18 +14,35 @@ export default function CompanyPage() {
     const [users, setUsers] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [userRole, setUserRole] = useState('CUSTOMER');
-    const [activeTab, setActiveTab] = useState<'OVERVIEW' | 'WORKFORCE' | 'DETAILS'>('OVERVIEW');
+    const [activeTab, setActiveTab] = useState<'OVERVIEW' | 'WORKFORCE' | 'DETAILS' | 'BRANDS'>('OVERVIEW');
 
     // Original Modals State
     const [showEditModal, setShowEditModal] = useState(false);
     const [showDeptModal, setShowDeptModal] = useState(false);
     const [showUserModal, setShowUserModal] = useState(false);
+    const [showBrandModal, setShowBrandModal] = useState(false);
+    const [editingBrand, setEditingBrand] = useState<any>(null);
+    const [brands, setBrands] = useState<any[]>([]);
     const [staffList, setStaffList] = useState<any[]>([]);
     const [actionLoading, setActionLoading] = useState(false);
 
     const searchParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
     const companyIdParam = searchParams?.get('id');
     const tabParam = searchParams?.get('tab');
+
+    const fetchBrands = useCallback(async (companyId: string) => {
+        try {
+            const token = localStorage.getItem('token');
+            const res = await fetch(`/api/brands?companyId=${companyId}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (res.ok) {
+                setBrands(await res.json());
+            }
+        } catch (err) {
+            console.error('Failed to fetch brands', err);
+        }
+    }, []);
 
     const fetchData = useCallback(async () => {
         setLoading(true);
@@ -75,6 +92,9 @@ export default function CompanyPage() {
                     const staffData = Array.isArray(staffResponse) ? staffResponse : (staffResponse.data || []);
                     setStaffList(staffData);
                 }
+
+                // Fetch brands
+                fetchBrands(companyData.id);
             }
 
             // Fetch users for department assignment (might be all visible users)
@@ -107,6 +127,8 @@ export default function CompanyPage() {
             setActiveTab('WORKFORCE');
         } else if (tabParam === 'details') {
             setActiveTab('DETAILS');
+        } else if (tabParam === 'brands') {
+            setActiveTab('BRANDS');
         }
 
         fetchData();
@@ -244,6 +266,84 @@ export default function CompanyPage() {
         }
     };
 
+    const handleSaveBrand = async (e: React.FormEvent<HTMLFormElement>) => {
+        e.preventDefault();
+        setActionLoading(true);
+        const form = e.currentTarget;
+        const formData = new FormData(form);
+        const payload = {
+            companyId: company.id,
+            name: formData.get('name'),
+            tagline: formData.get('tagline'),
+            address: formData.get('address'),
+            email: formData.get('email'),
+            website: formData.get('website'),
+            logoUrl: formData.get('logoUrl'),
+            companyLogoUrl: formData.get('companyLogoUrl'),
+            brandRelationType: (() => {
+                const preset = formData.get('brandRelationType') as string;
+                const custom = (formData.get('brandRelationTypeCustom') as string)?.trim();
+                // If user chose "Custom..." from dropdown, use the custom text box value
+                if (preset === 'custom') return custom || 'A Brand of';
+                // Otherwise use the preset value
+                return preset || 'A Brand of';
+            })(),
+        };
+
+        try {
+            const token = localStorage.getItem('token');
+            const url = editingBrand ? `/api/brands/${editingBrand.id}` : '/api/brands';
+            const method = editingBrand ? 'PATCH' : 'POST';
+
+            const res = await fetch(url, {
+                method,
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(payload)
+            });
+
+            if (res.ok) {
+                setShowBrandModal(false);
+                setEditingBrand(null);
+                fetchBrands(company.id);
+                form.reset();
+            } else {
+                const err = await res.json();
+                alert(err.error || 'Failed to save brand');
+            }
+        } catch (err) {
+            alert('Error saving brand');
+        } finally {
+            setActionLoading(false);
+        }
+    };
+
+    const handleDeleteBrand = async (id: string, name: string) => {
+        if (!confirm(`Are you sure you want to delete the brand "${name}"? This action cannot be undone.`)) return;
+        
+        setActionLoading(true);
+        try {
+            const token = localStorage.getItem('token');
+            const res = await fetch(`/api/brands/${id}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            if (res.ok) {
+                fetchBrands(company.id);
+            } else {
+                const err = await res.json();
+                alert(err.error || 'Failed to delete brand');
+            }
+        } catch (err) {
+            alert('Error deleting brand');
+        } finally {
+            setActionLoading(false);
+        }
+    };
+
     if (loading) {
         return (
             <CompanyClientLayout>
@@ -310,6 +410,12 @@ export default function CompanyPage() {
                         className={`px-6 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === 'DETAILS' ? 'bg-white text-primary-600 shadow' : 'text-secondary-500 hover:text-secondary-700'}`}
                     >
                         Company Settings
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('BRANDS')}
+                        className={`px-6 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === 'BRANDS' ? 'bg-white text-primary-600 shadow' : 'text-secondary-500 hover:text-secondary-700'}`}
+                    >
+                        Brands Management
                     </button>
                 </div>
 
@@ -527,6 +633,102 @@ export default function CompanyPage() {
                                     </table>
                                 </div>
                             </div>
+                        </div>
+                    )}
+
+                    {activeTab === 'BRANDS' && (
+                        <div className="space-y-6 animate-fadeIn">
+                            <div className="flex justify-between items-center">
+                                <div>
+                                    <h2 className="text-2xl font-bold font-primary">Brand Portfolio</h2>
+                                    <p className="text-secondary-600">Represent multiple trade names or subsidiaries under your company</p>
+                                </div>
+                                {['SUPER_ADMIN', 'ADMIN', 'MANAGER'].includes(userRole) && (
+                                    <button
+                                        onClick={() => setShowBrandModal(true)}
+                                        className="btn btn-primary"
+                                    >
+                                        + Create New Brand
+                                    </button>
+                                )}
+                            </div>
+
+                            {brands.length > 0 ? (
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                    {brands.map(brand => (
+                                        <div key={brand.id} className="card-premium p-6 hover:shadow-xl transition-all border border-secondary-100 flex flex-col group">
+                                            <div className="flex items-center gap-4 mb-4">
+                                                <div className="w-16 h-16 bg-secondary-50 rounded-2xl flex items-center justify-center p-2 border border-secondary-100 overflow-hidden">
+                                                    {brand.logoUrl ? (
+                                                        <img src={brand.logoUrl} alt={brand.name} className="max-w-full max-h-full object-contain" />
+                                                    ) : (
+                                                        <span className="text-2xl">🏷️</span>
+                                                    )}
+                                                </div>
+                                                <div className="flex-1">
+                                                    <h3 className="text-lg font-bold text-secondary-900 leading-tight">{brand.name}</h3>
+                                                    {brand.tagline && <p className="text-xs text-secondary-500 mt-0.5 line-clamp-1 italic">{brand.tagline}</p>}
+                                                    <span className="inline-block mt-1.5 text-[10px] font-black uppercase tracking-wider text-indigo-600 bg-indigo-50 border border-indigo-100 px-2 py-0.5 rounded-full">
+                                                        {brand.brandRelationType || 'A Brand of'}
+                                                    </span>
+                                                </div>
+                                            </div>
+
+                                            <div className="space-y-3 flex-1">
+                                                <div className="flex items-start gap-2 text-sm text-secondary-600">
+                                                    <span className="mt-0.5 text-secondary-400">📍</span>
+                                                    <span className="line-clamp-2">{brand.address || 'No address registered'}</span>
+                                                </div>
+                                                <div className="flex items-center gap-2 text-sm text-secondary-600">
+                                                    <span className="text-secondary-400">✉️</span>
+                                                    <span>{brand.email || 'No email registered'}</span>
+                                                </div>
+                                                {brand.website && (
+                                                    <div className="flex items-center gap-2 text-sm text-primary-600 font-bold">
+                                                        <span className="text-secondary-400">🌐</span>
+                                                        <a href={brand.website} target="_blank" rel="noreferrer" className="hover:underline truncate">{brand.website.replace(/^https?:\/\//, '')}</a>
+                                                    </div>
+                                                )}
+                                            </div>
+
+                                            <div className="mt-6 pt-4 border-t border-secondary-50 flex justify-between items-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                                <span className="text-[10px] uppercase font-black text-secondary-300 tracking-tighter">ID: {brand.id.split('-')[0]}</span>
+                                                <div className="flex gap-2">
+                                                    <button 
+                                                        onClick={() => {
+                                                            setEditingBrand(brand);
+                                                            setShowBrandModal(true);
+                                                        }}
+                                                        className="text-xs font-bold text-primary-600 hover:bg-primary-50 px-3 py-1.5 rounded-lg transition-colors border border-transparent hover:border-primary-100"
+                                                    >
+                                                        Edit
+                                                    </button>
+                                                    <button 
+                                                        onClick={() => handleDeleteBrand(brand.id, brand.name)}
+                                                        className="text-xs font-bold text-danger-600 hover:bg-danger-50 px-3 py-1.5 rounded-lg transition-colors border border-transparent hover:border-danger-100"
+                                                    >
+                                                        Delete
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : (
+                                <div className="text-center py-20 bg-secondary-50 rounded-3xl border-2 border-dashed border-secondary-200">
+                                    <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-sm">
+                                        <span className="text-3xl">🏗️</span>
+                                    </div>
+                                    <h3 className="text-xl font-bold text-secondary-900 mb-2">Build Your Brand Portfolio</h3>
+                                    <p className="text-secondary-500 max-w-sm mx-auto mb-8 font-medium">Create distinct brands to handle multiple publications, outlets, or service lines under your primary company.</p>
+                                    <button
+                                        onClick={() => setShowBrandModal(true)}
+                                        className="btn btn-primary px-8"
+                                    >
+                                        Create Your First Brand
+                                    </button>
+                                </div>
+                            )}
                         </div>
                     )}
                 </div>
@@ -748,6 +950,108 @@ export default function CompanyPage() {
                                     className="btn btn-primary px-8"
                                 >
                                     {actionLoading ? 'Creating...' : 'Add Employee'}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            {/* Create/Edit Brand Modal */}
+            {showBrandModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-secondary-900/50 backdrop-blur-sm p-4">
+                    <div className="bg-white rounded-3xl p-8 max-w-2xl w-full shadow-2xl max-h-[90vh] overflow-y-auto">
+                        <div className="flex justify-between items-center mb-6">
+                            <h2 className="text-2xl font-bold text-secondary-900 font-primary">
+                                {editingBrand ? 'Update Brand' : 'Register New Brand'}
+                            </h2>
+                            <button 
+                                onClick={() => {
+                                    setShowBrandModal(false);
+                                    setEditingBrand(null);
+                                }} 
+                                className="text-2xl text-secondary-400 hover:text-secondary-600"
+                            >
+                                ✕
+                            </button>
+                        </div>
+                        <form onSubmit={handleSaveBrand} className="space-y-6">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="md:col-span-2">
+                                    <label className="label">Brand Name *</label>
+                                    <input name="name" className="input" required defaultValue={editingBrand?.name || ''} placeholder="e.g. STM Journals" />
+                                </div>
+                                <div className="md:col-span-2">
+                                    <label className="label">Tagline / Sub-name</label>
+                                    <input name="tagline" className="input" defaultValue={editingBrand?.tagline || ''} placeholder="e.g. Scientific, Technical and Medical Journals" />
+                                </div>
+                                <div>
+                                    <label className="label">Official Email</label>
+                                    <input name="email" type="email" className="input" defaultValue={editingBrand?.email || ''} placeholder="brand@company.com" />
+                                </div>
+                                <div>
+                                    <label className="label">Website</label>
+                                    <input name="website" type="url" className="input" defaultValue={editingBrand?.website || ''} placeholder="https://brand.com" />
+                                </div>
+                                <div className="md:col-span-2">
+                                    <label className="label">Address</label>
+                                    <textarea name="address" className="input" rows={2} defaultValue={editingBrand?.address || ''} placeholder="Brand-specific office address"></textarea>
+                                </div>
+                                <div>
+                                    <label className="label">Brand Logo URL</label>
+                                    <input name="logoUrl" className="input" defaultValue={editingBrand?.logoUrl || ''} placeholder="https://..." />
+                                </div>
+                                <div>
+                                    <label className="label">Parent Company Logo URL (Optional)</label>
+                                    <input name="companyLogoUrl" className="input" defaultValue={editingBrand?.companyLogoUrl || ''} placeholder="https://..." />
+                                </div>
+                                <div className="md:col-span-2">
+                                    <label className="label">Relationship Label on Invoice</label>
+                                    <p className="text-xs text-secondary-400 mb-2">This text appears below the brand name on invoices, e.g. <em>&ldquo;— A Brand of [Company Name] —&rdquo;</em></p>
+                                    <select
+                                        name="brandRelationType"
+                                        className="input"
+                                        defaultValue={['A Brand of', 'An Imprint of', 'A Division of', 'A Subsidiary of', 'A Publication of', 'A Member of'].includes(editingBrand?.brandRelationType) ? editingBrand?.brandRelationType : (editingBrand?.brandRelationType ? 'custom' : 'A Brand of')}
+                                        onChange={(e) => {
+                                            const customInput = e.currentTarget.closest('div')?.querySelector('input[name="brandRelationTypeCustom"]') as HTMLInputElement;
+                                            if (customInput) customInput.style.display = e.target.value === 'custom' ? 'block' : 'none';
+                                        }}
+                                    >
+                                        <option value="A Brand of">A Brand of</option>
+                                        <option value="An Imprint of">An Imprint of</option>
+                                        <option value="A Division of">A Division of</option>
+                                        <option value="A Subsidiary of">A Subsidiary of</option>
+                                        <option value="A Publication of">A Publication of</option>
+                                        <option value="A Member of">A Member of</option>
+                                        <option value="custom">Custom...</option>
+                                    </select>
+                                    <input
+                                        name="brandRelationTypeCustom"
+                                        className="input mt-2"
+                                        placeholder="Enter custom relationship label"
+                                        defaultValue={!['A Brand of', 'An Imprint of', 'A Division of', 'A Subsidiary of', 'A Publication of', 'A Member of', undefined, null, ''].includes(editingBrand?.brandRelationType) ? editingBrand?.brandRelationType : ''}
+                                        style={{ display: ['A Brand of', 'An Imprint of', 'A Division of', 'A Subsidiary of', 'A Publication of', 'A Member of', undefined, null, ''].includes(editingBrand?.brandRelationType) ? 'none' : 'block' }}
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="flex justify-end space-x-3 pt-4">
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setShowBrandModal(false);
+                                        setEditingBrand(null);
+                                    }}
+                                    className="btn btn-secondary px-8"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="submit"
+                                    disabled={actionLoading}
+                                    className="btn btn-primary px-10 shadow-lg shadow-primary-200"
+                                >
+                                    {actionLoading ? 'Saving...' : (editingBrand ? 'Update Brand' : 'Register Brand')}
                                 </button>
                             </div>
                         </form>

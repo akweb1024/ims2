@@ -1,21 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { getAuthenticatedUser } from '@/lib/auth-legacy';
+import { authorizedRoute } from '@/lib/middleware-auth';
+import { handleApiError, ValidationError, NotFoundError } from '@/lib/error-handler';
 import { InvoiceStatus } from '@/types';
 import { FinanceService } from '@/lib/services/finance';
 import { logger } from '@/lib/logger';
 
-// ... imports
-
-export async function GET(req: NextRequest) {
+export const GET = authorizedRoute(
+    [],
+    async (req: NextRequest, user) => {
     try {
-        // 1. Verify Authentication
-        const decoded = await getAuthenticatedUser();
-        if (!decoded || !decoded.role) {
-            return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
-        }
-
-        // 2. Parse Query Parameters
+        // Parse Query Parameters
         const { searchParams } = new URL(req.url);
         const page = parseInt(searchParams.get('page') || '1');
         const limit = parseInt(searchParams.get('limit') || '10');
@@ -26,7 +21,7 @@ export async function GET(req: NextRequest) {
 
         // 3. Build Filter
         const where: any = {};
-        const userCompanyId = (decoded as any).companyId;
+        const userCompanyId = user.companyId;
 
         if (userCompanyId) {
             where.companyId = userCompanyId;
@@ -47,12 +42,12 @@ export async function GET(req: NextRequest) {
         }
 
         // Role-based filtering: Customers only see their own invoices
-        if (decoded.role === 'CUSTOMER') {
-            const profile = await prisma.customerProfile.findUnique({ where: { userId: decoded.id } });
+        if (user.role === 'CUSTOMER') {
+            const profile = await prisma.customerProfile.findUnique({ where: { userId: user.id } });
             if (profile) {
                 where.OR = [
-                    { customerProfileId: profile.id }, // Direct one-off
-                    { subscription: { customerProfileId: profile.id } } // Via subscription
+                    { customerProfileId: profile.id },
+                    { subscription: { customerProfileId: profile.id } }
                 ];
             } else {
                 return NextResponse.json({ data: [], pagination: { page, limit, total: 0, totalPages: 0 } });
@@ -93,32 +88,25 @@ export async function GET(req: NextRequest) {
 
         return NextResponse.json({
             data: invoices,
-            pagination: {
-                page,
-                limit,
-                total,
-                totalPages: Math.ceil(total / limit)
-            }
+            pagination: { page, limit, total, totalPages: Math.ceil(total / limit) }
         });
 
     } catch (error: any) {
-        logger.error('Invoices API Error', error);
-        return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+        return handleApiError(error, req.nextUrl.pathname);
     }
-}
+    }
+);
 
-export async function POST(req: NextRequest) {
+export const POST = authorizedRoute(
+    ['SUPER_ADMIN', 'FINANCE_ADMIN', 'MANAGER'],
+    async (req: NextRequest, user) => {
     try {
-        const decoded = await getAuthenticatedUser();
-        if (!decoded || !['SUPER_ADMIN', 'FINANCE_ADMIN', 'MANAGER'].includes(decoded.role)) {
-            return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
-        }
-
         const body = await req.json();
-        const { customerProfileId, brandId, dueDate, lineItems, description, taxRate = 0, currency = 'INR' } = body;
+        const { customerProfileId, brandId, couponId, couponCode, discountType, discountValue, discountAmount,
+                dueDate, lineItems, description, taxRate = 0, currency = 'INR' } = body;
 
         if (!customerProfileId || !lineItems || lineItems.length === 0) {
-            return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+            throw new ValidationError('customerProfileId and at least one lineItem are required');
         }
 
         // Calculate Totals
@@ -132,8 +120,8 @@ export async function POST(req: NextRequest) {
             };
         });
 
-        const tax = subtotal * (Number(taxRate) / 100);
-        const total = subtotal + tax;
+        const tax = (subtotal - Number(discountAmount || 0)) * (Number(taxRate) / 100);
+        const total = subtotal - Number(discountAmount || 0) + tax;
 
         // Generate Invoice Number
         const year = new Date().getFullYear();
@@ -144,8 +132,58 @@ export async function POST(req: NextRequest) {
             where: { id: customerProfileId }
         });
 
-        if (!customer) {
-            return NextResponse.json({ error: 'Customer not found' }, { status: 404 });
+        if (!customer) throw new NotFoundError('Customer');
+
+        // Fetch Brand and Company for Snapshots
+        const company = await prisma.company.findUnique({
+            where: { id: (user.companyId ?? customer.companyId) as string }
+        });
+
+        let brandSnapshot: any = {
+            brandRelationType: company?.brandRelationType || 'A Brand of' as string,
+            companyLogoUrl: company?.invoiceCompanyLogoUrl || company?.logoUrl || null,
+            brandLogoUrl: company?.logoUrl || null,
+            brandAddress: company?.address || null,
+            brandEmail: company?.email || null,
+            brandWebsite: company?.website || null
+        };
+
+        if (brandId) {
+            const brand = await prisma.brand.findUnique({
+                where: { id: brandId }
+            });
+            if (brand) {
+                // If brand has its own details, override the defaults
+                brandSnapshot = {
+                    brandRelationType: brand.brandRelationType || brandSnapshot.brandRelationType,
+                    brandLogoUrl: brand.logoUrl || brandSnapshot.brandLogoUrl,
+                    companyLogoUrl: brand.companyLogoUrl || brandSnapshot.companyLogoUrl,
+                    brandAddress: brand.address || brandSnapshot.brandAddress,
+                    brandEmail: brand.email || brandSnapshot.brandEmail,
+                    brandWebsite: brand.website || brandSnapshot.brandWebsite
+                };
+            }
+        }
+
+        const companyStateCode = company?.stateCode;
+        const placeOfSupplyCode = (customer as any).shippingStateCode || (customer as any).billingStateCode;
+        
+        // Calculate CGST, SGST, IGST
+        let cgst = 0, sgst = 0, igst = 0;
+        let cgstRate = 0, sgstRate = 0, igstRate = 0;
+        
+        if (Number(taxRate) > 0) {
+            if (companyStateCode && placeOfSupplyCode && companyStateCode === placeOfSupplyCode) {
+                // Intra-state (Same state)
+                cgstRate = Number(taxRate) / 2;
+                sgstRate = Number(taxRate) / 2;
+                cgst = tax / 2;
+                sgst = tax / 2;
+            } else {
+                // Inter-state (Different state)
+                igstRate = Number(taxRate);
+                igst = tax;
+            }
         }
 
         const newInvoice = await (prisma.invoice as any).create({
@@ -175,35 +213,59 @@ export async function POST(req: NextRequest) {
                 shippingCountry: (customer as any).shippingCountry || (customer as any).billingCountry || 'India',
 
                 placeOfSupply: (customer as any).shippingState || (customer as any).billingState,
-                placeOfSupplyCode: (customer as any).shippingStateCode || (customer as any).billingStateCode,
+                placeOfSupplyCode: placeOfSupplyCode,
+                companyStateCode: companyStateCode,
+
+                cgst,
+                sgst,
+                igst,
+                cgstRate,
+                sgstRate,
+                igstRate,
+
+                // Branding Snapshots
+                ...brandSnapshot,
 
                 status: 'UNPAID',
                 description,
                 currency,
-                lineItems: processedItems, // Saved as JSON
-                companyId: (decoded as any).companyId,
-                brandId: brandId || null
+                lineItems: processedItems,
+                companyId: user.companyId,
+                brandId: brandId || null,
+                // Coupon / Discount
+                couponId: couponId || null,
+                couponCode: couponCode || null,
+                discountType: discountType || null,
+                discountValue: discountValue ? Number(discountValue) : 0,
+                discountAmount: discountAmount ? Number(discountAmount) : 0,
             }
         });
 
+        // Increment coupon usedCount atomically
+        if (couponId) {
+            await prisma.coupon.update({
+                where: { id: couponId },
+                data: { usedCount: { increment: 1 } }
+            }).catch((err: any) => logger.error('Failed to increment coupon usage', err, { couponId }));
+        }
 
 
-        // --- Finance Automation ---
+
+        // Finance Automation (non-blocking)
         try {
-            if ((decoded as any).companyId) {
-                await FinanceService.postInvoiceJournal((decoded as any).companyId, newInvoice.id);
+            if (user.companyId) {
+                await FinanceService.postInvoiceJournal(user.companyId, newInvoice.id);
             }
         } catch (financeError) {
             logger.error('Failed to post invoice journal', financeError, { invoiceId: newInvoice.id });
-            // Non-blocking error
         }
-        // --------------------------
 
-        return NextResponse.json(newInvoice);
+        logger.info('Invoice created', { invoiceId: newInvoice.id, invoiceNumber: newInvoice.invoiceNumber, createdBy: user.id });
+
+        return NextResponse.json(newInvoice, { status: 201 });
 
     } catch (error: any) {
-        logger.error('Create Invoice Error', error);
-        return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+        return handleApiError(error, req.nextUrl.pathname);
     }
-}
-
+    }
+);

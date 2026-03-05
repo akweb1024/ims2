@@ -109,7 +109,7 @@ export const POST = authorizedRoute(
             return NextResponse.json(review);
         } catch (error) {
             if (error instanceof z.ZodError) {
-                return createErrorResponse('Validation failed', 400, (error as any).errors);
+                return createErrorResponse(error);
             }
             return createErrorResponse(error);
         }

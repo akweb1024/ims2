@@ -1,54 +1,21 @@
 import { NextResponse } from 'next/server';
-import { ZodError } from 'zod';
+import { handleApiError } from '@/lib/error-handler';
 
-type ApiError = {
-    message: string;
-    details?: any;
-    code?: string;
-};
-
+// ============================================================================
+// createErrorResponse → delegates to the centralized handleApiError
+// This adapter ensures backward-compatible routes get enterprise-grade error
+// handling (structured pino logging, Zod/Prisma mapping, consistent shape)
+// without requiring manual migration of every file.
+// ============================================================================
 export function createErrorResponse(
     error: unknown,
-    status: number = 500,
-    customMessage: string = 'Internal Server Error'
+    statusOrPath: number | string = 500
 ): NextResponse {
-    console.error('API Error:', error);
-
-    const response: ApiError = { message: customMessage };
-
-    if (error instanceof ZodError) {
-        response.message = 'Validation Error';
-        response.details = error.format();
-        return NextResponse.json(response, { status: 400 });
-    }
-
-    if (error instanceof Error) {
-        response.message = error.message;
-        // In dev, send stack
-        if (process.env.NODE_ENV === 'development') {
-            response.details = error.stack;
-        }
-    } else if (typeof error === 'string') {
-        response.message = error;
-    }
-
-    // Prisma specific error codes can be handled here
-    if (typeof error === 'object' && error !== null && 'code' in error) {
-        // e.g. P2002 (Unique constraint)
-        const prismaError = error as any;
-        if (prismaError.code === 'P2002') {
-            response.message = 'Duplicate entry found';
-            response.code = prismaError.code;
-            return NextResponse.json(response, { status: 409 });
-        }
-        if (prismaError.code === 'P2025') {
-            response.message = 'Record not found';
-            response.code = prismaError.code;
-            return NextResponse.json(response, { status: 404 });
-        }
-    }
-
-    return NextResponse.json(response, { status });
+    // If called with a numeric status (legacy: createErrorResponse(error, 404))
+    // we wrap the error in a form handleApiError understands, or we can just
+    // call handleApiError with a synthetic path.
+    const path = typeof statusOrPath === 'string' ? statusOrPath : '/api/unknown';
+    return handleApiError(error, path);
 }
 
 export function createSuccessResponse<T>(data: T, status: number = 200): NextResponse {

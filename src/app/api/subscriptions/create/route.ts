@@ -16,21 +16,31 @@ export async function POST(request: NextRequest) {
 
         const body = await request.json();
         const {
-
             customerProfileId,
             startDate,
             endDate,
             salesChannel,
             agencyId,
-            items, // list of { journalId, planId, quantity }
+            items, // list of { planId, courseId, workshopId, productId, quantity }
             autoRenew,
             currency = 'INR',
             taxRate = 0
         } = body;
 
-        // 2. Validation
-        if (!customerProfileId || !items || items.length === 0) {
-            return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+        // 2. Fetch Customer and Company for Snapshots
+        const customer = await prisma.customerProfile.findUnique({
+            where: { id: customerProfileId },
+            include: { company: true }
+        });
+
+        if (!customer) return NextResponse.json({ error: 'Customer not found' }, { status: 404 });
+
+        const company = customer.company;
+        const targetCompanyId = (decoded as any).companyId || customer.companyId;
+
+        // 3. Validation and Item Processing
+        if (!items || items.length === 0) {
+            return NextResponse.json({ error: 'Missing required items' }, { status: 400 });
         }
 
         // Validate Agency if Sales Channel is AGENCY
@@ -48,59 +58,118 @@ export async function POST(request: NextRequest) {
                 return NextResponse.json({ error: 'Invalid Agency' }, { status: 400 });
             }
 
-            if (agency.agencyDetails?.discountRate) {
-                appliedDiscountRate = agency.agencyDetails.discountRate;
-            }
+            appliedDiscountRate = agency.agencyDetails?.discountRate || 0;
         }
 
-        // 3. Calculate Totals
-        let selectedCurrencyTotal = 0;
+        // 4. Calculate Totals and Process Items
+        let subtotal = 0;
         let totalInINR = 0;
         let totalInUSD = 0;
         const subscriptionItems: any[] = [];
+        const invoiceLineItems: any[] = [];
 
         for (const item of items) {
-            const plan = await prisma.plan.findUnique({
-                where: { id: item.planId },
-                include: { journal: true }
-            });
+            let price = 0;
+            let pINR = 0;
+            let pUSD = 0;
+            let description = '';
 
-            if (!plan) return NextResponse.json({ error: `Plan ${item.planId} not found` }, { status: 404 });
+            if (item.planId) {
+                const plan = await prisma.plan.findUnique({
+                    where: { id: item.planId },
+                    include: { journal: true }
+                });
+                if (!plan) return NextResponse.json({ error: `Plan ${item.planId} not found` }, { status: 404 });
+                pINR = plan.priceINR;
+                pUSD = plan.priceUSD;
+                description = `Journal: ${plan.journal.name} (${plan.planType})`;
+            } else if (item.courseId) {
+                const course = await prisma.course.findUnique({ where: { id: item.courseId } });
+                if (!course) return NextResponse.json({ error: `Course ${item.courseId} not found` }, { status: 404 });
+                pINR = course.price || 0;
+                pUSD = 0;
+                description = `Course: ${course.title}`;
+            } else if (item.workshopId) {
+                const workshop = await prisma.workshop.findUnique({ where: { id: item.workshopId } });
+                if (!workshop) return NextResponse.json({ error: `Workshop ${item.workshopId} not found` }, { status: 404 });
+                pINR = workshop.price || 0;
+                pUSD = 0;
+                description = `Workshop: ${workshop.title}`;
+            } else if (item.productId) {
+                const product = await (prisma as any).product.findUnique({ where: { id: item.productId } });
+                if (!product) return NextResponse.json({ error: `Product ${item.productId} not found` }, { status: 404 });
+                pINR = product.priceINR;
+                pUSD = product.priceUSD;
+                description = `${product.type}: ${product.name}`;
+            }
 
-            const price = currency === 'USD' ? plan.priceUSD : plan.priceINR;
-            selectedCurrencyTotal += price * (item.quantity || 1);
-
-            totalInINR += plan.priceINR * (item.quantity || 1);
-            totalInUSD += plan.priceUSD * (item.quantity || 1);
+            price = currency === 'USD' ? pUSD : pINR;
+            const qty = item.quantity || 1;
+            
+            subtotal += price * qty;
+            totalInINR += pINR * qty;
+            totalInUSD += pUSD * qty;
 
             subscriptionItems.push({
-                journalId: plan.journalId,
-                planId: plan.id,
-                quantity: item.quantity || 1,
+                journalId: item.journalId || null,
+                planId: item.planId || null,
+                courseId: item.courseId || null,
+                workshopId: item.workshopId || null,
+                productId: item.productId || null,
+                quantity: qty,
                 price: price
+            });
+
+            invoiceLineItems.push({
+                description,
+                quantity: qty,
+                unitPrice: price,
+                total: price * qty
             });
         }
 
-        // Apply Discount
-        // Discount is applied to the total amount in selected currency
-        const discountAmount = selectedCurrencyTotal * (appliedDiscountRate / 100);
-        const taxableAmount = selectedCurrencyTotal - discountAmount;
+        // Apply Discount and Tax
+        const discountAmount = subtotal * (appliedDiscountRate / 100);
+        const taxableAmount = subtotal - discountAmount;
         const taxAmount = taxableAmount * (Number(taxRate) / 100);
         const finalTotal = taxableAmount + taxAmount;
 
-        // Prepare Invoice Line Items
-        const invoiceLineItems = subscriptionItems.map(si => ({
-            ...si,
-            description: items.find((i: any) => i.journalId === si.journalId)?.journalName || 'Journal Subscription'
-        }));
+        // Calculate SGST/CGST/IGST for the invoice
+        const companyStateCode = company?.stateCode;
+        const placeOfSupplyCode = (customer as any).shippingStateCode || (customer as any).billingStateCode;
+        
+        let cgst = 0, sgst = 0, igst = 0;
+        let cgstRate = 0, sgstRate = 0, igstRate = 0;
+        
+        if (Number(taxRate) > 0) {
+            if (companyStateCode && placeOfSupplyCode && companyStateCode === placeOfSupplyCode) {
+                cgstRate = Number(taxRate) / 2;
+                sgstRate = Number(taxRate) / 2;
+                cgst = taxAmount / 2;
+                sgst = taxAmount / 2;
+            } else {
+                igstRate = Number(taxRate);
+                igst = taxAmount;
+            }
+        }
 
-        // 4. Create Subscription and Invoice in a transaction
+        // Branding Snapshot
+        const brandSnapshot = {
+            brandRelationType: (company as any)?.brandRelationType || 'A Brand of',
+            companyLogoUrl: (company as any)?.invoiceCompanyLogoUrl || company?.logoUrl || null,
+            brandLogoUrl: company?.logoUrl || null,
+            brandAddress: company?.address || null,
+            brandEmail: company?.email || null,
+            brandWebsite: company?.website || null
+        };
+
+        // 5. Create Subscription and Invoice in a transaction
         const result = await prisma.$transaction(async (tx: any) => {
-            try {
-                // Create Subscription
-                const subscriptionData: any = {
+            // Create Subscription
+            const subscription = await tx.subscription.create({
+                data: {
                     customerProfileId,
-                    companyId: (decoded as any).companyId,
+                    companyId: targetCompanyId,
                     startDate: new Date(startDate),
                     endDate: new Date(endDate),
                     salesChannel,
@@ -108,59 +177,69 @@ export async function POST(request: NextRequest) {
                     autoRenew: autoRenew || false,
                     status: 'PENDING_PAYMENT',
                     currency,
-                    subtotal: selectedCurrencyTotal,
+                    subtotal,
                     discount: discountAmount,
                     tax: taxAmount,
-                    total: finalTotal, // Store discounted total with tax
+                    total: finalTotal,
                     subtotalInINR: totalInINR, 
                     subtotalInUSD: totalInUSD,
-                    // Apply both discount AND tax to the base currency totals for consistency
                     totalInINR: (totalInINR * (1 - appliedDiscountRate / 100)) * (1 + Number(taxRate) / 100),
                     totalInUSD: (totalInUSD * (1 - appliedDiscountRate / 100)) * (1 + Number(taxRate) / 100),
                     salesExecutiveId: decoded.id,
                     items: {
                         create: subscriptionItems
                     }
-                };
+                }
+            });
 
-                const subscription = await tx.subscription.create({
-                    data: subscriptionData
-                });
+            // Create Invoice
+            const invoiceNumber = `INV-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+            const invoice = await tx.invoice.create({
+                data: {
+                    subscriptionId: subscription.id,
+                    customerProfileId,
+                    companyId: targetCompanyId,
+                    invoiceNumber,
+                    currency,
+                    amount: taxableAmount,
+                    tax: taxAmount,
+                    total: finalTotal,
+                    taxRate: Number(taxRate),
+                    status: 'UNPAID',
+                    dueDate: new Date(new Date().getTime() + 15 * 24 * 60 * 60 * 1000),
+                    lineItems: invoiceLineItems,
+                    
+                    // Tax Details
+                    cgst, sgst, igst,
+                    cgstRate, sgstRate, igstRate,
+                    placeOfSupplyCode,
+                    companyStateCode,
+                    
+                    // Address Snapshots
+                    billingAddress: customer.billingAddress,
+                    billingCity: customer.billingCity,
+                    billingState: customer.billingState,
+                    billingStateCode: customer.billingStateCode,
+                    billingPincode: customer.billingPincode,
+                    billingCountry: customer.billingCountry,
 
-                // Create Invoice
-                const invoiceNumber = `INV-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
-                const invoice = await tx.invoice.create({
-                    data: {
-                        subscriptionId: subscription.id,
-                        customerProfileId,
-                        companyId: (decoded as any).companyId,
-                        invoiceNumber,
-                        currency,
-                        amount: taxableAmount, // Subtotal after discount
-                        tax: taxAmount,
-                        total: finalTotal,
-                        status: 'UNPAID',
-                        dueDate: new Date(new Date().getTime() + 15 * 24 * 60 * 60 * 1000),
-                        lineItems: invoiceLineItems
-                    }
-                });
+                    // Branding Snapshots
+                    ...brandSnapshot
+                }
+            });
 
-                // Log Audit
-                await tx.auditLog.create({
-                    data: {
-                        userId: decoded.id,
-                        action: 'create',
-                        entity: 'subscription',
-                        entityId: subscription.id,
-                        changes: JSON.stringify({ total: finalTotal, discount: discountAmount, agencyId, itemsCount: items.length })
-                    }
-                });
+            // Log Audit
+            await tx.auditLog.create({
+                data: {
+                    userId: decoded.id,
+                    action: 'create',
+                    entity: 'subscription',
+                    entityId: subscription.id,
+                    changes: JSON.stringify({ total: finalTotal, discount: discountAmount, agencyId, itemsCount: items.length })
+                }
+            });
 
-                return { subscription, invoice };
-            } catch (err: any) {
-                logger.error('Subscription Transaction Error', err);
-                throw err;
-            }
+            return { subscription, invoice };
         });
 
         return NextResponse.json({

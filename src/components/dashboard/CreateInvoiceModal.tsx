@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { X, Plus, Trash2, Search, User } from 'lucide-react';
+import { X, Plus, Trash2, Search, User, Ticket } from 'lucide-react';
+import { CustomerType } from '@/types';
 import GuidelineHelp from './GuidelineHelp';
 
 interface CreateInvoiceModalProps {
@@ -31,6 +32,22 @@ export default function CreateInvoiceModal({ isOpen, onClose, onSuccess }: Creat
     const [currency, setCurrency] = useState('INR');
     const [taxRate, setTaxRate] = useState(18); // Default GST 18%
     const searchTimeout = useRef<any>(null);
+
+    // Coupon / Discount
+    const [couponCode, setCouponCode] = useState('');
+    const [couponResult, setCouponResult] = useState<any>(null);
+    const [couponError, setCouponError] = useState('');
+    const [couponLoading, setCouponLoading] = useState(false);
+    const [isCreatingCustomer, setIsCreatingCustomer] = useState(false);
+    const [newCustomerForm, setNewCustomerForm] = useState({
+        name: '',
+        primaryEmail: '',
+        customerType: 'INDIVIDUAL' as CustomerType,
+        organizationName: '',
+        gstVatTaxId: '',
+        primaryPhone: '',
+    });
+    const [creatingCustomerLoading, setCreatingCustomerLoading] = useState(false);
 
     const handleTaxTypeChange = (type: 'DOMESTIC' | 'INTERNATIONAL') => {
         setTaxType(type);
@@ -125,6 +142,84 @@ export default function CreateInvoiceModal({ isOpen, onClose, onSuccess }: Creat
         return items.reduce((acc, item) => acc + (Number(item.quantity) * Number(item.price)), 0);
     };
 
+    const calculateDiscount = () => couponResult?.discountAmount || 0;
+
+    const calculateTaxableAmount = () => Math.max(0, calculateTotal() - calculateDiscount());
+
+    const applyScoupon = async () => {
+        if (!couponCode.trim()) return;
+        setCouponLoading(true);
+        setCouponError('');
+        setCouponResult(null);
+        try {
+            const token = localStorage.getItem('token');
+            const res = await fetch('/api/coupons/validate', {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    code: couponCode,
+                    subtotal: calculateTotal(),
+                    brandId: selectedBrandId || null
+                })
+            });
+            const data = await res.json();
+            if (data.valid) {
+                setCouponResult(data);
+            } else {
+                setCouponError(data.error || 'Invalid coupon');
+            }
+        } catch (err) {
+            setCouponError('Failed to validate coupon');
+        } finally {
+            setCouponLoading(false);
+        }
+    };
+
+    const handleCreateCustomer = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setCreatingCustomerLoading(true);
+        try {
+            const token = localStorage.getItem('token');
+            const res = await fetch('/api/customers', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(newCustomerForm)
+            });
+
+            if (res.ok) {
+                const customer = await res.json();
+                setSelectedCustomer(customer);
+                setStep(2);
+                setIsCreatingCustomer(false);
+                setNewCustomerForm({
+                    name: '',
+                    primaryEmail: '',
+                    customerType: 'INDIVIDUAL',
+                    organizationName: '',
+                    gstVatTaxId: '',
+                    primaryPhone: '',
+                });
+            } else {
+                const err = await res.json();
+                alert(err.error || 'Failed to create customer');
+            }
+        } catch (error) {
+            console.error(error);
+            alert('An error occurred while creating customer');
+        } finally {
+            setCreatingCustomerLoading(false);
+        }
+    };
+
+    const removeCoupon = () => {
+        setCouponResult(null);
+        setCouponCode('');
+        setCouponError('');
+    };
+
     const handleSubmit = async () => {
         if (!selectedCustomer || !dueDate || items.some(i => !i.description || i.price <= 0)) {
             alert('Please fill in all required fields');
@@ -147,7 +242,13 @@ export default function CreateInvoiceModal({ isOpen, onClose, onSuccess }: Creat
                     lineItems: items.map(({ id, description, quantity, price }) => ({ id, description, quantity, price })),
                     taxRate,
                     currency,
-                    brandId: selectedBrandId || null
+                    brandId: selectedBrandId || null,
+                    // Coupon
+                    couponId: couponResult?.coupon?.id || null,
+                    couponCode: couponResult?.coupon?.code || null,
+                    discountType: couponResult?.coupon?.discountType || null,
+                    discountValue: couponResult?.coupon?.discountValue || 0,
+                    discountAmount: couponResult?.discountAmount || 0,
                 })
             });
 
@@ -183,46 +284,164 @@ export default function CreateInvoiceModal({ isOpen, onClose, onSuccess }: Creat
 
                 <div className="flex-1 overflow-y-auto p-6 scrollbar-hide">
                     {step === 1 ? (
-                        <div className="space-y-6">
-                            <div className="relative">
-                                <label className="label mb-2 block">Search Customer / Organization</label>
-                                <div className="relative">
-                                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
-                                    <input
-                                        type="text"
-                                        className="input-premium pl-12 w-full"
-                                        placeholder="Type name, email, or organization..."
-                                        value={customerSearch}
-                                        onChange={e => setCustomerSearch(e.target.value)}
-                                        autoFocus
-                                    />
-                                </div>
-                                {searching && <p className="text-xs text-secondary-400 mt-2 ml-1">Searching...</p>}
+                        <div className="p-8 space-y-6 overflow-y-auto">
+                            <div className="flex items-center justify-between mb-4">
+                                <h3 className="text-lg font-bold text-gray-800">
+                                    {isCreatingCustomer ? 'New Customer Details' : 'Select Customer'}
+                                </h3>
+                                <button 
+                                    onClick={() => setIsCreatingCustomer(!isCreatingCustomer)}
+                                    className="text-sm font-bold text-primary-600 hover:text-primary-700 underline flex items-center gap-1"
+                                >
+                                    {isCreatingCustomer ? '← Search Existing' : '+ Create New Customer'}
+                                </button>
                             </div>
 
-                            <div className="space-y-2">
-                                {customers.map(c => (
-                                    <button
-                                        key={c.id}
-                                        onClick={() => {
-                                            setSelectedCustomer(c);
-                                            setStep(2);
-                                        }}
-                                        className="w-full text-left p-4 rounded-xl border border-gray-100 hover:border-primary-500 hover:bg-primary-50 transition-all group flex items-center gap-4"
-                                    >
-                                        <div className="w-10 h-10 rounded-full bg-gray-100 text-gray-500 flex items-center justify-center group-hover:bg-primary-100 group-hover:text-primary-600 transition-colors">
-                                            <User size={20} />
+                            {isCreatingCustomer ? (
+                                <form onSubmit={handleCreateCustomer} className="space-y-4 animate-fadeIn">
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="label">Full Name <span className="text-red-500">*</span></label>
+                                            <input 
+                                                className="input-premium w-full" 
+                                                placeholder="e.g. John Doe"
+                                                value={newCustomerForm.name}
+                                                onChange={e => setNewCustomerForm({...newCustomerForm, name: e.target.value})}
+                                                required
+                                            />
                                         </div>
                                         <div>
-                                            <p className="font-bold text-gray-900">{c.name}</p>
-                                            <p className="text-sm text-gray-500">{c.organizationName || c.primaryEmail}</p>
+                                            <label className="label">Email Address <span className="text-red-500">*</span></label>
+                                            <input 
+                                                className="input-premium w-full" 
+                                                type="email"
+                                                placeholder="e.g. john@example.com"
+                                                value={newCustomerForm.primaryEmail}
+                                                onChange={e => setNewCustomerForm({...newCustomerForm, primaryEmail: e.target.value})}
+                                                required
+                                            />
                                         </div>
-                                    </button>
-                                ))}
-                                {customers.length === 0 && customerSearch.length > 2 && !searching && (
-                                    <p className="text-center text-gray-400 py-8">No customers found.</p>
-                                )}
-                            </div>
+                                    </div>
+
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="label">Customer Type</label>
+                                            <select 
+                                                className="input-premium w-full"
+                                                value={newCustomerForm.customerType}
+                                                onChange={e => setNewCustomerForm({...newCustomerForm, customerType: e.target.value as CustomerType})}
+                                            >
+                                                <option value="INDIVIDUAL">Individual</option>
+                                                <option value="INSTITUTION">Institution</option>
+                                                <option value="AGENCY">Agency</option>
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label className="label">Phone Number</label>
+                                            <input 
+                                                className="input-premium w-full" 
+                                                placeholder="e.g. +91 9876543210"
+                                                value={newCustomerForm.primaryPhone}
+                                                onChange={e => setNewCustomerForm({...newCustomerForm, primaryPhone: e.target.value})}
+                                            />
+                                        </div>
+                                    </div>
+
+                                    {(newCustomerForm.customerType === 'INSTITUTION' || newCustomerForm.customerType === 'AGENCY') && (
+                                        <div className="grid grid-cols-2 gap-4 animate-slideDown">
+                                            <div>
+                                                <label className="label">Organization Name <span className="text-red-500">*</span></label>
+                                                <input 
+                                                    className="input-premium w-full" 
+                                                    placeholder="e.g. National Institute of Tech"
+                                                    value={newCustomerForm.organizationName}
+                                                    onChange={e => setNewCustomerForm({...newCustomerForm, organizationName: e.target.value})}
+                                                    required
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="label">GST / Tax ID</label>
+                                                <input 
+                                                    className="input-premium w-full" 
+                                                    placeholder="e.g. 05AAAAA0000A1Z5"
+                                                    value={newCustomerForm.gstVatTaxId}
+                                                    onChange={e => setNewCustomerForm({...newCustomerForm, gstVatTaxId: e.target.value})}
+                                                />
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    <div className="pt-4">
+                                        <button 
+                                            type="submit" 
+                                            disabled={creatingCustomerLoading}
+                                            className="btn btn-primary w-full py-4 text-base font-bold shadow-lg shadow-primary-200"
+                                        >
+                                            {creatingCustomerLoading ? 'Creating...' : 'Create & Proceed to Invoice'}
+                                        </button>
+                                    </div>
+                                </form>
+                            ) : (
+                                <>
+                                    <div className="relative">
+                                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">
+                                            <Search size={20} />
+                                        </span>
+                                        <input
+                                            type="text"
+                                            className="input-premium pl-12 w-full"
+                                            placeholder="Type name, email, or organization..."
+                                            value={customerSearch}
+                                            onChange={e => setCustomerSearch(e.target.value)}
+                                            autoFocus
+                                        />
+                                    </div>
+
+                                    <div className="space-y-3 max-h-80 overflow-y-auto pr-2 custom-scrollbar">
+                                        {customers.map(c => (
+                                            <button
+                                                key={c.id}
+                                                onClick={() => {
+                                                    setSelectedCustomer(c);
+                                                    setStep(2);
+                                                }}
+                                                className="w-full text-left p-4 rounded-xl border border-gray-100 hover:border-primary-500 hover:bg-primary-50 transition-all group flex items-center gap-4"
+                                            >
+                                                <div className="w-10 h-10 rounded-full bg-gray-100 text-gray-500 flex items-center justify-center group-hover:bg-primary-100 group-hover:text-primary-600 transition-colors">
+                                                    <User size={20} />
+                                                </div>
+                                                <div className="flex-1">
+                                                    <div className="flex items-center gap-2">
+                                                        <p className="font-bold text-gray-900">{c.name}</p>
+                                                        <span className={`text-[10px] px-1.5 py-0.5 rounded font-black uppercase
+                                                            ${c.customerType === 'INSTITUTION' ? 'bg-green-100 text-green-700' :
+                                                              c.customerType === 'AGENCY' ? 'bg-amber-100 text-amber-700' :
+                                                              'bg-blue-100 text-blue-700'}`}>
+                                                            {c.customerType}
+                                                        </span>
+                                                    </div>
+                                                    <p className="text-sm text-gray-500">{c.organizationName || c.primaryEmail}</p>
+                                                </div>
+                                            </button>
+                                        ))}
+
+                                        {customerSearch && customers.length === 0 && !loading && (
+                                            <div className="text-center py-8">
+                                                <p className="text-gray-500 mb-4 font-medium">No customer found named &ldquo;{customerSearch}&rdquo;</p>
+                                                <button 
+                                                    onClick={() => {
+                                                        setIsCreatingCustomer(true);
+                                                        setNewCustomerForm({...newCustomerForm, name: customerSearch});
+                                                    }}
+                                                    className="btn btn-secondary border-dashed"
+                                                >
+                                                    + Create &ldquo;{customerSearch}&rdquo; as new customer
+                                                </button>
+                                            </div>
+                                        )}
+                                    </div>
+                                </>
+                            )}
                         </div>
                     ) : (
                         <div className="space-y-6">
@@ -402,23 +621,71 @@ export default function CreateInvoiceModal({ isOpen, onClose, onSuccess }: Creat
                                 ))}
                             </div>
 
+                            {/* Coupon / Discount */}
+                            <div className="space-y-2">
+                                <label className="label">Discount Coupon (Optional)</label>
+                                {!couponResult ? (
+                                    <div className="flex gap-2">
+                                        <input
+                                            type="text"
+                                            className="input-premium flex-1 uppercase tracking-widest font-mono"
+                                            placeholder="ENTER COUPON CODE"
+                                            value={couponCode}
+                                            onChange={e => { setCouponCode(e.target.value.toUpperCase()); setCouponError(''); }}
+                                            onKeyDown={e => e.key === 'Enter' && applyScoupon()}
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={applyScoupon}
+                                            disabled={couponLoading || !couponCode.trim()}
+                                            className="btn btn-secondary px-5 font-bold disabled:opacity-50"
+                                        >
+                                            {couponLoading ? '...' : 'Apply'}
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <div className="flex items-center justify-between bg-green-50 border border-green-200 rounded-xl px-4 py-3">
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-green-600 text-lg">🎟️</span>
+                                            <div>
+                                                <p className="font-bold text-green-800 text-sm font-mono tracking-wider">{couponResult.coupon.code}</p>
+                                                <p className="text-xs text-green-600">
+                                                    {couponResult.coupon.discountType === 'PERCENTAGE'
+                                                        ? `${couponResult.coupon.discountValue}% off`
+                                                        : `₹${couponResult.coupon.discountValue} flat off`}
+                                                    {couponResult.coupon.description && ` — ${couponResult.coupon.description}`}
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <button onClick={removeCoupon} className="text-xs text-red-500 font-bold hover:underline">Remove</button>
+                                    </div>
+                                )}
+                                {couponError && <p className="text-xs text-red-500 font-medium">{couponError}</p>}
+                            </div>
+
                             <div className="bg-gray-50 p-6 rounded-2xl space-y-3">
                                 <div className="flex justify-between items-center text-sm">
                                     <span className="text-secondary-500 font-medium uppercase tracking-wider">Subtotal</span>
                                     <span className="text-secondary-900 font-bold">{currency === 'INR' ? '₹' : currency} {calculateTotal().toLocaleString()}</span>
                                 </div>
+                                {couponResult && (
+                                    <div className="flex justify-between items-center text-sm">
+                                        <span className="text-green-600 font-bold uppercase tracking-wider">🎟️ Coupon Discount</span>
+                                        <span className="text-green-600 font-bold">− {currency === 'INR' ? '₹' : currency} {calculateDiscount().toLocaleString()}</span>
+                                    </div>
+                                )}
                                 <div className="flex justify-between items-center text-sm">
                                     <span className="text-secondary-500 font-medium uppercase tracking-wider">
                                         {taxType === 'DOMESTIC' ? 'GST (18%)' : 'Tax (International)'}
                                     </span>
                                     <span className="text-secondary-900 font-bold">
-                                        {currency === 'INR' ? '₹' : currency} {(calculateTotal() * (taxRate / 100)).toLocaleString()}
+                                        {currency === 'INR' ? '₹' : currency} {(calculateTaxableAmount() * (taxRate / 100)).toLocaleString()}
                                     </span>
                                 </div>
                                 <div className="pt-3 border-t border-gray-200 flex justify-between items-center">
                                     <span className="text-base font-black text-gray-900 uppercase">Total Amount</span>
                                     <span className="text-2xl font-black text-primary-600">
-                                        {currency === 'INR' ? '₹' : currency} {(calculateTotal() * (1 + taxRate / 100)).toLocaleString()}
+                                        {currency === 'INR' ? '₹' : currency} {(calculateTaxableAmount() * (1 + taxRate / 100)).toLocaleString()}
                                     </span>
                                 </div>
                             </div>

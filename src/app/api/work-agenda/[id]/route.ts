@@ -50,6 +50,19 @@ export const GET = authorizedRoute(
                             status: true
                         }
                     },
+                    itProject: {
+                        select: {
+                            id: true,
+                            name: true
+                        }
+                    },
+                    itTask: {
+                        select: {
+                            id: true,
+                            title: true,
+                            status: true
+                        }
+                    },
                     comments: {
                         include: {
                             user: {
@@ -115,6 +128,8 @@ export const PUT = authorizedRoute(
                 linkedGoalId,
                 projectId,
                 taskId,
+                itProjectId,
+                itTaskId,
                 visibility
             } = body;
 
@@ -161,6 +176,8 @@ export const PUT = authorizedRoute(
                     ...(linkedGoalId !== undefined && { linkedGoalId: (linkedGoalId && linkedGoalId !== 'null') ? linkedGoalId : null }),
                     ...(projectId !== undefined && { projectId: (projectId && projectId !== 'null') ? projectId : null }),
                     ...(taskId !== undefined && { taskId: (taskId && taskId !== 'null') ? taskId : null }),
+                    ...(itProjectId !== undefined && { itProjectId: (itProjectId && itProjectId !== 'null') ? itProjectId : null }),
+                    ...(itTaskId !== undefined && { itTaskId: (itTaskId && itTaskId !== 'null') ? itTaskId : null }),
                     ...(visibility && { visibility })
                 } as any,
                 include: {
@@ -186,6 +203,17 @@ export const PUT = authorizedRoute(
                         }
                     },
                     task: {
+                        select: {
+                            title: true,
+                            status: true
+                        }
+                    },
+                    itProject: {
+                        select: {
+                            name: true
+                        }
+                    },
+                    itTask: {
                         select: {
                             title: true,
                             status: true
