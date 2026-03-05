@@ -3,14 +3,14 @@ import { prisma } from '@/lib/prisma';
 import { authorizedRoute } from '@/lib/middleware-auth';
 import { handleApiError, ValidationError, NotFoundError } from '@/lib/error-handler';
 import { logger } from '@/lib/logger';
+import { proformaStatusSchema, validateData } from '@/lib/validation/schemas';
 
 const db = prisma as any;
 
-// Valid FSM transitions (from → allowed_to[])
+// Allowed FSM transitions (CONVERTED + CANCELLED are terminal = not in map)
 const VALID_TRANSITIONS: Record<string, string[]> = {
     DRAFT: ['PAYMENT_PENDING', 'CANCELLED'],
     PAYMENT_PENDING: ['DRAFT', 'CANCELLED'],
-    // CONVERTED and CANCELLED are terminal states
 };
 
 export const POST = authorizedRoute(
@@ -18,10 +18,21 @@ export const POST = authorizedRoute(
     async (request: NextRequest, user: any, context?: any) => {
         try {
             const { id } = await context.params;
-            const body = await request.json();
-            const { toStatus, reason } = body;
 
-            if (!toStatus) throw new ValidationError('toStatus is required');
+            let body: any;
+            try { body = await request.json(); } catch {
+                throw new ValidationError('Invalid JSON in request body');
+            }
+
+            // Zod validation
+            const validation = validateData(proformaStatusSchema, body);
+            if (!validation.success) {
+                return NextResponse.json(
+                    { error: 'Validation failed', details: validation.errors },
+                    { status: 422 }
+                );
+            }
+            const { toStatus, reason } = validation.data!;
 
             const proforma = await db.proformaInvoice.findFirst({
                 where: { id, companyId: user.companyId, deletedAt: null }
@@ -29,11 +40,22 @@ export const POST = authorizedRoute(
 
             if (!proforma) throw new NotFoundError('Proforma invoice not found');
 
+            // Block already-at-target
+            if (proforma.status === toStatus) {
+                return NextResponse.json({
+                    success: true,
+                    message: `Proforma is already in ${toStatus} status`,
+                    proforma,
+                });
+            }
+
             const allowedTransitions = VALID_TRANSITIONS[proforma.status] || [];
             if (!allowedTransitions.includes(toStatus)) {
+                const isTerminal = ['CONVERTED', 'CANCELLED'].includes(proforma.status);
                 throw new ValidationError(
-                    `Invalid status transition: ${proforma.status} → ${toStatus}. ` +
-                    `Allowed: ${allowedTransitions.join(', ') || 'none (terminal state)'}`
+                    isTerminal
+                        ? `Proforma is in a terminal state (${proforma.status}) and cannot be transitioned.`
+                        : `Invalid transition: ${proforma.status} → ${toStatus}. Allowed: ${allowedTransitions.join(', ')}`
                 );
             }
 
@@ -43,6 +65,7 @@ export const POST = authorizedRoute(
                     data: { status: toStatus }
                 });
 
+                // Immutable FSM audit event
                 await tx.proformaAuditEvent.create({
                     data: {
                         proformaId: id,
@@ -51,17 +74,22 @@ export const POST = authorizedRoute(
                         fromStatus: proforma.status,
                         toStatus,
                         action: 'STATUS_CHANGE',
-                        metadata: { reason: reason || null }
+                        metadata: {
+                            reason: reason || null,
+                            ip: request.headers.get('x-forwarded-for') || null,
+                        }
                     }
                 });
 
                 return pf;
             });
 
-            logger.info(
-                'Proforma status transition',
-                { proformaId: id, from: proforma.status, to: toStatus, userId: user.id }
-            );
+            logger.info('Proforma status transition', {
+                proformaId: id,
+                from: proforma.status,
+                to: toStatus,
+                userId: user.id,
+            });
 
             return NextResponse.json({ success: true, proforma: updated });
         } catch (error) {

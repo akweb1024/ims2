@@ -411,3 +411,88 @@ export function validateData<T>(schema: z.ZodSchema<T>, data: unknown): {
     }
     return { success: false, errors: formatZodError(result.error) };
 }
+
+// ============================================================================
+// Proforma Invoice Schemas
+// ============================================================================
+
+export const proformaLineItemSchema = z.object({
+    description: z.string().min(1, 'Item description is required').max(500),
+    quantity: z.number().int().min(1, 'Quantity must be at least 1').max(9999),
+    unitPrice: z.number().min(0, 'Unit price must be >= 0').max(99_999_999),
+    total: z.number().optional(),
+    journalId: z.string().uuid().optional().nullable(),
+    planId: z.string().uuid().optional().nullable(),
+    courseId: z.string().uuid().optional().nullable(),
+    workshopId: z.string().uuid().optional().nullable(),
+    productId: z.string().uuid().optional().nullable(),
+});
+
+export const PROFORMA_SALES_CHANNELS = ['DIRECT', 'AGENCY', 'ONLINE', 'REFERRAL'] as const;
+export const PROFORMA_BILLING_FREQUENCIES = ['MONTHLY', 'QUARTERLY', 'ANNUAL', 'BIENNIAL'] as const;
+export const PROFORMA_CURRENCIES = ['INR', 'USD', 'EUR', 'GBP'] as const;
+export const PROFORMA_DISCOUNT_TYPES = ['PERCENTAGE', 'FIXED'] as const;
+export const PROFORMA_PAYMENT_METHODS = ['BANK_TRANSFER', 'CHEQUE', 'ONLINE', 'CASH', 'DD', 'UPI'] as const;
+
+export const proformaCreateSchema = z.object({
+    customerProfileId: z.string().uuid('Invalid customer ID'),
+    subject: z.string().max(300).optional().default('Proforma Invoice'),
+    salesChannel: z.enum(PROFORMA_SALES_CHANNELS).optional().default('DIRECT'),
+    agencyId: z.string().uuid().optional().nullable(),
+    startDate: z.string().optional().nullable(),
+    endDate: z.string().optional().nullable(),
+    autoRenew: z.boolean().optional().default(false),
+    currency: z.enum(PROFORMA_CURRENCIES).optional().default('INR'),
+    billingFrequency: z.enum(PROFORMA_BILLING_FREQUENCIES).optional().default('ANNUAL'),
+    taxRate: z.number().min(0).max(100).optional().default(18),
+    discountType: z.enum(PROFORMA_DISCOUNT_TYPES).optional().nullable(),
+    discountValue: z.number().min(0).optional().default(0),
+    notes: z.string().max(2000).optional().nullable(),
+    validUntil: z.string().optional().nullable(),
+    lineItems: z.array(proformaLineItemSchema)
+        .min(1, 'At least one line item is required')
+        .max(50, 'Maximum 50 line items per proforma'),
+    idempotencyKey: z.string().max(128).optional().nullable(),
+}).refine(
+    (data) => {
+        if (data.discountType === 'PERCENTAGE' && (data.discountValue || 0) > 100) return false;
+        return true;
+    },
+    { message: 'Percentage discount cannot exceed 100%', path: ['discountValue'] }
+);
+
+export const proformaUpdateSchema = z.object({
+    subject: z.string().max(300).optional(),
+    salesChannel: z.enum(PROFORMA_SALES_CHANNELS).optional(),
+    agencyId: z.string().uuid().optional().nullable(),
+    startDate: z.string().optional().nullable(),
+    endDate: z.string().optional().nullable(),
+    autoRenew: z.boolean().optional(),
+    currency: z.enum(PROFORMA_CURRENCIES).optional(),
+    billingFrequency: z.enum(PROFORMA_BILLING_FREQUENCIES).optional(),
+    taxRate: z.number().min(0).max(100).optional(),
+    discountType: z.enum(PROFORMA_DISCOUNT_TYPES).optional().nullable(),
+    discountValue: z.number().min(0).optional(),
+    notes: z.string().max(2000).optional().nullable(),
+    validUntil: z.string().optional().nullable(),
+    lineItems: z.array(proformaLineItemSchema).min(1).max(50).optional(),
+});
+
+export const proformaStatusSchema = z.object({
+    toStatus: z.enum(['DRAFT', 'PAYMENT_PENDING', 'CANCELLED']).refine(
+        (v) => ['DRAFT', 'PAYMENT_PENDING', 'CANCELLED'].includes(v),
+        { message: 'toStatus must be DRAFT, PAYMENT_PENDING, or CANCELLED' }
+    ),
+    reason: z.string().max(500).optional().nullable(),
+});
+
+export const proformaConvertSchema = z.object({
+    paymentAmount: z.number().positive('Payment amount must be positive'),
+    paymentMethod: z.enum(PROFORMA_PAYMENT_METHODS).optional().default('BANK_TRANSFER'),
+    paymentReference: z.string().max(200).optional().nullable(),
+    paymentDate: z.string().optional().nullable(),
+    startDate: z.string().optional().nullable(),
+    endDate: z.string().optional().nullable(),
+    notes: z.string().max(1000).optional().nullable(),
+});
+

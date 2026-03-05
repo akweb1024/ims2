@@ -1,58 +1,72 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { authorizedRoute } from '@/lib/middleware-auth';
-import { handleApiError, ValidationError, NotFoundError, AuthorizationError } from '@/lib/error-handler';
+import {
+    handleApiError,
+    ValidationError,
+    NotFoundError,
+    AuthorizationError,
+} from '@/lib/error-handler';
 import { logger } from '@/lib/logger';
+import { proformaConvertSchema, validateData } from '@/lib/validation/schemas';
 
 const db = prisma as any;
 
 /**
  * POST /api/proforma/[id]/convert
  *
- * Atomically converts a PAYMENT_PENDING proforma into:
- *   1. Permanent Invoice (PAID, sequential number, tax-compliant)
- *   2. Active Subscription (service entitlement starts immediately)
- *   3. Payment ledger record
- *   4. RevenueTransaction (accounting)
- *   5. AuditLog entry
- *   6. ProformaAuditEvent (FSM terminal → CONVERTED)
+ * Converts a PAYMENT_PENDING proforma into a permanent Invoice + Subscription.
  *
- * Idempotent: repeat calls return existing result without re-executing.
- * Validates paymentAmount against proforma.total within ±0.01 tolerance.
+ * Transaction guarantees (ACID):
+ *   a. Subscription created (ACTIVE)
+ *   b. Invoice created (PAID, sequential number)
+ *   c. Payment record created
+ *   d. RevenueTransaction created
+ *   e. AuditLog entry
+ *   f. ProformaInvoice sealed (CONVERTED, convertedInvoiceId set)
+ *   g. ProformaAuditEvent (terminal FSM event)
+ *
+ * Idempotency: if convertedInvoiceId already set, returns existing data.
+ * Payment precision: amount must match proforma.total ±₹0.01.
+ * Role gate: SUPER_ADMIN or MANAGER only.
  */
 export const POST = authorizedRoute(
     ['SUPER_ADMIN', 'MANAGER'],
     async (request: NextRequest, user: any, context?: any) => {
         try {
             const { id } = await context.params;
-            const body = await request.json();
-            const {
-                paymentAmount,
-                paymentMethod = 'BANK_TRANSFER',
-                paymentReference,
-                paymentDate,
-                startDate,
-                endDate,
-                notes,
-            } = body;
 
-            // ── 1. Load proforma ──────────────────────────────────────────
+            let body: any;
+            try { body = await request.json(); } catch {
+                throw new ValidationError('Invalid JSON in request body');
+            }
+
+            // Zod validation
+            const validation = validateData(proformaConvertSchema, body);
+            if (!validation.success) {
+                return NextResponse.json(
+                    { error: 'Validation failed', details: validation.errors },
+                    { status: 422 }
+                );
+            }
+            const input = validation.data!;
+
+            // ── 1. Load proforma ───────────────────────────────────────────
             const proforma = await db.proformaInvoice.findFirst({
                 where: { id, companyId: user.companyId, deletedAt: null },
                 include: {
-                    customerProfile: {
-                        include: { company: true }
-                    }
+                    customerProfile: { include: { company: true } }
                 }
             });
 
             if (!proforma) throw new NotFoundError('Proforma invoice not found');
 
-            // ── 2. Idempotency — return existing if already converted ─────
+            // ── 2. Idempotency ─────────────────────────────────────────────
             if (proforma.convertedInvoiceId) {
                 logger.info('Proforma already converted — idempotent response', { proformaId: id });
                 const existingInvoice = await prisma.invoice.findUnique({
-                    where: { id: proforma.convertedInvoiceId }
+                    where: { id: proforma.convertedInvoiceId },
+                    select: { invoiceNumber: true, id: true }
                 });
                 return NextResponse.json({
                     idempotent: true,
@@ -63,33 +77,40 @@ export const POST = authorizedRoute(
                 });
             }
 
-            // ── 3. FSM gate — must be PAYMENT_PENDING ────────────────────
+            // ── 3. FSM gate ────────────────────────────────────────────────
             if (proforma.status !== 'PAYMENT_PENDING') {
                 throw new ValidationError(
                     `Proforma must be in PAYMENT_PENDING status to convert. ` +
-                    `Current: ${proforma.status}. Use the status endpoint to advance it first.`
+                    `Current: "${proforma.status}". ` +
+                    (proforma.status === 'DRAFT'
+                        ? 'Use the status endpoint to move it to PAYMENT_PENDING first.'
+                        : proforma.status === 'CONVERTED'
+                            ? 'This proforma was already converted.'
+                            : 'This proforma was cancelled and cannot be converted.')
                 );
             }
 
-            // ── 4. Payment amount precision validation (±0.01 tolerance) ──
-            if (paymentAmount === undefined || paymentAmount === null) {
-                throw new ValidationError('paymentAmount is required');
-            }
-            const diff = Math.abs(Number(paymentAmount) - proforma.total);
+            // ── 4. Payment precision validation (±₹0.01) ──────────────────
+            const paidAmount = Number(input.paymentAmount);
+            const diff = Math.abs(paidAmount - proforma.total);
             if (diff > 0.01) {
                 throw new ValidationError(
-                    `Payment amount ₹${Number(paymentAmount).toFixed(2)} does not match ` +
+                    `Payment amount ₹${paidAmount.toFixed(2)} does not match ` +
                     `proforma total ₹${proforma.total.toFixed(2)}. ` +
-                    `Variance: ₹${diff.toFixed(2)} (max allowed: ₹0.01).`
+                    `Variance: ₹${diff.toFixed(2)} (tolerance: ₹0.01). ` +
+                    `Please verify the payment amount and try again.`
                 );
             }
 
-            // ── 5. Date validation ────────────────────────────────────────
-            const effectiveStartDate = startDate ? new Date(startDate) : proforma.startDate;
-            const effectiveEndDate = endDate ? new Date(endDate) : proforma.endDate;
+            // ── 5. Date validation ─────────────────────────────────────────
+            const effectiveStartDate = input.startDate ? new Date(input.startDate) : proforma.startDate;
+            const effectiveEndDate = input.endDate ? new Date(input.endDate) : proforma.endDate;
 
             if (!effectiveStartDate || !effectiveEndDate) {
-                throw new ValidationError('startDate and endDate are required for subscription creation');
+                throw new ValidationError(
+                    'startDate and endDate are required to activate the subscription. ' +
+                    'Either provide them in this request or set them on the proforma first.'
+                );
             }
             if (effectiveEndDate <= effectiveStartDate) {
                 throw new ValidationError('endDate must be after startDate');
@@ -98,29 +119,31 @@ export const POST = authorizedRoute(
             const customer = proforma.customerProfile;
             const company = customer.company as any;
 
-            // ── 6. Sequential invoice number ──────────────────────────────
-            const invoiceCount = await prisma.invoice.count({
-                where: { companyId: user.companyId }
-            });
-            const year = new Date().getFullYear();
-            const invoiceNumber = `INV-${year}-${String(invoiceCount + 1).padStart(5, '0')}`;
+            // ── 6. Sequential invoice number (race-condition resistant) ────
+            // Lock approach: count within transaction to avoid duplicate numbers
+            // ── 7. Atomic transaction ──────────────────────────────────────
+            const paidOn = new Date(input.paymentDate || new Date());
 
-            // ── 7. Atomic transaction ─────────────────────────────────────
             const result = await db.$transaction(async (tx: any) => {
+                // Sequential invoice number inside tx for race safety
+                const invoiceCount = await tx.invoice.count({ where: { companyId: user.companyId } });
+                const invoiceNumber = `INV-${new Date().getFullYear()}-${String(invoiceCount + 1).padStart(5, '0')}`;
 
-                // a. Build subscription items from proforma line items
+                // a. Build subscription items
                 const lineItems: any[] = proforma.lineItems || [];
-                const subscriptionItems = lineItems.map((item: any) => ({
-                    journalId: item.journalId || null,
-                    planId: item.planId || null,
-                    courseId: item.courseId || null,
-                    workshopId: item.workshopId || null,
-                    productId: item.productId || null,
-                    quantity: item.quantity || 1,
-                    price: item.unitPrice || item.price || 0,
-                }));
+                const subscriptionItems = lineItems
+                    .filter((item: any) => item.description) // skip empty items
+                    .map((item: any) => ({
+                        journalId: item.journalId || null,
+                        planId: item.planId || null,
+                        courseId: item.courseId || null,
+                        workshopId: item.workshopId || null,
+                        productId: item.productId || null,
+                        quantity: Number(item.quantity) || 1,
+                        price: Number(item.unitPrice || item.price) || 0,
+                    }));
 
-                // b. Create Subscription — ACTIVE (service entitlement begins)
+                // b. Create Subscription — ACTIVE
                 const subscription = await tx.subscription.create({
                     data: {
                         customerProfileId: proforma.customerProfileId,
@@ -142,14 +165,13 @@ export const POST = authorizedRoute(
                         totalInUSD: proforma.currency === 'USD' ? proforma.total : 0,
                         invoiceReference: invoiceNumber,
                         salesExecutiveId: user.id,
-                        items: { create: subscriptionItems },
+                        ...(subscriptionItems.length > 0 && {
+                            items: { create: subscriptionItems }
+                        }),
                     }
                 });
 
                 // c. Create permanent Invoice (legally binding fiscal document)
-                const taxableAmount = proforma.subtotal - proforma.discountAmount;
-                const paidOn = new Date(paymentDate || new Date());
-
                 const invoice = await tx.invoice.create({
                     data: {
                         subscriptionId: subscription.id,
@@ -158,7 +180,7 @@ export const POST = authorizedRoute(
                         brandId: proforma.brandId || null,
                         invoiceNumber,
                         currency: proforma.currency,
-                        amount: taxableAmount,
+                        amount: proforma.subtotal - proforma.discountAmount,
                         tax: proforma.taxAmount,
                         total: proforma.total,
                         taxRate: proforma.taxRate,
@@ -167,7 +189,7 @@ export const POST = authorizedRoute(
                         paidDate: paidOn,
                         lineItems: proforma.lineItems,
                         description: proforma.subject || `Converted from Proforma #${proforma.proformaNumber}`,
-                        // Indian GST compliance
+                        // Indian GST
                         cgst: proforma.cgst,
                         sgst: proforma.sgst,
                         igst: proforma.igst,
@@ -176,7 +198,7 @@ export const POST = authorizedRoute(
                         igstRate: proforma.igstRate,
                         placeOfSupplyCode: proforma.placeOfSupplyCode,
                         companyStateCode: proforma.companyStateCode,
-                        // Address snapshots
+                        // Address
                         billingAddress: proforma.billingAddress,
                         billingCity: proforma.billingCity,
                         billingState: proforma.billingState,
@@ -187,8 +209,8 @@ export const POST = authorizedRoute(
                         discountType: proforma.discountType,
                         discountValue: proforma.discountValue,
                         discountAmount: proforma.discountAmount,
-                        gstNumber: (customer as any).gstVatTaxId,
-                        // Branding snapshot
+                        gstNumber: customer.gstVatTaxId || null,
+                        // Branding
                         companyLogoUrl: company?.logoUrl || null,
                         brandAddress: company?.address || null,
                         brandEmail: company?.email || null,
@@ -196,23 +218,23 @@ export const POST = authorizedRoute(
                     }
                 });
 
-                // d. Create Payment record
+                // d. Payment ledger record
                 await tx.payment.create({
                     data: {
                         invoiceId: invoice.id,
                         companyId: proforma.companyId,
-                        amount: Number(paymentAmount),
-                        paymentMethod,
-                        transactionId: paymentReference || null,
+                        amount: paidAmount,
+                        paymentMethod: input.paymentMethod,
+                        transactionId: input.paymentReference || null,
                         paymentDate: paidOn,
-                        notes: notes || `Converted from Proforma #${proforma.proformaNumber}`,
+                        notes: input.notes || `Converted from Proforma #${proforma.proformaNumber}`,
                         status: 'SUCCESS',
                         currency: proforma.currency,
                     }
                 });
 
-                // e. Create RevenueTransaction (accounting ledger)
-                const txNumber = `REV-${Date.now()}-${Math.floor(Math.random() * 9999)}`;
+                // e. Revenue transaction (accounting)
+                const txNumber = `REV-${Date.now()}-${Math.floor(Math.random() * 9999).toString().padStart(4, '0')}`;
                 await tx.revenueTransaction.create({
                     data: {
                         transactionNumber: txNumber,
@@ -221,19 +243,19 @@ export const POST = authorizedRoute(
                         companyId: proforma.companyId,
                         amount: proforma.total,
                         currency: proforma.currency,
-                        paymentMethod,
+                        paymentMethod: input.paymentMethod,
                         paymentDate: paidOn,
                         status: 'CONFIRMED',
                         description: `Invoice ${invoiceNumber} — Proforma ${proforma.proformaNumber}`,
                         source: 'Subscription',
                         revenueType: 'NEW',
-                        referenceNumber: paymentReference || null,
+                        referenceNumber: input.paymentReference || null,
                         customerName: customer.name,
                         customerEmail: customer.primaryEmail,
                     }
                 });
 
-                // f. AuditLog (system-wide audit trail)
+                // f. System audit log
                 await tx.auditLog.create({
                     data: {
                         userId: user.id,
@@ -244,14 +266,16 @@ export const POST = authorizedRoute(
                             proformaNumber: proforma.proformaNumber,
                             invoiceNumber,
                             subscriptionId: subscription.id,
+                            invoiceId: invoice.id,
                             total: proforma.total,
-                            paymentAmount,
-                            paymentMethod,
+                            paidAmount,
+                            paymentMethod: input.paymentMethod,
+                            paymentReference: input.paymentReference || null,
                         })
                     }
                 });
 
-                // g. Seal proforma as CONVERTED (idempotency + FSM terminal state)
+                // g. Seal proforma as CONVERTED (idempotency lock)
                 await tx.proformaInvoice.update({
                     where: { id: proforma.id },
                     data: {
@@ -263,7 +287,7 @@ export const POST = authorizedRoute(
                     }
                 });
 
-                // h. FSM audit event — immutable record of conversion
+                // h. Immutable FSM audit event — terminal CONVERTED
                 await tx.proformaAuditEvent.create({
                     data: {
                         proformaId: proforma.id,
@@ -276,30 +300,35 @@ export const POST = authorizedRoute(
                             invoiceNumber,
                             invoiceId: invoice.id,
                             subscriptionId: subscription.id,
-                            paymentAmount,
-                            paymentMethod,
-                            paymentReference: paymentReference || null,
+                            paidAmount,
+                            paymentMethod: input.paymentMethod,
+                            paymentReference: input.paymentReference || null,
+                            ip: request.headers.get('x-forwarded-for') || null,
                         }
                     }
                 });
 
-                return { subscription, invoice };
+                return { subscription, invoice, invoiceNumber };
             });
 
-            logger.info('Proforma converted → Invoice + Subscription created', {
+            logger.info('Proforma converted to Invoice + Subscription', {
                 proformaId: id,
+                proformaNumber: proforma.proformaNumber,
                 invoiceId: result.invoice.id,
+                invoiceNumber: result.invoiceNumber,
                 subscriptionId: result.subscription.id,
-                invoiceNumber,
                 userId: user.id,
+                total: proforma.total,
             });
 
             return NextResponse.json({
                 success: true,
                 invoiceId: result.invoice.id,
                 subscriptionId: result.subscription.id,
-                invoiceNumber,
-                message: `Proforma ${proforma.proformaNumber} converted. Invoice ${invoiceNumber} issued and Subscription activated.`,
+                invoiceNumber: result.invoiceNumber,
+                message:
+                    `Proforma ${proforma.proformaNumber} successfully converted. ` +
+                    `Invoice ${result.invoiceNumber} issued and Subscription activated.`,
             });
 
         } catch (error) {
