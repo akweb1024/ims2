@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import {
     AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -8,6 +8,8 @@ import {
 } from 'recharts';
 import { Globe, TrendingUp, DollarSign, Download, RefreshCw, Calendar, Search, User, Mail } from 'lucide-react';
 import { downloadCSV } from '@/lib/csv-utils';
+
+const AUTO_SYNC_INTERVAL_MS = 60 * 60 * 1000; // 1 hour
 
 export default function RazorpayTrackerPage() {
     const [data, setData] = useState<any>(null);
@@ -21,6 +23,10 @@ export default function RazorpayTrackerPage() {
     const [endDate, setEndDate] = useState<string>('');
     const [activeTab, setActiveTab] = useState<'LEDGER' | 'MONTHLY' | 'YEARLY'>('LEDGER');
     const [summarySearch, setSummarySearch] = useState<string>('');
+    const [nextSyncIn, setNextSyncIn] = useState<number>(AUTO_SYNC_INTERVAL_MS);
+    const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
+    const autoSyncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const countdownTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
     const fetchData = useCallback(async () => {
         setLoading(true);
@@ -41,11 +47,63 @@ export default function RazorpayTrackerPage() {
         }
     }, [startDate, endDate]);
 
+    const showToast = useCallback((message: string, type: 'success' | 'error' | 'info' = 'info') => {
+        setToast({ message, type });
+        setTimeout(() => setToast(null), 5000);
+    }, []);
+
+    const runAutoSync = useCallback(async () => {
+        try {
+            const token = localStorage.getItem('token');
+            const res = await fetch('/api/cron/razorpay-sync?force=true', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const result = await res.json();
+            if (res.ok) {
+                showToast(`Auto-sync complete. ${result.syncedCount} new transactions found.`, 'success');
+                fetchData();
+            } else {
+                showToast(`Auto-sync failed: ${result.error || 'Unknown error'}`, 'error');
+            }
+        } catch (err) {
+            console.error('Auto-sync error:', err);
+            showToast('Auto-sync network error.', 'error');
+        }
+    }, [fetchData, showToast]);
+
+    const startAutoSyncCycle = useCallback(() => {
+        // Clear any existing timers
+        if (autoSyncTimerRef.current) clearTimeout(autoSyncTimerRef.current);
+        if (countdownTimerRef.current) clearInterval(countdownTimerRef.current);
+
+        setNextSyncIn(AUTO_SYNC_INTERVAL_MS);
+
+        // Countdown every second
+        countdownTimerRef.current = setInterval(() => {
+            setNextSyncIn(prev => {
+                if (prev <= 1000) return AUTO_SYNC_INTERVAL_MS;
+                return prev - 1000;
+            });
+        }, 1000);
+
+        // Auto-sync after 1 hour
+        autoSyncTimerRef.current = setTimeout(() => {
+            runAutoSync();
+            startAutoSyncCycle(); // restart cycle
+        }, AUTO_SYNC_INTERVAL_MS);
+    }, [runAutoSync]);
+
     useEffect(() => {
         const user = localStorage.getItem('user');
         if (user) setUserRole(JSON.parse(user).role);
         fetchData();
-    }, [fetchData]);
+        startAutoSyncCycle();
+
+        return () => {
+            if (autoSyncTimerRef.current) clearTimeout(autoSyncTimerRef.current);
+            if (countdownTimerRef.current) clearInterval(countdownTimerRef.current);
+        };
+    }, [fetchData, startAutoSyncCycle]);
 
     const handleManualSync = async () => {
         setIsSyncing(true);
@@ -56,26 +114,34 @@ export default function RazorpayTrackerPage() {
             });
             const result = await res.json();
             if (res.ok) {
-                alert(`Sync completed. Found ${result.syncedCount} new transactions.`);
+                showToast(`Sync complete. ${result.syncedCount} new transactions found.`, 'success');
                 fetchData();
+                startAutoSyncCycle(); // reset the auto-sync timer after manual sync
             } else {
-                alert(`Sync failed: ${result.error || 'Unknown error'}`);
+                showToast(`Sync failed: ${result.error || 'Unknown error'}`, 'error');
             }
         } catch (err) {
             console.error(err);
-            alert('A network error occurred during sync.');
+            showToast('A network error occurred during sync.', 'error');
         } finally {
             setIsSyncing(false);
         }
+    };
+
+    const formatCountdown = (ms: number) => {
+        const totalSeconds = Math.floor(ms / 1000);
+        const mins = Math.floor(totalSeconds / 60);
+        const secs = totalSeconds % 60;
+        return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
     };
 
     if (loading && !data) return <div className="p-8 text-center text-secondary-500 font-bold animate-pulse">Loading payment gateway data...</div>;
 
     const chartData = data?.dailyRevenue?.map((d: any) => ({
         date: new Date(d.date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' }),
-        revenue: d.revenue,
         captured: d.captured,
-        failed: d.failed
+        failed: d.failed,
+        lastMonth: d.lastMonth || 0
     })).reverse() || [];
 
     const formatCurrency = (amount: number, currency: string = 'INR') => {
@@ -161,6 +227,7 @@ export default function RazorpayTrackerPage() {
     };
 
     return (
+        <>
         <DashboardLayout userRole={userRole}>
             <div className="space-y-6 animate-fade-in pb-20">
                 {/* Header */}
@@ -175,6 +242,11 @@ export default function RazorpayTrackerPage() {
                             <p className="text-xs font-bold text-secondary-600">
                                 {data?.lastSync ? new Date(data.lastSync.lastSyncAt).toLocaleString() : 'Never'}
                             </p>
+                        </div>
+                        {/* Auto-sync countdown badge */}
+                        <div className="flex flex-col items-center px-4 py-2 bg-secondary-50 border border-secondary-200 rounded-2xl min-w-[110px]">
+                            <span className="text-[9px] font-black text-secondary-400 uppercase tracking-widest">Next Auto-Sync</span>
+                            <span className="text-sm font-black text-primary-600 font-mono tracking-tighter mt-0.5">{formatCountdown(nextSyncIn)}</span>
                         </div>
                         <button
                             onClick={handleManualSync}
@@ -302,14 +374,18 @@ export default function RazorpayTrackerPage() {
                     <div className="lg:col-span-2 card-premium p-8">
                         <div className="flex justify-between items-center mb-8">
                             <h2 className="text-xl font-black text-secondary-900 uppercase">Day-wise Trajectory</h2>
-                            <div className="flex gap-4">
-                                <div className="flex items-center gap-2">
-                                    <div className="w-3 h-3 rounded-full bg-primary-600"></div>
-                                    <span className="text-[10px] font-black text-secondary-400 uppercase tracking-widest">Forecast</span>
-                                </div>
+                            <div className="flex gap-5">
                                 <div className="flex items-center gap-2">
                                     <div className="w-3 h-3 rounded-full bg-green-500"></div>
                                     <span className="text-[10px] font-black text-secondary-400 uppercase tracking-widest">Captured</span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <div className="w-3 h-3 rounded-full bg-red-500"></div>
+                                    <span className="text-[10px] font-black text-secondary-400 uppercase tracking-widest">Failed</span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <div className="w-6 h-0.5 bg-orange-400" style={{ borderTop: '2px dashed #fb923c' }}></div>
+                                    <span className="text-[10px] font-black text-secondary-400 uppercase tracking-widest">Last Month</span>
                                 </div>
                             </div>
                         </div>
@@ -317,13 +393,17 @@ export default function RazorpayTrackerPage() {
                             <ResponsiveContainer width="100%" height="100%">
                                 <AreaChart data={chartData}>
                                     <defs>
-                                        <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
-                                            <stop offset="5%" stopColor="#2563eb" stopOpacity={0.4} />
-                                            <stop offset="95%" stopColor="#2563eb" stopOpacity={0} />
-                                        </linearGradient>
                                         <linearGradient id="colorCaptured" x1="0" y1="0" x2="0" y2="1">
-                                            <stop offset="5%" stopColor="#10b981" stopOpacity={0.4} />
-                                            <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+                                            <stop offset="5%" stopColor="#22c55e" stopOpacity={0.3} />
+                                            <stop offset="95%" stopColor="#22c55e" stopOpacity={0} />
+                                        </linearGradient>
+                                        <linearGradient id="colorFailed" x1="0" y1="0" x2="0" y2="1">
+                                            <stop offset="5%" stopColor="#ef4444" stopOpacity={0.25} />
+                                            <stop offset="95%" stopColor="#ef4444" stopOpacity={0} />
+                                        </linearGradient>
+                                        <linearGradient id="colorLastMonth" x1="0" y1="0" x2="0" y2="1">
+                                            <stop offset="5%" stopColor="#fb923c" stopOpacity={0.15} />
+                                            <stop offset="95%" stopColor="#fb923c" stopOpacity={0} />
                                         </linearGradient>
                                     </defs>
                                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
@@ -348,22 +428,41 @@ export default function RazorpayTrackerPage() {
                                             padding: '16px'
                                         }}
                                         labelStyle={{ fontWeight: 'black', color: '#1e293b', marginBottom: '8px', fontSize: '12px' }}
+                                        formatter={(value: any, name?: string) => [
+                                            `₹${Number(value).toLocaleString('en-IN')}`,
+                                            name === 'captured' ? 'Captured' : name === 'failed' ? 'Failed' : 'Last Month'
+                                        ]}
                                     />
+                                    {/* Last Month - orange dashed line (behind others) */}
                                     <Area
                                         type="monotone"
-                                        dataKey="revenue"
-                                        stroke="#2563eb"
-                                        strokeWidth={4}
+                                        dataKey="lastMonth"
+                                        stroke="#fb923c"
+                                        strokeWidth={2}
+                                        strokeDasharray="6 3"
                                         fillOpacity={1}
-                                        fill="url(#colorRevenue)"
+                                        fill="url(#colorLastMonth)"
+                                        name="lastMonth"
                                     />
+                                    {/* Captured - green line */}
                                     <Area
                                         type="monotone"
                                         dataKey="captured"
-                                        stroke="#10b981"
-                                        strokeWidth={4}
+                                        stroke="#22c55e"
+                                        strokeWidth={3.5}
                                         fillOpacity={1}
                                         fill="url(#colorCaptured)"
+                                        name="captured"
+                                    />
+                                    {/* Failed - red line */}
+                                    <Area
+                                        type="monotone"
+                                        dataKey="failed"
+                                        stroke="#ef4444"
+                                        strokeWidth={3.5}
+                                        fillOpacity={1}
+                                        fill="url(#colorFailed)"
+                                        name="failed"
                                     />
                                 </AreaChart>
                             </ResponsiveContainer>
@@ -680,5 +779,19 @@ export default function RazorpayTrackerPage() {
                 </div>
             )}
         </DashboardLayout>
+
+        {/* Toast Notification */}
+        {toast && (
+            <div className={`fixed bottom-6 right-6 z-[200] flex items-center gap-3 px-6 py-4 rounded-2xl shadow-2xl text-white text-sm font-bold transition-all animate-in slide-in-from-bottom-4 duration-300 ${
+                toast!.type === 'success' ? 'bg-green-600' :
+                toast!.type === 'error' ? 'bg-red-600' :
+                'bg-secondary-900'
+            }`}>
+                <span className="text-lg">{toast!.type === 'success' ? '✅' : toast!.type === 'error' ? '❌' : 'ℹ️'}</span>
+                <span>{toast!.message}</span>
+                <button onClick={() => setToast(null)} className="ml-2 text-white/60 hover:text-white transition-colors text-lg leading-none">×</button>
+            </div>
+        )}
+        </>
     );
 }

@@ -214,26 +214,50 @@ export async function GET(req: NextRequest) {
             inrEquivalent: data.amount * (exchangeRates[currency] || 1)
         }));
 
-        const dailyRevenueRaw: any[] = await prisma.$queryRaw`
-            SELECT 
-                "paymentDate"::date as date,
-                SUM(amount)::numeric as total_revenue,
-                SUM(CASE WHEN status = 'captured' THEN amount ELSE 0 END)::numeric as captured_revenue,
-                SUM(CASE WHEN status = 'failed' THEN amount ELSE 0 END)::numeric as failed_revenue
-            FROM "Payment"
-            WHERE "razorpayPaymentId" IS NOT NULL
-            GROUP BY date
-            ORDER BY date DESC
-            LIMIT 60
-        `;
+        const [dailyRevenueRaw, lastMonthDailyRaw] = await Promise.all([
+            prisma.$queryRaw`
+                SELECT 
+                    "paymentDate"::date as date,
+                    SUM(amount)::numeric as total_revenue,
+                    SUM(CASE WHEN status = 'captured' THEN amount ELSE 0 END)::numeric as captured_revenue,
+                    SUM(CASE WHEN status = 'failed' THEN amount ELSE 0 END)::numeric as failed_revenue
+                FROM "Payment"
+                WHERE "razorpayPaymentId" IS NOT NULL
+                GROUP BY date
+                ORDER BY date DESC
+                LIMIT 60
+            `,
+            prisma.$queryRaw`
+                SELECT 
+                    EXTRACT(DAY FROM "paymentDate")::integer as day_of_month,
+                    SUM(CASE WHEN status = 'captured' THEN amount ELSE 0 END)::numeric as last_month_captured
+                FROM "Payment"
+                WHERE "razorpayPaymentId" IS NOT NULL
+                  AND "paymentDate" >= ${startOfLastMonth}
+                  AND "paymentDate" <= ${endOfLastMonth}
+                GROUP BY day_of_month
+                ORDER BY day_of_month ASC
+            `
+        ]);
+
+        // Build a day-of-month -> lastMonthCaptured lookup
+        const lastMonthMap = new Map<number, number>();
+        (Array.isArray(lastMonthDailyRaw) ? lastMonthDailyRaw : []).forEach((r: any) => {
+            lastMonthMap.set(Number(r.day_of_month), Number(r.last_month_captured) || 0);
+        });
 
         const dailyRevenue = Array.isArray(dailyRevenueRaw) ? dailyRevenueRaw : [];
-        const processedDaily = dailyRevenue.map((curr: any) => ({
-            date: curr.date instanceof Date ? curr.date.toISOString().split('T')[0] : String(curr.date),
-            revenue: (Number(curr.total_revenue) || 0),
-            captured: (Number(curr.captured_revenue) || 0),
-            failed: (Number(curr.failed_revenue) || 0)
-        })).slice(0, 30);
+        const processedDaily = dailyRevenue.map((curr: any) => {
+            const dateStr = curr.date instanceof Date ? curr.date.toISOString().split('T')[0] : String(curr.date);
+            const dayOfMonth = new Date(dateStr).getDate();
+            return {
+                date: dateStr,
+                revenue: (Number(curr.total_revenue) || 0),
+                captured: (Number(curr.captured_revenue) || 0),
+                failed: (Number(curr.failed_revenue) || 0),
+                lastMonth: lastMonthMap.get(dayOfMonth) || 0
+            };
+        }).slice(0, 30);
 
         return NextResponse.json({
             payments: transformedPayments,
