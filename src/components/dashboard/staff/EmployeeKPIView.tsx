@@ -416,7 +416,7 @@ export default function EmployeeKPIView({ snapshots = [], reviews = [], incremen
                 <div className="bg-white rounded-[2rem] p-8 shadow-sm border border-red-100">
                     <h3 className="font-bold text-lg text-gray-900 flex items-center gap-2 mb-6">
                         <AlertTriangle className="text-red-500" size={22} />
-                        What's Dragging Your Score Down
+                        What&apos;s Dragging Your Score Down
                     </h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {weakAreas.map(comp => (
