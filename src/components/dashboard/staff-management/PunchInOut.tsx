@@ -28,7 +28,12 @@ export default function PunchInOut({ filters }: PunchInOutProps) {
             setLoading(true);
             try {
                 const params = new URLSearchParams();
-                params.append('date', selectedDate);
+                // Query full month of selected date
+                const d = new Date(selectedDate);
+                const monthStart = new Date(d.getFullYear(), d.getMonth(), 1).toISOString().split('T')[0];
+                const monthEnd = new Date(d.getFullYear(), d.getMonth() + 1, 0).toISOString().split('T')[0];
+                params.append('startDate', monthStart);
+                params.append('endDate', monthEnd);
                 if (filters.companyId !== 'all') params.append('companyId', filters.companyId);
                 if (filters.teamId !== 'all') params.append('departmentId', filters.teamId);
                 if (filters.employeeId !== 'all') params.append('employeeId', filters.employeeId);
@@ -37,6 +42,8 @@ export default function PunchInOut({ filters }: PunchInOutProps) {
                 if (res.ok) {
                     const data = await res.json();
                     setPunchRecords(data);
+                } else {
+                    console.error('Punch fetch error:', res.status, await res.text());
                 }
             } catch (err) {
                 console.error('Error fetching punch records:', err);
@@ -108,13 +115,13 @@ export default function PunchInOut({ filters }: PunchInOutProps) {
                     <p className="text-sm text-secondary-500">Track employee punch in and out times</p>
                 </div>
                 <div className="flex items-center gap-3">
+                    <label className="text-sm font-medium text-secondary-600">Month:</label>
                     <input
-                        type="date"
-                        value={selectedDate}
-                        onChange={(e) => setSelectedDate(e.target.value)}
+                        type="month"
+                        value={selectedDate.slice(0, 7)}
+                        onChange={(e) => setSelectedDate(`${e.target.value}-01`)}
                         className="rounded-lg border border-secondary-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
                     />
-                    {/* Button Removed: Use Attendance Tab for Manual Entry */}
                 </div>
             </div>
 
@@ -246,7 +253,7 @@ export default function PunchInOut({ filters }: PunchInOutProps) {
                     </div>
                     {punchRecords.length === 0 && (
                         <div className="text-center py-12">
-                            <p className="text-secondary-500">No punch records found for this date</p>
+                            <p className="text-secondary-500">No punch records found for this month</p>
                         </div>
                     )}
                 </div>

@@ -12,6 +12,11 @@ export default function AttendanceManagement({ filters }: AttendanceManagementPr
     const [employees, setEmployees] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+    const [showDateRange, setShowDateRange] = useState(false);
+    const [dateRange, setDateRange] = useState({
+        start: new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0],
+        end: new Date().toISOString().split('T')[0]
+    });
     const [viewMode, setViewMode] = useState<'calendar' | 'list'>('list');
     const [showManualEntry, setShowManualEntry] = useState(false);
 
@@ -52,7 +57,17 @@ export default function AttendanceManagement({ filters }: AttendanceManagementPr
             setLoading(true);
             try {
                 const params = new URLSearchParams();
-                params.append('date', selectedDate);
+                if (showDateRange) {
+                    params.append('startDate', dateRange.start);
+                    params.append('endDate', dateRange.end);
+                } else {
+                    // Send full month of selected date so data always loads
+                    const d = new Date(selectedDate);
+                    const monthStart = new Date(d.getFullYear(), d.getMonth(), 1).toISOString().split('T')[0];
+                    const monthEnd = new Date(d.getFullYear(), d.getMonth() + 1, 0).toISOString().split('T')[0];
+                    params.append('startDate', monthStart);
+                    params.append('endDate', monthEnd);
+                }
                 if (filters.companyId !== 'all') params.append('companyId', filters.companyId);
                 if (filters.teamId !== 'all') params.append('departmentId', filters.teamId);
                 if (filters.employeeId !== 'all') params.append('employeeId', filters.employeeId);
@@ -66,6 +81,8 @@ export default function AttendanceManagement({ filters }: AttendanceManagementPr
                 if (res.ok) {
                     const data = await res.json();
                     setAttendance(data);
+                } else {
+                    console.error('Attendance fetch failed:', res.status, await res.text());
                 }
             } catch (err) {
                 console.error('Error fetching attendance:', err);
@@ -76,7 +93,7 @@ export default function AttendanceManagement({ filters }: AttendanceManagementPr
         };
 
         fetchAttendance();
-    }, [filters, selectedDate]);
+    }, [filters, selectedDate, showDateRange, dateRange]);
 
     const handleManualEntry = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -141,13 +158,27 @@ export default function AttendanceManagement({ filters }: AttendanceManagementPr
                     <h2 className="text-lg font-semibold text-secondary-900">Attendance Management</h2>
                     <p className="text-sm text-secondary-500">Track and manage employee attendance</p>
                 </div>
-                <div className="flex items-center gap-3">
-                    <input
-                        type="date"
-                        value={selectedDate}
-                        onChange={(e) => setSelectedDate(e.target.value)}
-                        className="rounded-lg border border-secondary-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
-                    />
+                <div className="flex items-center gap-3 flex-wrap">
+                    <button
+                        onClick={() => setShowDateRange(!showDateRange)}
+                        className={`px-3 py-2 rounded-lg text-xs font-bold border transition-colors ${showDateRange ? 'bg-primary-100 border-primary-300 text-primary-700' : 'bg-white border-secondary-300 text-secondary-600 hover:bg-secondary-50'}`}
+                    >
+                        {showDateRange ? '📅 Range' : '📅 Month'}
+                    </button>
+                    {showDateRange ? (
+                        <div className="flex items-center gap-2">
+                            <input type="date" value={dateRange.start} onChange={(e) => setDateRange(p => ({ ...p, start: e.target.value }))} className="rounded-lg border border-secondary-300 px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" />
+                            <span className="text-secondary-400 text-xs">to</span>
+                            <input type="date" value={dateRange.end} onChange={(e) => setDateRange(p => ({ ...p, end: e.target.value }))} className="rounded-lg border border-secondary-300 px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" />
+                        </div>
+                    ) : (
+                        <input
+                            type="month"
+                            value={selectedDate.slice(0, 7)}
+                            onChange={(e) => setSelectedDate(`${e.target.value}-01`)}
+                            className="rounded-lg border border-secondary-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                        />
+                    )}
                     <button
                         onClick={() => {
                             setManualEntry({

@@ -25,6 +25,8 @@ export default function LeaveManagement({ filters }: LeaveManagementProps) {
                 if (res.ok) {
                     const data = await res.json();
                     setLeaves(data);
+                } else {
+                    console.error('Leave fetch error:', res.status, await res.text());
                 }
             } catch (err) {
                 console.error('Error fetching leaves:', err);
@@ -39,10 +41,10 @@ export default function LeaveManagement({ filters }: LeaveManagementProps) {
 
     const handleLeaveAction = async (leaveId: string, action: 'APPROVED' | 'REJECTED', comment?: string) => {
         try {
-            const res = await fetch(`/api/staff-management/leaves/${leaveId}`, {
-                method: 'PATCH',
+            const res = await fetch(`/api/staff-management/leaves`, {
+                method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ status: action, managerComment: comment })
+                body: JSON.stringify({ leaveId, status: action, comment })
             });
 
             if (res.ok) {
@@ -51,7 +53,8 @@ export default function LeaveManagement({ filters }: LeaveManagementProps) {
                     l.id === leaveId ? { ...l, status: action } : l
                 ));
             } else {
-                toast.error('Failed to update leave request');
+                const errData = await res.json().catch(() => ({}));
+                toast.error(errData.error || 'Failed to update leave request');
             }
         } catch (err) {
             console.error('Error updating leave:', err);
@@ -165,17 +168,17 @@ export default function LeaveManagement({ filters }: LeaveManagementProps) {
                                         <td className="px-6 py-4">
                                             <div className="flex items-center">
                                                 <div className="w-8 h-8 rounded-full bg-primary-100 flex items-center justify-center text-primary-600 font-semibold text-sm">
-                                                    {leave.employee?.name?.charAt(0).toUpperCase()}
+                                                    {(leave.employee?.user?.name || leave.employee?.name || '?').charAt(0).toUpperCase()}
                                                 </div>
                                                 <div className="ml-2">
-                                                    <p className="text-sm font-medium text-secondary-900">{leave.employee?.name}</p>
-                                                    <p className="text-xs text-secondary-500">{leave.employee?.department?.name}</p>
+                                                    <p className="text-sm font-medium text-secondary-900">{leave.employee?.user?.name || leave.employee?.name}</p>
+                                                    <p className="text-xs text-secondary-500">{leave.employee?.user?.department?.name || leave.employee?.department?.name || 'N/A'}</p>
                                                 </div>
                                             </div>
                                         </td>
                                         <td className="px-6 py-4 text-sm text-secondary-600">
                                             <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-medium">
-                                                {leave.leaveType}
+                                                {leave.type || leave.leaveType || 'N/A'}
                                             </span>
                                         </td>
                                         <td className="px-6 py-4 text-sm text-secondary-600">
@@ -186,7 +189,7 @@ export default function LeaveManagement({ filters }: LeaveManagementProps) {
                                             </div>
                                         </td>
                                         <td className="px-6 py-4 text-sm text-secondary-600 font-medium">
-                                            {leave.totalDays} days
+                                            {leave.totalDays || (leave.startDate && leave.endDate ? Math.ceil((new Date(leave.endDate).getTime() - new Date(leave.startDate).getTime()) / (1000 * 60 * 60 * 24)) + 1 : '-')} days
                                         </td>
                                         <td className="px-6 py-4 text-sm text-secondary-600 max-w-xs truncate">
                                             {leave.reason}

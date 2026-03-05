@@ -9,7 +9,9 @@ export const GET = authorizedRoute(
         try {
             const { searchParams } = new URL(req.url);
             const date = searchParams.get('date');
-            const companyId = searchParams.get('companyId');
+            const startDate = searchParams.get('startDate');
+            const endDate = searchParams.get('endDate');
+            const companyIdParam = searchParams.get('companyId');
             const departmentId = searchParams.get('departmentId');
             const employeeId = searchParams.get('employeeId');
             const status = searchParams.get('status');
@@ -21,12 +23,23 @@ export const GET = authorizedRoute(
                 targetDate.setHours(0, 0, 0, 0);
                 const nextDay = new Date(targetDate);
                 nextDay.setDate(nextDay.getDate() + 1);
-
-                where.date = {
-                    gte: targetDate,
-                    lt: nextDay
-                };
+                where.date = { gte: targetDate, lt: nextDay };
+            } else if (startDate || endDate) {
+                const from = startDate ? new Date(startDate) : new Date(new Date().setDate(new Date().getDate() - 30));
+                const to = endDate ? new Date(endDate) : new Date();
+                from.setHours(0, 0, 0, 0);
+                to.setHours(23, 59, 59, 999);
+                where.date = { gte: from, lte: to };
+            } else {
+                const from = new Date();
+                from.setDate(from.getDate() - 30);
+                from.setHours(0, 0, 0, 0);
+                where.date = { gte: from, lte: new Date() };
             }
+
+            const companyId = (companyIdParam && companyIdParam !== 'all')
+                ? companyIdParam
+                : (user.role !== 'SUPER_ADMIN' ? user.companyId : null);
 
             if (companyId && companyId !== 'all') {
                 where.companyId = companyId;

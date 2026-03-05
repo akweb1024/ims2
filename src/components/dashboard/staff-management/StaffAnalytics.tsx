@@ -26,6 +26,8 @@ export default function StaffAnalytics({ filters }: StaffAnalyticsProps) {
                 if (res.ok) {
                     const data = await res.json();
                     setAnalyticsData(data);
+                } else {
+                    console.error('Analytics fetch error:', res.status, await res.text());
                 }
             } catch (err) {
                 console.error('Error fetching analytics:', err);

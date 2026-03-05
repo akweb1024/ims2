@@ -37,7 +37,12 @@ export default function WorkReportManagement({ filters }: WorkReportManagementPr
             setLoading(true);
             try {
                 const params = new URLSearchParams();
-                params.append('date', selectedDate);
+                // Query full month of selected date
+                const d = new Date(selectedDate);
+                const monthStart = new Date(d.getFullYear(), d.getMonth(), 1).toISOString().split('T')[0];
+                const monthEnd = new Date(d.getFullYear(), d.getMonth() + 1, 0).toISOString().split('T')[0];
+                params.append('startDate', monthStart);
+                params.append('endDate', monthEnd);
                 if (filters.companyId !== 'all') params.append('companyId', filters.companyId);
                 if (filters.teamId !== 'all') params.append('departmentId', filters.teamId);
                 if (filters.employeeId !== 'all') params.append('employeeId', filters.employeeId);
@@ -46,6 +51,8 @@ export default function WorkReportManagement({ filters }: WorkReportManagementPr
                 if (res.ok) {
                     const data = await res.json();
                     setWorkReports(data);
+                } else {
+                    console.error('Work reports fetch error:', res.status, await res.text());
                 }
             } catch (err) {
                 console.error('Error fetching work reports:', err);
@@ -103,9 +110,9 @@ export default function WorkReportManagement({ filters }: WorkReportManagementPr
                     <p className="text-sm text-secondary-500">Review and manage employee work reports</p>
                 </div>
                 <input
-                    type="date"
-                    value={selectedDate}
-                    onChange={(e) => setSelectedDate(e.target.value)}
+                    type="month"
+                    value={selectedDate.slice(0, 7)}
+                    onChange={(e) => setSelectedDate(`${e.target.value}-01`)}
                     className="rounded-lg border border-secondary-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
                 />
             </div>

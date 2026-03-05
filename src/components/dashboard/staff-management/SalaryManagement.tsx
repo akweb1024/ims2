@@ -53,6 +53,8 @@ export default function SalaryManagement({ filters }: SalaryManagementProps) {
                 if (res.ok) {
                     const data = await res.json();
                     setSalaryRecords(data);
+                } else {
+                    console.error('Salary fetch error:', res.status, await res.text());
                 }
             } catch (err) {
                 console.error('Error fetching salary records:', err);
