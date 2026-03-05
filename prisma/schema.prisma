@@ -422,6 +422,7 @@ model CustomerProfile {
   invoices            Invoice[]
   revenueTransactions RevenueTransaction[]
   subscriptions       Subscription[]
+  proformaInvoices    ProformaInvoice[]
   supportTickets      SupportTicket[]
   deals               Deal[]
   assignedExecutives  User[]               @relation("CustomerToExecutives")
@@ -632,6 +633,105 @@ model Plan {
 
   @@index([journalId])
   @@index([isActive])
+}
+
+// ─── Proforma Invoice System ──────────────────────────────────────────────────
+
+model ProformaInvoice {
+  id                  String          @id @default(uuid())
+  proformaNumber      String          @unique
+  customerProfileId   String
+  companyId           String?
+  brandId             String?
+  status              ProformaStatus  @default(DRAFT)
+
+  // Provisional subscription terms
+  salesChannel        String          @default("DIRECT")
+  agencyId            String?
+  startDate           DateTime?
+  endDate             DateTime?
+  autoRenew           Boolean         @default(false)
+  currency            String          @default("INR")
+  billingFrequency    String          @default("ANNUAL")
+
+  // Financials
+  subtotal            Float           @default(0)
+  discountAmount      Float           @default(0)
+  discountType        String?         // PERCENTAGE | FIXED
+  discountValue       Float?          @default(0)
+  taxRate             Float           @default(18)
+  taxAmount           Float           @default(0)
+  total               Float           @default(0)
+
+  // Tax breakdown (Indian GST compliance)
+  cgst                Float           @default(0)
+  sgst                Float           @default(0)
+  igst                Float           @default(0)
+  cgstRate            Float           @default(0)
+  sgstRate            Float           @default(0)
+  igstRate            Float           @default(0)
+  placeOfSupply       String?
+  placeOfSupplyCode   String?
+  companyStateCode    String?
+
+  // Line items stored as JSON
+  lineItems           Json?
+
+  // Document metadata
+  notes               String?
+  validUntil          DateTime?
+  subject             String?         @default("Proforma Invoice")
+
+  // Idempotency (prevents duplicate generation on retry)
+  idempotencyKey      String?         @unique
+
+  // Conversion tracking
+  convertedInvoiceId  String?         @unique
+  convertedSubId      String?         @unique
+  convertedAt         DateTime?
+  convertedByUserId   String?
+
+  // Address snapshots
+  billingAddress      String?
+  billingCity         String?
+  billingState        String?
+  billingStateCode    String?
+  billingPincode      String?
+  billingCountry      String?         @default("India")
+
+  // Audit
+  createdByUserId     String
+  updatedAt           DateTime        @updatedAt
+  createdAt           DateTime        @default(now())
+  deletedAt           DateTime?       // soft delete
+  deletedByUserId     String?
+  deleteReason        String?
+
+  // Relations
+  customerProfile     CustomerProfile @relation(fields: [customerProfileId], references: [id])
+  auditEvents         ProformaAuditEvent[]
+
+  @@index([customerProfileId])
+  @@index([status])
+  @@index([companyId])
+  @@index([createdAt])
+}
+
+model ProformaAuditEvent {
+  id            String          @id @default(uuid())
+  proformaId    String
+  actorUserId   String
+  actorEmail    String?
+  fromStatus    ProformaStatus?
+  toStatus      ProformaStatus
+  action        String          // CREATE | EDIT | SEND | STATUS_CHANGE | CONVERT | DELETE
+  metadata      Json?
+  createdAt     DateTime        @default(now())
+
+  proforma      ProformaInvoice @relation(fields: [proformaId], references: [id], onDelete: Cascade)
+
+  @@index([proformaId])
+  @@index([createdAt])
 }
 
 model Subscription {
@@ -4171,6 +4271,13 @@ enum InvoiceStatus {
   OVERDUE
   CANCELLED
   VOID
+}
+
+enum ProformaStatus {
+  DRAFT
+  PAYMENT_PENDING
+  CONVERTED
+  CANCELLED
 }
 
 enum CommunicationType {

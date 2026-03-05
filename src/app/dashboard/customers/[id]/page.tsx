@@ -10,6 +10,8 @@ import CustomerAssignmentManager from '@/components/dashboard/CustomerAssignment
 import { useCustomer, useCustomerMutations } from '@/hooks/useCRM';
 import { getHealthBadgeColor, getScoreColor } from '@/lib/predictions';
 import AgencyPerformanceDashboard from '@/components/dashboard/AgencyPerformanceDashboard';
+import ProformaInvoicePanel from '@/components/dashboard/ProformaInvoicePanel';
+
 
 export default function CustomerDetailPage({ params }: { params: Promise<{ id: string }> }) {
     const { id } = use(params);
@@ -261,12 +263,7 @@ export default function CustomerDetailPage({ params }: { params: Promise<{ id: s
                         >
                             Edit Profile
                         </button>
-                        <Link
-                            href={`/dashboard/crm/subscriptions/new?customerId=${customer.id}`}
-                            className="btn btn-primary"
-                        >
-                            New Subscription
-                        </Link>
+
                     </div>
                 </div>
 
@@ -639,63 +636,75 @@ export default function CustomerDetailPage({ params }: { params: Promise<{ id: s
                         )}
 
                         {activeTab === 'subscriptions' && (
-                            <div className="space-y-4">
-                                {customer.subscriptions.length === 0 ? (
-                                    <div className="card-premium text-center py-12">
-                                        <p className="text-secondary-500">No active subscriptions found.</p>
-                                        <Link
-                                            href={`/dashboard/crm/subscriptions/new?customerId=${customer.id}`}
-                                            className="btn btn-primary mt-4"
-                                        >
-                                            Create First Subscription
-                                        </Link>
+                            <div className="space-y-6">
+
+                                {/* ── Proforma Invoice Panel ───────────────── */}
+                                <ProformaInvoicePanel
+                                    customerId={customer.id}
+                                    customerName={customer.name}
+                                    customerEmail={customer.primaryEmail}
+                                    currency={customer.subscriptions?.[0]?.currency || 'INR'}
+                                    userRole={userRole}
+                                    onConversionSuccess={(invoiceId, subscriptionId) => {
+                                        // Refresh customer data to show new active subscription
+                                        fetchCustomer();
+                                        setActiveTab('billing');
+                                    }}
+                                />
+
+                                {/* ── Existing Subscriptions ───────────────── */}
+                                {customer.subscriptions.length > 0 && (
+                                    <div className="space-y-4">
+                                        <h4 className="text-base font-bold text-secondary-900 border-l-4 border-primary-500 pl-3">
+                                            Active Subscriptions
+                                        </h4>
+                                        {customer.subscriptions.map((sub: any) => (
+                                            <div key={sub.id} className="card-premium border-l-4 border-primary-500 hover:shadow-md transition-shadow">
+                                                <div className="flex justify-between items-start mb-4">
+                                                    <div>
+                                                        <h4 className="font-bold text-secondary-900 text-lg">
+                                                            {sub.items[0]?.journal?.name || 'Subscription Package'}
+                                                            {sub.items.length > 1 && ` (+${sub.items.length - 1} more)`}
+                                                        </h4>
+                                                        <p className="text-sm text-secondary-500">
+                                                            <FormattedDate date={sub.startDate} /> - <FormattedDate date={sub.endDate} />
+                                                        </p>
+                                                    </div>
+                                                    <div className="flex flex-col items-end gap-2">
+                                                        <span className={`badge ${sub.status === 'ACTIVE' ? 'badge-success' : 'badge-warning'}`}>
+                                                            {sub.status.replace('_', ' ')}
+                                                        </span>
+                                                        <Link
+                                                            href={`/dashboard/crm/subscriptions/${sub.id}`}
+                                                            className="text-xs text-primary-600 font-bold hover:underline"
+                                                        >
+                                                            View Details →
+                                                        </Link>
+                                                    </div>
+                                                </div>
+                                                <div className="grid grid-cols-3 gap-4 text-sm bg-secondary-50 p-3 rounded-lg border border-secondary-100">
+                                                    <div>
+                                                        <p className="text-xs text-secondary-500 uppercase font-bold tracking-tighter">Total Price</p>
+                                                        <p className="font-bold text-secondary-900">
+                                                            {sub.currency === 'INR' ? '₹' : '$'}{sub.total.toLocaleString()}
+                                                        </p>
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-xs text-secondary-500 uppercase font-bold tracking-tighter">Channel</p>
+                                                        <p className="font-medium text-secondary-800">{sub.salesChannel}</p>
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-xs text-secondary-500 uppercase font-bold tracking-tighter">Auto-Renew</p>
+                                                        <p className="font-medium text-secondary-800">{sub.autoRenew ? 'Yes' : 'No'}</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
                                     </div>
-                                ) : (
-                                    customer.subscriptions.map((sub: any) => (
-                                        <div key={sub.id} className="card-premium border-l-4 border-primary-500 hover:shadow-md transition-shadow">
-                                            <div className="flex justify-between items-start mb-4">
-                                                <div>
-                                                    <h4 className="font-bold text-secondary-900 text-lg">
-                                                        {sub.items[0]?.journal?.name || 'Subscription Package'}
-                                                        {sub.items.length > 1 && ` (+${sub.items.length - 1} more)`}
-                                                    </h4>
-                                                    <p className="text-sm text-secondary-500">
-                                                        <FormattedDate date={sub.startDate} /> - <FormattedDate date={sub.endDate} />
-                                                    </p>
-                                                </div>
-                                                <div className="flex flex-col items-end gap-2">
-                                                    <span className={`badge ${sub.status === 'ACTIVE' ? 'badge-success' : 'badge-warning'}`}>
-                                                        {sub.status.replace('_', ' ')}
-                                                    </span>
-                                                    <Link
-                                                        href={`/dashboard/crm/subscriptions/${sub.id}`}
-                                                        className="text-xs text-primary-600 font-bold hover:underline"
-                                                    >
-                                                        View Details →
-                                                    </Link>
-                                                </div>
-                                            </div>
-                                            <div className="grid grid-cols-3 gap-4 text-sm bg-secondary-50 p-3 rounded-lg border border-secondary-100">
-                                                <div>
-                                                    <p className="text-xs text-secondary-500 uppercase font-bold tracking-tighter">Total Price</p>
-                                                    <p className="font-bold text-secondary-900">
-                                                        {sub.currency === 'INR' ? '₹' : '$'}{sub.total.toLocaleString()}
-                                                    </p>
-                                                </div>
-                                                <div>
-                                                    <p className="text-xs text-secondary-500 uppercase font-bold tracking-tighter">Channel</p>
-                                                    <p className="font-medium text-secondary-800">{sub.salesChannel}</p>
-                                                </div>
-                                                <div>
-                                                    <p className="text-xs text-secondary-500 uppercase font-bold tracking-tighter">Auto-Renew</p>
-                                                    <p className="font-medium text-secondary-800">{sub.autoRenew ? 'Yes' : 'No'}</p>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    ))
                                 )}
                             </div>
                         )}
+
 
                         {activeTab === 'communication' && (
                             <div className="space-y-6">
