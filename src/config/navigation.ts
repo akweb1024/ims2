@@ -167,6 +167,7 @@ export const ALL_MODULES: NavModule[] = [
                     { name: 'Add Customer', href: '/dashboard/customers/new', icon: '➕', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'TEAM_LEADER', 'EXECUTIVE'] },
                     { name: 'Invoices', href: '/dashboard/crm/invoices', icon: '🧾', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'EXECUTIVE', 'FINANCE_ADMIN', 'AGENCY', 'CUSTOMER'] },
                     { name: 'Subscriptions', href: '/dashboard/crm/subscriptions', icon: '📋', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'EXECUTIVE', 'FINANCE_ADMIN', 'AGENCY', 'CUSTOMER'] },
+                    { name: 'Invoice Products', href: '/dashboard/crm/invoice-products', icon: '🗂️', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'EXECUTIVE', 'FINANCE_ADMIN'] },
                     { name: 'Coupons', href: '/dashboard/coupons', icon: '🎟️', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER'] },
                 ]
             },

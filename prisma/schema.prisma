@@ -635,7 +635,81 @@ model Plan {
   @@index([isActive])
 }
 
+// ─── Invoice Product Catalogue ────────────────────────────────────────────────
+
+enum InvoiceProductCategory {
+  JOURNAL_SUBSCRIPTION
+  COURSE
+  WORKSHOP
+  DOI_SERVICE
+  APC
+  CERTIFICATE
+  DIGITAL_SERVICE
+  MISC
+}
+
+enum PricingModel {
+  FIXED
+  TIERED
+  VOLUME
+  CUSTOM
+}
+
+model InvoiceProduct {
+  id              String                  @id @default(uuid())
+  companyId       String?
+  sku             String?                 @unique
+  name            String
+  category        InvoiceProductCategory  @default(MISC)
+  pricingModel    PricingModel            @default(FIXED)
+  description     String?
+  shortDesc       String?
+
+  // Dual-currency pricing
+  priceINR        Float                   @default(0)
+  priceUSD        Float                   @default(0)
+
+  // Flexible tier / volume pricing (stored as JSON array)
+  // e.g. [{ minQty: 1, maxQty: 10, priceINR: 5000, priceUSD: 60 }]
+  priceTiers      Json?
+
+  // Tax configuration
+  taxRate         Float                   @default(18)
+  taxIncluded     Boolean                 @default(false)
+  hsnCode         String?                 // Harmonized System Nomenclature for GST
+  sacCode         String?                 // Services Accounting Code
+
+  // Billing config
+  billingCycle    String?                 // MONTHLY | QUARTERLY | ANNUAL | ONE_TIME
+  unit            String                  @default("unit")  // e.g. year, article, user
+  minQuantity     Int                     @default(1)
+  maxQuantity     Int?
+
+  // Linkage (optional – link to source entity)
+  journalId       String?
+  courseId        String?
+  workshopId      String?
+  certificateId   String?
+
+  // Status
+  isActive        Boolean                 @default(true)
+  isFeatured      Boolean                 @default(false)
+  tags            String[]                @default([])
+  notes           String?
+
+  // Audit
+  createdByUserId String?
+  updatedByUserId String?
+  createdAt       DateTime                @default(now())
+  updatedAt       DateTime                @updatedAt
+
+  @@index([companyId, category])
+  @@index([isActive])
+  @@index([name])
+}
+
 // ─── Proforma Invoice System ──────────────────────────────────────────────────
+
 
 model ProformaInvoice {
   id                  String          @id @default(uuid())
