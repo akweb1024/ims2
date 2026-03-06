@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import FormattedDate from '@/components/common/FormattedDate';
 import CreateInvoiceModal from '@/components/dashboard/CreateInvoiceModal';
+import AnvInvoiceTemplate from '@/components/dashboard/invoices/AnvInvoiceTemplate';
 
 // Helper: convert number to Indian words
 // Helper: convert number to words based on currency
@@ -62,6 +63,7 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
         notes: ''
     });
     const [showEditModal, setShowEditModal] = useState(false);
+    const [templateType, setTemplateType] = useState<'standard' | 'anv'>('standard');
 
     const fetchInvoice = useCallback(async () => {
         setLoading(true);
@@ -425,6 +427,14 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
                         Exit Preview
                     </button>
                     <div className="flex gap-3">
+                        <select 
+                            className="btn btn-secondary rounded-full px-6 outline-none appearance-none cursor-pointer bg-white"
+                            value={templateType}
+                            onChange={(e) => setTemplateType(e.target.value as any)}
+                        >
+                            <option value="standard">Standard Template</option>
+                            <option value="anv">ANV Premium (Raipur Style)</option>
+                        </select>
                         <button className="btn btn-secondary rounded-full px-6" onClick={() => window.print()}>
                             🖨 Save PDF / Print
                         </button>
@@ -445,246 +455,258 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
                 </div>
 
                 {/* ─── PREMIUM TAX INVOICE DOCUMENT ─── */}
-                <div className="print-content ref-invoice shadow-2xl">
-                    {/* HEADER */}
-                    <div className="inv-header flex items-center justify-between">
-                        {/* Left Logo (Brand Strategy) */}
-                        <div className="w-[150px] flex justify-start pl-2">
-                            {identity.brandLogoUrl && (
-                                <img src={identity.brandLogoUrl} className="max-h-16 w-auto object-contain" alt="Brand Logo" />
-                            )}
-                        </div>
-
-                        {/* Center Details */}
-                        <div className="flex-1 flex flex-col items-center text-center px-4">
-                            <h1 className="brand-title leading-none">{identity.name}</h1>
-                            {identity.tagline && (
-                                <p className="text-[10px] mt-1 font-semibold italic text-[#555] opacity-90">{identity.tagline}</p>
-                            )}
-                            <div className="company-info leading-relaxed mt-2">
-                                <p className="font-bold text-[11px] uppercase tracking-wide">
-                                    {identity.relationType} {company.legalEntityName || company.name}
-                                </p>
-                                <p className="opacity-90 whitespace-pre-line leading-tight mt-1 max-w-sm mx-auto">{identity.address}</p>
-                            </div>
-                        </div>
-
-                        {/* Right Logo (Company Strategy) */}
-                        <div className="w-[150px] flex justify-end pr-2">
-                            {identity.companyLogoUrl && (
-                                <img src={identity.companyLogoUrl} className="max-h-16 w-auto object-contain" alt="Company Logo" />
-                            )}
-                        </div>
+                {templateType === 'anv' ? (
+                    <div className="print-content shadow-2xl">
+                        <AnvInvoiceTemplate 
+                            invoice={invoice}
+                            identity={identity}
+                            currencySymbol={currencySymbol}
+                            numberToWords={numberToWords}
+                            invoiceTitle={invoiceTitle}
+                        />
                     </div>
+                ) : (
+                    <div className="print-content ref-invoice shadow-2xl">
+                        {/* HEADER */}
+                        <div className="inv-header flex items-center justify-between">
+                            {/* Left Logo (Brand Strategy) */}
+                            <div className="w-[150px] flex justify-start pl-2">
+                                {identity.brandLogoUrl && (
+                                    <img src={identity.brandLogoUrl} className="max-h-16 w-auto object-contain" alt="Brand Logo" />
+                                )}
+                            </div>
 
-                    {/* META SECTION */}
-                    <div className="meta-row">
-                        <div className="meta-col">
-                            <span className="meta-label">{invoiceTitle} NUMBER :</span>
-                            <div className="meta-value-lg mb-4">{displayInvoiceNumber}</div>
-                            
-                            <span className="meta-label">{invoiceTitle} DATE :</span>
-                            <div className="text-sm font-bold mb-4">
-                                <FormattedDate date={invoice.createdAt} />
+                            {/* Center Details */}
+                            <div className="flex-1 flex flex-col items-center text-center px-4">
+                                <h1 className="brand-title leading-none">{identity.name}</h1>
+                                {identity.tagline && (
+                                    <p className="text-[10px] mt-1 font-semibold italic text-[#555] opacity-90">{identity.tagline}</p>
+                                )}
+                                <div className="company-info leading-relaxed mt-2">
+                                    <p className="font-bold text-[11px] uppercase tracking-wide">
+                                        {identity.relationType} {company.legalEntityName || company.name}
+                                    </p>
+                                    <p className="opacity-90 whitespace-pre-line leading-tight mt-1 max-w-sm mx-auto">{identity.address}</p>
+                                </div>
                             </div>
-                            
-                            <span className="meta-label">VALID UNTIL :</span>
-                            <div className="meta-value-blue">
-                                <FormattedDate date={invoice.dueDate} />
-                            </div>
-                        </div>
-                        <div className="meta-col">
-                            <span className="meta-label">BANK DETAILS:</span>
-                            <ul className="bank-list text-[10px]">
-                                <li><label>Bank Name :</label> <span>{identity.bankName || '—'}</span></li>
-                                <li><label>Bank Address :</label> <span className="text-[9px]">{identity.address?.split(',').slice(0,2).join(',')}</span></li>
-                                <li><label>A/C. Number :</label> <span className="font-bold">{identity.bankNumber || '—'}</span></li>
-                                <li><label>IFSC Code :</label> <span className="font-bold">{identity.bankIfsc || '—'}</span></li>
-                                <li><label>Swift Code :</label> <span>{identity.bankSwift || '—'}</span></li>
-                                <li><label>A/C. Holder :</label> <span className="text-[9px] italic">{identity.bankHolder || '—'}</span></li>
-                            </ul>
-                        </div>
-                        <div className="meta-col text-[10px]">
-                            <div className="mb-2"><strong>GSTIN :</strong> {identity.gstin || '—'}</div>
-                            <div className="mb-2"><strong>PAN No. :</strong> {identity.pan || '—'}</div>
-                            <div className="mb-2"><strong>CIN No. :</strong> {identity.cin || '—'}</div>
-                            <div className="mb-2"><strong>IEC :</strong> {identity.iec || '—'}</div>
-                            <div className="mt-4 leading-relaxed">
-                                <strong>Legal Name/ Publisher name:</strong><br/>
-                                {company.legalEntityName || company.name}
-                            </div>
-                        </div>
-                    </div>
 
-                    {/* ADDRESSES */}
-                    <div className="address-row">
-                        <div className="address-col">
-                            <span className="section-title">BILLED TO / DETAILS OF RECEIVER:</span>
-                            <div className="space-y-1">
-                                <p><strong>Name :</strong> {customer.name || 'asa'}</p>
-                                <p><strong>Institution :</strong> {customer.institution?.name || 'aas'}</p>
-                                <p className="leading-relaxed"><strong>Address :</strong> {invoice.billingAddress || customer.billingAddress }</p>
-                                <p><strong>GSTIN :</strong> {invoice.gstNumber || 'N/A'}</p>
+                            {/* Right Logo (Company Strategy) */}
+                            <div className="w-[150px] flex justify-end pr-2">
+                                {identity.companyLogoUrl && (
+                                    <img src={identity.companyLogoUrl} className="max-h-16 w-auto object-contain" alt="Company Logo" />
+                                )}
                             </div>
                         </div>
-                        <div className="address-col relative">
-                            <span className="section-title">SHIPPED TO / DELIVERY ADDRESS:</span>
-                            <div className="space-y-1">
-                                <p><strong>Recipient :</strong> {customer.name || 'asa'}</p>
-                                <p className="leading-relaxed"><strong>Address :</strong> {invoice.shippingAddress || customer.shippingAddress || invoice.billingAddress}</p>
-                                <p><strong>Contact :</strong> {customer.primaryPhone || '—'}</p>
-                            </div>
-                            <div className="absolute top-2 right-2 text-center">
-                                <span className="text-[7px] text-gray-400 font-bold block mb-1">SCAN INVOICE</span>
-                                <div className="w-12 h-12 border border-gray-100 flex items-center justify-center text-[8px] text-gray-300">QR</div>
-                            </div>
-                        </div>
-                    </div>
 
-                    {/* ITEMS TABLE */}
-                    <table className="items-table">
-                        <thead>
-                            <tr>
-                                <th style={{width:'40px'}}>Sr.No</th>
-                                <th style={{textAlign:'left'}}>Particulars</th>
-                                <th style={{width:'60px'}}>HSN/SAC</th>
-                                <th style={{width:'40px'}}>Qty</th>
-                                <th style={{width:'80px', textAlign:'right'}}>Unit Price ({currencySymbol})</th>
-                                <th style={{width:'80px', textAlign:'right'}}>Amount ({currencySymbol})</th>
-                                <th style={{width:'70px', textAlign:'right'}}>Discount ({currencySymbol})</th>
-                                <th style={{width:'80px', textAlign:'right'}}>Taxable Value ({currencySymbol})</th>
-                                <th style={{width:'60px', textAlign:'right'}}>GST Rate (%)</th>
-                                <th style={{width:'90px', textAlign:'right'}}>Net Amount ({currencySymbol})</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {invoiceItems.map((item, idx) => {
-                                const taxable = (item.amount || (item.quantity * item.price)) - (item.discount || 0);
-                                const gstRate = item.taxRate || (isExport ? 0 : (invoice.taxRate || 18));
-                                const gstAmt = taxable * (gstRate / 100);
-                                return (
-                                    <tr key={idx}>
-                                        <td style={{textAlign:'center'}}>{idx + 1}</td>
-                                        <td>
-                                            <strong>{item.description || item.journal?.name || 'Journal of Nanomedicine & Nanotechnology'}</strong>
-                                            {item.plan && <div className="text-[9px] text-gray-500 mt-1">[{item.plan.format} | {item.plan.duration} Months Subscription]</div>}
-                                            {!item.plan && <div className="text-[9px] text-gray-500 mt-1">[Jan-2025 TO Dec-2025 | Print + Digital Subscription]</div>}
-                                        </td>
-                                        <td style={{textAlign:'center'}}>{item.hsnCode || '9984'}</td>
-                                        <td style={{textAlign:'center'}}>{item.quantity}</td>
-                                        <td style={{textAlign:'right'}}>{item.price?.toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
-                                        <td style={{textAlign:'right'}}>{(item.quantity * item.price).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
-                                        <td style={{textAlign:'right'}}>{(item.discount || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
-                                        <td style={{textAlign:'right'}}>{taxable.toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
-                                        <td style={{textAlign:'right'}}>{gstRate}%</td>
-                                        <td style={{textAlign:'right', fontWeight:700}}>{(taxable + gstAmt).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
-                                    </tr>
-                                )
-                            })}
-                        </tbody>
-                    </table>
-
-                    {/* TOTALS SECTION */}
-                    <div className="total-section">
-                        <div className="total-grid">
-                            <div className="words-area leading-snug">
-                                In Words: {numberToWords(grandTotal, invoice.currency)}
-                            </div>
-                            <div className="sums-area">
-                                <div className="sum-row">
-                                    <span className="sum-label">Subtotal:</span>
-                                    <span className="sum-value">{subtotal.toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
+                        {/* META SECTION */}
+                        <div className="meta-row">
+                            <div className="meta-col">
+                                <span className="meta-label">{invoiceTitle} NUMBER :</span>
+                                <div className="meta-value-lg mb-4">{displayInvoiceNumber}</div>
+                                
+                                <span className="meta-label">{invoiceTitle} DATE :</span>
+                                <div className="text-sm font-bold mb-4">
+                                    <FormattedDate date={invoice.createdAt} />
                                 </div>
                                 
-                                {isExport ? (
-                                    <div className="sum-row text-gray-500 italic">
-                                        <span className="sum-label">Export (0% Tax):</span>
+                                <span className="meta-label">VALID UNTIL :</span>
+                                <div className="meta-value-blue">
+                                    <FormattedDate date={invoice.dueDate} />
+                                </div>
+                            </div>
+                            <div className="meta-col">
+                                <span className="meta-label">BANK DETAILS:</span>
+                                <ul className="bank-list text-[10px]">
+                                    <li><label>Bank Name :</label> <span>{identity.bankName || '—'}</span></li>
+                                    <li><label>Bank Address :</label> <span className="text-[9px]">{identity.address?.split(',').slice(0,2).join(',')}</span></li>
+                                    <li><label>A/C. Number :</label> <span className="font-bold">{identity.bankNumber || '—'}</span></li>
+                                    <li><label>IFSC Code :</label> <span className="font-bold">{identity.bankIfsc || '—'}</span></li>
+                                    <li><label>Swift Code :</label> <span>{identity.bankSwift || '—'}</span></li>
+                                    <li><label>A/C. Holder :</label> <span className="text-[9px] italic">{identity.bankHolder || '—'}</span></li>
+                                </ul>
+                            </div>
+                            <div className="meta-col text-[10px]">
+                                <div className="mb-2"><strong>GSTIN :</strong> {identity.gstin || '—'}</div>
+                                <div className="mb-2"><strong>PAN No. :</strong> {identity.pan || '—'}</div>
+                                <div className="mb-2"><strong>CIN No. :</strong> {identity.cin || '—'}</div>
+                                <div className="mb-2"><strong>IEC :</strong> {identity.iec || '—'}</div>
+                                <div className="mt-4 leading-relaxed">
+                                    <strong>Legal Name/ Publisher name:</strong><br/>
+                                    {company.legalEntityName || company.name}
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* ADDRESSES */}
+                        <div className="address-row">
+                            <div className="address-col">
+                                <span className="section-title">BILLED TO / DETAILS OF RECEIVER:</span>
+                                <div className="space-y-1">
+                                    <p><strong>Name :</strong> {customer.name || '—'}</p>
+                                    <p><strong>Institution :</strong> {customer.institution?.name || '—'}</p>
+                                    <p className="leading-relaxed"><strong>Address :</strong> {invoice.billingAddress || customer.billingAddress }</p>
+                                    <p><strong>GSTIN :</strong> {invoice.gstNumber || 'N/A'}</p>
+                                </div>
+                            </div>
+                            <div className="address-col relative">
+                                <span className="section-title">SHIPPED TO / DELIVERY ADDRESS:</span>
+                                <div className="space-y-1">
+                                    <p><strong>Recipient :</strong> {customer.name || '—'}</p>
+                                    <p className="leading-relaxed"><strong>Address :</strong> {invoice.shippingAddress || customer.shippingAddress || invoice.billingAddress}</p>
+                                    <p><strong>Contact :</strong> {customer.primaryPhone || '—'}</p>
+                                </div>
+                                <div className="absolute top-2 right-2 text-center">
+                                    <span className="text-[7px] text-gray-400 font-bold block mb-1">SCAN INVOICE</span>
+                                    <div className="w-12 h-12 border border-gray-100 flex items-center justify-center text-[8px] text-gray-300">QR</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* ITEMS TABLE */}
+                        <table className="items-table">
+                            <thead>
+                                <tr>
+                                    <th style={{width:'40px'}}>Sr.No</th>
+                                    <th style={{textAlign:'left'}}>Particulars</th>
+                                    <th style={{width:'60px'}}>HSN/SAC</th>
+                                    <th style={{width:'40px'}}>Qty</th>
+                                    <th style={{width:'80px', textAlign:'right'}}>Unit Price ({currencySymbol})</th>
+                                    <th style={{width:'80px', textAlign:'right'}}>Amount ({currencySymbol})</th>
+                                    <th style={{width:'70px', textAlign:'right'}}>Discount ({currencySymbol})</th>
+                                    <th style={{width:'80px', textAlign:'right'}}>Taxable Value ({currencySymbol})</th>
+                                    <th style={{width:'60px', textAlign:'right'}}>GST Rate (%)</th>
+                                    <th style={{width:'90px', textAlign:'right'}}>Net Amount ({currencySymbol})</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {invoiceItems.map((item, idx) => {
+                                    const taxable = (item.amount || (item.quantity * item.price)) - (item.discount || 0);
+                                    const gstRate = item.taxRate || (isExport ? 0 : (invoice.taxRate || 18));
+                                    const gstAmt = taxable * (gstRate / 100);
+                                    return (
+                                        <tr key={idx}>
+                                            <td style={{textAlign:'center'}}>{idx + 1}</td>
+                                            <td>
+                                                <strong>{item.description || item.journal?.name || 'Item Name'}</strong>
+                                                {item.plan && <div className="text-[9px] text-gray-500 mt-1">[{item.plan.format} | {item.plan.duration} Months Subscription]</div>}
+                                                {!item.plan && <div className="text-[9px] text-gray-500 mt-1">[Subscription Item]</div>}
+                                            </td>
+                                            <td style={{textAlign:'center'}}>{item.hsnCode || '9984'}</td>
+                                            <td style={{textAlign:'center'}}>{item.quantity}</td>
+                                            <td style={{textAlign:'right'}}>{item.price?.toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
+                                            <td style={{textAlign:'right'}}>{(item.quantity * item.price).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
+                                            <td style={{textAlign:'right'}}>{(item.discount || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
+                                            <td style={{textAlign:'right'}}>{taxable.toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
+                                            <td style={{textAlign:'right'}}>{gstRate}%</td>
+                                            <td style={{textAlign:'right', fontWeight:700}}>{(taxable + gstAmt).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
+                                        </tr>
+                                    )
+                                })}
+                            </tbody>
+                        </table>
+
+                        {/* TOTALS SECTION */}
+                        <div className="total-section">
+                            <div className="total-grid">
+                                <div className="words-area leading-snug">
+                                    In Words: {numberToWords(grandTotal, invoice.currency)}
+                                </div>
+                                <div className="sums-area">
+                                    <div className="sum-row">
+                                        <span className="sum-label">Subtotal:</span>
+                                        <span className="sum-value">{subtotal.toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
+                                    </div>
+                                    
+                                    {isExport ? (
+                                        <div className="sum-row text-gray-500 italic">
+                                            <span className="sum-label">Export (0% Tax):</span>
+                                            <span className="sum-value">0.00</span>
+                                        </div>
+                                    ) : isIGST ? (
+                                        <div className="sum-row">
+                                            <span className="sum-label">IGST ({invoice.igstRate || invoice.taxRate}%):</span>
+                                            <span className="sum-value">{(invoice.igst || taxAmt).toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
+                                        </div>
+                                    ) : (
+                                        <>
+                                            <div className="sum-row">
+                                                <span className="sum-label">CGST ({invoice.cgstRate || (invoice.taxRate/2)}%):</span>
+                                                <span className="sum-value">{(invoice.cgst || (taxAmt/2)).toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
+                                            </div>
+                                            <div className="sum-row">
+                                                <span className="sum-label">SGST ({invoice.sgstRate || (invoice.taxRate/2)}%):</span>
+                                                <span className="sum-value">{(invoice.sgst || (taxAmt/2)).toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
+                                            </div>
+                                        </>
+                                    )}
+
+                                    <div className="sum-row grand-total-row border-t border-black pt-2">
+                                        <span className="sum-label text-black font-black text-xs">Total ({invoice.currency || 'INR'})::</span>
+                                        <span className="sum-value text-black font-black text-base">{currencySymbol}{grandTotal.toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
+                                    </div>
+                                    <div className="sum-row text-[8px] text-gray-400">
+                                        <span className="sum-label">Round Off :</span>
                                         <span className="sum-value">0.00</span>
                                     </div>
-                                ) : isIGST ? (
-                                    <div className="sum-row">
-                                        <span className="sum-label">IGST ({invoice.igstRate || invoice.taxRate}%):</span>
-                                        <span className="sum-value">{(invoice.igst || taxAmt).toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="px-4 py-2 italic text-[9px] border-b border-gray-700">
+                            The sum of {currencySymbol}{grandTotal.toLocaleString()}/- is a payment on account of subscription by {identity.paymentMode || 'NEFT/RTGS'}.
+                        </div>
+
+                        {/* TERMS AND SIGNATURE */}
+                        <div className="terms-sign">
+                            <div className="terms-area">
+                                <strong className="text-[10px] underline block mb-2">TERMS & CONDITIONS:</strong>
+                                <div className="whitespace-pre-wrap leading-tight text-gray-600">
+                                    {identity.terms || (
+                                        <>
+                                            1. All subscription amount mentioned is as per year fee (Between January and December).<br/>
+                                            2. Missing numbers will not be supplied if claims are received more than six months.<br/>
+                                            3. The Publisher cannot accept responsibility for foreign delivery when records indicate posting has been made.<br/>
+                                            4. Invoice subject to realization of demand draft/cheque.
+                                        </>
+                                    )}
+                                </div>
+                            </div>
+                            <div className="sign-area pb-2">
+                                <div className="font-bold text-[10px] text-gray-900">For, {identity.name.toUpperCase()}</div>
+                                <div className="mt-8">
+                                    <div className="w-full border-b border-black mb-1"></div>
+                                    <div className="text-[9px] font-bold text-center uppercase tracking-wider">AUTHORISED SIGNATORY</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* FOOTER */}
+                        <div className="footer-box border-t-2 border-black">
+                            <div className="offices-grid">
+                                <div>
+                                    <div className="office-title">REGD. OFFICE:</div>
+                                    <div className="office-text font-medium">{identity.regdOffice || '—'}</div>
+                                </div>
+                                <div>
+                                    <div className="office-title">SALES & ADMIN OFFICE:</div>
+                                    <div className="office-text">
+                                        <strong>{identity.name}, {invoice.brandRelationType || brand?.brandRelationType || company.brandRelationType || 'A Brand of'} {company.legalEntityName || company.name}</strong><br/>
+                                        <span className="font-medium">{identity.salesOffice || '—'}</span>
                                     </div>
-                                ) : (
-                                    <>
-                                        <div className="sum-row">
-                                            <span className="sum-label">CGST ({invoice.cgstRate || (invoice.taxRate/2)}%):</span>
-                                            <span className="sum-value">{(invoice.cgst || (taxAmt/2)).toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
-                                        </div>
-                                        <div className="sum-row">
-                                            <span className="sum-label">SGST ({invoice.sgstRate || (invoice.taxRate/2)}%):</span>
-                                            <span className="sum-value">{(invoice.sgst || (taxAmt/2)).toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
-                                        </div>
-                                    </>
-                                )}
-
-                                <div className="sum-row grand-total-row border-t border-black pt-2">
-                                    <span className="sum-label text-black font-black text-xs">Total ({invoice.currency || 'INR'}):</span>
-                                    <span className="sum-value text-black font-black text-base">{currencySymbol}{grandTotal.toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
-                                </div>
-                                <div className="sum-row text-[8px] text-gray-400">
-                                    <span className="sum-label">Round Off :</span>
-                                    <span className="sum-value">0.00</span>
                                 </div>
                             </div>
-                        </div>
-                    </div>
-
-                    <div className="px-4 py-2 italic text-[9px] border-b border-gray-700">
-                        The sum of {currencySymbol}{grandTotal.toLocaleString()}/- is a payment on account of subscription by {identity.paymentMode || 'NEFT/RTGS'}.
-                    </div>
-
-                    {/* TERMS AND SIGNATURE */}
-                    <div className="terms-sign">
-                        <div className="terms-area">
-                            <strong className="text-[10px] underline block mb-2">TERMS & CONDITIONS:</strong>
-                            <div className="whitespace-pre-wrap leading-tight text-gray-600">
-                                {identity.terms || (
-                                    <>
-                                        1. All subscription amount mentioned is as per year fee (Between January and December).<br/>
-                                        2. Missing numbers will not be supplied if claims are received more than six months.<br/>
-                                        3. The Publisher cannot accept responsibility for foreign delivery when records indicate posting has been made.<br/>
-                                        4. Invoice subject to realization of demand draft/cheque.
-                                    </>
-                                )}
+                            <div className="contact-bottom mt-4 pt-2 border-t border-gray-100 flex justify-between px-8">
+                                <div>Tel: {company.phone || '+91 (0)120 - 4781206'}</div>
+                                <div>Mob: +91-9810078958</div>
+                                <div>E-mail: {identity.email}</div>
+                                <div>Website: {identity.website}</div>
                             </div>
-                        </div>
-                        <div className="sign-area pb-2">
-                            <div className="font-bold text-[10px] text-gray-900">For, {identity.name.toUpperCase()}</div>
-                            <div className="mt-8">
-                                <div className="w-full border-b border-black mb-1"></div>
-                                <div className="text-[9px] font-bold text-center uppercase tracking-wider">AUTHORISED SIGNATORY</div>
+                            <div className="text-center mt-3 text-[7px] text-gray-400">
+                                This computer generated invoice is available online at: {identity.website || 'stmjournals.com'}/invoice.aspx?ID={displayInvoiceNumber}
                             </div>
                         </div>
                     </div>
-
-                    {/* FOOTER */}
-                    <div className="footer-box border-t-2 border-black">
-                        <div className="offices-grid">
-                            <div>
-                                <div className="office-title">REGD. OFFICE:</div>
-                                <div className="office-text font-medium">{identity.regdOffice || '—'}</div>
-                            </div>
-                            <div>
-                                <div className="office-title">SALES & ADMIN OFFICE:</div>
-                                <div className="office-text">
-                                    <strong>{identity.name}, {invoice.brandRelationType || brand?.brandRelationType || company.brandRelationType || 'A Brand of'} {company.legalEntityName || company.name}</strong><br/>
-                                    <span className="font-medium">{identity.salesOffice || '—'}</span>
-                                </div>
-                            </div>
-                        </div>
-                        <div className="contact-bottom mt-4 pt-2 border-t border-gray-100 flex justify-between px-8">
-                            <div>Tel: {company.phone || '+91 (0)120 - 4781206'}</div>
-                            <div>Mob: +91-9810078958</div>
-                            <div>E-mail: {identity.email}</div>
-                            <div>Website: {identity.website}</div>
-                        </div>
-                        <div className="text-center mt-3 text-[7px] text-gray-400">
-                            This computer generated invoice is available online at: {identity.website || 'stmjournals.com'}/invoice.aspx?ID={displayInvoiceNumber}
-                        </div>
-                    </div>
-                </div>
+                )}
                 {/* ─── End of Tax Invoice Document ─── */}
 
                 {/* Payment History */}

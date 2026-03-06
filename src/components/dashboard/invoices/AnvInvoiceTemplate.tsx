@@ -1,0 +1,284 @@
+'use client';
+
+import React from 'react';
+import { QRCodeSVG } from 'qrcode.react';
+import FormattedDate from '@/components/common/FormattedDate';
+
+interface AnvInvoiceTemplateProps {
+    invoice: any;
+    identity: any;
+    currencySymbol: string;
+    numberToWords: (num: number, currency: string) => string;
+    invoiceTitle: string;
+}
+
+export default function AnvInvoiceTemplate({ invoice, identity, currencySymbol, numberToWords, invoiceTitle }: AnvInvoiceTemplateProps) {
+    const customer = invoice.subscription?.customerProfile || invoice.customerProfile || {};
+    const invoiceItems: any[] = Array.isArray(invoice.lineItems) && invoice.lineItems.length > 0
+        ? invoice.lineItems
+        : (invoice.subscription?.items || []);
+    
+    const invoiceCountry = invoice.shippingCountry || invoice.billingCountry || customer.shippingCountry || customer.billingCountry || customer.country || 'India';
+    const isExport = invoiceCountry.toLowerCase() !== 'india';
+    
+    const subtotal = invoice.amount || 0;
+    const taxAmt = invoice.tax || 0;
+    const grandTotal = invoice.total || 0;
+    const displayInvoiceNumber = invoice.status === 'PAID' ? invoice.invoiceNumber : (invoice.proformaNumber || invoice.invoiceNumber);
+
+    // Dynamic Invoice URL for QR Code
+    const invoiceUrl = typeof window !== 'undefined' 
+        ? `${window.location.origin}/dashboard/crm/invoices/${invoice.id}`
+        : `https://stmjournals.com/invoice.aspx?i=${invoice.id}`;
+
+    return (
+        <div className="anv-invoice-template bg-white text-black font-serif p-0 border border-black max-w-[800px] mx-auto overflow-hidden">
+            <style jsx>{`
+                .anv-invoice-template { font-family: 'Arial', sans-serif; line-height: 1.2; font-size: 11px; color: #000; }
+                .border-all { border: 1px solid #000; }
+                .border-b { border-bottom: 1px solid #000; }
+                .border-r { border-right: 1px solid #000; }
+                .header-box { padding: 10px; display: grid; grid-template-columns: 100px 1fr 100px; gap: 10px; align-items: center; border-bottom: 1.5px solid #000; }
+                .header-center { text-align: center; }
+                .header-center h1 { font-size: 20px; font-weight: 900; margin: 0; color: #000; letter-spacing: 0.5px; }
+                .meta-summary { display: grid; grid-template-columns: 1fr 1fr 1fr; border-bottom: 1px solid #000; }
+                .meta-box { padding: 6px; font-size: 10px; }
+                .meta-box label { display: block; font-weight: 800; font-size: 8px; text-transform: uppercase; color: #333; margin-bottom: 2px; }
+                
+                .billing-section { display: grid; grid-template-columns: 1fr 120px; border-bottom: 1.5px solid #000; }
+                .bill-to { padding: 8px; }
+                .qr-box { padding: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; border-left: 1px solid #000; }
+                
+                .table-main { width: 100%; border-collapse: collapse; }
+                .table-main th { border-bottom: 1px solid #000; border-right: 1px solid #000; padding: 4px; font-size: 9px; font-weight: 800; background: #f0f0f0; text-align: center; }
+                .table-main td { border-bottom: 0.5px solid #ccc; border-right: 1px solid #000; padding: 6px 4px; vertical-align: top; }
+                .table-main th:last-child, .table-main td:last-child { border-right: none; }
+                
+                .summary-section { display: grid; grid-template-columns: 1fr 200px; border-bottom: 1px solid #000; }
+                .words-part { padding: 8px; border-right: 1px solid #000; align-self: end; }
+                .totals-part { padding: 8px; }
+                .row-total { display: flex; justify-content: flex-end; gap: 10px; margin-bottom: 2px; }
+                .total-label { font-weight: 700; width: 100px; text-align: right; }
+                .total-val { font-weight: 800; width: 80px; text-align: right; }
+                .grand-total { border-top: 1px solid #000; padding-top: 4px; margin-top: 4px; font-size: 13px; font-weight: 900; }
+
+                .tax-table { width: 100%; border-collapse: collapse; margin-top: 0px; border-bottom: 1px solid #000; }
+                .tax-table th { border-bottom: 1px solid #000; border-right: 1px solid #000; padding: 4px; font-size: 8px; font-weight: 800; background: #fafafa; }
+                .tax-table td { border-bottom: 1px solid #ccc; border-right: 1px solid #000; padding: 4px; font-size: 9px; text-align: right; }
+                .tax-table th:last-child, .tax-table td:last-child { border-right: none; }
+                
+                .terms-sign-section { display: grid; grid-template-columns: 1.5fr 1fr; border-bottom: 1.5px solid #000; height: 120px; }
+                .terms-area { padding: 8px; border-right: 1px solid #000; font-size: 8.5px; }
+                .sign-area { padding: 8px; display: flex; flex-direction: column; justify-content: space-between; text-align: right; }
+                
+                .footer { padding: 10px; text-align: center; font-size: 9px; }
+                .footer-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 8px; text-align: left; }
+                .office-box h4 { font-size: 8px; font-weight: 800; color: #666; margin: 0 0 2px 0; }
+                
+                @media print {
+                    .anv-invoice-template { border: 1px solid black !important; width: 100% !important; margin: 0 !important; box-shadow: none !important; }
+                }
+            `}</style>
+
+            <div className="header-box">
+                <div className="logo-left">
+                    {identity.brandLogoUrl && <img src={identity.brandLogoUrl} className="max-h-16 w-auto" alt="Logo" />}
+                </div>
+                <div className="header-center">
+                    <p className="text-[10px] font-bold text-right -mt-2 -mr-2 absolute right-2 top-2 uppercase">Subjected to {identity.jurisdiction || 'Raipur'} Jurisdiction</p>
+                    <h2 className="text-gray-500 font-bold mb-1 uppercase tracking-widest">{invoiceTitle}</h2>
+                    <h1>{identity.name}</h1>
+                    <p className="text-[10px] font-medium leading-tight max-w-sm mx-auto mt-1">{identity.address}</p>
+                </div>
+                <div className="logo-right text-right">
+                    {identity.companyLogoUrl && <img src={identity.companyLogoUrl} className="max-h-16 w-auto" alt="Company Logo" />}
+                </div>
+            </div>
+
+            <div className="meta-summary">
+                <div className="meta-box border-r">
+                    <div className="mb-2">
+                        <label>{invoiceTitle} Number</label>
+                        <span className="font-bold text-sm tracking-tight">{displayInvoiceNumber}</span>
+                    </div>
+                    <div>
+                        <label>{invoiceTitle} Date</label>
+                        <span className="font-bold"><FormattedDate date={invoice.createdAt} /></span>
+                    </div>
+                </div>
+                <div className="meta-box border-r">
+                    <label>Bank Details</label>
+                    <div className="text-[9px] space-y-0.5">
+                        <p><strong>Bank:</strong> {identity.bankName || '—'}</p>
+                        <p><strong>A/C No:</strong> <span className="font-bold">{identity.bankNumber || '—'}</span></p>
+                        <p><strong>IFSC:</strong> {identity.bankIfsc || '—'}</p>
+                        <p><strong>Holder:</strong> {identity.bankHolder || '—'}</p>
+                    </div>
+                </div>
+                <div className="meta-box">
+                    <div className="grid grid-cols-2 gap-x-2 gap-y-1">
+                        <div><label>GSTIN</label> <span className="font-bold text-[9px]">{identity.gstin || '—'}</span></div>
+                        <div><label>PAN No.</label> <span className="font-bold text-[9px]">{identity.pan || '—'}</span></div>
+                        <div className="col-span-2 mt-1">
+                            <label>LEGAL NAME</label>
+                            <span className="font-bold leading-tight">{identity.bankHolder || identity.name}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div className="billing-section">
+                <div className="bill-to border-r">
+                    <h3 className="text-[10px] font-black underline mb-2 tracking-widest uppercase">Billed To / Details of Reciever:</h3>
+                    <div className="space-y-1 text-[10px]">
+                        <p className="text-lg font-black">{customer.name || '—'}</p>
+                        {customer.organizationName && <p className="font-bold uppercase">{customer.organizationName}</p>}
+                        <p className="whitespace-pre-line leading-tight">{invoice.billingAddress || customer.billingAddress }</p>
+                        <p><strong>Contact:</strong> {customer.primaryPhone || '—'} / {customer.primaryEmail || '—'}</p>
+                        {invoice.gstNumber && <p><strong>GSTIN:</strong> {invoice.gstNumber}</p>}
+                    </div>
+                </div>
+                <div className="qr-box">
+                    <span className="text-[7px] font-black mb-1">SCAN TO VIEW INVOICE</span>
+                    <div className="p-1 bg-white">
+                        <QRCodeSVG value={invoiceUrl} size={84} level="M" />
+                    </div>
+                    <span className="text-[6px] font-bold mt-1 text-gray-500">DIGITAL VERIFIED</span>
+                </div>
+            </div>
+
+            <table className="table-main">
+                <thead>
+                    <tr>
+                        <th className="w-8">Sr.No</th>
+                        <th className="text-left">Particulars</th>
+                        <th className="w-16">HSN/SAC</th>
+                        <th className="w-10">Qty</th>
+                        <th className="w-16 text-right">Rate ({currencySymbol})</th>
+                        <th className="w-20 text-right">Taxable Val ({currencySymbol})</th>
+                        <th className="w-16 text-right">GST %</th>
+                        <th className="w-24 text-right">Net Amt ({currencySymbol})</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {invoiceItems.map((item, idx) => {
+                        const taxable = (item.amount || (item.quantity * item.price)) - (item.discount || 0);
+                        const gstRate = item.taxRate || (isExport ? 0 : (invoice.taxRate || 18));
+                        const gstDisplay = isExport ? '0%' : `${gstRate}%`;
+                        const netAmt = taxable + (taxable * (gstRate / 100));
+                        return (
+                            <tr key={idx}>
+                                <td className="text-center">{idx + 1}</td>
+                                <td className="font-bold tracking-tight">
+                                    {item.description || item.journal?.name || 'A&V Publication Item'}
+                                    <div className="text-[8px] font-normal italic text-gray-700">Period: Jan 2025 - Dec 2025</div>
+                                </td>
+                                <td className="text-center">{item.hsnCode || '9984'}</td>
+                                <td className="text-center">{item.quantity}</td>
+                                <td className="text-right">{item.price?.toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
+                                <td className="text-right">{taxable.toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
+                                <td className="text-right">{gstDisplay}</td>
+                                <td className="text-right font-black">{netAmt.toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
+                            </tr>
+                        );
+                    })}
+                </tbody>
+            </table>
+
+            <div className="summary-section">
+                <div className="words-part text-[9px]">
+                    <strong>Total Amount (in words):</strong><br/>
+                    {numberToWords(grandTotal, invoice.currency)}
+                </div>
+                <div className="totals-part">
+                    <div className="row-total">
+                        <span className="total-label text-[10px]">Taxable Amount:</span>
+                        <span className="total-val text-[11px] font-bold">{subtotal.toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
+                    </div>
+                    <div className="row-total">
+                        <span className="total-label text-[10px]">Total GST:</span>
+                        <span className="total-val text-[11px] font-bold">{taxAmt.toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
+                    </div>
+                    <div className="row-total grand-total">
+                        <span className="total-label">Grand Total:</span>
+                        <span className="total-val">{currencySymbol}{grandTotal.toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
+                    </div>
+                </div>
+            </div>
+
+            {/* Tax Breakdown Table */}
+            {!isExport && (
+                <div className="p-0">
+                    <table className="tax-table font-sans">
+                        <thead>
+                            <tr>
+                                <th>Sr.No</th>
+                                <th style={{textAlign:'left'}}>HSN/SAC</th>
+                                <th>Taxable Val</th>
+                                <th>CGST (Amt)</th>
+                                <th>SGST (Amt)</th>
+                                <th>IGST (Amt)</th>
+                                <th>Total Tax</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td className="text-center">1</td>
+                                <td style={{textAlign:'left'}} className="font-bold">9984</td>
+                                <td>{subtotal.toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
+                                <td>{(invoice.cgst || (taxAmt / 2)).toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
+                                <td>{(invoice.sgst || (taxAmt / 2)).toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
+                                <td>{(invoice.igst || 0).toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
+                                <td className="font-bold">{taxAmt.toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            )}
+
+            <div className="terms-sign-section">
+                <div className="terms-area">
+                    <h4 className="font-black underline mb-1">TERMS & CONDITIONS:</h4>
+                    <ol className="list-decimal list-inside space-y-0.5 opacity-80 leading-snug">
+                        <li>All subscription amount mentioned is as per year fee.</li>
+                        <li>Missing numbers will not be supplied after six months.</li>
+                        <li>Publisher is not responsible for foreign delivery issues.</li>
+                        <li>Subject to Raipur Jurisdiction only.</li>
+                    </ol>
+                    <div className="mt-2 text-[9px] font-bold p-1 bg-gray-50 border border-dotted border-black">
+                        Payment Ref: Subscription payment on account of {customer.name}
+                    </div>
+                </div>
+                <div className="sign-area">
+                    <p className="text-[10px] font-bold">For, {identity.name.toUpperCase()}</p>
+                    <div className="sign-placeholder h-12"></div>
+                    <div>
+                        <div className="w-full border-b border-black mb-1"></div>
+                        <p className="text-[8px] font-black text-center">AUTHORISED SIGNATORY</p>
+                    </div>
+                </div>
+            </div>
+
+            <div className="footer">
+                <div className="footer-grid">
+                    <div className="office-box border-r pr-2">
+                        <h4>REGD. OFFICE:</h4>
+                        <p className="leading-tight opacity-80">{identity.regdOffice || identity.address}</p>
+                    </div>
+                    <div className="office-box">
+                        <h4>SALES OFFICE:</h4>
+                        <p className="leading-tight opacity-80">{identity.salesOffice || identity.address}</p>
+                    </div>
+                </div>
+                <div className="flex justify-between border-t border-black pt-2 px-4 font-bold text-gray-700">
+                    <span>GSTIN: {identity.gstin}</span>
+                    <span>PAN: {identity.pan}</span>
+                    <span>Website: {identity.website}</span>
+                </div>
+                <div className="mt-4 text-[7px] text-gray-400 font-bold tracking-widest uppercase">
+                    This computer generated invoice is digitally signed and available online
+                </div>
+            </div>
+        </div>
+    );
+}
