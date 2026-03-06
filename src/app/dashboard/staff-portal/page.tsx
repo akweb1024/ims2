@@ -76,7 +76,10 @@ export default function StaffPortalPage() {
             setUser(parsedUser);
             fetchAllData();
         } else {
-            window.location.href = '/login';
+            // If localStorage is empty, we don't redirect to /login immediately
+            // because DashboardLayout will fetch the user context and set it.
+            // We just fetch all data anyway which might work if session is active.
+            fetchAllData();
         }
     }, []);
 

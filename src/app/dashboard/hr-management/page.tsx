@@ -315,7 +315,9 @@ const HRManagementContent = () => {
             setUserRole(parsedUser.role);
             // fetchEmployees replaced by hook
         } else {
-            window.location.href = '/login';
+            // We don't redirect to /login here, DashboardLayout will handle it.
+            // Also, setting role to a baseline if we are in this point.
+            setUserRole('CUSTOMER');
         }
     }, []);
 

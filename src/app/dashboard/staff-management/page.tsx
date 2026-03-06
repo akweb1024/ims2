@@ -76,7 +76,8 @@ function StaffManagementContent() {
 
                 setUserRole(role);
             } else {
-                window.location.href = '/login';
+                // If no userData, DashboardLayout handles it or sets it soon.
+                // We'll just stay idle until populated.
             }
             setIsLoading(false);
         };

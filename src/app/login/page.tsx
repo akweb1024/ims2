@@ -33,6 +33,9 @@ function LoginForm() {
 
             const data = await res.json();
             if (res.ok) {
+                if (data.user) localStorage.setItem('user', JSON.stringify(data.user));
+                if (data.availableCompanies) localStorage.setItem('availableCompanies', JSON.stringify(data.availableCompanies));
+                
                 // In a real NextAuth v5 app, we would use update() from useSession
                 // But for now, we'll just redirect since we updated the DB and the next session fetch will get it
                 // Or we can just call signIn again with the same credentials if redirect:true
@@ -91,6 +94,8 @@ function LoginForm() {
                     setAvailableCompanies(availableCompanies);
                     setShowCompanySelection(true);
                 } else {
+                    localStorage.setItem('user', JSON.stringify(user));
+                    localStorage.setItem('availableCompanies', JSON.stringify(availableCompanies));
                     window.location.href = finalDestination;
                 }
             } else {

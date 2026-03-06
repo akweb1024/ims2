@@ -4560,6 +4560,7 @@ enum UserRole {
   IT_MANAGER
   IT_ADMIN
   HR
+  HR_MANAGER
 }
 
 enum CustomerType {

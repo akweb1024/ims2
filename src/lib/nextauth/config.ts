@@ -10,11 +10,13 @@ export const authConfig = {
             const isDashboard = nextUrl.pathname.startsWith("/dashboard");
             const isAuthPage = nextUrl.pathname.startsWith("/login") || nextUrl.pathname.startsWith("/register");
             const userRole = (auth?.user as any)?.role;
+            const companyId = (auth?.user as any)?.companyId;
             const isStaff = isLoggedIn && !['CUSTOMER', 'AGENCY'].includes(userRole);
+            const hasCompany = !!companyId || userRole === 'SUPER_ADMIN';
 
             if (isAuthPage) {
                 if (isLoggedIn) {
-                    const destination = isStaff ? "/dashboard/staff-portal" : "/dashboard";
+                    const destination = (isStaff && hasCompany) ? "/dashboard/staff-portal" : "/dashboard";
                     return Response.redirect(new URL(destination, nextUrl));
                 }
                 return true;
@@ -23,8 +25,8 @@ export const authConfig = {
             if (isDashboard) {
                 if (!isLoggedIn) return false; // Redirect to login
 
-                // If accessing dashboard root, redirect staff to staff portal
-                if (nextUrl.pathname === "/dashboard" && isStaff) {
+                // If accessing dashboard root, redirect staff to staff portal if they have a company
+                if (nextUrl.pathname === "/dashboard" && isStaff && hasCompany) {
                     return Response.redirect(new URL("/dashboard/staff-portal", nextUrl));
                 }
 
