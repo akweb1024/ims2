@@ -22,6 +22,18 @@ const priceTierSchema = z.object({
     label: z.string().optional(),
 });
 
+const variantUpdateSchema = z.object({
+    id: z.string().optional().nullable(),
+    sku: z.string().max(100).optional().nullable(),
+    priceINR: z.number().min(0).optional().nullable(),
+    priceUSD: z.number().min(0).optional().nullable(),
+    stockQuantity: z.number().int().min(0).optional().nullable(),
+    manageStock: z.boolean().optional().default(false),
+    isActive: z.boolean().optional().default(true),
+    imageUrl: z.string().url().optional().nullable(),
+    attributes: z.any().optional().default({}),
+});
+
 const updateSchema = z.object({
     name: z.string().min(1).max(300).optional(),
     category: z.enum(CATEGORIES).optional(),
@@ -48,6 +60,8 @@ const updateSchema = z.object({
     isFeatured: z.boolean().optional(),
     tags: z.array(z.string().max(50)).max(20).optional(),
     notes: z.string().max(1000).optional().nullable(),
+    productAttributes: z.any().optional().nullable(),
+    variants: z.array(variantUpdateSchema).optional(),
 });
 
 // ─── GET single product ───────────────────────────────────────────────────
@@ -61,7 +75,8 @@ export const GET = authorizedRoute(
                 where: {
                     id,
                     OR: [{ companyId: user.companyId }, { companyId: null }],
-                }
+                },
+                include: { variants: true }
             });
 
             if (!product) throw new NotFoundError('Invoice product not found');
@@ -110,13 +125,77 @@ export const PATCH = authorizedRoute(
                 if (existing) throw new ValidationError(`SKU "${input.sku}" is already in use`);
             }
 
-            const updated = await db.invoiceProduct.update({
-                where: { id },
-                data: {
-                    ...input,
-                    priceTiers: input.priceTiers !== undefined ? input.priceTiers ?? undefined : undefined,
-                    updatedByUserId: user.id,
+            const updated = await db.$transaction(async (tx: any) => {
+                const prod = await tx.invoiceProduct.update({
+                    where: { id },
+                    data: {
+                        name: input.name,
+                        category: input.category,
+                        pricingModel: input.pricingModel,
+                        description: input.description,
+                        shortDesc: input.shortDesc,
+                        priceINR: input.priceINR,
+                        priceUSD: input.priceUSD,
+                        priceTiers: input.priceTiers !== undefined ? input.priceTiers ?? undefined : undefined,
+                        taxRate: input.taxRate,
+                        taxIncluded: input.taxIncluded,
+                        hsnCode: input.hsnCode,
+                        sacCode: input.sacCode,
+                        billingCycle: input.billingCycle,
+                        unit: input.unit,
+                        minQuantity: input.minQuantity,
+                        maxQuantity: input.maxQuantity,
+                        sku: input.sku,
+                        journalId: input.journalId,
+                        courseId: input.courseId,
+                        workshopId: input.workshopId,
+                        certificateId: input.certificateId,
+                        isActive: input.isActive,
+                        isFeatured: input.isFeatured,
+                        tags: input.tags,
+                        notes: input.notes,
+                        updatedByUserId: user.id,
+                        productAttributes: input.productAttributes !== undefined ? (input.productAttributes ?? undefined) : undefined,
+                    }
+                });
+
+                if (input.variants !== undefined) {
+                    const skus = input.variants.map((v: any) => v.sku).filter(Boolean);
+                    if (new Set(skus).size !== skus.length) {
+                        throw new ValidationError('Duplicate SKUs found in variants payload');
+                    }
+                    if (skus.length > 0) {
+                        const existing = await tx.productVariant.findFirst({ 
+                            where: { sku: { in: skus }, NOT: { productId: id } } 
+                        });
+                        if (existing) throw new ValidationError(`SKU "${existing.sku}" is already in use by another variant`);
+                    }
+
+                    // Delete existing variants
+                    await tx.productVariant.deleteMany({ where: { productId: id } });
+
+                    // Re-create variants
+                    if (input.variants.length > 0) {
+                        await tx.productVariant.createMany({
+                            data: input.variants.map((v: any) => ({
+                                productId: id,
+                                sku: v.sku || undefined,
+                                priceINR: v.priceINR ?? null,
+                                priceUSD: v.priceUSD ?? null,
+                                stockQuantity: v.stockQuantity ?? null,
+                                manageStock: v.manageStock,
+                                isActive: v.isActive,
+                                imageUrl: v.imageUrl || undefined,
+                                attributes: v.attributes,
+                            }))
+                        });
+                    }
                 }
+
+                return tx.invoiceProduct.findUnique({
+                    where: { id },
+                    include: { variants: true }
+                });
             });
 
             logger.info('Invoice product updated', {

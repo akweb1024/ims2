@@ -24,6 +24,17 @@ const priceTierSchema = z.object({
     label: z.string().optional(),
 });
 
+const variantCreateSchema = z.object({
+    sku: z.string().max(100).optional().nullable(),
+    priceINR: z.number().min(0).optional().nullable(),
+    priceUSD: z.number().min(0).optional().nullable(),
+    stockQuantity: z.number().int().min(0).optional().nullable(),
+    manageStock: z.boolean().optional().default(false),
+    isActive: z.boolean().optional().default(true),
+    imageUrl: z.string().url().optional().nullable(),
+    attributes: z.any().optional().default({}),
+});
+
 const productCreateSchema = z.object({
     name: z.string().min(1, 'Product name is required').max(300),
     category: z.enum(CATEGORIES).optional().default('MISC'),
@@ -50,6 +61,8 @@ const productCreateSchema = z.object({
     isFeatured: z.boolean().optional().default(false),
     tags: z.array(z.string().max(50)).max(20).optional().default([]),
     notes: z.string().max(1000).optional().nullable(),
+    productAttributes: z.any().optional().nullable(),
+    variants: z.array(variantCreateSchema).optional().default([]),
 });
 
 const productUpdateSchema = productCreateSchema.partial().omit({ name: true }).extend({
@@ -102,6 +115,7 @@ export const GET = authorizedRoute(
             const [products, total] = await Promise.all([
                 db.invoiceProduct.findMany({
                     where,
+                    include: { variants: true },
                     orderBy,
                     skip: (page - 1) * pageSize,
                     take: pageSize,
@@ -153,13 +167,70 @@ export const POST = authorizedRoute(
                 if (existing) throw new ValidationError(`SKU "${input.sku}" is already in use`);
             }
 
-            const product = await db.invoiceProduct.create({
-                data: {
-                    ...input,
-                    priceTiers: input.priceTiers ?? undefined,
-                    companyId: user.companyId,
-                    createdByUserId: user.id,
+            const product = await db.$transaction(async (tx: any) => {
+                const prod = await tx.invoiceProduct.create({
+                    data: {
+                        name: input.name,
+                        category: input.category,
+                        pricingModel: input.pricingModel,
+                        description: input.description,
+                        shortDesc: input.shortDesc,
+                        priceINR: input.priceINR,
+                        priceUSD: input.priceUSD,
+                        priceTiers: input.priceTiers ?? undefined,
+                        taxRate: input.taxRate,
+                        taxIncluded: input.taxIncluded,
+                        hsnCode: input.hsnCode,
+                        sacCode: input.sacCode,
+                        billingCycle: input.billingCycle,
+                        unit: input.unit,
+                        minQuantity: input.minQuantity,
+                        maxQuantity: input.maxQuantity,
+                        sku: input.sku,
+                        journalId: input.journalId,
+                        courseId: input.courseId,
+                        workshopId: input.workshopId,
+                        certificateId: input.certificateId,
+                        isActive: input.isActive,
+                        isFeatured: input.isFeatured,
+                        tags: input.tags,
+                        notes: input.notes,
+                        companyId: user.companyId,
+                        createdByUserId: user.id,
+                        productAttributes: input.productAttributes ?? undefined,
+                    }
+                });
+
+                if (input.variants && input.variants.length > 0) {
+                    // Check local sku uniqueness for variants inside the request
+                    const skus = input.variants.map((v: any) => v.sku).filter(Boolean);
+                    if (new Set(skus).size !== skus.length) {
+                        throw new ValidationError('Duplicate SKUs found in variants payload');
+                    }
+                    if (skus.length > 0) {
+                        const existing = await tx.productVariant.findFirst({ where: { sku: { in: skus } } });
+                        if (existing) throw new ValidationError(`SKU "${existing.sku}" is already in use by a variant`);
+                    }
+
+                    await tx.productVariant.createMany({
+                        data: input.variants.map((v: any) => ({
+                            productId: prod.id,
+                            sku: v.sku || undefined,
+                            priceINR: v.priceINR ?? null,
+                            priceUSD: v.priceUSD ?? null,
+                            stockQuantity: v.stockQuantity ?? null,
+                            manageStock: v.manageStock,
+                            isActive: v.isActive,
+                            imageUrl: v.imageUrl || undefined,
+                            attributes: v.attributes,
+                        }))
+                    });
                 }
+
+                return tx.invoiceProduct.findUnique({
+                    where: { id: prod.id },
+                    include: { variants: true }
+                });
             });
 
             logger.info('Invoice product created', {

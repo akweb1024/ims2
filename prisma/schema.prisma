@@ -670,10 +670,50 @@ model InvoiceProduct {
   createdAt         DateTime               @default(now())
   updatedAt         DateTime               @updatedAt
   subscriptionItems SubscriptionItem[]
+  
+  productAttributes Json?                  // Specific attributes configuration for this product
+  variants          ProductVariant[]
 
   @@index([companyId, category])
   @@index([isActive])
   @@index([name])
+}
+
+model ProductAttribute {
+  id        String                 @id @default(uuid())
+  name      String                 @unique
+  terms     ProductAttributeTerm[]
+  createdAt DateTime               @default(now())
+  updatedAt DateTime               @updatedAt
+}
+
+model ProductAttributeTerm {
+  id          String           @id @default(uuid())
+  attributeId String
+  attribute   ProductAttribute @relation(fields: [attributeId], references: [id], onDelete: Cascade)
+  value       String
+
+  @@unique([attributeId, value])
+  @@index([attributeId])
+}
+
+model ProductVariant {
+  id             String         @id @default(uuid())
+  productId      String
+  product        InvoiceProduct @relation(fields: [productId], references: [id], onDelete: Cascade)
+  sku            String?        @unique
+  priceINR       Float?
+  priceUSD       Float?
+  stockQuantity  Int?
+  manageStock    Boolean        @default(false)
+  isActive       Boolean        @default(true)
+  imageUrl       String?
+  attributes     Json           // E.g., { "Size": "M", "Color": "Red", "Custom": "Yes" }
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  @@index([productId])
+  @@index([isActive])
 }
 
 model ProformaInvoice {

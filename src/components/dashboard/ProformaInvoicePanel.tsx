@@ -418,6 +418,7 @@ export default function ProformaInvoicePanel({
     const [catProducts, setCatProducts] = useState<any[]>([]);
     const [catSearch, setCatSearch] = useState('');
     const [catLoading, setCatLoading] = useState(false);
+    const [selectedProductForVariant, setSelectedProductForVariant] = useState<any>(null);
 
     const fetchCatalogue = useCallback(async (query = '') => {
         setCatLoading(true);
@@ -436,10 +437,14 @@ export default function ProformaInvoicePanel({
         if (showProductModal) fetchCatalogue(catSearch);
     }, [showProductModal, catSearch, fetchCatalogue]);
 
-    const handleSelectProduct = (p: any) => {
-        const price = pfCurrency === 'USD' ? p.priceUSD : p.priceINR;
+    const finalizeProductSelection = (p: any, v?: any) => {
+        const pSku = v?.sku || p.sku;
+        const pName = v ? `${p.name} (${Object.values(v.attributes).join(', ')})` : p.name;
+        const finalDesc = pSku ? `${pName} (${pSku})` : pName;
+        const price = pfCurrency === 'USD' ? (v?.priceUSD ?? p.priceUSD ?? 0) : (v?.priceINR ?? p.priceINR ?? 0);
+
         const newItem: LineItem = {
-            description: p.sku ? `${p.name} (${p.sku})` : p.name,
+            description: finalDesc,
             quantity: p.minQuantity || 1,
             unitPrice: price,
             total: price * (p.minQuantity || 1),
@@ -447,46 +452,73 @@ export default function ProformaInvoicePanel({
         };
 
         setLineItems(prev => {
-            // If the first item is empty, replace it
             if (prev.length === 1 && !prev[0].description && prev[0].unitPrice === 0) {
                 return [newItem];
             }
             return [...prev, newItem];
         });
 
-        // Proactively set tax rate if it matches (optional convenience)
         if (p.taxRate && p.taxRate !== taxRate) {
             if (confirm(`Product "${p.name}" has a tax rate of ${p.taxRate}%. Update proforma tax rate?`)) {
                 setTaxRate(p.taxRate);
             }
         }
 
+        setSelectedProductForVariant(null);
         setShowProductModal(false);
         setCatSearch('');
+    };
+
+    const handleSelectProduct = (p: any) => {
+        if (p.variants && p.variants.length > 0) {
+            setSelectedProductForVariant(p);
+        } else {
+            finalizeProductSelection(p);
+        }
     };
 
     const ProductSearchModal = () => (
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-md p-4">
             <div className="bg-white rounded-2xl w-full max-w-lg shadow-2xl flex flex-col max-h-[80vh]">
-                <div className="p-4 border-b border-gray-100 flex items-center justify-between">
-                    <h3 className="font-bold text-gray-900 flex items-center gap-2">
-                        🗂️ Product Catalogue
-                    </h3>
-                    <button onClick={() => setShowProductModal(false)} className="text-gray-400 hover:text-gray-600">✕</button>
-                </div>
-                <div className="p-4 border-b border-gray-100">
-                    <div className="relative">
-                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">🔍</span>
-                        <input
-                            className="input pl-9 text-sm"
-                            placeholder="Search catalogue by name or SKU..."
-                            autoFocus
-                            value={catSearch}
-                            onChange={e => setCatSearch(e.target.value)}
-                        />
-                    </div>
-                </div>
-                <div className="flex-1 overflow-y-auto p-2 space-y-1">
+                {selectedProductForVariant ? (
+                    <>
+                        <div className="p-4 border-b border-gray-100 flex items-center justify-between">
+                            <h3 className="font-bold text-gray-900 flex items-center gap-2">🔗 Select Variant</h3>
+                            <button onClick={() => setSelectedProductForVariant(null)} className="text-gray-400 hover:text-gray-600">✕</button>
+                        </div>
+                        <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-gray-50">
+                            {selectedProductForVariant.variants.map((v: any, i: number) => (
+                                <button key={i} onClick={() => finalizeProductSelection(selectedProductForVariant, v)} className="w-full text-left p-4 rounded-xl border border-secondary-200 bg-white hover:border-primary-500 hover:bg-primary-50 transition-all">
+                                    <div className="flex justify-between items-center mb-1">
+                                        <span className="font-bold text-sm text-secondary-900">{Object.values(v.attributes).join(' · ')}</span>
+                                        <span className="font-black text-primary-600">{FMT(pfCurrency === 'USD' ? v.priceUSD : v.priceINR, pfCurrency)}</span>
+                                    </div>
+                                    <p className="text-[10px] text-secondary-500 font-mono tracking-widest uppercase">SKU: {v.sku || selectedProductForVariant.sku}</p>
+                                </button>
+                            ))}
+                        </div>
+                    </>
+                ) : (
+                    <>
+                        <div className="p-4 border-b border-gray-100 flex items-center justify-between">
+                            <h3 className="font-bold text-gray-900 flex items-center gap-2">
+                                🗂️ Product Catalogue
+                            </h3>
+                            <button onClick={() => setShowProductModal(false)} className="text-gray-400 hover:text-gray-600">✕</button>
+                        </div>
+                        <div className="p-4 border-b border-gray-100">
+                            <div className="relative">
+                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">🔍</span>
+                                <input
+                                    className="input pl-9 text-sm"
+                                    placeholder="Search catalogue by name or SKU..."
+                                    autoFocus
+                                    value={catSearch}
+                                    onChange={e => setCatSearch(e.target.value)}
+                                />
+                            </div>
+                        </div>
+                        <div className="flex-1 overflow-y-auto p-2 space-y-1">
                     {catLoading ? (
                         <div className="flex justify-center p-8">
                             <div className="animate-spin h-6 w-6 border-b-2 border-primary-600 rounded-full" />
@@ -511,7 +543,7 @@ export default function ProformaInvoicePanel({
                                         <p className="font-black text-gray-900">
                                             {FMT(pfCurrency === 'USD' ? p.priceUSD : p.priceINR, pfCurrency)}
                                         </p>
-                                        <p className="text-[10px] text-gray-400 uppercase font-bold">{p.category.replace('_', ' ')}</p>
+                                        <p className="text-[10px] text-primary-600 font-bold uppercase mt-1">{p.variants && p.variants.length > 0 ? 'Pick Variant →' : 'Select'}</p>
                                     </div>
                                 </div>
                                 {p.shortDesc && <p className="text-xs text-gray-500 mt-1 line-clamp-1">{p.shortDesc}</p>}
@@ -523,6 +555,8 @@ export default function ProformaInvoicePanel({
                     <span>{catProducts.length} Results</span>
                     <a href="/dashboard/crm/invoice-products" target="_blank" className="text-primary-600 hover:underline">Manage Catalogue ↗</a>
                 </div>
+                        </>
+                )}
             </div>
         </div>
     );

@@ -96,6 +96,8 @@ export default function CreateInvoiceModal({ isOpen, onClose, onSuccess, editId 
     const [productResults, setProductResults] = useState<{ [key: number]: any[] }>({});
     const [catSearch, setCatSearch] = useState('');
     const [catProducts, setCatProducts] = useState<any[]>([]);
+    const [selectedProductForVariant, setSelectedProductForVariant] = useState<any>(null);
+    const [pendingDropdownTarget, setPendingDropdownTarget] = useState<number | null>(null);
     const [catLoading, setCatLoading] = useState(false);
 
     const searchCatalogue = async (itemId: number, query: string) => {
@@ -137,30 +139,52 @@ export default function CreateInvoiceModal({ isOpen, onClose, onSuccess, editId 
         if (showProductModal) fetchCatalogue(catSearch);
     }, [showProductModal, catSearch, fetchCatalogue]);
 
-    const handleSelectFromCatalogue = (p: any) => {
-        const price = currency === 'USD' ? p.priceUSD : p.priceINR;
-        const newItem = {
-            id: Date.now(),
-            description: p.sku ? `${p.name} (${p.sku})` : p.name,
-            quantity: p.minQuantity || 1,
-            price: price,
-            productId: p.id
-        };
+    // Unified product selection handler
+    const finalizeProductSelection = (p: any, v?: any, targetItemId?: number) => {
+        const pSku = v?.sku || p.sku;
+        const pName = v ? `${p.name} (${Object.values(v.attributes).join(', ')})` : p.name;
+        const finalDesc = pSku ? `${pName} (${pSku})` : pName;
+        const price = currency === 'USD' ? (v?.priceUSD ?? p.priceUSD ?? 0) : (v?.priceINR ?? p.priceINR ?? 0);
 
-        setItems(prev => {
-            if (prev.length === 1 && !prev[0].description && prev[0].price === 0) {
-                return [newItem];
-            }
-            return [...prev, newItem];
-        });
+        if (targetItemId) {
+            updateItem(targetItemId, 'description', finalDesc);
+            updateItem(targetItemId, 'price', price);
+            updateItem(targetItemId, 'productId', p.id);
+            setProductResults(prev => ({ ...prev, [targetItemId]: [] }));
+        } else {
+            const newItem = {
+                id: Date.now(),
+                description: finalDesc,
+                quantity: p.minQuantity || 1,
+                price: price,
+                productId: p.id
+            };
+            setItems(prev => {
+                if (prev.length === 1 && !prev[0].description && prev[0].price === 0) return [newItem];
+                return [...prev, newItem];
+            });
+            setShowProductModal(false);
+            setCatSearch('');
+        }
 
         if (p.taxRate && p.taxRate !== taxRate) {
             if (confirm(`Product "${p.name}" has standard tax of ${p.taxRate}%. Update invoice tax rate?`)) {
                 setTaxRate(p.taxRate);
             }
         }
-        setShowProductModal(false);
-        setCatSearch('');
+        
+        setSelectedProductForVariant(null);
+        setPendingDropdownTarget(null);
+    };
+
+    const handleSelectProductClick = (p: any, targetItemId?: number) => {
+        if (p.variants && p.variants.length > 0) {
+            setSelectedProductForVariant(p);
+            setPendingDropdownTarget(targetItemId || null);
+            if (!showProductModal) setShowProductModal(true); // Ensure overlay is there for variants
+        } else {
+            finalizeProductSelection(p, undefined, targetItemId);
+        }
     };
 
     useEffect(() => {
@@ -455,10 +479,37 @@ export default function CreateInvoiceModal({ isOpen, onClose, onSuccess, editId 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
             <div className="bg-white rounded-3xl w-full max-w-2xl max-h-[90vh] overflow-hidden shadow-2xl flex flex-col">
-                {/* Product Catalogue Modal (Nested Overlay) */}
+                {/* Product Catalogue & Variants Overlay */}
                 {showProductModal && (
-                    <div className="absolute inset-0 z-[60] bg-white animate-slideIn">
-                        <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50">
+                    <div className="absolute inset-0 z-[60] bg-white flex flex-col animate-slideIn">
+                        {selectedProductForVariant ? (
+                            <div className="flex-1 flex flex-col">
+                                <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50">
+                                    <div>
+                                        <h3 className="text-lg font-black text-gray-900 flex items-center gap-2">🔗 Select Variant</h3>
+                                        <p className="text-xs text-secondary-500 uppercase font-bold tracking-widest">{selectedProductForVariant.name}</p>
+                                    </div>
+                                    <button onClick={() => { setSelectedProductForVariant(null); setPendingDropdownTarget(null); if (pendingDropdownTarget) setShowProductModal(false); }} className="p-2 hover:bg-gray-200 rounded-full">
+                                        <X size={20} className="text-gray-500" />
+                                    </button>
+                                </div>
+                                <div className="p-6 overflow-y-auto flex-1 bg-white">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        {selectedProductForVariant.variants.map((v: any, i: number) => (
+                                            <button key={i} onClick={() => finalizeProductSelection(selectedProductForVariant, v, pendingDropdownTarget || undefined)} className="text-left p-4 rounded-xl border border-secondary-200 hover:border-primary-500 hover:bg-primary-50 transition-all">
+                                                <div className="flex justify-between items-center mb-2">
+                                                    <span className="font-bold text-sm text-secondary-900">{Object.values(v.attributes).join(' · ')}</span>
+                                                    <span className="text-xs font-black text-primary-600 bg-primary-100 px-2 rounded-full">{getCurrencySymbol(currency)}{(currency === 'USD' ? v.priceUSD : v.priceINR)?.toLocaleString()}</span>
+                                                </div>
+                                                <p className="text-[10px] text-secondary-400 font-mono tracking-widest uppercase">SKU: {v.sku || selectedProductForVariant.sku}</p>
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="flex-1 flex flex-col">
+                                <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50">
                             <div>
                                 <h3 className="text-lg font-black text-gray-900 flex items-center gap-2">
                                     🗂️ Browse Product Catalogue
@@ -495,7 +546,7 @@ export default function CreateInvoiceModal({ isOpen, onClose, onSuccess, editId 
                                     catProducts.map(p => (
                                         <button
                                             key={p.id}
-                                            onClick={() => handleSelectFromCatalogue(p)}
+                                            onClick={() => handleSelectProductClick(p)}
                                             className="w-full text-left p-4 rounded-2xl border border-gray-100 hover:border-primary-500 hover:bg-primary-50 transition-all flex items-center justify-between group"
                                         >
                                             <div className="min-w-0 flex-1">
@@ -510,7 +561,7 @@ export default function CreateInvoiceModal({ isOpen, onClose, onSuccess, editId 
                                                     {getCurrencySymbol(currency)}
                                                     {(currency === 'USD' ? p.priceUSD : p.priceINR)?.toLocaleString()}
                                                 </p>
-                                                <p className="text-[9px] text-primary-600 font-bold uppercase">Add to Invoice →</p>
+                                                <p className="text-[9px] text-primary-600 font-bold uppercase">{p.variants && p.variants.length > 0 ? 'Select Variant →' : 'Add to Invoice →'}</p>
                                             </div>
                                         </button>
                                     ))
@@ -521,6 +572,8 @@ export default function CreateInvoiceModal({ isOpen, onClose, onSuccess, editId 
                             <span>Showing {catProducts.length} Results</span>
                             <Link href="/dashboard/crm/invoice-products" className="text-primary-600 hover:underline">Manage Catalogue ↗</Link>
                         </div>
+                            </div>
+                        )}
                     </div>
                 )}
 
@@ -1085,19 +1138,8 @@ export default function CreateInvoiceModal({ isOpen, onClose, onSuccess, editId 
                                                             <button
                                                                 key={p.id}
                                                                 type="button"
-                                                                onClick={() => {
-                                                                    const price = currency === 'USD' ? (p.priceUSD || 0) : (p.priceINR || 0);
-                                                                    updateItem(item.id, 'description', p.sku ? `${p.name} (${p.sku})` : p.name);
-                                                                    updateItem(item.id, 'price', price);
-                                                                    updateItem(item.id, 'productId', p.id);
-                                                                    setProductResults(prev => ({ ...prev, [item.id]: [] }));
-                                                                    if (p.taxRate && p.taxRate !== taxRate) {
-                                                                        if (confirm(`Product "${p.name}" has standard tax of ${p.taxRate}%. Update invoice tax rate?`)) {
-                                                                            setTaxRate(p.taxRate);
-                                                                        }
-                                                                    }
-                                                                }}
-                                                                className="w-full text-left px-4 py-2 hover:bg-primary-50 transition-colors border-b border-gray-50 last:border-0"
+                                                                onClick={() => handleSelectProductClick(p, item.id)}
+                                                                className="w-full text-left px-4 py-3 hover:bg-primary-50 transition-colors border-b border-gray-50 last:border-0 group"
                                                             >
                                                                 <div className="flex justify-between items-start">
                                                                     <div className="min-w-0 flex-1">
@@ -1109,7 +1151,7 @@ export default function CreateInvoiceModal({ isOpen, onClose, onSuccess, editId 
                                                                             {getCurrencySymbol(currency)}
                                                                             {(currency === 'USD' ? p.priceUSD : p.priceINR)?.toLocaleString()}
                                                                         </p>
-                                                                        <p className="text-[9px] text-gray-400 uppercase font-black tracking-widest">{p.category.replace('_', ' ')}</p>
+                                                                        <p className="text-[9px] text-gray-400 uppercase font-black tracking-widest">{p.variants && p.variants.length > 0 ? '+ VARIANTS' : p.category.replace('_', ' ')}</p>
                                                                     </div>
                                                                 </div>
                                                             </button>
