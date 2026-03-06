@@ -54,6 +54,12 @@ export type Env = z.infer<typeof envSchema>;
  * Throws error if validation fails
  */
 export const env = (() => {
+    // Only validate on server
+    if (typeof window !== 'undefined') {
+        // Return a partial object or proxy on client
+        return process.env as unknown as Env;
+    }
+
     try {
         const parsed = envSchema.parse(process.env);
 
