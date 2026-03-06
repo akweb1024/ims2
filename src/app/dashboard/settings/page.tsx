@@ -3,14 +3,12 @@
 import { useState, useEffect, useCallback } from 'react';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 
-type Tab = 'General' | 'Security' | 'Invoice Settings' | 'Notifications' | 'Allocations';
+type Tab = 'General' | 'Security' | 'Notifications' | 'Allocations';
 
 export default function SettingsPage() {
     const [userRole, setUserRole] = useState('CUSTOMER');
     const [activeTab, setActiveTab] = useState<Tab>('General');
     const [loading, setLoading] = useState(false);
-    const [billingSaving, setBillingSaving] = useState(false);
-    const [billingSaved, setBillingSaved] = useState(false);
 
     // User Preferences
     const [theme, setTheme] = useState('light');
@@ -22,32 +20,6 @@ export default function SettingsPage() {
         supportEmail: '',
         defaultCurrency: 'INR',
         maintenanceMode: false
-    });
-
-    // Company Billing / Invoice Settings
-    const [billing, setBilling] = useState({
-        name: '',
-        legalEntityName: '',
-        tagline: '',
-        address: '',
-        email: '',
-        phone: '',
-        website: '',
-        logoUrl: '',
-        gstin: '',
-        stateCode: '',
-        cinNo: '',
-        panNo: '',
-        iecCode: '',
-        bankName: '',
-        bankAccountHolder: '',
-        bankAccountNumber: '',
-        bankIfscCode: '',
-        bankSwiftCode: '',
-        paymentMode: 'Online',
-        currency: 'INR',
-        brandRelationType: 'A Brand of',
-        invoiceCompanyLogoUrl: '',
     });
 
     const [departments, setDepartments] = useState<any[]>([]);
@@ -85,21 +57,6 @@ export default function SettingsPage() {
         }
     }, []);
 
-    const fetchBillingSettings = useCallback(async () => {
-        try {
-            const token = localStorage.getItem('token');
-            const res = await fetch('/api/settings/company-billing', {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            if (res.ok) {
-                const data = await res.json();
-                setBilling(prev => ({ ...prev, ...data }));
-            }
-        } catch (err) {
-            console.error('Fetch billing settings error:', err);
-        }
-    }, []);
-
     const fetchAllocationData = useCallback(async () => {
         try {
             const token = localStorage.getItem('token');
@@ -128,11 +85,10 @@ export default function SettingsPage() {
         }
         fetchUserSettings();
         fetchSystemSettings();
-        fetchBillingSettings();
         if (activeTab === 'Allocations') {
             fetchAllocationData();
         }
-    }, [fetchUserSettings, fetchSystemSettings, fetchBillingSettings, fetchAllocationData, activeTab]);
+    }, [fetchUserSettings, fetchSystemSettings, fetchAllocationData, activeTab]);
 
     const handleUpdateUserPref = async (updates: any) => {
         try {
@@ -181,40 +137,9 @@ export default function SettingsPage() {
         }
     };
 
-    const handleSaveBilling = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setBillingSaving(true);
-        setBillingSaved(false);
-        try {
-            const token = localStorage.getItem('token');
-            const res = await fetch('/api/settings/company-billing', {
-                method: 'PATCH',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(billing)
-            });
-            if (res.ok) {
-                setBillingSaved(true);
-                setTimeout(() => setBillingSaved(false), 3000);
-            } else {
-                const data = await res.json();
-                alert(data.error || 'Failed to save billing settings');
-            }
-        } catch (err) {
-            console.error('Save billing error:', err);
-        } finally {
-            setBillingSaving(false);
-        }
-    };
-
-    const isAdminRole = ['SUPER_ADMIN', 'FINANCE_ADMIN'].includes(userRole);
-
     const tabs: Tab[] = [
         'General',
         'Security',
-        ...(isAdminRole ? ['Invoice Settings' as Tab] : []),
         'Notifications',
         ...(['SUPER_ADMIN', 'ADMIN', 'FINANCE_ADMIN'].includes(userRole) ? ['Allocations' as Tab] : [])
     ];
@@ -222,7 +147,6 @@ export default function SettingsPage() {
     const tabIcons: Record<Tab, string> = {
         'General': '⚙️',
         'Security': '🔐',
-        'Invoice Settings': '🧾',
         'Notifications': '🔔',
         'Allocations': '📊'
     };
@@ -356,163 +280,7 @@ export default function SettingsPage() {
                             </section>
                         )}
 
-                        {/* ─── INVOICE SETTINGS TAB ─── */}
-                        {activeTab === 'Invoice Settings' && (
-                            <form onSubmit={handleSaveBilling} className="space-y-6">
-                                {/* Company Identity */}
-                                <section className="card-premium">
-                                    <div className="flex items-center gap-2 mb-6 pb-4 border-b border-secondary-100">
-                                        <span className="text-2xl">🏢</span>
-                                        <h3 className="text-lg font-bold text-secondary-900">Company Identity</h3>
-                                    </div>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <Field label="Company Display Name" hint="Shown in large at the top of every invoice">
-                                            <input className="input" value={billing.name} onChange={e => setBilling({ ...billing, name: e.target.value })} placeholder="e.g. STM JOURNALS" />
-                                        </Field>
-                                        <Field label="Legal Entity Name" hint="Full registered company name">
-                                            <input className="input" value={billing.legalEntityName} onChange={e => setBilling({ ...billing, legalEntityName: e.target.value })} placeholder="e.g. Consortium e-Learning Network Pvt. Ltd." />
-                                        </Field>
-                                        <Field label="Tagline / Sub-name" hint="Shown in brackets below company name">
-                                            <input className="input" value={billing.tagline} onChange={e => setBilling({ ...billing, tagline: e.target.value })} placeholder="e.g. Scientific, Technical and Medical Journals" />
-                                        </Field>
-                                        <Field label="Default Currency">
-                                            <select className="input" value={billing.currency} onChange={e => setBilling({ ...billing, currency: e.target.value })}>
-                                                <option value="INR">INR (₹)</option>
-                                                <option value="USD">USD ($)</option>
-                                                <option value="EUR">EUR (€)</option>
-                                                <option value="GBP">GBP (£)</option>
-                                            </select>
-                                        </Field>
-                                        <div className="md:col-span-2">
-                                            <Field label="Registered Address" hint="Full address shown on invoice header">
-                                                <textarea className="input" rows={2} value={billing.address} onChange={e => setBilling({ ...billing, address: e.target.value })} placeholder="A-118, 1st Floor, Sector-63, Noida - 201 301 (U.P.), INDIA" />
-                                            </Field>
-                                        </div>
-                                        <Field label="Official Email">
-                                            <input className="input" type="email" value={billing.email} onChange={e => setBilling({ ...billing, email: e.target.value })} placeholder="finance@stmjournals.com" />
-                                        </Field>
-                                        <Field label="Phone">
-                                            <input className="input" type="tel" value={billing.phone} onChange={e => setBilling({ ...billing, phone: e.target.value })} placeholder="+91 XXXXX XXXXX" />
-                                        </Field>
-                                        <Field label="Website" hint="Shown in invoice header">
-                                            <input className="input" type="url" value={billing.website} onChange={e => setBilling({ ...billing, website: e.target.value })} placeholder="https://www.stmjournals.com" />
-                                        </Field>
-                                         <Field label="Company Logo URL" hint="System-wide logo (used in sidebar and reports)">
-                                            <input className="input" value={billing.logoUrl} onChange={e => setBilling({ ...billing, logoUrl: e.target.value })} placeholder="https://cdn.yoursite.com/main-logo.png" />
-                                        </Field>
-                                        <Field label="Relationship Label on Invoice" hint="e.g. 'A Brand of', 'An imprint of', 'Published by'">
-                                            <select className="input" value={(billing as any).brandRelationType || 'A Brand of'} onChange={e => setBilling({ ...billing, brandRelationType: e.target.value })}>
-                                                <option value="A Brand of">A Brand of</option>
-                                                <option value="An imprint of">An imprint of</option>
-                                                <option value="Published by">Published by</option>
-                                                <option value="A Subsidiary of">A Subsidiary of</option>
-                                                <option value="A Unit of">A Unit of</option>
-                                            </select>
-                                        </Field>
-                                        <Field label="Parent Company Logo URL (Optional)" hint="Logo for use as the parent reference on invoices">
-                                            <input className="input" value={(billing as any).invoiceCompanyLogoUrl || ''} onChange={e => setBilling({ ...billing, invoiceCompanyLogoUrl: e.target.value })} placeholder="https://cdn.yoursite.com/parent-logo.png" />
-                                            {((billing as any).invoiceCompanyLogoUrl || billing.logoUrl) && (
-                                                <div className="mt-2 flex items-center gap-3 p-3 bg-secondary-50 rounded-xl border border-secondary-100">
-                                                    <img src={(billing as any).invoiceCompanyLogoUrl || billing.logoUrl} alt="Logo preview" className="h-10 max-w-[120px] object-contain" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
-                                                    <span className="text-xs text-secondary-500">Invoice Reference Logo Preview</span>
-                                                </div>
-                                            )}
-                                        </Field>
-                                    </div>
-                                </section>
-
-                                {/* Tax Registration */}
-                                <section className="card-premium">
-                                    <div className="flex items-center gap-2 mb-6 pb-4 border-b border-secondary-100">
-                                        <span className="text-2xl">📋</span>
-                                        <h3 className="text-lg font-bold text-secondary-900">Tax & Registration Numbers</h3>
-                                    </div>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <Field label="GSTIN No." hint="Printed in the identity bar on every invoice">
-                                            <input className="input font-mono" value={billing.gstin} onChange={e => setBilling({ ...billing, gstin: e.target.value })} placeholder="e.g. 09AACCC6494M1Z1" maxLength={15} />
-                                        </Field>
-                                        <Field label="State Code" hint="2-digit GST state code">
-                                            <input className="input font-mono" value={billing.stateCode} onChange={e => setBilling({ ...billing, stateCode: e.target.value })} placeholder="e.g. 09" maxLength={2} />
-                                        </Field>
-                                        <Field label="CIN No." hint="Company Identification Number">
-                                            <input className="input font-mono" value={billing.cinNo} onChange={e => setBilling({ ...billing, cinNo: e.target.value })} placeholder="e.g. U80302DL2005PTC138759" />
-                                        </Field>
-                                        <Field label="PAN No." hint="Shown in invoice footer">
-                                            <input className="input font-mono" value={billing.panNo} onChange={e => setBilling({ ...billing, panNo: e.target.value })} placeholder="e.g. AACCC6494M" maxLength={10} />
-                                        </Field>
-                                        <Field label="IEC Code" hint="Import Export Code — for international invoices">
-                                            <input className="input font-mono" value={billing.iecCode} onChange={e => setBilling({ ...billing, iecCode: e.target.value })} placeholder="e.g. AACCC6494" />
-                                        </Field>
-                                    </div>
-                                </section>
-
-                                {/* Bank Details */}
-                                <section className="card-premium">
-                                    <div className="flex items-center gap-2 mb-6 pb-4 border-b border-secondary-100">
-                                        <span className="text-2xl">🏦</span>
-                                        <h3 className="text-lg font-bold text-secondary-900">Bank Account Details for Payment</h3>
-                                    </div>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <Field label="Bank Name">
-                                            <input className="input" value={billing.bankName} onChange={e => setBilling({ ...billing, bankName: e.target.value })} placeholder="e.g. HDFC BANK LIMITED" />
-                                        </Field>
-                                        <Field label="Account Holder Name">
-                                            <input className="input" value={billing.bankAccountHolder} onChange={e => setBilling({ ...billing, bankAccountHolder: e.target.value })} placeholder="e.g. Consortium eLearning Network Pvt. Ltd" />
-                                        </Field>
-                                        <Field label="IBAN / Account Number">
-                                            <input className="input font-mono" value={billing.bankAccountNumber} onChange={e => setBilling({ ...billing, bankAccountNumber: e.target.value })} placeholder="e.g. 03942000001153" />
-                                        </Field>
-                                        <Field label="IFSC Code">
-                                            <input className="input font-mono" value={billing.bankIfscCode} onChange={e => setBilling({ ...billing, bankIfscCode: e.target.value })} placeholder="e.g. HDFC0002649" maxLength={11} />
-                                        </Field>
-                                        <Field label="Swift Code" hint="For international wire transfers">
-                                            <input className="input font-mono" value={billing.bankSwiftCode} onChange={e => setBilling({ ...billing, bankSwiftCode: e.target.value })} placeholder="e.g. HDFCINBB" />
-                                        </Field>
-                                        <Field label="Payment Mode">
-                                            <select className="input" value={billing.paymentMode} onChange={e => setBilling({ ...billing, paymentMode: e.target.value })}>
-                                                <option value="Online">Online</option>
-                                                <option value="NEFT/RTGS">NEFT/RTGS</option>
-                                                <option value="Cheque/DD">Cheque/DD</option>
-                                                <option value="UPI">UPI</option>
-                                            </select>
-                                        </Field>
-                                    </div>
-                                </section>
-
-                                {/* Preview Banner */}
-                                <div className="card-premium bg-primary-50 border border-primary-100 p-5">
-                                    <div className="flex items-start gap-3">
-                                        <span className="text-2xl">🧾</span>
-                                        <div className="flex-1">
-                                            <p className="font-bold text-primary-900">These are your Company-Level Invoice Defaults</p>
-                                            <p className="text-sm text-primary-700 mt-1">
-                                                These details populate the header, identity bar, and footer of all invoices. 
-                                                When an invoice is associated with a <strong>Brand</strong>, the brand&apos;s own Address, Email, Website, and Logo will override these defaults — while GSTIN, CIN, and bank details always come from the company (legal requirement).
-                                            </p>
-                                            <a href="/dashboard/company?tab=BRANDS" className="inline-flex items-center gap-1.5 mt-3 text-sm font-bold text-primary-700 hover:text-primary-900 underline underline-offset-2">
-                                                🏷️ Manage Brand Overrides →
-                                            </a>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div className="flex items-center gap-4 pt-2">
-                                    <button type="submit" disabled={billingSaving} className="btn btn-primary px-10 flex items-center gap-2">
-                                        {billingSaving ? (
-                                            <>
-                                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />
-                                                Saving...
-                                            </>
-                                        ) : '💾 Save Invoice Settings'}
-                                    </button>
-                                    {billingSaved && (
-                                        <span className="text-success-600 font-bold flex items-center gap-1">
-                                            ✅ Saved successfully!
-                                        </span>
-                                    )}
-                                </div>
-                            </form>
-                        )}
+                        {/* Invoice Settings are now managed in dashboard/company → Company Settings tab */}
 
                         {/* ─── NOTIFICATIONS TAB ─── */}
                         {activeTab === 'Notifications' && (

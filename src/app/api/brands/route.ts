@@ -44,7 +44,25 @@ export const POST = authorizedRoute(
                     address,
                     email,
                     website,
-                    brandRelationType: brandRelationType || 'A Brand of'
+                    brandRelationType: brandRelationType || 'A Brand of',
+                    legalEntityName: body.legalEntityName,
+                    gstin: body.gstin,
+                    cinNo: body.cinNo,
+                    panNo: body.panNo,
+                    iecCode: body.iecCode,
+                    bankName: body.bankName,
+                    bankAccountHolder: body.bankAccountHolder,
+                    bankAccountNumber: body.bankAccountNumber,
+                    bankIfscCode: body.bankIfscCode,
+                    bankSwiftCode: body.bankSwiftCode,
+                    paymentMode: body.paymentMode || 'Online',
+                    regdOfficeAddress: body.regdOfficeAddress,
+                    salesOfficeAddress: body.salesOfficeAddress,
+                    invoiceTerms: body.invoiceTerms,
+                    invoicePrefix: body.invoicePrefix,
+                    proformaPrefix: body.proformaPrefix,
+                    invoiceNextNumber: body.invoiceNextNumber,
+                    proformaNextNumber: body.proformaNextNumber
                 }
             });
 

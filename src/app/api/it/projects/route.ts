@@ -5,6 +5,7 @@ import { handleApiError, AuthorizationError, ValidationError } from '@/lib/error
 import { createNotification } from '@/lib/system-notifications';
 import { logger } from '@/lib/logger';
 import { itProjectSchema } from '@/lib/validation/schemas';
+import { getDownlineUserIds } from '@/lib/hierarchy';
 
 export const dynamic = 'force-dynamic';
 
@@ -30,12 +31,26 @@ export const GET = authorizedRoute(
 
             // Restricted view for non-admin/non-IT manager roles
             if (!ALL_ACCESS_ROLES.includes(user.role)) {
-                where.OR = [
-                    { projectManagerId: user.id },
-                    { teamLeadId: user.id },
-                    { tasks: { some: { assignedToId: user.id } } },
-                    { visibility: 'PUBLIC' }
-                ];
+                // Managers/Team Leaders see projects their entire downline is involved in
+                if (['MANAGER', 'TEAM_LEADER'].includes(user.role)) {
+                    const downlineIds = await getDownlineUserIds(user.id, null); // cross-company
+                    const teamIds = [...new Set([user.id, ...downlineIds])];
+                    where.OR = [
+                        { projectManagerId: { in: teamIds } },
+                        { teamLeadId: { in: teamIds } },
+                        { tasks: { some: { assignedToId: { in: teamIds } } } },
+                        { taggedEmployees: { some: { id: { in: teamIds } } } },
+                        { visibility: 'PUBLIC' }
+                    ];
+                } else {
+                    // Executives see only their personal involvement or public projects
+                    where.OR = [
+                        { projectManagerId: user.id },
+                        { teamLeadId: user.id },
+                        { tasks: { some: { assignedToId: user.id } } },
+                        { visibility: 'PUBLIC' }
+                    ];
+                }
             }
 
             // Simple filters

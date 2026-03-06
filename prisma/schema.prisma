@@ -11,8 +11,7 @@ model Company {
   id                          String                       @id @default(uuid())
   name                        String
   registrationNumber          String?
-  domain              String?
-  universityId        String?
+  domain                      String?
   address                     String?
   phone                       String?
   email                       String?
@@ -22,44 +21,55 @@ model Company {
   currency                    String                       @default("INR")
   timezone                    String                       @default("Asia/Kolkata")
   employeeIdPrefix            String?
-  // Invoice / Billing Identity Fields
-  legalEntityName             String?
-  tagline                     String?
-  gstin                       String?
-  stateCode                   String?
-  cinNo                       String?
-  panNo                       String?
-  iecCode                     String?
-  // Bank Details for Invoice
-  bankName                    String?
-  bankAccountHolder           String?
-  bankAccountNumber           String?
-  bankIfscCode                String?
-  bankSwiftCode               String?
-  paymentMode                 String?
-  brandRelationType           String?                      @default("A Brand of")
-  invoiceCompanyLogoUrl       String?                      @map("invoiceCompanyLogoUrl")
   createdAt                   DateTime                     @default(now())
   updatedAt                   DateTime                     @updatedAt
   latitude                    Float?
   longitude                   Float?
+  bankAccountHolder           String?
+  bankAccountNumber           String?
+  bankIfscCode                String?
+  bankName                    String?
+  bankSwiftCode               String?
+  cinNo                       String?
+  gstin                       String?
+  iecCode                     String?
+  legalEntityName             String?
+  panNo                       String?
+  paymentMode                 String?
+  stateCode                   String?
+  tagline                     String?
+  brandRelationType           String?                      @default("A Brand of")
+  invoiceCompanyLogoUrl       String?                      @map("invoiceCompanyLogoUrl")
+  universityId                String?
+  invoiceTerms                String?
+  regdOfficeAddress           String?
+  salesOfficeAddress          String?
+  invoicePrefix               String?                      @default("INV-")
+  proformaPrefix              String?                      @default("PRO-")
+  invoiceNextNumber           Int                          @default(1)
+  proformaNextNumber          Int                          @default(1)
   accounts                    Account[]
   appConfigurations           AppConfiguration[]
   attendance                  Attendance[]
   bonusSchemas                BonusSchema[]
+  brands                      Brand[]
+  campaignAudiences           CampaignAudience[]
   chatRooms                   ChatRoom[]
   communications              CommunicationLog[]
+  integrations                CompanyIntegration[]
   companyPerformance          CompanyPerformance[]
   potential                   CompanyPotential?
   conferences                 Conference[]
+  coupons                     Coupon[]
   courses                     Course[]
   customers                   CustomerProfile[]
+  deals                       Deal[]
   departments                 Department[]
   departmentBudgets           DepartmentBudget[]
   departmentPerformance       DepartmentPerformance[]
   dispatchOrders              DispatchOrder[]
   documentTemplates           DocumentTemplate[]
-  deals                       Deal[]
+  emailTemplates              EmailTemplate[]
   employeeCompanyDesignations EmployeeCompanyDesignation[]
   expenseAllocations          EmployeeExpenseAllocation[]
   employeeGoals               EmployeeGoal[]
@@ -80,21 +90,27 @@ model Company {
   incentiveSchemas            IncentiveSchema[]
   institutions                Institution[]
   internships                 Internship[]
+  inventoryItems              InventoryItem[]
   invoices                    Invoice[]
-  brands                      Brand[]
-  coupons                     Coupon[]
+  issues                      Issue[]
   jobPostings                 JobPosting[]
   journalEntries              JournalEntry[]
   leaveLedgers                LeaveLedger[]
   leaveRequests               LeaveRequest[]
+  marketingCampaigns          MarketingCampaign[]
   performanceSnapshots        MonthlyPerformanceSnapshot[]
   onboardingModules           OnboardingModule[]
   payments                    Payment[]
   performanceInsights         PerformanceInsight[]
   performanceReviews          PerformanceReview[]
+  productionOrders            ProductionOrder[]
+  projects                    Project[]
+  purchaseOrders              PurchaseOrder[]
+  redGreenDiaries             RedGreenDiary[]
   revenueTransactions         RevenueTransaction[]
   salaryAdvances              SalaryAdvance[]
   salarySlips                 SalarySlip[]
+  screeningTemplates          ScreeningTemplate[]
   shifts                      Shift[]
   shiftRosters                ShiftRoster[]
   statutoryConfig             StatutoryConfig?
@@ -104,36 +120,25 @@ model Company {
   taxRates                    TaxRate[]
   teamMembers                 TeamMember[]
   primaryUsers                User[]                       @relation("PrimaryCompany")
+  vendors                     Vendor[]
+  warehouses                  Warehouse[]
   workPlans                   WorkPlan[]
   workReports                 WorkReport[]
   workshops                   Workshop[]
   designations                Designation[]                @relation("CompanyToDesignation")
   users                       User[]                       @relation("UserCompanies")
-  projects                    Project[]
-  issues                      Issue[]
-  screeningTemplates          ScreeningTemplate[]
-  redGreenDiaries             RedGreenDiary[]
-  vendors                     Vendor[]
-  purchaseOrders              PurchaseOrder[]
-  warehouses                  Warehouse[]
-  inventoryItems              InventoryItem[]
-  productionOrders            ProductionOrder[]
-  integrations                CompanyIntegration[]
-  marketingCampaigns          MarketingCampaign[]
-  emailTemplates              EmailTemplate[]
-  campaignAudiences           CampaignAudience[]
 }
 
 model CompanyIntegration {
-  id               String   @id @default(uuid())
-  companyId        String
-  provider         String   // E.g. 'GEMINI', 'OPENAI', 'PLAGIARISM_SCANNER', 'AWS_SES'
-  key              String   @db.Text
-  value            String?  @db.Text
-  isActive         Boolean  @default(true)
-  company          Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  id        String   @id @default(uuid())
+  companyId String
+  provider  String
+  key       String
+  value     String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  company   Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
 
   @@unique([companyId, provider])
   @@index([companyId])
@@ -159,6 +164,7 @@ model Department {
   expenseAllocations     EmployeeExpenseAllocation[]
   taskTemplates          EmployeeTaskTemplate[]
   expenseAllocationRules ExpenseAllocationRule[]
+  itProjects             ITProject[]                  @relation("DepartmentITProjects")
   jobApplications        JobApplication[]
   jobPostings            JobPosting[]
   performanceSnapshots   MonthlyPerformanceSnapshot[]
@@ -166,7 +172,6 @@ model Department {
   revenueTransactions    RevenueTransaction[]
   users                  User[]                       @relation("DepartmentMembers")
   designations           Designation[]                @relation("DepartmentToDesignation")
-  itProjects             ITProject[]                  @relation("DepartmentITProjects")
 
   @@unique([companyId, code])
   @@index([companyId])
@@ -190,8 +195,6 @@ model User {
   name                      String?
   allowedModules            String[]                    @default(["CORE"])
   roles                     UserRole[]                  @default([EXECUTIVE])
-  taggedITProjects          ITProject[]                 @relation("ProjectTaggedEmployees")
-  itProjectSuggestions      ITProjectSuggestion[]
   announcements             Announcement[]
   auditLogs                 AuditLog[]
   certificates              Certificate[]
@@ -208,17 +211,21 @@ model User {
   customerAssignments       CustomerAssignment[]        @relation("EmployeeAssignments")
   assignedCustomers         CustomerProfile[]           @relation("AssignedCustomers")
   customerProfile           CustomerProfile?
+  deals                     Deal[]
   headOfDepartments         Department[]                @relation("DepartmentHead")
   discussionReplies         DiscussionReply[]
   editorialMemberships      EditorialBoardMember[]
   authoredComments          EmployeeComment[]
+  reviewedGoals             EmployeeGoal[]              @relation("GoalReviewer")
   employeeProfile           EmployeeProfile?
   createdFinanceRecords     FinancialRecord[]           @relation("FinanceCreator")
+  goalEvaluations           GoalEvaluation[]
   assignedAssets            ITAsset[]
   itPerformanceMetrics      ITPerformanceMetric[]       @relation("ITPerformance")
   managedProjects           ITProject[]                 @relation("ProjectManager")
   ledProjects               ITProject[]                 @relation("TeamLead")
   itProjectComments         ITProjectComment[]          @relation("ITProjectComments")
+  itProjectSuggestions      ITProjectSuggestion[]
   itResolutions             ITSupportTicket[]           @relation("ITResolver")
   itRequests                ITSupportTicket[]           @relation("ITRequestor")
   assignedITTasks           ITTask[]                    @relation("ITTaskAssignee")
@@ -230,6 +237,10 @@ model User {
   assignedInstitutions      Institution[]               @relation("InstitutionOwner")
   mentoredInternships       Internship[]                @relation("InternshipMentor")
   internshipApplications    InternshipApplication[]
+  screeningsSubmitted       InterviewScreening[]        @relation("ScreeningSubmitter")
+  assignedIssues            Issue[]                     @relation("IssueAssignee")
+  reportedIssues            Issue[]                     @relation("IssueReporter")
+  issueFollowUps            IssueFollowUp[]
   managedJournals           Journal[]                   @relation("JournalEditor")
   managedJournalsAsManager  Journal[]                   @relation("JournalManager")
   postedJournalEntries      JournalEntry[]
@@ -243,24 +254,35 @@ model User {
   manuscriptDrafts          ManuscriptDraft[]
   manuscriptRevisions       ManuscriptRevision[]
   manuscriptStatusChanges   ManuscriptStatusHistory[]
+  mentorSessions            MentorSession[]             @relation("SessionMentor")
   notifications             Notification[]
   paperReviews              PaperReview[]
   passwordResetTokens       PasswordResetToken[]
+  peerReviewsGiven          PeerReview[]                @relation("PeerReviewer")
   evaluationsConducted      PerformanceEvaluation[]     @relation("EvaluatorUser")
   performanceReviews        PerformanceReview[]         @relation("Reviewer")
   plagiarismReports         PlagiarismReport[]          @relation("PlagiarismChecker")
+  businessLedProjects       Project[]                   @relation("BusinessTeamLead")
+  businessProjects          Project[]                   @relation("BusinessProjectManager")
+  projectMemberships        ProjectMember[]
   pushSubscriptions         PushSubscription[]
   qualityReports            QualityReport[]             @relation("QualityChecker")
   quizAttempts              QuizAttempt[]
   interviewsConducted       RecruitmentInterview[]      @relation("RecruitmentInterviewer")
+  redGreenEntriesRecorded   RedGreenDiary[]             @relation("DiaryRecorder")
+  redGreenEntriesTarget     RedGreenDiary[]             @relation("DiaryTarget")
   reviews                   Review[]
   assignedReviews           ReviewAssignment[]          @relation("AssignedReviews")
   issuedCertificates        ReviewCertificate[]         @relation("IssuedCertificates")
   validatedReports          ReviewReport[]              @relation("ValidatedReports")
+  incrementReviews          SalaryIncrementReview[]     @relation("IncrementReviewer")
+  screeningTemplatesCreated ScreeningTemplate[]
   assignedByTasks           StageAssignment[]           @relation("TaskAssigner")
   assignedTasks             StageAssignment[]           @relation("TaskAssignee")
+  movedStocks               StockMovement[]             @relation("StockMover")
   assignedSubscriptions     Subscription[]              @relation("AssignedSalesExecutive")
   assignedTickets           SupportTicket[]             @relation("AssignedTickets")
+  createdTasks              Task[]                      @relation("TaskAssigner")
   tasks                     Task[]
   managedTeamMembers        TeamMember[]                @relation("ManagerTeamMembers")
   teamMemberships           TeamMember[]                @relation("UserTeamMemberships")
@@ -269,31 +291,14 @@ model User {
   manager                   User?                       @relation("ManagementChain", fields: [managerId], references: [id])
   subordinates              User[]                      @relation("ManagementChain")
   lessonProgress            UserLessonProgress[]
+  managedWarehouses         Warehouse[]                 @relation("WarehouseManager")
   workPlanComments          WorkPlanComment[]
   workReportComments        WorkReportComment[]         @relation("WorkReportCommentAuthor")
   mentoredWorkshops         Workshop[]                  @relation("WorkshopMentor")
   workshopEnrollments       WorkshopEnrollment[]
   assignedToCustomers       CustomerProfile[]           @relation("CustomerToExecutives")
+  taggedITProjects          ITProject[]                 @relation("ProjectTaggedEmployees")
   companies                 Company[]                   @relation("UserCompanies")
-  reviewedGoals             EmployeeGoal[]              @relation("GoalReviewer")
-  goalEvaluations           GoalEvaluation[]
-  createdTasks              Task[]                      @relation("TaskAssigner")
-  incrementReviews          SalaryIncrementReview[]     @relation("IncrementReviewer")
-  deals                     Deal[]
-  businessProjects          Project[]                   @relation("BusinessProjectManager")
-  businessLedProjects       Project[]                   @relation("BusinessTeamLead")
-  assignedIssues            Issue[]                     @relation("IssueAssignee")
-  reportedIssues            Issue[]                     @relation("IssueReporter")
-  issueFollowUps            IssueFollowUp[]
-  peerReviewsGiven          PeerReview[]                @relation("PeerReviewer")
-  mentorSessions            MentorSession[]             @relation("SessionMentor")
-  projectMemberships        ProjectMember[]
-  screeningTemplatesCreated ScreeningTemplate[]
-  screeningsSubmitted       InterviewScreening[]        @relation("ScreeningSubmitter")
-  redGreenEntriesTarget     RedGreenDiary[]             @relation("DiaryTarget")
-  redGreenEntriesRecorded   RedGreenDiary[]             @relation("DiaryRecorder")
-  managedWarehouses         Warehouse[]                 @relation("WarehouseManager")
-  movedStocks               StockMovement[]             @relation("StockMover")
 
   @@index([email])
   @@index([role])
@@ -363,39 +368,23 @@ model KnowledgeArticle {
 }
 
 model CustomerProfile {
-  id               String       @id @default(uuid())
-  userId           String       @unique
-  customerType     CustomerType
-  assignedToUserId String?
-  name             String
-  organizationName String?
-  primaryEmail     String
-  secondaryEmail   String?
-  primaryPhone     String
-  secondaryPhone   String?
-  gstVatTaxId      String?
-  // Billing Address (Structured)
-  billingAddress   String?
-  billingCity      String?
-  billingState     String?
-  billingStateCode String?
-  billingPincode   String?
-  billingCountry   String?      @default("India")
-
-  // Shipping Address (Structured)
-  shippingAddress   String?
-  shippingCity      String?
-  shippingState     String?
-  shippingStateCode String?
-  shippingPincode   String?
-  shippingCountry   String? @default("India")
-
-  // Legacy fields (keeping for compatibility, will migrate data)
-  country String?
-  state   String?
-  city    String?
-  pincode String?
-
+  id                  String               @id @default(uuid())
+  userId              String               @unique
+  customerType        CustomerType
+  assignedToUserId    String?
+  name                String
+  organizationName    String?
+  primaryEmail        String
+  secondaryEmail      String?
+  primaryPhone        String
+  secondaryPhone      String?
+  gstVatTaxId         String?
+  billingAddress      String?
+  shippingAddress     String?
+  country             String?
+  state               String?
+  city                String?
+  pincode             String?
   preferredChannel    String?
   notes               String?
   tags                String?
@@ -407,24 +396,34 @@ model CustomerProfile {
   companyId           String?
   designation         CustomerDesignation?
   institutionId       String?
+  billingCity         String?
+  billingCountry      String?              @default("India")
+  billingPincode      String?
+  billingState        String?
+  billingStateCode    String?
+  shippingCity        String?
+  shippingCountry     String?              @default("India")
+  shippingPincode     String?
+  shippingState       String?
+  shippingStateCode   String?
   agencyId            String?
   agencyDetails       AgencyDetails?
   communications      CommunicationLog[]
   assignments         CustomerAssignment[]
+  agencyPartner       CustomerProfile?     @relation("AgencyToSubCustomers", fields: [agencyId], references: [id])
+  subCustomers        CustomerProfile[]    @relation("AgencyToSubCustomers")
   assignedTo          User?                @relation("AssignedCustomers", fields: [assignedToUserId], references: [id])
   company             Company?             @relation(fields: [companyId], references: [id])
   institution         Institution?         @relation("InstitutionToCustomers", fields: [institutionId], references: [id])
-  agencyPartner       CustomerProfile?     @relation("AgencyToSubCustomers", fields: [agencyId], references: [id])
-  subCustomers        CustomerProfile[]    @relation("AgencyToSubCustomers")
   user                User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  deals               Deal[]
   agencyInstitutions  Institution[]        @relation("AgencyInstitutions")
   institutionDetails  InstitutionDetails?
   invoices            Invoice[]
+  proformaInvoices    ProformaInvoice[]
   revenueTransactions RevenueTransaction[]
   subscriptions       Subscription[]
-  proformaInvoices    ProformaInvoice[]
   supportTickets      SupportTicket[]
-  deals               Deal[]
   assignedExecutives  User[]               @relation("CustomerToExecutives")
 
   @@index([customerType])
@@ -468,8 +467,8 @@ model AgencyDetails {
   createdAt          DateTime           @default(now())
   updatedAt          DateTime           @updatedAt
   discountRate       Float              @default(0)
-  discountTier       String?           @default("GOLD") // GOLD, SILVER, BRONZE, CUSTOM
-  tierMetadata       Json?             // Tiers can have fixed percentages based on product types
+  discountTier       String?            @default("GOLD")
+  tierMetadata       Json?
   customerProfile    CustomerProfile    @relation(fields: [customerProfileId], references: [id], onDelete: Cascade)
   performance        AgencyPerformance?
   subscriptions      Subscription[]
@@ -524,15 +523,15 @@ model Institution {
   companyId           String?
   assignedToUserId    String?
   domain              String?
-  universityId        String?
   agencyId            String?
+  universityId        String?
   communications      CommunicationLog[]
   customers           CustomerProfile[]    @relation("InstitutionToCustomers")
   agency              CustomerProfile?     @relation("AgencyInstitutions", fields: [agencyId], references: [id])
   assignedTo          User?                @relation("InstitutionOwner", fields: [assignedToUserId], references: [id])
-  university          Institution?       @relation("UniversityToAffiliate", fields: [universityId], references: [id])
-  affiliates          Institution[]     @relation("UniversityToAffiliate")
   company             Company?             @relation(fields: [companyId], references: [id])
+  university          Institution?         @relation("UniversityToAffiliate", fields: [universityId], references: [id])
+  affiliates          Institution[]        @relation("UniversityToAffiliate")
   revenueTransactions RevenueTransaction[]
   subscriptions       Subscription[]
 
@@ -585,11 +584,11 @@ model Journal {
   domainId          String?
   hIndex            Int?
   impactFactor      Float?
-  frequencyTrack    String?       @default("TRACK_A") // TRACK_A (3 issues), TRACK_B (2 issues), MODULAR
-  subscriptionYear  Int?
   journalManagerId  String?
   publisherId       String?
   abbreviation      String?                   @unique
+  frequencyTrack    String?                   @default("TRACK_A")
+  subscriptionYear  Int?
   articles          Article[]
   editorialBoard    EditorialBoardMember[]
   domain            JournalDomain?            @relation(fields: [domainId], references: [id])
@@ -628,80 +627,48 @@ model Plan {
   isActive          Boolean            @default(true)
   createdAt         DateTime           @default(now())
   updatedAt         DateTime           @updatedAt
+  subscriptionYear  Int?
+  issue             String?
   journal           Journal            @relation(fields: [journalId], references: [id], onDelete: Cascade)
   subscriptionItems SubscriptionItem[]
 
   @@index([journalId])
   @@index([isActive])
-}
-
-// ─── Invoice Product Catalogue ────────────────────────────────────────────────
-
-enum InvoiceProductCategory {
-  JOURNAL_SUBSCRIPTION
-  COURSE
-  WORKSHOP
-  DOI_SERVICE
-  APC
-  CERTIFICATE
-  DIGITAL_SERVICE
-  MISC
-}
-
-enum PricingModel {
-  FIXED
-  TIERED
-  VOLUME
-  CUSTOM
+  @@index([subscriptionYear])
 }
 
 model InvoiceProduct {
-  id              String                  @id @default(uuid())
-  companyId       String?
-  sku             String?                 @unique
-  name            String
-  category        InvoiceProductCategory  @default(MISC)
-  pricingModel    PricingModel            @default(FIXED)
-  description     String?
-  shortDesc       String?
-
-  // Dual-currency pricing
-  priceINR        Float                   @default(0)
-  priceUSD        Float                   @default(0)
-
-  // Flexible tier / volume pricing (stored as JSON array)
-  // e.g. [{ minQty: 1, maxQty: 10, priceINR: 5000, priceUSD: 60 }]
-  priceTiers      Json?
-
-  // Tax configuration
-  taxRate         Float                   @default(18)
-  taxIncluded     Boolean                 @default(false)
-  hsnCode         String?                 // Harmonized System Nomenclature for GST
-  sacCode         String?                 // Services Accounting Code
-
-  // Billing config
-  billingCycle    String?                 // MONTHLY | QUARTERLY | ANNUAL | ONE_TIME
-  unit            String                  @default("unit")  // e.g. year, article, user
-  minQuantity     Int                     @default(1)
-  maxQuantity     Int?
-
-  // Linkage (optional – link to source entity)
-  journalId       String?
-  courseId        String?
-  workshopId      String?
-  certificateId   String?
-
-  // Status
-  isActive        Boolean                 @default(true)
-  isFeatured      Boolean                 @default(false)
-  tags            String[]                @default([])
-  notes           String?
-
-  // Audit
-  createdByUserId String?
-  updatedByUserId String?
-  createdAt       DateTime                @default(now())
-  updatedAt       DateTime                @updatedAt
+  id                String                 @id @default(uuid())
+  companyId         String?
+  sku               String?                @unique
+  name              String
+  category          InvoiceProductCategory @default(MISC)
+  pricingModel      PricingModel           @default(FIXED)
+  description       String?
+  shortDesc         String?
+  priceINR          Float                  @default(0)
+  priceUSD          Float                  @default(0)
+  priceTiers        Json?
+  taxRate           Float                  @default(18)
+  taxIncluded       Boolean                @default(false)
+  hsnCode           String?
+  sacCode           String?
+  billingCycle      String?
+  unit              String                 @default("unit")
+  minQuantity       Int                    @default(1)
+  maxQuantity       Int?
+  journalId         String?
+  courseId          String?
+  workshopId        String?
+  certificateId     String?
+  isActive          Boolean                @default(true)
+  isFeatured        Boolean                @default(false)
+  tags              String[]               @default([])
+  notes             String?
+  createdByUserId   String?
+  updatedByUserId   String?
+  createdAt         DateTime               @default(now())
+  updatedAt         DateTime               @updatedAt
   subscriptionItems SubscriptionItem[]
 
   @@index([companyId, category])
@@ -709,82 +676,59 @@ model InvoiceProduct {
   @@index([name])
 }
 
-// ─── Proforma Invoice System ──────────────────────────────────────────────────
-
-
 model ProformaInvoice {
-  id                  String          @id @default(uuid())
-  proformaNumber      String          @unique
-  customerProfileId   String
-  companyId           String?
-  brandId             String?
-  status              ProformaStatus  @default(DRAFT)
-
-  // Provisional subscription terms
-  salesChannel        String          @default("DIRECT")
-  agencyId            String?
-  startDate           DateTime?
-  endDate             DateTime?
-  autoRenew           Boolean         @default(false)
-  currency            String          @default("INR")
-  billingFrequency    String          @default("ANNUAL")
-
-  // Financials
-  subtotal            Float           @default(0)
-  discountAmount      Float           @default(0)
-  discountType        String?         // PERCENTAGE | FIXED
-  discountValue       Float?          @default(0)
-  taxRate             Float           @default(18)
-  taxAmount           Float           @default(0)
-  total               Float           @default(0)
-
-  // Tax breakdown (Indian GST compliance)
-  cgst                Float           @default(0)
-  sgst                Float           @default(0)
-  igst                Float           @default(0)
-  cgstRate            Float           @default(0)
-  sgstRate            Float           @default(0)
-  igstRate            Float           @default(0)
-  placeOfSupply       String?
-  placeOfSupplyCode   String?
-  companyStateCode    String?
-
-  // Line items stored as JSON
-  lineItems           Json?
-
-  // Document metadata
-  notes               String?
-  validUntil          DateTime?
-  subject             String?         @default("Proforma Invoice")
-
-  // Idempotency (prevents duplicate generation on retry)
-  idempotencyKey      String?         @unique
-
-  // Conversion tracking
-  convertedInvoiceId  String?         @unique
-  convertedSubId      String?         @unique
-  convertedAt         DateTime?
-  convertedByUserId   String?
-
-  // Address snapshots
-  billingAddress      String?
-  billingCity         String?
-  billingState        String?
-  billingStateCode    String?
-  billingPincode      String?
-  billingCountry      String?         @default("India")
-
-  // Audit
-  createdByUserId     String
-  updatedAt           DateTime        @updatedAt
-  createdAt           DateTime        @default(now())
-  deletedAt           DateTime?       // soft delete
-  deletedByUserId     String?
-  deleteReason        String?
-
-  // Relations
-  customerProfile     CustomerProfile @relation(fields: [customerProfileId], references: [id])
-  auditEvents         ProformaAuditEvent[]
+  id                 String               @id @default(uuid())
+  proformaNumber     String               @unique
+  customerProfileId  String
+  companyId          String?
+  brandId            String?
+  status             ProformaStatus       @default(DRAFT)
+  salesChannel       String               @default("DIRECT")
+  agencyId           String?
+  startDate          DateTime?
+  endDate            DateTime?
+  autoRenew          Boolean              @default(false)
+  currency           String               @default("INR")
+  billingFrequency   String               @default("ANNUAL")
+  subtotal           Float                @default(0)
+  discountAmount     Float                @default(0)
+  discountType       String?
+  discountValue      Float?               @default(0)
+  taxRate            Float                @default(18)
+  taxAmount          Float                @default(0)
+  total              Float                @default(0)
+  cgst               Float                @default(0)
+  sgst               Float                @default(0)
+  igst               Float                @default(0)
+  cgstRate           Float                @default(0)
+  sgstRate           Float                @default(0)
+  igstRate           Float                @default(0)
+  placeOfSupply      String?
+  placeOfSupplyCode  String?
+  companyStateCode   String?
+  lineItems          Json?
+  notes              String?
+  validUntil         DateTime?
+  subject            String?              @default("Proforma Invoice")
+  idempotencyKey     String?              @unique
+  convertedInvoiceId String?              @unique
+  convertedSubId     String?              @unique
+  convertedAt        DateTime?
+  convertedByUserId  String?
+  billingAddress     String?
+  billingCity        String?
+  billingState       String?
+  billingStateCode   String?
+  billingPincode     String?
+  billingCountry     String?              @default("India")
+  createdByUserId    String
+  updatedAt          DateTime             @updatedAt
+  createdAt          DateTime             @default(now())
+  deletedAt          DateTime?
+  deletedByUserId    String?
+  deleteReason       String?
+  auditEvents        ProformaAuditEvent[]
+  customerProfile    CustomerProfile      @relation(fields: [customerProfileId], references: [id])
 
   @@index([customerProfileId])
   @@index([status])
@@ -793,17 +737,16 @@ model ProformaInvoice {
 }
 
 model ProformaAuditEvent {
-  id            String          @id @default(uuid())
-  proformaId    String
-  actorUserId   String
-  actorEmail    String?
-  fromStatus    ProformaStatus?
-  toStatus      ProformaStatus
-  action        String          // CREATE | EDIT | SEND | STATUS_CHANGE | CONVERT | DELETE
-  metadata      Json?
-  createdAt     DateTime        @default(now())
-
-  proforma      ProformaInvoice @relation(fields: [proformaId], references: [id], onDelete: Cascade)
+  id          String          @id @default(uuid())
+  proformaId  String
+  actorUserId String
+  actorEmail  String?
+  fromStatus  ProformaStatus?
+  toStatus    ProformaStatus
+  action      String
+  metadata    Json?
+  createdAt   DateTime        @default(now())
+  proforma    ProformaInvoice @relation(fields: [proformaId], references: [id], onDelete: Cascade)
 
   @@index([proformaId])
   @@index([createdAt])
@@ -853,97 +796,105 @@ model Subscription {
 }
 
 model SubscriptionItem {
-  id             String       @id @default(uuid())
-  subscriptionId String
-  journalId      String?
-  planId         String?
-  courseId       String?
-  workshopId     String?
-  productId      String?
+  id               String          @id @default(uuid())
+  subscriptionId   String
+  journalId        String?
+  planId           String?
+  quantity         Int             @default(1)
+  seats            Int?
+  price            Float
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+  courseId         String?
+  productId        String?
+  workshopId       String?
   invoiceProductId String?
-  quantity       Int          @default(1)
-  seats          Int?
-  price          Float
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
-  journal        Journal?     @relation(fields: [journalId], references: [id])
-  plan           Plan?        @relation(fields: [planId], references: [id])
-  course         Course?      @relation(fields: [courseId], references: [id])
-  workshop       Workshop?    @relation(fields: [workshopId], references: [id])
-  product        Product?     @relation(fields: [productId], references: [id])
-  invoiceProduct InvoiceProduct? @relation(fields: [invoiceProductId], references: [id])
-  subscription   Subscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+  course           Course?         @relation(fields: [courseId], references: [id])
+  invoiceProduct   InvoiceProduct? @relation(fields: [invoiceProductId], references: [id])
+  journal          Journal?        @relation(fields: [journalId], references: [id])
+  plan             Plan?           @relation(fields: [planId], references: [id])
+  product          Product?        @relation(fields: [productId], references: [id])
+  subscription     Subscription    @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+  workshop         Workshop?       @relation(fields: [workshopId], references: [id])
 
   @@index([subscriptionId])
 }
 
 model Invoice {
-  id                String        @id @default(uuid())
-  subscriptionId    String?
-  invoiceNumber     String        @unique
-  currency          String        @default("INR")
-  amount            Float
-  tax               Float
-  total             Float
-  status            InvoiceStatus @default(UNPAID)
-  dueDate           DateTime
-  paidDate          DateTime?
-  createdAt         DateTime      @default(now())
-  updatedAt         DateTime      @updatedAt
-  companyId         String?
-  brandId           String?
-  customerProfileId String?
-  description       String?
-  taxRate           Float?        @default(18.0)
-  gstNumber         String?
-  // Address Snapshots (Indian Law Compliance)
-  billingAddress    String?
-  billingCity       String?
-  billingState      String?
-  billingStateCode  String?
-  billingPincode    String?
-  billingCountry    String?       @default("India")
-
-  shippingAddress   String?
-  shippingCity      String?
-  shippingState     String?
-  shippingStateCode String?
-  shippingPincode   String?
-  shippingCountry   String? @default("India")
-
-  placeOfSupply     String?
-  placeOfSupplyCode String?
-  companyStateCode  String?
-  cgst              Float?        @default(0)
-  sgst              Float?        @default(0)
-  igst              Float?        @default(0)
-  cgstRate          Float?        @default(0)
-  sgstRate          Float?        @default(0)
-  igstRate          Float?        @default(0)
-
-  couponId          String?
-  couponCode        String?
-  discountType      String?
-  discountValue     Float?        @default(0)
-  discountAmount    Float?        @default(0)
-
-  lineItems Json?
-
-  // Branding Snapshots (From Brand/Company Settings)
-  brandRelationType  String?   @default("A Brand of")
-  brandLogoUrl       String?
-  companyLogoUrl     String?   @map("brandCompanyLogoUrl")
-  brandAddress       String?
-  brandEmail         String?   @map("invoiceBrandEmail")
-  brandWebsite       String?   @map("invoiceBrandWebsite")
-
-  company             Company?             @relation(fields: [companyId], references: [id])
-  brand               Brand?               @relation(fields: [brandId], references: [id])
-  coupon              Coupon?              @relation(fields: [couponId], references: [id])
-  customerProfile     CustomerProfile?     @relation(fields: [customerProfileId], references: [id])
-  subscription        Subscription?        @relation(fields: [subscriptionId], references: [id])
-  payments            Payment[]
-  revenueTransactions RevenueTransaction[]
+  id                      String               @id @default(uuid())
+  subscriptionId          String?
+  invoiceNumber           String               @unique
+  proformaNumber          String?              @unique
+  currency                String               @default("INR")
+  amount                  Float
+  tax                     Float
+  total                   Float
+  status                  InvoiceStatus        @default(UNPAID)
+  dueDate                 DateTime
+  paidDate                DateTime?
+  createdAt               DateTime             @default(now())
+  updatedAt               DateTime             @updatedAt
+  companyId               String?
+  customerProfileId       String?
+  description             String?
+  lineItems               Json?
+  billingAddress          String?
+  billingCity             String?
+  billingCountry          String?              @default("India")
+  billingPincode          String?
+  billingState            String?
+  billingStateCode        String?
+  gstNumber               String?
+  placeOfSupply           String?
+  placeOfSupplyCode       String?
+  shippingAddress         String?
+  shippingCity            String?
+  shippingCountry         String?              @default("India")
+  shippingPincode         String?
+  shippingState           String?
+  shippingStateCode       String?
+  taxRate                 Float?               @default(18.0)
+  brandId                 String?
+  couponCode              String?
+  couponId                String?
+  discountAmount          Float?               @default(0)
+  discountType            String?
+  discountValue           Float?               @default(0)
+  brandAddress            String?
+  companyLogoUrl          String?              @map("brandCompanyLogoUrl")
+  brandLogoUrl            String?
+  brandRelationType       String?              @default("A Brand of")
+  cgst                    Float?               @default(0)
+  cgstRate                Float?               @default(0)
+  companyStateCode        String?
+  igst                    Float?               @default(0)
+  igstRate                Float?               @default(0)
+  brandEmail              String?              @map("invoiceBrandEmail")
+  brandWebsite            String?              @map("invoiceBrandWebsite")
+  sgst                    Float?               @default(0)
+  sgstRate                Float?               @default(0)
+  brandBankHolder         String?
+  brandBankIfsc           String?
+  brandBankName           String?
+  brandBankNumber         String?
+  brandBankSwift          String?
+  brandCin                String?
+  brandGstin              String?
+  brandIec                String?
+  brandLegalName          String?
+  brandPan                String?
+  brandPaymentMode        String?
+  brandTagline            String?
+  brandInvoiceTerms       String?
+  brandRegdOfficeAddress  String?
+  brandSalesOfficeAddress String?
+  brand                   Brand?               @relation(fields: [brandId], references: [id])
+  company                 Company?             @relation(fields: [companyId], references: [id])
+  coupon                  Coupon?              @relation(fields: [couponId], references: [id])
+  customerProfile         CustomerProfile?     @relation(fields: [customerProfileId], references: [id])
+  subscription            Subscription?        @relation(fields: [subscriptionId], references: [id])
+  payments                Payment[]
+  revenueTransactions     RevenueTransaction[]
 
   @@index([subscriptionId])
   @@index([customerProfileId])
@@ -955,25 +906,25 @@ model Invoice {
 }
 
 model Coupon {
-  id               String    @id @default(uuid())
-  code             String    @unique
-  description      String?
-  discountType     String    // 'PERCENTAGE' | 'FIXED'
-  discountValue    Float
-  minOrderValue    Float?    @default(0)
-  maxDiscountCap   Float?    // max discount allowed for PERCENTAGE type
-  usageLimit       Int?      // null = unlimited
-  usedCount        Int       @default(0)
-  validFrom        DateTime  @default(now())
-  validUntil       DateTime?
-  isActive         Boolean   @default(true)
-  companyId        String
-  brandId          String?   // null = applies to all brands
-  createdAt        DateTime  @default(now())
-  updatedAt        DateTime  @updatedAt
-  company          Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  brand            Brand?    @relation(fields: [brandId], references: [id])
-  invoices         Invoice[]
+  id             String    @id @default(uuid())
+  code           String    @unique
+  description    String?
+  discountType   String
+  discountValue  Float
+  minOrderValue  Float?    @default(0)
+  maxDiscountCap Float?
+  usageLimit     Int?
+  usedCount      Int       @default(0)
+  validFrom      DateTime  @default(now())
+  validUntil     DateTime?
+  isActive       Boolean   @default(true)
+  companyId      String
+  brandId        String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  brand          Brand?    @relation(fields: [brandId], references: [id])
+  company        Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  invoices       Invoice[]
 
   @@index([code])
   @@index([companyId])
@@ -991,12 +942,30 @@ model Brand {
   email              String?
   website            String?
   tagline            String?
-  brandRelationType  String?   @default("A Brand of")
   createdAt          DateTime  @default(now())
   updatedAt          DateTime  @updatedAt
+  brandRelationType  String?   @default("A Brand of")
+  bankAccountHolder  String?
+  bankAccountNumber  String?
+  bankIfscCode       String?
+  bankName           String?
+  bankSwiftCode      String?
+  cinNo              String?
+  gstin              String?
+  iecCode            String?
+  legalEntityName    String?
+  panNo              String?
+  paymentMode        String?   @default("Online")
+  invoiceTerms       String?
+  regdOfficeAddress  String?
+  salesOfficeAddress String?
+  invoicePrefix      String?   @default("INV-")
+  proformaPrefix     String?   @default("PRO-")
+  invoiceNextNumber  Int?      @default(1)
+  proformaNextNumber Int?      @default(1)
   company            Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  invoices           Invoice[]
   coupons            Coupon[]
+  invoices           Invoice[]
 
   @@index([companyId])
 }
@@ -1093,25 +1062,25 @@ model ConversationChecklist {
 
 model Task {
   id                    String     @id @default(uuid())
-  userId                String // Assigned to
-  assignedById          String? // Assigned by (manager/admin)
+  userId                String
+  assignedById          String?
   title                 String
   description           String?
   dueDate               DateTime
   priority              Priority   @default(MEDIUM)
   status                TaskStatus @default(PENDING)
-  estimatedEffort       Float? // In hours
-  actualEffort          Float? // In hours
+  estimatedEffort       Float?
+  actualEffort          Float?
   relatedCustomerId     String?
   relatedSubscriptionId String?
   createdAt             DateTime   @default(now())
   updatedAt             DateTime   @updatedAt
-  projectId             String?
-  project               Project?   @relation(fields: [projectId], references: [id])
   companyId             String?
-  company               Company?   @relation(fields: [companyId], references: [id])
-  user                  User       @relation(fields: [userId], references: [id])
+  projectId             String?
   assignedBy            User?      @relation("TaskAssigner", fields: [assignedById], references: [id])
+  company               Company?   @relation(fields: [companyId], references: [id])
+  project               Project?   @relation(fields: [projectId], references: [id])
+  user                  User       @relation(fields: [userId], references: [id])
   workPlans             WorkPlan[]
 
   @@index([userId])
@@ -1259,10 +1228,10 @@ model Designation {
   companyDesignations EmployeeCompanyDesignation[]
   employees           EmployeeProfile[]
   taskTemplates       EmployeeTaskTemplate[]
+  newIncrements       SalaryIncrementRecord[]      @relation("NewDesignation")
+  previousIncrements  SalaryIncrementRecord[]      @relation("PreviousDesignation")
   companies           Company[]                    @relation("CompanyToDesignation")
   departments         Department[]                 @relation("DepartmentToDesignation")
-  previousIncrements  SalaryIncrementRecord[]      @relation("PreviousDesignation")
-  newIncrements       SalaryIncrementRecord[]      @relation("NewDesignation")
 }
 
 model GlobalDepartment {
@@ -1378,8 +1347,8 @@ model EmployeeProfile {
   performanceSnapshots     MonthlyPerformanceSnapshot[]
   onboardingProgress       OnboardingProgress[]
   evaluations              PerformanceEvaluation[]      @relation("EvaluatedEmployee")
-  performanceReviews       PerformanceReview[]          @relation("EmployeeReviews")
   performanceInsights      PerformanceInsight[]
+  performanceReviews       PerformanceReview[]          @relation("EmployeeReviews")
   revenueClaims            RevenueClaim[]
   approvedRevenue          RevenueTransaction[]         @relation("ApprovedRevenue")
   claimedRevenue           RevenueTransaction[]         @relation("ClaimedRevenue")
@@ -1477,7 +1446,6 @@ model SalaryIncrementRecord {
   percentage              Float
   optInVariable           Boolean                 @default(false)
   optInIncentive          Boolean                 @default(false)
-  performanceReviews      PerformanceReview[]
   oldVariablePerTarget    Float?
   newVariablePerTarget    Float?
   oldVariableUpperCap     Float?
@@ -1496,11 +1464,7 @@ model SalaryIncrementRecord {
   newBooksAndPeriodicals  Float?
   type                    String                  @default("INCREMENT")
   previousDesignation     String?
-  previousDesignationId   String?
-  previousDesignatRef     Designation?            @relation("PreviousDesignation", fields: [previousDesignationId], references: [id])
   newDesignation          String?
-  newDesignationId        String?
-  newDesignatRef          Designation?            @relation("NewDesignation", fields: [newDesignationId], references: [id])
   oldJobDescription       String?
   newJobDescription       String?
   reason                  String?
@@ -1537,8 +1501,13 @@ model SalaryIncrementRecord {
   monthlyVariableTargets  Json?
   monthlyFixedSalaries    Json?
   monthlyVariableSalaries Json?
-  reviews                 SalaryIncrementReview[]
+  newDesignationId        String?
+  previousDesignationId   String?
+  performanceReviews      PerformanceReview[]
   employeeProfile         EmployeeProfile         @relation(fields: [employeeProfileId], references: [id], onDelete: Cascade)
+  newDesignatRef          Designation?            @relation("NewDesignation", fields: [newDesignationId], references: [id])
+  previousDesignatRef     Designation?            @relation("PreviousDesignation", fields: [previousDesignationId], references: [id])
+  reviews                 SalaryIncrementReview[]
 
   @@index([employeeProfileId])
   @@index([status])
@@ -1589,7 +1558,7 @@ model Attendance {
   shiftId      String?
   remarks      String?
   company      Company?        @relation(fields: [companyId], references: [id])
-  employee   EmployeeProfile @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  employee     EmployeeProfile @relation(fields: [employeeId], references: [id], onDelete: Cascade)
   shift        Shift?          @relation(fields: [shiftId], references: [id])
 
   @@unique([employeeId, date])
@@ -1619,10 +1588,10 @@ model WorkReport {
   kraMatchRatio       Float?
   metrics             Json?
   evaluation          Json?
-  attendanceStatus    String? // PRESENT, LATE, ABSENT
-  disciplineStatus    String? // GOOD, WARNING, VIOLATION
   pointsEarned        Int                  @default(0)
   tasksSnapshot       Json?
+  attendanceStatus    String?
+  disciplineStatus    String?
   revenueClaims       RevenueClaim[]
   revenueTransactions RevenueTransaction[]
   company             Company?             @relation(fields: [companyId], references: [id])
@@ -1669,10 +1638,10 @@ model Vendor {
   phone          String?
   address        String?
   taxId          String?
-  status         String          @default("ACTIVE") // ACTIVE, INACTIVE
-  purchaseOrders PurchaseOrder[]
+  status         String          @default("ACTIVE")
   createdAt      DateTime        @default(now())
   updatedAt      DateTime        @updatedAt
+  purchaseOrders PurchaseOrder[]
   company        Company         @relation(fields: [companyId], references: [id], onDelete: Cascade)
 
   @@index([companyId])
@@ -1683,14 +1652,14 @@ model PurchaseOrder {
   companyId    String
   vendorId     String
   poNumber     String              @unique
-  status       String              @default("DRAFT") // DRAFT, ISSUED, PARTIAL, COMPLETED, CANCELLED
+  status       String              @default("DRAFT")
   totalAmount  Float               @default(0)
   expectedDate DateTime?
-  items        PurchaseOrderItem[]
   createdAt    DateTime            @default(now())
   updatedAt    DateTime            @updatedAt
   company      Company             @relation(fields: [companyId], references: [id], onDelete: Cascade)
   vendor       Vendor              @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  items        PurchaseOrderItem[]
 
   @@index([companyId])
   @@index([vendorId])
@@ -1705,8 +1674,8 @@ model PurchaseOrderItem {
   quantity        Int
   unitPrice       Float
   total           Float
-  purchaseOrder   PurchaseOrder  @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
   inventoryItem   InventoryItem? @relation(fields: [inventoryItemId], references: [id])
+  purchaseOrder   PurchaseOrder  @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
 
   @@index([purchaseOrderId])
   @@index([inventoryItemId])
@@ -1718,9 +1687,9 @@ model Warehouse {
   name           String
   location       String?
   managerId      String?
-  inventoryItems InventoryItem[]
   createdAt      DateTime        @default(now())
   updatedAt      DateTime        @updatedAt
+  inventoryItems InventoryItem[]
   company        Company         @relation(fields: [companyId], references: [id], onDelete: Cascade)
   manager        User?           @relation("WarehouseManager", fields: [managerId], references: [id])
 
@@ -1729,23 +1698,22 @@ model Warehouse {
 
 model InventoryItem {
   id             String              @id @default(uuid())
-  companyId      String?
-  warehouseId    String?
-  sku            String
   name           String
+  sku            String
   category       String              @default("GENERAL")
-  description    String?
-  quantity       Int                 @default(0)
-  minStockLevel  Int                 @default(0)
-  unitPrice      Float               @default(0)
-  stockMovements StockMovement[]
-  purchaseItems  PurchaseOrderItem[]
-  createdAt      DateTime            @default(now())
   updatedAt      DateTime            @updatedAt
+  companyId      String?
+  createdAt      DateTime            @default(now())
+  description    String?
+  minStockLevel  Int                 @default(0)
+  quantity       Int                 @default(0)
+  unitPrice      Float               @default(0)
+  warehouseId    String?
   company        Company?            @relation(fields: [companyId], references: [id], onDelete: Cascade)
   warehouse      Warehouse?          @relation(fields: [warehouseId], references: [id])
+  purchaseItems  PurchaseOrderItem[]
+  stockMovements StockMovement[]
 
-  // Make sku unique per company rather than globally unique if multi-tenant
   @@unique([sku, companyId])
   @@index([companyId])
   @@index([warehouseId])
@@ -1754,21 +1722,20 @@ model InventoryItem {
 model StockMovement {
   id              String        @id @default(uuid())
   inventoryItemId String
-  type            String // IN, OUT, ADJUSTMENT
+  type            String
   quantity        Int
-  referenceId     String? // e.g. PO ID or Dispatch Order ID
+  referenceId     String?
   notes           String?
   createdBy       String?
   createdAt       DateTime      @default(now())
-  inventoryItem   InventoryItem @relation(fields: [inventoryItemId], references: [id], onDelete: Cascade)
   user            User?         @relation("StockMover", fields: [createdBy], references: [id])
+  inventoryItem   InventoryItem @relation(fields: [inventoryItemId], references: [id], onDelete: Cascade)
 
   @@index([inventoryItemId])
 }
 
 model ProductionOrder {
   id         String   @id @default(uuid())
-  companyId  String?
   itemSku    String
   quantity   Int
   status     String   @default("PLANNED")
@@ -1776,6 +1743,7 @@ model ProductionOrder {
   reason     String?
   targetDate DateTime
   createdAt  DateTime @default(now())
+  companyId  String?
   company    Company? @relation(fields: [companyId], references: [id], onDelete: Cascade)
 
   @@index([companyId])
@@ -1821,9 +1789,9 @@ model SalarySlip {
   salaryFixed         Float               @default(0)
   salaryVariable      Float               @default(0)
   salaryIncentive     Float               @default(0)
-  isPFDeducted        Boolean             @default(true)
   isFinalSettlement   Boolean             @default(false)
   notes               String?
+  isPFDeducted        Boolean             @default(true)
   advanceEmi          AdvanceEMI?
   arrearRecords       ArrearRecord[]
   linkedIncentives    EmployeeIncentive[]
@@ -1977,10 +1945,10 @@ model SalaryStructure {
   salaryVariable      Float           @default(0)
   salaryIncentive     Float           @default(0)
   ctc                 Float           @default(0)
-  deductPF            Boolean         @default(true)
   effectiveFrom       DateTime        @default(now())
   createdAt           DateTime        @default(now())
   updatedAt           DateTime        @updatedAt
+  deductPF            Boolean         @default(true)
   employee            EmployeeProfile @relation(fields: [employeeId], references: [id], onDelete: Cascade)
 }
 
@@ -1994,13 +1962,13 @@ model PerformanceReview {
   period                  String?
   companyId               String?
   createdAt               DateTime               @default(now())
+  salaryIncrementRecordId String?
+  anonymousFeedback       AnonymousFeedback[]
+  peerReviews             PeerReview[]
   company                 Company?               @relation(fields: [companyId], references: [id])
   employee                EmployeeProfile        @relation("EmployeeReviews", fields: [employeeId], references: [id], onDelete: Cascade)
   reviewer                User                   @relation("Reviewer", fields: [reviewerId], references: [id])
-  salaryIncrementRecordId String?
   salaryIncrementRecord   SalaryIncrementRecord? @relation(fields: [salaryIncrementRecordId], references: [id])
-  peerReviews             PeerReview[]
-  anonymousFeedback       AnonymousFeedback[]
 
   @@index([companyId])
   @@index([salaryIncrementRecordId])
@@ -2064,27 +2032,27 @@ model WorkPlan {
   date             DateTime
   agenda           String
   strategy         String?
-  priority         String            @default("MEDIUM") // HIGH, MEDIUM, LOW
+  priority         String            @default("MEDIUM")
   estimatedHours   Float?
   actualHours      Float?
-  completionStatus String            @default("PLANNED") // PLANNED, IN_PROGRESS, COMPLETED, CANCELLED
-  linkedGoalId     String? // Link to EmployeeGoal
-  visibility       String            @default("MANAGER") // SELF, MANAGER, ADMIN, ALL
+  completionStatus String            @default("PLANNED")
+  linkedGoalId     String?
+  visibility       String            @default("MANAGER")
   status           String            @default("SHARED")
   createdAt        DateTime          @default(now())
   updatedAt        DateTime          @updatedAt
   companyId        String?
-  company          Company?          @relation(fields: [companyId], references: [id])
-  employee         EmployeeProfile   @relation(fields: [employeeId], references: [id], onDelete: Cascade)
-  linkedGoal       EmployeeGoal?     @relation("GoalWorkPlans", fields: [linkedGoalId], references: [id])
   projectId        String?
   taskId           String?
   itProjectId      String?
   itTaskId         String?
-  project          Project?          @relation(fields: [projectId], references: [id])
-  task             Task?             @relation(fields: [taskId], references: [id])
+  company          Company?          @relation(fields: [companyId], references: [id])
+  employee         EmployeeProfile   @relation(fields: [employeeId], references: [id], onDelete: Cascade)
   itProject        ITProject?        @relation(fields: [itProjectId], references: [id])
   itTask           ITTask?           @relation(fields: [itTaskId], references: [id])
+  linkedGoal       EmployeeGoal?     @relation("GoalWorkPlans", fields: [linkedGoalId], references: [id])
+  project          Project?          @relation(fields: [projectId], references: [id])
+  task             Task?             @relation(fields: [taskId], references: [id])
   comments         WorkPlanComment[]
 
   @@unique([employeeId, date])
@@ -2222,10 +2190,10 @@ model JobApplication {
   updatedAt           DateTime               @updatedAt
   departmentId        String?
   examAttempt         ExamAttempt?
+  interviewScreenings InterviewScreening[]
   department          Department?            @relation(fields: [departmentId], references: [id])
   jobPosting          JobPosting             @relation(fields: [jobPostingId], references: [id], onDelete: Cascade)
   interviews          RecruitmentInterview[]
-  interviewScreenings InterviewScreening[]
 }
 
 model RecruitmentExam {
@@ -2267,9 +2235,9 @@ model RecruitmentInterview {
   meetingLink   String?
   rating        Int?
   type          String              @default("VIRTUAL")
+  screening     InterviewScreening?
   application   JobApplication      @relation(fields: [applicationId], references: [id], onDelete: Cascade)
   interviewer   User                @relation("RecruitmentInterviewer", fields: [interviewerId], references: [id])
-  screening     InterviewScreening?
 
   @@unique([applicationId, level])
 }
@@ -2731,60 +2699,60 @@ model ConferenceSponsor {
 }
 
 model Course {
-  id             String               @id @default(uuid())
-  title          String
-  description    String
-  thumbnailUrl   String?
-  price          Float                @default(0)
-  currency       String               @default("INR")
-  instructorId   String?
-  isPublished    Boolean              @default(false)
-  createdAt      DateTime             @default(now())
-  updatedAt      DateTime             @updatedAt
-  companyId      String?
-  category       String?
-  estimatedHours Int?
-  language       String?              @default("English")
-  level          String?              @default("BEGINNER")
-  prerequisites  String?
-  emailCount     Int                  @default(0)
-  mentorId       String?
-  mentorReward   Float                @default(0)
-  totalRevenue   Float                @default(0)
-  company        Company?             @relation(fields: [companyId], references: [id])
-  mentor         User?                @relation("CourseMentor", fields: [mentorId], references: [id])
-  announcements  CourseAnnouncement[]
-  discussions    CourseDiscussion[]
-  enrollments    CourseEnrollment[]
-  modules        CourseModule[]
+  id                String               @id @default(uuid())
+  title             String
+  description       String
+  thumbnailUrl      String?
+  price             Float                @default(0)
+  currency          String               @default("INR")
+  instructorId      String?
+  isPublished       Boolean              @default(false)
+  createdAt         DateTime             @default(now())
+  updatedAt         DateTime             @updatedAt
+  companyId         String?
+  category          String?
+  estimatedHours    Int?
+  language          String?              @default("English")
+  level             String?              @default("BEGINNER")
+  prerequisites     String?
+  emailCount        Int                  @default(0)
+  mentorId          String?
+  mentorReward      Float                @default(0)
+  totalRevenue      Float                @default(0)
+  company           Company?             @relation(fields: [companyId], references: [id])
+  mentor            User?                @relation("CourseMentor", fields: [mentorId], references: [id])
+  announcements     CourseAnnouncement[]
+  discussions       CourseDiscussion[]
+  enrollments       CourseEnrollment[]
+  modules           CourseModule[]
   subscriptionItems SubscriptionItem[]
 }
 
 model Workshop {
-  id           String               @id @default(uuid())
-  title        String
-  description  String
-  startDate    DateTime
-  endDate      DateTime?
-  duration     String?
-  status       String               @default("DRAFT")
-  price        Float                @default(0)
-  currency     String               @default("INR")
-  mentorId     String?
-  mentorReward Float                @default(0)
-  totalRevenue Float                @default(0)
-  emailCount   Int                  @default(0)
-  maxAttendees Int?
-  venue        String?
-  meetingLink  String?
-  createdAt    DateTime             @default(now())
-  updatedAt    DateTime             @updatedAt
-  companyId    String?
-  company      Company?             @relation(fields: [companyId], references: [id])
-  mentor       User?                @relation("WorkshopMentor", fields: [mentorId], references: [id])
-  enrollments  WorkshopEnrollment[]
-  sessions     MentorSession[]
+  id                String               @id @default(uuid())
+  title             String
+  description       String
+  startDate         DateTime
+  endDate           DateTime?
+  duration          String?
+  status            String               @default("DRAFT")
+  price             Float                @default(0)
+  currency          String               @default("INR")
+  mentorId          String?
+  mentorReward      Float                @default(0)
+  totalRevenue      Float                @default(0)
+  emailCount        Int                  @default(0)
+  maxAttendees      Int?
+  venue             String?
+  meetingLink       String?
+  createdAt         DateTime             @default(now())
+  updatedAt         DateTime             @updatedAt
+  companyId         String?
+  sessions          MentorSession[]
   subscriptionItems SubscriptionItem[]
+  company           Company?             @relation(fields: [companyId], references: [id])
+  mentor            User?                @relation("WorkshopMentor", fields: [mentorId], references: [id])
+  enrollments       WorkshopEnrollment[]
 }
 
 model WorkshopEnrollment {
@@ -3164,7 +3132,7 @@ model EmployeeGoal {
   employeeId            String
   title                 String
   description           String?
-  kra                   String? // Key Result Area
+  kra                   String?
   targetValue           Float
   currentValue          Float            @default(0)
   achievementPercentage Float            @default(0)
@@ -3173,8 +3141,8 @@ model EmployeeGoal {
   startDate             DateTime
   endDate               DateTime
   status                String           @default("IN_PROGRESS")
-  visibility            String           @default("MANAGER") // SELF, MANAGER, ADMIN, ALL
-  reviewerId            String? // Manager/Admin who reviews
+  visibility            String           @default("MANAGER")
+  reviewerId            String?
   reviewNotes           String?
   companyId             String
   kpiId                 String?
@@ -3184,8 +3152,8 @@ model EmployeeGoal {
   employee              EmployeeProfile  @relation(fields: [employeeId], references: [id], onDelete: Cascade)
   kpi                   EmployeeKPI?     @relation(fields: [kpiId], references: [id])
   reviewer              User?            @relation("GoalReviewer", fields: [reviewerId], references: [id])
-  workPlans             WorkPlan[]       @relation("GoalWorkPlans")
   evaluations           GoalEvaluation[]
+  workPlans             WorkPlan[]       @relation("GoalWorkPlans")
 
   @@index([employeeId])
   @@index([companyId])
@@ -3423,8 +3391,8 @@ model WebsiteMonitor {
   createdAt      DateTime            @default(now())
   updatedAt      DateTime            @updatedAt
   category       String?
-  logs           WebsiteMonitorLog[]
   itProjects     ITProject[]         @relation("WebsiteITProjects")
+  logs           WebsiteMonitorLog[]
 }
 
 model WebsiteMonitorLog {
@@ -3671,18 +3639,17 @@ model ManuscriptCommunication {
 }
 
 model EmailTemplate {
-  id        String   @id @default(uuid())
-  name      String   @unique
-  subject   String
-  body      String
-  variables String[]
-  category  String
-  isActive  Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  designState Json?
+  id          String              @id @default(uuid())
+  name        String              @unique
+  subject     String
+  body        String
+  variables   String[]
+  category    String
+  isActive    Boolean             @default(true)
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
   companyId   String?
+  designState Json?
   company     Company?            @relation(fields: [companyId], references: [id], onDelete: Cascade)
   campaigns   MarketingCampaign[]
 
@@ -3718,11 +3685,6 @@ model ITProject {
   projectCode      String                @unique
   name             String
   description      String?
-  about            String?
-  details          String?
-  keywords         String[]
-  departmentId     String?
-  websiteId        String?
   category         ProjectCategory       @default(DEVELOPMENT)
   type             ProjectType           @default(SUPPORT)
   status           ProjectStatus         @default(PLANNING)
@@ -3741,8 +3703,6 @@ model ITProject {
   currency         String                @default("INR")
   itDepartmentCut  Float                 @default(0)
   itRevenueEarned  Float                 @default(0)
-  visibility       ProjectVisibility     @default(PRIVATE)
-  sharedWithIds    String[]
   billingType      BillingType?
   hourlyRate       Float?
   isBilled         Boolean               @default(false)
@@ -3752,19 +3712,26 @@ model ITProject {
   createdAt        DateTime              @default(now())
   updatedAt        DateTime              @updatedAt
   completedAt      DateTime?
+  about            String?
+  departmentId     String?
+  details          String?
+  keywords         String[]
+  websiteId        String?
+  sharedWithIds    String[]
+  visibility       ProjectVisibility     @default(PRIVATE)
   company          Company               @relation("CompanyITProjects", fields: [companyId], references: [id], onDelete: Cascade)
+  department       Department?           @relation("DepartmentITProjects", fields: [departmentId], references: [id])
   projectManager   User?                 @relation("ProjectManager", fields: [projectManagerId], references: [id])
   teamLead         User?                 @relation("TeamLead", fields: [teamLeadId], references: [id])
+  website          WebsiteMonitor?       @relation("WebsiteITProjects", fields: [websiteId], references: [id])
   comments         ITProjectComment[]
   documents        ITProjectDocument[]
   milestones       ITProjectMilestone[]
   suggestions      ITProjectSuggestion[]
   tasks            ITTask[]
   timeEntries      ITTimeEntry[]
-  workPlans   WorkPlan[]
+  workPlans        WorkPlan[]
   taggedEmployees  User[]                @relation("ProjectTaggedEmployees")
-  department       Department?           @relation("DepartmentITProjects", fields: [departmentId], references: [id])
-  website          WebsiteMonitor?       @relation("WebsiteITProjects", fields: [websiteId], references: [id])
 
   @@index([companyId])
   @@index([status])
@@ -3836,13 +3803,13 @@ model ITProjectDocument {
   projectId   String
   name        String
   description String?
-  content     String?   @db.Text
   url         String?
   fileType    String?
   fileSize    Int?      @default(0)
   category    String    @default("GENERAL")
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
+  content     String?
   project     ITProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
   @@index([projectId])
@@ -3913,13 +3880,13 @@ model ITProjectComment {
   projectId String
   userId    String
   content   String
-  parentId  String?
   createdAt DateTime           @default(now())
   updatedAt DateTime           @updatedAt
-  project   ITProject          @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  user      User               @relation("ITProjectComments", fields: [userId], references: [id])
+  parentId  String?
   parent    ITProjectComment?  @relation("ITProjectCommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
   replies   ITProjectComment[] @relation("ITProjectCommentReplies")
+  project   ITProject          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user      User               @relation("ITProjectComments", fields: [userId], references: [id])
 
   @@index([projectId])
   @@index([userId])
@@ -4039,16 +4006,15 @@ model RevenueTransaction {
   sourceOther         String?
   expenseAllocations  EmployeeExpenseAllocation[]
   claims              RevenueClaim[]
-
-  approvedBy      EmployeeProfile? @relation("ApprovedRevenue", fields: [approvedByManagerId], references: [id])
-  claimedBy       EmployeeProfile? @relation("ClaimedRevenue", fields: [claimedByEmployeeId], references: [id])
-  company         Company          @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  customerProfile CustomerProfile? @relation(fields: [customerProfileId], references: [id])
-  department      Department?      @relation(fields: [departmentId], references: [id])
-  institution     Institution?     @relation(fields: [institutionId], references: [id])
-  invoice         Invoice?         @relation(fields: [invoiceId], references: [id])
-  payment         Payment?         @relation(fields: [paymentId], references: [id])
-  workReport      WorkReport?      @relation(fields: [workReportId], references: [id])
+  approvedBy          EmployeeProfile?            @relation("ApprovedRevenue", fields: [approvedByManagerId], references: [id])
+  claimedBy           EmployeeProfile?            @relation("ClaimedRevenue", fields: [claimedByEmployeeId], references: [id])
+  company             Company                     @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  customerProfile     CustomerProfile?            @relation(fields: [customerProfileId], references: [id])
+  department          Department?                 @relation(fields: [departmentId], references: [id])
+  institution         Institution?                @relation(fields: [institutionId], references: [id])
+  invoice             Invoice?                    @relation(fields: [invoiceId], references: [id])
+  payment             Payment?                    @relation(fields: [paymentId], references: [id])
+  workReport          WorkReport?                 @relation(fields: [workReportId], references: [id])
 
   @@index([companyId])
   @@index([transactionNumber])
@@ -4219,6 +4185,356 @@ model StageAssignment {
   @@index([stage])
 }
 
+model Deal {
+  id                String          @id @default(uuid())
+  title             String
+  value             Float           @default(0)
+  currency          String          @default("INR")
+  stage             DealStage       @default(DISCOVERY)
+  probability       Int             @default(20)
+  expectedCloseDate DateTime?
+  customerId        String
+  ownerId           String
+  notes             String?
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  companyId         String?
+  company           Company?        @relation(fields: [companyId], references: [id])
+  customer          CustomerProfile @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  owner             User            @relation(fields: [ownerId], references: [id])
+
+  @@index([customerId])
+  @@index([ownerId])
+  @@index([stage])
+  @@index([companyId])
+}
+
+model GoalEvaluation {
+  id          String       @id @default(uuid())
+  goalId      String
+  evaluatorId String
+  score       Float
+  feedback    String?
+  createdAt   DateTime     @default(now())
+  evaluator   User         @relation(fields: [evaluatorId], references: [id])
+  goal        EmployeeGoal @relation(fields: [goalId], references: [id], onDelete: Cascade)
+}
+
+model SalaryIncrementReview {
+  id                 String                @id @default(uuid())
+  incrementRecordId  String
+  type               ReviewType            @default(MONTHLY)
+  month              Int?
+  year               Int?
+  period             String?
+  date               DateTime              @default(now())
+  reviewerId         String
+  revenueAchievement Float?                @default(0)
+  kraProgress        String?
+  kpiProgress        Json?
+  rating             Float?
+  comments           String?
+  status             String                @default("COMPLETED")
+  createdAt          DateTime              @default(now())
+  updatedAt          DateTime              @updatedAt
+  incrementRecord    SalaryIncrementRecord @relation(fields: [incrementRecordId], references: [id], onDelete: Cascade)
+  reviewer           User                  @relation("IncrementReviewer", fields: [reviewerId], references: [id])
+
+  @@index([incrementRecordId])
+  @@index([reviewerId])
+}
+
+model Project {
+  id          String          @id @default(uuid())
+  title       String
+  description String?
+  startDate   DateTime
+  endDate     DateTime?
+  status      String          @default("PLANNED")
+  priority    String          @default("MEDIUM")
+  companyId   String
+  managerId   String?
+  leadId      String?
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+  issues      Issue[]
+  company     Company         @relation(fields: [companyId], references: [id])
+  lead        User?           @relation("BusinessTeamLead", fields: [leadId], references: [id])
+  manager     User?           @relation("BusinessProjectManager", fields: [managerId], references: [id])
+  members     ProjectMember[]
+  tasks       Task[]
+  workPlans   WorkPlan[]
+
+  @@index([companyId])
+  @@index([managerId])
+}
+
+model ProjectMember {
+  id        String   @id @default(uuid())
+  projectId String
+  userId    String
+  role      String?
+  joinedAt  DateTime @default(now())
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id])
+
+  @@unique([projectId, userId])
+}
+
+model Issue {
+  id          String          @id @default(uuid())
+  projectId   String?
+  title       String
+  description String?
+  status      String          @default("OPEN")
+  priority    String          @default("MEDIUM")
+  type        String          @default("BUG")
+  assigneeId  String?
+  reporterId  String
+  companyId   String
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+  dueDate     DateTime?
+  assignee    User?           @relation("IssueAssignee", fields: [assigneeId], references: [id])
+  company     Company         @relation(fields: [companyId], references: [id])
+  project     Project?        @relation(fields: [projectId], references: [id])
+  reporter    User            @relation("IssueReporter", fields: [reporterId], references: [id])
+  followUps   IssueFollowUp[]
+
+  @@index([projectId])
+  @@index([companyId])
+  @@index([assigneeId])
+}
+
+model IssueFollowUp {
+  id        String   @id @default(uuid())
+  issueId   String
+  content   String
+  authorId  String
+  createdAt DateTime @default(now())
+  author    User     @relation(fields: [authorId], references: [id])
+  issue     Issue    @relation(fields: [issueId], references: [id], onDelete: Cascade)
+
+  @@index([issueId])
+}
+
+model ScreeningTemplate {
+  id         String               @id @default(uuid())
+  title      String
+  companyId  String?
+  jobRoleId  String?
+  department String?
+  jobType    String?
+  version    Int                  @default(1)
+  categories Json
+  questions  Json
+  weights    Json?
+  createdBy  String
+  createdAt  DateTime             @default(now())
+  updatedAt  DateTime             @updatedAt
+  screenings InterviewScreening[]
+  company    Company?             @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  creator    User                 @relation(fields: [createdBy], references: [id])
+}
+
+model InterviewScreening {
+  id              String               @id @default(uuid())
+  interviewId     String               @unique
+  applicationId   String
+  templateId      String
+  templateVersion Int
+  overallScore    Float?
+  categoryScores  Json?
+  recommendation  String?
+  status          String               @default("DRAFT")
+  submittedBy     String?
+  submittedAt     DateTime?
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @updatedAt
+  application     JobApplication       @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  interview       RecruitmentInterview @relation(fields: [interviewId], references: [id], onDelete: Cascade)
+  submitter       User?                @relation("ScreeningSubmitter", fields: [submittedBy], references: [id])
+  template        ScreeningTemplate    @relation(fields: [templateId], references: [id])
+  responses       ScreeningResponse[]
+
+  @@index([applicationId])
+  @@index([templateId])
+}
+
+model ScreeningResponse {
+  id             String             @id @default(uuid())
+  screeningId    String
+  questionId     String
+  rating         Int?
+  checkboxStatus String?
+  notes          String?
+  flags          String?
+  followupsUsed  Boolean            @default(false)
+  updatedAt      DateTime           @updatedAt
+  screening      InterviewScreening @relation(fields: [screeningId], references: [id], onDelete: Cascade)
+
+  @@index([screeningId])
+}
+
+model RedGreenDiary {
+  id           String   @id @default(uuid())
+  companyId    String
+  userId       String
+  recordedById String
+  type         String
+  title        String
+  description  String
+  date         DateTime @default(now())
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  company      Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  recordedBy   User     @relation("DiaryRecorder", fields: [recordedById], references: [id])
+  user         User     @relation("DiaryTarget", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+  @@index([userId])
+  @@index([type])
+}
+
+model ITProjectSuggestion {
+  id          String           @id @default(uuid())
+  projectId   String
+  authorName  String?
+  authorEmail String?
+  userId      String?
+  content     String
+  status      SuggestionStatus @default(PENDING)
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  project     ITProject        @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user        User?            @relation(fields: [userId], references: [id])
+
+  @@index([projectId])
+  @@index([status])
+}
+
+model MentorSession {
+  id           String   @id @default(uuid())
+  workshopId   String
+  mentorId     String
+  title        String
+  scheduledAt  DateTime
+  durationMins Int      @default(60)
+  meetingLink  String?
+  notes        String?
+  status       String   @default("SCHEDULED")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  mentor       User     @relation("SessionMentor", fields: [mentorId], references: [id])
+  workshop     Workshop @relation(fields: [workshopId], references: [id], onDelete: Cascade)
+
+  @@index([workshopId])
+  @@index([mentorId])
+}
+
+model PeerReview {
+  id                  String            @id @default(uuid())
+  performanceReviewId String
+  peerId              String
+  rating              Int
+  feedback            String?
+  createdAt           DateTime          @default(now())
+  peer                User              @relation("PeerReviewer", fields: [peerId], references: [id])
+  performanceReview   PerformanceReview @relation(fields: [performanceReviewId], references: [id], onDelete: Cascade)
+
+  @@unique([performanceReviewId, peerId])
+  @@index([performanceReviewId])
+  @@index([peerId])
+}
+
+model AnonymousFeedback {
+  id                  String            @id @default(uuid())
+  performanceReviewId String
+  feedback            String
+  category            String            @default("GENERAL")
+  createdAt           DateTime          @default(now())
+  performanceReview   PerformanceReview @relation(fields: [performanceReviewId], references: [id], onDelete: Cascade)
+
+  @@index([performanceReviewId])
+}
+
+model MarketingCampaign {
+  id          String            @id @default(uuid())
+  name        String
+  description String?
+  status      String            @default("DRAFT")
+  type        String            @default("EMAIL")
+  startDate   DateTime?
+  endDate     DateTime?
+  audienceId  String?
+  templateId  String?
+  companyId   String?
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+  audience    CampaignAudience? @relation(fields: [audienceId], references: [id])
+  company     Company?          @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  template    EmailTemplate?    @relation(fields: [templateId], references: [id])
+
+  @@index([companyId])
+  @@index([status])
+}
+
+model CampaignAudience {
+  id          String              @id @default(uuid())
+  name        String
+  description String?
+  queryFilter Json?
+  companyId   String?
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+  company     Company?            @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  campaigns   MarketingCampaign[]
+
+  @@index([companyId])
+}
+
+model ProductCategory {
+  id          String    @id @default(uuid())
+  name        String    @unique
+  description String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  products    Product[]
+}
+
+model Product {
+  id                String             @id @default(uuid())
+  name              String
+  type              String
+  categoryId        String?
+  priceINR          Float              @default(0)
+  priceUSD          Float              @default(0)
+  isActive          Boolean            @default(true)
+  metadata          Json?
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  category          ProductCategory?   @relation(fields: [categoryId], references: [id])
+  subscriptionItems SubscriptionItem[]
+}
+
+enum InvoiceProductCategory {
+  JOURNAL_SUBSCRIPTION
+  COURSE
+  WORKSHOP
+  DOI_SERVICE
+  APC
+  CERTIFICATE
+  DIGITAL_SERVICE
+  MISC
+}
+
+enum PricingModel {
+  FIXED
+  TIERED
+  VOLUME
+  CUSTOM
+}
+
 enum TaskCalculationType {
   FLAT
   SCALED
@@ -4268,31 +4584,6 @@ enum DealStage {
   NEGOTIATION
   CLOSED_WON
   CLOSED_LOST
-}
-
-model Deal {
-  id                String    @id @default(uuid())
-  title             String
-  value             Float     @default(0)
-  currency          String    @default("INR")
-  stage             DealStage @default(DISCOVERY)
-  probability       Int       @default(20)
-  expectedCloseDate DateTime?
-  customerId        String
-  ownerId           String
-  notes             String?
-  createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt
-  companyId         String?
-
-  customer CustomerProfile @relation(fields: [customerId], references: [id], onDelete: Cascade)
-  owner    User            @relation(fields: [ownerId], references: [id])
-  company  Company?        @relation(fields: [companyId], references: [id])
-
-  @@index([customerId])
-  @@index([ownerId])
-  @@index([stage])
-  @@index([companyId])
 }
 
 enum InstitutionType {
@@ -4638,206 +4929,10 @@ enum AccountType {
   EXPENSE
 }
 
-model GoalEvaluation {
-  id          String       @id @default(uuid())
-  goalId      String
-  evaluatorId String
-  score       Float // 1-10 or percentage
-  feedback    String?
-  createdAt   DateTime     @default(now())
-  goal        EmployeeGoal @relation(fields: [goalId], references: [id], onDelete: Cascade)
-  evaluator   User         @relation(fields: [evaluatorId], references: [id])
-}
-
-model SalaryIncrementReview {
-  id                String                @id @default(uuid())
-  incrementRecordId String
-  incrementRecord   SalaryIncrementRecord @relation(fields: [incrementRecordId], references: [id], onDelete: Cascade)
-  type              ReviewType            @default(MONTHLY)
-  // Period Mapping
-  month             Int?
-  year              Int?
-  period            String? // e.g., "Jan 2024", "Q1 2024", "2024"
-  date              DateTime              @default(now())
-  reviewerId        String
-  reviewer          User                  @relation("IncrementReviewer", fields: [reviewerId], references: [id])
-
-  // Performance Data
-  revenueAchievement Float?  @default(0)
-  kraProgress        String? // Detailed comments on KRA
-  kpiProgress        Json? // Actual values for KPIs
-  rating             Float?
-  comments           String?
-
-  status String @default("COMPLETED")
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([incrementRecordId])
-  @@index([reviewerId])
-}
-
 enum ReviewType {
   MONTHLY
   QUARTERLY
   YEARLY
-}
-
-model Project {
-  id          String          @id @default(uuid())
-  title       String
-  description String?
-  startDate   DateTime
-  endDate     DateTime?
-  status      String          @default("PLANNED") // PLANNED, IN_PROGRESS, COMPLETED, ON_HOLD
-  priority    String          @default("MEDIUM")
-  companyId   String
-  company     Company         @relation(fields: [companyId], references: [id])
-  managerId   String?
-  manager     User?           @relation("BusinessProjectManager", fields: [managerId], references: [id])
-  leadId      String?
-  lead        User?           @relation("BusinessTeamLead", fields: [leadId], references: [id])
-  members     ProjectMember[]
-  tasks       Task[]
-  issues      Issue[]
-  workPlans   WorkPlan[]
-  createdAt   DateTime        @default(now())
-  updatedAt   DateTime        @updatedAt
-
-  @@index([companyId])
-  @@index([managerId])
-}
-
-model ProjectMember {
-  id        String   @id @default(uuid())
-  projectId String
-  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  userId    String
-  user      User     @relation(fields: [userId], references: [id])
-  role      String? // MEMBER, LEAD
-  joinedAt  DateTime @default(now())
-
-  @@unique([projectId, userId])
-}
-
-model Issue {
-  id          String          @id @default(uuid())
-  projectId   String?
-  project     Project?        @relation(fields: [projectId], references: [id])
-  title       String
-  description String?
-  status      String          @default("OPEN") // OPEN, IN_PROGRESS, RESOLVED, CLOSED
-  priority    String          @default("MEDIUM")
-  type        String          @default("BUG") // BUG, FEATURE, TASK
-  assigneeId  String?
-  assignee    User?           @relation("IssueAssignee", fields: [assigneeId], references: [id])
-  reporterId  String
-  reporter    User            @relation("IssueReporter", fields: [reporterId], references: [id])
-  companyId   String
-  company     Company         @relation(fields: [companyId], references: [id])
-  createdAt   DateTime        @default(now())
-  updatedAt   DateTime        @updatedAt
-  dueDate     DateTime?
-  followUps   IssueFollowUp[]
-
-  @@index([projectId])
-  @@index([companyId])
-  @@index([assigneeId])
-}
-
-model IssueFollowUp {
-  id        String   @id @default(uuid())
-  issueId   String
-  issue     Issue    @relation(fields: [issueId], references: [id], onDelete: Cascade)
-  content   String
-  authorId  String
-  author    User     @relation(fields: [authorId], references: [id])
-  createdAt DateTime @default(now())
-
-  @@index([issueId])
-}
-
-model ScreeningTemplate {
-  id         String   @id @default(uuid())
-  title      String
-  companyId  String?
-  jobRoleId  String?
-  department String?
-  jobType    String?
-  version    Int      @default(1)
-  categories Json
-  questions  Json // Array of questions with rubric, type, difficulty
-  weights    Json? // e.g. { "Technical": 60, "Communication": 40 }
-  createdBy  String
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-
-  screenings InterviewScreening[]
-  company    Company?             @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  creator    User                 @relation(fields: [createdBy], references: [id])
-}
-
-model InterviewScreening {
-  id              String    @id @default(uuid())
-  interviewId     String    @unique
-  applicationId   String
-  templateId      String
-  templateVersion Int
-  overallScore    Float?
-  categoryScores  Json?
-  recommendation  String? // e.g. Strong Hire / Hire / Lean Hire / Lean No / No Hire
-  status          String    @default("DRAFT") // DRAFT or SUBMITTED
-  submittedBy     String?
-  submittedAt     DateTime?
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
-
-  interview   RecruitmentInterview @relation(fields: [interviewId], references: [id], onDelete: Cascade)
-  application JobApplication       @relation(fields: [applicationId], references: [id], onDelete: Cascade)
-  template    ScreeningTemplate    @relation(fields: [templateId], references: [id])
-  submitter   User?                @relation("ScreeningSubmitter", fields: [submittedBy], references: [id])
-  responses   ScreeningResponse[]
-
-  @@index([applicationId])
-  @@index([templateId])
-}
-
-model ScreeningResponse {
-  id             String   @id @default(uuid())
-  screeningId    String
-  questionId     String
-  rating         Int?
-  checkboxStatus String? // e.g. MEETS, PARTIAL, NO
-  notes          String?
-  flags          String? // e.g. STRONG_SIGNAL, RED_FLAG
-  followupsUsed  Boolean  @default(false)
-  updatedAt      DateTime @updatedAt
-
-  screening InterviewScreening @relation(fields: [screeningId], references: [id], onDelete: Cascade)
-
-  @@index([screeningId])
-}
-
-model RedGreenDiary {
-  id           String   @id @default(uuid())
-  companyId    String
-  userId       String
-  recordedById String
-  type         String // "RED" or "GREEN"
-  title        String
-  description  String
-  date         DateTime @default(now())
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-
-  user       User    @relation("DiaryTarget", fields: [userId], references: [id], onDelete: Cascade)
-  recordedBy User    @relation("DiaryRecorder", fields: [recordedById], references: [id])
-  company    Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
-
-  @@index([companyId])
-  @@index([userId])
-  @@index([type])
 }
 
 enum ProjectVisibility {
@@ -4851,139 +4946,4 @@ enum SuggestionStatus {
   RESOLVED
   FAILED
   HOLD
-}
-
-model ITProjectSuggestion {
-  id          String           @id @default(uuid())
-  projectId   String
-  authorName  String?
-  authorEmail String?
-  userId      String?
-  content     String
-  status      SuggestionStatus @default(PENDING)
-  createdAt   DateTime         @default(now())
-  updatedAt   DateTime         @updatedAt
-
-  project ITProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  user    User?     @relation(fields: [userId], references: [id])
-
-  @@index([projectId])
-  @@index([status])
-}
-
-// ----------------------------------------------------------------------------
-// 🎓 LMS Expansion & 360° HR
-// ----------------------------------------------------------------------------
-
-model MentorSession {
-  id           String      @id @default(uuid())
-  workshopId   String
-  mentorId     String
-  title        String
-  scheduledAt  DateTime
-  durationMins Int         @default(60)
-  meetingLink  String?
-  notes        String?     @db.Text
-  status       String      @default("SCHEDULED") // SCHEDULED, COMPLETED, CANCELLED
-  createdAt    DateTime    @default(now())
-  updatedAt    DateTime    @updatedAt
-  
-  workshop     Workshop    @relation(fields: [workshopId], references: [id], onDelete: Cascade)
-  mentor       User        @relation("SessionMentor", fields: [mentorId], references: [id])
-
-  @@index([workshopId])
-  @@index([mentorId])
-}
-
-model PeerReview {
-  id                  String            @id @default(uuid())
-  performanceReviewId String
-  peerId              String
-  rating              Int               // 1-5 scale
-  feedback            String?           @db.Text
-  createdAt           DateTime          @default(now())
-  
-  performanceReview   PerformanceReview @relation(fields: [performanceReviewId], references: [id], onDelete: Cascade)
-  peer                User              @relation("PeerReviewer", fields: [peerId], references: [id])
-
-  @@index([performanceReviewId])
-  @@index([peerId])
-  @@unique([performanceReviewId, peerId])
-}
-
-model AnonymousFeedback {
-  id                  String            @id @default(uuid())
-  performanceReviewId String
-  feedback            String            @db.Text
-  category            String            @default("GENERAL") // STRENGTH, IMPROVEMENT, GENERAL
-  createdAt           DateTime          @default(now())
-  
-  performanceReview   PerformanceReview @relation(fields: [performanceReviewId], references: [id], onDelete: Cascade)
-
-  @@index([performanceReviewId])
-}
-
-// ----------------------------------------------------------------------------
-// 📈 Phase 5: CRM & Marketing Automation
-// ----------------------------------------------------------------------------
-
-model MarketingCampaign {
-  id             String            @id @default(uuid())
-  name           String
-  description    String?
-  status         String            @default("DRAFT") // DRAFT, SCHEDULED, ACTIVE, COMPLETED, CANCELLED
-  type           String            @default("EMAIL")
-  startDate      DateTime?
-  endDate        DateTime?
-  audienceId     String?
-  templateId     String?
-  companyId      String?
-  createdAt      DateTime          @default(now())
-  updatedAt      DateTime          @updatedAt
-  
-  audience       CampaignAudience? @relation(fields: [audienceId], references: [id])
-  template       EmailTemplate?    @relation(fields: [templateId], references: [id])
-  company        Company?          @relation(fields: [companyId], references: [id], onDelete: Cascade)
-
-  @@index([companyId])
-  @@index([status])
-}
-
-model CampaignAudience {
-  id             String            @id @default(uuid())
-  name           String
-  description    String?
-  queryFilter    Json?             // Stores the dynamic filter rules (e.g. tag: "VIP")
-  companyId      String?
-  createdAt      DateTime          @default(now())
-  updatedAt      DateTime          @updatedAt
-  
-  company        Company?          @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  campaigns      MarketingCampaign[]
-
-  @@index([companyId])
-}
-
-model ProductCategory {
-  id          String    @id @default(uuid())
-  name        String    @unique
-  description String?
-  products    Product[]
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-}
-
-model Product {
-  id                String             @id @default(uuid())
-  name              String
-  type              String             // e.g. "DOI", "APC", "RAPID_PUB", "CERTIFICATE"
-  categoryId        String?
-  category          ProductCategory?   @relation(fields: [categoryId], references: [id])
-  priceINR          Float              @default(0)
-  priceUSD          Float              @default(0)
-  isActive          Boolean            @default(true)
-  metadata          Json?              // Extensible attributes
-  createdAt         DateTime           @default(now())
-  updatedAt         DateTime           @updatedAt
-  subscriptionItems SubscriptionItem[]
 }

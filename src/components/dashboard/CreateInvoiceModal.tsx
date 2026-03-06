@@ -2,7 +2,21 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
-import { X, Plus, Trash2, Search, User, Ticket } from 'lucide-react';
+import { 
+    X, Search, User, Plus, Trash2, Calendar, FileText, 
+    ChevronRight, CheckCircle2, AlertCircle, Info, Landmark, MapPin, Phone,
+    Package, Globe, Tag
+} from 'lucide-react';
+
+const getCurrencySymbol = (curr: string) => {
+    switch ((curr || 'INR').toUpperCase()) {
+        case 'INR': return '₹';
+        case 'USD': return '$';
+        case 'EUR': return '€';
+        case 'GBP': return '£';
+        default: return curr + ' ';
+    }
+}
 import { CustomerType } from '@/types';
 import GuidelineHelp from './GuidelineHelp';
 
@@ -10,9 +24,10 @@ interface CreateInvoiceModalProps {
     isOpen: boolean;
     onClose: () => void;
     onSuccess: () => void;
+    editId?: string;
 }
 
-export default function CreateInvoiceModal({ isOpen, onClose, onSuccess }: CreateInvoiceModalProps) {
+export default function CreateInvoiceModal({ isOpen, onClose, onSuccess, editId }: CreateInvoiceModalProps) {
     const [step, setStep] = useState(1);
     const [loading, setLoading] = useState(false);
 
@@ -177,6 +192,63 @@ export default function CreateInvoiceModal({ isOpen, onClose, onSuccess }: Creat
         if (isOpen) fetchBrands();
     }, [isOpen]);
 
+    // Populate data for editing
+    useEffect(() => {
+        const fetchInvoiceForEdit = async () => {
+            if (!editId || !isOpen) return;
+            setLoading(true);
+            try {
+                const token = localStorage.getItem('token');
+                const res = await fetch(`/api/invoices/${editId}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    setDueDate(data.dueDate?.split('T')[0] || '');
+                    setDescription(data.description || '');
+                    setItems(Array.isArray(data.lineItems) ? data.lineItems : []);
+                    setTaxRate(data.taxRate || 18);
+                    setCurrency(data.currency || 'INR');
+                    setSelectedBrandId(data.brandId || '');
+                    setSelectedCustomer(data.customerProfile || data.subscription?.customerProfile);
+                    // If editing, skip customer selection step
+                    setStep(2);
+
+                    if (data.couponCode) {
+                        setCouponCode(data.couponCode);
+                        setCouponResult({
+                            valid: true,
+                            coupon: {
+                                id: data.couponId,
+                                code: data.couponCode,
+                                discountType: data.discountType,
+                                discountValue: data.discountValue
+                            },
+                            discountAmount: data.discountAmount
+                        });
+                    }
+                }
+            } catch (err) {
+                console.error('Failed to fetch invoice for editing', err);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        if (isOpen && editId) {
+            fetchInvoiceForEdit();
+        } else if (isOpen && !editId) {
+            // Reset for new invoice
+            setStep(1);
+            setSelectedCustomer(null);
+            setDueDate('');
+            setItems([{ id: 1, description: '', quantity: 1, price: 0 }]);
+            setDescription('');
+            setCouponResult(null);
+            setCouponCode('');
+        }
+    }, [isOpen, editId]);
+
     const handleAddItem = () => {
         setItems([...items, { id: Date.now(), description: '', quantity: 1, price: 0 }]);
     };
@@ -282,8 +354,8 @@ export default function CreateInvoiceModal({ isOpen, onClose, onSuccess }: Creat
         setLoading(true);
         try {
             const token = localStorage.getItem('token');
-            const res = await fetch('/api/invoices', {
-                method: 'POST',
+            const res = await fetch(editId ? `/api/invoices/${editId}` : '/api/invoices', {
+                method: editId ? 'PATCH' : 'POST',
                 headers: {
                     'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json'
@@ -300,6 +372,9 @@ export default function CreateInvoiceModal({ isOpen, onClose, onSuccess }: Creat
                         productId: productId || null 
                     })),
                     taxRate,
+                    amount: calculateTotal(),
+                    tax: (calculateTaxableAmount() * (taxRate / 100)),
+                    total: calculateTaxableAmount() * (1 + (taxRate / 100)),
                     currency,
                     brandId: selectedBrandId || null,
                     // Coupon
@@ -383,7 +458,7 @@ export default function CreateInvoiceModal({ isOpen, onClose, onSuccess }: Creat
                                             </div>
                                             <div className="text-right">
                                                 <p className="font-black text-gray-900">
-                                                    {currency === 'USD' ? '$' : '₹'}
+                                                    {getCurrencySymbol(currency)}
                                                     {(currency === 'USD' ? p.priceUSD : p.priceINR)?.toLocaleString()}
                                                 </p>
                                                 <p className="text-[9px] text-primary-600 font-bold uppercase">Add to Invoice →</p>
@@ -402,7 +477,7 @@ export default function CreateInvoiceModal({ isOpen, onClose, onSuccess }: Creat
 
                 <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gradient-to-r from-gray-50 to-white">
                     <div>
-                        <h2 className="text-xl font-bold text-gray-900">Create New Invoice</h2>
+                        <h2 className="text-xl font-bold text-gray-900">{editId ? 'Edit Invoice' : 'Create New Invoice'}</h2>
                         <p className="text-sm text-gray-500">Step {step}: {step === 1 ? 'Select Customer' : 'Invoice Details'}</p>
                     </div>
                     <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
@@ -733,7 +808,7 @@ export default function CreateInvoiceModal({ isOpen, onClose, onSuccess }: Creat
                                                                     </div>
                                                                     <div className="text-right ml-3">
                                                                         <p className="text-xs font-black text-primary-600">
-                                                                            {currency === 'USD' ? '$' : '₹'}
+                                                                            {getCurrencySymbol(currency)}
                                                                             {(currency === 'USD' ? p.priceUSD : p.priceINR)?.toLocaleString()}
                                                                         </p>
                                                                         <p className="text-[9px] text-gray-400 uppercase font-black tracking-widest">{p.category.replace('_', ' ')}</p>
@@ -808,7 +883,7 @@ export default function CreateInvoiceModal({ isOpen, onClose, onSuccess }: Creat
                                                 <p className="text-xs text-green-600">
                                                     {couponResult.coupon.discountType === 'PERCENTAGE'
                                                         ? `${couponResult.coupon.discountValue}% off`
-                                                        : `₹${couponResult.coupon.discountValue} flat off`}
+                                                        : `${getCurrencySymbol(currency)}${couponResult.coupon.discountValue} flat off`}
                                                     {couponResult.coupon.description && ` — ${couponResult.coupon.description}`}
                                                 </p>
                                             </div>
@@ -822,12 +897,12 @@ export default function CreateInvoiceModal({ isOpen, onClose, onSuccess }: Creat
                             <div className="bg-gray-50 p-6 rounded-2xl space-y-3">
                                 <div className="flex justify-between items-center text-sm">
                                     <span className="text-secondary-500 font-medium uppercase tracking-wider">Subtotal</span>
-                                    <span className="text-secondary-900 font-bold">{currency === 'INR' ? '₹' : currency} {calculateTotal().toLocaleString()}</span>
+                                    <span className="text-secondary-900 font-bold">{getCurrencySymbol(currency)} {calculateTotal().toLocaleString()}</span>
                                 </div>
                                 {couponResult && (
                                     <div className="flex justify-between items-center text-sm">
                                         <span className="text-green-600 font-bold uppercase tracking-wider">🎟️ Coupon Discount</span>
-                                        <span className="text-green-600 font-bold">− {currency === 'INR' ? '₹' : currency} {calculateDiscount().toLocaleString()}</span>
+                                        <span className="text-green-600 font-bold">− {getCurrencySymbol(currency)} {calculateDiscount().toLocaleString()}</span>
                                     </div>
                                 )}
                                 <div className="flex justify-between items-center text-sm">
@@ -835,13 +910,13 @@ export default function CreateInvoiceModal({ isOpen, onClose, onSuccess }: Creat
                                         {taxType === 'DOMESTIC' ? 'GST (18%)' : 'Tax (International)'}
                                     </span>
                                     <span className="text-secondary-900 font-bold">
-                                        {currency === 'INR' ? '₹' : currency} {(calculateTaxableAmount() * (taxRate / 100)).toLocaleString()}
+                                        {getCurrencySymbol(currency)} {(calculateTaxableAmount() * (taxRate / 100)).toLocaleString()}
                                     </span>
                                 </div>
                                 <div className="pt-3 border-t border-gray-200 flex justify-between items-center">
                                     <span className="text-base font-black text-gray-900 uppercase">Total Amount</span>
                                     <span className="text-2xl font-black text-primary-600">
-                                        {currency === 'INR' ? '₹' : currency} {(calculateTaxableAmount() * (1 + taxRate / 100)).toLocaleString()}
+                                        {getCurrencySymbol(currency)} {(calculateTaxableAmount() * (1 + taxRate / 100)).toLocaleString()}
                                     </span>
                                 </div>
                             </div>

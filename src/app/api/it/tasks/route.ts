@@ -4,6 +4,7 @@ import { authorizedRoute } from '@/lib/middleware-auth';
 import { handleApiError, AuthorizationError, ValidationError } from '@/lib/error-handler';
 import { logger } from '@/lib/logger';
 import { itTaskSchema } from '@/lib/validation/schemas';
+import { getDownlineUserIds } from '@/lib/hierarchy';
 
 export const dynamic = 'force-dynamic';
 
@@ -37,16 +38,14 @@ export const GET = authorizedRoute(
                     throw new AuthorizationError('Forbidden: Manager access required for "team" view');
                 }
 
-                const subordinates = await prisma.user.findMany({
-                    where: { managerId: user.id },
-                    select: { id: true }
-                });
-                const subordinateIds = subordinates.map(s => s.id);
+                // Use full recursive downline (cross-company) instead of just direct reports
+                const downlineIds = await getDownlineUserIds(user.id, null);
+                const teamIds = [...new Set([user.id, ...downlineIds])];
 
                 where.OR = [
-                    { assignedToId: user.id },
-                    { assignedToId: { in: subordinateIds } },
+                    { assignedToId: { in: teamIds } },
                     { createdById: user.id },
+                    { reporterId: user.id },
                     { project: { visibility: 'PUBLIC' } }
                 ];
             } else {

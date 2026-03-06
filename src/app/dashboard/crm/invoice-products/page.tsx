@@ -1,7 +1,21 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
+import { 
+    CRMPageShell, 
+    CRMStatCard, 
+    CRMModal, 
+    CRMBadge 
+} from '@/components/crm/CRMPageShell';
+import { 
+    Search, Filter, Plus, ChevronRight, Zap, Target,
+    Layers, Layout, ShieldCheck, CreditCard, Globe,
+    ArrowRight, Star, Trash2, Edit3, MoreHorizontal,
+    BarChart3, Settings2, Sparkles, Box, Info,
+    CheckCircle2, DollarSign, Calculator, Activity
+} from 'lucide-react';
+import FormattedDate from '@/components/common/FormattedDate';
 
 // ─── Constants ─────────────────────────────────────────────────────────────
 const CATEGORIES = [
@@ -74,7 +88,6 @@ const EMPTY_FORM = {
     tags: '', notes: '', priceTiers: [{ minQty: 1, maxQty: '', priceINR: 0, priceUSD: 0, label: '' }],
 };
 
-// ─── Main Page ─────────────────────────────────────────────────────────────
 export default function InvoiceProductsPage() {
     const [products, setProducts] = useState<InvoiceProduct[]>([]);
     const [total, setTotal] = useState(0);
@@ -93,7 +106,7 @@ export default function InvoiceProductsPage() {
     const [sortBy, setSortBy] = useState('createdAt');
     const [sortDir, setSortDir] = useState('desc');
 
-    // Selection (bulk ops)
+    // Selection
     const [selected, setSelected] = useState<Set<string>>(new Set());
 
     // Modal state
@@ -104,16 +117,9 @@ export default function InvoiceProductsPage() {
     const [deleting, setDeleting] = useState<string | null>(null);
 
     // FX converter
-    const [fxRate, setFxRate] = useState(83.5); // INR per USD
+    const [fxRate, setFxRate] = useState(83.5);
     const [fxInput, setFxInput] = useState('');
     const [fxCurrency, setFxCurrency] = useState<'INR' | 'USD'>('INR');
-
-    // Notifications
-    const [toast, setToast] = useState<{ msg: string; type: 'success' | 'error' } | null>(null);
-    const notify = useCallback((msg: string, type: 'success' | 'error' = 'success') => {
-        setToast({ msg, type });
-        setTimeout(() => setToast(null), 5000);
-    }, []);
 
     const token = typeof window !== 'undefined' ? localStorage.getItem('token') : '';
     const authH = { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' };
@@ -142,7 +148,7 @@ export default function InvoiceProductsPage() {
             setTotal(data.pagination?.total || 0);
             setCategoryCounts(data.categoryCounts || {});
         } catch (e: any) {
-            notify(e.message, 'error');
+            console.error(e);
         } finally {
             setLoading(false);
         }
@@ -150,7 +156,6 @@ export default function InvoiceProductsPage() {
 
     useEffect(() => { fetchProducts(); }, [fetchProducts]);
 
-    // ── Form helpers ──────────────────────────────────────────────────────
     const openCreate = () => {
         setEditingProduct(null);
         setForm(EMPTY_FORM);
@@ -210,20 +215,18 @@ export default function InvoiceProductsPage() {
     });
 
     const handleSave = async () => {
-        if (!form.name.trim()) { notify('Product name is required', 'error'); return; }
+        if (!form.name.trim()) return;
         setSaving(true);
         try {
             const payload = buildPayload();
             const url = editingProduct ? `/api/invoice-products/${editingProduct.id}` : '/api/invoice-products';
             const method = editingProduct ? 'PATCH' : 'POST';
             const res = await fetch(url, { method, headers: authH, body: JSON.stringify(payload) });
-            const data = await res.json();
-            if (!res.ok) throw new Error(data.error || 'Save failed');
-            notify(editingProduct ? 'Product updated ✓' : 'Product created ✓');
+            if (!res.ok) throw new Error('Save failed');
             setShowModal(false);
             fetchProducts();
         } catch (e: any) {
-            notify(e.message, 'error');
+            console.error(e);
         } finally {
             setSaving(false);
         }
@@ -234,12 +237,10 @@ export default function InvoiceProductsPage() {
         setDeleting(id);
         try {
             const res = await fetch(`/api/invoice-products/${id}`, { method: 'DELETE', headers: authH });
-            const data = await res.json();
-            if (!res.ok) throw new Error(data.error || 'Delete failed');
-            notify('Product deleted');
+            if (!res.ok) throw new Error('Delete failed');
             fetchProducts();
         } catch (e: any) {
-            notify(e.message, 'error');
+            console.error(e);
         } finally {
             setDeleting(null);
         }
@@ -247,26 +248,23 @@ export default function InvoiceProductsPage() {
 
     const handleBulk = async (action: string) => {
         if (selected.size === 0) return;
-        if (action === 'DELETE' && !confirm(`Delete ${selected.size} product(s)?`)) return;
         try {
-            const res = await fetch('/api/invoice-products/bulk', {
+            await fetch('/api/invoice-products/bulk', {
                 method: 'POST', headers: authH,
                 body: JSON.stringify({ action, ids: Array.from(selected) }),
             });
-            const data = await res.json();
-            if (!res.ok) throw new Error(data.error || 'Bulk operation failed');
-            notify(`${action}: ${data.affected} product(s) updated`);
             setSelected(new Set());
             fetchProducts();
         } catch (e: any) {
-            notify(e.message, 'error');
+            console.error(e);
         }
     };
 
     const toggleSelect = (id: string) => {
         setSelected(prev => {
             const s = new Set(prev);
-            s.has(id) ? s.delete(id) : s.add(id);
+            if (s.has(id)) s.delete(id);
+            else s.add(id);
             return s;
         });
     };
@@ -277,660 +275,534 @@ export default function InvoiceProductsPage() {
 
     const totalPages = Math.ceil(total / pageSize);
 
-    // FX conversion
     const fxConverted = fxInput
         ? fxCurrency === 'INR'
             ? Number(fxInput) / fxRate
             : Number(fxInput) * fxRate
         : null;
 
-    // ── Render ───────────────────────────────────────────────────────────
     return (
         <DashboardLayout userRole={userRole}>
-            <div className="p-6 space-y-6 max-w-[1600px] mx-auto">
-
-                {/* Toast */}
-                {toast && (
-                    <div className={`fixed top-20 right-6 z-[100] px-5 py-3 rounded-xl shadow-2xl text-sm font-bold flex items-center gap-2 transition-all animate-in slide-in-from-right-4 ${toast.type === 'success' ? 'bg-emerald-500 text-white' : 'bg-red-500 text-white'}`}>
-                        {toast.type === 'success' ? '✅' : '⚠️'} {toast.msg}
-                    </div>
-                )}
-
-                {/* ── Page header ────────────────────────────────────────── */}
-                <div className="flex items-start justify-between gap-4 flex-wrap">
-                    <div>
-                        <h1 className="text-2xl font-black text-gray-900 flex items-center gap-2">
-                            🗂️ Invoice Product Catalogue
-                        </h1>
-                        <p className="text-sm text-gray-500 mt-1">
-                            Manage billable products across all categories · Dual-currency INR & USD pricing
-                        </p>
-                    </div>
-                    <div className="flex items-center gap-3 flex-wrap">
-                        {/* FX Rate adjuster */}
-                        <div className="flex items-center gap-2 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2">
-                            <span className="text-xs font-black text-amber-700 uppercase">USD→INR</span>
-                            <input
-                                type="number" step="0.01" min="1"
-                                className="w-20 text-xs font-bold text-amber-900 bg-transparent border-none outline-none text-right"
-                                value={fxRate}
-                                onChange={e => setFxRate(parseFloat(e.target.value) || 83.5)}
-                            />
-                            <span className="text-xs text-amber-600">₹</span>
-                        </div>
-                        <button onClick={openCreate} className="btn btn-primary flex items-center gap-2">
-                            <span>+</span> Add Product
+            <CRMPageShell
+                title="Invoice Product Catalogue"
+                subtitle="Manage billable products, courses, and tactical services across dual-currency domains."
+                breadcrumb={[
+                    { label: 'CRM', href: '/dashboard/crm' },
+                    { label: 'Product Registry' }
+                ]}
+                icon={<Box className="w-5 h-5" />}
+                actions={
+                    <div className="flex items-center gap-3">
+                         <div className="hidden lg:flex items-center gap-3 bg-white/40 backdrop-blur-md px-4 py-2 rounded-2xl border border-secondary-200">
+                             <span className="text-[9px] font-black uppercase tracking-widest text-secondary-400">USD Protocol</span>
+                             <div className="flex items-center gap-1.5 font-black text-xs text-primary-600">
+                                 <span>1 USD = ₹</span>
+                                 <input
+                                     type="number" step="0.01"
+                                     className="w-16 bg-transparent outline-none focus:ring-0"
+                                     value={fxRate}
+                                     onChange={e => setFxRate(parseFloat(e.target.value) || 83.5)}
+                                 />
+                             </div>
+                         </div>
+                         <button 
+                            onClick={openCreate} 
+                            className="bg-primary-600 text-white px-8 py-3.5 rounded-2xl text-[11px] font-black uppercase tracking-[0.2em] shadow-2xl shadow-primary-200 hover:bg-primary-700 transition-all flex items-center gap-3 active:scale-95 group"
+                        >
+                            <Plus size={18} className="group-hover:rotate-90 transition-transform" />
+                            Initialize Product
                         </button>
                     </div>
+                }
+            >
+                {/* Global Statistics Matrix */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <CRMStatCard
+                        label="Total Assets"
+                        value={total}
+                        icon={<Layers size={22} />}
+                        accent="bg-primary-950 text-white shadow-primary-100"
+                        trend={{ value: 'Real-time', label: 'sync active', isPositive: true }}
+                    />
+                    <CRMStatCard
+                        label="Active Status"
+                        value={products.filter(p => p.isActive).length}
+                        icon={<ShieldCheck size={22} />}
+                        accent="bg-emerald-900 text-white shadow-emerald-100"
+                        trend={{ value: 'Identity', label: 'verified', isPositive: true }}
+                    />
+                    <CRMStatCard
+                        label="Featured Nodes"
+                        value={products.filter(p => p.isFeatured).length}
+                        icon={<Sparkles size={22} />}
+                        accent="bg-amber-900 text-white shadow-amber-100"
+                        trend={{ value: 'Promotion', label: 'ready', isPositive: true }}
+                    />
+                    <CRMStatCard
+                        label="Asset Valuation"
+                        value="Dual-FX"
+                        icon={<DollarSign size={22} />}
+                        accent="bg-indigo-900 text-white shadow-indigo-100"
+                        trend={{ value: 'Multi-domain', label: 'parity', isPositive: true }}
+                    />
                 </div>
 
-                {/* ── Category pills ──────────────────────────────────────── */}
-                <div className="flex flex-wrap gap-2">
-                    <button
-                        onClick={() => { setCategoryFilter(''); setPage(1); }}
-                        className={`px-3 py-1.5 rounded-full text-xs font-bold border transition-colors ${categoryFilter === '' ? 'bg-primary-600 text-white border-primary-600' : 'bg-white text-gray-600 border-gray-200 hover:border-primary-300'}`}
-                    >
-                        All <span className="opacity-70">({total})</span>
-                    </button>
-                    {CATEGORIES.map(cat => {
-                        const count = categoryCounts[cat.value] || 0;
-                        return (
-                            <button
-                                key={cat.value}
-                                onClick={() => { setCategoryFilter(cat.value); setPage(1); }}
-                                className={`px-3 py-1.5 rounded-full text-xs font-bold border transition-colors ${categoryFilter === cat.value ? 'ring-2 ring-offset-1 ring-primary-400 ' + cat.color.replace('bg-', 'bg-') : 'bg-white text-gray-600 border-gray-200 hover:border-gray-400'}`}
+                {/* Tactical FX Engine */}
+                <div className="mt-8 bg-secondary-950 p-8 rounded-[3rem] border border-white/5 shadow-2xl relative overflow-hidden group">
+                     <div className="absolute right-0 top-0 w-1/3 h-full bg-gradient-to-l from-primary-500/10 to-transparent pointer-events-none" />
+                     <div className="flex flex-col lg:flex-row items-center justify-between gap-10">
+                          <div className="flex items-center gap-6">
+                               <div className="w-14 h-14 bg-white/5 rounded-2xl flex items-center justify-center text-primary-400 group-hover:scale-110 transition-transform">
+                                    <Calculator size={32} />
+                               </div>
+                               <div>
+                                    <h3 className="text-xl font-black text-white uppercase tracking-tight italic leading-none">Valuation Parity Engine</h3>
+                                    <p className="text-[9px] font-black text-primary-400 uppercase tracking-[0.4em] mt-2">Real-time Cross-Domain Currency Translation</p>
+                               </div>
+                          </div>
+
+                          <div className="flex items-center gap-4 flex-1 max-w-2xl w-full">
+                               <div className="relative flex-1 group/input">
+                                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-primary-400 font-black text-lg group-focus-within/input:text-white transition-colors">
+                                        {fxCurrency === 'INR' ? '₹' : '$'}
+                                    </span>
+                                    <input
+                                        type="number"
+                                        className="w-full bg-white/5 border border-white/10 h-16 rounded-[1.2rem] pl-10 pr-6 text-white font-black text-lg focus:outline-none focus:bg-white/10 focus:ring-primary-500/20 transition-all placeholder-white/20"
+                                        placeholder="Input amount..."
+                                        value={fxInput}
+                                        onChange={e => setFxInput(e.target.value)}
+                                    />
+                               </div>
+                               <select
+                                    className="h-16 px-6 bg-white/5 border border-white/10 rounded-[1.2rem] text-white font-black text-xs uppercase tracking-widest focus:outline-none cursor-pointer"
+                                    value={fxCurrency}
+                                    onChange={e => setFxCurrency(e.target.value as 'INR' | 'USD')}
+                                >
+                                    <option value="INR">INR Hub</option>
+                                    <option value="USD">USD Hub</option>
+                                </select>
+                                <div className="hidden sm:flex items-center justify-center w-12 text-primary-400">
+                                     <ArrowRight size={24} className="animate-pulse" />
+                                </div>
+                                <div className="bg-primary-600 px-8 h-16 rounded-[1.2rem] flex flex-col justify-center min-w-[180px] shadow-2xl shadow-primary-900/50">
+                                     {fxConverted !== null ? (
+                                         <>
+                                             <p className="text-white font-black text-xl italic tracking-tight">
+                                                 {fxCurrency === 'INR' ? `$${fxConverted.toFixed(2)}` : `₹${fxConverted.toLocaleString('en-IN', { maximumFractionDigits: 2 })}`}
+                                             </p>
+                                             <p className="text-[8px] font-black text-white/40 uppercase tracking-widest mt-0.5">{fxCurrency === 'INR' ? 'USD PROJECTION' : 'INR PROJECTION'}</p>
+                                         </>
+                                     ) : (
+                                         <p className="text-white/20 font-black text-lg tracking-widest uppercase">Parity Null</p>
+                                     )}
+                                </div>
+                          </div>
+                     </div>
+                </div>
+
+                {/* Operations bar */}
+                <div className="mt-12 space-y-8">
+                    <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-6 border-b border-secondary-100 pb-8">
+                        <div className="flex flex-wrap gap-2">
+                             <button
+                                onClick={() => { setCategoryFilter(''); setPage(1); }}
+                                className={`px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all border ${categoryFilter === '' ? 'bg-secondary-950 text-white border-secondary-950 shadow-xl' : 'bg-white text-secondary-500 border-secondary-200 hover:border-primary-300'}`}
                             >
-                                {cat.icon} {cat.label} <span className="opacity-60">({count})</span>
+                                Universal Matrix <span className="ml-2 opacity-40">[{total}]</span>
                             </button>
-                        );
-                    })}
-                </div>
-
-                {/* ── Filters bar ─────────────────────────────────────────── */}
-                <div className="card-premium">
-                    <div className="flex flex-wrap gap-3 items-center">
-                        {/* Search */}
-                        <div className="relative flex-1 min-w-[220px]">
-                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">🔍</span>
-                            <input
-                                className="input pl-9 text-sm w-full"
-                                placeholder="Search by name, SKU, HSN/SAC code..."
-                                value={q}
-                                onChange={e => { setQ(e.target.value); setPage(1); }}
-                            />
-                        </div>
-
-                        <select className="input text-sm w-40" value={pricingFilter} onChange={e => { setPricingFilter(e.target.value); setPage(1); }}>
-                            <option value="">All Pricing</option>
-                            {PRICING_MODELS.map(p => <option key={p.value} value={p.value}>{p.icon} {p.label}</option>)}
-                        </select>
-
-                        <select className="input text-sm w-36" value={activeFilter} onChange={e => { setActiveFilter(e.target.value); setPage(1); }}>
-                            <option value="">All Status</option>
-                            <option value="true">✅ Active</option>
-                            <option value="false">⛔ Inactive</option>
-                        </select>
-
-                        <label className="flex items-center gap-2 cursor-pointer text-sm font-medium text-gray-700 border border-gray-200 rounded-xl px-3 py-2 hover:border-primary-300 transition-colors">
-                            <input type="checkbox" checked={featuredOnly} onChange={e => { setFeaturedOnly(e.target.checked); setPage(1); }} className="accent-primary-600" />
-                            ⭐ Featured only
-                        </label>
-
-                        <select className="input text-sm w-44" value={`${sortBy}:${sortDir}`} onChange={e => {
-                            const [field, dir] = e.target.value.split(':');
-                            setSortBy(field); setSortDir(dir); setPage(1);
-                        }}>
-                            <option value="createdAt:desc">Newest First</option>
-                            <option value="createdAt:asc">Oldest First</option>
-                            <option value="name:asc">Name A→Z</option>
-                            <option value="name:desc">Name Z→A</option>
-                            <option value="priceINR:asc">Price ↑ (INR)</option>
-                            <option value="priceINR:desc">Price ↓ (INR)</option>
-                        </select>
-
-                        {(q || categoryFilter || pricingFilter || activeFilter || featuredOnly) && (
-                            <button onClick={() => { setQ(''); setCategoryFilter(''); setPricingFilter(''); setActiveFilter(''); setFeaturedOnly(false); setPage(1); }}
-                                className="text-xs text-red-500 hover:text-red-700 font-bold">
-                                ✕ Clear filters
-                            </button>
-                        )}
-                    </div>
-
-                    {/* Bulk actions */}
-                    {selected.size > 0 && (
-                        <div className="mt-3 pt-3 border-t border-gray-100 flex items-center gap-3 flex-wrap">
-                            <span className="text-xs font-bold text-primary-700 bg-primary-50 px-3 py-1 rounded-full">
-                                {selected.size} selected
-                            </span>
-                            <button onClick={() => handleBulk('ACTIVATE')} className="text-xs px-3 py-1.5 bg-emerald-100 hover:bg-emerald-200 text-emerald-700 rounded-lg font-bold">✅ Activate</button>
-                            <button onClick={() => handleBulk('DEACTIVATE')} className="text-xs px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-bold">⛔ Deactivate</button>
-                            <button onClick={() => handleBulk('FEATURE')} className="text-xs px-3 py-1.5 bg-amber-100 hover:bg-amber-200 text-amber-700 rounded-lg font-bold">⭐ Feature</button>
-                            <button onClick={() => handleBulk('UNFEATURE')} className="text-xs px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-lg font-bold">☆ Unfeature</button>
-                            <button onClick={() => handleBulk('DELETE')} className="text-xs px-3 py-1.5 bg-red-100 hover:bg-red-200 text-red-700 rounded-lg font-bold ml-auto">🗑️ Delete</button>
-                            <button onClick={() => setSelected(new Set())} className="text-xs text-gray-400 hover:text-gray-600">✕ Deselect all</button>
-                        </div>
-                    )}
-                </div>
-
-                {/* ── FX Converter widget ───────────────────────────────── */}
-                <div className="bg-gradient-to-r from-indigo-900 via-blue-900 to-indigo-900 rounded-2xl p-4 flex flex-wrap items-center gap-4">
-                    <div>
-                        <p className="text-xs font-black text-indigo-300 uppercase tracking-widest">Real-time FX Converter</p>
-                        <p className="text-xs text-indigo-400 mt-0.5">1 USD = {fxRate.toFixed(2)} INR (editable above)</p>
-                    </div>
-                    <div className="flex items-center gap-2 flex-1 min-w-[280px]">
-                        <div className="relative flex-1">
-                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-white/60 text-sm font-bold">
-                                {fxCurrency === 'INR' ? '₹' : '$'}
-                            </span>
-                            <input
-                                type="number" min="0" step="0.01"
-                                className="w-full pl-8 pr-3 py-2.5 rounded-xl bg-white/10 border border-white/20 text-white placeholder-white/40 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-white/30"
-                                placeholder="Enter amount..."
-                                value={fxInput}
-                                onChange={e => setFxInput(e.target.value)}
-                            />
-                        </div>
-                        <select
-                            className="px-3 py-2.5 rounded-xl bg-white/10 border border-white/20 text-white text-sm font-bold focus:outline-none"
-                            value={fxCurrency}
-                            onChange={e => setFxCurrency(e.target.value as 'INR' | 'USD')}
-                        >
-                            <option value="INR">INR ₹</option>
-                            <option value="USD">USD $</option>
-                        </select>
-                        <span className="text-white/40 text-lg">→</span>
-                        <div className="bg-white/10 border border-white/20 rounded-xl px-4 py-2.5 min-w-[140px]">
-                            {fxConverted !== null ? (
-                                <div>
-                                    <p className="text-white font-black text-base">
-                                        {fxCurrency === 'INR' ? `$${fxConverted.toFixed(2)}` : `₹${fxConverted.toLocaleString('en-IN', { maximumFractionDigits: 2 })}`}
-                                    </p>
-                                    <p className="text-indigo-300 text-[10px]">{fxCurrency === 'INR' ? 'USD' : 'INR'}</p>
-                                </div>
-                            ) : (
-                                <p className="text-white/30 text-sm">—</p>
-                            )}
-                        </div>
-                    </div>
-                    <div className="ml-auto flex gap-4 text-right">
-                        <div>
-                            <p className="text-[10px] text-indigo-400 uppercase font-black">Active Products</p>
-                            <p className="text-xl font-black text-white">{products.filter(p => p.isActive).length}</p>
-                        </div>
-                        <div>
-                            <p className="text-[10px] text-indigo-400 uppercase font-black">Total Catalogue</p>
-                            <p className="text-xl font-black text-white">{total}</p>
-                        </div>
-                    </div>
-                </div>
-
-                {/* ── Product Table ──────────────────────────────────────── */}
-                <div className="card-premium overflow-hidden !p-0">
-                    {loading ? (
-                        <div className="flex items-center justify-center py-16">
-                            <div className="animate-spin h-8 w-8 border-b-2 border-primary-600 rounded-full" />
-                        </div>
-                    ) : products.length === 0 ? (
-                        <div className="text-center py-16">
-                            <div className="text-5xl mb-4">🗂️</div>
-                            <p className="text-gray-500 font-medium">No products found</p>
-                            <p className="text-sm text-gray-400 mt-1 mb-5">Try adjusting your filters or add a new product</p>
-                            <button onClick={openCreate} className="btn btn-primary">Add First Product</button>
-                        </div>
-                    ) : (
-                        <div className="overflow-x-auto">
-                            <table className="w-full text-sm">
-                                <thead>
-                                    <tr className="bg-gray-50 border-b border-gray-100">
-                                        <th className="p-3 w-10">
-                                            <input type="checkbox" checked={selected.size === products.length && products.length > 0}
-                                                onChange={selectAll} className="accent-primary-600 w-4 h-4" />
-                                        </th>
-                                        <th className="text-left p-3 text-xs font-black uppercase text-gray-400 tracking-tight">Product</th>
-                                        <th className="text-left p-3 text-xs font-black uppercase text-gray-400 tracking-tight">Category</th>
-                                        <th className="text-left p-3 text-xs font-black uppercase text-gray-400 tracking-tight">Pricing</th>
-                                        <th className="text-right p-3 text-xs font-black uppercase text-gray-400 tracking-tight">Price INR</th>
-                                        <th className="text-right p-3 text-xs font-black uppercase text-gray-400 tracking-tight">Price USD</th>
-                                        <th className="text-left p-3 text-xs font-black uppercase text-gray-400 tracking-tight">Billing</th>
-                                        <th className="text-left p-3 text-xs font-black uppercase text-gray-400 tracking-tight">Tax</th>
-                                        <th className="text-left p-3 text-xs font-black uppercase text-gray-400 tracking-tight">Status</th>
-                                        <th className="text-right p-3 text-xs font-black uppercase text-gray-400 tracking-tight">Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {products.map(p => {
-                                        const catCfg = getCatConfig(p.category);
-                                        const priceCfg = getPricingConfig(p.pricingModel);
-                                        const usdInINR = p.priceUSD * fxRate;
-
-                                        return (
-                                            <tr key={p.id} className={`border-b border-gray-50 hover:bg-gray-50/50 transition-colors ${selected.has(p.id) ? 'bg-primary-50/30' : ''}`}>
-                                                <td className="p-3">
-                                                    <input type="checkbox" checked={selected.has(p.id)}
-                                                        onChange={() => toggleSelect(p.id)} className="accent-primary-600 w-4 h-4" />
-                                                </td>
-                                                <td className="p-3">
-                                                    <div className="flex items-center gap-2">
-                                                        {p.isFeatured && <span className="text-amber-400 text-xs">⭐</span>}
-                                                        <div className="min-w-0">
-                                                            <p className="font-bold text-gray-900 truncate max-w-[240px]">{p.name}</p>
-                                                            {p.sku && <p className="text-[10px] text-gray-400 font-mono">{p.sku}</p>}
-                                                            {p.shortDesc && <p className="text-xs text-gray-500 truncate max-w-[240px]">{p.shortDesc}</p>}
-                                                            {p.tags.length > 0 && (
-                                                                <div className="flex gap-1 mt-1 flex-wrap">
-                                                                    {p.tags.slice(0, 3).map(t => (
-                                                                        <span key={t} className="text-[9px] px-1.5 py-0.5 bg-gray-100 text-gray-500 rounded-full font-medium">
-                                                                            {t}
-                                                                        </span>
-                                                                    ))}
-                                                                    {p.tags.length > 3 && <span className="text-[9px] text-gray-400">+{p.tags.length - 3}</span>}
-                                                                </div>
-                                                            )}
-                                                        </div>
-                                                    </div>
-                                                </td>
-                                                <td className="p-3">
-                                                    <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-bold border ${catCfg.color}`}>
-                                                        {catCfg.icon} {catCfg.label}
-                                                    </span>
-                                                </td>
-                                                <td className="p-3">
-                                                    <span className="text-xs font-bold text-gray-600 flex items-center gap-1">
-                                                        {priceCfg.icon} {priceCfg.label}
-                                                    </span>
-                                                </td>
-                                                <td className="p-3 text-right">
-                                                    <p className="font-black text-gray-900">{FMT_INR(p.priceINR)}</p>
-                                                    {p.priceUSD > 0 && (
-                                                        <p className="text-[10px] text-gray-400">
-                                                            ≈ {FMT_INR(usdInINR)} <span className="text-gray-300">(from $)</span>
-                                                        </p>
-                                                    )}
-                                                </td>
-                                                <td className="p-3 text-right">
-                                                    <p className="font-black text-gray-900">{FMT_USD(p.priceUSD)}</p>
-                                                    {p.priceINR > 0 && (
-                                                        <p className="text-[10px] text-gray-400">
-                                                            ≈ {FMT_USD(p.priceINR / fxRate)} <span className="text-gray-300">(from ₹)</span>
-                                                        </p>
-                                                    )}
-                                                </td>
-                                                <td className="p-3">
-                                                    <span className="text-xs text-gray-600 font-medium">
-                                                        {p.billingCycle ? BILLING_CYCLES.find(b => b.value === p.billingCycle)?.label : '—'}
-                                                    </span>
-                                                    <p className="text-[10px] text-gray-400 capitalize">per {p.unit}</p>
-                                                </td>
-                                                <td className="p-3">
-                                                    <p className="text-xs font-bold text-gray-700">{p.taxRate}%</p>
-                                                    {p.taxIncluded && <p className="text-[10px] text-gray-400">incl.</p>}
-                                                    {p.hsnCode && <p className="text-[10px] text-gray-400 font-mono">HSN {p.hsnCode}</p>}
-                                                </td>
-                                                <td className="p-3">
-                                                    <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-1 rounded-full border ${p.isActive ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-gray-100 text-gray-500 border-gray-200'}`}>
-                                                        {p.isActive ? '● Active' : '○ Inactive'}
-                                                    </span>
-                                                </td>
-                                                <td className="p-3">
-                                                    <div className="flex items-center justify-end gap-1">
-                                                        <button onClick={() => openEdit(p)}
-                                                            className="p-1.5 text-gray-400 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-colors" title="Edit">
-                                                            ✏️
-                                                        </button>
-                                                        <button onClick={() => handleDelete(p.id, p.name)}
-                                                            disabled={deleting === p.id}
-                                                            className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors" title="Delete">
-                                                            {deleting === p.id ? '⏳' : '🗑️'}
-                                                        </button>
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                        );
-                                    })}
-                                </tbody>
-                            </table>
-                        </div>
-                    )}
-
-                    {/* Pagination */}
-                    {totalPages > 1 && (
-                        <div className="p-4 border-t border-gray-100 flex items-center justify-between">
-                            <p className="text-xs text-gray-500">
-                                Showing {((page - 1) * pageSize) + 1}–{Math.min(page * pageSize, total)} of {total}
-                            </p>
-                            <div className="flex gap-2">
-                                <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}
-                                    className="btn btn-secondary !py-1.5 !px-3 text-xs disabled:opacity-40">← Prev</button>
-                                <span className="px-3 py-1.5 text-xs font-bold text-gray-700">
-                                    {page} / {totalPages}
-                                </span>
-                                <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages}
-                                    className="btn btn-secondary !py-1.5 !px-3 text-xs disabled:opacity-40">Next →</button>
-                            </div>
-                        </div>
-                    )}
-                </div>
-
-                {/* ── Create / Edit Modal ──────────────────────────────── */}
-                {showModal && (
-                    <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-start justify-center p-4 overflow-y-auto">
-                        <div className="bg-white rounded-2xl w-full max-w-3xl shadow-2xl my-8">
-
-                            {/* Header */}
-                            <div className="p-6 border-b border-gray-100 flex items-center justify-between">
-                                <div>
-                                    <h2 className="text-xl font-black text-gray-900">
-                                        {editingProduct ? `✏️ Edit: ${editingProduct.name}` : '➕ New Invoice Product'}
-                                    </h2>
-                                    <p className="text-sm text-gray-500 mt-0.5">
-                                        {editingProduct ? 'Update product details and pricing' : 'Add a billable product to the catalogue'}
-                                    </p>
-                                </div>
-                                <button onClick={() => setShowModal(false)}
-                                    className="p-2 rounded-full hover:bg-gray-100 text-gray-400 hover:text-gray-600">✕</button>
-                            </div>
-
-                            <div className="p-6 space-y-6">
-
-                                {/* Name + SKU */}
-                                <div className="grid grid-cols-3 gap-4">
-                                    <div className="col-span-2">
-                                        <label className="label">Product Name <span className="text-red-500">*</span></label>
-                                        <input className="input" placeholder="e.g. Physics Journal — Annual Subscription"
-                                            value={form.name} onChange={e => setForm((f: any) => ({ ...f, name: e.target.value }))} />
-                                    </div>
-                                    <div>
-                                        <label className="label">SKU / Code</label>
-                                        <input className="input font-mono text-sm" placeholder="e.g. JNL-PHY-ANN"
-                                            value={form.sku} onChange={e => setForm((f: any) => ({ ...f, sku: e.target.value }))} />
-                                    </div>
-                                </div>
-
-                                {/* Category + Pricing Model + Billing */}
-                                <div className="grid grid-cols-3 gap-4">
-                                    <div>
-                                        <label className="label">Category</label>
-                                        <select className="input" value={form.category}
-                                            onChange={e => setForm((f: any) => ({ ...f, category: e.target.value }))}>
-                                            {CATEGORIES.map(c => <option key={c.value} value={c.value}>{c.icon} {c.label}</option>)}
-                                        </select>
-                                    </div>
-                                    <div>
-                                        <label className="label">Pricing Model</label>
-                                        <select className="input" value={form.pricingModel}
-                                            onChange={e => setForm((f: any) => ({ ...f, pricingModel: e.target.value }))}>
-                                            {PRICING_MODELS.map(p => <option key={p.value} value={p.value}>{p.icon} {p.label}</option>)}
-                                        </select>
-                                        <p className="text-[10px] text-gray-400 mt-1">{getPricingConfig(form.pricingModel).desc}</p>
-                                    </div>
-                                    <div>
-                                        <label className="label">Billing Cycle</label>
-                                        <select className="input" value={form.billingCycle}
-                                            onChange={e => setForm((f: any) => ({ ...f, billingCycle: e.target.value }))}>
-                                            {BILLING_CYCLES.map(b => <option key={b.value} value={b.value}>{b.label}</option>)}
-                                        </select>
-                                    </div>
-                                </div>
-
-                                {/* Dual-currency pricing */}
-                                <div className="bg-gradient-to-r from-emerald-50 to-blue-50 border border-emerald-100 rounded-xl p-4">
-                                    <h3 className="text-xs font-black uppercase text-gray-600 mb-3 tracking-widest">💱 Dual-Currency Pricing</h3>
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div>
-                                            <label className="label">Base Price (INR ₹)</label>
-                                            <div className="relative">
-                                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 font-bold">₹</span>
-                                                <input type="number" min="0" step="0.01" className="input pl-7"
-                                                    value={form.priceINR}
-                                                    onChange={e => {
-                                                        const inr = parseFloat(e.target.value) || 0;
-                                                        setForm((f: any) => ({
-                                                            ...f, priceINR: inr,
-                                                            priceUSD: f.priceUSD === 0 ? parseFloat((inr / fxRate).toFixed(2)) : f.priceUSD
-                                                        }));
-                                                    }} />
-                                            </div>
-                                            {form.priceINR > 0 && (
-                                                <p className="text-[10px] text-emerald-600 mt-1 font-bold">
-                                                    ≈ {FMT_USD(form.priceINR / fxRate)} USD
-                                                </p>
-                                            )}
-                                        </div>
-                                        <div>
-                                            <label className="label">Base Price (USD $)</label>
-                                            <div className="relative">
-                                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 font-bold">$</span>
-                                                <input type="number" min="0" step="0.01" className="input pl-7"
-                                                    value={form.priceUSD}
-                                                    onChange={e => {
-                                                        const usd = parseFloat(e.target.value) || 0;
-                                                        setForm((f: any) => ({
-                                                            ...f, priceUSD: usd,
-                                                            priceINR: f.priceINR === 0 ? parseFloat((usd * fxRate).toFixed(2)) : f.priceINR
-                                                        }));
-                                                    }} />
-                                            </div>
-                                            {form.priceUSD > 0 && (
-                                                <p className="text-[10px] text-blue-600 mt-1 font-bold">
-                                                    ≈ {FMT_INR(form.priceUSD * fxRate)} INR
-                                                </p>
-                                            )}
-                                        </div>
-                                    </div>
-                                    <div className="mt-3 flex items-center gap-3">
-                                        <button type="button"
-                                            onClick={() => setForm((f: any) => ({ ...f, priceUSD: parseFloat((f.priceINR / fxRate).toFixed(2)) }))}
-                                            className="text-xs font-bold text-emerald-700 hover:text-emerald-900 bg-emerald-100 hover:bg-emerald-200 px-3 py-1 rounded-lg transition-colors">
-                                            ₹→$ Auto-fill USD
-                                        </button>
-                                        <button type="button"
-                                            onClick={() => setForm((f: any) => ({ ...f, priceINR: parseFloat((f.priceUSD * fxRate).toFixed(2)) }))}
-                                            className="text-xs font-bold text-blue-700 hover:text-blue-900 bg-blue-100 hover:bg-blue-200 px-3 py-1 rounded-lg transition-colors">
-                                            $→₹ Auto-fill INR
-                                        </button>
-                                        <span className="text-[10px] text-gray-400 ml-1">at ₹{fxRate}/USD</span>
-                                    </div>
-                                </div>
-
-                                {/* Tiered pricing */}
-                                {(form.pricingModel === 'TIERED' || form.pricingModel === 'VOLUME') && (
-                                    <div>
-                                        <div className="flex items-center justify-between mb-3">
-                                            <label className="label mb-0">📊 Price Tiers</label>
-                                            <button type="button"
-                                                onClick={() => setForm((f: any) => ({ ...f, priceTiers: [...f.priceTiers, { minQty: 1, maxQty: '', priceINR: 0, priceUSD: 0, label: '' }] }))}
-                                                className="text-xs text-primary-600 font-bold hover:text-primary-800">
-                                                + Add Tier
-                                            </button>
-                                        </div>
-                                        <div className="space-y-2">
-                                            <div className="grid grid-cols-12 gap-2 text-[10px] font-black uppercase text-gray-400 px-1">
-                                                <div className="col-span-2">Min Qty</div>
-                                                <div className="col-span-2">Max Qty</div>
-                                                <div className="col-span-3">Price INR ₹</div>
-                                                <div className="col-span-3">Price USD $</div>
-                                                <div className="col-span-1">Label</div>
-                                                <div className="col-span-1" />
-                                            </div>
-                                            {form.priceTiers.map((tier: any, i: number) => (
-                                                <div key={i} className="grid grid-cols-12 gap-2 items-center bg-gray-50 p-2 rounded-xl">
-                                                    <div className="col-span-2">
-                                                        <input type="number" min="1" className="input !py-1.5 text-sm text-center"
-                                                            value={tier.minQty}
-                                                            onChange={e => {
-                                                                const t = [...form.priceTiers];
-                                                                t[i] = { ...t[i], minQty: parseInt(e.target.value) || 1 };
-                                                                setForm((f: any) => ({ ...f, priceTiers: t }));
-                                                            }} />
-                                                    </div>
-                                                    <div className="col-span-2">
-                                                        <input type="number" min="1" className="input !py-1.5 text-sm text-center"
-                                                            placeholder="∞"
-                                                            value={tier.maxQty}
-                                                            onChange={e => {
-                                                                const t = [...form.priceTiers];
-                                                                t[i] = { ...t[i], maxQty: e.target.value };
-                                                                setForm((f: any) => ({ ...f, priceTiers: t }));
-                                                            }} />
-                                                    </div>
-                                                    <div className="col-span-3">
-                                                        <input type="number" min="0" className="input !py-1.5 text-sm text-right"
-                                                            value={tier.priceINR}
-                                                            onChange={e => {
-                                                                const t = [...form.priceTiers];
-                                                                t[i] = { ...t[i], priceINR: parseFloat(e.target.value) || 0 };
-                                                                setForm((f: any) => ({ ...f, priceTiers: t }));
-                                                            }} />
-                                                    </div>
-                                                    <div className="col-span-3">
-                                                        <input type="number" min="0" className="input !py-1.5 text-sm text-right"
-                                                            value={tier.priceUSD}
-                                                            onChange={e => {
-                                                                const t = [...form.priceTiers];
-                                                                t[i] = { ...t[i], priceUSD: parseFloat(e.target.value) || 0 };
-                                                                setForm((f: any) => ({ ...f, priceTiers: t }));
-                                                            }} />
-                                                    </div>
-                                                    <div className="col-span-1">
-                                                        <input className="input !py-1.5 text-xs" placeholder="label"
-                                                            value={tier.label}
-                                                            onChange={e => {
-                                                                const t = [...form.priceTiers];
-                                                                t[i] = { ...t[i], label: e.target.value };
-                                                                setForm((f: any) => ({ ...f, priceTiers: t }));
-                                                            }} />
-                                                    </div>
-                                                    <div className="col-span-1 flex justify-center">
-                                                        {form.priceTiers.length > 1 && (
-                                                            <button type="button"
-                                                                onClick={() => setForm((f: any) => ({ ...f, priceTiers: f.priceTiers.filter((_: any, idx: number) => idx !== i) }))}
-                                                                className="text-red-400 hover:text-red-600 text-sm font-bold">✕</button>
-                                                        )}
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-                                )}
-
-                                {/* Tax config */}
-                                <div className="grid grid-cols-4 gap-4">
-                                    <div>
-                                        <label className="label">Tax Rate (%)</label>
-                                        <input type="number" min="0" max="100" step="0.5" className="input"
-                                            value={form.taxRate}
-                                            onChange={e => setForm((f: any) => ({ ...f, taxRate: parseFloat(e.target.value) || 0 }))} />
-                                    </div>
-                                    <div className="flex items-end pb-2">
-                                        <label className="flex items-center gap-2 cursor-pointer">
-                                            <input type="checkbox" className="accent-primary-600 w-4 h-4"
-                                                checked={form.taxIncluded}
-                                                onChange={e => setForm((f: any) => ({ ...f, taxIncluded: e.target.checked }))} />
-                                            <span className="text-sm font-medium text-gray-700">Tax Included</span>
-                                        </label>
-                                    </div>
-                                    <div>
-                                        <label className="label">HSN Code</label>
-                                        <input className="input font-mono text-sm" placeholder="e.g. 4902"
-                                            value={form.hsnCode}
-                                            onChange={e => setForm((f: any) => ({ ...f, hsnCode: e.target.value }))} />
-                                    </div>
-                                    <div>
-                                        <label className="label">SAC Code</label>
-                                        <input className="input font-mono text-sm" placeholder="e.g. 998596"
-                                            value={form.sacCode}
-                                            onChange={e => setForm((f: any) => ({ ...f, sacCode: e.target.value }))} />
-                                    </div>
-                                </div>
-
-                                {/* Unit + Qty */}
-                                <div className="grid grid-cols-3 gap-4">
-                                    <div>
-                                        <label className="label">Unit</label>
-                                        <input className="input" placeholder="e.g. year, article, user"
-                                            value={form.unit}
-                                            onChange={e => setForm((f: any) => ({ ...f, unit: e.target.value }))} />
-                                    </div>
-                                    <div>
-                                        <label className="label">Min Quantity</label>
-                                        <input type="number" min="1" className="input"
-                                            value={form.minQuantity}
-                                            onChange={e => setForm((f: any) => ({ ...f, minQuantity: parseInt(e.target.value) || 1 }))} />
-                                    </div>
-                                    <div>
-                                        <label className="label">Max Quantity <span className="text-gray-400 text-xs">(optional)</span></label>
-                                        <input type="number" min="1" className="input" placeholder="unlimited"
-                                            value={form.maxQuantity}
-                                            onChange={e => setForm((f: any) => ({ ...f, maxQuantity: e.target.value }))} />
-                                    </div>
-                                </div>
-
-                                {/* Descriptions */}
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div>
-                                        <label className="label">Short Description</label>
-                                        <input className="input" placeholder="Brief one-liner (shown in lists)"
-                                            value={form.shortDesc}
-                                            onChange={e => setForm((f: any) => ({ ...f, shortDesc: e.target.value }))} />
-                                    </div>
-                                    <div>
-                                        <label className="label">Tags <span className="text-gray-400 text-xs">(comma-separated)</span></label>
-                                        <input className="input" placeholder="e.g. physics, open-access, 2025"
-                                            value={form.tags}
-                                            onChange={e => setForm((f: any) => ({ ...f, tags: e.target.value }))} />
-                                    </div>
-                                </div>
-
-                                <div>
-                                    <label className="label">Full Description</label>
-                                    <textarea className="input h-20" placeholder="Detailed product description..."
-                                        value={form.description}
-                                        onChange={e => setForm((f: any) => ({ ...f, description: e.target.value }))} />
-                                </div>
-
-                                {/* Status toggles */}
-                                <div className="flex items-center gap-6 bg-gray-50 border border-gray-100 rounded-xl p-4">
-                                    <label className="flex items-center gap-3 cursor-pointer">
-                                        <div className={`relative w-10 h-5 rounded-full transition-colors ${form.isActive ? 'bg-emerald-500' : 'bg-gray-300'}`}
-                                            onClick={() => setForm((f: any) => ({ ...f, isActive: !f.isActive }))}>
-                                            <div className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${form.isActive ? 'translate-x-5' : 'translate-x-0.5'}`} />
-                                        </div>
-                                        <span className={`text-sm font-bold ${form.isActive ? 'text-emerald-700' : 'text-gray-500'}`}>
-                                            {form.isActive ? '✅ Active' : '⛔ Inactive'}
-                                        </span>
-                                    </label>
-                                    <label className="flex items-center gap-3 cursor-pointer">
-                                        <div className={`relative w-10 h-5 rounded-full transition-colors ${form.isFeatured ? 'bg-amber-500' : 'bg-gray-300'}`}
-                                            onClick={() => setForm((f: any) => ({ ...f, isFeatured: !f.isFeatured }))}>
-                                            <div className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${form.isFeatured ? 'translate-x-5' : 'translate-x-0.5'}`} />
-                                        </div>
-                                        <span className={`text-sm font-bold ${form.isFeatured ? 'text-amber-700' : 'text-gray-500'}`}>
-                                            {form.isFeatured ? '⭐ Featured' : '☆ Not Featured'}
-                                        </span>
-                                    </label>
-                                </div>
-
-                                {/* Notes */}
-                                <div>
-                                    <label className="label">Internal Notes</label>
-                                    <textarea className="input h-16" placeholder="Internal notes (not shown to customers)..."
-                                        value={form.notes}
-                                        onChange={e => setForm((f: any) => ({ ...f, notes: e.target.value }))} />
-                                </div>
-                            </div>
-
-                            {/* Footer */}
-                            <div className="p-6 border-t border-gray-100 flex justify-end gap-3">
-                                <button onClick={() => setShowModal(false)} className="btn btn-secondary">Cancel</button>
-                                <button onClick={handleSave} disabled={saving || !form.name.trim()} className="btn btn-primary px-10">
-                                    {saving ? '⏳ Saving...' : editingProduct ? '💾 Save Changes' : '✅ Create Product'}
+                            {CATEGORIES.map(cat => (
+                                <button
+                                    key={cat.value}
+                                    onClick={() => { setCategoryFilter(cat.value); setPage(1); }}
+                                    className={`px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all border ${categoryFilter === cat.value ? 'bg-primary-600 text-white border-primary-600 shadow-xl' : 'bg-white text-secondary-500 border-secondary-200 hover:shadow-lg'}`}
+                                >
+                                    {cat.icon} {cat.label}
                                 </button>
-                            </div>
+                            ))}
+                        </div>
+
+                        <div className="flex items-center gap-3">
+                             <div className="relative group">
+                                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-secondary-300 group-focus-within:text-primary-600 transition-colors" size={18} />
+                                  <input
+                                      className="h-12 w-full sm:w-[320px] bg-secondary-50 border-secondary-100 rounded-2xl pl-12 pr-6 text-sm font-bold text-secondary-950 placeholder-secondary-300 focus:bg-white focus:ring-primary-500/20 transition-all border focus:border-primary-100"
+                                      placeholder="Search identity node..."
+                                      value={q}
+                                      onChange={e => { setQ(e.target.value); setPage(1); }}
+                                  />
+                             </div>
+                             <div className="flex items-center gap-2 p-1 bg-secondary-100 rounded-xl">
+                                  <button onClick={() => setSortBy('name')} className={`p-2 rounded-lg transition-all ${sortBy === 'name' ? 'bg-white shadow-sm text-primary-600' : 'text-secondary-400 hover:text-secondary-600'}`}>
+                                       <BarChart3 size={18} />
+                                  </button>
+                                  <button onClick={() => setSortBy('createdAt')} className={`p-2 rounded-lg transition-all ${sortBy === 'createdAt' ? 'bg-white shadow-sm text-primary-600' : 'text-secondary-400 hover:text-secondary-600'}`}>
+                                       <Activity size={18} />
+                                  </button>
+                             </div>
                         </div>
                     </div>
-                )}
-            </div>
+
+                    {/* Bulk Matrix Actions */}
+                    {selected.size > 0 && (
+                        <div className="bg-primary-50 p-4 px-6 rounded-3xl border border-primary-100 flex items-center justify-between animate-in slide-in-from-top-4">
+                            <div className="flex items-center gap-4">
+                                 <div className="w-10 h-10 bg-primary-600 text-white rounded-xl flex items-center justify-center font-black text-sm">
+                                      {selected.size}
+                                 </div>
+                                 <span className="text-[10px] font-black uppercase tracking-[0.2em] text-primary-900 italic">Nodes selected for bulk propagation</span>
+                            </div>
+                            <div className="flex items-center gap-3">
+                                <button onClick={() => handleBulk('ACTIVATE')} className="px-5 py-2 rounded-xl bg-white text-emerald-600 border border-emerald-100 text-[9px] font-black uppercase tracking-widest hover:bg-emerald-50 transition-all shadow-sm">Protocol: Activate</button>
+                                <button onClick={() => handleBulk('FEATURE')} className="px-5 py-2 rounded-xl bg-white text-amber-600 border border-amber-100 text-[9px] font-black uppercase tracking-widest hover:bg-amber-50 transition-all shadow-sm">Flag: Featured</button>
+                                <button onClick={() => handleBulk('DELETE')} className="px-5 py-2 rounded-xl bg-white text-danger-600 border border-danger-100 text-[9px] font-black uppercase tracking-widest hover:bg-danger-50 transition-all shadow-sm">Operation: Purge</button>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Registry Flux */}
+                    <div className="bg-white rounded-[3rem] border border-secondary-100 shadow-2xl shadow-secondary-100/50 overflow-hidden relative">
+                         {loading ? (
+                             <div className="py-40 flex flex-col items-center justify-center">
+                                  <div className="w-16 h-16 border-4 border-primary-100 border-t-primary-600 rounded-full animate-spin" />
+                                  <span className="text-[10px] font-black uppercase tracking-[0.4em] text-secondary-300 mt-6">Decrypting registry...</span>
+                             </div>
+                         ) : products.length === 0 ? (
+                             <div className="py-40 text-center group">
+                                  <div className="w-24 h-24 bg-secondary-50 text-secondary-200 border border-secondary-100 rounded-[2.5rem] flex items-center justify-center mx-auto mb-8 group-hover:rotate-12 transition-transform duration-1000">
+                                       <Box size={48} strokeWidth={1} />
+                                  </div>
+                                  <h3 className="text-xl font-black text-secondary-900 uppercase tracking-tight">Registry Node Empty</h3>
+                                  <p className="text-[10px] font-black text-secondary-400 uppercase tracking-[0.3em] mt-3">No asset parameters found in the current sector mapping.</p>
+                             </div>
+                         ) : (
+                             <div className="overflow-x-auto overflow-y-hidden">
+                                 <table className="w-full text-left">
+                                     <thead>
+                                         <tr className="bg-secondary-50/50 border-b border-secondary-100">
+                                             <th className="p-8 py-5 w-16">
+                                                 <input 
+                                                     type="checkbox" 
+                                                     checked={selected.size === products.length && products.length > 0}
+                                                     onChange={selectAll} 
+                                                     className="w-5 h-5 rounded-lg border-secondary-300 text-primary-600 focus:ring-primary-500 cursor-pointer" 
+                                                 />
+                                             </th>
+                                             <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-secondary-400 italic">Identity Node</th>
+                                             <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-secondary-400 italic">Sub-Sector</th>
+                                             <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-secondary-400 italic text-right">INR Valuation</th>
+                                             <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-secondary-400 italic text-right">USD Valuation</th>
+                                             <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-secondary-400 italic text-center">Protocol Status</th>
+                                             <th className="px-8 py-5 text-[10px] font-black uppercase tracking-widest text-secondary-400 italic text-right">Operations</th>
+                                         </tr>
+                                     </thead>
+                                     <tbody className="divide-y divide-secondary-50">
+                                         {products.map(p => {
+                                             const catCfg = getCatConfig(p.category);
+                                             return (
+                                                 <tr key={p.id} className={`group hover:bg-secondary-50/50 transition-all duration-500 ${selected.has(p.id) ? 'bg-primary-50/30' : ''}`}>
+                                                     <td className="p-8 py-6">
+                                                         <input 
+                                                             type="checkbox" 
+                                                             checked={selected.has(p.id)}
+                                                             onChange={() => toggleSelect(p.id)} 
+                                                             className="w-5 h-5 rounded-lg border-secondary-300 text-primary-600 focus:ring-primary-500 cursor-pointer" 
+                                                         />
+                                                     </td>
+                                                     <td className="px-6 py-6">
+                                                          <div className="flex flex-col min-w-[200px]">
+                                                               <div className="flex items-center gap-2 mb-1">
+                                                                    <span className="font-black text-secondary-950 uppercase tracking-tight italic group-hover:text-primary-600 transition-colors">{p.name}</span>
+                                                                    {p.isFeatured && <Star size={12} className="text-amber-500 fill-amber-500 animate-pulse" />}
+                                                               </div>
+                                                               <div className="flex items-center gap-3">
+                                                                    <span className="text-[9px] font-black text-secondary-300 uppercase tracking-widest">SKU: {p.sku || 'NULL_NODE'}</span>
+                                                                    <span className="h-1 w-1 bg-secondary-200 rounded-full" />
+                                                                    <span className="text-[9px] font-black text-secondary-300 uppercase tracking-widest">{p.unit} unit</span>
+                                                               </div>
+                                                          </div>
+                                                     </td>
+                                                     <td className="px-6 py-6 font-black uppercase">
+                                                          <span className={`px-4 py-1.5 rounded-full text-[9px] font-black tracking-widest border ${catCfg.color.replace('opacity-10', 'border-opacity-30')}`}>
+                                                               {catCfg.label}
+                                                          </span>
+                                                     </td>
+                                                     <td className="px-6 py-6 text-right">
+                                                          <span className="font-black text-secondary-950 text-base italic">{FMT_INR(p.priceINR)}</span>
+                                                          <p className="text-[8px] font-black text-secondary-400 uppercase tracking-widest mt-1">DOMESTIC COORDINATES</p>
+                                                     </td>
+                                                     <td className="px-6 py-6 text-right">
+                                                          <span className="font-black text-indigo-700 text-base italic">{FMT_USD(p.priceUSD)}</span>
+                                                          <p className="text-[8px] font-black text-indigo-300 uppercase tracking-widest mt-1">GLOBAL PARITY</p>
+                                                     </td>
+                                                     <td className="px-6 py-6 text-center">
+                                                          <CRMBadge 
+                                                               variant={p.isActive ? 'success' : 'secondary'} 
+                                                               className="text-[9px] font-black border-none uppercase tracking-[0.2em] italic"
+                                                               dot
+                                                          >
+                                                               {p.isActive ? 'ACTIVE_PROT' : 'STANDBY'}
+                                                          </CRMBadge>
+                                                     </td>
+                                                     <td className="px-8 py-6 text-right">
+                                                          <div className="flex items-center justify-end gap-2">
+                                                               <button 
+                                                                    onClick={() => openEdit(p)}
+                                                                    className="p-3 bg-white border border-secondary-100 rounded-xl text-secondary-400 hover:text-primary-600 hover:border-primary-100 hover:shadow-lg transition-all"
+                                                               >
+                                                                    <Edit3 size={16} />
+                                                               </button>
+                                                               <button 
+                                                                    onClick={() => handleDelete(p.id, p.name)}
+                                                                    className="p-3 bg-white border border-secondary-100 rounded-xl text-secondary-400 hover:text-danger-600 hover:border-danger-100 hover:shadow-lg transition-all"
+                                                               >
+                                                                    <Trash2 size={16} />
+                                                               </button>
+                                                          </div>
+                                                     </td>
+                                                 </tr>
+                                             );
+                                         })}
+                                     </tbody>
+                                 </table>
+                             </div>
+                         )}
+
+                         {/* Registry Pagination */}
+                         {totalPages > 1 && (
+                             <div className="p-8 border-t border-secondary-100 flex items-center justify-between bg-secondary-50/30">
+                                 <p className="text-[10px] font-black text-secondary-400 uppercase tracking-[0.2em]">
+                                     Mapping {((page - 1) * pageSize) + 1}–{Math.min(page * pageSize, total)} <span className="mx-1 text-secondary-200">/</span> Total Registry Nodes: {total}
+                                 </p>
+                                 <div className="flex items-center gap-4">
+                                     <button 
+                                        onClick={() => setPage(p => Math.max(1, p - 1))} 
+                                        disabled={page === 1}
+                                        className="h-10 w-10 flex items-center justify-center rounded-xl bg-white border border-secondary-200 text-secondary-400 hover:text-primary-600 disabled:opacity-20 transition-all font-black"
+                                    >
+                                         <ChevronRight size={18} className="rotate-180" />
+                                    </button>
+                                     <span className="text-xs font-black text-secondary-900 uppercase tracking-widest italic">Sector {page} <span className="mx-2 text-secondary-200">OF</span> {totalPages}</span>
+                                     <button 
+                                        onClick={() => setPage(p => Math.min(totalPages, p + 1))} 
+                                        disabled={page === totalPages}
+                                        className="h-10 w-10 flex items-center justify-center rounded-xl bg-white border border-secondary-200 text-secondary-400 hover:text-primary-600 disabled:opacity-20 transition-all font-black"
+                                    >
+                                         <ChevronRight size={18} />
+                                    </button>
+                                 </div>
+                             </div>
+                         )}
+                    </div>
+                </div>
+
+                {/* Registry Architect Modal */}
+                <CRMModal
+                    open={showModal}
+                    onClose={() => setShowModal(false)}
+                    title={editingProduct ? "Modify Registry Node" : "Initialize Asset Node"}
+                    subtitle="Define identity, valuation parity, and operational parameters for the product registry."
+                >
+                    <form onSubmit={(e) => { e.preventDefault(); handleSave(); }} className="space-y-8 py-2">
+                        {/* Primary Intel */}
+                        <div className="bg-secondary-950 p-8 rounded-[2.5rem] border border-white/5 shadow-2xl relative overflow-hidden">
+                             <div className="absolute -right-4 -bottom-4 opacity-5 blur-sm rotate-12">
+                                  <Box size={140} className="text-white" />
+                             </div>
+                             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 relative z-10">
+                                  <div className="space-y-2">
+                                       <label className="text-[10px] font-black uppercase tracking-[0.3em] text-primary-400 pl-1">Product Designation</label>
+                                       <input 
+                                           className="input h-14 bg-white/5 border-white/10 text-white font-black text-sm uppercase tracking-tight focus:bg-white/10 focus:ring-primary-500/20" 
+                                           placeholder="NODE IDENTITY NAME..." 
+                                           value={form.name} 
+                                           onChange={e => setForm((f: any) => ({ ...f, name: e.target.value }))}
+                                           required 
+                                       />
+                                  </div>
+                                  <div className="space-y-2">
+                                       <label className="text-[10px] font-black uppercase tracking-[0.3em] text-primary-400 pl-1">Unique SKU Protocol</label>
+                                       <input 
+                                           className="input h-14 bg-white/5 border-white/10 text-white font-black text-sm uppercase tracking-widest font-mono focus:bg-white/10 focus:ring-primary-500/20" 
+                                           placeholder="SKU-XXXX-XXXX" 
+                                           value={form.sku} 
+                                           onChange={e => setForm((f: any) => ({ ...f, sku: e.target.value }))}
+                                       />
+                                  </div>
+                             </div>
+                        </div>
+
+                        {/* Valuation Matrix */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                             <div className="bg-emerald-50/30 p-8 rounded-[2.5rem] border border-emerald-100/50 space-y-6">
+                                  <div className="flex items-center gap-3 border-b border-emerald-100 pb-4">
+                                       <div className="w-10 h-10 bg-emerald-600 text-white rounded-xl flex items-center justify-center shadow-lg shadow-emerald-100">
+                                            <CreditCard size={18} />
+                                       </div>
+                                       <div>
+                                            <h4 className="text-xs font-black text-emerald-900 uppercase tracking-widest italic">INR Fiscal Node</h4>
+                                       </div>
+                                  </div>
+                                  <div className="space-y-4">
+                                       <div className="space-y-2">
+                                            <label className="text-[9px] font-black uppercase tracking-widest text-emerald-700 opacity-60">Base Valuation (₹)</label>
+                                            <input 
+                                                type="number" 
+                                                className="input h-12 bg-white border-emerald-100 font-black text-emerald-950 focus:ring-emerald-500/20" 
+                                                value={form.priceINR}
+                                                onChange={e => {
+                                                    const inr = parseFloat(e.target.value) || 0;
+                                                    setForm((f: any) => ({ ...f, priceINR: inr }));
+                                                }}
+                                            />
+                                       </div>
+                                       <button 
+                                            type="button"
+                                            onClick={() => setForm((f: any) => ({ ...f, priceINR: parseFloat((form.priceUSD * fxRate).toFixed(2)) }))}
+                                            className="w-full py-3 bg-emerald-100 text-emerald-700 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-emerald-200 transition-all flex items-center justify-center gap-2"
+                                       >
+                                            <Calculator size={14} /> Pull from USD [$→₹]
+                                       </button>
+                                  </div>
+                             </div>
+
+                             <div className="bg-blue-50/30 p-8 rounded-[2.5rem] border border-blue-100/50 space-y-6">
+                                  <div className="flex items-center gap-3 border-b border-blue-100 pb-4">
+                                       <div className="w-10 h-10 bg-blue-600 text-white rounded-xl flex items-center justify-center shadow-lg shadow-blue-100">
+                                            <Globe size={18} />
+                                       </div>
+                                       <div>
+                                            <h4 className="text-xs font-black text-blue-900 uppercase tracking-widest italic">USD Fiscal Node</h4>
+                                       </div>
+                                  </div>
+                                  <div className="space-y-4">
+                                       <div className="space-y-2">
+                                            <label className="text-[9px] font-black uppercase tracking-widest text-blue-700 opacity-60">Market Valuation ($)</label>
+                                            <input 
+                                                type="number" 
+                                                className="input h-12 bg-white border-blue-100 font-black text-blue-950 focus:ring-blue-500/20" 
+                                                value={form.priceUSD}
+                                                onChange={e => {
+                                                    const usd = parseFloat(e.target.value) || 0;
+                                                    setForm((f: any) => ({ ...f, priceUSD: usd }));
+                                                }}
+                                            />
+                                       </div>
+                                       <button 
+                                            type="button"
+                                            onClick={() => setForm((f: any) => ({ ...f, priceUSD: parseFloat((form.priceINR / fxRate).toFixed(2)) }))}
+                                            className="w-full py-3 bg-blue-100 text-blue-700 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-blue-200 transition-all flex items-center justify-center gap-2"
+                                       >
+                                            <Calculator size={14} /> Pull from INR [₹→$]
+                                       </button>
+                                  </div>
+                             </div>
+                        </div>
+
+                        {/* Operational Parameters */}
+                        <div className="bg-secondary-50 p-8 rounded-[2.5rem] border border-secondary-200/50 grid grid-cols-1 md:grid-cols-3 gap-8">
+                             <div className="space-y-2 text-primary-600">
+                                  <label className="text-[9px] font-black uppercase tracking-widest opacity-60">Classification Sector</label>
+                                  <select 
+                                       className="input h-12 bg-white border-secondary-200 font-black text-[10px] uppercase tracking-tighter"
+                                       value={form.category}
+                                       onChange={e => setForm((f: any) => ({ ...f, category: e.target.value }))}
+                                  >
+                                       {CATEGORIES.map(c => <option key={c.value} value={c.value}>{c.label.toUpperCase()}</option>)}
+                                  </select>
+                             </div>
+                             <div className="space-y-2">
+                                  <label className="text-[9px] font-black uppercase tracking-widest text-secondary-500 opacity-60">Fiscal Cycle</label>
+                                  <select 
+                                       className="input h-12 bg-white border-secondary-200 font-black text-[10px] uppercase tracking-tighter"
+                                       value={form.billingCycle}
+                                       onChange={e => setForm((f: any) => ({ ...f, billingCycle: e.target.value }))}
+                                  >
+                                       {BILLING_CYCLES.map(b => <option key={b.value} value={b.value}>{b.label.toUpperCase()}</option>)}
+                                  </select>
+                             </div>
+                             <div className="space-y-2">
+                                  <label className="text-[9px] font-black uppercase tracking-widest text-secondary-500 opacity-60">Pricing Topology</label>
+                                  <select 
+                                       className="input h-12 bg-white border-secondary-200 font-black text-[10px] uppercase tracking-tighter"
+                                       value={form.pricingModel}
+                                       onChange={e => setForm((f: any) => ({ ...f, pricingModel: e.target.value }))}
+                                  >
+                                       {PRICING_MODELS.map(p => <option key={p.value} value={p.value}>{p.label.toUpperCase()}</option>)}
+                                  </select>
+                             </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 px-2">
+                             <div className="space-y-2">
+                                  <label className="text-[10px] font-black uppercase tracking-[0.2em] text-secondary-400 pl-1">Compliance Tax Rate (%)</label>
+                                  <input 
+                                      type="number" 
+                                      className="input h-14 bg-secondary-50 border-secondary-100 font-black text-sm" 
+                                      value={form.taxRate} 
+                                      onChange={e => setForm((f: any) => ({ ...f, taxRate: parseFloat(e.target.value) || 0 }))} 
+                                  />
+                             </div>
+                             <div className="space-y-2">
+                                  <label className="text-[10px] font-black uppercase tracking-[0.2em] text-secondary-400 pl-1">HSN Compliance Code</label>
+                                  <input 
+                                      className="input h-14 bg-secondary-50 border-secondary-100 font-black text-sm font-mono uppercase tracking-widest" 
+                                      value={form.hsnCode} 
+                                      onChange={e => setForm((f: any) => ({ ...f, hsnCode: e.target.value }))} 
+                                      placeholder="EX: 4902"
+                                  />
+                             </div>
+                             <div className="space-y-2">
+                                  <label className="text-[10px] font-black uppercase tracking-[0.2em] text-secondary-400 pl-1">Operational unit</label>
+                                  <input 
+                                      className="input h-14 bg-secondary-50 border-secondary-100 font-black text-sm uppercase italic" 
+                                      value={form.unit} 
+                                      onChange={e => setForm((f: any) => ({ ...f, unit: e.target.value }))} 
+                                      placeholder="EX: YEAR / ARTICLE"
+                                  />
+                             </div>
+                        </div>
+
+                        <div className="flex bg-secondary-50 p-6 rounded-[2rem] border border-secondary-100 gap-8">
+                             <label className="flex items-center gap-3 cursor-pointer group">
+                                  <div className={`w-10 h-6 rounded-full p-1 transition-all ${form.isActive ? 'bg-emerald-600 shadow-lg shadow-emerald-100' : 'bg-secondary-300'}`}
+                                       onClick={() => setForm((f: any) => ({ ...f, isActive: !f.isActive }))}>
+                                       <div className={`w-4 h-4 bg-white rounded-full transition-all ${form.isActive ? 'translate-x-4' : 'translate-x-0'}`} />
+                                  </div>
+                                  <span className="text-[10px] font-black uppercase tracking-[0.2em] text-secondary-950 italic group-hover:text-primary-600">Active Node Status</span>
+                             </label>
+                             <label className="flex items-center gap-3 cursor-pointer group border-l border-secondary-200 pl-8">
+                                  <div className={`w-10 h-6 rounded-full p-1 transition-all ${form.isFeatured ? 'bg-amber-500 shadow-lg shadow-amber-100' : 'bg-secondary-300'}`}
+                                       onClick={() => setForm((f: any) => ({ ...f, isFeatured: !f.isFeatured }))}>
+                                       <div className={`w-4 h-4 bg-white rounded-full transition-all ${form.isFeatured ? 'translate-x-4' : 'translate-x-0'}`} />
+                                  </div>
+                                  <span className="text-[10px] font-black uppercase tracking-[0.2em] text-secondary-950 italic group-hover:text-primary-600">Identity Promotion</span>
+                             </label>
+                        </div>
+
+                        <div className="flex gap-4 pt-10 border-t border-secondary-100/50">
+                            <button 
+                                type="button" 
+                                onClick={() => setShowModal(false)} 
+                                className="flex-1 px-4 py-4 rounded-2xl border-2 border-secondary-200 text-[10px] font-black uppercase tracking-[0.2em] text-secondary-400 hover:bg-secondary-50 transition-all font-mono"
+                            >
+                                Abandon
+                            </button>
+                            <button 
+                                type="submit" 
+                                disabled={saving}
+                                className="flex-1 bg-primary-600 text-white px-8 py-4 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] shadow-2xl shadow-primary-100 hover:bg-primary-700 hover:-translate-y-1 transition-all flex items-center justify-center gap-3 active:scale-95 group/btn"
+                            >
+                                {saving ? 'Propagating...' : (
+                                    <>
+                                        Propagate Registry Node <ChevronRight size={16} className="group-hover/btn:translate-x-1 transition-transform" />
+                                    </>
+                                )}
+                            </button>
+                        </div>
+                    </form>
+                </CRMModal>
+            </CRMPageShell>
         </DashboardLayout>
     );
 }

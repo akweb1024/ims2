@@ -121,7 +121,15 @@ export const PATCH = authorizedRoute(
             }
 
             const body = await req.json();
-            const { name, domain, email, phone, address, website, currency, timezone, fiscalYearStart } = body;
+            const {
+                name, domain, email, phone, address, website, currency, timezone, fiscalYearStart,
+                // Invoice identity fields
+                legalEntityName, tagline, logoUrl,
+                gstin, stateCode, cinNo, panNo, iecCode,
+                bankName, bankAccountHolder, bankAccountNumber, bankIfscCode, bankSwiftCode,
+                paymentMode, brandRelationType, invoiceCompanyLogoUrl,
+                regdOfficeAddress, salesOfficeAddress, invoiceTerms
+            } = body;
 
             const company = await prisma.company.update({
                 where: { id },
@@ -134,7 +142,27 @@ export const PATCH = authorizedRoute(
                     ...(website !== undefined && { website }),
                     ...(currency && { currency }),
                     ...(timezone && { timezone }),
-                    ...(fiscalYearStart !== undefined && { fiscalYearStart })
+                    ...(fiscalYearStart !== undefined && { fiscalYearStart }),
+                    // Invoice identity fields
+                    ...(legalEntityName !== undefined && { legalEntityName }),
+                    ...(tagline !== undefined && { tagline }),
+                    ...(logoUrl !== undefined && { logoUrl }),
+                    ...(gstin !== undefined && { gstin }),
+                    ...(stateCode !== undefined && { stateCode }),
+                    ...(cinNo !== undefined && { cinNo }),
+                    ...(panNo !== undefined && { panNo }),
+                    ...(iecCode !== undefined && { iecCode }),
+                    ...(bankName !== undefined && { bankName }),
+                    ...(bankAccountHolder !== undefined && { bankAccountHolder }),
+                    ...(bankAccountNumber !== undefined && { bankAccountNumber }),
+                    ...(bankIfscCode !== undefined && { bankIfscCode }),
+                    ...(bankSwiftCode !== undefined && { bankSwiftCode }),
+                    ...(paymentMode !== undefined && { paymentMode }),
+                    ...(brandRelationType !== undefined && { brandRelationType }),
+                    ...(invoiceCompanyLogoUrl !== undefined && { invoiceCompanyLogoUrl }),
+                    ...(regdOfficeAddress !== undefined && { regdOfficeAddress }),
+                    ...(salesOfficeAddress !== undefined && { salesOfficeAddress }),
+                    ...(invoiceTerms !== undefined && { invoiceTerms }),
                 },
                 include: {
                     _count: {

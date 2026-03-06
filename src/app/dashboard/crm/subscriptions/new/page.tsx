@@ -36,6 +36,8 @@ export default function NewSubscriptionPage() {
         currency: 'INR'
     });
 
+    const [selectionContext, setSelectionContext] = useState<any>({});
+
     const [taxType, setTaxType] = useState<'DOMESTIC' | 'INTERNATIONAL'>('DOMESTIC');
     const [taxRate, setTaxRate] = useState(18); // Default GST 18%
 
@@ -123,15 +125,20 @@ export default function NewSubscriptionPage() {
         if (formData.items.some(i => i.journalId === journal.id)) return;
 
         const price = formData.currency === 'INR' ? (plan.priceINR || 0) : (plan.priceUSD || 0);
+        const planName = `${plan.planType} - ${plan.format}${plan.issue && plan.issue !== 'ALL' ? ` (${plan.issue})` : ''} [${plan.subscriptionYear}]`;
+
+        const planDuration = plan.duration || 365;
+        const newEndDate = new Date(new Date(formData.startDate).getTime() + (planDuration * 24 * 60 * 60 * 1000)).toISOString().split('T')[0];
 
         setFormData({
             ...formData,
+            endDate: newEndDate,
             items: [...formData.items, {
                 journalId: journal.id,
                 planId: plan.id,
                 quantity: 1,
                 journalName: journal.name,
-                planName: `${plan.planType} - ${plan.format}`,
+                planName: planName,
                 price: price
             }]
         });
@@ -338,35 +345,110 @@ export default function NewSubscriptionPage() {
                                 {journals.filter(j => {
                                     const term = searchTerm.toLowerCase();
                                     return j.name.toLowerCase().includes(term) || (j.frequency && j.frequency.toLowerCase().includes(term));
-                                }).map((j) => (
-                                    <div key={j.id} className="p-4 rounded-xl border border-secondary-100 hover:border-primary-200 transition-colors">
-                                        <div className="flex justify-between items-start mb-4">
-                                            <div>
-                                                <h4 className="font-bold text-secondary-900">{j.name}</h4>
-                                                <p className="text-xs text-secondary-500 uppercase">{j.frequency} Access</p>
+                                }).map((j) => {
+                                    const journalContext = selectionContext[j.id] || {};
+                                    const availableYears = Array.from(new Set(j.plans.map((p: any) => p.subscriptionYear).filter(Boolean))) as number[];
+                                    availableYears.sort((a, b) => b - a);
+
+                                    const filteredPlansByYear = j.plans.filter((p: any) => !journalContext.year || p.subscriptionYear === journalContext.year);
+                                    const availableFormats = Array.from(new Set(filteredPlansByYear.map((p: any) => p.format))) as string[];
+
+                                    const filteredPlansByFormat = filteredPlansByYear.filter((p: any) => !journalContext.format || p.format === journalContext.format);
+                                    const availableIssues = Array.from(new Set(filteredPlansByFormat.map((p: any) => p.issue).filter(Boolean))) as string[];
+
+                                    const finalPlan = filteredPlansByFormat.find((p: any) => 
+                                        (!journalContext.format || p.format === journalContext.format) &&
+                                        (!journalContext.issue || p.issue === journalContext.issue || (availableIssues.length === 0 && p.issue === 'ALL'))
+                                    );
+
+                                    return (
+                                        <div key={j.id} className="p-5 rounded-2xl border-2 border-secondary-100 hover:border-primary-200 transition-all bg-white shadow-sm">
+                                            <div className="flex justify-between items-start mb-6">
+                                                <div>
+                                                    <h4 className="font-bold text-lg text-secondary-900">{j.name}</h4>
+                                                    <p className="text-xs font-bold text-primary-600 uppercase tracking-wider">{j.frequency || 'Annual'} Journal</p>
+                                                </div>
                                             </div>
-                                        </div>
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                            {j.plans.map((p: any) => (
-                                                <button
-                                                    key={p.id}
-                                                    onClick={() => addItem(j, p)}
-                                                    className={`p-3 rounded-lg border text-left transition-all ${formData.items.some(i => i.planId === p.id)
-                                                        ? 'bg-primary-600 border-primary-600 text-white'
-                                                        : 'bg-white border-secondary-200 hover:border-primary-600 '
-                                                        }`}
-                                                >
-                                                    <div className="text-sm font-bold">{p.planType}</div>
-                                                    <div className="text-xs opacity-75">{p.format}</div>
-                                                    <div className="text-sm mt-1 font-bold">
-                                                        {formData.currency === 'INR' ? '₹' : '$'}
-                                                        {formData.currency === 'INR' ? (p.priceINR?.toLocaleString() || 0) : (p.priceUSD?.toLocaleString() || 0)}
+
+                                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                                                {/* Year Selector */}
+                                                <div>
+                                                    <label className="text-[10px] font-bold text-secondary-400 uppercase mb-1 block">1. Select Year</label>
+                                                    <select 
+                                                        className="input py-2 text-sm"
+                                                        value={journalContext.year || ''}
+                                                        onChange={(e) => setSelectionContext({
+                                                            ...selectionContext,
+                                                            [j.id]: { year: parseInt(e.target.value) }
+                                                        })}
+                                                    >
+                                                        <option value="">Choose Year</option>
+                                                        {availableYears.map(y => <option key={y} value={y}>{y}</option>)}
+                                                    </select>
+                                                </div>
+
+                                                {/* Format Selector */}
+                                                {journalContext.year && (
+                                                    <div className="animate-in fade-in slide-in-from-left-2">
+                                                        <label className="text-[10px] font-bold text-secondary-400 uppercase mb-1 block">2. Select Format</label>
+                                                        <select 
+                                                            className="input py-2 text-sm"
+                                                            value={journalContext.format || ''}
+                                                            onChange={(e) => setSelectionContext({
+                                                                ...selectionContext,
+                                                                [j.id]: { ...journalContext, format: e.target.value, issue: undefined }
+                                                            })}
+                                                        >
+                                                            <option value="">Choose Format</option>
+                                                            {availableFormats.map(f => <option key={f} value={f}>{f.replace('_', ' + ')}</option>)}
+                                                        </select>
                                                     </div>
-                                                </button>
-                                            ))}
+                                                )}
+
+                                                {/* Issue Selector */}
+                                                {journalContext.format === 'PRINT' && availableIssues.length > 0 && (
+                                                    <div className="animate-in fade-in slide-in-from-left-2">
+                                                        <label className="text-[10px] font-bold text-secondary-400 uppercase mb-1 block">3. Select Issue</label>
+                                                        <select 
+                                                            className="input py-2 text-sm"
+                                                            value={journalContext.issue || ''}
+                                                            onChange={(e) => setSelectionContext({
+                                                                ...selectionContext,
+                                                                [j.id]: { ...journalContext, issue: e.target.value }
+                                                            })}
+                                                        >
+                                                            <option value="">Choose Issue</option>
+                                                            {availableIssues.map(i => (
+                                                                <option key={i} value={i}>
+                                                                    {i === 'ISSUE_1' ? 'Issue 1 (Jan-June)' : i === 'ISSUE_2' ? 'Issue 2 (July-Dec)' : 'All Issues (Jan-Dec)'}
+                                                                </option>
+                                                            ))}
+                                                        </select>
+                                                    </div>
+                                                )}
+                                            </div>
+
+                                            {/* Final Action / Price */}
+                                            {finalPlan && (
+                                                <div className="flex items-center justify-between p-4 bg-primary-50 rounded-xl border border-primary-100 animate-in zoom-in-95">
+                                                    <div>
+                                                        <div className="text-xs text-primary-600 font-bold uppercase tracking-widest mb-1">Price Configuration</div>
+                                                        <div className="text-2xl font-black text-primary-900">
+                                                            {currencySymbol}{formData.currency === 'INR' ? (finalPlan.priceINR?.toLocaleString() || 0) : (finalPlan.priceUSD?.toLocaleString() || 0)}
+                                                        </div>
+                                                    </div>
+                                                    <button
+                                                        onClick={() => addItem(j, finalPlan)}
+                                                        className={`btn ${formData.items.some(i => i.journalId === j.id) ? 'btn-secondary' : 'btn-primary'} px-8`}
+                                                        disabled={formData.items.some(i => i.journalId === j.id)}
+                                                    >
+                                                        {formData.items.some(i => i.journalId === j.id) ? 'Added to Cart' : 'Add to Subscription'}
+                                                    </button>
+                                                </div>
+                                            )}
                                         </div>
-                                    </div>
-                                ))}
+                                    );
+                                })}
                             </div>
                         </div>
 

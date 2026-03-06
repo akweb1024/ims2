@@ -1,130 +1,113 @@
-
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { getAuthenticatedUser } from '@/lib/auth-legacy';
+import { authorizedRoute } from '@/lib/middleware-auth';
+import { handleApiError } from '@/lib/error-handler';
+import { z } from 'zod';
 
-export async function GET(
-    req: NextRequest,
-    { params }: { params: Promise<{ id: string }> }
-) {
-    try {
-        const user = await getAuthenticatedUser();
-        if (!user) {
-            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-        }
+const updateLeadSchema = z.object({
+    name: z.string().min(2).optional(),
+    primaryEmail: z.string().email().optional(),
+    primaryPhone: z.string().optional(),
+    organizationName: z.string().optional(),
+    leadStatus: z.string().optional(),
+    leadScore: z.number().optional(),
+    source: z.string().optional(),
+    notes: z.string().optional(),
+    assignedToUserId: z.string().optional().nullable(),
+});
 
-        const { id } = await params;
+export const GET = authorizedRoute(
+    ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'TEAM_LEADER', 'EXECUTIVE'],
+    async (req, user, { params }) => {
+        try {
+            const { id } = await params;
 
-        const lead = await prisma.customerProfile.findFirst({
-            where: {
-                id,
-                companyId: user.companyId,
-                leadStatus: { not: null }
-            },
-            include: {
-                assignedTo: {
-                    select: { id: true, name: true, email: true }
+            const lead = await prisma.customerProfile.findFirst({
+                where: {
+                    id,
+                    companyId: user.companyId,
+                    leadStatus: { not: null }
                 },
-                communications: {
-                    orderBy: { date: 'desc' },
-                    include: {
-                        user: {
-                            select: { id: true, name: true }
+                include: {
+                    assignedTo: {
+                        select: { id: true, name: true, email: true }
+                    },
+                    communications: {
+                        orderBy: { date: 'desc' },
+                        include: {
+                            user: {
+                                select: { id: true, name: true }
+                            }
                         }
+                    },
+                    deals: {
+                        orderBy: { updatedAt: 'desc' }
                     }
-                },
-                deals: {
-                    orderBy: { updatedAt: 'desc' }
                 }
+            });
+
+            if (!lead) {
+                return NextResponse.json({ error: 'Lead not found' }, { status: 404 });
             }
-        });
 
-        if (!lead) {
-            return NextResponse.json({ error: 'Lead not found' }, { status: 404 });
+            return NextResponse.json(lead);
+        } catch (error) {
+            return handleApiError(error, 'Failed to fetch lead');
         }
-
-        return NextResponse.json(lead);
-
-    } catch (error) {
-        console.error('Failed to fetch lead:', error);
-        return NextResponse.json({ error: 'Failed to fetch lead' }, { status: 500 });
     }
-}
+);
 
-export async function PATCH(
-    req: NextRequest,
-    { params }: { params: Promise<{ id: string }> }
-) {
-    try {
-        const user = await getAuthenticatedUser();
-        if (!user) {
-            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-        }
+export const PATCH = authorizedRoute(
+    ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'TEAM_LEADER'],
+    async (req, user, { params }) => {
+        try {
+            const { id } = await params;
+            const body = await req.json();
+            const validated = updateLeadSchema.parse(body);
 
-        const { id } = await params;
-        const body = await req.json();
+            // Safety check: ensure lead belongs to company
+            const existing = await prisma.customerProfile.findFirst({
+                where: { id, companyId: user.companyId }
+            });
 
-        // Safety check: ensure lead belongs to company
-        const existing = await prisma.customerProfile.findFirst({
-            where: { id, companyId: user.companyId }
-        });
-
-        if (!existing) {
-            return NextResponse.json({ error: 'Lead not found' }, { status: 404 });
-        }
-
-        const updatedLead = await prisma.customerProfile.update({
-            where: { id },
-            data: {
-                name: body.name,
-                primaryEmail: body.primaryEmail,
-                primaryPhone: body.primaryPhone,
-                organizationName: body.organizationName,
-                leadStatus: body.leadStatus,
-                leadScore: body.leadScore,
-                source: body.source,
-                notes: body.notes,
-                assignedToUserId: body.assignedToUserId
+            if (!existing) {
+                return NextResponse.json({ error: 'Lead not found' }, { status: 404 });
             }
-        });
 
-        return NextResponse.json(updatedLead);
+            const updatedLead = await prisma.customerProfile.update({
+                where: { id },
+                data: validated as any
+            });
 
-    } catch (error) {
-        console.error('Failed to update lead:', error);
-        return NextResponse.json({ error: 'Failed to update lead' }, { status: 500 });
-    }
-}
-
-export async function DELETE(
-    req: NextRequest,
-    { params }: { params: Promise<{ id: string }> }
-) {
-    try {
-        const user = await getAuthenticatedUser();
-        if (!user) {
-            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+            return NextResponse.json(updatedLead);
+        } catch (error) {
+            return handleApiError(error, 'Failed to update lead');
         }
-
-        const { id } = await params;
-
-        // Check ownership
-        const lead = await prisma.customerProfile.findFirst({
-            where: { id, companyId: user.companyId }
-        });
-
-        if (!lead) {
-            return NextResponse.json({ error: 'Lead not found' }, { status: 404 });
-        }
-
-        await prisma.customerProfile.delete({
-            where: { id }
-        });
-
-        return NextResponse.json({ message: 'Lead deleted successfully' });
-
-    } catch (error) {
-        console.error('Failed to delete lead:', error);
-        return NextResponse.json({ error: 'Failed to delete lead' }, { status: 500 });
     }
-}
+);
+
+export const DELETE = authorizedRoute(
+    ['SUPER_ADMIN', 'ADMIN', 'MANAGER'],
+    async (req, user, { params }) => {
+        try {
+            const { id } = await params;
+
+            // Check ownership/access
+            const lead = await prisma.customerProfile.findFirst({
+                where: { id, companyId: user.companyId }
+            });
+
+            if (!lead) {
+                return NextResponse.json({ error: 'Lead not found' }, { status: 404 });
+            }
+
+            await prisma.customerProfile.delete({
+                where: { id }
+            });
+
+            return NextResponse.json({ message: 'Lead deleted successfully' });
+        } catch (error) {
+            return handleApiError(error, 'Failed to delete lead');
+        }
+    }
+);

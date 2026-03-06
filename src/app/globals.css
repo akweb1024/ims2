@@ -430,3 +430,196 @@
     left: 0 !important;
   }
 }
+
+/* ═══════════════════════════════════════════════════════════════════
+   CRM DESIGN SYSTEM  – Unified tokens for all CRM module pages
+   Pages: crm, customers, crm/partners, customers/new, crm/invoices,
+          crm/subscriptions, crm/invoice-products, coupons,
+          communications, crm/campaigns, follow-ups
+═══════════════════════════════════════════════════════════════════ */
+@layer components {
+  /* ── Page scaffold ─────────────────────────────────────────────── */
+  .crm-page {
+    @apply space-y-6;
+  }
+
+  .crm-page-title {
+    @apply text-2xl font-bold text-secondary-900 tracking-tight;
+  }
+
+  .crm-page-subtitle {
+    @apply text-sm text-secondary-500 mt-0.5;
+  }
+
+  /* ── Card ──────────────────────────────────────────────────────── */
+  .crm-card {
+    background-color: rgb(var(--surface));
+    border-color: rgb(var(--border) / 0.5);
+    @apply rounded-2xl border shadow-sm transition-shadow duration-200;
+  }
+
+  .crm-card-body {
+    @apply p-5;
+  }
+
+  /* ── Filter bar ────────────────────────────────────────────────── */
+  .crm-filter-bar {
+    background-color: rgb(var(--surface));
+    border-color: rgb(var(--border) / 0.5);
+    @apply rounded-2xl border shadow-sm p-4;
+  }
+
+  /* ── Search input ──────────────────────────────────────────────── */
+  .crm-search-wrapper {
+    @apply relative;
+  }
+
+  .crm-search-icon {
+    @apply absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-secondary-400 pointer-events-none;
+  }
+
+  .crm-search-input {
+    @apply pl-9 text-sm;
+  }
+
+  /* ── Standardised table ────────────────────────────────────────── */
+  .crm-table {
+    @apply w-full;
+  }
+
+  .crm-table thead tr {
+    border-bottom-width: 1px;
+    border-color: rgb(var(--border) / 0.6);
+    background-color: rgb(var(--border) / 0.12);
+  }
+
+  .crm-table thead th {
+    @apply px-5 py-3.5 text-left text-[11px] font-semibold uppercase tracking-wider text-secondary-400;
+  }
+
+  .crm-table thead th.text-right {
+    text-align: right;
+  }
+
+  .crm-table tbody tr {
+    border-bottom-width: 1px;
+    border-color: rgb(var(--border) / 0.3);
+    @apply transition-colors duration-100 hover:bg-secondary-50/60;
+  }
+
+  .crm-table tbody td {
+    @apply px-5 py-3.5 text-sm text-secondary-700;
+  }
+
+  /* ── Badge ─────────────────────────────────────────────────────── */
+  .crm-badge {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold;
+  }
+
+  /* ── Pagination ─────────────────────────────────────────────────── */
+  .crm-pagination {
+    border-top-width: 1px;
+    border-color: rgb(var(--border) / 0.4);
+    background-color: rgb(var(--border) / 0.06);
+    @apply px-5 py-3.5 flex items-center justify-between flex-wrap gap-3;
+  }
+
+  .crm-pagination-info {
+    @apply text-xs text-secondary-400;
+  }
+
+  .crm-pagination-btn {
+    background-color: rgb(var(--surface));
+    border-color: rgb(var(--border) / 0.8);
+    @apply px-3 py-1.5 text-xs font-medium rounded-lg border text-secondary-600
+           hover:bg-secondary-50 disabled:opacity-40 disabled:cursor-not-allowed
+           transition-colors duration-150;
+  }
+
+  /* ── Row action icon button ─────────────────────────────────────── */
+  .crm-row-action {
+    @apply p-1.5 rounded-lg text-secondary-400 hover:text-secondary-700
+           hover:bg-secondary-100 transition-colors duration-150 inline-flex
+           items-center justify-center;
+  }
+
+  /* ── Modal ──────────────────────────────────────────────────────── */
+  .crm-modal-overlay {
+    @apply fixed inset-0 z-50 flex items-center justify-center
+           bg-secondary-900/50 backdrop-blur-sm p-4;
+  }
+
+  .crm-modal-panel {
+    background-color: rgb(var(--surface));
+    @apply w-full rounded-2xl shadow-2xl max-h-[92vh] flex flex-col overflow-hidden;
+  }
+
+  .crm-modal-header {
+    border-bottom-width: 1px;
+    border-color: rgb(var(--border) / 0.5);
+    @apply px-6 py-5 flex items-start justify-between gap-4 shrink-0;
+  }
+
+  .crm-modal-title {
+    @apply text-lg font-semibold text-secondary-900;
+  }
+
+  .crm-modal-subtitle {
+    @apply text-sm text-secondary-400 mt-0.5;
+  }
+
+  .crm-modal-close {
+    @apply p-1.5 rounded-lg text-secondary-400 hover:text-secondary-700
+           hover:bg-secondary-100 transition-colors shrink-0;
+  }
+
+  .crm-modal-body {
+    @apply px-6 py-5 overflow-y-auto;
+  }
+
+  .crm-modal-footer {
+    border-top-width: 1px;
+    border-color: rgb(var(--border) / 0.5);
+    @apply px-6 py-4 flex justify-end gap-3 shrink-0;
+  }
+
+  /* ── Section heading inside a page ─────────────────────────────── */
+  .crm-section-title {
+    @apply text-xs font-semibold uppercase tracking-wider text-secondary-400 mb-3;
+  }
+
+  /* ── Bulk action bar ────────────────────────────────────────────── */
+  .crm-bulk-bar {
+    @apply bg-primary-50 border border-primary-200 rounded-xl px-4 py-3
+           flex items-center justify-between gap-4 animate-pulse-subtle;
+  }
+
+  /* ── Avatar circle used in table rows ───────────────────────────── */
+  .crm-avatar {
+    @apply w-8 h-8 rounded-full bg-primary-100 text-primary-700 flex items-center
+           justify-center text-sm font-bold shrink-0 uppercase;
+  }
+
+  /* ── Status pill (replaces mixed badge patterns) ─────────────────── */
+  /* Note: must inline crm-badge utilities — @apply cannot compose @layer classes */
+  .crm-status-active {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold
+           bg-emerald-50 text-emerald-700 border border-emerald-200;
+  }
+  .crm-status-pending {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold
+           bg-amber-50 text-amber-700 border border-amber-200;
+  }
+  .crm-status-inactive {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold
+           bg-slate-100 text-slate-500 border border-slate-200;
+  }
+  .crm-status-danger {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold
+           bg-rose-50 text-rose-700 border border-rose-200;
+  }
+  .crm-status-info {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold
+           bg-sky-50 text-sky-700 border border-sky-200;
+  }
+}

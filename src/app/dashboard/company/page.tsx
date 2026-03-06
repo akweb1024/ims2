@@ -26,6 +26,35 @@ export default function CompanyPage() {
     const [staffList, setStaffList] = useState<any[]>([]);
     const [actionLoading, setActionLoading] = useState(false);
 
+    // Invoice Identity Settings
+    const [invoiceSettings, setInvoiceSettings] = useState({
+        legalEntityName: '',
+        tagline: '',
+        logoUrl: '',
+        invoiceCompanyLogoUrl: '',
+        brandRelationType: 'A Brand of',
+        gstin: '',
+        stateCode: '',
+        cinNo: '',
+        panNo: '',
+        iecCode: '',
+        bankName: '',
+        bankAccountHolder: '',
+        bankAccountNumber: '',
+        bankIfscCode: '',
+        bankSwiftCode: '',
+        paymentMode: 'Online',
+        regdOfficeAddress: '',
+        salesOfficeAddress: '',
+        invoiceTerms: '',
+        invoicePrefix: 'INV-',
+        proformaPrefix: 'PRO-',
+        invoiceNextNumber: 1,
+        proformaNextNumber: 1,
+    });
+    const [invoiceSaving, setInvoiceSaving] = useState(false);
+    const [invoiceSaved, setInvoiceSaved] = useState(false);
+
     const searchParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
     const companyIdParam = searchParams?.get('id');
     const tabParam = searchParams?.get('tab');
@@ -73,6 +102,33 @@ export default function CompanyPage() {
 
             if (companyData) {
                 setCompany(companyData);
+
+                // Sync invoice identity fields from company data
+                setInvoiceSettings({
+                    legalEntityName: companyData.legalEntityName || '',
+                    tagline: companyData.tagline || '',
+                    logoUrl: companyData.logoUrl || '',
+                    invoiceCompanyLogoUrl: companyData.invoiceCompanyLogoUrl || '',
+                    brandRelationType: companyData.brandRelationType || 'A Brand of',
+                    gstin: companyData.gstin || '',
+                    stateCode: companyData.stateCode || '',
+                    cinNo: companyData.cinNo || '',
+                    panNo: companyData.panNo || '',
+                    iecCode: companyData.iecCode || '',
+                    bankName: companyData.bankName || '',
+                    bankAccountHolder: companyData.bankAccountHolder || '',
+                    bankAccountNumber: companyData.bankAccountNumber || '',
+                    bankIfscCode: companyData.bankIfscCode || '',
+                    bankSwiftCode: companyData.bankSwiftCode || '',
+                    paymentMode: companyData.paymentMode || 'Online',
+                    regdOfficeAddress: companyData.regdOfficeAddress || '',
+                    salesOfficeAddress: companyData.salesOfficeAddress || '',
+                    invoiceTerms: companyData.invoiceTerms || '',
+                    invoicePrefix: companyData.invoicePrefix || 'INV-',
+                    proformaPrefix: companyData.proformaPrefix || 'PRO-',
+                    invoiceNextNumber: companyData.invoiceNextNumber || 1,
+                    proformaNextNumber: companyData.proformaNextNumber || 1,
+                });
 
                 // Fetch departments for this company
                 const deptRes = await fetch(`/api/departments?companyId=${companyData.id}`, {
@@ -150,6 +206,14 @@ export default function CompanyPage() {
         }
     };
 
+    const Field = ({ label, children, hint }: { label: string; children: React.ReactNode; hint?: string }) => (
+        <div className="space-y-1">
+            <label className="text-xs text-secondary-500 uppercase font-black tracking-wider">{label}</label>
+            {hint && <p className="text-[10px] text-secondary-400 leading-tight mb-1">{hint}</p>}
+            {children}
+        </div>
+    );
+
     const handleUpdateCompany = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         setActionLoading(true);
@@ -188,6 +252,42 @@ export default function CompanyPage() {
             alert('Error updating company');
         } finally {
             setActionLoading(false);
+        }
+    };
+
+    const handleSaveInvoiceSettings = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setInvoiceSaving(true);
+        setInvoiceSaved(false);
+        try {
+            const token = localStorage.getItem('token');
+            const payload = {
+                ...invoiceSettings,
+                invoiceNextNumber: parseInt(invoiceSettings.invoiceNextNumber as any) || 1,
+                proformaNextNumber: parseInt(invoiceSettings.proformaNextNumber as any) || 1,
+            };
+
+            const res = await fetch(`/api/companies/${company.id}`, {
+                method: 'PATCH',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(payload)
+            });
+            if (res.ok) {
+                const updated = await res.json();
+                setCompany(updated);
+                setInvoiceSaved(true);
+                setTimeout(() => setInvoiceSaved(false), 3000);
+            } else {
+                const err = await res.json();
+                alert(err.error || 'Failed to save invoice settings');
+            }
+        } catch (err) {
+            alert('Error saving invoice settings');
+        } finally {
+            setInvoiceSaving(false);
         }
     };
 
@@ -288,6 +388,24 @@ export default function CompanyPage() {
                 // Otherwise use the preset value
                 return preset || 'A Brand of';
             })(),
+            regdOfficeAddress: formData.get('regdOfficeAddress'),
+            salesOfficeAddress: formData.get('salesOfficeAddress'),
+            invoiceTerms: formData.get('invoiceTerms'),
+            legalEntityName: formData.get('legalEntityName'),
+            gstin: formData.get('gstin'),
+            cinNo: formData.get('cinNo'),
+            panNo: formData.get('panNo'),
+            iecCode: formData.get('iecCode'),
+            bankName: formData.get('bankName'),
+            bankAccountHolder: formData.get('bankAccountHolder'),
+            bankAccountNumber: formData.get('bankAccountNumber'),
+            bankIfscCode: formData.get('bankIfscCode'),
+            bankSwiftCode: formData.get('bankSwiftCode'),
+            paymentMode: formData.get('paymentMode'),
+            invoicePrefix: formData.get('invoicePrefix'),
+            proformaPrefix: formData.get('proformaPrefix'),
+            invoiceNextNumber: formData.get('invoiceNextNumber') ? parseInt(formData.get('invoiceNextNumber') as string) : null,
+            proformaNextNumber: formData.get('proformaNextNumber') ? parseInt(formData.get('proformaNextNumber') as string) : null,
         };
 
         try {
@@ -405,18 +523,18 @@ export default function CompanyPage() {
                     >
                         Workforce Intelligence
                     </button>
-                    <button
-                        onClick={() => setActiveTab('DETAILS')}
-                        className={`px-6 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === 'DETAILS' ? 'bg-white text-primary-600 shadow' : 'text-secondary-500 hover:text-secondary-700'}`}
-                    >
-                        Company Settings
-                    </button>
-                    <button
-                        onClick={() => setActiveTab('BRANDS')}
-                        className={`px-6 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === 'BRANDS' ? 'bg-white text-primary-600 shadow' : 'text-secondary-500 hover:text-secondary-700'}`}
-                    >
-                        Brands Management
-                    </button>
+                        <button
+                            onClick={() => setActiveTab('DETAILS')}
+                            className={`px-6 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === 'DETAILS' ? 'bg-white text-primary-600 shadow-sm' : 'text-secondary-500 hover:text-secondary-700'}`}
+                        >
+                            Identity & Settings
+                        </button>
+                        <button
+                            onClick={() => setActiveTab('BRANDS')}
+                            className={`px-6 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === 'BRANDS' ? 'bg-white text-primary-600 shadow-sm' : 'text-secondary-500 hover:text-secondary-700'}`}
+                        >
+                            Brand Portfolios
+                        </button>
                 </div>
 
                 {/* Tab Content */}
@@ -495,6 +613,304 @@ export default function CompanyPage() {
                                         <div>
                                             <label className="text-xs text-secondary-500 uppercase font-bold">Employees</label>
                                             <p className="text-secondary-900 text-2xl font-bold">{company._count?.users || 0}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* ─── INVOICE & LEGAL IDENTITY SECTION ─── */}
+                            <div className="card-premium p-8 overflow-hidden relative">
+                                <div className="absolute top-0 right-0 w-64 h-64 bg-primary-50 rounded-full blur-3xl opacity-50 -mr-32 -mt-32" />
+                                
+                                <div className="relative">
+                                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8 pb-6 border-b border-secondary-100">
+                                        <div>
+                                            <h3 className="text-2xl font-black text-secondary-900 flex items-center gap-2">
+                                                <span className="p-2 bg-secondary-100 rounded-xl text-xl">🧾</span>
+                                                Invoice & Legal Identity
+                                            </h3>
+                                            <p className="text-secondary-500 text-sm font-medium mt-1">Manage global billing defaults and registered entity information</p>
+                                        </div>
+                                        <div className="flex items-center gap-3">
+                                            {invoiceSaved && (
+                                                <div className="bg-success-50 text-success-700 px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest animate-fadeIn border border-success-100 italic">
+                                                    ✨ Identity Synchronized
+                                                </div>
+                                            )}
+                                            <button 
+                                                onClick={handleSaveInvoiceSettings}
+                                                disabled={invoiceSaving}
+                                                className={`btn ${invoiceSaving ? 'btn-secondary' : 'btn-primary'} px-8 flex items-center gap-2 shadow-lg shadow-primary-100`}
+                                            >
+                                                {invoiceSaving ? (
+                                                    <>
+                                                        <span className="animate-spin text-sm">⏳</span>
+                                                        Saving...
+                                                    </>
+                                                ) : (
+                                                    'Update Identity'
+                                                )}
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+                                        <div className="md:col-span-2">
+                                            <Field label="Legal Entity Name" hint="Full registered name of your business organization">
+                                                <input 
+                                                    className="input-premium" 
+                                                    value={invoiceSettings.legalEntityName} 
+                                                    onChange={e => setInvoiceSettings({ ...invoiceSettings, legalEntityName: e.target.value })} 
+                                                    placeholder="e.g. Consortium e-Learning Network Pvt. Ltd." 
+                                                />
+                                            </Field>
+                                        </div>
+                                        <div className="md:col-span-2 lg:col-span-1">
+                                            <Field label="Corporate tagline" hint="Appears below company name on invoices">
+                                                <input 
+                                                    className="input-premium italic font-serif" 
+                                                    value={invoiceSettings.tagline} 
+                                                    onChange={e => setInvoiceSettings({ ...invoiceSettings, tagline: e.target.value })} 
+                                                    placeholder="Focusing on S&T Research Journals" 
+                                                />
+                                            </Field>
+                                        </div>
+                                        <div>
+                                            <Field label="Relationship Label" hint="e.g. 'A Brand of'">
+                                                <select 
+                                                    className="input-premium" 
+                                                    value={invoiceSettings.brandRelationType}
+                                                    onChange={e => setInvoiceSettings({ ...invoiceSettings, brandRelationType: e.target.value })}
+                                                >
+                                                    <option value="A Brand of">A Brand of</option>
+                                                    <option value="An imprint of">An imprint of</option>
+                                                    <option value="Published by">Published by</option>
+                                                    <option value="A Subsidiary of">A Subsidiary of</option>
+                                                    <option value="A Unit of">A Unit of</option>
+                                                </select>
+                                            </Field>
+                                        </div>
+                                    </div>
+
+                                    <div className="mt-10 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-x-8 gap-y-6 bg-secondary-50/50 p-6 rounded-2xl border border-secondary-100">
+                                        <Field label="GSTIN Number">
+                                            <input 
+                                                className="input-premium font-mono bg-white" 
+                                                value={invoiceSettings.gstin} 
+                                                onChange={e => setInvoiceSettings({ ...invoiceSettings, gstin: e.target.value })} 
+                                                placeholder="09..." 
+                                                maxLength={15} 
+                                            />
+                                        </Field>
+                                        <Field label="State Code" hint="Numeric GST state code">
+                                            <input 
+                                                className="input-premium font-mono bg-white" 
+                                                value={invoiceSettings.stateCode} 
+                                                onChange={e => setInvoiceSettings({ ...invoiceSettings, stateCode: e.target.value })} 
+                                                placeholder="09" 
+                                                maxLength={2} 
+                                            />
+                                        </Field>
+                                        <Field label="PAN Number">
+                                            <input 
+                                                className="input-premium font-mono bg-white" 
+                                                value={invoiceSettings.panNo} 
+                                                onChange={e => setInvoiceSettings({ ...invoiceSettings, panNo: e.target.value })} 
+                                                placeholder="AAC..." 
+                                            />
+                                        </Field>
+                                        <Field label="CIN (Corporate ID)">
+                                            <input 
+                                                className="input-premium font-mono bg-white text-[11px]" 
+                                                value={invoiceSettings.cinNo} 
+                                                onChange={e => setInvoiceSettings({ ...invoiceSettings, cinNo: e.target.value })} 
+                                                placeholder="U80..." 
+                                            />
+                                        </Field>
+                                        <Field label="IEC Code" hint="Import Export Code">
+                                            <input 
+                                                className="input-premium font-mono bg-white" 
+                                                value={invoiceSettings.iecCode} 
+                                                onChange={e => setInvoiceSettings({ ...invoiceSettings, iecCode: e.target.value })} 
+                                                placeholder="AAC..." 
+                                            />
+                                        </Field>
+                                    </div>
+
+                                    <div className="mt-12">
+                                        <h4 className="font-black text-secondary-900 mb-6 flex items-center gap-2 uppercase tracking-tighter">
+                                            <span className="w-8 h-8 bg-indigo-100 flex items-center justify-center rounded-lg text-lg">🏦</span>
+                                            Banking & Settlement Details
+                                        </h4>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                                            <Field label="Bank Name">
+                                                <input 
+                                                    className="input-premium" 
+                                                    value={invoiceSettings.bankName} 
+                                                    onChange={e => setInvoiceSettings({ ...invoiceSettings, bankName: e.target.value })} 
+                                                    placeholder="e.g. HDFC BANK" 
+                                                />
+                                            </Field>
+                                            <Field label="Account Holder">
+                                                <input 
+                                                    className="input-premium" 
+                                                    value={invoiceSettings.bankAccountHolder} 
+                                                    onChange={e => setInvoiceSettings({ ...invoiceSettings, bankAccountHolder: e.target.value })} 
+                                                />
+                                            </Field>
+                                            <Field label="Account Number">
+                                                <input 
+                                                    className="input-premium font-mono" 
+                                                    value={invoiceSettings.bankAccountNumber} 
+                                                    onChange={e => setInvoiceSettings({ ...invoiceSettings, bankAccountNumber: e.target.value })} 
+                                                />
+                                            </Field>
+                                            <Field label="IFSC Code">
+                                                <input 
+                                                    className="input-premium font-mono" 
+                                                    value={invoiceSettings.bankIfscCode} 
+                                                    onChange={e => setInvoiceSettings({ ...invoiceSettings, bankIfscCode: e.target.value })} 
+                                                />
+                                            </Field>
+                                            <Field label="Swift Code" hint="For International Payments">
+                                                <input 
+                                                    className="input-premium font-mono" 
+                                                    value={invoiceSettings.bankSwiftCode} 
+                                                    onChange={e => setInvoiceSettings({ ...invoiceSettings, bankSwiftCode: e.target.value })} 
+                                                />
+                                            </Field>
+                                            <Field label="Settlement Mode">
+                                                <select 
+                                                    className="input-premium" 
+                                                    value={invoiceSettings.paymentMode} 
+                                                    onChange={e => setInvoiceSettings({ ...invoiceSettings, paymentMode: e.target.value })}
+                                                >
+                                                    <option value="Online">Online / Card</option>
+                                                    <option value="NEFT/RTGS">NEFT / RTGS</option>
+                                                    <option value="Cheque/DD">Cheque / Demand Draft</option>
+                                                    <option value="UPI">UPI / QR</option>
+                                                </select>
+                                            </Field>
+                                        </div>
+                                    </div>
+
+                                    <div className="mt-12 bg-indigo-50/30 p-8 rounded-3xl border border-indigo-100/50">
+                                        <h4 className="font-black text-secondary-900 mb-6 flex items-center gap-2 uppercase tracking-tighter">
+                                            <span className="w-8 h-8 bg-indigo-100 flex items-center justify-center rounded-lg text-lg">📍</span>
+                                            Corporate Office Addresses
+                                        </h4>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                            <Field label="Registered Office Address" hint="Legal address for registrations and notices (Regd. Office:)">
+                                                <textarea 
+                                                    className="input-premium bg-white" 
+                                                    rows={3}
+                                                    value={invoiceSettings.regdOfficeAddress} 
+                                                    onChange={e => setInvoiceSettings({ ...invoiceSettings, regdOfficeAddress: e.target.value })} 
+                                                    placeholder="Enter full registered office address..." 
+                                                />
+                                            </Field>
+                                            <Field label="Sales & Admin Office" hint="Operating address for communications (Sales & Admin Office:)">
+                                                <textarea 
+                                                    className="input-premium bg-white" 
+                                                    rows={3}
+                                                    value={invoiceSettings.salesOfficeAddress} 
+                                                    onChange={e => setInvoiceSettings({ ...invoiceSettings, salesOfficeAddress: e.target.value })} 
+                                                    placeholder="Enter operating office address..." 
+                                                />
+                                            </Field>
+                                        </div>
+                                    </div>
+
+                                    <div className="mt-8">
+                                        <Field label="Invoice Terms & Conditions" hint="Standard legal terms that appear at the bottom of every invoice">
+                                            <textarea 
+                                                className="input-premium min-h-[150px]" 
+                                                value={invoiceSettings.invoiceTerms} 
+                                                onChange={e => setInvoiceSettings({ ...invoiceSettings, invoiceTerms: e.target.value })} 
+                                                placeholder="1. Payment is due within... 2. All disputes subject to..." 
+                                            />
+                                        </Field>
+                                    </div>
+
+                                    <div className="mt-12 bg-amber-50/30 p-8 rounded-3xl border border-amber-100/50">
+                                        <h4 className="font-black text-secondary-900 mb-6 flex items-center gap-2 uppercase tracking-tighter">
+                                            <span className="w-8 h-8 bg-amber-100 flex items-center justify-center rounded-lg text-lg">🔢</span>
+                                            Document Serial Numbering
+                                        </h4>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+                                            <Field label="Tax Invoice Prefix" hint="e.g. INV-2026-">
+                                                <input 
+                                                    className="input-premium font-mono bg-white" 
+                                                    value={invoiceSettings.invoicePrefix} 
+                                                    onChange={e => setInvoiceSettings({ ...invoiceSettings, invoicePrefix: e.target.value.toUpperCase() })} 
+                                                    placeholder="INV-" 
+                                                />
+                                            </Field>
+                                            <Field label="Tax Invoice Next #" hint="Starts auto-incrementing from here">
+                                                <input 
+                                                    type="number"
+                                                    min="1"
+                                                    className="input-premium font-mono bg-white" 
+                                                    value={invoiceSettings.invoiceNextNumber} 
+                                                    onChange={e => setInvoiceSettings({ ...invoiceSettings, invoiceNextNumber: parseInt(e.target.value) || 1 })} 
+                                                />
+                                            </Field>
+                                            <Field label="Proforma Prefix" hint="e.g. PRO-2026-">
+                                                <input 
+                                                    className="input-premium font-mono bg-white" 
+                                                    value={invoiceSettings.proformaPrefix} 
+                                                    onChange={e => setInvoiceSettings({ ...invoiceSettings, proformaPrefix: e.target.value.toUpperCase() })} 
+                                                    placeholder="PRO-" 
+                                                />
+                                            </Field>
+                                            <Field label="Proforma Next #" hint="Starts auto-incrementing from here">
+                                                <input 
+                                                    type="number"
+                                                    min="1"
+                                                    className="input-premium font-mono bg-white" 
+                                                    value={invoiceSettings.proformaNextNumber} 
+                                                    onChange={e => setInvoiceSettings({ ...invoiceSettings, proformaNextNumber: parseInt(e.target.value) || 1 })} 
+                                                />
+                                            </Field>
+                                        </div>
+                                    </div>
+
+                                    <div className="mt-12 pt-8 border-t border-secondary-100">
+                                        <h4 className="font-black text-secondary-900 mb-6 flex items-center gap-2 uppercase tracking-tighter">
+                                            <span className="w-8 h-8 bg-pink-100 flex items-center justify-center rounded-lg text-lg">🖼️</span>
+                                            Visual Identity Assets
+                                        </h4>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                            <Field label="Primary Logo URL" hint="Main company logo used in portal">
+                                                <div className="flex gap-4 items-center">
+                                                    <input 
+                                                        className="input-premium flex-1" 
+                                                        value={invoiceSettings.logoUrl} 
+                                                        onChange={e => setInvoiceSettings({ ...invoiceSettings, logoUrl: e.target.value })} 
+                                                        placeholder="https://..." 
+                                                    />
+                                                    {invoiceSettings.logoUrl && (
+                                                        <div className="w-12 h-12 rounded-xl bg-secondary-50 border p-1 border-secondary-200 overflow-hidden flex-shrink-0">
+                                                            <img src={invoiceSettings.logoUrl} className="w-full h-full object-contain" />
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </Field>
+                                            <Field label="Invoice Company Logo" hint="Specific logo for invoice footers/headers (if different)">
+                                                <div className="flex gap-4 items-center">
+                                                    <input 
+                                                        className="input-premium flex-1" 
+                                                        value={invoiceSettings.invoiceCompanyLogoUrl} 
+                                                        onChange={e => setInvoiceSettings({ ...invoiceSettings, invoiceCompanyLogoUrl: e.target.value })} 
+                                                        placeholder="https://..." 
+                                                    />
+                                                    {invoiceSettings.invoiceCompanyLogoUrl && (
+                                                        <div className="w-12 h-12 rounded-xl bg-secondary-50 border p-1 border-secondary-200 overflow-hidden flex-shrink-0">
+                                                            <img src={invoiceSettings.invoiceCompanyLogoUrl} className="w-full h-full object-contain" />
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </Field>
                                         </div>
                                     </div>
                                 </div>
@@ -994,7 +1410,15 @@ export default function CompanyPage() {
                                     <input name="website" type="url" className="input" defaultValue={editingBrand?.website || ''} placeholder="https://brand.com" />
                                 </div>
                                 <div className="md:col-span-2">
-                                    <label className="label">Address</label>
+                                    <label className="label">Registered Office Address (Regd. Office:)</label>
+                                    <textarea name="regdOfficeAddress" className="input" rows={2} defaultValue={editingBrand?.regdOfficeAddress || ''} placeholder="Full registered address"></textarea>
+                                </div>
+                                <div className="md:col-span-2">
+                                    <label className="label">Sales & Admin Office Address</label>
+                                    <textarea name="salesOfficeAddress" className="input" rows={2} defaultValue={editingBrand?.salesOfficeAddress || ''} placeholder="Operational address"></textarea>
+                                </div>
+                                <div className="md:col-span-2">
+                                    <label className="label">General Business Address (Display)</label>
                                     <textarea name="address" className="input" rows={2} defaultValue={editingBrand?.address || ''} placeholder="Brand-specific office address"></textarea>
                                 </div>
                                 <div>
@@ -1032,6 +1456,83 @@ export default function CompanyPage() {
                                         defaultValue={!['A Brand of', 'An Imprint of', 'A Division of', 'A Subsidiary of', 'A Publication of', 'A Member of', undefined, null, ''].includes(editingBrand?.brandRelationType) ? editingBrand?.brandRelationType : ''}
                                         style={{ display: ['A Brand of', 'An Imprint of', 'A Division of', 'A Subsidiary of', 'A Publication of', 'A Member of', undefined, null, ''].includes(editingBrand?.brandRelationType) ? 'none' : 'block' }}
                                     />
+                                </div>
+
+                                <div className="md:col-span-2 pt-4 border-t border-secondary-100">
+                                    <h4 className="font-bold text-secondary-900 mb-4 flex items-center gap-2">
+                                        ⚖️ Legal Identity
+                                    </h4>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div className="md:col-span-2">
+                                            <label className="label">Legal Entity Name</label>
+                                            <input name="legalEntityName" className="input" defaultValue={editingBrand?.legalEntityName || ''} placeholder="Registered Name of Brand Entity" />
+                                        </div>
+                                        <div>
+                                            <label className="label">GSTIN</label>
+                                            <input name="gstin" className="input font-mono" defaultValue={editingBrand?.gstin || ''} placeholder="GST Number" maxLength={15} />
+                                        </div>
+                                        <div>
+                                            <label className="label">PAN Number</label>
+                                            <input name="panNo" className="input font-mono" defaultValue={editingBrand?.panNo || ''} placeholder="PAN Card Number" />
+                                        </div>
+                                        <div>
+                                            <label className="label">CIN Number</label>
+                                            <input name="cinNo" className="input font-mono" defaultValue={editingBrand?.cinNo || ''} placeholder="Corporate Identity Number" />
+                                        </div>
+                                        <div>
+                                            <label className="label">IEC Code</label>
+                                            <input name="iecCode" className="input font-mono" defaultValue={editingBrand?.iecCode || ''} placeholder="Import Export Code" />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="md:col-span-2 pt-4 border-t border-secondary-100">
+                                    <h4 className="font-bold text-secondary-900 mb-4 flex items-center gap-2">
+                                        🏦 Banking & Payment
+                                    </h4>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div className="md:col-span-2">
+                                            <label className="label">Bank Name</label>
+                                            <input name="bankName" className="input" defaultValue={editingBrand?.bankName || ''} />
+                                        </div>
+                                        <div>
+                                            <label className="label">Account Holder</label>
+                                            <input name="bankAccountHolder" className="input" defaultValue={editingBrand?.bankAccountHolder || ''} />
+                                        </div>
+                                        <div>
+                                            <label className="label">Account Number</label>
+                                            <input name="bankAccountNumber" className="input font-mono" defaultValue={editingBrand?.bankAccountNumber || ''} />
+                                        </div>
+                                        <div>
+                                            <label className="label">IFSC Code</label>
+                                            <input name="bankIfscCode" className="input font-mono" defaultValue={editingBrand?.bankIfscCode || ''} />
+                                        </div>
+                                        <div>
+                                            <label className="label">Payment Mode</label>
+                                            <select name="paymentMode" className="input" defaultValue={editingBrand?.paymentMode || 'Online'}>
+                                                <option value="Online">Online / Card</option>
+                                                <option value="NEFT/RTGS">NEFT / RTGS</option>
+                                                <option value="Cheque/DD">Cheque / Demand Draft</option>
+                                                <option value="UPI">UPI / QR</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div className="md:col-span-2 pt-4 border-t border-secondary-100">
+                                    <h4 className="font-bold text-secondary-900 mb-4 flex items-center gap-2">
+                                        📄 Terms & Conditions
+                                    </h4>
+                                    <div className="space-y-2">
+                                        <label className="label">Invoice Specific Terms</label>
+                                        <textarea 
+                                            name="invoiceTerms" 
+                                            className="input" 
+                                            rows={4} 
+                                            defaultValue={editingBrand?.invoiceTerms || ''} 
+                                            placeholder="Standard terms specific to this brand (falls back to company terms if empty)..."
+                                        />
+                                    </div>
                                 </div>
                             </div>
 

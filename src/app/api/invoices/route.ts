@@ -120,13 +120,9 @@ export const POST = authorizedRoute(
             };
         });
 
-        const tax = (subtotal - Number(discountAmount || 0)) * (Number(taxRate) / 100);
-        const total = subtotal - Number(discountAmount || 0) + tax;
-
-        // Generate Invoice Number
-        const year = new Date().getFullYear();
-        const count = await prisma.invoice.count();
-        const invoiceNumber = `INV-${year}-${(count + 1).toString().padStart(5, '0')}`;
+        // Initial placeholder totals, will be refined after customer/location check
+        let tax = 0;
+        let total = subtotal - Number(discountAmount || 0);
 
         const customer = await prisma.customerProfile.findUnique({
             where: { id: customerProfileId }
@@ -134,10 +130,42 @@ export const POST = authorizedRoute(
 
         if (!customer) throw new NotFoundError('Customer');
 
-        // Fetch Brand and Company for Snapshots
+        // Fetch Company for Snapshots and Number Generation
         const company = await prisma.company.findUnique({
             where: { id: (user.companyId ?? customer.companyId) as string }
         });
+        
+        if (!company) throw new NotFoundError('Company');
+
+        let invoiceNumber = '';
+        let proformaNumber = '';
+        const year = new Date().getFullYear();
+
+        if (brandId) {
+            const updatedBrand = await prisma.brand.update({
+                where: { id: brandId },
+                data: {
+                    invoiceNextNumber: { increment: 1 },
+                    proformaNextNumber: { increment: 1 },
+                }
+            });
+            const invPrefix = updatedBrand.invoicePrefix || company.invoicePrefix || 'INV-';
+            const proPrefix = updatedBrand.proformaPrefix || company.proformaPrefix || 'PRO-';
+            invoiceNumber = `${invPrefix}${year}-${(updatedBrand.invoiceNextNumber! - 1).toString().padStart(5, '0')}`;
+            proformaNumber = `${proPrefix}${year}-${(updatedBrand.proformaNextNumber! - 1).toString().padStart(5, '0')}`;
+        } else {
+            const updatedCompany = await prisma.company.update({
+                where: { id: company.id },
+                data: {
+                    invoiceNextNumber: { increment: 1 },
+                    proformaNextNumber: { increment: 1 },
+                }
+            });
+            const invPrefix = updatedCompany.invoicePrefix || 'INV-';
+            const proPrefix = updatedCompany.proformaPrefix || 'PRO-';
+            invoiceNumber = `${invPrefix}${year}-${(updatedCompany.invoiceNextNumber - 1).toString().padStart(5, '0')}`;
+            proformaNumber = `${proPrefix}${year}-${(updatedCompany.proformaNextNumber - 1).toString().padStart(5, '0')}`;
+        }
 
         let brandSnapshot: any = {
             brandRelationType: company?.brandRelationType || 'A Brand of' as string,
@@ -145,7 +173,22 @@ export const POST = authorizedRoute(
             brandLogoUrl: company?.logoUrl || null,
             brandAddress: company?.address || null,
             brandEmail: company?.email || null,
-            brandWebsite: company?.website || null
+            brandWebsite: company?.website || null,
+            brandLegalName: company?.legalEntityName || company?.name || null,
+            brandTagline: company?.tagline || null,
+            brandGstin: company?.gstin || null,
+            brandCin: company?.cinNo || null,
+            brandPan: company?.panNo || null,
+            brandIec: company?.iecCode || null,
+            brandBankName: company?.bankName || null,
+            brandBankHolder: company?.bankAccountHolder || null,
+            brandBankNumber: company?.bankAccountNumber || null,
+            brandBankIfsc: company?.bankIfscCode || null,
+            brandBankSwift: company?.bankSwiftCode || null,
+            brandPaymentMode: company?.paymentMode || 'Online',
+            brandRegdOfficeAddress: (company as any)?.regdOfficeAddress || null,
+            brandSalesOfficeAddress: (company as any)?.salesOfficeAddress || null,
+            brandInvoiceTerms: (company as any)?.invoiceTerms || null
         };
 
         if (brandId) {
@@ -160,10 +203,33 @@ export const POST = authorizedRoute(
                     companyLogoUrl: brand.companyLogoUrl || brandSnapshot.companyLogoUrl,
                     brandAddress: brand.address || brandSnapshot.brandAddress,
                     brandEmail: brand.email || brandSnapshot.brandEmail,
-                    brandWebsite: brand.website || brandSnapshot.brandWebsite
+                    brandWebsite: brand.website || brandSnapshot.brandWebsite,
+                    brandLegalName: (brand as any).legalEntityName || brand.name || (brandSnapshot as any).brandLegalName,
+                    brandTagline: (brand as any).tagline || (brandSnapshot as any).brandTagline,
+                    brandGstin: (brand as any).gstin || (brandSnapshot as any).brandGstin,
+                    brandCin: (brand as any).cinNo || (brandSnapshot as any).brandCin,
+                    brandPan: (brand as any).panNo || (brandSnapshot as any).brandPan,
+                    brandIec: (brand as any).iecCode || (brandSnapshot as any).brandIec,
+                    brandBankName: (brand as any).bankName || (brandSnapshot as any).brandBankName,
+                    brandBankHolder: (brand as any).bankAccountHolder || (brandSnapshot as any).brandBankHolder,
+                    brandBankNumber: (brand as any).bankAccountNumber || (brandSnapshot as any).brandBankNumber,
+                    brandBankIfsc: (brand as any).bankIfscCode || (brandSnapshot as any).brandBankIfsc,
+                    brandBankSwift: (brand as any).bankSwiftCode || (brandSnapshot as any).brandBankSwift,
+                    brandPaymentMode: (brand as any).paymentMode || (brandSnapshot as any).brandPaymentMode,
+                    brandRegdOfficeAddress: (brand as any).regdOfficeAddress || (brandSnapshot as any).brandRegdOfficeAddress,
+                    brandSalesOfficeAddress: (brand as any).salesOfficeAddress || (brandSnapshot as any).brandSalesOfficeAddress,
+                    brandInvoiceTerms: (brand as any).invoiceTerms || (brandSnapshot as any).brandInvoiceTerms
                 };
             }
         }
+
+        const customerCountry = (customer as any).billingCountry || 'India';
+        const isInternational = customerCountry.toLowerCase() !== 'india';
+        
+        // Final Tax Calculation based on location
+        const effectiveTaxRate = isInternational ? 0 : Number(taxRate);
+        tax = (subtotal - Number(discountAmount || 0)) * (effectiveTaxRate / 100);
+        total = subtotal - Number(discountAmount || 0) + tax;
 
         const companyStateCode = company?.stateCode;
         const placeOfSupplyCode = (customer as any).shippingStateCode || (customer as any).billingStateCode;
@@ -172,16 +238,16 @@ export const POST = authorizedRoute(
         let cgst = 0, sgst = 0, igst = 0;
         let cgstRate = 0, sgstRate = 0, igstRate = 0;
         
-        if (Number(taxRate) > 0) {
+        if (effectiveTaxRate > 0) {
             if (companyStateCode && placeOfSupplyCode && companyStateCode === placeOfSupplyCode) {
                 // Intra-state (Same state)
-                cgstRate = Number(taxRate) / 2;
-                sgstRate = Number(taxRate) / 2;
+                cgstRate = effectiveTaxRate / 2;
+                sgstRate = effectiveTaxRate / 2;
                 cgst = tax / 2;
                 sgst = tax / 2;
             } else {
                 // Inter-state (Different state)
-                igstRate = Number(taxRate);
+                igstRate = effectiveTaxRate;
                 igst = tax;
             }
         }
@@ -189,12 +255,13 @@ export const POST = authorizedRoute(
         const newInvoice = await (prisma.invoice as any).create({
             data: {
                 invoiceNumber,
+                proformaNumber,
                 customerProfileId,
                 dueDate: new Date(dueDate),
                 amount: subtotal,
                 tax,
                 total,
-                taxRate: Number(taxRate),
+                taxRate: effectiveTaxRate,
                 gstNumber: (customer as any).gstVatTaxId,
                 
                 // Snapshots

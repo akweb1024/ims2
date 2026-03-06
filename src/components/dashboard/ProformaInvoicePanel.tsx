@@ -89,7 +89,11 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; icon: string
 };
 
 const FMT = (n: number, currency = 'INR') =>
-    new Intl.NumberFormat('en-IN', { style: 'currency', currency, minimumFractionDigits: 2 }).format(n);
+    new Intl.NumberFormat(currency === 'INR' ? 'en-IN' : 'en-US', { 
+        style: 'currency', 
+        currency, 
+        minimumFractionDigits: 2 
+    }).format(n);
 
 const formatDate = (d?: string) => d ? new Date(d).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '—';
 
@@ -897,7 +901,7 @@ export default function ProformaInvoicePanel({
                                 placeholder={`${pf.total.toFixed(2)}`} />
                             {paymentAmount && !amountOk && (
                                 <p className="text-xs text-red-600 mt-1">
-                                    ⚠️ Amount differs by ₹{amountDiff.toFixed(2)} from the proforma total. Must be within ₹0.01.
+                                    ⚠️ Amount differs by {pf.currency === 'USD' ? '$' : (pf.currency === 'EUR' ? '€' : (pf.currency === 'GBP' ? '£' : '₹'))}{amountDiff.toFixed(2)} from the proforma total. Must be within {pf.currency === 'USD' ? '$' : (pf.currency === 'EUR' ? '€' : (pf.currency === 'GBP' ? '£' : '₹'))}0.01.
                                 </p>
                             )}
                             {paymentAmount && amountOk && (

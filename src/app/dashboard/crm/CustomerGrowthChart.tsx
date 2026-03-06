@@ -3,18 +3,10 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
-const data = [
-    { name: 'Jan', customers: 400 },
-    { name: 'Feb', customers: 300 },
-    { name: 'Mar', customers: 200 },
-    { name: 'Apr', customers: 278 },
-    { name: 'May', customers: 189 },
-    { name: 'Jun', customers: 239 },
-    { name: 'Jul', customers: 349 },
-];
-
-export default function CustomerGrowthChart({ user }: { user: any }) {
-    // TODO: Fetch real growth data based on user role
+export default function CustomerGrowthChart({ data }: { data: { name: string; customers: number }[] }) {
+    if (!data || data.length === 0) {
+        return <div className="h-full flex items-center justify-center text-secondary-400 italic">No growth data available</div>;
+    }
     return (
         <ResponsiveContainer width="100%" height="100%">
             <AreaChart

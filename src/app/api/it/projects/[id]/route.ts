@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getAuthenticatedUser } from '@/lib/auth-legacy';
 import { createErrorResponse } from '@/lib/api-utils';
+import { getDownlineUserIds } from '@/lib/hierarchy';
 
 export const dynamic = 'force-dynamic';
 
@@ -139,16 +140,36 @@ export async function GET(
         }
 
         // Access Rule:
-        // 1. Manager/Admin of IT module can see any project in their company
-        // 2. Project Manager/Team Lead/Task Assignees can see their projects
-        // 3. Any employee in company can see PUBLIC projects
-        const isManager = canManageProjects(user.role);
-        const isInvolved = project.projectManagerId === user.id || 
-                          project.teamLeadId === user.id || 
-                          project.tasks.some(t => t.assignedToId === user.id);
+        // 1. Admin/IT Manager of IT module → any project in their company
+        // 2. MANAGER/TEAM_LEADER → projects involving anyone in their recursive downline
+        // 3. Others → only where personally involved (PM, TL, task assignee)
+        // 4. Any employee → PUBLIC projects
+        const isAdminRole = canManageProjects(user.role);
+        const isManagerRole = ['MANAGER', 'TEAM_LEADER'].includes(user.role);
         const isPublic = project.visibility === 'PUBLIC';
+        const isInvolved = project.projectManagerId === user.id ||
+                           project.teamLeadId === user.id ||
+                           project.tasks.some((t: any) => t.assignedToId === user.id);
 
-        if (!isManager && !isInvolved && !isPublic) {
+        let hasAccess = false;
+        if (isAdminRole) {
+            hasAccess = true;
+        } else if (isPublic) {
+            hasAccess = true;
+        } else if (isManagerRole) {
+            // Check if any team member (downline) is involved
+            const downlineIds = await getDownlineUserIds(user.id, null);
+            const teamIds = new Set([user.id, ...downlineIds]);
+            hasAccess =
+                (project.projectManagerId !== null && teamIds.has(project.projectManagerId!)) ||
+                (project.teamLeadId !== null && teamIds.has(project.teamLeadId!)) ||
+                project.tasks.some((t: any) => t.assignedToId !== null && teamIds.has(t.assignedToId)) ||
+                project.taggedEmployees.some((e: any) => teamIds.has(e.id));
+        } else {
+            hasAccess = isInvolved;
+        }
+
+        if (!hasAccess) {
             return NextResponse.json({ error: 'Access Denied' }, { status: 403 });
         }
 

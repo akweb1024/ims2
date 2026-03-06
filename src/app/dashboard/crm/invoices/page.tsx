@@ -1,11 +1,28 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import Link from 'next/link';
-import FinanceClientLayout from '../../finance/FinanceClientLayout';
+import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import FormattedDate from '@/components/common/FormattedDate';
-
 import CreateInvoiceModal from '@/components/dashboard/CreateInvoiceModal';
+import {
+    CRMPageShell,
+    CRMSearchInput,
+    CRMFilterBar,
+    CRMTable,
+    CRMTableLoading,
+    CRMTableEmpty,
+    CRMTableError,
+    CRMPagination,
+    CRMBadge,
+    CRMRowAction,
+} from '@/components/crm/CRMPageShell';
+import { 
+    FileText, Plus, Download, Search, Filter, 
+    MoreHorizontal, Eye, CreditCard, Clock, CheckCircle2,
+    XCircle, AlertCircle, IndianRupee
+} from 'lucide-react';
+
+type BadgeVariant = 'success' | 'warning' | 'danger' | 'secondary' | 'info';
 
 export default function InvoicesPage() {
     const [invoices, setInvoices] = useState<any[]>([]);
@@ -69,230 +86,190 @@ export default function InvoicesPage() {
         return () => clearTimeout(timer);
     }, [searchTerm, pagination.page, fetchInvoices]);
 
-    const getStatusBadgeClass = (status: string) => {
+    const getStatusVariant = (status: string): BadgeVariant => {
         switch (status) {
-            case 'PAID': return 'badge-success';
-            case 'PARTIALLY_PAID': return 'badge-warning';
-            case 'UNPAID': return 'badge-danger';
-            case 'OVERDUE': return 'bg-red-600 text-white';
-            case 'VOID': return 'bg-gray-400 text-white';
-            case 'CANCELLED': return 'bg-gray-400 text-white';
-            default: return 'badge-secondary';
+            case 'PAID': return 'success';
+            case 'PARTIALLY_PAID': return 'warning';
+            case 'UNPAID': return 'danger';
+            case 'OVERDUE': return 'danger';
+            case 'VOID': return 'secondary';
+            case 'CANCELLED': return 'secondary';
+            default: return 'secondary';
         }
     };
 
+    const handleExport = async () => {
+        try {
+            const token = localStorage.getItem('token');
+            const res = await fetch('/api/exports/invoices', { headers: { 'Authorization': `Bearer ${token}` } });
+            if (res.ok) {
+                const blob = await res.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `billing-intelligence-${new Date().toISOString().split('T')[0]}.csv`;
+                document.body.appendChild(a); a.click();
+                window.URL.revokeObjectURL(url);
+                document.body.removeChild(a);
+            } else alert('Export failed');
+        } catch { alert('Export failed'); }
+    };
+
     return (
-        <FinanceClientLayout>
-            <div className="space-y-6">
-                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                    <div>
-                        <h1 className="text-3xl font-bold text-secondary-900">Billing & Invoices</h1>
-                        <p className="text-secondary-600 mt-1">Manage your payments, view invoices, and track billing history</p>
-                    </div>
+        <DashboardLayout userRole={userRole}>
+            <CRMPageShell
+                title="Billing & Invoices"
+                subtitle="High-level financial overview and transaction lifecycle management."
+                breadcrumb={[{ label: 'CRM', href: '/dashboard/crm' }, { label: 'Invoices' }]}
+                icon={<FileText className="w-5 h-5" />}
+                actions={
                     <div className="flex items-center gap-3">
                         {['SUPER_ADMIN', 'MANAGER', 'FINANCE_ADMIN'].includes(userRole) && (
                             <>
                                 <button
-                                    onClick={() => setShowCreateModal(true)}
-                                    className="btn btn-primary flex items-center gap-2 shadow-lg shadow-primary-200"
+                                    onClick={handleExport}
+                                    className="btn btn-secondary py-2 px-4 text-xs font-black uppercase tracking-widest flex items-center gap-2 border-secondary-200"
                                 >
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-                                    Create Invoice
+                                    <Download size={16} />
+                                    Export CSV
                                 </button>
                                 <button
-                                    onClick={async () => {
-                                        try {
-                                            const token = localStorage.getItem('token');
-                                            const res = await fetch('/api/exports/invoices', {
-                                                headers: { 'Authorization': `Bearer ${token}` }
-                                            });
-                                            if (res.ok) {
-                                                const blob = await res.blob();
-                                                const url = window.URL.createObjectURL(blob);
-                                                const a = document.createElement('a');
-                                                a.href = url;
-                                                a.download = `invoices-${new Date().toISOString().split('T')[0]}.csv`;
-                                                document.body.appendChild(a);
-                                                a.click();
-                                                window.URL.revokeObjectURL(url);
-                                                document.body.removeChild(a);
-                                            } else {
-                                                alert('Failed to export invoices');
-                                            }
-                                        } catch (err) {
-                                            alert('Export failed');
-                                        }
-                                    }}
-                                    className="btn btn-secondary flex items-center gap-2 bg-white"
+                                    onClick={() => setShowCreateModal(true)}
+                                    className="btn btn-primary py-2 px-5 text-xs font-black uppercase tracking-[0.15em] flex items-center gap-2 shadow-lg shadow-primary-200 group grow-0"
                                 >
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-                                    Export CSV
+                                    <Plus size={18} className="group-hover:rotate-90 transition-transform" />
+                                    Generate Invoice
                                 </button>
                             </>
                         )}
                     </div>
-                </div>
-
-                {/* Filters */}
-                <div className="card-premium p-4">
-                    <div className="flex flex-col md:flex-row gap-4">
-                        <div className="flex-1 relative">
-                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-secondary-400">
-                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                                </svg>
-                            </span>
-                            <input
-                                type="text"
-                                placeholder="Search by invoice number or customer..."
-                                className="input pl-10 w-full"
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                            />
+                }
+            >
+                {/* Filters matrix */}
+                <CRMFilterBar>
+                    <CRMSearchInput
+                        value={searchTerm}
+                        onChange={setSearchTerm}
+                        placeholder="Search IDs or profiles..."
+                    />
+                    <div className="flex items-center gap-3 bg-white p-1.5 rounded-2xl border border-secondary-200/60 shadow-sm md:w-auto w-full">
+                        <div className="pl-3 text-secondary-400">
+                             <Filter size={14} />
                         </div>
                         <select
-                            className="input w-full md:w-48"
+                            className="bg-transparent text-[10px] font-black uppercase tracking-widest border-none focus:ring-0 cursor-pointer pr-10 py-1"
                             value={statusFilter}
-                            onChange={(e) => setStatusFilter(e.target.value)}
-                            title="Filter Invoices by Status"
+                            onChange={e => setStatusFilter(e.target.value)}
                         >
-                            <option value="">All Statuses</option>
-                            <option value="PAID">Paid</option>
-                            <option value="UNPAID">Unpaid</option>
-                            <option value="PARTIALLY_PAID">Partially Paid</option>
-                            <option value="OVERDUE">Overdue</option>
-                            <option value="VOID">Void</option>
+                            <option value="">Lifecycle: All</option>
+                            <option value="PAID">Phase: Paid</option>
+                            <option value="UNPAID">Phase: Unpaid</option>
+                            <option value="PARTIALLY_PAID">Phase: Partial</option>
+                            <option value="OVERDUE">Phase: Overdue</option>
+                            <option value="VOID">Phase: Void</option>
                         </select>
                     </div>
-                </div>
+                </CRMFilterBar>
 
-                {/* Data Table */}
-                <div className="card-premium overflow-hidden">
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-left border-collapse">
-                            <thead>
-                                <tr className="bg-secondary-50 border-b border-secondary-100">
-                                    <th className="px-6 py-4 text-xs font-bold text-secondary-500 uppercase tracking-wider">Invoice #</th>
-                                    <th className="px-6 py-4 text-xs font-bold text-secondary-500 uppercase tracking-wider">Customer / Organization</th>
-                                    <th className="px-6 py-4 text-xs font-bold text-secondary-500 uppercase tracking-wider">Due Date</th>
-                                    <th className="px-6 py-4 text-xs font-bold text-secondary-500 uppercase tracking-wider">Total Amount</th>
-                                    <th className="px-6 py-4 text-xs font-bold text-secondary-500 uppercase tracking-wider">Status</th>
-                                    <th className="px-6 py-4 text-xs font-bold text-secondary-500 uppercase tracking-wider">Brand</th>
-                                    <th className="px-6 py-4 text-xs font-bold text-secondary-500 uppercase tracking-wider text-right">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-secondary-100 min-h-[400px]">
-                                {loading ? (
-                                    <tr>
-                                        <td colSpan={6} className="text-center py-12">
-                                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600 mx-auto mb-4"></div>
-                                            <p className="text-secondary-500">Loading invoices...</p>
+                {/* Billing Matrix */}
+                <div className="crm-card overflow-hidden">
+                    <CRMTable>
+                        <thead>
+                            <tr className="bg-secondary-50/50">
+                                <th className="text-[10px] font-black uppercase tracking-widest text-secondary-500 py-5">Sequential ID</th>
+                                <th className="text-[10px] font-black uppercase tracking-widest text-secondary-500 py-5">Client Profile</th>
+                                <th className="text-[10px] font-black uppercase tracking-widest text-secondary-500 py-5">Milestone Date</th>
+                                <th className="text-[10px] font-black uppercase tracking-widest text-secondary-500 py-5">Financial Value</th>
+                                <th className="text-[10px] font-black uppercase tracking-widest text-secondary-500 py-5">Lifecycle Status</th>
+                                <th className="text-[10px] font-black uppercase tracking-widest text-secondary-500 py-5">Identity Brand</th>
+                                <th className="text-right text-[10px] font-black uppercase tracking-widest text-secondary-500 py-5 px-6">Operations</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-secondary-50">
+                            {loading ? (
+                                <CRMTableLoading rows={6} colSpan={7} />
+                            ) : error ? (
+                                <CRMTableError message={error} onRetry={fetchInvoices} colSpan={7} />
+                            ) : invoices.length === 0 ? (
+                                <CRMTableEmpty icon={<FileText size={48} />} message="No billing intelligence found in current matrix parameters" colSpan={7} />
+                            ) : (
+                                invoices.map(inv => (
+                                    <tr key={inv.id} className="group hover:bg-secondary-50/30 transition-all border-l-4 border-transparent hover:border-primary-500">
+                                        <td className="py-5">
+                                            <div className="flex flex-col">
+                                                <span className="font-mono font-black text-secondary-900 text-sm">{inv.invoiceNumber}</span>
+                                                {inv.description && (
+                                                    <p className="text-[10px] text-secondary-400 max-w-[150px] truncate mt-1 italic font-medium">&quot;{inv.description}&quot;</p>
+                                                )}
+                                            </div>
                                         </td>
-                                    </tr>
-                                ) : error ? (
-                                    <tr>
-                                        <td colSpan={6} className="text-center py-12">
-                                            <p className="text-danger-600">{error}</p>
-                                            <button onClick={fetchInvoices} className="btn btn-secondary mt-4">Try Again</button>
+                                        <td className="py-5">
+                                            <div className="flex flex-col">
+                                                <p className="font-bold text-secondary-900 text-xs uppercase tracking-tight">
+                                                    {inv.customerProfile?.name || inv.subscription?.customerProfile?.name || 'Unmapped'}
+                                                </p>
+                                                <p className="text-[10px] text-secondary-400 font-bold uppercase tracking-widest mt-0.5 opacity-60">
+                                                    {inv.customerProfile?.organizationName || inv.subscription?.customerProfile?.organizationName || 'N/A'}
+                                                </p>
+                                            </div>
                                         </td>
-                                    </tr>
-                                ) : !loading && invoices.length === 0 ? (
-                                    <tr>
-                                        <td colSpan={6} className="text-center py-12 text-secondary-500">
-                                            No billing records found
-                                        </td>
-                                    </tr>
-                                ) : (
-                                    invoices.map((inv) => (
-                                        <tr key={inv.id} className="hover:bg-secondary-50 transition-colors">
-                                            <td className="px-6 py-4 whitespace-nowrap">
-                                                <div className="flex flex-col">
-                                                    <span className="font-mono text-sm font-bold text-secondary-900">{inv.invoiceNumber}</span>
-                                                    {inv.description && <span className="text-[10px] text-secondary-400 max-w-[150px] truncate">{inv.description}</span>}
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-4">
-                                                <div className="flex flex-col">
-                                                    <span className="text-sm font-semibold text-secondary-900">
-                                                        {inv.customerProfile?.name || inv.subscription?.customerProfile?.name || 'Unknown'}
-                                                    </span>
-                                                    <span className="text-xs text-secondary-500">
-                                                        {inv.customerProfile?.organizationName || inv.subscription?.customerProfile?.organizationName || 'Individual'}
-                                                    </span>
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-secondary-600">
+                                        <td className="py-5">
+                                            <div className="flex items-center gap-2 text-[11px] font-bold text-secondary-600">
+                                                <Clock size={12} className="text-secondary-300" />
                                                 <FormattedDate date={inv.dueDate} />
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap">
-                                                <span className="text-sm font-bold text-primary-700">
-                                                    {inv.currency === 'INR' || !inv.currency ? '₹' : inv.currency + ' '}
-                                                    {inv.total.toLocaleString()}
-                                                </span>
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap">
-                                                <span className={`badge ${getStatusBadgeClass(inv.status)}`}>
-                                                    {inv.status.replace('_', ' ')}
-                                                </span>
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap">
-                                                {inv.brand ? (
-                                                    <span className="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded-full border border-blue-100">
+                                            </div>
+                                        </td>
+                                        <td className="py-5">
+                                             <span className="font-black text-primary-700 text-sm whitespace-nowrap">
+                                                 {(() => {
+                                                     const c = (inv.currency || 'INR').toUpperCase();
+                                                     return c === 'INR' ? '₹' : (c === 'USD' ? '$' : (c === 'EUR' ? '€' : (c === 'GBP' ? '£' : `${inv.currency} `)));
+                                                 })()}{inv.total.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                                             </span>
+                                         </td>
+                                        <td className="py-5">
+                                            <CRMBadge variant={getStatusVariant(inv.status)} dot>
+                                                {inv.status.replace(/_/g, ' ')}
+                                            </CRMBadge>
+                                        </td>
+                                        <td className="py-5">
+                                            {inv.brand ? (
+                                                <div className="flex items-center gap-2 bg-secondary-100/50 px-2 py-1 rounded-lg border border-secondary-200/40 w-fit">
+                                                    <span className="text-[9px] font-black uppercase tracking-widest text-secondary-600 truncate max-w-[80px]">
                                                         {inv.brand.name}
                                                     </span>
-                                                ) : (
-                                                    <span className="text-xs text-gray-400">—</span>
-                                                )}
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-right">
-                                                <Link
-                                                    href={`/dashboard/crm/invoices/${inv.id}`}
-                                                    className="btn btn-secondary py-1 text-xs"
-                                                >
-                                                    View Details
-                                                </Link>
-                                            </td>
-                                        </tr>
-                                    ))
-                                )}
-                            </tbody>
-                        </table>
-                    </div>
+                                                </div>
+                                            ) : (
+                                                <span className="text-secondary-300 text-[10px] font-black uppercase tracking-widest">Global</span>
+                                            )}
+                                        </td>
+                                        <td className="text-right py-5 px-6">
+                                            <CRMRowAction href={`/dashboard/crm/invoices/${inv.id}`} variant="primary" title="Access Ledger Detail">
+                                                <Eye size={16} />
+                                            </CRMRowAction>
+                                        </td>
+                                    </tr>
+                                ))
+                            )}
+                        </tbody>
+                    </CRMTable>
 
-                    {/* Pagination */}
-                    {!loading && pagination.totalPages > 1 && (
-                        <div className="bg-secondary-50 px-6 py-4 flex items-center justify-between border-t border-secondary-100">
-                            <button
-                                disabled={pagination.page === 1}
-                                onClick={() => setPagination({ ...pagination, page: pagination.page - 1 })}
-                                className="btn btn-secondary py-1 px-3 disabled:opacity-50"
-                            >
-                                Previous
-                            </button>
-                            <span className="text-sm text-secondary-600">
-                                Page {pagination.page} of {pagination.totalPages}
-                            </span>
-                            <button
-                                disabled={pagination.page === pagination.totalPages}
-                                onClick={() => setPagination({ ...pagination, page: pagination.page + 1 })}
-                                className="btn btn-secondary py-1 px-3 disabled:opacity-50"
-                            >
-                                Next
-                            </button>
-                        </div>
-                    )}
+                    <CRMPagination
+                        page={pagination.page}
+                        totalPages={pagination.totalPages}
+                        total={pagination.totalPages * 10}
+                        limit={10}
+                        onPageChange={p => setPagination(prev => ({ ...prev, page: p }))}
+                        entityName="billing cycles"
+                    />
                 </div>
-            </div>
+            </CRMPageShell>
 
             <CreateInvoiceModal
                 isOpen={showCreateModal}
                 onClose={() => setShowCreateModal(false)}
-                onSuccess={() => {
-                    fetchInvoices();
-                    // Optional: Show success toast
-                }}
+                onSuccess={() => fetchInvoices()}
             />
-        </FinanceClientLayout>
+        </DashboardLayout>
     );
 }
-

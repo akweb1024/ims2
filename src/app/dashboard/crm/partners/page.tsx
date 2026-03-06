@@ -3,9 +3,10 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
+import { CRMPageShell } from '@/components/crm/CRMPageShell';
 import AgencyList from './AgencyList';
 import InstitutionList from './InstitutionList';
-import { Users, Building2, LayoutGrid, ListFilter } from 'lucide-react';
+import { Users, Building2, LayoutGrid } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function PartnersPage() {
@@ -31,43 +32,40 @@ export default function PartnersPage() {
 
     return (
         <DashboardLayout userRole={userRole}>
-            <div className="space-y-6">
-                {/* Header */}
-                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                    <div>
-                        <h1 className="text-4xl font-black text-secondary-900 tracking-tight">Partner Ecosystem</h1>
-                        <p className="text-secondary-500 font-medium">Manage your global network of agencies and institutions in one place.</p>
-                    </div>
-                </div>
-
+            <CRMPageShell
+                title="Partner Ecosystem"
+                subtitle="Manage your global network of agencies and institutions."
+                breadcrumb={[{ label: 'CRM', href: '/dashboard/crm' }, { label: 'Partners' }]}
+                icon={<LayoutGrid className="w-5 h-5" />}
+            >
                 {/* Navigation Tabs */}
-                <div className="flex p-1.5 bg-secondary-100/50 backdrop-blur-md rounded-2xl w-full max-w-md border border-secondary-200">
+                <div className="flex p-1 bg-secondary-100/50 backdrop-blur-md rounded-xl w-full max-w-sm border border-secondary-200">
                     <button
                         onClick={() => handleTabChange('agencies')}
-                        className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-xl transition-all duration-300 font-black text-sm ${
+                        className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg transition-all duration-200 font-semibold text-sm ${
                             activeTab === 'agencies'
-                                ? 'bg-white text-primary-600 shadow-sm shadow-primary-100 ring-1 ring-secondary-200'
+                                ? 'bg-white text-primary-600 shadow-sm ring-1 ring-secondary-200'
                                 : 'text-secondary-500 hover:text-secondary-700'
                         }`}
                     >
-                        <Users size={18} className={activeTab === 'agencies' ? 'text-primary-500' : 'text-secondary-400'} />
+                        <Users size={16} className={activeTab === 'agencies' ? 'text-primary-600' : 'text-secondary-400'} />
                         Agencies
                     </button>
                     <button
                         onClick={() => handleTabChange('institutions')}
-                        className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl transition-all duration-300 font-black text-sm ${
+                        className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg transition-all duration-200 font-semibold text-sm ${
                             activeTab === 'institutions'
-                                ? 'bg-white text-primary-600 shadow-sm shadow-primary-100 ring-1 ring-secondary-200'
+                                ? 'bg-white text-primary-600 shadow-sm ring-1 ring-secondary-200'
                                 : 'text-secondary-500 hover:text-secondary-700'
                         }`}
                     >
-                        <Building2 size={18} className={activeTab === 'institutions' ? 'text-primary-500' : 'text-secondary-400'} />
+                        <Building2 size={16} className={activeTab === 'institutions' ? 'text-primary-600' : 'text-secondary-400'} />
                         Institutions
                     </button>
                 </div>
 
                 {/* View Content */}
-                <div className="mt-8">
+                <div className="mt-2">
                     <AnimatePresence mode="wait">
                         <motion.div
                             key={activeTab}
@@ -84,7 +82,7 @@ export default function PartnersPage() {
                         </motion.div>
                     </AnimatePresence>
                 </div>
-            </div>
+            </CRMPageShell>
         </DashboardLayout>
     );
 }

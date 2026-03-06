@@ -1,56 +1,58 @@
-import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { getSessionUser } from '@/lib/session';
+import { authorizedRoute } from '@/lib/middleware-auth';
+import { handleApiError } from '@/lib/error-handler';
+import { NextResponse } from 'next/server';
+import { z } from 'zod';
 
-export async function GET(req: Request) {
-    try {
-        const user = await getSessionUser();
-        if (!user || !user.companyId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+const campaignSchema = z.object({
+    name: z.string().min(2),
+    description: z.string().optional(),
+    audienceId: z.string().uuid(),
+    templateId: z.string().uuid(),
+    startDate: z.string(),
+    endDate: z.string().optional().nullable(),
+    status: z.string().default('DRAFT'),
+});
 
-        const campaigns = await (prisma as any).marketingCampaign.findMany({
-            where: { companyId: user.companyId },
-            include: {
-                audience: true,
-                template: { select: { id: true, name: true, subject: true } }
-            },
-            orderBy: { createdAt: 'desc' }
-        });
+export const GET = authorizedRoute(
+    ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'TEAM_LEADER'],
+    async (req, user) => {
+        try {
+            const campaigns = await (prisma as any).marketingCampaign.findMany({
+                where: { companyId: user.companyId },
+                include: {
+                    audience: true,
+                    template: { select: { id: true, name: true, subject: true } }
+                },
+                orderBy: { createdAt: 'desc' }
+            });
 
-        return NextResponse.json(campaigns);
-    } catch (error) {
-        console.error('Error fetching campaigns:', error);
-        return NextResponse.json({ error: 'Failed to fetch campaigns' }, { status: 500 });
-    }
-}
-
-export async function POST(req: Request) {
-    try {
-        const user = await getSessionUser();
-        if (!user || !user.companyId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-
-        if (user.role !== 'SUPER_ADMIN' && user.role !== 'MANAGER') {
-            return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+            return NextResponse.json(campaigns);
+        } catch (error) {
+            return handleApiError(error, 'Failed to fetch campaigns');
         }
-
-        const body = await req.json();
-        const { name, description, audienceId, templateId, startDate, endDate, status } = body;
-
-        const campaign = await (prisma as any).marketingCampaign.create({
-            data: {
-                companyId: user.companyId,
-                name,
-                description,
-                audienceId,
-                templateId,
-                startDate: startDate ? new Date(startDate) : null,
-                endDate: endDate ? new Date(endDate) : null,
-                status: status || 'DRAFT'
-            }
-        });
-
-        return NextResponse.json(campaign);
-    } catch (error) {
-        console.error('Error creating campaign:', error);
-        return NextResponse.json({ error: 'Failed to create campaign' }, { status: 500 });
     }
-}
+);
+
+export const POST = authorizedRoute(
+    ['SUPER_ADMIN', 'ADMIN', 'MANAGER'],
+    async (req, user) => {
+        try {
+            const body = await req.json();
+            const validated = campaignSchema.parse(body);
+
+            const campaign = await (prisma as any).marketingCampaign.create({
+                data: {
+                    companyId: user.companyId,
+                    ...validated,
+                    startDate: new Date(validated.startDate),
+                    endDate: validated.endDate ? new Date(validated.endDate) : null
+                }
+            });
+
+            return NextResponse.json(campaign);
+        } catch (error) {
+            return handleApiError(error, 'Failed to create campaign');
+        }
+    }
+);

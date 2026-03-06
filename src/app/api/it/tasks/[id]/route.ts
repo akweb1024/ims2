@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getAuthenticatedUser } from '@/lib/auth-legacy';
 import { createErrorResponse } from '@/lib/api-utils';
+import { getDownlineUserIds } from '@/lib/hierarchy';
 
 export const dynamic = 'force-dynamic';
 
@@ -23,6 +24,7 @@ export async function GET(req: NextRequest, context: { params: Promise<{ id: str
                         name: true,
                         projectCode: true,
                         status: true,
+                        visibility: true,
                     }
                 },
                 assignedTo: {
@@ -98,10 +100,41 @@ export async function GET(req: NextRequest, context: { params: Promise<{ id: str
             return NextResponse.json({ error: 'Task not found' }, { status: 404 });
         }
 
-        // Check access
+        // Check access: company isolation first
         const companyId = (user as any).companyId;
         if (task.companyId !== companyId) {
             return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+        }
+
+        // Hierarchy enforcement: non-admins must be involved or have team member involved
+        const adminRoles = ['SUPER_ADMIN', 'ADMIN', 'IT_MANAGER', 'IT_ADMIN'];
+        const managerRoles = ['MANAGER', 'TEAM_LEADER', 'IT_SUPPORT'];
+        const isAdmin = adminRoles.includes((user as any).role);
+        const isManager = managerRoles.includes((user as any).role);
+
+        if (!isAdmin) {
+            const isDirectlyInvolved =
+                task.assignedToId === user.id ||
+                task.createdById === user.id ||
+                task.reporterId === user.id;
+
+            if (!isDirectlyInvolved) {
+                if (isManager) {
+                    // Check if any team member is involved
+                    const downlineIds = await getDownlineUserIds(user.id, null);
+                    const teamIds = new Set([user.id, ...downlineIds]);
+                    const teamInvolved =
+                        (task.assignedToId && teamIds.has(task.assignedToId)) ||
+                        (task.createdById && teamIds.has(task.createdById)) ||
+                        (task.reporterId && teamIds.has(task.reporterId));
+
+                    if (!teamInvolved && task.project?.visibility !== 'PUBLIC') {
+                        return NextResponse.json({ error: 'Access Denied: Not in your team scope' }, { status: 403 });
+                    }
+                } else if (task.project?.visibility !== 'PUBLIC') {
+                    return NextResponse.json({ error: 'Access Denied' }, { status: 403 });
+                }
+            }
         }
 
         // Calculate statistics
@@ -150,6 +183,35 @@ export async function PATCH(req: NextRequest, context: { params: Promise<{ id: s
         const companyId = (user as any).companyId;
         if (existingTask.companyId !== companyId) {
             return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+        }
+
+        // Hierarchy enforcement on update
+        const patchAdminRoles = ['SUPER_ADMIN', 'ADMIN', 'IT_MANAGER', 'IT_ADMIN'];
+        const patchManagerRoles = ['MANAGER', 'TEAM_LEADER', 'IT_SUPPORT'];
+        const isPatchAdmin = patchAdminRoles.includes((user as any).role);
+        const isPatchManager = patchManagerRoles.includes((user as any).role);
+
+        if (!isPatchAdmin) {
+            const isDirectlyInvolved =
+                existingTask.assignedToId === user.id ||
+                existingTask.createdById === user.id ||
+                existingTask.reporterId === user.id;
+
+            if (!isDirectlyInvolved) {
+                if (isPatchManager) {
+                    const downlineIds = await getDownlineUserIds(user.id, null);
+                    const teamIds = new Set([user.id, ...downlineIds]);
+                    const teamInvolved =
+                        (existingTask.assignedToId && teamIds.has(existingTask.assignedToId)) ||
+                        (existingTask.createdById && teamIds.has(existingTask.createdById)) ||
+                        (existingTask.reporterId && teamIds.has(existingTask.reporterId));
+                    if (!teamInvolved) {
+                        return NextResponse.json({ error: 'Forbidden: Not in your team scope' }, { status: 403 });
+                    }
+                } else {
+                    return NextResponse.json({ error: 'Forbidden: Insufficient permissions' }, { status: 403 });
+                }
+            }
         }
 
         // Prepare update data

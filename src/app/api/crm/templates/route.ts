@@ -1,50 +1,51 @@
-import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { getSessionUser } from '@/lib/session';
+import { authorizedRoute } from '@/lib/middleware-auth';
+import { handleApiError } from '@/lib/error-handler';
+import { NextResponse } from 'next/server';
+import { z } from 'zod';
 
-export async function GET(req: Request) {
-    try {
-        const user = await getSessionUser();
-        if (!user || !user.companyId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+const templateSchema = z.object({
+    name: z.string().min(2),
+    subject: z.string().min(2),
+    htmlBody: z.string().min(1),
+    designState: z.any().optional(),
+});
 
-        const templates = await (prisma as any).emailTemplate.findMany({
-            where: { companyId: user.companyId },
-            include: { _count: { select: { campaigns: true } } },
-            orderBy: { createdAt: 'desc' }
-        });
+export const GET = authorizedRoute(
+    ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'TEAM_LEADER'],
+    async (req, user) => {
+        try {
+            const templates = await (prisma as any).emailTemplate.findMany({
+                where: { companyId: user.companyId },
+                include: { _count: { select: { campaigns: true } } },
+                orderBy: { createdAt: 'desc' }
+            });
 
-        return NextResponse.json(templates);
-    } catch (error) {
-        console.error('Error fetching templates:', error);
-        return NextResponse.json({ error: 'Failed to fetch templates' }, { status: 500 });
-    }
-}
-
-export async function POST(req: Request) {
-    try {
-        const user = await getSessionUser();
-        if (!user || !user.companyId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-
-        if (user.role !== 'SUPER_ADMIN' && user.role !== 'MANAGER') {
-            return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+            return NextResponse.json(templates);
+        } catch (error) {
+            return handleApiError(error, 'Failed to fetch templates');
         }
-
-        const body = await req.json();
-        const { name, subject, htmlBody, designState } = body;
-
-        const template = await (prisma as any).emailTemplate.create({
-            data: {
-                companyId: user.companyId,
-                name,
-                subject,
-                htmlBody,
-                designState: designState || {}
-            }
-        });
-
-        return NextResponse.json(template);
-    } catch (error) {
-        console.error('Error creating template:', error);
-        return NextResponse.json({ error: 'Failed to create template' }, { status: 500 });
     }
-}
+);
+
+export const POST = authorizedRoute(
+    ['SUPER_ADMIN', 'ADMIN', 'MANAGER'],
+    async (req, user) => {
+        try {
+            const body = await req.json();
+            const validated = templateSchema.parse(body);
+
+            const template = await (prisma as any).emailTemplate.create({
+                data: {
+                    companyId: user.companyId,
+                    ...validated,
+                    designState: validated.designState || {}
+                }
+            });
+
+            return NextResponse.json(template);
+        } catch (error) {
+            return handleApiError(error, 'Failed to create template');
+        }
+    }
+);
