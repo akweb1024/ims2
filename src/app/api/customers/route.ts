@@ -159,6 +159,8 @@ export const POST = authorizedRoute(
 
             gstVatTaxId,
             tags,
+            notes,
+            secondaryPhone,
             institutionDetails,
             institutionId, 
             designation, 
@@ -273,6 +275,8 @@ export const POST = authorizedRoute(
 
                     gstVatTaxId,
                     tags,
+                    notes,
+                    secondaryPhone,
                     institutionId: finalInstitutionId || null,
                     agencyId: finalAgencyId || null,
                     designation: designation || null,

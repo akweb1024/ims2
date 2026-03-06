@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { 
     X, Search, User, Plus, Trash2, Calendar, FileText, 
     ChevronRight, CheckCircle2, AlertCircle, Info, Landmark, MapPin, Phone,
-    Package, Globe, Tag
+    Package, Globe, Tag, Building2, CreditCard, ClipboardList, ShieldCheck, Zap
 } from 'lucide-react';
 
 const getCurrencySymbol = (curr: string) => {
@@ -58,12 +58,28 @@ export default function CreateInvoiceModal({ isOpen, onClose, onSuccess, editId 
     const [newCustomerForm, setNewCustomerForm] = useState({
         name: '',
         primaryEmail: '',
+        primaryPhone: '',
+        secondaryPhone: '',
         customerType: 'INDIVIDUAL' as CustomerType,
         organizationName: '',
+        designation: '',
+        institutionId: '',
         gstVatTaxId: '',
-        primaryPhone: '',
+        billingAddress: '',
+        billingCity: '',
+        billingState: '',
+        billingPincode: '',
+        billingCountry: 'India',
+        shippingAddress: '',
+        shippingCity: '',
+        shippingState: '',
+        shippingPincode: '',
+        shippingCountry: 'India',
+        notes: '',
     });
+    const [isShippingSame, setIsShippingSame] = useState(true);
     const [creatingCustomerLoading, setCreatingCustomerLoading] = useState(false);
+    const [institutions, setInstitutions] = useState<any[]>([]);
 
     const handleTaxTypeChange = (type: 'DOMESTIC' | 'INTERNATIONAL') => {
         setTaxType(type);
@@ -189,7 +205,25 @@ export default function CreateInvoiceModal({ isOpen, onClose, onSuccess, editId 
                 console.error('Failed to fetch brands', err);
             }
         };
-        if (isOpen) fetchBrands();
+        const fetchInstitutions = async () => {
+            try {
+                const token = localStorage.getItem('token');
+                const res = await fetch('/api/institutions', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    setInstitutions(Array.isArray(data) ? data : (data.data || []));
+                }
+            } catch (err) {
+                console.error('Failed to fetch institutions', err);
+            }
+        };
+
+        if (isOpen) {
+            fetchBrands();
+            fetchInstitutions();
+        }
     }, [isOpen]);
 
     // Populate data for editing
@@ -322,11 +356,26 @@ export default function CreateInvoiceModal({ isOpen, onClose, onSuccess, editId 
                 setNewCustomerForm({
                     name: '',
                     primaryEmail: '',
+                    primaryPhone: '',
+                    secondaryPhone: '',
                     customerType: 'INDIVIDUAL',
                     organizationName: '',
+                    designation: '',
+                    institutionId: '',
                     gstVatTaxId: '',
-                    primaryPhone: '',
+                    billingAddress: '',
+                    billingCity: '',
+                    billingState: '',
+                    billingPincode: '',
+                    billingCountry: 'India',
+                    shippingAddress: '',
+                    shippingCity: '',
+                    shippingState: '',
+                    shippingPincode: '',
+                    shippingCountry: 'India',
+                    notes: '',
                 });
+                setIsShippingSame(true);
             } else {
                 const err = await res.json();
                 alert(err.error || 'Failed to create customer');
@@ -501,86 +550,335 @@ export default function CreateInvoiceModal({ isOpen, onClose, onSuccess, editId 
                             </div>
 
                             {isCreatingCustomer ? (
-                                <form onSubmit={handleCreateCustomer} className="space-y-4 animate-fadeIn">
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div>
-                                            <label className="label">Full Name <span className="text-red-500">*</span></label>
-                                            <input 
-                                                className="input-premium w-full" 
-                                                placeholder="e.g. John Doe"
-                                                value={newCustomerForm.name}
-                                                onChange={e => setNewCustomerForm({...newCustomerForm, name: e.target.value})}
-                                                required
-                                            />
+                                <form onSubmit={handleCreateCustomer} className="space-y-8 animate-fadeIn">
+                                    {/* Basic Intel Section */}
+                                    <div className="bg-gray-50/50 p-6 rounded-[2rem] border border-gray-100 space-y-4">
+                                        <div className="flex items-center gap-3 mb-2">
+                                            <div className="w-8 h-8 rounded-xl bg-primary-600 text-white flex items-center justify-center shadow-lg shadow-primary-100">
+                                                <Info size={16} />
+                                            </div>
+                                            <h4 className="text-xs font-black text-gray-900 uppercase tracking-widest italic">Basic Intel</h4>
                                         </div>
-                                        <div>
-                                            <label className="label">Email Address <span className="text-red-500">*</span></label>
-                                            <input 
-                                                className="input-premium w-full" 
-                                                type="email"
-                                                placeholder="e.g. john@example.com"
-                                                value={newCustomerForm.primaryEmail}
-                                                onChange={e => setNewCustomerForm({...newCustomerForm, primaryEmail: e.target.value})}
-                                                required
-                                            />
-                                        </div>
-                                    </div>
-
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div>
-                                            <label className="label">Customer Type</label>
-                                            <select 
-                                                className="input-premium w-full"
-                                                value={newCustomerForm.customerType}
-                                                onChange={e => setNewCustomerForm({...newCustomerForm, customerType: e.target.value as CustomerType})}
-                                            >
-                                                <option value="INDIVIDUAL">Individual</option>
-                                                <option value="INSTITUTION">Institution</option>
-                                                <option value="AGENCY">Agency</option>
-                                            </select>
-                                        </div>
-                                        <div>
-                                            <label className="label">Phone Number</label>
-                                            <input 
-                                                className="input-premium w-full" 
-                                                placeholder="e.g. +91 9876543210"
-                                                value={newCustomerForm.primaryPhone}
-                                                onChange={e => setNewCustomerForm({...newCustomerForm, primaryPhone: e.target.value})}
-                                            />
-                                        </div>
-                                    </div>
-
-                                    {(newCustomerForm.customerType === 'INSTITUTION' || newCustomerForm.customerType === 'AGENCY') && (
-                                        <div className="grid grid-cols-2 gap-4 animate-slideDown">
+                                        
+                                        <div className="grid grid-cols-2 gap-4">
                                             <div>
-                                                <label className="label">Organization Name <span className="text-red-500">*</span></label>
+                                                <label className="label">Full Identity Name <span className="text-red-500">*</span></label>
                                                 <input 
-                                                    className="input-premium w-full" 
-                                                    placeholder="e.g. National Institute of Tech"
-                                                    value={newCustomerForm.organizationName}
-                                                    onChange={e => setNewCustomerForm({...newCustomerForm, organizationName: e.target.value})}
+                                                    className="input-premium w-full bg-white" 
+                                                    placeholder="EX: JOHNATHAN PROTOCOL"
+                                                    value={newCustomerForm.name}
+                                                    onChange={e => setNewCustomerForm({...newCustomerForm, name: e.target.value})}
                                                     required
                                                 />
                                             </div>
                                             <div>
-                                                <label className="label">GST / Tax ID</label>
+                                                <label className="label">Primary Signal (Email) <span className="text-red-500">*</span></label>
                                                 <input 
-                                                    className="input-premium w-full" 
-                                                    placeholder="e.g. 05AAAAA0000A1Z5"
+                                                    className="input-premium w-full bg-white" 
+                                                    type="email"
+                                                    placeholder="INTEL@CRYPTO.COM"
+                                                    value={newCustomerForm.primaryEmail}
+                                                    onChange={e => setNewCustomerForm({...newCustomerForm, primaryEmail: e.target.value})}
+                                                    required
+                                                />
+                                            </div>
+                                        </div>
+
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div>
+                                                <label className="label">Primary Vector (Phone) <span className="text-red-500">*</span></label>
+                                                <input 
+                                                    className="input-premium w-full bg-white" 
+                                                    placeholder="e.g. +91 9876543210"
+                                                    value={newCustomerForm.primaryPhone}
+                                                    onChange={e => setNewCustomerForm({...newCustomerForm, primaryPhone: e.target.value})}
+                                                    required
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="label">Secondary Signal Mode</label>
+                                                <input 
+                                                    className="input-premium w-full bg-white" 
+                                                    placeholder="OPTIONAL VECTOR"
+                                                    value={newCustomerForm.secondaryPhone}
+                                                    onChange={e => setNewCustomerForm({...newCustomerForm, secondaryPhone: e.target.value})}
+                                                />
+                                            </div>
+                                        </div>
+
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div>
+                                                <label className="label">Classification Type</label>
+                                                <select 
+                                                    className="input-premium w-full bg-white"
+                                                    value={newCustomerForm.customerType}
+                                                    onChange={e => setNewCustomerForm({...newCustomerForm, customerType: e.target.value as CustomerType})}
+                                                >
+                                                    <option value="INDIVIDUAL">SINGLE UNIT (INDIVIDUAL)</option>
+                                                    <option value="INSTITUTION">ORGANIZATIONAL NODE (INST)</option>
+                                                    <option value="AGENCY">EXTERNAL AGENT (AGENCY)</option>
+                                                </select>
+                                            </div>
+                                            <div>
+                                                <label className="label">Functional Designation</label>
+                                                <input 
+                                                    className="input-premium w-full bg-white" 
+                                                    placeholder="EX: LIBRARIAN / DIRECTOR"
+                                                    value={newCustomerForm.designation}
+                                                    onChange={e => setNewCustomerForm({...newCustomerForm, designation: e.target.value})}
+                                                />
+                                            </div>
+                                        </div>
+
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div>
+                                                <label className="label">Organization Designation</label>
+                                                <input 
+                                                    className="input-premium w-full bg-white" 
+                                                    placeholder="GLOBAL ACADEMY / ENTERPRISE X"
+                                                    value={newCustomerForm.organizationName}
+                                                    onChange={e => setNewCustomerForm({...newCustomerForm, organizationName: e.target.value})}
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="label">Global Matrix Bind (Institution)</label>
+                                                <select 
+                                                    className="input-premium w-full bg-white"
+                                                    value={newCustomerForm.institutionId}
+                                                    onChange={e => setNewCustomerForm({...newCustomerForm, institutionId: e.target.value})}
+                                                >
+                                                    <option value="">-- NO MATRIX BIND --</option>
+                                                    {institutions.map(inst => (
+                                                        <option key={inst.id} value={inst.id}>
+                                                            {inst.name.toUpperCase()} [{inst.code}]
+                                                        </option>
+                                                    ))}
+                                                </select>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Billing Matrix Section */}
+                                    <div className="bg-indigo-50/30 p-6 rounded-[2rem] border border-indigo-100 space-y-4">
+                                        <div className="flex items-center gap-3 mb-2">
+                                            <div className="w-8 h-8 rounded-xl bg-indigo-600 text-white flex items-center justify-center shadow-lg shadow-indigo-100">
+                                                <CreditCard size={16} />
+                                            </div>
+                                            <h4 className="text-xs font-black text-indigo-900 uppercase tracking-widest italic">Billing Matrix</h4>
+                                        </div>
+
+                                        <div className="grid grid-cols-1 gap-4">
+                                            <div>
+                                                <label className="label">GSTIN / VAT ID Protocol</label>
+                                                <input 
+                                                    className="input-premium w-full bg-white" 
+                                                    placeholder="TAX-XXXXXX-XXXX"
                                                     value={newCustomerForm.gstVatTaxId}
                                                     onChange={e => setNewCustomerForm({...newCustomerForm, gstVatTaxId: e.target.value})}
                                                 />
                                             </div>
+                                            <div>
+                                                <label className="label">Base Street Coordinates</label>
+                                                <textarea 
+                                                    className="input-premium w-full bg-white min-h-[60px]" 
+                                                    placeholder="BUILDING, STREET, BLOCK..."
+                                                    value={newCustomerForm.billingAddress}
+                                                    onChange={e => {
+                                                        const val = e.target.value;
+                                                        setNewCustomerForm(prev => {
+                                                            const upd = {...prev, billingAddress: val};
+                                                            if (isShippingSame) upd.shippingAddress = val;
+                                                            return upd;
+                                                        });
+                                                    }}
+                                                />
+                                            </div>
                                         </div>
-                                    )}
 
-                                    <div className="pt-4">
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div>
+                                                <label className="label">Sector / City</label>
+                                                <input 
+                                                    className="input-premium w-full bg-white" 
+                                                    value={newCustomerForm.billingCity}
+                                                    onChange={e => {
+                                                        const val = e.target.value;
+                                                        setNewCustomerForm(prev => {
+                                                            const upd = {...prev, billingCity: val};
+                                                            if (isShippingSame) upd.shippingCity = val;
+                                                            return upd;
+                                                        });
+                                                    }}
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="label">Region / State</label>
+                                                <input 
+                                                    className="input-premium w-full bg-white" 
+                                                    value={newCustomerForm.billingState}
+                                                    onChange={e => {
+                                                        const val = e.target.value;
+                                                        setNewCustomerForm(prev => {
+                                                            const upd = {...prev, billingState: val};
+                                                            if (isShippingSame) upd.shippingState = val;
+                                                            return upd;
+                                                        });
+                                                    }}
+                                                />
+                                            </div>
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div>
+                                                <label className="label">Zone Code</label>
+                                                <input 
+                                                    className="input-premium w-full bg-white" 
+                                                    value={newCustomerForm.billingPincode}
+                                                    onChange={e => {
+                                                        const val = e.target.value;
+                                                        setNewCustomerForm(prev => {
+                                                            const upd = {...prev, billingPincode: val};
+                                                            if (isShippingSame) upd.shippingPincode = val;
+                                                            return upd;
+                                                        });
+                                                    }}
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="label">Nation</label>
+                                                <input 
+                                                    className="input-premium w-full bg-white" 
+                                                    value={newCustomerForm.billingCountry}
+                                                    onChange={e => {
+                                                        const val = e.target.value;
+                                                        setNewCustomerForm(prev => {
+                                                            const upd = {...prev, billingCountry: val};
+                                                            if (isShippingSame) upd.shippingCountry = val;
+                                                            return upd;
+                                                        });
+                                                    }}
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Shipping Matrix Section */}
+                                    <div className="bg-blue-50/30 p-6 rounded-[2rem] border border-blue-100 space-y-4">
+                                        <div className="flex items-center justify-between mb-2">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-8 h-8 rounded-xl bg-blue-600 text-white flex items-center justify-center shadow-lg shadow-blue-100">
+                                                    <Globe size={16} />
+                                                </div>
+                                                <h4 className="text-xs font-black text-blue-900 uppercase tracking-widest italic">Shipping Matrix</h4>
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-[10px] font-black text-blue-400 uppercase tracking-widest">Mirror Billing</span>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        const next = !isShippingSame;
+                                                        setIsShippingSame(next);
+                                                        if (next) {
+                                                            setNewCustomerForm(prev => ({
+                                                                ...prev,
+                                                                shippingAddress: prev.billingAddress,
+                                                                shippingCity: prev.billingCity,
+                                                                shippingState: prev.billingState,
+                                                                shippingPincode: prev.billingPincode,
+                                                                shippingCountry: prev.billingCountry
+                                                            }));
+                                                        }
+                                                    }}
+                                                    className={`relative inline-flex h-5 w-9 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${isShippingSame ? 'bg-blue-600' : 'bg-gray-200'}`}
+                                                >
+                                                    <span className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${isShippingSame ? 'translate-x-4' : 'translate-x-0'}`} />
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        {!isShippingSame ? (
+                                            <div className="space-y-4 animate-fadeIn">
+                                                <div>
+                                                    <label className="label">Target Street Coordinates</label>
+                                                    <textarea 
+                                                        className="input-premium w-full bg-white min-h-[60px]" 
+                                                        placeholder="ENTER DEPLOYMENT ADDRESS"
+                                                        value={newCustomerForm.shippingAddress}
+                                                        onChange={e => setNewCustomerForm({...newCustomerForm, shippingAddress: e.target.value})}
+                                                    />
+                                                </div>
+                                                <div className="grid grid-cols-2 gap-4">
+                                                    <div>
+                                                        <label className="label">Sector / City</label>
+                                                        <input 
+                                                            className="input-premium w-full bg-white" 
+                                                            value={newCustomerForm.shippingCity}
+                                                            onChange={e => setNewCustomerForm({...newCustomerForm, shippingCity: e.target.value})}
+                                                        />
+                                                    </div>
+                                                    <div>
+                                                        <label className="label">Region / State</label>
+                                                        <input 
+                                                            className="input-premium w-full bg-white" 
+                                                            value={newCustomerForm.shippingState}
+                                                            onChange={e => setNewCustomerForm({...newCustomerForm, shippingState: e.target.value})}
+                                                        />
+                                                    </div>
+                                                </div>
+                                                <div className="grid grid-cols-2 gap-4">
+                                                    <div>
+                                                        <label className="label">Zone Code</label>
+                                                        <input 
+                                                            className="input-premium w-full bg-white" 
+                                                            value={newCustomerForm.shippingPincode}
+                                                            onChange={e => setNewCustomerForm({...newCustomerForm, shippingPincode: e.target.value})}
+                                                        />
+                                                    </div>
+                                                    <div>
+                                                        <label className="label">Nation</label>
+                                                        <input 
+                                                            className="input-premium w-full bg-white" 
+                                                            value={newCustomerForm.shippingCountry}
+                                                            onChange={e => setNewCustomerForm({...newCustomerForm, shippingCountry: e.target.value})}
+                                                        />
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <div className="py-8 flex flex-col items-center justify-center text-center">
+                                                <div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center mb-2 animate-pulse border border-blue-100">
+                                                    <Zap size={20} />
+                                                </div>
+                                                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Mirroring Fiscal Coordinates</p>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* Strategic Intel Section */}
+                                    <div className="bg-purple-50/30 p-6 rounded-[2rem] border border-purple-100 space-y-4">
+                                        <div className="flex items-center gap-3 mb-2">
+                                            <div className="w-8 h-8 rounded-xl bg-purple-600 text-white flex items-center justify-center shadow-lg shadow-purple-100">
+                                                <ClipboardList size={16} />
+                                            </div>
+                                            <h4 className="text-xs font-black text-purple-900 uppercase tracking-widest italic">Strategic Intel</h4>
+                                        </div>
+                                        <div>
+                                            <label className="label">Observation Log</label>
+                                            <textarea 
+                                                className="input-premium w-full bg-white min-h-[100px] border-dashed" 
+                                                placeholder="DOCUMENT INTERNAL INTEL, SPECIFIC BIASES, OR OPERATIONAL PREFERENCES..."
+                                                value={newCustomerForm.notes}
+                                                onChange={e => setNewCustomerForm({...newCustomerForm, notes: e.target.value})}
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div className="pt-4 sticky bottom-0 bg-white/80 backdrop-blur-md pb-4">
                                         <button 
                                             type="submit" 
                                             disabled={creatingCustomerLoading}
                                             className="btn btn-primary w-full py-4 text-base font-bold shadow-lg shadow-primary-200"
                                         >
-                                            {creatingCustomerLoading ? 'Creating...' : 'Create & Proceed to Invoice'}
+                                            {creatingCustomerLoading ? 'Propagating...' : 'Initialize Profile & Continue'}
                                         </button>
                                     </div>
                                 </form>
