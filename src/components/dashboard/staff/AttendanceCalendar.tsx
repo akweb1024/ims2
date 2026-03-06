@@ -9,9 +9,10 @@ interface AttendanceCalendarProps {
     attendance: any[];
     workReports: any[];
     onDateClick?: (date: Date, attendanceRecord?: any) => void;
+    onMonthChange?: (year: number, month: number) => void;
 }
 
-export default function AttendanceCalendar({ attendance, workReports, onDateClick }: AttendanceCalendarProps) {
+export default function AttendanceCalendar({ attendance, workReports, onDateClick, onMonthChange }: AttendanceCalendarProps) {
     const [currentMonth, setCurrentMonth] = useState(new Date());
 
     const daysInMonth = (year: number, month: number) => new Date(year, month + 1, 0).getDate();
@@ -23,8 +24,17 @@ export default function AttendanceCalendar({ attendance, workReports, onDateClic
     const totalDays = daysInMonth(year, month);
     const startDay = firstDayOfMonth(year, month);
 
-    const prevMonth = () => setCurrentMonth(new Date(year, month - 1, 1));
-    const nextMonth = () => setCurrentMonth(new Date(year, month + 1, 1));
+    const prevMonth = () => {
+        const next = new Date(year, month - 1, 1);
+        setCurrentMonth(next);
+        if (onMonthChange) onMonthChange(next.getFullYear(), next.getMonth());
+    };
+    
+    const nextMonth = () => {
+        const next = new Date(year, month + 1, 1);
+        setCurrentMonth(next);
+        if (onMonthChange) onMonthChange(next.getFullYear(), next.getMonth());
+    };
 
     const monthNames = [
         "January", "February", "March", "April", "May", "June",

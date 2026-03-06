@@ -50,12 +50,15 @@ export default function ManualAttendanceView() {
         return () => clearTimeout(timer);
     }, [searchQuery]);
 
-    const fetchAttendance = useCallback(async () => {
+    const fetchAttendance = useCallback(async (monthOverride?: number, yearOverride?: number) => {
         setIsLoadingData(true);
         try {
             const now = new Date();
+            const targetMonth = monthOverride !== undefined ? monthOverride : now.getMonth() + 1;
+            const targetYear = yearOverride !== undefined ? yearOverride : now.getFullYear();
+
             // Fetch using the targetUserId which we added support for in the API
-            const res = await fetch(`/api/hr/attendance?month=${now.getMonth() + 1}&year=${now.getFullYear()}&targetUserId=${selectedEmployee.userId || selectedEmployee.id}&all=true`);
+            const res = await fetch(`/api/hr/attendance?month=${targetMonth}&year=${targetYear}&targetUserId=${selectedEmployee.userId || selectedEmployee.id}&all=true`);
             if (res.ok) {
                 const data = await res.json();
                 setAttendanceData(data);
@@ -206,6 +209,7 @@ export default function ManualAttendanceView() {
                         attendance={attendanceData}
                         workReports={[]} // Not needed for manual entry view
                         onDateClick={handleDateClick}
+                        onMonthChange={(year, month) => fetchAttendance(month + 1, year)}
                     />
                 </div>
             )}

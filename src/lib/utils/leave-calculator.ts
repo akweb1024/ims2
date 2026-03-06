@@ -40,8 +40,8 @@ export function calculateLateDeduction(
     if (lateMinutes > 90) return 1; // Workflow Phase 4.1 suggests 1 full day for > 90 min
 
     // 31-90 min range
-    if (monthlyLateCount <= 2) return 0; // First 2 are free
-    return 0.5; // Half day deduction after 2nd occurrence
+    if (monthlyLateCount < 2) return 0; // First 2 occurrences (count 0 and 1) are free
+    return 0.5; // Half day deduction on the 3rd occurrence
 }
 
 /**
@@ -57,8 +57,8 @@ export function calculateShortLeaveDeduction(
     // Workflow specifies "exactly 90 min" or "short leave logic (90 min)"
     if (shortLeaveMinutes < 90) return 0;
 
-    if (monthlyShortLeaveCount <= 2) return 0; // First 2 are free
-    return 0.5; // Half day deduction after 2nd occurrence
+    if (monthlyShortLeaveCount < 2) return 0; // First 2 occurrences (count 0 and 1) are free
+    return 0.5; // Half day deduction on the 3rd occurrence
 }
 
 /**

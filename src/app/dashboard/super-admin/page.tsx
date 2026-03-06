@@ -1,6 +1,6 @@
 
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
-import SuperAdminView from "@/components/dashboard/super-admin/SuperAdminView";
+import SuperAdminOverhaulDashboard from "@/components/dashboard/super-admin/OverhaulDashboard";
 import { getAuthenticatedUser } from "@/lib/auth";
 import { redirect } from "next/navigation";
 
@@ -15,7 +15,7 @@ export default async function SuperAdminPage() {
 
     return (
         <DashboardLayout>
-            <SuperAdminView />
+            <SuperAdminOverhaulDashboard />
         </DashboardLayout>
     );
 }

@@ -1,4 +1,5 @@
 'use client';
+export const dynamic = 'force-dynamic';
 
 import { useState, useEffect } from 'react';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
@@ -139,6 +140,22 @@ export default function StaffPortalPage() {
             console.error('Failed to fetch staff data', err);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleMonthChange = async (year: number, month: number) => {
+        const token = localStorage.getItem('token');
+        if (!token) return;
+        try {
+            const results = await Promise.all([
+                fetch(`/api/hr/attendance?year=${year}&month=${month + 1}`, { headers: { 'Authorization': `Bearer ${token}` } }),
+                fetch(`/api/hr/work-reports?employeeId=self&year=${year}&month=${month + 1}`, { headers: { 'Authorization': `Bearer ${token}` } })
+            ]);
+            
+            if (results[0].ok) setAttendance(await results[0].json());
+            if (results[1].ok) setWorkReports(await results[1].json());
+        } catch (err) {
+            console.error('Failed to refetch attendance for month', err);
         }
     };
 
@@ -511,7 +528,11 @@ export default function StaffPortalPage() {
 
                     {activeTab === 'attendance' && (
                         <div className="space-y-6">
-                            <AttendanceCalendar attendance={attendance} workReports={workReports} />
+                            <AttendanceCalendar 
+                                attendance={attendance} 
+                                workReports={workReports} 
+                                onMonthChange={handleMonthChange}
+                            />
 
                             <div className="card-premium overflow-hidden">
                                 <div className="p-6 border-b border-secondary-100 flex justify-between items-center bg-secondary-50/30">

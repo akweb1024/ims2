@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getAuthenticatedUser } from '@/lib/auth-legacy';
+import { logger } from '@/lib/logger';
 
 export async function GET(
     _req: NextRequest,
@@ -122,7 +123,7 @@ export async function GET(
         return NextResponse.json(customer);
 
     } catch (error) {
-        console.error('Customer Details Error:', error);
+        logger.error('Customer Details Error:', error);
         return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
     }
 }
@@ -143,6 +144,7 @@ export async function PATCH(
             institutionDetails,
             assignedToUserId,
             assignedToUserIds, // Array of IDs
+            website, // Extracting website to omit it from profileData since it is not in the schema
             ...profileData
         } = body;
 
@@ -187,7 +189,7 @@ export async function PATCH(
         return NextResponse.json(result);
 
     } catch (error) {
-        console.error('Update Customer Error:', error);
+        logger.error('Update Customer Error:', error);
         return NextResponse.json({ error: error instanceof Error ? error.message : 'Internal Server Error' }, { status: 500 });
     }
 }

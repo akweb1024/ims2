@@ -54,6 +54,14 @@ export async function upsertAttendanceRecord(
         include: { shift: true }
     });
 
+    const existing = await tx.attendance.findUnique({
+        where: { employeeId_date: { employeeId, date } }
+    });
+
+    // Determine effective check-in and check-out
+    const effectiveCheckIn = checkIn !== undefined ? checkIn : existing?.checkIn;
+    const effectiveCheckOut = checkOut !== undefined ? checkOut : existing?.checkOut;
+
     let lateMinutes = 0;
     let shortMinutes = 0;
     let otMinutes = 0;
@@ -76,7 +84,7 @@ export async function upsertAttendanceRecord(
     }
 
     // 3. Late Arrival Calculation
-    if (checkIn && roster?.shift) {
+    if (effectiveCheckIn && roster?.shift) {
         const shift = roster.shift;
         const [sHrs, sMin] = shift.startTime.split(':').map(Number);
         const shiftStart = new Date(date);
@@ -85,26 +93,29 @@ export async function upsertAttendanceRecord(
         const graceLimit = new Date(shiftStart);
         graceLimit.setMinutes(graceLimit.getMinutes() + (shift.gracePeriod || 0));
 
-        if (checkIn > graceLimit) {
-            lateMinutes = Math.floor((checkIn.getTime() - shiftStart.getTime()) / (1000 * 60));
+        if (effectiveCheckIn > graceLimit) {
+            lateMinutes = Math.floor((effectiveCheckIn.getTime() - shiftStart.getTime()) / (1000 * 60));
             isLate = lateMinutes > 0;
         }
     }
 
     // 4. Short Leave / OT Calculation
-    if (checkOut && roster?.shift) {
+    if (effectiveCheckOut && roster?.shift) {
         const shift = roster.shift;
         const [eHrs, eMin] = shift.endTime.split(':').map(Number);
         const shiftEnd = new Date(date);
         shiftEnd.setHours(eHrs, eMin, 0, 0);
 
-        if (checkOut > shiftEnd) {
-            otMinutes = Math.floor((checkOut.getTime() - shiftEnd.getTime()) / (1000 * 60));
+        if (effectiveCheckOut > shiftEnd) {
+            otMinutes = Math.floor((effectiveCheckOut.getTime() - shiftEnd.getTime()) / (1000 * 60));
         } else {
-            shortMinutes = Math.floor((shiftEnd.getTime() - checkOut.getTime()) / (1000 * 60));
+            shortMinutes = Math.floor((shiftEnd.getTime() - effectiveCheckOut.getTime()) / (1000 * 60));
             isShort = shortMinutes > 0;
         }
     }
+
+    const payloadCheckIn = checkIn !== undefined ? checkIn : undefined;
+    const payloadCheckOut = checkOut !== undefined ? checkOut : undefined;
 
     // 5. Upsert Data
     const record = await tx.attendance.upsert({
@@ -112,8 +123,8 @@ export async function upsertAttendanceRecord(
             employeeId_date: { employeeId, date }
         },
         update: {
-            checkIn: checkIn ?? undefined,
-            checkOut: checkOut ?? undefined,
+            checkIn: payloadCheckIn,
+            checkOut: payloadCheckOut,
             workFrom: workFrom || 'OFFICE',
             status: status || 'PRESENT',
             latitude: latitude ?? undefined,
@@ -132,8 +143,8 @@ export async function upsertAttendanceRecord(
         create: {
             employeeId,
             date,
-            checkIn: checkIn ?? null,
-            checkOut: checkOut ?? null,
+            checkIn: payloadCheckIn ?? null,
+            checkOut: payloadCheckOut ?? null,
             workFrom: workFrom || 'OFFICE',
             status: status || 'PRESENT',
             latitude: latitude ?? null,
@@ -152,14 +163,18 @@ export async function upsertAttendanceRecord(
     });
 
     // 6. Triggers (Side Effects)
-    // Only run side effects if not in a critical bulk operation or if explicitly requested?
-    // For now, mirroring existing behavior:
-    if (lateMinutes >= 31) {
-        await processLateArrival(employeeId, lateMinutes, companyId);
-    }
+    // Run side effects ONLY on check-out to automate end-of-day leave deductions properly
+    // and to prevent double-penalization for the same day.
+    const isFirstTimeCheckOut = payloadCheckOut != null && existing?.checkOut == null;
 
-    if (shortMinutes >= 90) {
-        await processShortLeave(employeeId, shortMinutes, companyId);
+    if (isFirstTimeCheckOut || isManual) {
+        if (lateMinutes >= 31) {
+            await processLateArrival(employeeId, lateMinutes, companyId);
+        }
+
+        if (shortMinutes >= 90) {
+            await processShortLeave(employeeId, shortMinutes, companyId);
+        }
     }
 
     return record;

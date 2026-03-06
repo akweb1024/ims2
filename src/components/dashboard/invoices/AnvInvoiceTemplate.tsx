@@ -82,7 +82,7 @@ export default function AnvInvoiceTemplate({ invoice, identity, currencySymbol, 
 
             <div className="header-box">
                 <div className="logo-left">
-                    {identity.brandLogoUrl && <img src={identity.brandLogoUrl} className="max-h-16 w-auto" alt="Logo" />}
+                    {identity.brandLogoUrl && <img src={identity.brandLogoUrl} className="max-h-16 w-auto" alt="Brand Logo" />}
                 </div>
                 <div className="header-center">
                     <p className="text-[10px] font-bold text-right -mt-2 -mr-2 absolute right-2 top-2 uppercase">Subjected to {identity.jurisdiction || 'Raipur'} Jurisdiction</p>
