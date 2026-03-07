@@ -150,6 +150,7 @@ export default function CreateInvoiceModal({ isOpen, onClose, onSuccess, editId 
             updateItem(targetItemId, 'description', finalDesc);
             updateItem(targetItemId, 'price', price);
             updateItem(targetItemId, 'productId', p.id);
+            updateItem(targetItemId, 'variantId', v?.id);
             setProductResults(prev => ({ ...prev, [targetItemId]: [] }));
         } else {
             const newItem = {
@@ -157,7 +158,8 @@ export default function CreateInvoiceModal({ isOpen, onClose, onSuccess, editId 
                 description: finalDesc,
                 quantity: p.minQuantity || 1,
                 price: price,
-                productId: p.id
+                productId: p.id,
+                variantId: v?.id
             };
             setItems(prev => {
                 if (prev.length === 1 && !prev[0].description && prev[0].price === 0) return [newItem];
@@ -437,12 +439,13 @@ export default function CreateInvoiceModal({ isOpen, onClose, onSuccess, editId 
                     customerProfileId: selectedCustomer.id,
                     dueDate,
                     description,
-                    lineItems: items.map(({ id, description, quantity, price, productId }: any) => ({ 
+                    lineItems: items.map(({ id, description, quantity, price, productId, variantId }: any) => ({ 
                         id, 
                         description, 
                         quantity, 
                         price, 
-                        productId: productId || null 
+                        productId: productId || null,
+                        variantId: variantId || null
                     })),
                     taxRate,
                     amount: calculateTotal(),

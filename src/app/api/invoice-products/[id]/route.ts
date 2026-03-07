@@ -9,8 +9,8 @@ const db = prisma as any;
 
 const CATEGORIES = [
     'JOURNAL_SUBSCRIPTION', 'COURSE', 'WORKSHOP',
-    'DOI_SERVICE', 'APC', 'CERTIFICATE', 'DIGITAL_SERVICE', 'MISC'
 ] as const;
+const PRODUCT_TYPES = ['SIMPLE', 'VARIABLE'] as const;
 const PRICING_MODELS = ['FIXED', 'TIERED', 'VOLUME', 'CUSTOM'] as const;
 const BILLING_CYCLES = ['MONTHLY', 'QUARTERLY', 'ANNUAL', 'ONE_TIME'] as const;
 
@@ -36,10 +36,12 @@ const variantUpdateSchema = z.object({
 
 const updateSchema = z.object({
     name: z.string().min(1).max(300).optional(),
+    type: z.enum(PRODUCT_TYPES).optional(),
     category: z.enum(CATEGORIES).optional(),
     pricingModel: z.enum(PRICING_MODELS).optional(),
     description: z.string().max(2000).optional().nullable(),
     shortDesc: z.string().max(300).optional().nullable(),
+    basePrice: z.number().min(0).optional().nullable(),
     priceINR: z.number().min(0).optional(),
     priceUSD: z.number().min(0).optional(),
     priceTiers: z.array(priceTierSchema).optional().nullable(),
@@ -60,7 +62,7 @@ const updateSchema = z.object({
     isFeatured: z.boolean().optional(),
     tags: z.array(z.string().max(50)).max(20).optional(),
     notes: z.string().max(1000).optional().nullable(),
-    productAttributes: z.any().optional().nullable(),
+    attributes: z.any().optional().nullable(),
     variants: z.array(variantUpdateSchema).optional(),
 });
 
@@ -76,7 +78,10 @@ export const GET = authorizedRoute(
                     id,
                     OR: [{ companyId: user.companyId }, { companyId: null }],
                 },
-                include: { variants: true }
+                include: { 
+                    variants: true,
+                    attributes: { include: { values: true } },
+                }
             });
 
             if (!product) throw new NotFoundError('Invoice product not found');
@@ -125,17 +130,27 @@ export const PATCH = authorizedRoute(
                 if (existing) throw new ValidationError(`SKU "${input.sku}" is already in use`);
             }
 
+            // Enforce constraints
+            const newType = input.type || product.type;
+            if (newType === 'VARIABLE' && (input.basePrice != null || (input.basePrice === undefined && product.basePrice != null))) {
+                if ('basePrice' in input && input.basePrice != null) {
+                    throw new ValidationError('base_price must be null for VARIABLE type products');
+                }
+            }
+
             const updated = await db.$transaction(async (tx: any) => {
                 const prod = await tx.invoiceProduct.update({
                     where: { id },
                     data: {
                         name: input.name,
+                        type: input.type,
+                        basePrice: input.basePrice !== undefined ? input.basePrice : undefined,
                         category: input.category,
                         pricingModel: input.pricingModel,
                         description: input.description,
                         shortDesc: input.shortDesc,
-                        priceINR: input.priceINR,
-                        priceUSD: input.priceUSD,
+                        priceINR: newType === 'VARIABLE' ? null : input.priceINR,
+                        priceUSD: newType === 'VARIABLE' ? null : input.priceUSD,
                         priceTiers: input.priceTiers !== undefined ? input.priceTiers ?? undefined : undefined,
                         taxRate: input.taxRate,
                         taxIncluded: input.taxIncluded,
@@ -155,7 +170,6 @@ export const PATCH = authorizedRoute(
                         tags: input.tags,
                         notes: input.notes,
                         updatedByUserId: user.id,
-                        productAttributes: input.productAttributes !== undefined ? (input.productAttributes ?? undefined) : undefined,
                     }
                 });
 
@@ -194,7 +208,7 @@ export const PATCH = authorizedRoute(
 
                 return tx.invoiceProduct.findUnique({
                     where: { id },
-                    include: { variants: true }
+                    include: { variants: true, attributes: { include: { values: true } } }
                 });
             });
 

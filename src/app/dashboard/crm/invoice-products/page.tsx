@@ -16,6 +16,7 @@ import {
     CheckCircle2, DollarSign, Calculator, Activity
 } from 'lucide-react';
 import FormattedDate from '@/components/common/FormattedDate';
+import VariantAdminPanel from '@/components/dashboard/crm/VariantAdminPanel';
 
 // ─── Constants ─────────────────────────────────────────────────────────────
 const CATEGORIES = [
@@ -47,6 +48,8 @@ interface PriceTier { minQty: number; maxQty?: number | null; priceINR: number; 
 
 interface InvoiceProduct {
     id: string;
+    type: string;
+    basePrice: number | null;
     sku?: string;
     name: string;
     category: string;
@@ -83,7 +86,7 @@ const getPricingConfig = (val: string) => PRICING_MODELS.find(p => p.value === v
 
 // ─── Empty form state ──────────────────────────────────────────────────────
 const EMPTY_FORM = {
-    name: '', category: 'MISC', pricingModel: 'FIXED', description: '', shortDesc: '',
+    name: '', type: 'SIMPLE', basePrice: 0, category: 'MISC', pricingModel: 'FIXED', description: '', shortDesc: '',
     priceINR: 0, priceUSD: 0, taxRate: 18, taxIncluded: false,
     hsnCode: '', sacCode: '', billingCycle: 'ONE_TIME', unit: 'unit',
     minQuantity: 1, maxQuantity: '', sku: '', isActive: true, isFeatured: false,
@@ -178,7 +181,7 @@ export default function InvoiceProductsPage() {
     const openEdit = (p: InvoiceProduct) => {
         setEditingProduct(p);
         setForm({
-            name: p.name, category: p.category, pricingModel: p.pricingModel,
+            name: p.name, type: p.type || 'SIMPLE', basePrice: p.basePrice || 0, category: p.category, pricingModel: p.pricingModel,
             description: p.description || '', shortDesc: p.shortDesc || '',
             priceINR: p.priceINR, priceUSD: p.priceUSD,
             taxRate: p.taxRate, taxIncluded: p.taxIncluded,
@@ -199,12 +202,14 @@ export default function InvoiceProductsPage() {
 
     const buildPayload = () => ({
         name: form.name.trim(),
+        type: form.type,
+        basePrice: form.type === 'VARIABLE' ? Number(form.priceINR) || 0 : null,
         category: form.category,
         pricingModel: form.pricingModel,
         description: form.description || null,
         shortDesc: form.shortDesc || null,
-        priceINR: Number(form.priceINR) || 0,
-        priceUSD: Number(form.priceUSD) || 0,
+        priceINR: form.type === 'VARIABLE' ? null : (Number(form.priceINR) || 0),
+        priceUSD: form.type === 'VARIABLE' ? null : (Number(form.priceUSD) || 0),
         taxRate: Number(form.taxRate) || 18,
         taxIncluded: form.taxIncluded,
         hsnCode: form.hsnCode || null,
@@ -227,8 +232,6 @@ export default function InvoiceProductsPage() {
                 label: t.label || null,
             }))
             : null,
-        productAttributes: form.productAttributes,
-        variants: form.variants,
     });
 
     const handleSave = async () => {
@@ -297,41 +300,6 @@ export default function InvoiceProductsPage() {
             ? Number(fxInput) / fxRate
             : Number(fxInput) * fxRate
         : null;
-
-    // --- Variant generator ---
-    const generateVariants = () => {
-        const attrs = form.productAttributes.filter((a: any) => a.terms && a.terms.length > 0);
-        if (attrs.length === 0) return;
-        
-        const backtrack = (idx: number, currentObj: any): any[] => {
-            if (idx === attrs.length) return [currentObj];
-            const attr = attrs[idx];
-            let res: any[] = [];
-            for (const t of attr.terms) {
-                const nextObj = { ...currentObj, [attr.name]: t.value };
-                res = res.concat(backtrack(idx + 1, nextObj));
-            }
-            return res;
-        };
-        const generated = backtrack(0, {});
-        
-        // Match existing variants to avoid losing data
-        const newVariants = generated.map(gen => {
-            const existing = form.variants.find((v: any) => JSON.stringify(v.attributes) === JSON.stringify(gen));
-            if (existing) return existing;
-            return {
-                id: null,
-                sku: `${form.sku || 'SKU'}-${Object.values(gen).join('-').replace(/\\s+/g,'').toUpperCase()}`,
-                priceINR: form.priceINR,
-                priceUSD: form.priceUSD,
-                stockQuantity: null,
-                manageStock: false,
-                isActive: true,
-                attributes: gen
-            };
-        });
-        setForm({ ...form, variants: newVariants });
-    };
 
     return (
         <DashboardLayout userRole={userRole}>
@@ -752,7 +720,18 @@ export default function InvoiceProductsPage() {
                         </div>
 
                         {/* Operational Parameters */}
-                        <div className="bg-secondary-50 p-8 rounded-[2.5rem] border border-secondary-200/50 grid grid-cols-1 md:grid-cols-3 gap-8">
+                        <div className="bg-secondary-50 p-8 rounded-[2.5rem] border border-secondary-200/50 grid grid-cols-1 md:grid-cols-4 gap-8">
+                             <div className="space-y-2 text-primary-600">
+                                  <label className="text-[9px] font-black uppercase tracking-widest opacity-60">Node Type</label>
+                                  <select 
+                                       className="input h-12 bg-white border-secondary-200 font-black text-[10px] uppercase tracking-tighter"
+                                       value={form.type}
+                                       onChange={e => setForm((f: any) => ({ ...f, type: e.target.value }))}
+                                  >
+                                       <option value="SIMPLE">SIMPLE</option>
+                                       <option value="VARIABLE">VARIABLE</option>
+                                  </select>
+                             </div>
                              <div className="space-y-2 text-primary-600">
                                   <label className="text-[9px] font-black uppercase tracking-widest opacity-60">Classification Sector</label>
                                   <select 
@@ -815,93 +794,22 @@ export default function InvoiceProductsPage() {
                              </div>
                         </div>
 
-                        {/* Variables / Attributes Engine */}
-                        <div className="bg-secondary-950 p-8 rounded-[2.5rem] border border-white/5 relative overflow-hidden">
-                             <h3 className="text-white font-black text-lg uppercase tracking-widest mb-4">Attribute Engine (Variants)</h3>
-                             <p className="text-[10px] font-black uppercase tracking-[0.2em] text-primary-400 mb-6">Define global or local attributes to spawn variations of this asset.</p>
-                             
-                             <div className="space-y-4 mb-6 relative z-10">
-                                 {form.productAttributes.map((attr: any, i: number) => (
-                                     <div key={i} className="bg-white/10 p-4 rounded-xl flex gap-4 items-start">
-                                         <div className="flex-1">
-                                             <input className="input bg-transparent border-white/20 text-white font-bold"
-                                                 placeholder="Attribute Name (e.g. Size)" 
-                                                 value={attr.name}
-                                                 onChange={e => {
-                                                     const n = [...form.productAttributes];
-                                                     n[i].name = e.target.value;
-                                                     setForm({...form, productAttributes: n});
-                                                 }}
-                                             />
-                                         </div>
-                                         <div className="flex-[3]">
-                                             <input className="input bg-transparent border-white/20 text-white"
-                                                 placeholder="Values separated by comma (e.g. S, M, L)" 
-                                                 value={attr.terms.map((t:any)=>t.value).join(', ')}
-                                                 onChange={e => {
-                                                     const n = [...form.productAttributes];
-                                                     n[i].terms = e.target.value.split(',').filter(v=>v.trim()).map(v => ({ value: v.trim() }));
-                                                     setForm({...form, productAttributes: n});
-                                                 }}
-                                             />
-                                         </div>
-                                         <button type="button" onClick={() => {
-                                             const n = form.productAttributes.filter((_:any, idx:number) => idx !== i);
-                                             setForm({...form, productAttributes: n});
-                                         }} className="p-3 text-red-400 hover:bg-white/10 rounded-xl">✕</button>
-                                     </div>
-                                 ))}
-                             </div>
-
-                             <div className="flex items-center gap-3 relative z-10 border-b border-white/10 pb-6 mb-6">
-                                 <button type="button" onClick={() => setForm({...form, productAttributes: [...form.productAttributes, { name: '', terms: [] }]})}
-                                     className="px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg text-[10px] font-black uppercase">
-                                     + Add Attribute
-                                 </button>
-                                 <select className="px-4 py-2 bg-white/10 text-white border-none rounded-lg text-[10px] font-black uppercase"
-                                     onChange={(e) => {
-                                         if (!e.target.value) return;
-                                         const ga = globalAttributes.find(a => a.id === e.target.value);
-                                         if (ga && !form.productAttributes.some((a:any)=>a.name===ga.name)) {
-                                             setForm({...form, productAttributes: [...form.productAttributes, { name: ga.name, terms: ga.terms }]});
-                                         }
-                                         e.target.value = "";
-                                     }}
-                                 >
-                                     <option value="">+ From Global Repository</option>
-                                     {globalAttributes.map(ga => <option key={ga.id} value={ga.id}>{ga.name}</option>)}
-                                 </select>
-                                 <button type="button" onClick={generateVariants}
-                                     className="ml-auto px-6 py-2 bg-primary-600 hover:bg-primary-500 text-white rounded-lg text-[10px] font-black uppercase tracking-widest shadow-lg shadow-primary-900/50">
-                                     ⚡ Spawn Variants
-                                 </button>
-                             </div>
-
-                             {form.variants.length > 0 && (
-                                 <div className="space-y-2 relative z-10 max-h-96 overflow-y-auto">
-                                     {form.variants.map((variant: any, i: number) => (
-                                         <div key={i} className="flex gap-2 items-center bg-white/5 p-2 rounded-xl">
-                                             <div className="px-3 py-1 font-bold text-[10px] uppercase text-white tracking-widest bg-white/10 rounded">
-                                                 {Object.entries(variant.attributes).map(([k,v])=> `${v}`).join(' · ')}
-                                             </div>
-                                             <input className="input !py-1 text-xs bg-transparent border-white/10 text-white flex-1"
-                                                 placeholder="SKU Override" value={variant.sku || ''}
-                                                 onChange={e => { const n=[...form.variants]; n[i].sku=e.target.value; setForm({...form, variants: n})}}/>
-                                             <input type="number" className="input !py-1 text-xs bg-transparent border-white/10 text-white w-24"
-                                                 placeholder="₹ Price" value={variant.priceINR ?? ''}
-                                                 onChange={e => { const n=[...form.variants]; n[i].priceINR=e.target.value ? parseFloat(e.target.value) : null; setForm({...form, variants: n})}}/>
-                                             <input type="number" className="input !py-1 text-xs bg-transparent border-white/10 text-white w-24"
-                                                 placeholder="$ Price" value={variant.priceUSD ?? ''}
-                                                 onChange={e => { const n=[...form.variants]; n[i].priceUSD=e.target.value ? parseFloat(e.target.value) : null; setForm({...form, variants: n})}}/>
-                                             <button type="button" onClick={() => {
-                                                 const n = form.variants.filter((_:any,idx:number)=>idx!==i);
-                                                 setForm({...form, variants: n});
-                                             }} className="p-2 text-white/40 hover:text-red-400">✕</button>
-                                         </div>
-                                     ))}
-                                 </div>
-                             )}
-                        </div>
+                        {editingProduct && editingProduct.type === 'VARIABLE' ? (
+                            <VariantAdminPanel 
+                                product={editingProduct} 
+                                authH={authH}
+                                onRefresh={async () => {
+                                    const res = await fetch(`/api/invoice-products/${editingProduct.id}`, { headers: authH });
+                                    if (res.ok) setEditingProduct(await res.json());
+                                    fetchProducts();
+                                }} 
+                            />
+                        ) : form.type === 'VARIABLE' ? (
+                            <div className="bg-secondary-950 p-8 rounded-[2.5rem] border border-white/5 relative overflow-hidden text-center justify-center flex flex-col items-center mt-8">
+                                <h3 className="text-white font-black text-lg uppercase tracking-widest mb-4">Attribute Engine (Variants)</h3>
+                                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-primary-400">Save the product first to define variables and variants.</p>
+                            </div>
+                        ) : null}
 
                         <div className="flex bg-secondary-50 p-6 rounded-[2rem] border border-secondary-100 gap-8">
                              <label className="flex items-center gap-3 cursor-pointer group">

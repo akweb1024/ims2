@@ -13,6 +13,7 @@ interface LineItem {
     courseId?: string;
     workshopId?: string;
     productId?: string;
+    variantId?: string;
 }
 
 interface ProformaAuditEvent {
@@ -449,6 +450,7 @@ export default function ProformaInvoicePanel({
             unitPrice: price,
             total: price * (p.minQuantity || 1),
             productId: p.id,
+            variantId: v?.id,
         };
 
         setLineItems(prev => {

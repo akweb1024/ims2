@@ -316,7 +316,16 @@ export const POST = authorizedRoute(
             }).catch((err: any) => logger.error('Failed to increment coupon usage', err, { couponId }));
         }
 
-
+        // Deduct Stock
+        for (const item of processedItems) {
+            const qty = Number(item.quantity) || 1;
+            if (item.variantId) {
+                await prisma.productVariant.update({
+                    where: { id: item.variantId },
+                    data: { stockQuantity: { decrement: qty } }
+                }).catch(() => {});
+            }
+        }
 
         // Finance Automation (non-blocking)
         try {

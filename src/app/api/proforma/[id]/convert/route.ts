@@ -219,6 +219,17 @@ export const POST = authorizedRoute(
                     }
                 });
 
+                // Deduct stock for any linked variants
+                for (const item of (proforma.lineItems as any[]) || []) {
+                    const qty = Number(item.quantity) || 1;
+                    if (item.variantId) {
+                        await tx.productVariant.update({
+                            where: { id: item.variantId },
+                            data: { stockQuantity: { decrement: qty } }
+                        }).catch(() => {});
+                    }
+                }
+
                 // d. Payment ledger record
                 await tx.payment.create({
                     data: {

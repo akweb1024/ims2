@@ -13,6 +13,8 @@ const CATEGORIES = [
     'DOI_SERVICE', 'APC', 'CERTIFICATE', 'DIGITAL_SERVICE', 'MISC'
 ] as const;
 
+const PRODUCT_TYPES = ['SIMPLE', 'VARIABLE'] as const;
+
 const PRICING_MODELS = ['FIXED', 'TIERED', 'VOLUME', 'CUSTOM'] as const;
 const BILLING_CYCLES = ['MONTHLY', 'QUARTERLY', 'ANNUAL', 'ONE_TIME'] as const;
 
@@ -37,10 +39,12 @@ const variantCreateSchema = z.object({
 
 const productCreateSchema = z.object({
     name: z.string().min(1, 'Product name is required').max(300),
+    type: z.enum(PRODUCT_TYPES).optional().default('SIMPLE'),
     category: z.enum(CATEGORIES).optional().default('MISC'),
     pricingModel: z.enum(PRICING_MODELS).optional().default('FIXED'),
     description: z.string().max(2000).optional().nullable(),
     shortDesc: z.string().max(300).optional().nullable(),
+    basePrice: z.number().min(0).optional().nullable(),
     priceINR: z.number().min(0).optional().default(0),
     priceUSD: z.number().min(0).optional().default(0),
     priceTiers: z.array(priceTierSchema).optional().nullable(),
@@ -61,7 +65,7 @@ const productCreateSchema = z.object({
     isFeatured: z.boolean().optional().default(false),
     tags: z.array(z.string().max(50)).max(20).optional().default([]),
     notes: z.string().max(1000).optional().nullable(),
-    productAttributes: z.any().optional().nullable(),
+    attributes: z.any().optional().nullable(),
     variants: z.array(variantCreateSchema).optional().default([]),
 });
 
@@ -115,7 +119,12 @@ export const GET = authorizedRoute(
             const [products, total] = await Promise.all([
                 db.invoiceProduct.findMany({
                     where,
-                    include: { variants: true },
+                    include: { 
+                        variants: true,
+                        attributes: {
+                            include: { values: true }
+                        }
+                    },
                     orderBy,
                     skip: (page - 1) * pageSize,
                     take: pageSize,
@@ -167,16 +176,22 @@ export const POST = authorizedRoute(
                 if (existing) throw new ValidationError(`SKU "${input.sku}" is already in use`);
             }
 
+            if (input.type === 'VARIABLE' && input.basePrice != null) {
+                throw new ValidationError('base_price must be null for VARIABLE type products');
+            }
+
             const product = await db.$transaction(async (tx: any) => {
                 const prod = await tx.invoiceProduct.create({
                     data: {
                         name: input.name,
+                        type: input.type,
+                        basePrice: input.basePrice,
                         category: input.category,
                         pricingModel: input.pricingModel,
                         description: input.description,
                         shortDesc: input.shortDesc,
-                        priceINR: input.priceINR,
-                        priceUSD: input.priceUSD,
+                        priceINR: input.type === 'VARIABLE' ? null : input.priceINR,
+                        priceUSD: input.type === 'VARIABLE' ? null : input.priceUSD,
                         priceTiers: input.priceTiers ?? undefined,
                         taxRate: input.taxRate,
                         taxIncluded: input.taxIncluded,
@@ -197,7 +212,6 @@ export const POST = authorizedRoute(
                         notes: input.notes,
                         companyId: user.companyId,
                         createdByUserId: user.id,
-                        productAttributes: input.productAttributes ?? undefined,
                     }
                 });
 
