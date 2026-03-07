@@ -1022,20 +1022,80 @@ export default function InvoiceProductsPage() {
                             </span>
                           </td>
                           <td className="px-6 py-6 text-right">
-                            <span className="font-black text-secondary-950 text-base italic">
-                              {FMT_INR(p.priceINR)}
-                            </span>
-                            <p className="text-[8px] font-black text-secondary-400 uppercase tracking-widest mt-1">
-                              DOMESTIC COORDINATES
-                            </p>
+                            <div className="flex flex-col items-end">
+                              <span className="font-black text-secondary-950 text-base italic">
+                                {p.type === "VARIABLE" &&
+                                p.variants &&
+                                p.variants.length > 0
+                                  ? (() => {
+                                      const prices = p.variants
+                                        .map((v: any) => v.priceINR)
+                                        .filter(
+                                          (pr: any) =>
+                                            pr !== null &&
+                                            pr !== undefined &&
+                                            pr > 0,
+                                        );
+                                      if (prices.length === 0)
+                                        return FMT_INR(0);
+                                      const min = Math.min(...prices);
+                                      const max = Math.max(...prices);
+                                      if (min === max) return FMT_INR(min);
+                                      return (
+                                        <div className="flex flex-col items-end">
+                                          <span className="text-[9px] text-secondary-400 not-italic font-black leading-none mb-1">
+                                            FROM {FMT_INR(min)}
+                                          </span>
+                                          <span className="text-secondary-950">
+                                            {FMT_INR(max)}
+                                          </span>
+                                        </div>
+                                      );
+                                    })()
+                                  : FMT_INR(p.priceINR || 0)}
+                              </span>
+                              <p className="text-[8px] font-black text-secondary-400 uppercase tracking-widest mt-1">
+                                DOMESTIC COORDINATES
+                              </p>
+                            </div>
                           </td>
                           <td className="px-6 py-6 text-right">
-                            <span className="font-black text-indigo-700 text-base italic">
-                              {FMT_USD(p.priceUSD)}
-                            </span>
-                            <p className="text-[8px] font-black text-indigo-300 uppercase tracking-widest mt-1">
-                              GLOBAL PARITY
-                            </p>
+                            <div className="flex flex-col items-end">
+                              <span className="font-black text-indigo-700 text-base italic">
+                                {p.type === "VARIABLE" &&
+                                p.variants &&
+                                p.variants.length > 0
+                                  ? (() => {
+                                      const prices = p.variants
+                                        .map((v: any) => v.priceUSD)
+                                        .filter(
+                                          (pr: any) =>
+                                            pr !== null &&
+                                            pr !== undefined &&
+                                            pr > 0,
+                                        );
+                                      if (prices.length === 0)
+                                        return FMT_USD(0);
+                                      const min = Math.min(...prices);
+                                      const max = Math.max(...prices);
+                                      if (min === max) return FMT_USD(min);
+                                      return (
+                                        <div className="flex flex-col items-end">
+                                          <span className="text-[9px] text-indigo-300 not-italic font-black leading-none mb-1">
+                                            FROM {FMT_USD(min)}
+                                          </span>
+                                          <span className="text-indigo-700">
+                                            {FMT_USD(max)}
+                                          </span>
+                                        </div>
+                                      );
+                                    })()
+                                  : FMT_USD(p.priceUSD || 0)}
+                              </span>
+                              <p className="text-[8px] font-black text-indigo-300 uppercase tracking-widest mt-1">
+                                GLOBAL PARITY
+                              </p>
+                            </div>
                           </td>
                           <td className="px-6 py-6 text-center">
                             <CRMBadge

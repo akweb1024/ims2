@@ -483,6 +483,37 @@ export default function LeadsPage() {
                     }
                   />
                 </div>
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black uppercase tracking-[0.3em] text-primary-400 pl-1">
+                    Tactical Custodian (Assignment)
+                  </label>
+                  <select
+                    className="input h-14 bg-white/5 border-white/10 text-white font-black text-sm uppercase tracking-tight focus:bg-white/10 w-full"
+                    value={newLead.assignedToUserId}
+                    onChange={(e) =>
+                      setNewLead({
+                        ...newLead,
+                        assignedToUserId: e.target.value,
+                      })
+                    }
+                  >
+                    <option
+                      value=""
+                      className="bg-secondary-900 text-secondary-500"
+                    >
+                      AUTO-ALLOCATE / UNASSIGNED
+                    </option>
+                    {employees.map((emp) => (
+                      <option
+                        key={emp.id}
+                        value={emp.id}
+                        className="bg-secondary-900 text-white"
+                      >
+                        {emp.name.toUpperCase()}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
             </div>
 
