@@ -673,10 +673,6 @@ model InvoiceProduct {
   updatedAt         DateTime               @updatedAt
   subscriptionItems SubscriptionItem[]
   
-  // WooCommerce Sync
-  wooExternalId     Int?                   // WooCommerce product ID
-  wooSyncedAt       DateTime?              // Last sync timestamp
-
   productAttributes Json?                  // Specific attributes configuration for this product
   attributes        ProductAttribute[]
   variants          ProductVariant[]
@@ -684,7 +680,6 @@ model InvoiceProduct {
   @@index([companyId, category])
   @@index([isActive])
   @@index([name])
-  @@index([wooExternalId])
 }
 
 model ProductAttribute {

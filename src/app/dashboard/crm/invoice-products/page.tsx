@@ -265,7 +265,7 @@ export default function InvoiceProductsPage() {
       Authorization: `Bearer ${token}`,
       "Content-Type": "application/json",
     }),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
     [token],
   );
 
@@ -415,8 +415,8 @@ export default function InvoiceProductsPage() {
       pricingModel: form.pricingModel,
       description: form.description || null,
       shortDesc: form.shortDesc || null,
-      priceINR: isVariable ? null : Number(catalogueForm.fixedPriceINR) || 0,
-      priceUSD: isVariable ? null : Number(catalogueForm.fixedPriceUSD) || 0,
+      priceINR: isVariable ? 0 : Number(catalogueForm.fixedPriceINR) || 0,
+      priceUSD: isVariable ? 0 : Number(catalogueForm.fixedPriceUSD) || 0,
       taxRate: Number(form.taxRate) || 18,
       taxIncluded: form.taxIncluded,
       hsnCode: form.hsnCode || null,
@@ -465,11 +465,16 @@ export default function InvoiceProductsPage() {
         headers: authH,
         body: JSON.stringify(payload),
       });
-      if (!res.ok) throw new Error("Save failed");
+      if (!res.ok) {
+        const errData = await res.json().catch(() => null);
+        console.error("API Error Response:", errData);
+        throw new Error(errData?.error || "Save failed");
+      }
       setShowModal(false);
       fetchProducts();
     } catch (e: any) {
-      console.error(e);
+      console.error("handleSave Error:", e);
+      alert(e.message || "Failed to save product");
     } finally {
       setSaving(false);
     }
