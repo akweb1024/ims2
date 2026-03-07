@@ -17,6 +17,10 @@ import {
 } from 'lucide-react';
 import FormattedDate from '@/components/common/FormattedDate';
 import VariantAdminPanel from '@/components/dashboard/crm/VariantAdminPanel';
+import ProductCatalogueForm, {
+    DEFAULT_FORM_DATA,
+    type ProductCatalogueFormData,
+} from '@/components/dashboard/crm/ProductCatalogueForm';
 
 // ─── Constants ─────────────────────────────────────────────────────────────
 const CATEGORIES = [
@@ -119,6 +123,7 @@ export default function InvoiceProductsPage() {
     const [showModal, setShowModal] = useState(false);
     const [editingProduct, setEditingProduct] = useState<InvoiceProduct | null>(null);
     const [form, setForm] = useState<any>(EMPTY_FORM);
+    const [catalogueForm, setCatalogueForm] = useState<ProductCatalogueFormData>(DEFAULT_FORM_DATA);
     const [saving, setSaving] = useState(false);
     const [deleting, setDeleting] = useState<string | null>(null);
     const [globalAttributes, setGlobalAttributes] = useState<any[]>([]);
@@ -182,12 +187,13 @@ export default function InvoiceProductsPage() {
     const openCreate = () => {
         setEditingProduct(null);
         setForm(EMPTY_FORM);
+        setCatalogueForm(DEFAULT_FORM_DATA);
         setShowModal(true);
     };
 
     const openEdit = (p: InvoiceProduct) => {
         setEditingProduct(p);
-        setForm({
+        const legacyForm = {
             name: p.name, type: p.type || 'SIMPLE', basePrice: p.basePrice || 0, category: p.category, pricingModel: p.pricingModel,
             description: p.description || '', shortDesc: p.shortDesc || '',
             priceINR: p.priceINR, priceUSD: p.priceUSD,
@@ -203,43 +209,71 @@ export default function InvoiceProductsPage() {
                 : [{ minQty: 1, maxQty: '', priceINR: 0, priceUSD: 0, label: '' }],
             productAttributes: p.productAttributes || [],
             variants: p.variants || [],
+        };
+        setForm(legacyForm);
+
+        // Populate the new catalogue form from existing product data
+        const isVariable = p.type === 'VARIABLE';
+        setCatalogueForm({
+            name: p.name,
+            sku: p.sku || '',
+            pricingMode: isVariable ? 'VARIABLE' : 'FIXED',
+            fixedPriceINR: p.priceINR || '',
+            fixedPriceUSD: p.priceUSD || '',
+            variants: (p.variants && p.variants.length > 0)
+                ? p.variants.map((v: any) => ({
+                    id: v.id || crypto.randomUUID(),
+                    name: v.sku || v.name || '',
+                    priceINR: v.priceINR ?? '',
+                    priceUSD: v.priceUSD ?? '',
+                    year: new Date().getFullYear(),
+                }))
+                : [{ id: crypto.randomUUID(), name: '', priceINR: '', priceUSD: '', year: new Date().getFullYear() }],
+            domain: '',
+            category: p.category || '',
         });
+
         setShowModal(true);
     };
 
-    const buildPayload = () => ({
-        name: form.name.trim(),
-        type: form.type,
-        basePrice: form.type === 'VARIABLE' ? Number(form.priceINR) || 0 : null,
-        category: form.category,
-        pricingModel: form.pricingModel,
-        description: form.description || null,
-        shortDesc: form.shortDesc || null,
-        priceINR: form.type === 'VARIABLE' ? null : (Number(form.priceINR) || 0),
-        priceUSD: form.type === 'VARIABLE' ? null : (Number(form.priceUSD) || 0),
-        taxRate: Number(form.taxRate) || 18,
-        taxIncluded: form.taxIncluded,
-        hsnCode: form.hsnCode || null,
-        sacCode: form.sacCode || null,
-        billingCycle: form.billingCycle || null,
-        unit: form.unit || 'unit',
-        minQuantity: Number(form.minQuantity) || 1,
-        maxQuantity: form.maxQuantity ? Number(form.maxQuantity) : null,
-        sku: form.sku || null,
-        isActive: form.isActive,
-        isFeatured: form.isFeatured,
-        tags: form.tags.split(',').map((t: string) => t.trim()).filter(Boolean),
-        notes: form.notes || null,
-        priceTiers: form.pricingModel !== 'FIXED' && form.pricingModel !== 'CUSTOM'
-            ? form.priceTiers.filter((t: any) => t.minQty > 0).map((t: any) => ({
-                minQty: Number(t.minQty),
-                maxQty: t.maxQty ? Number(t.maxQty) : null,
-                priceINR: Number(t.priceINR) || 0,
-                priceUSD: Number(t.priceUSD) || 0,
-                label: t.label || null,
-            }))
-            : null,
-    });
+    const buildPayload = () => {
+        // Merge new catalogueForm fields with legacy form fields
+        const isVariable = catalogueForm.pricingMode === 'VARIABLE';
+        return {
+            name: catalogueForm.name.trim() || form.name.trim(),
+            type: isVariable ? 'VARIABLE' : 'SIMPLE',
+            basePrice: isVariable ? null : null,
+            category: catalogueForm.category || form.category,
+            pricingModel: form.pricingModel,
+            description: form.description || null,
+            shortDesc: form.shortDesc || null,
+            priceINR: isVariable ? null : (Number(catalogueForm.fixedPriceINR) || 0),
+            priceUSD: isVariable ? null : (Number(catalogueForm.fixedPriceUSD) || 0),
+            taxRate: Number(form.taxRate) || 18,
+            taxIncluded: form.taxIncluded,
+            hsnCode: form.hsnCode || null,
+            sacCode: form.sacCode || null,
+            billingCycle: form.billingCycle || null,
+            unit: form.unit || 'unit',
+            minQuantity: Number(form.minQuantity) || 1,
+            maxQuantity: form.maxQuantity ? Number(form.maxQuantity) : null,
+            sku: catalogueForm.sku || form.sku || null,
+            isActive: form.isActive,
+            isFeatured: form.isFeatured,
+            tags: form.tags.split(',').map((t: string) => t.trim()).filter(Boolean),
+            notes: form.notes || null,
+            priceTiers: null,
+            ...(isVariable && catalogueForm.variants.length > 0 ? {
+                variants: catalogueForm.variants.filter(v => v.name).map(v => ({
+                    sku: v.name,
+                    priceINR: Number(v.priceINR) || 0,
+                    priceUSD: Number(v.priceUSD) || 0,
+                    isActive: true,
+                    attributes: { year: v.year },
+                }))
+            } : {}),
+        };
+    };
 
     const handleSave = async () => {
         if (!form.name.trim()) return;
@@ -623,241 +657,24 @@ export default function InvoiceProductsPage() {
                     </div>
                 </div>
 
-                {/* Registry Architect Modal */}
+                {/* Product Catalogue Modal — new structured form */}
                 <CRMModal
                     open={showModal}
                     onClose={() => setShowModal(false)}
-                    title={editingProduct ? "Modify Registry Node" : "Initialize Asset Node"}
-                    subtitle="Define identity, valuation parity, and operational parameters for the product registry."
+                    title={editingProduct ? 'Edit Product' : 'Add Product to Catalogue'}
+                    subtitle="Define identity, pricing mode, variants and category."
                 >
-                    <form onSubmit={(e) => { e.preventDefault(); handleSave(); }} className="space-y-8 py-2">
-                        {/* Primary Intel */}
-                        <div className="bg-secondary-950 p-8 rounded-[2.5rem] border border-white/5 shadow-2xl relative overflow-hidden">
-                             <div className="absolute -right-4 -bottom-4 opacity-5 blur-sm rotate-12">
-                                  <Box size={140} className="text-white" />
-                             </div>
-                             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 relative z-10">
-                                  <div className="space-y-2">
-                                       <label className="text-[10px] font-black uppercase tracking-[0.3em] text-primary-400 pl-1">Product Designation</label>
-                                       <input 
-                                           className="input h-14 bg-white/5 border-white/10 text-white font-black text-sm uppercase tracking-tight focus:bg-white/10 focus:ring-primary-500/20" 
-                                           placeholder="NODE IDENTITY NAME..." 
-                                           value={form.name} 
-                                           onChange={e => setForm((f: any) => ({ ...f, name: e.target.value }))}
-                                           required 
-                                       />
-                                  </div>
-                                  <div className="space-y-2">
-                                       <label className="text-[10px] font-black uppercase tracking-[0.3em] text-primary-400 pl-1">Unique SKU Protocol</label>
-                                       <input 
-                                           className="input h-14 bg-white/5 border-white/10 text-white font-black text-sm uppercase tracking-widest font-mono focus:bg-white/10 focus:ring-primary-500/20" 
-                                           placeholder="SKU-XXXX-XXXX" 
-                                           value={form.sku} 
-                                           onChange={e => setForm((f: any) => ({ ...f, sku: e.target.value }))}
-                                       />
-                                  </div>
-                             </div>
-                        </div>
-
-                        {/* Valuation Matrix */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                             <div className="bg-emerald-50/30 p-8 rounded-[2.5rem] border border-emerald-100/50 space-y-6">
-                                  <div className="flex items-center gap-3 border-b border-emerald-100 pb-4">
-                                       <div className="w-10 h-10 bg-emerald-600 text-white rounded-xl flex items-center justify-center shadow-lg shadow-emerald-100">
-                                            <CreditCard size={18} />
-                                       </div>
-                                       <div>
-                                            <h4 className="text-xs font-black text-emerald-900 uppercase tracking-widest italic">INR Fiscal Node</h4>
-                                       </div>
-                                  </div>
-                                  <div className="space-y-4">
-                                       <div className="space-y-2">
-                                            <label className="text-[9px] font-black uppercase tracking-widest text-emerald-700 opacity-60">Base Valuation (₹)</label>
-                                            <input 
-                                                type="number" 
-                                                className="input h-12 bg-white border-emerald-100 font-black text-emerald-950 focus:ring-emerald-500/20" 
-                                                value={form.priceINR}
-                                                onChange={e => {
-                                                    const inr = parseFloat(e.target.value) || 0;
-                                                    setForm((f: any) => ({ ...f, priceINR: inr }));
-                                                }}
-                                            />
-                                       </div>
-                                       <button 
-                                            type="button"
-                                            onClick={() => setForm((f: any) => ({ ...f, priceINR: parseFloat((form.priceUSD * fxRate).toFixed(2)) }))}
-                                            className="w-full py-3 bg-emerald-100 text-emerald-700 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-emerald-200 transition-all flex items-center justify-center gap-2"
-                                       >
-                                            <Calculator size={14} /> Pull from USD [$→₹]
-                                       </button>
-                                  </div>
-                             </div>
-
-                             <div className="bg-blue-50/30 p-8 rounded-[2.5rem] border border-blue-100/50 space-y-6">
-                                  <div className="flex items-center gap-3 border-b border-blue-100 pb-4">
-                                       <div className="w-10 h-10 bg-blue-600 text-white rounded-xl flex items-center justify-center shadow-lg shadow-blue-100">
-                                            <Globe size={18} />
-                                       </div>
-                                       <div>
-                                            <h4 className="text-xs font-black text-blue-900 uppercase tracking-widest italic">USD Fiscal Node</h4>
-                                       </div>
-                                  </div>
-                                  <div className="space-y-4">
-                                       <div className="space-y-2">
-                                            <label className="text-[9px] font-black uppercase tracking-widest text-blue-700 opacity-60">Market Valuation ($)</label>
-                                            <input 
-                                                type="number" 
-                                                className="input h-12 bg-white border-blue-100 font-black text-blue-950 focus:ring-blue-500/20" 
-                                                value={form.priceUSD}
-                                                onChange={e => {
-                                                    const usd = parseFloat(e.target.value) || 0;
-                                                    setForm((f: any) => ({ ...f, priceUSD: usd }));
-                                                }}
-                                            />
-                                       </div>
-                                       <button 
-                                            type="button"
-                                            onClick={() => setForm((f: any) => ({ ...f, priceUSD: parseFloat((form.priceINR / fxRate).toFixed(2)) }))}
-                                            className="w-full py-3 bg-blue-100 text-blue-700 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-blue-200 transition-all flex items-center justify-center gap-2"
-                                       >
-                                            <Calculator size={14} /> Pull from INR [₹→$]
-                                       </button>
-                                  </div>
-                             </div>
-                        </div>
-
-                        {/* Operational Parameters */}
-                        <div className="bg-secondary-50 p-8 rounded-[2.5rem] border border-secondary-200/50 grid grid-cols-1 md:grid-cols-4 gap-8">
-                             <div className="space-y-2 text-primary-600">
-                                  <label className="text-[9px] font-black uppercase tracking-widest opacity-60">Node Type</label>
-                                  <select 
-                                       className="input h-12 bg-white border-secondary-200 font-black text-[10px] uppercase tracking-tighter"
-                                       value={form.type}
-                                       onChange={e => setForm((f: any) => ({ ...f, type: e.target.value }))}
-                                  >
-                                       <option value="SIMPLE">SIMPLE</option>
-                                       <option value="VARIABLE">VARIABLE</option>
-                                  </select>
-                             </div>
-                             <div className="space-y-2 text-primary-600">
-                                  <label className="text-[9px] font-black uppercase tracking-widest opacity-60">Classification Sector</label>
-                                  <select 
-                                       className="input h-12 bg-white border-secondary-200 font-black text-[10px] uppercase tracking-tighter"
-                                       value={form.category}
-                                       onChange={e => setForm((f: any) => ({ ...f, category: e.target.value }))}
-                                  >
-                                       {CATEGORIES.map(c => <option key={c.value} value={c.value}>{c.label.toUpperCase()}</option>)}
-                                  </select>
-                             </div>
-                             <div className="space-y-2">
-                                  <label className="text-[9px] font-black uppercase tracking-widest text-secondary-500 opacity-60">Fiscal Cycle</label>
-                                  <select 
-                                       className="input h-12 bg-white border-secondary-200 font-black text-[10px] uppercase tracking-tighter"
-                                       value={form.billingCycle}
-                                       onChange={e => setForm((f: any) => ({ ...f, billingCycle: e.target.value }))}
-                                  >
-                                       {BILLING_CYCLES.map(b => <option key={b.value} value={b.value}>{b.label.toUpperCase()}</option>)}
-                                  </select>
-                             </div>
-                             <div className="space-y-2">
-                                  <label className="text-[9px] font-black uppercase tracking-widest text-secondary-500 opacity-60">Pricing Topology</label>
-                                  <select 
-                                       className="input h-12 bg-white border-secondary-200 font-black text-[10px] uppercase tracking-tighter"
-                                       value={form.pricingModel}
-                                       onChange={e => setForm((f: any) => ({ ...f, pricingModel: e.target.value }))}
-                                  >
-                                       {PRICING_MODELS.map(p => <option key={p.value} value={p.value}>{p.label.toUpperCase()}</option>)}
-                                  </select>
-                             </div>
-                        </div>
-
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 px-2">
-                             <div className="space-y-2">
-                                  <label className="text-[10px] font-black uppercase tracking-[0.2em] text-secondary-400 pl-1">Compliance Tax Rate (%)</label>
-                                  <input 
-                                      type="number" 
-                                      className="input h-14 bg-secondary-50 border-secondary-100 font-black text-sm" 
-                                      value={form.taxRate} 
-                                      onChange={e => setForm((f: any) => ({ ...f, taxRate: parseFloat(e.target.value) || 0 }))} 
-                                  />
-                             </div>
-                             <div className="space-y-2">
-                                  <label className="text-[10px] font-black uppercase tracking-[0.2em] text-secondary-400 pl-1">HSN Compliance Code</label>
-                                  <input 
-                                      className="input h-14 bg-secondary-50 border-secondary-100 font-black text-sm font-mono uppercase tracking-widest" 
-                                      value={form.hsnCode} 
-                                      onChange={e => setForm((f: any) => ({ ...f, hsnCode: e.target.value }))} 
-                                      placeholder="EX: 4902"
-                                  />
-                             </div>
-                             <div className="space-y-2">
-                                  <label className="text-[10px] font-black uppercase tracking-[0.2em] text-secondary-400 pl-1">Operational unit</label>
-                                  <input 
-                                      className="input h-14 bg-secondary-50 border-secondary-100 font-black text-sm uppercase italic" 
-                                      value={form.unit} 
-                                      onChange={e => setForm((f: any) => ({ ...f, unit: e.target.value }))} 
-                                      placeholder="EX: YEAR / ARTICLE"
-                                  />
-                             </div>
-                        </div>
-
-                        {editingProduct && editingProduct.type === 'VARIABLE' ? (
-                            <VariantAdminPanel 
-                                product={editingProduct} 
-                                authH={authH}
-                                onRefresh={async () => {
-                                    const res = await fetch(`/api/invoice-products/${editingProduct.id}`, { headers: authH });
-                                    if (res.ok) setEditingProduct(await res.json());
-                                    fetchProducts();
-                                }} 
-                            />
-                        ) : form.type === 'VARIABLE' ? (
-                            <div className="bg-secondary-950 p-8 rounded-[2.5rem] border border-white/5 relative overflow-hidden text-center justify-center flex flex-col items-center mt-8">
-                                <h3 className="text-white font-black text-lg uppercase tracking-widest mb-4">Attribute Engine (Variants)</h3>
-                                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-primary-400">Save the product first to define variables and variants.</p>
-                            </div>
-                        ) : null}
-
-                        <div className="flex bg-secondary-50 p-6 rounded-[2rem] border border-secondary-100 gap-8">
-                             <label className="flex items-center gap-3 cursor-pointer group">
-                                  <div className={`w-10 h-6 rounded-full p-1 transition-all ${form.isActive ? 'bg-emerald-600 shadow-lg shadow-emerald-100' : 'bg-secondary-300'}`}
-                                       onClick={() => setForm((f: any) => ({ ...f, isActive: !f.isActive }))}>
-                                       <div className={`w-4 h-4 bg-white rounded-full transition-all ${form.isActive ? 'translate-x-4' : 'translate-x-0'}`} />
-                                  </div>
-                                  <span className="text-[10px] font-black uppercase tracking-[0.2em] text-secondary-950 italic group-hover:text-primary-600">Active Node Status</span>
-                             </label>
-                             <label className="flex items-center gap-3 cursor-pointer group border-l border-secondary-200 pl-8">
-                                  <div className={`w-10 h-6 rounded-full p-1 transition-all ${form.isFeatured ? 'bg-amber-500 shadow-lg shadow-amber-100' : 'bg-secondary-300'}`}
-                                       onClick={() => setForm((f: any) => ({ ...f, isFeatured: !f.isFeatured }))}>
-                                       <div className={`w-4 h-4 bg-white rounded-full transition-all ${form.isFeatured ? 'translate-x-4' : 'translate-x-0'}`} />
-                                  </div>
-                                  <span className="text-[10px] font-black uppercase tracking-[0.2em] text-secondary-950 italic group-hover:text-primary-600">Identity Promotion</span>
-                             </label>
-                        </div>
-
-                        <div className="flex gap-4 pt-10 border-t border-secondary-100/50">
-                            <button 
-                                type="button" 
-                                onClick={() => setShowModal(false)} 
-                                className="flex-1 px-4 py-4 rounded-2xl border-2 border-secondary-200 text-[10px] font-black uppercase tracking-[0.2em] text-secondary-400 hover:bg-secondary-50 transition-all font-mono"
-                            >
-                                Abandon
-                            </button>
-                            <button 
-                                type="submit" 
-                                disabled={saving}
-                                className="flex-1 bg-primary-600 text-white px-8 py-4 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] shadow-2xl shadow-primary-100 hover:bg-primary-700 hover:-translate-y-1 transition-all flex items-center justify-center gap-3 active:scale-95 group/btn"
-                            >
-                                {saving ? 'Propagating...' : (
-                                    <>
-                                        Propagate Registry Node <ChevronRight size={16} className="group-hover/btn:translate-x-1 transition-transform" />
-                                    </>
-                                )}
-                            </button>
-                        </div>
-                    </form>
+                    <ProductCatalogueForm
+                        value={catalogueForm}
+                        onChange={setCatalogueForm}
+                        onSubmit={() => handleSave()}
+                        onCancel={() => setShowModal(false)}
+                        saving={saving}
+                        categories={CATEGORIES.map(c => ({ value: c.value, label: c.label, icon: c.icon }))}
+                    />
                 </CRMModal>
             </CRMPageShell>
         </DashboardLayout>
     );
 }
+
