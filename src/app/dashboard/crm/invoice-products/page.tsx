@@ -13,8 +13,7 @@ import {
     Layers, Layout, ShieldCheck, CreditCard, Globe,
     ArrowRight, Star, Trash2, Edit3, MoreHorizontal,
     BarChart3, Settings2, Sparkles, Box, Info,
-    CheckCircle2, DollarSign, Calculator, Activity,
-    RefreshCw, ShoppingBag, AlertCircle
+    CheckCircle2, DollarSign, Calculator, Activity
 } from 'lucide-react';
 import FormattedDate from '@/components/common/FormattedDate';
 import VariantAdminPanel from '@/components/dashboard/crm/VariantAdminPanel';
@@ -74,8 +73,6 @@ interface InvoiceProduct {
     notes?: string;
     productAttributes?: any[];
     variants?: any[];
-    wooExternalId?: number;
-    wooSyncedAt?: string;
     createdAt: string;
     updatedAt: string;
 }
@@ -131,22 +128,15 @@ export default function InvoiceProductsPage() {
     const [fxInput, setFxInput] = useState('');
     const [fxCurrency, setFxCurrency] = useState<'INR' | 'USD'>('INR');
 
-    // WooCommerce Sync
-    const [showWooModal, setShowWooModal] = useState(false);
-    const [wooKey, setWooKey] = useState('');
-    const [wooSecret, setWooSecret] = useState('');
-    const [wooUrl, setWooUrl] = useState('https://shop.stmjournals.com');
-    const [wooFxRate, setWooFxRate] = useState(84);
-    const [wooOverwrite, setWooOverwrite] = useState(false);
-    const [wooSyncing, setWooSyncing] = useState(false);
-    const [wooResult, setWooResult] = useState<any>(null);
-    const [wooStatus, setWooStatus] = useState<any>(null);
-
     const token = typeof window !== 'undefined' ? localStorage.getItem('token') : '';
-    const authH = useMemo(() => ({
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json'
-    }), [token]);
+    // Memoize authH so its reference is stable between renders —
+    // without this, authH causes fetchProducts/fetchAttributes to re-create
+    // on EVERY render, spawning an infinite useEffect loop.
+    const authH = useMemo(
+        () => ({ Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }),
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+        [token]
+    );
 
     useEffect(() => {
         const r = localStorage.getItem('userRole');
@@ -188,44 +178,6 @@ export default function InvoiceProductsPage() {
     }, [authH]);
 
     useEffect(() => { fetchProducts(); fetchAttributes(); }, [fetchProducts, fetchAttributes]);
-
-    const fetchWooStatus = useCallback(async () => {
-        try {
-            const res = await fetch('/api/woo-sync', { headers: authH });
-            if (res.ok) setWooStatus(await res.json());
-        } catch {}
-    }, [authH]);
-
-    useEffect(() => { fetchWooStatus(); }, [fetchWooStatus]);
-
-    const handleWooSync = async () => {
-        if (!wooKey || !wooSecret) return;
-        setWooSyncing(true);
-        setWooResult(null);
-        try {
-            const res = await fetch('/api/woo-sync', {
-                method: 'POST',
-                headers: authH,
-                body: JSON.stringify({
-                    storeUrl: wooUrl,
-                    consumerKey: wooKey,
-                    consumerSecret: wooSecret,
-                    fxRate: wooFxRate,
-                    overwriteManual: wooOverwrite,
-                }),
-            });
-            const data = await res.json();
-            setWooResult(data);
-            if (data.success) {
-                fetchProducts();
-                fetchWooStatus();
-            }
-        } catch (e: any) {
-            setWooResult({ error: e.message });
-        } finally {
-            setWooSyncing(false);
-        }
-    };
 
     const openCreate = () => {
         setEditingProduct(null);
@@ -386,16 +338,6 @@ export default function InvoiceProductsPage() {
                         >
                             <Plus size={18} className="group-hover:rotate-90 transition-transform" />
                             Initialize Product
-                        </button>
-                        <button
-                            onClick={() => setShowWooModal(true)}
-                            className="bg-purple-600 text-white px-5 py-3.5 rounded-2xl text-[11px] font-black uppercase tracking-[0.2em] shadow-2xl shadow-purple-200 hover:bg-purple-700 transition-all flex items-center gap-2 active:scale-95 group"
-                        >
-                            <ShoppingBag size={16} className="group-hover:scale-110 transition-transform" />
-                            WooSync
-                            {wooStatus?.totalSyncedProducts > 0 && (
-                                <span className="bg-white/20 text-[9px] px-1.5 py-0.5 rounded-lg font-black">{wooStatus.totalSyncedProducts}</span>
-                            )}
                         </button>
                     </div>
                 }
@@ -915,159 +857,7 @@ export default function InvoiceProductsPage() {
                         </div>
                     </form>
                 </CRMModal>
-
-            {/* ── WooCommerce Sync Modal ──────────────────────────────────── */}
-            {showWooModal && (
-                <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-                    <div className="bg-white rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden">
-                        {/* Header */}
-                        <div className="bg-gradient-to-r from-purple-700 to-purple-500 px-8 py-6 flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                                <ShoppingBag size={22} className="text-white" />
-                                <div>
-                                    <h2 className="text-white font-black text-lg uppercase tracking-wider">WooCommerce Sync</h2>
-                                    <p className="text-purple-200 text-[10px] font-medium mt-0.5">Pull live product catalog from shop.stmjournals.com</p>
-                                </div>
-                            </div>
-                            <button onClick={() => { setShowWooModal(false); setWooResult(null); }} className="text-white/60 hover:text-white text-2xl font-light leading-none">✕</button>
-                        </div>
-
-                        <div className="p-8 space-y-5">
-                            {/* Last sync status */}
-                            {wooStatus && (
-                                <div className="bg-purple-50 border border-purple-100 rounded-2xl px-5 py-3 flex items-center justify-between">
-                                    <div>
-                                        <p className="text-[10px] font-black uppercase tracking-widest text-purple-400">Last Synced</p>
-                                        <p className="text-sm font-bold text-purple-900">
-                                            {wooStatus.lastSyncedAt
-                                                ? new Date(wooStatus.lastSyncedAt).toLocaleString('en-IN')
-                                                : 'Never synced'}
-                                        </p>
-                                    </div>
-                                    {wooStatus.totalSyncedProducts > 0 && (
-                                        <span className="bg-purple-600 text-white text-xs font-black px-3 py-1 rounded-xl">
-                                            {wooStatus.totalSyncedProducts} WC products
-                                        </span>
-                                    )}
-                                </div>
-                            )}
-
-                            {/* Store URL */}
-                            <div>
-                                <label className="block text-[10px] font-black uppercase tracking-widest text-gray-500 mb-1.5">WooCommerce Store URL</label>
-                                <input
-                                    type="url"
-                                    className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm font-mono focus:ring-2 focus:ring-purple-300 outline-none"
-                                    value={wooUrl}
-                                    onChange={e => setWooUrl(e.target.value)}
-                                    placeholder="https://shop.stmjournals.com"
-                                />
-                            </div>
-
-                            {/* API Keys */}
-                            <div>
-                                <label className="block text-[10px] font-black uppercase tracking-widest text-gray-500 mb-1.5">Consumer Key <span className="text-red-500">*</span></label>
-                                <input
-                                    type="text"
-                                    className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm font-mono focus:ring-2 focus:ring-purple-300 outline-none"
-                                    value={wooKey}
-                                    onChange={e => setWooKey(e.target.value)}
-                                    placeholder="ck_xxxxxxxxxxxxxxxxxxxxxxxxxx"
-                                />
-                                <p className="text-[10px] text-gray-400 mt-1">Go to WooCommerce → Settings → Advanced → REST API to generate keys.</p>
-                            </div>
-
-                            <div>
-                                <label className="block text-[10px] font-black uppercase tracking-widest text-gray-500 mb-1.5">Consumer Secret <span className="text-red-500">*</span></label>
-                                <input
-                                    type="password"
-                                    className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm font-mono focus:ring-2 focus:ring-purple-300 outline-none"
-                                    value={wooSecret}
-                                    onChange={e => setWooSecret(e.target.value)}
-                                    placeholder="cs_xxxxxxxxxxxxxxxxxxxxxxxxxx"
-                                />
-                            </div>
-
-                            {/* FX Rate */}
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label className="block text-[10px] font-black uppercase tracking-widest text-gray-500 mb-1.5">INR → USD Rate</label>
-                                    <input
-                                        type="number"
-                                        step="0.01"
-                                        className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm font-mono focus:ring-2 focus:ring-purple-300 outline-none"
-                                        value={wooFxRate}
-                                        onChange={e => setWooFxRate(parseFloat(e.target.value) || 84)}
-                                    />
-                                    <p className="text-[10px] text-gray-400 mt-1">Used to compute USD prices from INR.</p>
-                                </div>
-                                <div className="flex flex-col justify-end pb-1">
-                                    <label className="flex items-center gap-2 cursor-pointer">
-                                        <div
-                                            className={`w-10 h-5 rounded-full p-0.5 transition-all ${wooOverwrite ? 'bg-purple-600' : 'bg-gray-300'}`}
-                                            onClick={() => setWooOverwrite(v => !v)}
-                                        >
-                                            <div className={`w-4 h-4 bg-white rounded-full transition-all ${wooOverwrite ? 'translate-x-5' : ''}`} />
-                                        </div>
-                                        <span className="text-[10px] font-black uppercase tracking-widest text-gray-500">Overwrite Manual Edits</span>
-                                    </label>
-                                    <p className="text-[9px] text-gray-400 mt-1">If OFF, manually-set SKUs won't be overwritten.</p>
-                                </div>
-                            </div>
-
-                            {/* Result */}
-                            {wooResult && (
-                                <div className={`rounded-2xl px-5 py-4 border ${wooResult.success ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
-                                    {wooResult.success ? (
-                                        <div className="space-y-1">
-                                            <p className="text-sm font-black text-green-800 flex items-center gap-1.5">
-                                                <CheckCircle2 size={16} /> Sync Complete!
-                                            </p>
-                                            <div className="grid grid-cols-4 gap-2 mt-2">
-                                                {[
-                                                    { label: 'Total', val: wooResult.total },
-                                                    { label: 'Created', val: wooResult.created },
-                                                    { label: 'Updated', val: wooResult.updated },
-                                                    { label: 'Errors', val: wooResult.errors },
-                                                ].map(s => (
-                                                    <div key={s.label} className="text-center bg-white rounded-xl py-2 shadow-sm">
-                                                        <p className="text-lg font-black text-green-800">{s.val}</p>
-                                                        <p className="text-[9px] font-bold uppercase text-green-600">{s.label}</p>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    ) : (
-                                        <p className="text-sm font-bold text-red-700 flex items-center gap-1.5">
-                                            <AlertCircle size={16} /> {wooResult.error || 'Sync failed. Check your API credentials.'}
-                                        </p>
-                                    )}
-                                </div>
-                            )}
-
-                            {/* Actions */}
-                            <div className="flex gap-3 pt-2">
-                                <button
-                                    onClick={() => { setShowWooModal(false); setWooResult(null); }}
-                                    className="flex-1 border-2 border-gray-200 text-gray-500 text-[11px] font-black uppercase tracking-widest py-3 rounded-2xl hover:bg-gray-50 transition-all"
-                                >
-                                    Cancel
-                                </button>
-                                <button
-                                    onClick={handleWooSync}
-                                    disabled={wooSyncing || !wooKey || !wooSecret}
-                                    className="flex-1 bg-purple-600 text-white text-[11px] font-black uppercase tracking-widest py-3 rounded-2xl hover:bg-purple-700 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed shadow-xl shadow-purple-200"
-                                >
-                                    <RefreshCw size={14} className={wooSyncing ? 'animate-spin' : ''} />
-                                    {wooSyncing ? 'Syncing...' : 'Start Sync'}
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-        </CRMPageShell>
+            </CRMPageShell>
         </DashboardLayout>
     );
 }
