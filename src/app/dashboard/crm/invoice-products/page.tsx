@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { 
     CRMPageShell, 
@@ -143,7 +143,10 @@ export default function InvoiceProductsPage() {
     const [wooStatus, setWooStatus] = useState<any>(null);
 
     const token = typeof window !== 'undefined' ? localStorage.getItem('token') : '';
-    const authH = { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' };
+    const authH = useMemo(() => ({
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json'
+    }), [token]);
 
     useEffect(() => {
         const r = localStorage.getItem('userRole');

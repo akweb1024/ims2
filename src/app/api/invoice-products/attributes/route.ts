@@ -13,17 +13,27 @@ const termSchema = z.object({
 
 const attributeSchema = z.object({
     name: z.string().min(1, 'Attribute name is required').max(100),
+    productId: z.string().optional(),  // optional — for global attribute management
     terms: z.array(termSchema).optional().default([]),
 });
 
+// GET /api/invoice-products/attributes
+// Returns all ProductAttributes with their values (global across all products)
 export const GET = authorizedRoute(
     ['SUPER_ADMIN', 'MANAGER', 'EXECUTIVE', 'FINANCE_ADMIN'],
     async (request: NextRequest) => {
         try {
+            const { searchParams } = new URL(request.url);
+            const productId = searchParams.get('productId');
+
+            const where: any = productId ? { productId } : {};
+
             const attributes = await db.productAttribute.findMany({
-                include: { terms: { orderBy: { value: 'asc' } } },
+                where,
+                include: { values: { orderBy: { value: 'asc' } } },
                 orderBy: { name: 'asc' }
             });
+
             return NextResponse.json(attributes);
         } catch (error) {
             return handleApiError(error, request.nextUrl.pathname);
@@ -31,6 +41,8 @@ export const GET = authorizedRoute(
     }
 );
 
+// POST /api/invoice-products/attributes
+// Create a new attribute (with optional terms/values)
 export const POST = authorizedRoute(
     ['SUPER_ADMIN', 'MANAGER'],
     async (request: NextRequest) => {
@@ -40,17 +52,25 @@ export const POST = authorizedRoute(
             if (!parsed.success) throw new ValidationError('Invalid request payload');
             const data = parsed.data;
 
-            const existing = await db.productAttribute.findUnique({ where: { name: data.name } });
-            if (existing) throw new ValidationError(`Attribute with name "${data.name}" already exists.`);
+            if (!data.productId) {
+                throw new ValidationError('productId is required to create an attribute.');
+            }
+
+            // Check uniqueness: [productId, name]
+            const existing = await db.productAttribute.findFirst({
+                where: { productId: data.productId, name: data.name }
+            });
+            if (existing) throw new ValidationError(`Attribute "${data.name}" already exists for this product.`);
 
             const attribute = await db.productAttribute.create({
                 data: {
+                    productId: data.productId,
                     name: data.name,
-                    terms: {
-                        create: data.terms.map(t => ({ value: t.value }))
+                    values: {
+                        create: data.terms.map((t: any) => ({ value: t.value }))
                     }
                 },
-                include: { terms: true }
+                include: { values: true }
             });
 
             return NextResponse.json(attribute, { status: 201 });
