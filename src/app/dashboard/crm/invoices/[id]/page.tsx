@@ -735,7 +735,13 @@ export default function InvoiceDetailPage({
               </div>
               <div className="meta-col">
                 <span className="meta-label">BANK DETAILS:</span>
-                <ul className="bank-list text-[10px]">
+                <ul className="bank-list text-[10px] space-y-1 mt-1">
+                  <li>
+                    <label>A/C. Holder :</label>{" "}
+                    <span className="text-[9px] italic">
+                      {identity.bankHolder || "—"}
+                    </span>
+                  </li>
                   <li>
                     <label>Bank Name :</label>{" "}
                     <span>{identity.bankName || "—"}</span>
@@ -762,15 +768,16 @@ export default function InvoiceDetailPage({
                     <label>Swift Code :</label>{" "}
                     <span>{identity.bankSwift || "—"}</span>
                   </li>
-                  <li>
-                    <label>A/C. Holder :</label>{" "}
-                    <span className="text-[9px] italic">
-                      {identity.bankHolder || "—"}
-                    </span>
-                  </li>
                 </ul>
               </div>
               <div className="meta-col text-[10px]">
+                <div className="mb-4 leading-relaxed bg-secondary-50/50 p-2 rounded">
+                  <strong>Legal Name:</strong>
+                  <br />
+                  <span className="font-black text-secondary-900">
+                    {company.legalEntityName || company.name}
+                  </span>
+                </div>
                 <div className="mb-2">
                   <strong>GSTIN :</strong> {identity.gstin || "—"}
                 </div>
@@ -782,11 +789,6 @@ export default function InvoiceDetailPage({
                 </div>
                 <div className="mb-2">
                   <strong>IEC :</strong> {identity.iec || "—"}
-                </div>
-                <div className="mt-4 leading-relaxed">
-                  <strong>Legal Name/ Publisher name:</strong>
-                  <br />
-                  {company.legalEntityName || company.name}
                 </div>
               </div>
             </div>
