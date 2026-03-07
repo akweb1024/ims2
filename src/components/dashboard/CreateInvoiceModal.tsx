@@ -41,7 +41,7 @@ export default function CreateInvoiceModal({ isOpen, onClose, onSuccess, editId 
 
     // Step 2: Invoice Details
     const [dueDate, setDueDate] = useState('');
-    const [items, setItems] = useState([{ id: 1, description: '', quantity: 1, price: 0 }]);
+    const [items, setItems] = useState([{ id: 1, description: '', hsnCode: '', quantity: 1, price: 0 }]);
     const [description, setDescription] = useState('');
     const [journalResults, setJournalResults] = useState<{ [key: number]: any[] }>({});
     const [taxType, setTaxType] = useState<'DOMESTIC' | 'INTERNATIONAL'>('DOMESTIC');
@@ -151,11 +151,13 @@ export default function CreateInvoiceModal({ isOpen, onClose, onSuccess, editId 
             updateItem(targetItemId, 'price', price);
             updateItem(targetItemId, 'productId', p.id);
             updateItem(targetItemId, 'variantId', v?.id);
+            updateItem(targetItemId, 'hsnCode', p.hsnCode || p.sacCode || '');
             setProductResults(prev => ({ ...prev, [targetItemId]: [] }));
         } else {
             const newItem = {
                 id: Date.now(),
                 description: finalDesc,
+                hsnCode: p.hsnCode || p.sacCode || '',
                 quantity: p.minQuantity || 1,
                 price: price,
                 productId: p.id,
@@ -302,7 +304,7 @@ export default function CreateInvoiceModal({ isOpen, onClose, onSuccess, editId 
             setStep(1);
             setSelectedCustomer(null);
             setDueDate('');
-            setItems([{ id: 1, description: '', quantity: 1, price: 0 }]);
+            setItems([{ id: 1, description: '', hsnCode: '', quantity: 1, price: 0 }]);
             setDescription('');
             setCouponResult(null);
             setCouponCode('');
@@ -310,7 +312,7 @@ export default function CreateInvoiceModal({ isOpen, onClose, onSuccess, editId 
     }, [isOpen, editId]);
 
     const handleAddItem = () => {
-        setItems([...items, { id: Date.now(), description: '', quantity: 1, price: 0 }]);
+        setItems([...items, { id: Date.now(), description: '', hsnCode: '', quantity: 1, price: 0 }]);
     };
 
     const handleRemoveItem = (id: number) => {
@@ -439,9 +441,10 @@ export default function CreateInvoiceModal({ isOpen, onClose, onSuccess, editId 
                     customerProfileId: selectedCustomer.id,
                     dueDate,
                     description,
-                    lineItems: items.map(({ id, description, quantity, price, productId, variantId }: any) => ({ 
+                    lineItems: items.map(({ id, description, hsnCode, quantity, price, productId, variantId }: any) => ({ 
                         id, 
                         description, 
+                        hsnCode: hsnCode || null,
                         quantity, 
                         price, 
                         productId: productId || null,
@@ -1161,6 +1164,15 @@ export default function CreateInvoiceModal({ isOpen, onClose, onSuccess, editId 
                                                         ))}
                                                     </div>
                                                 )}
+                                            </div>
+                                            <div className="w-24">
+                                                <input
+                                                    type="text"
+                                                    className="input-premium text-sm text-center"
+                                                    placeholder="HSN/SAC"
+                                                    value={item.hsnCode || ''}
+                                                    onChange={e => updateItem(item.id, 'hsnCode', e.target.value)}
+                                                />
                                             </div>
                                             <div className="w-20">
                                                 <input

@@ -14,6 +14,7 @@ interface LineItem {
     workshopId?: string;
     productId?: string;
     variantId?: string;
+    hsnCode?: string;
 }
 
 interface ProformaAuditEvent {
@@ -177,7 +178,7 @@ export default function ProformaInvoicePanel({
     const [startDate, setStartDate] = useState('');
     const [endDate, setEndDate] = useState('');
     const [lineItems, setLineItems] = useState<LineItem[]>([
-        { description: '', quantity: 1, unitPrice: 0, total: 0 }
+        { description: '', hsnCode: '', quantity: 1, unitPrice: 0, total: 0 }
     ]);
 
     // Conversion form
@@ -234,14 +235,14 @@ export default function ProformaInvoicePanel({
         });
     };
 
-    const addLineItem = () => setLineItems(prev => [...prev, { description: '', quantity: 1, unitPrice: 0, total: 0 }]);
+    const addLineItem = () => setLineItems(prev => [...prev, { description: '', hsnCode: '', quantity: 1, unitPrice: 0, total: 0 }]);
     const removeLineItem = (i: number) => setLineItems(prev => prev.filter((_, idx) => idx !== i));
 
     const resetForm = () => {
         setSubject('Proforma Invoice'); setSalesChannel('DIRECT'); setBillingFrequency('ANNUAL');
         setPfCurrency(currency); setTaxRate(18); setDiscountType(''); setDiscountValue(0);
         setNotes(''); setValidUntil(''); setStartDate(''); setEndDate('');
-        setLineItems([{ description: '', quantity: 1, unitPrice: 0, total: 0 }]);
+        setLineItems([{ description: '', hsnCode: '', quantity: 1, unitPrice: 0, total: 0 }]);
     };
 
     const populateFormFromProforma = (pf: ProformaInvoice) => {
@@ -446,6 +447,7 @@ export default function ProformaInvoicePanel({
 
         const newItem: LineItem = {
             description: finalDesc,
+            hsnCode: p.hsnCode || p.sacCode || '',
             quantity: p.minQuantity || 1,
             unitPrice: price,
             total: price * (p.minQuantity || 1),
@@ -659,14 +661,15 @@ export default function ProformaInvoicePanel({
                         </div>
                         <div className="space-y-2">
                             <div className="grid grid-cols-12 gap-2 text-[10px] font-black uppercase text-gray-400 px-1">
-                                <div className="col-span-6">Description</div>
+                                <div className="col-span-4">Description</div>
+                                <div className="col-span-3 text-center">HSN/SAC</div>
                                 <div className="col-span-2 text-right">Qty</div>
-                                <div className="col-span-3 text-right">Unit Price</div>
+                                <div className="col-span-2 text-right">Price</div>
                                 <div className="col-span-1" />
                             </div>
                             {lineItems.map((item, i) => (
                                 <div key={i} className="grid grid-cols-12 gap-2 items-center bg-gray-50 p-2 rounded-xl border border-gray-100 group">
-                                    <div className="col-span-6">
+                                    <div className="col-span-4">
                                         <input
                                             className="input text-sm !py-1.5 bg-white border-transparent focus:border-primary-400"
                                             placeholder="e.g. Journal Subscription — Physics"
@@ -677,6 +680,15 @@ export default function ProformaInvoicePanel({
                                             <p className="text-[9px] text-primary-500 font-bold mt-0.5 ml-1">✓ Linked to Catalogue Product</p>
                                         )}
                                     </div>
+                                    <div className="col-span-3">
+                                        <input
+                                            type="text"
+                                            className="input text-sm !py-1.5 text-center bg-white border-transparent focus:border-primary-400 font-mono"
+                                            placeholder="HSN/SAC"
+                                            value={item.hsnCode || ''}
+                                            onChange={e => updateLineItem(i, 'hsnCode', e.target.value)}
+                                        />
+                                    </div>
                                     <div className="col-span-2">
                                         <input
                                             type="number" min="1"
@@ -685,10 +697,10 @@ export default function ProformaInvoicePanel({
                                             onChange={e => updateLineItem(i, 'quantity', parseInt(e.target.value) || 1)}
                                         />
                                     </div>
-                                    <div className="col-span-3">
+                                    <div className="col-span-2">
                                         <input
                                             type="number" min="0" step="0.01"
-                                            className="input text-sm !py-1.5 text-right bg-white border-transparent focus:border-primary-400"
+                                            className="input text-sm !py-1.5 text-right bg-white border-transparent focus:border-primary-400 font-mono"
                                             value={item.unitPrice}
                                             onChange={e => updateLineItem(i, 'unitPrice', parseFloat(e.target.value) || 0)}
                                         />
