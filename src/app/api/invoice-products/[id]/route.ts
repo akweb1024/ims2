@@ -11,7 +11,16 @@ import { z } from "zod";
 
 const db = prisma as any;
 
-const CATEGORIES = ["JOURNAL_SUBSCRIPTION", "COURSE", "WORKSHOP"] as const;
+const CATEGORIES = [
+  "JOURNAL_SUBSCRIPTION",
+  "COURSE",
+  "WORKSHOP",
+  "DOI_SERVICE",
+  "APC",
+  "CERTIFICATE",
+  "DIGITAL_SERVICE",
+  "MISC",
+] as const;
 const PRODUCT_TYPES = ["SIMPLE", "VARIABLE"] as const;
 const PRICING_MODELS = ["FIXED", "TIERED", "VOLUME", "CUSTOM"] as const;
 const BILLING_CYCLES = ["MONTHLY", "QUARTERLY", "ANNUAL", "ONE_TIME"] as const;

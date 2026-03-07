@@ -36,9 +36,10 @@ export interface ProductCatalogueFormData {
   fixedPriceUSD: number | "";
   // Variable pricing rows
   variants: VariantRow[];
-  // Other fields
   domain: string;
   category: string;
+  hsnCode: string;
+  sacCode: string;
 }
 
 interface ProductCatalogueFormProps {
@@ -69,6 +70,8 @@ export const DEFAULT_FORM_DATA: ProductCatalogueFormData = {
   ],
   domain: "",
   category: "",
+  hsnCode: "",
+  sacCode: "",
 };
 
 const DEFAULT_CATEGORIES = [
@@ -428,8 +431,31 @@ export default function ProductCatalogueForm({
             </p>
           </div>
 
-          {/* Category */}
+          {/* HSN / SAC fields */}
           <div className="space-y-1.5">
+            <FieldLabel>HSN Code</FieldLabel>
+            <TextInput
+              value={value.hsnCode}
+              onChange={(v) => setField("hsnCode", v.trim())}
+              placeholder="e.g. 4901"
+              mono
+              prefix={<Tag size={13} />}
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <FieldLabel>SAC Code</FieldLabel>
+            <TextInput
+              value={value.sacCode}
+              onChange={(v) => setField("sacCode", v.trim())}
+              placeholder="e.g. 9983"
+              mono
+              prefix={<Tag size={13} />}
+            />
+          </div>
+
+          {/* Category */}
+          <div className="space-y-1.5 sm:col-span-2">
             <FieldLabel required>Category</FieldLabel>
             <div className="relative">
               <select

@@ -34,6 +34,8 @@ import {
   DollarSign,
   Calculator,
   Activity,
+  UploadCloud,
+  DownloadCloud,
 } from "lucide-react";
 import FormattedDate from "@/components/common/FormattedDate";
 import VariantAdminPanel from "@/components/dashboard/crm/VariantAdminPanel";
@@ -265,7 +267,7 @@ export default function InvoiceProductsPage() {
       Authorization: `Bearer ${token}`,
       "Content-Type": "application/json",
     }),
-     
+
     [token],
   );
 
@@ -399,33 +401,35 @@ export default function InvoiceProductsPage() {
             ],
       domain: "",
       category: p.category || "",
+      hsnCode: p.hsnCode || "",
+      sacCode: p.sacCode || "",
     });
 
     setShowModal(true);
   };
 
-  const buildPayload = () => {
+  const buildPayload = (currentForm: ProductCatalogueFormData) => {
     // Merge new catalogueForm fields with legacy form fields
-    const isVariable = catalogueForm.pricingMode === "VARIABLE";
+    const isVariable = currentForm.pricingMode === "VARIABLE";
     return {
-      name: catalogueForm.name.trim() || form.name.trim(),
+      name: currentForm.name.trim() || form.name.trim(),
       type: isVariable ? "VARIABLE" : "SIMPLE",
       basePrice: isVariable ? null : null,
-      category: catalogueForm.category || form.category,
+      category: currentForm.category || form.category,
       pricingModel: form.pricingModel,
       description: form.description || null,
       shortDesc: form.shortDesc || null,
-      priceINR: isVariable ? 0 : Number(catalogueForm.fixedPriceINR) || 0,
-      priceUSD: isVariable ? 0 : Number(catalogueForm.fixedPriceUSD) || 0,
+      priceINR: isVariable ? 0 : Number(currentForm.fixedPriceINR) || 0,
+      priceUSD: isVariable ? 0 : Number(currentForm.fixedPriceUSD) || 0,
       taxRate: Number(form.taxRate) || 18,
       taxIncluded: form.taxIncluded,
-      hsnCode: form.hsnCode || null,
-      sacCode: form.sacCode || null,
+      hsnCode: currentForm.hsnCode || form.hsnCode || null,
+      sacCode: currentForm.sacCode || form.sacCode || null,
       billingCycle: form.billingCycle || null,
       unit: form.unit || "unit",
       minQuantity: Number(form.minQuantity) || 1,
       maxQuantity: form.maxQuantity ? Number(form.maxQuantity) : null,
-      sku: catalogueForm.sku || form.sku || null,
+      sku: currentForm.sku || form.sku || null,
       isActive: form.isActive,
       isFeatured: form.isFeatured,
       tags: form.tags
@@ -434,9 +438,9 @@ export default function InvoiceProductsPage() {
         .filter(Boolean),
       notes: form.notes || null,
       priceTiers: null,
-      ...(isVariable && catalogueForm.variants.length > 0
+      ...(isVariable && currentForm.variants.length > 0
         ? {
-            variants: catalogueForm.variants
+            variants: currentForm.variants
               .filter((v) => v.name)
               .map((v) => ({
                 sku: v.name,
@@ -450,12 +454,13 @@ export default function InvoiceProductsPage() {
     };
   };
 
-  const handleSave = async () => {
-    const productName = (catalogueForm.name || form.name || "").trim();
+  const handleSave = async (submittedData?: ProductCatalogueFormData) => {
+    const dataToUse = submittedData || catalogueForm;
+    const productName = (dataToUse.name || form.name || "").trim();
     if (!productName) return;
     setSaving(true);
     try {
-      const payload = buildPayload();
+      const payload = buildPayload(dataToUse);
       const url = editingProduct
         ? `/api/invoice-products/${editingProduct.id}`
         : "/api/invoice-products";
@@ -536,6 +541,115 @@ export default function InvoiceProductsPage() {
       : Number(fxInput) * fxRate
     : null;
 
+  const downloadTemplate = () => {
+    const csvContent =
+      "data:text/csv;charset=utf-8," +
+      "name,type,category,pricingModel,priceINR,priceUSD,taxRate,hsnCode,sku\n" +
+      "Sample Subscription,SIMPLE,JOURNAL_SUBSCRIPTION,FIXED,1500,20,18,4901,SUB-001\n" +
+      "Sample Course,SIMPLE,COURSE,FIXED,3000,40,18,9983,CRS-001";
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", "product_catalogue_template.csv");
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+  };
+
+  const handleExportCSV = () => {
+    if (products.length === 0) return alert("No products to export.");
+    const headers = [
+      "ID",
+      "Name",
+      "Type",
+      "Category",
+      "Price (INR)",
+      "Price (USD)",
+      "SKU",
+      "HSN Code",
+      "Status",
+    ];
+    const rows = products.map((p) => [
+      p.id,
+      `"${p.name.replace(/"/g, '""')}"`,
+      p.type,
+      p.category,
+      p.priceINR,
+      p.priceUSD,
+      p.sku || "",
+      p.hsnCode || "",
+      p.isActive ? "ACTIVE" : "INACTIVE",
+    ]);
+    const csvContent =
+      "data:text/csv;charset=utf-8," +
+      [headers.join(","), ...rows.map((r) => r.join(","))].join("\n");
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute(
+      "download",
+      `product_catalogue_${new Date().toISOString().split("T")[0]}.csv`,
+    );
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+  };
+
+  const handleImportCSV = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = async (evt) => {
+      const text = evt.target?.result as string;
+      if (!text) return;
+      const lines = text.split("\n").filter((l) => l.trim() !== "");
+      if (lines.length < 2) return alert("CSV is empty or missing data.");
+
+      const headers = lines[0].split(",").map((h) => h.trim());
+      const payloadProducts = lines.slice(1).map((line) => {
+        const values = line.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
+        const obj: any = {};
+        headers.forEach((h, i) => {
+          let val = values[i] ? values[i].trim() : "";
+          if (val.startsWith('"') && val.endsWith('"')) val = val.slice(1, -1);
+          obj[h] = val;
+        });
+        return obj;
+      });
+
+      if (
+        !confirm(
+          `Found ${payloadProducts.length} rows. Do you want to try importing them?`,
+        )
+      ) {
+        e.target.value = "";
+        return;
+      }
+
+      try {
+        const res = await fetch("/api/invoice-products/import", {
+          method: "POST",
+          headers: authH,
+          body: JSON.stringify({ products: payloadProducts }),
+        });
+        const data = await res.json();
+        if (res.ok) {
+          alert(
+            data.message || `Successfully imported ${data.count} products.`,
+          );
+          fetchProducts();
+        } else {
+          alert(data.error || "Failed to import products.");
+        }
+      } catch (err: any) {
+        alert("Error importing CSV: " + err.message);
+      } finally {
+        e.target.value = "";
+      }
+    };
+    reader.readAsText(file);
+  };
+
   return (
     <DashboardLayout userRole={userRole}>
       <CRMPageShell
@@ -564,6 +678,34 @@ export default function InvoiceProductsPage() {
                   }
                 />
               </div>
+            </div>
+            <div className="flex bg-white/40 backdrop-blur-md rounded-2xl border border-secondary-200 overflow-hidden text-[10px] font-black uppercase tracking-widest text-secondary-600">
+              <button
+                onClick={downloadTemplate}
+                className="px-4 py-2 hover:bg-white hover:text-primary-600 transition-colors border-r border-secondary-200"
+                title="Download CSV Template"
+              >
+                Template
+              </button>
+              <label
+                className="px-4 py-2 hover:bg-white hover:text-emerald-600 transition-colors border-r border-secondary-200 cursor-pointer flex items-center gap-1.5"
+                title="Import CSV"
+              >
+                <UploadCloud size={14} /> Import
+                <input
+                  type="file"
+                  accept=".csv"
+                  className="hidden"
+                  onChange={handleImportCSV}
+                />
+              </label>
+              <button
+                onClick={handleExportCSV}
+                className="px-4 py-2 hover:bg-white hover:text-indigo-600 transition-colors flex items-center gap-1.5"
+                title="Export list to CSV"
+              >
+                <DownloadCloud size={14} /> Export
+              </button>
             </div>
             <button
               onClick={openCreate}
@@ -973,7 +1115,7 @@ export default function InvoiceProductsPage() {
           <ProductCatalogueForm
             value={catalogueForm}
             onChange={setCatalogueForm}
-            onSubmit={() => handleSave()}
+            onSubmit={(data) => handleSave(data)}
             onCancel={() => setShowModal(false)}
             saving={saving}
             categories={CATEGORIES.map((c) => ({
