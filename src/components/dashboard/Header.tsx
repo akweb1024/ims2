@@ -44,204 +44,302 @@ export default function Header({
     isImpersonating
 }: HeaderProps) {
     const router = useRouter();
+    const unreadCount = notifications.filter(n => !n.isRead).length;
 
     return (
-        <nav className={`bg-white border-b border-secondary-100 fixed w-full z-30 transition-all shadow-[0_4px_24px_rgba(0,0,0,0.02)] ${isImpersonating ? 'top-10' : 'top-0'}`}>
-            <div className="px-4 sm:px-6 lg:px-8">
+        <nav
+            className={`fixed w-full z-30 transition-all ${isImpersonating ? 'top-10' : 'top-0'}`}
+            style={{
+                background: 'rgba(255, 255, 255, 0.92)',
+                backdropFilter: 'blur(20px)',
+                WebkitBackdropFilter: 'blur(20px)',
+                borderBottom: '1px solid rgba(15, 23, 42, 0.08)',
+                boxShadow: '0 4px 24px rgba(0, 0, 0, 0.06)',
+            }}
+        >
+            <div className="px-4 sm:px-6 lg:px-6">
                 <div className="flex justify-between h-16">
-                    <div className="flex items-center">
+                    <div className="flex items-center gap-3">
                         {/* Sidebar Toggle */}
                         <button
                             onClick={() => setSidebarOpen(!sidebarOpen)}
-                            className="text-secondary-400 hover:text-primary-600 focus:outline-none lg:hidden transition-colors"
+                            className="text-slate-500 hover:text-blue-600 focus:outline-none transition-colors p-2 rounded-lg hover:bg-blue-50"
+                            aria-label="Toggle sidebar"
                         >
-                            <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                            <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                {sidebarOpen ? (
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                ) : (
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                                )}
                             </svg>
                         </button>
 
                         {/* Logo */}
-                        <Link href="/dashboard" className="flex items-center ml-4 lg:ml-0">
-                            <div className="w-8 h-8 rounded-lg bg-primary-600 flex items-center justify-center mr-2.5 shadow-md shadow-primary-500/20">
-                                <span className="text-white font-bold text-lg leading-none">S</span>
+                        <Link href="/dashboard" className="flex items-center gap-2.5 group">
+                            <div
+                                className="w-8 h-8 rounded-lg flex items-center justify-center shadow-md shadow-blue-500/30 transition-all duration-200 group-hover:shadow-blue-500/50 group-hover:scale-105"
+                                style={{ background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)' }}
+                            >
+                                <span className="text-white font-bold text-base leading-none">S</span>
                             </div>
-                            <h1 className="text-xl font-bold text-secondary-900 tracking-tight">STM <span className="text-primary-600 font-semibold">Customer</span></h1>
+                            <div className="hidden sm:block">
+                                <h1 className="text-[15px] font-bold text-slate-900 tracking-tight leading-none">
+                                    STM <span className="text-blue-600">Customer</span>
+                                </h1>
+                                <p className="text-[10px] text-slate-400 font-medium mt-0.5 leading-none">Enterprise IMS</p>
+                            </div>
                         </Link>
 
                         {/* Global Search */}
-                        <div className="ml-8 hidden xl:block">
+                        <div className="ml-4 hidden xl:block">
                             <GlobalSearch />
                         </div>
 
-                        {/* Module Switcher - Horizontal */}
-                        <div className="hidden lg:flex items-center ml-10 space-x-2">
+                        {/* Module Switcher */}
+                        <div className="hidden lg:flex items-center ml-6 gap-1">
                             {navigationModules.map((mod) => (
                                 <button
                                     key={mod.id}
                                     onClick={() => {
                                         setActiveModule(mod.id);
-                                        // Auto-navigate to first link
                                         const firstLink = mod.categories[0]?.items[0]?.href;
                                         if (firstLink) router.push(firstLink);
                                     }}
-                                    className={`px-4 py-2 rounded-xl text-xs font-semibold tracking-wide transition-all duration-200 flex items-center gap-2 ${activeModule === mod.id
-                                        ? 'bg-primary-50 text-primary-600'
-                                        : 'text-secondary-500 hover:text-secondary-900 hover:bg-secondary-50'
-                                        }`}
+                                    className={`
+                                        relative px-3.5 py-1.5 rounded-lg text-[12px] font-semibold tracking-wide
+                                        transition-all duration-200 flex items-center gap-1.5 whitespace-nowrap
+                                        ${activeModule === mod.id
+                                            ? 'text-blue-700 bg-blue-50 shadow-sm'
+                                            : 'text-slate-500 hover:text-slate-800 hover:bg-slate-100/80'
+                                        }
+                                    `}
                                 >
-                                    <span className={activeModule === mod.id ? "text-primary-600" : "text-secondary-400"}>{mod.icon}</span>
+                                    {activeModule === mod.id && (
+                                        <span className="absolute inset-x-2 bottom-1 h-0.5 bg-blue-500 rounded-full" />
+                                    )}
+                                    <span className={activeModule === mod.id ? 'text-blue-600' : 'text-slate-400'}>
+                                        {mod.icon}
+                                    </span>
                                     {mod.name.split(' ')[0]}
                                 </button>
                             ))}
                         </div>
                     </div>
 
-                    {/* Right side - User menu */}
-                    <div className="flex items-center space-x-4">
-                        {/* Notifications */}
+                    {/* Right side */}
+                    <div className="flex items-center gap-2">
+                        {/* Notification Bell */}
                         <div className="relative group">
-                            <button className="text-secondary-500 hover:text-secondary-700 relative p-2 rounded-xl hover:bg-secondary-100 transition-colors">
-                                <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <button className="relative p-2 rounded-xl text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition-all duration-200">
+                                <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
                                 </svg>
-                                {notifications.filter(n => !n.isRead).length > 0 && (
-                                    <span className="absolute top-1.5 right-1.5 block h-2.5 w-2.5 rounded-full bg-danger-500 ring-2 ring-white"></span>
+                                {unreadCount > 0 && (
+                                    <span className="absolute top-1 right-1 flex items-center justify-center h-4 w-4 rounded-full bg-red-500 text-white text-[9px] font-black ring-2 ring-white animate-pulse">
+                                        {unreadCount > 9 ? '9+' : unreadCount}
+                                    </span>
                                 )}
                             </button>
 
                             {/* Notifications Dropdown */}
-                            <div className="hidden group-hover:block absolute right-0 mt-2 w-80 bg-white rounded-2xl shadow-2xl border border-secondary-200 py-2 z-50 overflow-hidden">
-                                <div className="px-4 py-3 border-b border-secondary-100 flex justify-between items-center bg-secondary-50/50">
-                                    <h3 className="text-sm font-bold text-secondary-900">Notifications</h3>
-                                    {notifications.some(n => !n.isRead) && (
-                                        <button
-                                            onClick={markAllAsRead}
-                                            className="text-[10px] font-bold text-primary-600 uppercase hover:text-primary-700"
-                                        >
-                                            Mark all read
-                                        </button>
-                                    )}
-                                </div>
-                                <div className="max-h-96 overflow-y-auto">
-                                    {notifications.length === 0 ? (
-                                        <div className="p-8 text-center text-secondary-500 italic text-sm">
-                                            No notifications yet.
+                            <div className="hidden group-hover:block absolute right-0 mt-2 w-84 z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+                                <div
+                                    style={{
+                                        background: 'rgba(255,255,255,0.98)',
+                                        backdropFilter: 'blur(16px)',
+                                        boxShadow: '0 20px 60px rgba(0,0,0,0.12), 0 0 0 1px rgba(0,0,0,0.06)',
+                                        borderRadius: '16px',
+                                        overflow: 'hidden'
+                                    }}
+                                >
+                                    <div className="px-4 py-3.5 border-b border-slate-100 flex justify-between items-center">
+                                        <div className="flex items-center gap-2">
+                                            <h3 className="text-sm font-bold text-slate-900">Notifications</h3>
+                                            {unreadCount > 0 && (
+                                                <span className="bg-blue-100 text-blue-700 text-[10px] font-black px-1.5 py-0.5 rounded-full">
+                                                    {unreadCount} new
+                                                </span>
+                                            )}
                                         </div>
-                                    ) : (
-                                        notifications.map((n) => (
-                                            <div
-                                                key={n.id}
-                                                onClick={() => handleNotificationClick(n)}
-                                                className={`px-4 py-3 hover:bg-secondary-50 cursor-pointer transition-colors border-b border-secondary-50 last:border-0 ${!n.isRead ? 'bg-primary-50/30' : ''}`}
+                                        {notifications.some(n => !n.isRead) && (
+                                            <button
+                                                onClick={markAllAsRead}
+                                                className="text-[11px] font-semibold text-blue-600 hover:text-blue-700 bg-blue-50 hover:bg-blue-100 px-2.5 py-1 rounded-lg transition-colors"
                                             >
-                                                <div className="flex justify-between items-start">
-                                                    <p className={`text-xs ${!n.isRead ? 'font-bold text-secondary-900' : 'text-secondary-700'}`}>{n.title}</p>
-                                                    <span className="text-[10px] text-secondary-400">
-                                                        {formatToISTTime(n.createdAt)}
-                                                    </span>
-                                                </div>
-                                                <p className="text-[11px] text-secondary-500 mt-1 line-clamp-2">{n.message}</p>
+                                                Mark all read
+                                            </button>
+                                        )}
+                                    </div>
+                                    <div className="max-h-[380px] overflow-y-auto">
+                                        {notifications.length === 0 ? (
+                                            <div className="py-10 text-center">
+                                                <div className="text-3xl mb-2">🔔</div>
+                                                <p className="text-sm text-slate-400 font-medium">All caught up!</p>
+                                                <p className="text-xs text-slate-300 mt-1">No notifications yet.</p>
                                             </div>
-                                        ))
-                                    )}
+                                        ) : (
+                                            notifications.map((n) => (
+                                                <div
+                                                    key={n.id}
+                                                    onClick={() => handleNotificationClick(n)}
+                                                    className={`px-4 py-3.5 cursor-pointer transition-all duration-150 border-b border-slate-50 last:border-0 group/notif
+                                                        ${!n.isRead
+                                                            ? 'bg-blue-50/60 hover:bg-blue-50'
+                                                            : 'hover:bg-slate-50'
+                                                        }`}
+                                                >
+                                                    <div className="flex justify-between items-start gap-3">
+                                                        <div className="flex items-start gap-2.5 flex-1 min-w-0">
+                                                            {!n.isRead && (
+                                                                <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-blue-500 flex-shrink-0" />
+                                                            )}
+                                                            <div className="flex-1 min-w-0">
+                                                                <p className={`text-xs leading-snug ${!n.isRead ? 'font-semibold text-slate-900' : 'text-slate-700'}`}>{n.title}</p>
+                                                                <p className="text-[11px] text-slate-500 mt-0.5 line-clamp-2 leading-relaxed">{n.message}</p>
+                                                            </div>
+                                                        </div>
+                                                        <span className="text-[10px] text-slate-400 flex-shrink-0 mt-0.5">
+                                                            {formatToISTTime(n.createdAt)}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            ))
+                                        )}
+                                    </div>
                                 </div>
                             </div>
                         </div>
 
                         {/* User Dropdown */}
                         <div className="relative group">
-                            <button className="flex items-center space-x-3 px-3 py-2 rounded-lg hover:bg-secondary-100 transition-colors">
-                                <div className="w-9 h-9 rounded-full bg-gradient-to-br from-primary-500 to-primary-700 text-white flex items-center justify-center font-bold text-sm shadow-lg">
-                                    {displayRole.charAt(0)}
+                            <button className="flex items-center gap-2.5 pl-2 pr-3 py-1.5 rounded-xl hover:bg-slate-100 transition-all duration-200 border border-transparent hover:border-slate-200">
+                                <div
+                                    className="w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm text-white shadow-md flex-shrink-0"
+                                    style={{ background: 'linear-gradient(135deg, #2563eb 0%, #7c3aed 100%)' }}
+                                >
+                                    {displayRole.charAt(0).toUpperCase()}
                                 </div>
                                 <div className="hidden md:block text-left">
-                                    <p className="text-sm font-semibold text-secondary-900 leading-tight">
+                                    <p className="text-[13px] font-semibold text-slate-900 leading-tight max-w-[120px] truncate">
                                         {displayRole}
                                     </p>
-                                    <p className="text-xs text-secondary-500">
+                                    <p className="text-[11px] text-slate-500 leading-tight max-w-[120px] truncate">
                                         {displayEmail}
                                     </p>
                                 </div>
-                                <svg className="h-4 w-4 text-secondary-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                <svg className="h-3.5 w-3.5 text-slate-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
                                 </svg>
                             </button>
 
-                            {/* Dropdown Menu - Enhanced */}
-                            <div className="hidden group-hover:block absolute right-0 top-full pt-2 w-64 z-50">
-                                <div className="bg-white rounded-2xl shadow-2xl border border-secondary-200 py-2 overflow-hidden">
+                            {/* Dropdown Menu */}
+                            <div className="hidden group-hover:block absolute right-0 top-full pt-2 w-[260px] z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+                                <div
+                                    style={{
+                                        background: 'rgba(255,255,255,0.98)',
+                                        backdropFilter: 'blur(16px)',
+                                        boxShadow: '0 20px 60px rgba(0,0,0,0.12), 0 0 0 1px rgba(0,0,0,0.06)',
+                                        borderRadius: '16px',
+                                        overflow: 'hidden'
+                                    }}
+                                >
                                     {/* User Info Header */}
-                                    <div className="px-4 py-3 border-b border-secondary-100">
-                                        <p className="text-sm font-bold text-secondary-900">
-                                            {displayFullEmail}
-                                        </p>
-                                        <p className="text-xs text-secondary-500 mt-1">
-                                            Role: <span className="font-semibold text-primary-600">{displayRole}</span>
-                                        </p>
+                                    <div
+                                        className="px-4 py-4 border-b border-slate-100"
+                                        style={{ background: 'linear-gradient(135deg, #eff6ff 0%, #f8faff 100%)' }}
+                                    >
+                                        <div className="flex items-center gap-3">
+                                            <div
+                                                className="w-10 h-10 rounded-full flex items-center justify-center font-bold text-base text-white shadow-lg flex-shrink-0"
+                                                style={{ background: 'linear-gradient(135deg, #2563eb 0%, #7c3aed 100%)' }}
+                                            >
+                                                {displayRole.charAt(0).toUpperCase()}
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                                <p className="text-sm font-bold text-slate-900 truncate">{displayFullEmail}</p>
+                                                <p className="text-[11px] mt-0.5">
+                                                    <span className="text-blue-600 font-semibold bg-blue-50 px-1.5 py-0.5 rounded text-[10px]">{displayRole}</span>
+                                                </p>
+                                            </div>
+                                        </div>
                                     </div>
 
                                     {/* Menu Items */}
-                                    <div className="py-2">
+                                    <div className="py-1.5">
                                         <Link
                                             href="/dashboard/profile"
-                                            className="flex items-center px-4 py-2.5 text-sm text-secondary-700 hover:bg-secondary-50 transition-colors"
+                                            className="flex items-center px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors gap-3"
                                         >
-                                            <svg className="h-5 w-5 mr-3 text-secondary-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                                            </svg>
-                                            Profile Settings
+                                            <span className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center flex-shrink-0">
+                                                <svg className="h-4 w-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                                </svg>
+                                            </span>
+                                            <span className="font-medium">Profile Settings</span>
                                         </Link>
 
                                         <Link
                                             href="/dashboard"
-                                            className="flex items-center px-4 py-2.5 text-sm text-secondary-700 hover:bg-secondary-50 transition-colors"
+                                            className="flex items-center px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors gap-3"
                                         >
-                                            <svg className="h-5 w-5 mr-3 text-secondary-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                            </svg>
-                                            Preferences
+                                            <span className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center flex-shrink-0">
+                                                <svg className="h-4 w-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                </svg>
+                                            </span>
+                                            <span className="font-medium">Preferences</span>
                                         </Link>
                                     </div>
 
-                                    {/* Switch Company Section */}
+                                    {/* Switch Company */}
                                     {availableCompanies.length > 1 && (
-                                        <div className="border-t border-secondary-100 py-2">
-                                            <p className="px-4 py-1 text-[10px] font-bold text-secondary-400 uppercase">Switch Company</p>
+                                        <div className="border-t border-slate-100 py-1.5">
+                                            <p className="px-4 py-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-wider">Switch Company</p>
                                             <div className="max-h-40 overflow-y-auto">
-                                                {/* All Company Option */}
                                                 <button
                                                     onClick={() => handleSwitchCompany('ALL')}
-                                                    className={`w-full text-left px-4 py-3 text-xs flex justify-between items-center transition-colors border-b border-secondary-50 ${!user?.companyId ? 'bg-primary-50 text-primary-700 font-bold' : 'text-secondary-600 hover:bg-secondary-50'}`}
+                                                    className={`w-full text-left px-4 py-2.5 text-xs flex justify-between items-center transition-colors gap-2
+                                                        ${!user?.companyId ? 'bg-blue-50 text-blue-700 font-bold' : 'text-slate-600 hover:bg-slate-50'}`}
                                                 >
-                                                    <div className="flex items-center">
-                                                        <span className="mr-2 text-primary-500 font-bold">🌐</span>
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="text-blue-500">🌐</span>
                                                         <span>All Companies</span>
                                                     </div>
-                                                    {!user?.companyId && <span className="text-primary-500 font-bold">✓</span>}
+                                                    {!user?.companyId && (
+                                                        <svg className="w-3.5 h-3.5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                                                        </svg>
+                                                    )}
                                                 </button>
-
                                                 {availableCompanies.map((comp) => (
                                                     <button
                                                         key={comp.id}
                                                         onClick={() => handleSwitchCompany(comp.id)}
-                                                        className={`w-full text-left px-4 py-2 text-xs flex justify-between items-center transition-colors ${comp.id === user?.companyId ? 'bg-primary-50 text-primary-700 font-bold' : 'text-secondary-600 hover:bg-secondary-50'}`}
+                                                        className={`w-full text-left px-4 py-2.5 text-xs flex justify-between items-center transition-colors
+                                                            ${comp.id === user?.companyId ? 'bg-blue-50 text-blue-700 font-bold' : 'text-slate-600 hover:bg-slate-50'}`}
                                                     >
                                                         <span className="truncate">{comp.name}</span>
-                                                        {comp.id === user?.companyId && <span className="text-primary-500">✓</span>}
+                                                        {comp.id === user?.companyId && (
+                                                            <svg className="w-3.5 h-3.5 text-blue-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                                                            </svg>
+                                                        )}
                                                     </button>
                                                 ))}
                                             </div>
                                         </div>
                                     )}
 
-                                    {/* Logout Button - Prominent */}
-                                    <div className="border-t border-secondary-100 pt-2 px-2 pb-2">
+                                    {/* Logout */}
+                                    <div className="border-t border-slate-100 p-2">
                                         <button
                                             onClick={handleLogout}
-                                            className="w-full flex items-center justify-center px-4 py-2.5 text-sm font-semibold text-white bg-gradient-to-r from-danger-500 to-danger-600 hover:from-danger-600 hover:to-danger-700 rounded-lg transition-all shadow-md hover:shadow-lg"
+                                            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-semibold text-white rounded-xl transition-all shadow-sm hover:shadow-md"
+                                            style={{ background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)' }}
                                         >
-                                            <svg className="h-5 w-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
                                             </svg>
                                             Logout

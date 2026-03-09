@@ -277,7 +277,7 @@ export default function DashboardLayout({ children, userRole: propUserRole = 'CU
     }, [pathname, navigationModules, activeModule]);
 
     return (
-        <div className="min-h-screen bg-secondary-50">
+        <div className="min-h-screen" style={{ background: 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 50%, #f8fafc 100%)' }}>
             <Toaster position="top-right" />
 
             {/* Impersonation Warning Bar */}
@@ -329,7 +329,7 @@ export default function DashboardLayout({ children, userRole: propUserRole = 'CU
                 className={`transition-all duration-300 ${sidebarOpen ? 'lg:pl-64' : 'lg:pl-20'} ${isImpersonating ? 'pt-[calc(4rem+2.5rem)]' : 'pt-16'}
                     }`}
             >
-                <div className="p-6 lg:p-8">
+                <div className="p-5 lg:p-7 page-animate">
                     {children}
                 </div>
             </main>

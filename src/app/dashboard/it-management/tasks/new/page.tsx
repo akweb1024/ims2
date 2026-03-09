@@ -76,11 +76,11 @@ function NewTaskForm() {
                 body: JSON.stringify({
                     ...formData,
                     projectId: formData.projectId || null,
-                    estimatedValue: parseFloat(formData.estimatedValue.toString()),
-                    itRevenueEarned: parseFloat(formData.itRevenueEarned.toString()),
+                    estimatedValue: parseFloat(formData.estimatedValue.toString()) || 0,
+                    itRevenueEarned: parseFloat(formData.itRevenueEarned.toString()) || 0,
                     assignedToId: formData.assignedToId || null,
                     dueDate: formData.dueDate || null,
-                    progressPercent: parseInt(formData.progressPercent.toString()),
+                    progressPercent: parseInt(formData.progressPercent.toString()) || 0,
                     tags: formData.tags ? formData.tags.split(',').map(t => t.trim()) : [],
                 }),
             });
@@ -89,9 +89,13 @@ function NewTaskForm() {
                 router.push(`/dashboard/it-management/tasks/${task.id}`);
             } else {
                 const error = await response.json();
-                alert(error.error || 'Uplink failed');
+                console.error("API Error details:", error);
+                alert(`${error.error || 'Uplink failed'}: ${error.details ? JSON.stringify(error.details) : error.message}`);
             }
-        } catch (error) { alert('Data link severed'); }
+        } catch (error) { 
+            console.error(error);
+            alert('Data link severed'); 
+        }
         finally { setLoading(false); }
     };
 
@@ -170,12 +174,11 @@ function NewTaskForm() {
                                         <select value={formData.type} onChange={(e) => setFormData({ ...formData, type: e.target.value })}
                                             className="w-full bg-slate-50 border border-slate-100 rounded-[1.2rem] px-6 py-4 text-xs font-black text-slate-900 uppercase focus:bg-white outline-none"
                                         >
+                                            <option value="REVENUE">Revenue</option>
                                             <option value="SUPPORT">Support</option>
                                             <option value="MAINTENANCE">Maintenance</option>
-                                            <option value="DEPLOYMENT">Deployment</option>
-                                            <option value="TROUBLESHOOTING">Troubleshooting</option>
+                                            <option value="URGENT">Urgent</option>
                                             <option value="SERVICE_REQUEST">Service Request</option>
-                                            <option value="REVENUE">Revenue</option>
                                         </select>
                                     </div>
                                     <div className="space-y-2">

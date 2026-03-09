@@ -5,7 +5,7 @@ import { createErrorResponse } from "@/lib/api-utils";
 
 export const dynamic = "force-dynamic";
 
-export const GET = authorizedRoute(
+const handler = authorizedRoute(
   ["SUPER_ADMIN", "ADMIN", "MANAGER"],
   async (req: NextRequest, user) => {
     try {
@@ -141,3 +141,7 @@ export const GET = authorizedRoute(
     }
   },
 );
+
+export async function GET(req: NextRequest, context: any) {
+    return handler(req, context);
+}

@@ -138,8 +138,8 @@ export default function NewProjectPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...formData,
-          estimatedRevenue: parseFloat(formData.estimatedRevenue.toString()),
-          itDepartmentCut: parseFloat(formData.itDepartmentCut.toString()),
+          estimatedRevenue: parseFloat(formData.estimatedRevenue.toString()) || 0,
+          itDepartmentCut: parseFloat(formData.itDepartmentCut.toString()) || 0,
           startDate: formData.startDate || null,
           endDate: formData.endDate || null,
           projectManagerId: formData.projectManagerId || null,
@@ -168,7 +168,8 @@ export default function NewProjectPage() {
         router.push(`/dashboard/it-management/projects/${project.id}`);
       } else {
         const errData = await response.json();
-        alert(errData.error || "Uplink failed");
+        console.error("API Error details:", errData);
+        alert(`${errData.error || "Uplink failed"}: ${errData.details ? JSON.stringify(errData.details) : errData.message}`);
       }
     } catch (error) {
       console.error(error);
@@ -315,7 +316,7 @@ export default function NewProjectPage() {
                         <option value="LOW">Low</option>
                         <option value="MEDIUM">Medium</option>
                         <option value="HIGH">High</option>
-                        <option value="CRITICAL">Critical</option>
+                        <option value="URGENT">Critical</option>
                       </select>
                     </div>
                     <div className="space-y-2 mt-4 md:mt-0">
@@ -329,11 +330,10 @@ export default function NewProjectPage() {
                         }
                         className="w-full bg-slate-50 border border-slate-100 rounded-[1.2rem] px-6 py-4 text-xs font-black text-slate-900 uppercase focus:bg-white transition-all outline-none"
                       >
-                        <option value="SUPPORT">Support</option>
-                        <option value="DEPLOYMENT">Deployment</option>
-                        <option value="MAINTENANCE">Maintenance</option>
                         <option value="REVENUE">Revenue</option>
-                        <option value="SERVICE_REQUEST">Service Request</option>
+                        <option value="SUPPORT">Support</option>
+                        <option value="MAINTENANCE">Maintenance</option>
+                        <option value="ENHANCEMENT">Enhancement</option>
                       </select>
                     </div>
                   </div>
