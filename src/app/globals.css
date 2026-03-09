@@ -57,6 +57,8 @@
   :root {
     --bg-main: 248 250 252;
     /* #f8fafc */
+    --bg-main-hex: #f8fafc;
+    --bg-main-gradient: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 50%, #f8fafc 100%);
     --text-main: 15 23 42;
     /* #0f172a */
     --text-muted: 71 85 105;
@@ -73,14 +75,18 @@
   }
 
   [data-theme="dark"] {
-    --bg-main: 18 18 18;
-    --text-main: 224 224 224;
-    --text-muted: 160 160 160;
-    --primary: 0 255 157;
-    --primary-hover: 0 204 125;
-    --surface: 30 30 30;
-    --border: 51 51 51;
-    --card-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+    --bg-main: 15 23 42; /* Deep Navy #0f172a */
+    --bg-main-hex: #0f172a;
+    --bg-main-gradient: radial-gradient(circle at 50% 50%, #1e293b 0%, #0f172a 100%);
+    --text-main: 248 250 252;
+    --text-muted: 148 163 184;
+    --primary: 37 99 235;
+    --primary-hover: 59 130 246;
+    --surface: 22 30 48;
+    --border: 30 41 59;
+    --card-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+    --glass-bg: 15 23 42 / 0.7;
+    --glass-border: 255 255 255 / 0.1;
   }
 
   [data-theme="eco"] {
@@ -292,7 +298,26 @@
   }
 
   .glass-effect {
-    @apply bg-white/80 backdrop-blur-md;
+    @apply backdrop-blur-xl border border-white/10;
+    background: rgba(255, 255, 255, 0.7);
+  }
+
+  .glass-card-premium {
+    @apply backdrop-blur-2xl rounded-2xl border transition-all duration-300;
+    background: rgba(var(--surface) / 0.8);
+    border-color: rgba(var(--border) / 0.5);
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.08);
+  }
+
+  .glass-card-premium:hover {
+    @apply border-primary-500/30 -translate-y-0.5 shadow-xl;
+    background: rgba(var(--surface) / 0.9);
+  }
+
+  [data-theme="dark"] .glass-card-premium {
+    background: rgba(15, 23, 42, 0.7);
+    border-color: rgba(255, 255, 255, 0.08);
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
   }
 
   /* Text Wrapping Utilities */

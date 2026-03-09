@@ -277,19 +277,26 @@ export default function DashboardLayout({ children, userRole: propUserRole = 'CU
     }, [pathname, navigationModules, activeModule]);
 
     return (
-        <div className="min-h-screen" style={{ background: 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 50%, #f8fafc 100%)' }}>
+        <div className="min-h-screen transition-colors duration-500" style={{ background: 'var(--bg-main-hex, #f8fafc)' }}>
             <Toaster position="top-right" />
+
+            {/* Background Ambient Glows */}
+            <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
+                <div className="absolute -top-[10%] -left-[10%] w-[40%] h-[40%] rounded-full bg-blue-500/5 blur-[120px] animate-pulse"></div>
+                <div className="absolute top-[20%] -right-[5%] w-[30%] h-[30%] rounded-full bg-indigo-500/5 blur-[100px]"></div>
+                <div className="absolute -bottom-[10%] left-[20%] w-[50%] h-[50%] rounded-full bg-blue-600/5 blur-[150px]"></div>
+            </div>
 
             {/* Impersonation Warning Bar */}
             {isImpersonating && (
-                <div className="bg-primary-600 text-white px-4 py-2 flex items-center justify-between fixed w-full z-50 top-0 shadow-lg animate-in slide-in-from-top duration-300">
+                <div className="bg-blue-600 text-white px-4 py-2 flex items-center justify-between fixed w-full z-50 top-0 shadow-lg animate-in slide-in-from-top duration-300">
                     <div className="flex items-center gap-2 text-sm font-bold">
                         <span className="text-xl">👤</span>
                         <span>Impersonation Mode Active: Viewing as {mounted && user ? user.email : 'User'}</span>
                     </div>
                     <button
                         onClick={handleRevertAdmin}
-                        className="bg-white text-primary-600 px-4 py-1 rounded-full text-xs font-black uppercase hover:bg-secondary-50 transition-all shadow-sm"
+                        className="bg-white text-blue-600 px-4 py-1 rounded-full text-xs font-black uppercase hover:bg-slate-50 transition-all shadow-sm"
                     >
                         Back to Admin Identity
                     </button>
@@ -326,10 +333,9 @@ export default function DashboardLayout({ children, userRole: propUserRole = 'CU
             />
 
             <main
-                className={`transition-all duration-300 ${sidebarOpen ? 'lg:pl-64' : 'lg:pl-20'} ${isImpersonating ? 'pt-[calc(4rem+2.5rem)]' : 'pt-16'}
-                    }`}
+                className={`transition-all duration-300 relative z-10 ${sidebarOpen ? 'lg:pl-64' : 'lg:pl-20'} ${isImpersonating ? 'pt-[calc(4rem+2.5rem)]' : 'pt-16'}`}
             >
-                <div className="p-5 lg:p-7 page-animate">
+                <div className="p-5 lg:p-8 max-w-[1600px] mx-auto page-animate">
                     {children}
                 </div>
             </main>

@@ -50,54 +50,49 @@ export default function Header({
         <nav
             className={`fixed w-full z-30 transition-all ${isImpersonating ? 'top-10' : 'top-0'}`}
             style={{
-                background: 'rgba(255, 255, 255, 0.92)',
-                backdropFilter: 'blur(20px)',
-                WebkitBackdropFilter: 'blur(20px)',
-                borderBottom: '1px solid rgba(15, 23, 42, 0.08)',
-                boxShadow: '0 4px 24px rgba(0, 0, 0, 0.06)',
+                background: 'rgba(255, 255, 255, 0.75)',
+                backdropFilter: 'blur(32px)',
+                WebkitBackdropFilter: 'blur(32px)',
+                borderBottom: '1px solid rgba(15, 23, 42, 0.06)',
+                boxShadow: '0 4px 30px rgba(0, 0, 0, 0.03)',
             }}
         >
-            <div className="px-4 sm:px-6 lg:px-6">
+            <div className="px-4 sm:px-6 lg:px-8">
                 <div className="flex justify-between h-16">
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-4">
                         {/* Sidebar Toggle */}
                         <button
                             onClick={() => setSidebarOpen(!sidebarOpen)}
-                            className="text-slate-500 hover:text-blue-600 focus:outline-none transition-colors p-2 rounded-lg hover:bg-blue-50"
+                            className="text-slate-500 hover:text-blue-600 focus:outline-none transition-all duration-200 p-2 rounded-xl hover:bg-blue-50/80 active:scale-95"
                             aria-label="Toggle sidebar"
                         >
                             <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 {sidebarOpen ? (
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
                                 ) : (
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M4 6h16M4 12h16M4 18h16" />
                                 )}
                             </svg>
                         </button>
 
                         {/* Logo */}
-                        <Link href="/dashboard" className="flex items-center gap-2.5 group">
+                        <Link href="/dashboard" className="flex items-center gap-3 group">
                             <div
-                                className="w-8 h-8 rounded-lg flex items-center justify-center shadow-md shadow-blue-500/30 transition-all duration-200 group-hover:shadow-blue-500/50 group-hover:scale-105"
-                                style={{ background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)' }}
+                                className="w-9 h-9 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/20 transition-all duration-300 group-hover:shadow-blue-500/40 group-hover:scale-110 rotate-0 group-hover:rotate-6"
+                                style={{ background: 'linear-gradient(135deg, #2563eb 0%, #1e293b 100%)' }}
                             >
-                                <span className="text-white font-bold text-base leading-none">S</span>
+                                <span className="text-white font-black text-lg leading-none italic">S</span>
                             </div>
                             <div className="hidden sm:block">
-                                <h1 className="text-[15px] font-bold text-slate-900 tracking-tight leading-none">
-                                    STM <span className="text-blue-600">Customer</span>
+                                <h1 className="text-[16px] font-black text-slate-900 tracking-tight leading-none group-hover:text-blue-600 transition-colors">
+                                    STM <span className="opacity-40">IMS</span>
                                 </h1>
-                                <p className="text-[10px] text-slate-400 font-medium mt-0.5 leading-none">Enterprise IMS</p>
+                                <p className="text-[10px] text-slate-400 font-bold mt-1 uppercase tracking-widest leading-none">Enterprise Suite</p>
                             </div>
                         </Link>
 
-                        {/* Global Search */}
-                        <div className="ml-4 hidden xl:block">
-                            <GlobalSearch />
-                        </div>
-
                         {/* Module Switcher */}
-                        <div className="hidden lg:flex items-center ml-6 gap-1">
+                        <div className="hidden lg:flex items-center ml-8 p-1 bg-slate-100/50 rounded-xl border border-slate-200/40">
                             {navigationModules.map((mod) => (
                                 <button
                                     key={mod.id}
@@ -107,18 +102,15 @@ export default function Header({
                                         if (firstLink) router.push(firstLink);
                                     }}
                                     className={`
-                                        relative px-3.5 py-1.5 rounded-lg text-[12px] font-semibold tracking-wide
-                                        transition-all duration-200 flex items-center gap-1.5 whitespace-nowrap
+                                        relative px-4 py-2 rounded-lg text-xs font-bold tracking-wide
+                                        transition-all duration-300 flex items-center gap-2 whitespace-nowrap
                                         ${activeModule === mod.id
-                                            ? 'text-blue-700 bg-blue-50 shadow-sm'
-                                            : 'text-slate-500 hover:text-slate-800 hover:bg-slate-100/80'
+                                            ? 'text-blue-600 bg-white shadow-sm ring-1 ring-slate-200/50'
+                                            : 'text-slate-400 hover:text-slate-600 hover:bg-white/50'
                                         }
                                     `}
                                 >
-                                    {activeModule === mod.id && (
-                                        <span className="absolute inset-x-2 bottom-1 h-0.5 bg-blue-500 rounded-full" />
-                                    )}
-                                    <span className={activeModule === mod.id ? 'text-blue-600' : 'text-slate-400'}>
+                                    <span className={`text-base ${activeModule === mod.id ? 'scale-110 drop-shadow-sm' : 'grayscale opacity-70 group-hover:grayscale-0'}`}>
                                         {mod.icon}
                                     </span>
                                     {mod.name.split(' ')[0]}
@@ -128,28 +120,32 @@ export default function Header({
                     </div>
 
                     {/* Right side */}
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-3">
+                        {/* Global Search - Integrated */}
+                        <div className="hidden xl:block">
+                            <GlobalSearch />
+                        </div>
+
                         {/* Notification Bell */}
                         <div className="relative group">
-                            <button className="relative p-2 rounded-xl text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition-all duration-200">
-                                <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <button className="relative p-2.5 rounded-xl text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-all duration-300 active:scale-95 group">
+                                <svg className="h-5.5 w-5.5 transition-transform duration-300 group-hover:rotate-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
                                 </svg>
                                 {unreadCount > 0 && (
-                                    <span className="absolute top-1 right-1 flex items-center justify-center h-4 w-4 rounded-full bg-red-500 text-white text-[9px] font-black ring-2 ring-white animate-pulse">
+                                    <span className="absolute top-2 right-2 flex items-center justify-center h-4.5 w-4.5 rounded-full bg-blue-600 text-white text-[9px] font-black ring-2 ring-white shadow-blue-500/30 animate-pulse">
                                         {unreadCount > 9 ? '9+' : unreadCount}
                                     </span>
                                 )}
                             </button>
 
                             {/* Notifications Dropdown */}
-                            <div className="hidden group-hover:block absolute right-0 mt-2 w-84 z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+                            <div className="hidden group-hover:block absolute right-0 mt-2 w-84 z-50 animate-in fade-in slide-in-from-top-2 duration-300">
                                 <div
+                                    className="glass-card-premium border-slate-200/60"
                                     style={{
-                                        background: 'rgba(255,255,255,0.98)',
-                                        backdropFilter: 'blur(16px)',
-                                        boxShadow: '0 20px 60px rgba(0,0,0,0.12), 0 0 0 1px rgba(0,0,0,0.06)',
-                                        borderRadius: '16px',
+                                        boxShadow: '0 20px 60px rgba(0,0,0,0.1), 0 0 0 1px rgba(0,0,0,0.05)',
+                                        borderRadius: '20px',
                                         overflow: 'hidden'
                                     }}
                                 >
