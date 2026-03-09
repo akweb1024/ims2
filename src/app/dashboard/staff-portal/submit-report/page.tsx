@@ -87,6 +87,7 @@ export default function SubmitReportPage() {
     };
 
     // Form State - Simplified to narrative only
+    const [adminOverride, setAdminOverride] = useState(false);
     const [commonData, setCommonData] = useState({
         title: '',
         content: '',
@@ -520,6 +521,7 @@ export default function SubmitReportPage() {
                 ...commonData,
                 category: 'TASK_BASED',
                 userRole: user?.role,
+                adminOverride,
                 revenueGenerated: derivedMetrics.revenue, // Only base revenue, claims will update this when approved
                 tasksCompleted: derivedMetrics.tasksCount,
                 completedTaskIds,
@@ -970,6 +972,21 @@ export default function SubmitReportPage() {
                                         />
                                         {isEditMode && <p className="text-[10px] text-secondary-400 mt-1">Date cannot be changed once submitted</p>}
                                     </div>
+                                    {user && ['SUPER_ADMIN', 'ADMIN'].includes(user.role) && (
+                                        <div className="col-span-2 flex items-center gap-2 mt-2">
+                                            <input
+                                                type="checkbox"
+                                                id="adminOverride"
+                                                className="w-4 h-4 text-primary-600 rounded border-secondary-300 focus:ring-primary-500"
+                                                checked={adminOverride}
+                                                onChange={(e) => setAdminOverride(e.target.checked)}
+                                            />
+                                            <label htmlFor="adminOverride" className="text-xs font-bold text-danger-600 cursor-pointer flex items-center gap-1">
+                                                <span>⚠️ Force Submit (Admin Override)</span>
+                                            </label>
+                                            <span className="text-[10px] text-secondary-500 italic block mt-0.5 max-w-xs leading-tight">Bypasses constraints</span>
+                                        </div>
+                                    )}
                                 </div>
 
                                 {prodActivity && (

@@ -171,6 +171,83 @@ export const POST = authorizedRoute(
                 }, { status: 400 });
             }
 
+            // Time & Status Gates for Work Report Submission
+            // 1. Admin Override
+            const isAdmin = ['SUPER_ADMIN', 'ADMIN'].includes(user.role);
+            if (isAdmin && body.adminOverride) {
+                logger.info(`Admin override employed for work report submission`, { adminId: user.id, employeeId: profile.id, reportDate });
+            } else {
+                // Determine current local time strictly in IST
+                const now = new Date();
+                const formatter = new Intl.DateTimeFormat('en-US', {
+                    timeZone: 'Asia/Kolkata',
+                    hour12: false,
+                    hour: 'numeric',
+                    minute: 'numeric',
+                    weekday: 'short'
+                });
+                const parts = formatter.formatToParts(now);
+                let currentHour = 0, currentMinute = 0, currentWeekday = '';
+                for (const p of parts) {
+                    if (p.type === 'hour') currentHour = parseInt(p.value, 10);
+                    if (p.type === 'minute') currentMinute = parseInt(p.value, 10);
+                    if (p.type === 'weekday') currentWeekday = p.value;
+                }
+                if (currentHour === 24) currentHour = 0;
+                
+                const isCurrentWeekend = currentWeekday === 'Sat' || currentWeekday === 'Sun';
+                const isAfter530PM = currentHour > 17 || (currentHour === 17 && currentMinute >= 30);
+                
+                // Ensure attendance for the reported date is checked
+                const targetDayStart = new Date(reportDate);
+                targetDayStart.setHours(0, 0, 0, 0);
+                const targetDayEnd = new Date(reportDate);
+                targetDayEnd.setHours(23, 59, 59, 999);
+                
+                const attendanceRecord = await prisma.attendance.findFirst({
+                    where: {
+                        employeeId: profile.id,
+                        date: { gte: targetDayStart, lte: targetDayEnd }
+                    }
+                });
+                const hasCheckedOut = !!attendanceRecord?.checkOut;
+
+                let allowed = false;
+                let rejectReason = '';
+
+                if (isCurrentWeekend) {
+                    if (!hasCheckedOut) {
+                        rejectReason = 'Submissions on weekends/holidays are only allowed if you have checked out for the reported day.';
+                    } else {
+                        allowed = true;
+                    }
+                } else {
+                    if (isAfter530PM || hasCheckedOut) {
+                        allowed = true;
+                    } else {
+                        rejectReason = 'Submissions are only allowed after 5:30 PM IST or after you have successfully checked out for the day.';
+                    }
+                }
+
+                if (!allowed) {
+                    logger.warn(`Work report submission blocked`, { 
+                        employeeId: profile.id, 
+                        isCurrentWeekend, 
+                        isAfter530PM, 
+                        hasCheckedOut, 
+                        istHour: currentHour,
+                        istMinute: currentMinute,
+                        reason: rejectReason 
+                    });
+                    return NextResponse.json({
+                        error: 'VALIDATION_ERROR',
+                        message: rejectReason
+                    }, { status: 400 });
+                }
+                
+                logger.info(`Work report submission passed gate`, { employeeId: profile.id, hasCheckedOut, isAfter530PM });
+            }
+
             // Trace performance against JD/KRA and generate alerts
             let kraMatchRatio = 1.0;
             if (profile.kra && body.content) {
