@@ -302,6 +302,11 @@ model User {
   feedbacks                 UserFeedback[]              @relation("UserFeedbacks")
   feedbackMessages          FeedbackMessage[]           @relation("FeedbackMessageSender")
   files                     FileRecord[]
+  vaultKeyring              VaultKeyring?           @relation("UserVaultKeyring")
+  vaultFolders              VaultFolder[]           @relation("UserVaultFolders")
+  ownedVaultItems           VaultItem[]             @relation("OwnerVaultItems")
+  vaultAccessReceived       VaultAccess[]           @relation("VaultAccessReceived")
+  vaultAccessGranted        VaultAccess[]           @relation("VaultAccessGranted")
 
   @@index([email])
   @@index([role])
@@ -5093,4 +5098,76 @@ model FileRecord {
   @@index([category])
   @@index([context])
   @@index([createdAt])
+}
+
+// ─── Zero-Knowledge Web Vault ───────────────────────────────────────────────
+
+model VaultKeyring {
+  id               String   @id @default(uuid())
+  userId           String   @unique
+  encryptedPrivKey String   @db.Text // Encrypted RSA private key
+  publicKey        String   @db.Text // Public RSA key for sharing
+  salt             String            // Salt used for deriving the wrapping key
+  iv               String            // IV used for encrypting the private key
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  user             User     @relation("UserVaultKeyring", fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VaultFolder {
+  id          String      @id @default(uuid())
+  userId      String
+  name        String
+  color       String?     @default("#3b82f6")
+  icon        String?     @default("folder")
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  user        User        @relation("UserVaultFolders", fields: [userId], references: [id], onDelete: Cascade)
+  items       VaultItem[]
+
+  @@unique([userId, name])
+  @@index([userId])
+}
+
+model VaultItem {
+  id              String         @id @default(uuid())
+  ownerId         String
+  folderId        String?
+  type            String         @default("LOGIN") // LOGIN, NOTE, CARD, IDENTITY
+  title           String         // Plaintext title for searching/display
+  username        String?        // Plaintext username for searching (often email)
+  website         String?        // Plaintext URL or app name
+  icon            String?        // Plaintext icon/favicon URL
+  encryptedData   String         @db.Text // AES-GCM encrypted payload (password, notes, custom fields)
+  encryptedKey    String         @db.Text // AES key encrypted with owner's public RSA key
+  iv              String         // Initialization vector for AES-GCM
+  isFavorite      Boolean        @default(false)
+  isShared        Boolean        @default(false)
+  lastPasswordUpdate DateTime?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  owner           User           @relation("OwnerVaultItems", fields: [ownerId], references: [id], onDelete: Cascade)
+  folder          VaultFolder?   @relation(fields: [folderId], references: [id], onDelete: SetNull)
+  sharedAccess    VaultAccess[]
+
+  @@index([ownerId])
+  @@index([folderId])
+}
+
+model VaultAccess {
+  id              String    @id @default(uuid())
+  itemId          String
+  grantedToId     String
+  grantedById     String
+  encryptedKey    String    @db.Text // AES key encrypted with grantedTo user's public RSA key
+  canEdit         Boolean   @default(false)
+  createdAt       DateTime  @default(now())
+
+  item            VaultItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  grantedTo       User      @relation("VaultAccessReceived", fields: [grantedToId], references: [id], onDelete: Cascade)
+  grantedBy       User      @relation("VaultAccessGranted", fields: [grantedById], references: [id], onDelete: Cascade)
+
+  @@unique([itemId, grantedToId])
+  @@index([grantedToId])
 }

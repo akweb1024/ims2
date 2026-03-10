@@ -40,6 +40,7 @@ export const ALL_MODULES: NavModule[] = [
                 title: 'Personal',
                 items: [
                     { name: 'My Profile', href: '/dashboard/profile', icon: '👤', roles: ['*'] },
+                    { name: 'Password Vault', href: '/dashboard/vault', icon: '🔒', roles: ['*'] },
                     { name: 'App Theme', href: '/dashboard/settings/theme', icon: '🎨', roles: ['*'] },
                 ]
             }
