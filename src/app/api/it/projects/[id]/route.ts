@@ -15,6 +15,9 @@ function canManageProjects(role: string): boolean {
     "IT_ADMIN",
     "IT_SUPPORT",
     "MANAGER",
+    "TEAM_LEADER",
+    "HR_MANAGER",
+    "FINANCE_ADMIN"
   ].includes(role);
 }
 

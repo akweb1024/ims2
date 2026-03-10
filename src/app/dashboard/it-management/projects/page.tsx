@@ -166,7 +166,7 @@ export default function ProjectsPage() {
     const totalRevenue   = projects.reduce((s, p) => s + (p.itRevenueEarned || 0), 0);
 
     const isAdmin = (session?.user as any)?.role &&
-        ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'IT_MANAGER', 'IT_ADMIN'].includes((session?.user as any)?.role);
+        ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'IT_MANAGER', 'IT_ADMIN', 'TEAM_LEADER', 'HR_MANAGER', 'FINANCE_ADMIN'].includes((session?.user as any)?.role);
 
     // Active filters for chip display
     const activeFilters: { key: string; label: string; clear: () => void }[] = [
