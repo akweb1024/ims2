@@ -73,15 +73,18 @@ export async function POST(
 
         const user = await getAuthenticatedUser().catch(() => null);
 
-        // Validation
-        if (!body.content || body.content.trim() === '') {
-            return NextResponse.json({ error: 'Content is required' }, { status: 400 });
+        // Validation — require either content text or at least one attachment
+        const hasContent = body.content && body.content.trim() !== '';
+        const hasAttachments = Array.isArray(body.attachments) && body.attachments.length > 0;
+        if (!hasContent && !hasAttachments) {
+            return NextResponse.json({ error: 'Content or at least one attachment is required' }, { status: 400 });
         }
 
         const suggestion = await prisma.iTProjectSuggestion.create({
             data: {
                 projectId: projectId,
-                content: body.content,
+                content: (body.content || '').trim(),
+                attachments: body.attachments ?? [],
                 authorName: body.authorName || ((user as any)?.name || user?.email || 'Guest'),
                 authorEmail: body.authorEmail || (user?.email || null),
                 userId: user?.id || null,

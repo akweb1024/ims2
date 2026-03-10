@@ -31,6 +31,7 @@ export const ALL_MODULES: NavModule[] = [
                     { name: 'Dashboard', href: '/dashboard', icon: '📊', roles: ['*'] },
                     { name: 'Staff Portal', href: '/dashboard/staff-portal', icon: '🏢', roles: ['*'] },
                     { name: 'Direct Chat', href: '/dashboard/chat', icon: '💬', roles: ['*'] },
+                    { name: 'File Manager', href: '/dashboard/files', icon: '🗂️', roles: ['*'] },
                     { name: 'Automation', href: '/dashboard/automation', icon: '⚡', roles: ['SUPER_ADMIN'] },
                     { name: 'Team Dashboard', href: '/dashboard/manager/team', icon: '👥', roles: ['MANAGER', 'TEAM_LEADER'] },
                 ]
@@ -343,6 +344,7 @@ export const ALL_MODULES: NavModule[] = [
                 title: 'System',
                 items: [
                     { name: 'Data Hub', href: '/dashboard/data-hub', icon: '📂', roles: ['SUPER_ADMIN'] },
+                    { name: 'File Manager', href: '/dashboard/files', icon: '🗂️', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'IT_MANAGER', 'IT_ADMIN'] },
                     { name: 'Configurations', href: '/dashboard/settings/configurations', icon: '🔐', roles: ['SUPER_ADMIN', 'ADMIN'] },
                     { name: 'Integrations', href: '/dashboard/settings/integrations', icon: '🔌', roles: ['SUPER_ADMIN', 'ADMIN'] },
                     { name: 'System Settings', href: '/dashboard/settings', icon: '⚙️', roles: ['SUPER_ADMIN'] },

@@ -50,8 +50,10 @@ export const GET = authorizedRoute(
         );
 
       const { searchParams } = new URL(req.url);
-      const status = searchParams.get("status");
-      const type = searchParams.get("type");
+      const status     = searchParams.get("status");
+      const type       = searchParams.get("type");
+      const category   = searchParams.get("category");
+      const managerId  = searchParams.get("managerId");
       const isRevenueBased = searchParams.get("isRevenueBased");
 
       // Build where clause
@@ -82,8 +84,26 @@ export const GET = authorizedRoute(
       }
 
       // Simple filters
-      if (status) where.status = status;
-      if (type) where.type = type;
+      if (status)   where.status   = status;
+      if (type)     where.type     = type;
+      if (category) where.category = category;
+      if (managerId) {
+        // Filter by project manager OR team lead
+        const personnelOr = [
+          { projectManagerId: managerId },
+          { teamLeadId: managerId },
+        ];
+        if (where.OR) {
+          // Merge with existing visibility OR — wrap in AND
+          where.AND = [
+            { OR: where.OR },
+            { OR: personnelOr },
+          ];
+          delete where.OR;
+        } else {
+          where.OR = personnelOr;
+        }
+      }
       if (isRevenueBased !== null)
         where.isRevenueBased = isRevenueBased === "true";
 
@@ -91,14 +111,10 @@ export const GET = authorizedRoute(
         where,
         include: {
           projectManager: { select: { id: true, name: true, email: true } },
-          teamLead: { select: { id: true, name: true, email: true } },
-          tasks: { select: { id: true, status: true } },
-          website: {
-            select: { id: true, name: true, url: true, status: true },
-          },
-          _count: {
-            select: { tasks: true, milestones: true, timeEntries: true },
-          },
+          teamLead:       { select: { id: true, name: true, email: true } },
+          tasks:    { select: { id: true, status: true } },
+          website:  { select: { id: true, name: true, url: true, status: true } },
+          _count:   { select: { tasks: true, milestones: true, timeEntries: true } },
         },
         orderBy: { createdAt: "desc" },
       });

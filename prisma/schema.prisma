@@ -299,6 +299,9 @@ model User {
   assignedToCustomers       CustomerProfile[]           @relation("CustomerToExecutives")
   taggedITProjects          ITProject[]                 @relation("ProjectTaggedEmployees")
   companies                 Company[]                   @relation("UserCompanies")
+  feedbacks                 UserFeedback[]              @relation("UserFeedbacks")
+  feedbackMessages          FeedbackMessage[]           @relation("FeedbackMessageSender")
+  files                     FileRecord[]
 
   @@index([email])
   @@index([role])
@@ -4466,6 +4469,7 @@ model ITProjectSuggestion {
   authorEmail String?
   userId      String?
   content     String
+  attachments Json?            // stored as [{url,filename,size,mimeType}]
   status      SuggestionStatus @default(PENDING)
   createdAt   DateTime         @default(now())
   updatedAt   DateTime         @updatedAt
@@ -5015,4 +5019,78 @@ enum SuggestionStatus {
   RESOLVED
   FAILED
   HOLD
+}
+
+// ─── Feedback System ──────────────────────────────────────────────────────────
+
+model UserFeedback {
+  id          String            @id @default(uuid())
+  userId      String
+  companyId   String?
+  category    String            @default("GENERAL")
+  priority    String            @default("MEDIUM")
+  status      String            @default("OPEN")
+  title       String?
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+  resolvedAt  DateTime?
+  user        User              @relation("UserFeedbacks", fields: [userId], references: [id])
+  messages    FeedbackMessage[]
+
+  @@index([userId])
+  @@index([status])
+  @@index([companyId])
+}
+
+model FeedbackMessage {
+  id           String               @id @default(uuid())
+  feedbackId   String
+  senderId     String?
+  content      String
+  isAdminReply Boolean              @default(false)
+  createdAt    DateTime             @default(now())
+  feedback     UserFeedback         @relation(fields: [feedbackId], references: [id], onDelete: Cascade)
+  sender       User?                @relation("FeedbackMessageSender", fields: [senderId], references: [id])
+  attachments  FeedbackAttachment[]
+
+  @@index([feedbackId])
+  @@index([senderId])
+}
+
+model FeedbackAttachment {
+  id        String          @id @default(uuid())
+  messageId String
+  url       String
+  filename  String
+  size      Int
+  mimeType  String
+  createdAt DateTime        @default(now())
+  message   FeedbackMessage @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  @@index([messageId])
+}
+
+// ─── Unified File Storage ──────────────────────────────────────────────────
+
+model FileRecord {
+  id           String   @id @default(uuid())
+  filename     String                          // original user filename
+  storedName   String                          // uuid-based filename on disk
+  url          String                          // served URL (/uploads/... or /api/files/...)
+  path         String                          // absolute disk path
+  mimeType     String
+  size         Int                             // bytes
+  category     String   @default("general")   // profile_pictures|documents|feedback|general|other
+  context      String?                         // e.g. "feedback:threadId", "project:id"
+  checksum     String?                         // MD5 hex for integrity verification
+  syncedAt     DateTime?                       // last time confirmed on storage
+  uploadedById String?
+  uploadedBy   User?    @relation(fields: [uploadedById], references: [id], onDelete: SetNull)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([uploadedById])
+  @@index([category])
+  @@index([context])
+  @@index([createdAt])
 }

@@ -8,6 +8,8 @@ import { Toaster } from 'react-hot-toast';
 import { getNavigationModules } from '@/config/navigation';
 import Header from './Header';
 import Sidebar from './Sidebar';
+import FeedbackWidget from './FeedbackWidget';
+
 
 interface DashboardLayoutProps {
     children: React.ReactNode;
@@ -339,6 +341,9 @@ export default function DashboardLayout({ children, userRole: propUserRole = 'CU
                     {children}
                 </div>
             </main>
+
+            {/* Global Feedback Widget */}
+            <FeedbackWidget />
         </div>
     );
 }

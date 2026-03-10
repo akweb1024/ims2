@@ -143,15 +143,18 @@ export default function Sidebar({
                 </div>
 
                 {/* Logout Button */}
-                <div className={`border-t border-slate-700/40 pt-4 mt-2 overflow-hidden ${sidebarOpen ? 'block' : 'hidden lg:hidden'}`}>
+                <div className="border-t border-slate-700/40 pt-2 mt-1 overflow-hidden shrink-0">
                     <button
                         onClick={handleLogout}
-                        className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-rose-400/90 hover:text-rose-100 hover:bg-rose-500 transition-all duration-300 font-bold text-[13px] group shadow-sm hover:shadow-rose-500/30"
+                        title={!sidebarOpen ? 'Logout' : ''}
+                        className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-rose-400/80 hover:text-rose-100 hover:bg-rose-500/90 transition-all duration-200 font-semibold text-[12px] group"
                     >
-                        <svg className="h-4.5 w-4.5 flex-shrink-0 group-hover:rotate-12 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                        <svg className="h-4 w-4 flex-shrink-0 group-hover:rotate-12 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
                         </svg>
-                        <span>Logout</span>
+                        <span className={`whitespace-nowrap transition-all duration-300 ${sidebarOpen ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4 pointer-events-none'}`}>
+                            Logout
+                        </span>
                     </button>
                 </div>
             </nav>
