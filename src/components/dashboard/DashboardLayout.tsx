@@ -324,6 +324,14 @@ export default function DashboardLayout({ children, userRole: propUserRole = 'CU
                 isImpersonating={isImpersonating}
             />
 
+            {/* Mobile Backdrop Overlay */}
+            {sidebarOpen && (
+                <div 
+                    className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-10 lg:hidden transition-opacity duration-300 animate-in fade-in"
+                    onClick={() => setSidebarOpen(false)}
+                />
+            )}
+
             <Sidebar
                 sidebarOpen={sidebarOpen}
                 setSidebarOpen={setSidebarOpen}
@@ -335,9 +343,11 @@ export default function DashboardLayout({ children, userRole: propUserRole = 'CU
             />
 
             <main
-                className={`transition-all duration-300 relative z-10 ${sidebarOpen ? 'lg:pl-64' : 'lg:pl-20'} ${isImpersonating ? 'pt-[calc(4rem+2.5rem)]' : 'pt-16'}`}
+                className={`transition-all duration-500 relative z-10 
+                    ${sidebarOpen ? 'lg:pl-64' : 'lg:pl-20'} 
+                    ${isImpersonating ? 'pt-[calc(4rem+2.5rem)]' : 'pt-16'}`}
             >
-                <div className="p-5 lg:p-8 max-w-[1600px] mx-auto page-animate">
+                <div className="p-4 sm:p-6 lg:p-8 max-w-[1600px] mx-auto page-animate">
                     {children}
                 </div>
             </main>

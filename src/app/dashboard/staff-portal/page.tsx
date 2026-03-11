@@ -15,6 +15,8 @@ import DailyTaskTracker from '@/components/dashboard/DailyTaskTracker';
 import EmployeeTransactions from '@/components/dashboard/staff/EmployeeTransactions';
 import { Lock, AlertOctagon, Calendar as CalendarIcon, Zap, ArrowLeft } from 'lucide-react';
 
+import ThanosSnapWrapper from '@/components/animations/ThanosSnapWrapper';
+
 // New Modular Components
 import StaffProfileView from '@/components/dashboard/staff-portal/StaffProfileView';
 import StaffLeaveManagement from '@/components/dashboard/staff-portal/StaffLeaveManagement';
@@ -51,6 +53,8 @@ export default function StaffPortalPage() {
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState('overview');
     const [checkingIn, setCheckingIn] = useState(false);
+    const [isMaterialized, setIsMaterialized] = useState(false);
+    const [hasInitializedState, setHasInitializedState] = useState(false);
     const [workFromMode, setWorkFromMode] = useState<'OFFICE' | 'REMOTE'>('OFFICE');
     const [managerFilters, setManagerFilters] = useState({
         month: new Date().getMonth() + 1,
@@ -143,6 +147,18 @@ export default function StaffPortalPage() {
         }
     };
 
+    // Calculate initial materialized state after data load
+    useEffect(() => {
+        if (!loading && !hasInitializedState) {
+            if (todayAttendance?.checkIn && !todayAttendance?.checkOut) {
+                setIsMaterialized(true);
+            } else {
+                setIsMaterialized(false);
+            }
+            setHasInitializedState(true);
+        }
+    }, [loading, todayAttendance, hasInitializedState]);
+
     const handleMonthChange = async (year: number, month: number) => {
         const token = localStorage.getItem('token');
         if (!token) return;
@@ -224,6 +240,11 @@ export default function StaffPortalPage() {
             });
             if (res.ok) {
                 await fetchAllData();
+                if (action === 'check-in') {
+                    setIsMaterialized(true);
+                } else if (action === 'check-out') {
+                    setIsMaterialized(false);
+                }
                 // Refresh profile to update button state
                 const userRes = await fetch('/api/hr/profile', {
                     headers: { 'Authorization': `Bearer ${token}` }
@@ -277,15 +298,15 @@ export default function StaffPortalPage() {
         <DashboardLayout userRole={user?.role}>
             <div className="space-y-8 max-w-6xl mx-auto">
                 {/* Header Section */}
-                <div className="flex flex-col md:flex-row md:items-center md:justify-between bg-white p-8 rounded-[2.5rem] shadow-xl border border-secondary-100 relative overflow-hidden">
+                <div className="flex flex-col md:flex-row md:items-center md:justify-between bg-white p-4 sm:p-8 rounded-[1.5rem] sm:rounded-[2.5rem] shadow-xl border border-secondary-100 relative overflow-hidden">
                     <div className="absolute top-0 right-0 w-64 h-64 bg-primary-50 rounded-full -mr-32 -mt-32 opacity-50 blur-3xl"></div>
-                    <div className="relative z-10 flex items-center gap-6">
-                        <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-primary-600 to-primary-800 text-white flex items-center justify-center text-3xl font-black shadow-2xl">
+                    <div className="relative z-10 flex items-center gap-4 sm:gap-6">
+                        <div className="w-14 h-14 sm:w-20 sm:h-20 rounded-2xl sm:rounded-3xl bg-gradient-to-br from-primary-600 to-primary-800 text-white flex items-center justify-center text-xl sm:text-3xl font-black shadow-2xl">
                             {user?.email?.charAt(0).toUpperCase()}
                         </div>
                         <div>
-                            <h1 className="text-4xl font-extrabold text-secondary-900 tracking-tight">Staff Portal</h1>
-                            <p className="text-secondary-500 font-medium">Welcome back, <span className="text-primary-600">{user?.name || user?.email?.split('@')[0]}</span></p>
+                            <h1 className="text-2xl sm:text-4xl font-extrabold text-secondary-900 tracking-tight">Staff Portal</h1>
+                            <p className="text-secondary-500 font-medium text-sm sm:text-base">Welcome back, <span className="text-primary-600">{user?.name || user?.email?.split('@')[0]}</span></p>
                         </div>
                     </div>
 
@@ -303,7 +324,7 @@ export default function StaffPortalPage() {
                             </div>
                         )}
 
-                        {!todayAttendance?.checkIn && (
+                        {!isMaterialized && !todayAttendance?.checkIn && (
                             <div className="flex gap-2 p-1 bg-secondary-100 rounded-xl mb-1">
                                 <button
                                     onClick={() => setWorkFromMode('OFFICE')}
@@ -320,22 +341,34 @@ export default function StaffPortalPage() {
                             </div>
                         )}
 
-                        {!todayAttendance?.checkIn ? (
+                        {!isMaterialized ? (
                             <button
-                                onClick={() => handleAttendance('check-in')}
+                                onClick={async () => {
+                                    if (todayAttendance?.checkOut) {
+                                        setIsMaterialized(true);
+                                    } else {
+                                        await handleAttendance('check-in');
+                                    }
+                                }}
                                 disabled={checkingIn}
                                 className="btn btn-primary px-8 py-3 rounded-2xl shadow-lg hover:shadow-primary-200 transition-all flex items-center gap-2 group"
                             >
-                                {checkingIn ? '...' : `Check In (${workFromMode})`}
+                                {checkingIn ? '...' : todayAttendance?.checkOut ? 'Rematerialize (Demo)' : `Check In (${workFromMode})`}
                                 <span className="group-hover:translate-x-1 transition-transform">🕒</span>
                             </button>
-                        ) : !todayAttendance?.checkOut ? (
+                        ) : !todayAttendance?.checkOut || isMaterialized ? (
                             <button
-                                onClick={() => handleAttendance('check-out')}
+                                onClick={async () => {
+                                    if (!todayAttendance?.checkOut) {
+                                        await handleAttendance('check-out');
+                                    } else {
+                                        setIsMaterialized(false);
+                                    }
+                                }}
                                 disabled={checkingIn}
                                 className="btn bg-secondary-900 text-white hover:bg-black px-8 py-3 rounded-2xl shadow-xl shadow-secondary-200 opacity-100 transition-all flex items-center gap-2 hover:scale-105 animate-pulse"
                             >
-                                {checkingIn ? '...' : 'Check Out'} 🚪
+                                {checkingIn ? '...' : todayAttendance?.checkOut ? 'Dematerialize (Demo)' : 'Check Out'} 🚪
                             </button>
                         ) : (
                             <div className="bg-success-50 text-success-700 px-6 py-3 rounded-2xl border border-success-200 font-bold flex items-center gap-2">
@@ -345,8 +378,9 @@ export default function StaffPortalPage() {
                     </div>
                 </div>
 
-                {/* Tabs */}
-                <div className="flex flex-wrap gap-2 mb-8 bg-white p-2 rounded-xl shadow-sm border border-secondary-100">
+                <ThanosSnapWrapper isSnapped={!isMaterialized} snapDuration={2.5}>
+                {/* Tabs - Scrollable on mobile, wraps on desktop */}
+                <div className="flex overflow-x-auto no-scrollbar lg:flex-wrap gap-2 mb-8 bg-white p-2 rounded-xl shadow-sm border border-secondary-100 whitespace-nowrap">
                     {tabs.map((tab) => {
                         if (tab.isSeparator) return <div key="sep" className="w-px h-8 bg-secondary-100 mx-2 self-center"></div>;
 
@@ -408,7 +442,7 @@ export default function StaffPortalPage() {
 
                     {activeTab === 'overview' && (
                         <div className="space-y-6">
-                            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-6">
                                 <div className="card-premium p-6 border-t-4 border-primary-500">
                                     <h3 className="text-sm font-bold text-secondary-400 uppercase tracking-widest mb-4">Today&apos;s Status</h3>
                                     <div className="space-y-4">
@@ -727,8 +761,9 @@ export default function StaffPortalPage() {
                             </div>
                         </div>
                     )}
-                </div >
-            </div >
-        </DashboardLayout >
+                </div>
+            </ThanosSnapWrapper>
+        </div>
+    </DashboardLayout>
     );
 }

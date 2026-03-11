@@ -259,7 +259,7 @@ export default function EmployeeKPIView({ snapshots = [], reviews = [], incremen
         <div className="space-y-8 animate-in fade-in duration-500">
 
             {/* ── 1. HEADER SCORE CARD ── */}
-            <div className={`relative bg-gradient-to-r ${theme.color} rounded-[2rem] p-8 text-white shadow-xl overflow-hidden`}>
+            <div className={`relative bg-gradient-to-r ${theme.color} rounded-2xl sm:rounded-[2rem] p-4 sm:p-8 text-white shadow-xl overflow-hidden`}>
                 <div className="relative z-10 flex flex-col md:flex-row justify-between items-end gap-6">
                     <div>
                         <div className="flex items-center gap-2 mb-2">
@@ -272,7 +272,7 @@ export default function EmployeeKPIView({ snapshots = [], reviews = [], incremen
                                 <Award size={14} /> Performance Score
                             </span>
                         </div>
-                        <h1 className="text-4xl font-black mb-2">{theme.text}</h1>
+                        <h1 className="text-2xl sm:text-4xl font-black mb-2">{theme.text}</h1>
                         <p className="text-white/90 max-w-xl">{theme.summary}</p>
                         {metricChips.length > 0 && (
                             <div className="flex flex-wrap gap-2 mt-4">
@@ -293,8 +293,8 @@ export default function EmployeeKPIView({ snapshots = [], reviews = [], incremen
                         )}
                     </div>
                     <div className="text-right shrink-0">
-                        <p className="text-xs uppercase tracking-widest opacity-80 font-bold">Overall Rating</p>
-                        <div className="text-5xl font-black mt-1">{overallRating}<span className="text-2xl opacity-60">/10</span></div>
+                        <p className="text-[10px] sm:text-xs uppercase tracking-widest opacity-80 font-bold">Overall Rating</p>
+                        <div className="text-3xl sm:text-5xl font-black mt-1">{overallRating}<span className="text-xl sm:text-2xl opacity-60">/10</span></div>
                         {currentSnapshot && (
                             <p className="text-[10px] text-white/70 mt-1 font-bold">
                                 {new Date(currentSnapshot.year, currentSnapshot.month - 1).toLocaleString('default', { month: 'long', year: 'numeric' })}
@@ -313,7 +313,7 @@ export default function EmployeeKPIView({ snapshots = [], reviews = [], incremen
 
             {/* ── 2. SCORE BREAKDOWN (Real Analytics) ── */}
             {currentSnapshot && (
-                <div className="bg-white rounded-[2rem] p-8 shadow-sm border border-gray-100">
+                <div className="bg-white rounded-[1.5rem] sm:rounded-[2rem] p-4 sm:p-8 shadow-sm border border-gray-100">
                     <div className="flex items-center justify-between mb-6">
                         <h3 className="font-bold text-lg text-gray-900 flex items-center gap-2">
                             <BarChart3 className="text-indigo-500" size={22} />
@@ -340,11 +340,11 @@ export default function EmployeeKPIView({ snapshots = [], reviews = [], incremen
                                             <div className="flex-1 min-w-0">
                                                 <div className="flex justify-between items-center">
                                                     <span className="font-bold text-gray-900 text-sm">{comp.label}</span>
-                                                    <div className="flex items-center gap-3 shrink-0 ml-3">
-                                                        <span className={`text-[10px] font-black uppercase ${statusColor}`}>{statusLabel}</span>
-                                                        <span className="text-xs text-gray-500 font-bold">{comp.weight}% weight</span>
+                                                    <div className="flex flex-wrap items-center gap-2 sm:gap-3 shrink-0 ml-0 sm:ml-3">
+                                                        <span className={`text-[9px] sm:text-[10px] font-black uppercase ${statusColor}`}>{statusLabel}</span>
+                                                        <span className="hidden sm:inline text-xs text-gray-500 font-bold">{comp.weight}% weight</span>
                                                         <span className="text-sm font-black text-gray-900">{comp.rawScore.toFixed(0)}<span className="text-gray-400 font-normal">/100</span></span>
-                                                        <span className={`text-[10px] font-black tabular-nums px-2 py-0.5 rounded-lg ${comp.contribution >= comp.weight * 0.8 ? 'bg-green-100 text-green-700' : comp.contribution >= comp.weight * 0.5 ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-700'}`}>
+                                                        <span className={`text-[9px] sm:text-[10px] font-black tabular-nums px-2 py-0.5 rounded-lg ${comp.contribution >= comp.weight * 0.8 ? 'bg-green-100 text-green-700' : comp.contribution >= comp.weight * 0.5 ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-700'}`}>
                                                             +{comp.contribution.toFixed(1)} pts
                                                         </span>
                                                         {isExpanded ? <ChevronUp size={14} className="text-gray-400" /> : <ChevronDown size={14} className="text-gray-400" />}
@@ -563,8 +563,8 @@ export default function EmployeeKPIView({ snapshots = [], reviews = [], incremen
                             <ResponsiveContainer width="100%" height="100%">
                                 <BarChart data={performanceHistory}>
                                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
-                                    <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fill: '#9ca3af', fontSize: 11 }} />
-                                    <YAxis domain={[0, 10]} axisLine={false} tickLine={false} tick={{ fill: '#9ca3af', fontSize: 11 }} />
+                                    <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fill: '#9ca3af', fontSize: 10 }} />
+                                    <YAxis domain={[0, 10]} axisLine={false} tickLine={false} tick={{ fill: '#9ca3af', fontSize: 10 }} />
                                     <RechartsTooltip
                                         cursor={{ fill: '#f9fafb' }}
                                         contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)' }}

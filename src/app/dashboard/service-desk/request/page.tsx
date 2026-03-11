@@ -16,6 +16,7 @@ import {
     Search,
     Loader2,
     Paperclip,
+    Check,
 } from 'lucide-react';
 
 interface Service {
@@ -153,24 +154,26 @@ export default function RequestITServicePage() {
 
     return (
         <DashboardLayout>
-            <div className="p-6 max-w-5xl mx-auto">
+            <div className="p-4 sm:p-6 lg:p-8 max-w-5xl mx-auto page-animate">
                 {/* Header */}
-                <div className="mb-8 flex items-center justify-between">
-                    <div className="flex items-center gap-4">
+                <div className="mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+                    <div className="flex items-start sm:items-center gap-4">
                         <button
                             onClick={() => router.back()}
-                            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                            className="p-2.5 hover:bg-white dark:hover:bg-gray-800 rounded-xl transition-all border border-transparent hover:border-gray-200 dark:hover:border-gray-700 shadow-sm hover:shadow-md group"
                         >
-                            <ArrowLeft className="h-5 w-5 text-gray-600 dark:text-gray-400" />
+                            <ArrowLeft className="h-5 w-5 text-gray-600 dark:text-gray-400 group-hover:-translate-x-1 transition-transform" />
                         </button>
                         <div>
                             <div className="flex items-center gap-3 mb-1">
-                                <LifeBuoy className="h-8 w-8 text-blue-600" />
-                                <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+                                <div className="p-2 bg-blue-50 dark:bg-blue-900/30 rounded-xl">
+                                    <LifeBuoy className="h-6 w-6 sm:h-7 sm:w-7 text-blue-600 dark:text-blue-400" />
+                                </div>
+                                <h1 className="text-2xl sm:text-3xl font-black text-gray-900 dark:text-white tracking-tight">
                                     Request IT Service
                                 </h1>
                             </div>
-                            <p className="text-gray-600 dark:text-gray-400">
+                            <p className="text-sm sm:text-base text-gray-500 dark:text-gray-400 font-medium">
                                 Browse available services and submit your requirement
                             </p>
                         </div>
@@ -182,19 +185,19 @@ export default function RequestITServicePage() {
                     <div className="lg:col-span-2 space-y-8">
                         {/* Service Selection */}
                         <section>
-                            <div className="flex items-center justify-between mb-4">
-                                <h2 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-                                    <span className="flex items-center justify-center w-7 h-7 bg-blue-100 text-blue-600 rounded-full text-sm">1</span>
+                            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+                                <h2 className="text-lg sm:text-xl font-black text-gray-900 dark:text-white flex items-center gap-3 uppercase tracking-tighter">
+                                    <span className="flex items-center justify-center w-8 h-8 bg-blue-600 text-white rounded-xl text-sm font-black shadow-lg shadow-blue-500/30">1</span>
                                     Select Service
                                 </h2>
-                                <div className="relative w-64">
+                                <div className="relative w-full sm:w-72">
                                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
                                     <input
                                         type="text"
                                         placeholder="Find a service..."
                                         value={searchTerm}
                                         onChange={(e) => setSearchTerm(e.target.value)}
-                                        className="w-full pl-10 pr-4 py-1.5 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-sm outline-none focus:ring-1 focus:ring-blue-500"
+                                        className="w-full pl-10 pr-4 py-2.5 border border-gray-200 dark:border-gray-800 rounded-xl bg-white dark:bg-gray-900 text-sm font-bold text-gray-700 dark:text-gray-200 outline-none focus:ring-2 focus:ring-blue-500/20 shadow-sm"
                                     />
                                 </div>
                             </div>
@@ -205,63 +208,79 @@ export default function RequestITServicePage() {
                                     <p className="text-sm text-gray-500">Fetching available services...</p>
                                 </div>
                             ) : (
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     {filteredServices.map((service) => (
                                         <button
                                             key={service.id}
+                                            type="button"
                                             onClick={() => setSelectedServiceId(service.id)}
-                                            className={`p-4 flex flex-col items-start gap-1 rounded-xl border-2 transition-all text-left ${selectedServiceId === service.id
-                                                ? 'border-blue-600 bg-blue-50 dark:bg-blue-900/10'
-                                                : 'border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-800 hover:border-blue-300'
-                                                }`}
+                                            className={`transition-all duration-300 text-left relative overflow-hidden group ${selectedServiceId === service.id
+                                                ? 'glass-card-premium border-blue-500 scale-[1.02] shadow-blue-500/10'
+                                                : 'glass-card-premium border-gray-100 dark:border-gray-800 hover:border-blue-300 dark:hover:border-blue-900/50 hover:scale-[1.01]'
+                                                } rounded-2xl border p-5`}
                                         >
-                                            <div className="flex items-center justify-between w-full mb-1">
-                                                <h3 className="font-bold text-gray-900 dark:text-white text-sm">
-                                                    {service.name}
-                                                </h3>
-                                                <span className="text-[10px] font-black uppercase text-blue-600 bg-blue-50 dark:bg-blue-900/30 px-2 py-0.5 rounded">
-                                                    ₹{service.price} {service.unit !== 'each' ? `/ ${service.unit}` : ''}
-                                                </span>
+                                            <div className="flex items-start gap-4 pr-10">
+                                                <div className={`p-3 rounded-xl transition-colors ${selectedServiceId === service.id
+                                                    ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/20'
+                                                    : 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 group-hover:bg-blue-100 dark:group-hover:bg-blue-900/50'
+                                                    }`}>
+                                                    <Zap className="h-6 w-6" />
+                                                </div>
+                                                <div className="flex-1 min-w-0">
+                                                    <div className="flex items-center justify-between gap-2 mb-1">
+                                                        <h3 className="font-black text-gray-900 dark:text-white uppercase tracking-tight truncate">
+                                                            {service.name}
+                                                        </h3>
+                                                        <span className="text-[10px] font-black uppercase text-blue-600 bg-blue-50 dark:bg-blue-900/30 px-2 py-0.5 rounded shrink-0">
+                                                            ₹{service.price}
+                                                        </span>
+                                                    </div>
+                                                    <p className="text-xs font-medium text-gray-500 dark:text-gray-400 line-clamp-2 leading-relaxed">
+                                                        {service.description || `IT Support for ${service.name}`}
+                                                    </p>
+                                                </div>
                                             </div>
-                                            {service.estimatedDays && (
-                                                <span className="text-[10px] text-amber-600 dark:text-amber-500 font-bold flex items-center gap-1 mb-1">
-                                                    <Clock className="h-3 w-3" />
-                                                    Ready in ~{service.estimatedDays} days
-                                                </span>
+
+                                            {selectedServiceId === service.id && (
+                                                <div className="absolute top-4 right-4">
+                                                    <div className="w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center shadow-lg shadow-blue-500/30">
+                                                        <Check className="h-3.5 w-3.5 text-white" />
+                                                    </div>
+                                                </div>
                                             )}
-                                            <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-2">
-                                                {service.description || `IT Support for ${service.name}`}
-                                            </p>
+
+                                            <div className="mt-4 pt-4 border-t border-gray-50 dark:border-gray-800 flex items-center justify-between text-[10px] font-black uppercase tracking-widest text-gray-400">
+                                                <span className="flex items-center gap-1">
+                                                    <Clock className="h-3 w-3" />
+                                                    ~{service.estimatedDays} Days
+                                                </span>
+                                                <span className="text-blue-500 opacity-0 group-hover:opacity-100 transition-opacity">Select &rarr;</span>
+                                            </div>
                                         </button>
                                     ))}
-                                    {filteredServices.length === 0 && (
-                                        <div className="col-span-2 py-10 text-center text-gray-500 text-sm italic">
-                                            No matching services found.
-                                        </div>
-                                    )}
                                 </div>
                             )}
                         </section>
 
                         {/* Request Details */}
                         {selectedServiceId && (
-                            <form onSubmit={handleSubmit} className="space-y-6 animate-in slide-in-from-bottom-4 duration-300">
-                                <h2 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-                                    <span className="flex items-center justify-center w-7 h-7 bg-blue-100 text-blue-600 rounded-full text-sm">2</span>
+                            <form onSubmit={handleSubmit} className="space-y-8 animate-in slide-in-from-bottom-4 duration-300">
+                                <h2 className="text-lg sm:text-xl font-black text-gray-900 dark:text-white flex items-center gap-3 uppercase tracking-tighter">
+                                    <span className="flex items-center justify-center w-8 h-8 bg-blue-600 text-white rounded-xl text-sm font-black shadow-lg shadow-blue-500/30">2</span>
                                     Request Details
                                 </h2>
 
-                                <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-100 dark:border-gray-700 overflow-hidden">
-                                    <div className="bg-blue-600 p-4 text-white flex justify-between items-center">
+                                <div className="glass-card-premium rounded-2xl shadow-xl border border-gray-100 dark:border-gray-700 overflow-hidden">
+                                    <div className="bg-gradient-to-r from-blue-600 to-indigo-700 p-4 text-white flex justify-between items-center">
                                         <div className="flex items-center gap-3">
                                             <LayoutGrid className="h-5 w-5" />
                                             <span className="font-bold">{selectedService?.name}</span>
                                         </div>
-                                        <div className="text-sm font-bold opacity-80 uppercase tracking-widest">
+                                        <div className="text-[10px] sm:text-sm font-bold opacity-80 uppercase tracking-widest">
                                             Step 2 of 2
                                         </div>
                                     </div>
-                                    <div className="p-6 space-y-4">
+                                    <div className="p-4 sm:p-6 space-y-4">
                                         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                                             <div className="md:col-span-3">
                                                 <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">Short Title *</label>
@@ -359,24 +378,24 @@ export default function RequestITServicePage() {
                                                     <option value="URGENT">Critical - Blocker</option>
                                                 </select>
                                             </div>
-                                            <div className="bg-gray-50 dark:bg-gray-900/60 p-4 rounded-xl border border-gray-100 dark:border-gray-700 flex flex-col justify-center">
+                                            <div className="glass-card-premium p-4 rounded-xl border border-gray-100 dark:border-gray-700 flex flex-col justify-center">
                                                 <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Total Estimated Value</span>
-                                                <span className="text-2xl font-black text-blue-600">
+                                                <span className="text-xl sm:text-2xl font-black text-blue-600">
                                                     ₹{((selectedService?.price || 0) * formData.quantity).toLocaleString()}
                                                 </span>
                                             </div>
                                         </div>
                                     </div>
 
-                                    <div className="bg-gray-50 dark:bg-gray-900/60 px-6 py-4 flex justify-between items-center group">
-                                        <div className="flex items-center gap-2 text-xs text-gray-500">
+                                    <div className="bg-gray-50/50 dark:bg-gray-900/40 px-4 sm:px-6 py-4 flex flex-col sm:flex-row gap-4 justify-between items-center group">
+                                        <div className="flex items-center gap-2 text-[10px] sm:text-xs text-gray-500">
                                             <AlertCircle className="h-4 w-4" />
                                             IT Points will be credited upon your acceptance.
                                         </div>
                                         <button
                                             type="submit"
                                             disabled={loading}
-                                            className="flex items-center gap-2 px-8 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold shadow-lg transition-all disabled:opacity-50"
+                                            className="w-full sm:w-auto flex items-center justify-center gap-2 px-8 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold shadow-lg transition-all disabled:opacity-50"
                                         >
                                             {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : <Send className="h-5 w-5" />}
                                             Submit Request

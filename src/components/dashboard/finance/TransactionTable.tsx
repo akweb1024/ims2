@@ -72,36 +72,36 @@ export default function TransactionTable({
         <div className="bg-white rounded-2xl border border-secondary-100 shadow-sm overflow-hidden flex flex-col h-full">
             {/* Toolbar */}
             <div className="p-4 border-b border-secondary-100 flex flex-col md:flex-row gap-4 justify-between items-center bg-secondary-50/50">
-                <div className="relative w-full md:w-96">
+                <div className="relative w-full lg:w-96">
                     <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">🔍</span>
                     <input
                         type="text"
-                        placeholder="Search by customer, description, reference..."
-                        className="w-full pl-10 pr-4 py-2 rounded-xl border border-secondary-200 focus:ring-2 focus:ring-primary-500 outline-none text-sm transition-all bg-white"
+                        placeholder="Search..."
+                        className="w-full pl-10 pr-4 py-2 rounded-xl border border-secondary-200 dark:border-gray-700 focus:ring-2 focus:ring-primary-500 outline-none text-sm transition-all bg-white dark:bg-gray-800 dark:text-gray-200"
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                     />
                 </div>
 
-                <div className="flex gap-2 w-full md:w-auto overflow-x-auto pb-2 md:pb-0">
+                <div className="flex gap-2 w-full md:w-auto overflow-x-auto no-scrollbar pb-1 md:pb-0">
                     <select
-                        className="px-3 py-2 rounded-xl border border-secondary-200 bg-white text-sm outline-none cursor-pointer hover:border-primary-400 transition-all font-medium text-secondary-600"
+                        className="px-3 py-2 rounded-xl border border-secondary-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-xs sm:text-sm outline-none cursor-pointer hover:border-primary-400 transition-all font-medium text-secondary-600 dark:text-gray-300"
                         value={filters.type}
                         onChange={(e) => onFilter('type', e.target.value)}
                     >
-                        <option value="">All Types</option>
+                        <option value="">Types</option>
                         <option value="REVENUE">Revenue</option>
                         <option value="EXPENSE">Expense</option>
                     </select>
 
                     <select
-                        className="px-3 py-2 rounded-xl border border-secondary-200 bg-white text-sm outline-none cursor-pointer hover:border-primary-400 transition-all font-medium text-secondary-600 max-w-[150px]"
+                        className="px-3 py-2 rounded-xl border border-secondary-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-xs sm:text-sm outline-none cursor-pointer hover:border-primary-400 transition-all font-medium text-secondary-600 dark:text-gray-300 max-w-[120px] sm:max-w-[150px]"
                         value={filters.category}
                         onChange={(e) => onFilter('category', e.target.value)}
                     >
-                        <option value="">All Categories</option>
-                        <option value="SALE">Product Sale</option>
-                        <option value="SUBSCRIPTION">Subscription</option>
+                        <option value="">Categories</option>
+                        <option value="SALE">Sale</option>
+                        <option value="SUBSCRIPTION">Subs</option>
                         <option value="SERVICE">Service</option>
                         <option value="RENT">Rent</option>
                         <option value="SALARIES">Salaries</option>
@@ -109,13 +109,13 @@ export default function TransactionTable({
                         <option value="MARKETING">Marketing</option>
                         <option value="TRAVEL">Travel</option>
                         <option value="UTILITIES">Utilities</option>
-                        <option value="OFFICE_SUPPLIES">Verify Supplies</option>
+                        <option value="OFFICE_SUPPLIES">Supplies</option>
                         <option value="OTHER">Other</option>
                     </select>
                     {onRefresh && (
                         <button
                             onClick={onRefresh}
-                            className="p-2 bg-secondary-100 text-secondary-600 rounded-xl hover:bg-primary-100 hover:text-primary-600 transition-colors ml-2"
+                            className="p-2 bg-secondary-100 dark:bg-gray-700 text-secondary-600 dark:text-gray-300 rounded-xl hover:bg-primary-100 dark:hover:bg-primary-900/40 hover:text-primary-600 transition-colors ml-auto md:ml-2"
                             title="Sync / Refresh Data"
                         >
                             🔄
@@ -140,20 +140,20 @@ export default function TransactionTable({
                     <table className="w-full text-left border-collapse">
 
 
-                        <thead className="bg-secondary-50 text-secondary-500 uppercase text-[10px] font-black tracking-widest sticky top-0 z-10 shadow-sm">
+                        <thead className="bg-secondary-50 dark:bg-gray-800 text-secondary-500 dark:text-gray-400 uppercase text-[9px] sm:text-[10px] font-black tracking-widest sticky top-0 z-10 shadow-sm">
                             <tr>
-                                <th onClick={() => handleSort('date')} className="px-6 py-4 cursor-pointer hover:bg-secondary-100 transition-colors group select-none">
+                                <th onClick={() => handleSort('date')} className="px-4 sm:px-6 py-4 cursor-pointer hover:bg-secondary-100 dark:hover:bg-gray-700 transition-colors group select-none whitespace-nowrap">
                                     Date <span className="text-gray-400 ml-1">{sortField === 'date' ? (sortDir === 'asc' ? '↑' : '↓') : '↕'}</span>
                                 </th>
-                                <th className="px-6 py-4">Type</th>
-                                <th className="px-6 py-4">Status</th>
-                                <th className="px-6 py-4">Category</th>
-                                <th className="px-6 py-4">Description / Reference</th>
-                                <th className="px-6 py-4">Party</th>
-                                <th onClick={() => handleSort('amount')} className="px-6 py-4 text-right cursor-pointer hover:bg-secondary-100 transition-colors group select-none">
+                                <th className="px-4 sm:px-6 py-4">Type</th>
+                                <th className="px-4 sm:px-6 py-4 hidden sm:table-cell">Status</th>
+                                <th className="px-4 sm:px-6 py-4 hidden lg:table-cell">Category</th>
+                                <th className="px-4 sm:px-6 py-4">Desc / Ref</th>
+                                <th className="px-4 sm:px-6 py-4 hidden md:table-cell">Party</th>
+                                <th onClick={() => handleSort('amount')} className="px-4 sm:px-6 py-4 text-right cursor-pointer hover:bg-secondary-100 dark:hover:bg-gray-700 transition-colors group select-none">
                                     Amount <span className="text-gray-400 ml-1">{sortField === 'amount' ? (sortDir === 'asc' ? '↑' : '↓') : '↕'}</span>
                                 </th>
-                                <th className="px-6 py-4 text-right">Actions</th>
+                                <th className="px-4 sm:px-6 py-4 text-right">Actions</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-secondary-100">
@@ -170,33 +170,33 @@ export default function TransactionTable({
                                             {rec.type}
                                         </span>
                                     </td>
-                                    <td className="px-6 py-4">
+                                    <td className="px-4 sm:px-6 py-4 hidden sm:table-cell">
                                         <VerificationBadge status={rec.verificationStatus || rec.status || 'COMPLETED'} />
                                     </td>
-                                    <td className="px-6 py-4 text-xs text-secondary-600 uppercase font-bold tracking-tight">
+                                    <td className="px-4 sm:px-6 py-4 hidden lg:table-cell text-[10px] text-secondary-600 dark:text-gray-400 uppercase font-bold tracking-tight">
                                         {rec.category}
                                     </td>
-                                    <td className="px-6 py-4 max-w-[200px]">
-                                        <p className="text-xs font-medium text-secondary-900 truncate" title={rec.description}>{rec.description || '-'}</p>
-                                        <p className="text-[10px] text-secondary-400 font-mono mt-0.5 truncate" title={rec.referenceId || rec.referenceNumber}>
-                                            Ref: {rec.referenceId || rec.referenceNumber || 'N/A'}
+                                    <td className="px-4 sm:px-6 py-4 max-w-[120px] sm:max-w-[200px]">
+                                        <p className="text-[10px] sm:text-xs font-medium text-secondary-900 dark:text-gray-200 truncate" title={rec.description}>{rec.description || '-'}</p>
+                                        <p className="text-[9px] sm:text-[10px] text-secondary-400 font-mono mt-0.5 truncate uppercase" title={rec.referenceId || rec.referenceNumber}>
+                                            {rec.referenceId || rec.referenceNumber || 'N/A'}
                                         </p>
                                     </td>
-                                    <td className="px-6 py-4 max-w-[150px]">
-                                        <p className="text-xs font-bold text-secondary-700 truncate" title={rec.customerName}>
+                                    <td className="px-4 sm:px-6 py-4 hidden md:table-cell max-w-[150px]">
+                                        <p className="text-xs font-bold text-secondary-700 dark:text-gray-300 truncate" title={rec.customerName}>
                                             {rec.customerName || '-'}
                                         </p>
                                         <p className="text-[10px] text-secondary-400 truncate" title={rec.customerEmail}>
-                                            {rec.bankName ? `via ${rec.bankName}` : rec.customerEmail}
+                                            {rec.bankName ? `${rec.bankName}` : rec.customerEmail}
                                         </p>
                                     </td>
-                                    <td className="px-6 py-4 text-right">
-                                        <p className={`text-sm font-black ${rec.type === 'REVENUE' ? 'text-emerald-600' : 'text-secondary-900'}`}>
-                                            {rec.currency !== 'INR' && <span className="text-[10px] text-gray-400 mr-1">{rec.currency}</span>}
-                                            ₹{rec.amount.toLocaleString()}
+                                    <td className="px-4 sm:px-6 py-4 text-right">
+                                        <p className={`text-xs sm:text-sm font-black ${rec.type === 'REVENUE' ? 'text-emerald-600' : 'text-secondary-900 dark:text-gray-100'}`}>
+                                            {rec.currency !== 'INR' && <span className="text-[9px] text-gray-400 mr-0.5">{rec.currency}</span>}
+                                            ₹{(rec.amount || 0).toLocaleString()}
                                         </p>
                                     </td>
-                                    <td className="px-6 py-4 text-right">
+                                    <td className="px-4 sm:px-6 py-4 text-right">
                                         <div className="flex items-center justify-end gap-2">
                                             <button
                                                 onClick={() => onEdit(rec)}
@@ -221,16 +221,16 @@ export default function TransactionTable({
                 )}
             </div>
 
-            {/* Simple Pagination Footer (Placeholder for now since API sends all) */}
-            <div className="px-6 py-3 border-t border-secondary-100 bg-secondary-50 text-xs text-secondary-500 flex justify-between items-center">
-                <span>Showing <strong>{sortedTransactions.length}</strong> transactions</span>
+            {/* Simple Pagination Footer */}
+            <div className="px-4 sm:px-6 py-3 border-t border-secondary-100 dark:border-gray-800 bg-secondary-50/50 dark:bg-gray-900/50 text-[10px] sm:text-xs text-secondary-500 dark:text-gray-400 flex justify-between items-center">
+                <span>Showing <strong>{sortedTransactions.length}</strong> entries</span>
                 <span
                     onClick={onRefresh}
-                    className={`text-[10px] uppercase font-bold tracking-wider text-secondary-400 flex items-center gap-1 ${onRefresh ? 'cursor-pointer hover:text-primary-600' : ''}`}
+                    className={`text-[9px] sm:text-[10px] uppercase font-bold tracking-wider text-secondary-400 flex items-center gap-1 ${onRefresh ? 'cursor-pointer hover:text-primary-600' : ''}`}
                     title={onRefresh ? "Click to Sync" : "Live"}
                 >
-                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                    {onRefresh ? "Synced Just Now" : "Real-time Data"}
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                    Synced
                 </span>
             </div>
         </div>

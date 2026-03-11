@@ -25,10 +25,10 @@ export default function FinanceStatsCard({
 }: FinanceStatsCardProps) {
     if (loading) {
         return (
-            <div className="bg-white/70 backdrop-blur-xl border border-white/50 rounded-2xl p-6 shadow-sm h-[160px] animate-pulse relative overflow-hidden">
-                <div className="h-4 w-1/3 bg-gray-200 rounded mb-4"></div>
-                <div className="h-8 w-2/3 bg-gray-200 rounded mb-2"></div>
-                <div className="h-3 w-1/2 bg-gray-100 rounded"></div>
+            <div className="glass-card-premium border border-white/50 dark:border-gray-800 rounded-2xl p-6 shadow-sm h-[160px] animate-pulse relative overflow-hidden">
+                <div className="h-4 w-1/3 bg-gray-200 dark:bg-gray-700 rounded mb-4"></div>
+                <div className="h-8 w-2/3 bg-gray-200 dark:bg-gray-700 rounded mb-2"></div>
+                <div className="h-3 w-1/2 bg-gray-100 dark:bg-gray-800 rounded"></div>
             </div>
         )
     }
@@ -58,37 +58,37 @@ export default function FinanceStatsCard({
     }
 
     return (
-        <div className="group relative bg-white/70 backdrop-blur-xl border border-white/60 rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1 overflow-hidden ring-1 ring-black/5">
+        <div className="group relative glass-card-premium border border-white/60 dark:border-gray-800 rounded-2xl p-4 sm:p-6 shadow-lg transition-all duration-300 overflow-hidden">
             {/* Background Decor */}
-            <div className={`absolute top-0 right-0 p-24 rounded-full bg-gradient-to-br from-${color}-500/5 to-transparent blur-2xl -mr-10 -mt-10 pointer-events-none`}></div>
+            <div className={`absolute top-0 right-0 p-16 sm:p-24 rounded-full bg-gradient-to-br from-${color}-500/5 to-transparent blur-2xl -mr-10 -mt-10 pointer-events-none`}></div>
 
-            <div className="relative z-10 flex justify-between items-start">
+            <div className="relative z-10 flex justify-between items-start gap-2">
                 <div>
-                    <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-1 flex items-center gap-2">
+                    <h3 className="text-[10px] sm:text-xs font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-1 flex items-center gap-2">
                         {title}
-                        <Info className="w-3 h-3 text-gray-300 cursor-help" />
+                        <Info className="w-3 h-3 text-gray-300 dark:text-gray-600 cursor-help" />
                     </h3>
-                    <div className="flex items-baseline gap-1 mt-2">
-                        <span className="text-2xl font-black text-gray-800 tracking-tight">
+                    <div className="flex items-baseline gap-1 mt-1 sm:mt-2">
+                        <span className="text-xl sm:text-2xl font-black text-gray-800 dark:text-gray-100 tracking-tight">
                             {currency}{amount.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
                         </span>
                     </div>
                 </div>
 
-                <div className={`p-3 rounded-2xl ${styles} shadow-inner`}>
-                    {icon || <TrendingUp className="w-6 h-6" />}
+                <div className={`p-2 sm:p-3 rounded-2xl ${styles} shadow-inner`}>
+                    {icon || <TrendingUp className="w-5 h-5 sm:w-6 sm:h-6" />}
                 </div>
             </div>
 
             {/* Footer / Trend Section */}
-            <div className="mt-6 flex items-center gap-2">
+            <div className="mt-4 sm:mt-6 flex items-center gap-2">
                 {trend !== undefined && (
-                    <span className={`flex items-center text-xs font-bold px-2 py-0.5 rounded-full ${trendColor} bg-opacity-10 bg-gray-100`}>
+                    <span className={`flex items-center text-[10px] sm:text-xs font-bold px-2 py-0.5 rounded-full ${trendColor} bg-opacity-10 dark:bg-opacity-20 bg-gray-100 dark:bg-gray-800`}>
                         {isTrendPositive ? <ArrowUpRight className="w-3 h-3 mr-1" /> : <ArrowDownRight className="w-3 h-3 mr-1" />}
                         {Math.abs(trend)}%
                     </span>
                 )}
-                <span className="text-xs text-gray-400 font-medium">
+                <span className="text-[10px] sm:text-xs text-gray-400 dark:text-gray-500 font-medium truncate">
                     {subtitle}
                 </span>
             </div>

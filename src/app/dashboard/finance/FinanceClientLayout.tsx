@@ -32,9 +32,9 @@ export default function FinanceClientLayout({ children }: FinanceClientLayoutPro
 
     return (
         <DashboardLayout>
-            <div className="flex flex-col h-full">
+            <div className="flex flex-col h-full page-animate">
                 {/* Finance Sub-Navigation */}
-                <div className="bg-white border-b border-secondary-200 sticky top-0 z-10 -mx-4 md:-mx-6 -mt-4 md:-mt-6 mb-6 px-4 md:px-6">
+                <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-md border-b border-secondary-200 sticky top-[64px] z-20 -mx-4 md:-mx-6 -mt-4 md:-mt-6 mb-6 px-4 md:px-6">
                     <div className="flex items-center space-x-1 overflow-x-auto no-scrollbar">
                         {navItems.map((item) => {
                             const isActive = pathname === item.href || (item.href !== '/dashboard/finance' && pathname.startsWith(item.href));
@@ -47,7 +47,7 @@ export default function FinanceClientLayout({ children }: FinanceClientLayoutPro
                                             : 'border-transparent text-secondary-500 hover:text-secondary-900 hover:border-secondary-300'
                                         }`}
                                 >
-                                    <item.icon className={`w-4 h-4 ${isActive ? 'text-primary-600' : 'text-secondary-400'}`} />
+                                    <item.icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-primary-600' : 'text-secondary-400'}`} />
                                     {item.name}
                                 </Link>
                             );

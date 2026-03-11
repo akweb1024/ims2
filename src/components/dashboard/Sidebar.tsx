@@ -31,16 +31,16 @@ export default function Sidebar({
 
     return (
         <aside
-            className={`fixed left-0 h-full transition-all duration-300 z-20 flex flex-col
-                ${sidebarOpen ? 'w-64' : 'w-0 lg:w-[70px]'}
+            className={`fixed left-0 h-full transition-all duration-500 ease-in-out z-20 flex flex-col
+                ${sidebarOpen ? 'translate-x-0 w-64' : '-translate-x-full lg:translate-x-0 w-64 lg:w-[70px]'}
                 ${isImpersonating ? 'top-[calc(4rem+2.5rem)]' : 'top-16'}
             `}
             style={{
                 background: 'rgba(15, 23, 42, 0.95)',
-                backdropFilter: 'blur(20px)',
-                WebkitBackdropFilter: 'blur(20px)',
+                backdropFilter: 'blur(24px)',
+                WebkitBackdropFilter: 'blur(24px)',
                 borderRight: '1px solid rgba(255,255,255,0.08)',
-                boxShadow: '4px 0 32px rgba(0,0,0,0.4)',
+                boxShadow: '8px 0 32px rgba(0,0,0,0.4)',
             }}
         >
             <nav className="p-3 space-y-1 flex-1 flex flex-col overflow-y-auto overflow-x-hidden custom-scrollbar">

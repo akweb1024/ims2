@@ -1,6 +1,7 @@
 
 'use client';
 import { useSession } from 'next-auth/react';
+import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import AttendanceAnalysis from '@/components/dashboard/attendance/AttendanceAnalysis';
 
 export default function AttendanceDashboardPage() {
@@ -16,16 +17,20 @@ export default function AttendanceDashboardPage() {
     }
 
     return (
-        <div className="space-y-6 max-w-[1600px] mx-auto p-4 md:p-8">
-            <div className="flex flex-col gap-2">
-                <h1 className="text-3xl font-black text-secondary-900 tracking-tight">Attendance & Leave Analysis</h1>
-                <p className="text-secondary-500 font-medium">
-                    Monitor attendance trends, track leave balances, and identify workforce patterns.
-                </p>
-            </div>
+        <DashboardLayout>
+            <div className="p-4 sm:p-8 max-w-[1600px] mx-auto space-y-6 page-animate">
+                <div className="flex flex-col gap-2">
+                    <h1 className="text-2xl sm:text-3xl font-black text-secondary-900 tracking-tight">
+                        Attendance & Leave Analysis
+                    </h1>
+                    <p className="text-sm sm:text-base text-secondary-500 font-medium">
+                        Monitor attendance trends, track leave balances, and identify workforce patterns.
+                    </p>
+                </div>
 
-            {/* Analysis Dashboard */}
-            <AttendanceAnalysis userRole={user.role} />
-        </div>
+                {/* Analysis Dashboard */}
+                <AttendanceAnalysis userRole={user.role} />
+            </div>
+        </DashboardLayout>
     );
 }

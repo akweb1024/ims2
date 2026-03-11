@@ -191,44 +191,46 @@ export default function DailyTaskTracker() {
     return (
         <div className="space-y-6">
             {/* Header Stats */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <div className="card-premium p-4 border-l-4 border-indigo-500">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="card-premium p-3 sm:p-4 border-l-4 border-indigo-500">
                     <div className="flex items-center justify-between">
                         <div>
-                            <p className="text-xs font-bold text-secondary-400 uppercase">Today&apos;s Tasks</p>
-                            <p className="text-2xl font-black text-secondary-900">{completedCount}/{totalTasks}</p>
+                            <p className="text-[10px] sm:text-xs font-bold text-secondary-400 uppercase">Tasks</p>
+                            <p className="text-xl sm:text-2xl font-black text-secondary-900">{completedCount}/{totalTasks}</p>
                         </div>
-                        <Target className="text-indigo-500" size={32} />
+                        <Target className="text-indigo-500 hidden sm:block" size={24} />
                     </div>
                 </div>
 
-                <div className="card-premium p-4 border-l-4 border-purple-500">
+                <div className="card-premium p-3 sm:p-4 border-l-4 border-purple-500">
                     <div className="flex items-center justify-between">
                         <div>
-                            <p className="text-xs font-bold text-secondary-400 uppercase">Points Earned</p>
-                            <p className="text-2xl font-black text-purple-600">{todayPoints}</p>
+                            <p className="text-[10px] sm:text-xs font-bold text-secondary-400 uppercase">Points</p>
+                            <p className="text-xl sm:text-2xl font-black text-purple-600">{todayPoints}</p>
                         </div>
-                        <Award className="text-purple-500" size={32} />
+                        <Award className="text-purple-500 hidden sm:block" size={24} />
                     </div>
                 </div>
 
-                <div className="card-premium p-4 border-l-4 border-success-500">
+                <div className="card-premium p-3 sm:p-4 border-l-4 border-success-500">
                     <div className="flex items-center justify-between">
                         <div>
-                            <p className="text-xs font-bold text-secondary-400 uppercase">Completion</p>
-                            <p className="text-2xl font-black text-success-600">{completionPercentage}%</p>
+                            <p className="text-[10px] sm:text-xs font-bold text-secondary-400 uppercase">Progress</p>
+                            <p className="text-xl sm:text-2xl font-black text-success-600">{completionPercentage}%</p>
                         </div>
-                        <TrendingUp className="text-success-500" size={32} />
+                        <TrendingUp className="text-success-500 hidden sm:block" size={24} />
                     </div>
                 </div>
 
-                <div className="card-premium p-4 border-l-4 border-amber-500">
+                <div className="card-premium p-3 sm:p-4 border-l-4 border-amber-500">
                     <div className="flex items-center justify-between">
                         <div>
-                            <p className="text-xs font-bold text-secondary-400 uppercase">Date</p>
-                            <p className="text-sm font-black text-secondary-900">{new Date().toLocaleDateString()}</p>
+                            <p className="text-[10px] sm:text-xs font-bold text-secondary-400 uppercase">Today</p>
+                            <p className="text-xs sm:text-sm font-black text-secondary-900 truncate">
+                                {new Date().toLocaleDateString(undefined, { day: 'numeric', month: 'short' })}
+                            </p>
                         </div>
-                        <Calendar className="text-amber-500" size={32} />
+                        <Calendar className="text-amber-500 hidden sm:block" size={24} />
                     </div>
                 </div>
             </div>
@@ -248,11 +250,11 @@ export default function DailyTaskTracker() {
             </div>
 
             {/* Task List */}
-            <div className="card-premium p-6">
+            <div className="card-premium p-4 sm:p-6">
                 <div className="flex items-center justify-between mb-6">
-                    <h3 className="font-bold text-xl text-secondary-900 flex items-center gap-2">
-                        <Clock className="text-primary-500" size={24} />
-                        My Tasks for Today
+                    <h3 className="font-bold text-lg sm:text-xl text-secondary-900 flex items-center gap-2">
+                        <Clock className="text-primary-500" size={20} />
+                        Daily Tasks
                     </h3>
                 </div>
 
@@ -276,7 +278,7 @@ export default function DailyTaskTracker() {
                                         : 'bg-white border-secondary-200 hover:border-indigo-300 hover:shadow-sm'
                                         }`}
                                 >
-                                    <div className="flex items-start gap-4">
+                                    <div className="flex items-start gap-3 sm:gap-4">
                                         {/* Checkbox */}
                                         <button
                                             onClick={() => handleToggleTask(task)}

@@ -107,7 +107,7 @@ export default function DashboardPage() {
 
     return (
         <DashboardLayout userRole={userRole}>
-            <div className="space-y-6">
+            <div className="space-y-6 page-animate">
                 {['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'FINANCE_ADMIN'].includes(userRole) && (
                     <RevenueMismatchAlert />
                 )}
@@ -159,19 +159,19 @@ export default function DashboardPage() {
                 {/* HR Quick Stats for Staff */}
                 {data.hrStats && (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
-                        <div className="glass-card-premium p-6 hover:translate-y-[-4px] transition-all duration-300 group">
-                            <div className="flex items-center justify-between mb-4">
+                        <div className="glass-card-premium p-6 group">
+                            <div className="flex items-center justify-between mb-4 relative z-10">
                                 <div className="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center text-2xl group-hover:scale-110 transition-transform shadow-sm">🕒</div>
                                 <span className={`text-[10px] font-black uppercase px-2.5 py-1 rounded-full border ${data.hrStats.hasCheckedIn ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : 'bg-amber-50 text-amber-700 border-amber-100'}`}>
                                     {data.hrStats.hasCheckedIn ? 'Active Now' : 'Pending'}
                                 </span>
                             </div>
-                            <h3 className="text-slate-400 text-[10px] font-black uppercase tracking-widest mb-1">Attendance</h3>
-                            <div className="flex items-baseline gap-2">
+                            <h3 className="text-slate-400 text-[10px] font-black uppercase tracking-widest mb-1 relative z-10">Attendance</h3>
+                            <div className="flex items-baseline gap-2 relative z-10">
                                 <p className="text-3xl font-black text-slate-900 leading-none">{data.hrStats.totalAttendance}</p>
                                 <span className="text-xs font-bold text-slate-400 uppercase tracking-tight">Days</span>
                             </div>
-                            <div className="mt-4 pt-4 border-t border-slate-100/50 flex items-center justify-between">
+                            <div className="mt-4 pt-4 border-t border-slate-100/50 flex items-center justify-between relative z-10">
                                 <div className="h-1.5 flex-1 bg-slate-100 rounded-full overflow-hidden mr-3">
                                     <div className="h-full bg-blue-500 rounded-full" style={{ width: '85%' }}></div>
                                 </div>
@@ -179,49 +179,49 @@ export default function DashboardPage() {
                             </div>
                         </div>
 
-                        <div className="glass-card-premium p-6 hover:translate-y-[-4px] transition-all duration-300 group">
-                            <div className="flex items-center justify-between mb-4">
+                        <div className="glass-card-premium p-6 group">
+                            <div className="flex items-center justify-between mb-4 relative z-10">
                                 <div className="w-12 h-12 rounded-2xl bg-purple-50 text-purple-600 flex items-center justify-center text-2xl group-hover:scale-110 transition-transform shadow-sm">📝</div>
                                 <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest bg-slate-50 px-2 py-1 rounded-md border border-slate-100">Monthly</span>
                             </div>
-                            <h3 className="text-slate-400 text-[10px] font-black uppercase tracking-widest mb-1">Work Reports</h3>
-                            <div className="flex items-baseline gap-2">
+                            <h3 className="text-slate-400 text-[10px] font-black uppercase tracking-widest mb-1 relative z-10">Work Reports</h3>
+                            <div className="flex items-baseline gap-2 relative z-10">
                                 <p className="text-3xl font-black text-slate-900 leading-none">{data.hrStats.totalReports}</p>
                                 <span className="text-xs font-bold text-slate-400 uppercase tracking-tight">Filed</span>
                             </div>
-                            <div className="mt-4 flex -space-x-2">
+                            <div className="mt-4 flex -space-x-2 relative z-10">
                                 {[1, 2, 3, 4].map(i => (
                                     <div key={i} className="w-6 h-6 rounded-full border-2 border-white bg-slate-100 flex items-center justify-center text-[8px] font-bold text-slate-400">R{i}</div>
                                 ))}
                             </div>
                         </div>
 
-                        <div className="glass-card-premium p-6 hover:translate-y-[-4px] transition-all duration-300 group">
-                            <div className="flex items-center justify-between mb-4">
+                        <div className="glass-card-premium p-6 group">
+                            <div className="flex items-center justify-between mb-4 relative z-10">
                                 <div className="w-12 h-12 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center text-2xl group-hover:scale-110 transition-transform shadow-sm">🏝️</div>
                                 {data.hrStats.pendingLeaves > 0 && <span className="w-2.5 h-2.5 bg-amber-500 rounded-full animate-ping"></span>}
                             </div>
-                            <h3 className="text-slate-400 text-[10px] font-black uppercase tracking-widest mb-1">Leave Requests</h3>
-                            <div className="flex items-baseline gap-2">
+                            <h3 className="text-slate-400 text-[10px] font-black uppercase tracking-widest mb-1 relative z-10">Leave Requests</h3>
+                            <div className="flex items-baseline gap-2 relative z-10">
                                 <p className="text-3xl font-black text-slate-900 leading-none">{data.hrStats.pendingLeaves}</p>
                                 <span className="text-xs font-bold text-slate-400 uppercase tracking-tight">Pending</span>
                             </div>
-                            <p className="mt-4 text-[10px] font-bold text-slate-400 italic">4.5 days balance remaining</p>
+                            <p className="mt-4 text-[10px] font-bold text-slate-400 italic relative z-10">4.5 days balance remaining</p>
                         </div>
 
-                        <div className="glass-card-premium p-6 hover:translate-y-[-4px] transition-all duration-300 group">
-                            <div className="flex items-center justify-between mb-4">
+                        <div className="glass-card-premium p-6 group">
+                            <div className="flex items-center justify-between mb-4 relative z-10">
                                 <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-2xl group-hover:scale-110 transition-transform shadow-sm">🎓</div>
                                 <div className="text-[10px] font-black text-emerald-600 flex items-center gap-1">
                                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
                                     On Track
                                 </div>
                             </div>
-                            <h3 className="text-slate-400 text-[10px] font-black uppercase tracking-widest mb-1">LMS Learning</h3>
-                            <div className="flex items-baseline gap-2">
+                            <h3 className="text-slate-400 text-[10px] font-black uppercase tracking-widest mb-1 relative z-10">LMS Learning</h3>
+                            <div className="flex items-baseline gap-2 relative z-10">
                                 <p className="text-3xl font-black text-slate-900 leading-none">Level 4</p>
                             </div>
-                            <div className="mt-4 flex items-center justify-between text-[10px] font-black uppercase text-slate-400 tracking-tighter">
+                            <div className="mt-4 flex items-center justify-between text-[10px] font-black uppercase text-slate-400 tracking-tighter relative z-10">
                                 <span>Exp.</span>
                                 <div className="h-1 flex-1 mx-2 bg-slate-100 rounded-full overflow-hidden">
                                     <div className="h-full bg-emerald-500" style={{ width: '65%' }}></div>
@@ -237,7 +237,7 @@ export default function DashboardPage() {
                     {stats?.map((stat: any, idx: number) => (
                         <div
                             key={stat.name}
-                            className="glass-card-premium p-6 hover:translate-y-[-4px] transition-all duration-300 group overflow-hidden relative"
+                            className="glass-card-premium p-6 group overflow-hidden relative"
                         >
                             <div className="absolute -right-4 -top-4 w-24 h-24 bg-blue-500/5 rounded-full blur-2xl group-hover:bg-blue-500/10 transition-colors"></div>
                             <div className="flex items-center justify-between mb-4 relative z-10">

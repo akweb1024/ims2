@@ -28,6 +28,8 @@ interface Task {
     estimatedValue: number;
     itRevenueEarned: number;
     createdAt: string;
+    serviceName: string;
+    category?: string;
     assignedTo?: {
         name: string;
     };
@@ -104,58 +106,60 @@ export default function MyITServicesPage() {
 
     return (
         <DashboardLayout>
-            <div className="p-6 max-w-7xl mx-auto">
+            <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto page-animate">
                 {/* Header */}
-                <div className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div className="mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
                     <div>
-                        <div className="flex items-center gap-3 mb-1">
-                            <Zap className="h-8 w-8 text-blue-600" />
-                            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+                        <div className="flex items-center gap-3 mb-2">
+                            <div className="p-2 bg-blue-50 dark:bg-blue-900/30 rounded-xl">
+                                <Zap className="h-6 w-6 sm:h-7 sm:w-7 text-blue-600 dark:text-blue-400" />
+                            </div>
+                            <h1 className="text-2xl sm:text-3xl font-black text-gray-900 dark:text-white tracking-tight">
                                 My IT Service Requests
                             </h1>
                         </div>
-                        <p className="text-gray-600 dark:text-gray-400">
-                            Track your requests and approve completed services
+                        <p className="text-sm sm:text-base text-gray-500 dark:text-gray-400 font-medium max-w-lg">
+                            Track your requests and approve completed services in real-time.
                         </p>
                     </div>
                     <Link
-                        href="/dashboard/it-services/request"
-                        className="flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold shadow-lg hover:shadow-xl transition-all w-fit"
+                        href="/dashboard/service-desk/request"
+                        className="flex items-center justify-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold shadow-lg shadow-blue-500/20 hover:shadow-blue-500/40 hover:-translate-y-0.5 active:translate-y-0 transition-all w-full sm:w-auto"
                     >
                         <Plus className="h-5 w-5" />
-                        New Service Request
+                        New Request
                     </Link>
                 </div>
 
                 {/* Stats Summary */}
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-                    <div className="bg-white dark:bg-gray-800 p-4 rounded-xl border border-gray-100 dark:border-gray-700">
-                        <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">Total Requests</p>
-                        <p className="text-2xl font-bold text-gray-900 dark:text-white">{tasks.length}</p>
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+                    <div className="glass-card-premium p-5 rounded-2xl border border-gray-100 dark:border-gray-800">
+                        <p className="text-[10px] font-black text-gray-500 dark:text-gray-400 mb-1 uppercase tracking-[0.15em]">Total Requests</p>
+                        <p className="text-2xl font-black text-gray-900 dark:text-white">{tasks.length}</p>
                     </div>
-                    <div className="bg-white dark:bg-gray-800 p-4 rounded-xl border border-gray-100 dark:border-gray-700">
-                        <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">In Progress</p>
-                        <p className="text-2xl font-bold text-blue-600">{tasks.filter(t => t.status === 'IN_PROGRESS').length}</p>
+                    <div className="glass-card-premium p-5 rounded-2xl border border-gray-100 dark:border-gray-800">
+                        <p className="text-[10px] font-black text-gray-500 dark:text-gray-400 mb-1 uppercase tracking-[0.15em]">Status: Active</p>
+                        <p className="text-2xl font-black text-blue-600">{tasks.filter(t => ['PENDING', 'IN_PROGRESS'].includes(t.status)).length}</p>
                     </div>
-                    <div className="bg-white dark:bg-gray-800 p-4 rounded-xl border border-gray-100 dark:border-gray-700 border-amber-200 dark:border-amber-900/50">
-                        <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">Awaiting My Approval</p>
-                        <p className="text-2xl font-bold text-amber-500">{tasks.filter(t => t.status === 'UNDER_REVIEW').length}</p>
+                    <div className="glass-card-premium p-5 rounded-2xl border border-amber-200 dark:border-amber-900/30 bg-amber-50/5">
+                        <p className="text-[10px] font-black text-amber-600/70 dark:text-amber-500/70 mb-1 uppercase tracking-[0.15em]">Action Needed</p>
+                        <p className="text-2xl font-black text-amber-500">{tasks.filter(t => t.status === 'UNDER_REVIEW').length}</p>
                     </div>
-                    <div className="bg-white dark:bg-gray-800 p-4 rounded-xl border border-gray-100 dark:border-gray-700">
-                        <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">Completed</p>
-                        <p className="text-2xl font-bold text-green-600">{tasks.filter(t => t.status === 'COMPLETED').length}</p>
+                    <div className="glass-card-premium p-5 rounded-2xl border border-emerald-100 dark:border-emerald-900/30 bg-emerald-50/5">
+                        <p className="text-[10px] font-black text-emerald-600/70 dark:text-emerald-500/70 mb-1 uppercase tracking-[0.15em]">Completed</p>
+                        <p className="text-2xl font-black text-emerald-600">{tasks.filter(t => t.status === 'COMPLETED').length}</p>
                     </div>
                 </div>
 
                 {/* Filters */}
-                <div className="mb-6 flex items-center gap-2 overflow-x-auto pb-2">
+                <div className="mb-6 flex items-center gap-2 overflow-x-auto pb-4 no-scrollbar">
                     {['ALL', 'PENDING', 'REVIEW', 'COMPLETED'].map((f) => (
                         <button
                             key={f}
                             onClick={() => setFilter(f)}
-                            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap ${filter === f
-                                ? 'bg-blue-600 text-white shadow-md'
-                                : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-50 shadow-sm'
+                            className={`px-5 py-2.5 rounded-xl text-xs sm:text-sm font-black uppercase tracking-widest transition-all whitespace-nowrap border ${filter === f
+                                ? 'bg-gray-900 dark:bg-white text-white dark:text-gray-900 shadow-xl border-gray-900 dark:border-white scale-[1.02]'
+                                : 'bg-white dark:bg-gray-800 text-gray-500 border-gray-100 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
                                 }`}
                         >
                             {f === 'REVIEW' ? 'Action Needed' : f.charAt(0) + f.slice(1).toLowerCase()}
@@ -170,13 +174,13 @@ export default function MyITServicesPage() {
                         <p className="text-gray-500">Loading your requests...</p>
                     </div>
                 ) : filteredTasks.length === 0 ? (
-                    <div className="bg-white dark:bg-gray-800 rounded-2xl p-12 text-center border border-gray-100 dark:border-gray-700 shadow-sm">
-                        <LifeBuoy className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-                        <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">No Service Requests Found</h3>
-                        <p className="text-gray-500 dark:text-gray-400 mb-6">You haven&apos;t submitted any IT service requests yet.</p>
+                    <div className="glass-card-premium rounded-2xl p-6 sm:p-12 text-center border border-gray-100 dark:border-gray-700 shadow-sm">
+                        <LifeBuoy className="h-12 w-12 sm:h-16 sm:w-16 text-gray-300 mx-auto mb-4" />
+                        <h3 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white mb-2">No Service Requests Found</h3>
+                        <p className="text-sm sm:text-base text-gray-500 dark:text-gray-400 mb-6">You haven&apos;t submitted any IT service requests yet.</p>
                         <Link
-                            href="/dashboard/it-services/request"
-                            className="inline-flex items-center gap-2 px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+                            href="/dashboard/service-desk/request"
+                            className="inline-flex items-center gap-2 px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg shadow-lg hover:shadow-xl transition-all font-bold"
                         >
                             Submit Your First Request
                         </Link>
@@ -186,61 +190,59 @@ export default function MyITServicesPage() {
                         {filteredTasks.map((task) => (
                             <div
                                 key={task.id}
-                                className={`bg-white dark:bg-gray-800 rounded-xl p-5 shadow-sm border transition-all ${task.status === 'UNDER_REVIEW'
+                                className={`glass-card-premium group hover:scale-[1.01] active:scale-[0.99] transition-all duration-300 rounded-2xl p-5 sm:p-6 border ${task.status === 'UNDER_REVIEW'
                                     ? 'border-amber-400 shadow-amber-100 dark:shadow-none bg-amber-50/10'
-                                    : 'border-gray-100 dark:border-gray-700'
+                                    : 'border-gray-100 dark:border-gray-800'
                                     }`}
                             >
-                                <div className="flex flex-col md:flex-row gap-4 items-start justify-between">
+                                <div className="flex flex-col md:flex-row gap-6 items-start justify-between">
                                     <div className="flex-1 min-w-0">
-                                        <div className="flex items-center gap-2 mb-2">
-                                            <span className="text-xs font-mono text-gray-500 bg-gray-100 dark:bg-gray-700 px-2 py-0.5 rounded">
+                                        <div className="flex flex-wrap items-center gap-3 mb-3">
+                                            <span className="text-[10px] font-black font-mono text-gray-500 bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded-lg uppercase tracking-wider">
                                                 {task.taskCode}
                                             </span>
-                                            <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${getStatusStyle(task.status)}`}>
+                                            <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border shadow-sm ${getStatusStyle(task.status)}`}>
                                                 {task.status.replace('_', ' ')}
                                             </span>
                                             {task.priority === 'URGENT' && (
-                                                <span className="bg-red-100 text-red-700 dark:bg-red-900/30 text-[10px] px-2 py-0.5 rounded-full font-bold">URGENT</span>
+                                                <span className="bg-red-500 text-white text-[10px] px-2.5 py-1 rounded-full font-black uppercase tracking-widest shadow-lg shadow-red-500/20">URGENT</span>
                                             )}
                                         </div>
-                                        <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-1 truncate">
+                                        <h3 className="text-xl font-black text-gray-900 dark:text-white mb-2 truncate group-hover:text-blue-600 transition-colors">
                                             {task.title}
                                         </h3>
-                                        <p className="text-sm text-gray-500 dark:text-gray-400 line-clamp-2 mb-3">
+                                        <p className="text-sm text-gray-500 dark:text-gray-400 line-clamp-2 mb-4 font-medium leading-relaxed">
                                             {task.description}
                                         </p>
-                                        <div className="flex flex-wrap items-center gap-4 text-xs text-gray-500 dark:text-gray-400">
-                                            <div className="flex items-center gap-1">
-                                                <Clock className="h-3.5 w-3.5" />
-                                                Created: {new Date(task.createdAt).toLocaleDateString()}
+                                        <div className="flex flex-wrap items-center gap-4 text-[10px] font-black uppercase tracking-[0.1em] text-gray-400">
+                                            <div className="flex items-center gap-1.5">
+                                                <div className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+                                                {task.serviceName}
                                             </div>
-                                            <div className="flex items-center gap-1">
-                                                <CheckCircle2 className="h-3.5 w-3.5" />
-                                                Assigned: {task.assignedTo?.name || 'Waiting for IT...'}
+                                            <div className="flex items-center gap-1.5">
+                                                <Clock className="h-3 w-3" />
+                                                {new Date(task.createdAt).toLocaleDateString()}
                                             </div>
-                                            {task.status === 'COMPLETED' && (
-                                                <div className="flex items-center gap-1 text-green-600 dark:text-green-400 font-medium">
-                                                    <Zap className="h-3.5 w-3.5" />
-                                                    {task.itRevenueEarned} points credited
-                                                </div>
-                                            )}
+                                            <div className="flex items-center gap-1.5">
+                                                <CheckCircle2 className="h-3 w-3" />
+                                                {task.assignedTo?.name || 'Waiting for IT...'}
+                                            </div>
                                         </div>
                                     </div>
 
-                                    <div className="flex flex-col gap-2 w-full md:w-auto">
+                                    <div className="flex flex-col gap-3 w-full md:w-auto pt-4 md:pt-0 border-t md:border-t-0 border-gray-100 dark:border-gray-800">
                                         {task.status === 'UNDER_REVIEW' && (
                                             <button
                                                 onClick={() => handleAccept(task.id)}
-                                                className="flex items-center justify-center gap-2 px-6 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-bold shadow-lg shadow-green-200 dark:shadow-none hover:scale-105 transition-all"
+                                                className="flex items-center justify-center gap-2 px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-black uppercase tracking-widest text-xs shadow-lg shadow-emerald-500/20 hover:shadow-emerald-500/40 hover:-translate-y-0.5 active:translate-y-0 transition-all"
                                             >
-                                                <CheckCircle2 className="h-5 w-5" />
-                                                Accept & Complete
+                                                <CheckCircle2 className="h-4 w-4" />
+                                                Approve
                                             </button>
                                         )}
                                         <Link
                                             href={`/dashboard/it-management/tasks/${task.id}`}
-                                            className="flex items-center justify-center gap-2 px-6 py-2 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-all"
+                                            className="flex items-center justify-center gap-2 px-6 py-3 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 rounded-xl font-black uppercase tracking-widest text-xs hover:bg-white dark:hover:bg-gray-800 transition-all active:scale-95"
                                         >
                                             View Details
                                             <ArrowRight className="h-4 w-4" />

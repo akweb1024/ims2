@@ -303,21 +303,28 @@
   }
 
   .glass-card-premium {
-    @apply backdrop-blur-2xl rounded-2xl border transition-all duration-300;
-    background: rgba(var(--surface) / 0.8);
-    border-color: rgba(var(--border) / 0.5);
-    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.08);
+    @apply backdrop-blur-2xl rounded-2xl border transition-all duration-500 ease-out;
+    background: rgba(var(--surface) / 0.7);
+    border-color: rgba(var(--border) / 0.4);
+    box-shadow: 0 4px 24px -1px rgba(0, 0, 0, 0.05), 0 2px 12px -2px rgba(0, 0, 0, 0.02);
   }
 
   .glass-card-premium:hover {
-    @apply border-primary-500/30 -translate-y-0.5 shadow-xl;
-    background: rgba(var(--surface) / 0.9);
+    @apply border-primary-500/40 -translate-y-1 shadow-2xl;
+    background: rgba(var(--surface) / 0.85);
+    box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.1);
   }
 
   [data-theme="dark"] .glass-card-premium {
-    background: rgba(15, 23, 42, 0.7);
-    border-color: rgba(255, 255, 255, 0.08);
-    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+    background: rgba(15, 23, 42, 0.6);
+    border-color: rgba(255, 255, 255, 0.06);
+    box-shadow: 0 4px 24px -1px rgba(0, 0, 0, 0.2);
+  }
+
+  [data-theme="dark"] .glass-card-premium:hover {
+    background: rgba(15, 23, 42, 0.75);
+    border-color: rgba(255, 255, 255, 0.12);
+    box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.4);
   }
 
   /* Text Wrapping Utilities */
@@ -745,10 +752,12 @@
 
 /* ── Page Fade-in Transition ────────────────────────────────────── */
 @keyframes page-in {
-  from { opacity: 0; transform: translateY(8px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from { opacity: 0; transform: translateY(12px) scale(0.995); filter: blur(4px); }
+  to   { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
 }
-.page-animate { animation: page-in 0.35s ease-out; }
+.page-animate { 
+  animation: page-in 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
 
 /* ── Premium Table Row Hover ────────────────────────────────────── */
 .table-row-premium {

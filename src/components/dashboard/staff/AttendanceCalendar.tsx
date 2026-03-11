@@ -76,11 +76,11 @@ export default function AttendanceCalendar({ attendance, workReports, onDateClic
     };
 
     return (
-        <div className="bg-white rounded-3xl shadow-xl border border-secondary-100 overflow-hidden">
-            <div className="p-6 bg-gradient-to-r from-primary-600 to-primary-800 text-white flex items-center justify-between">
-                <div>
-                    <h3 className="text-xl font-black">{monthNames[month]} {year}</h3>
-                    <p className="text-primary-100 text-xs font-bold uppercase tracking-widest">Attendance & Reports Tracker</p>
+        <div className="bg-white rounded-2xl sm:rounded-3xl shadow-xl border border-secondary-100 overflow-hidden">
+            <div className="p-4 sm:p-6 bg-gradient-to-r from-primary-600 to-primary-800 text-white flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div className="text-center sm:text-left">
+                    <h3 className="text-lg sm:text-xl font-black">{monthNames[month]} {year}</h3>
+                    <p className="text-primary-100 text-[10px] font-bold uppercase tracking-widest">Attendance tracker</p>
                 </div>
                 <div className="flex gap-2">
                     <div className="flex gap-1 mr-2">
@@ -124,14 +124,14 @@ export default function AttendanceCalendar({ attendance, workReports, onDateClic
                 </div>
             </div>
 
-            <div className="p-6">
-                <div className="grid grid-cols-7 gap-4 mb-4">
-                    {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(d => (
-                        <div key={d} className="text-center text-[10px] font-black text-secondary-400 uppercase tracking-widest">{d}</div>
+            <div className="p-2 sm:p-6">
+                <div className="grid grid-cols-7 gap-1 sm:gap-4 mb-4">
+                    {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map(d => (
+                        <div key={d} className="text-center text-[8px] sm:text-[10px] font-black text-secondary-400 uppercase tracking-widest">{d}</div>
                     ))}
                 </div>
 
-                <div className="grid grid-cols-7 gap-4">
+                <div className="grid grid-cols-7 gap-1 sm:gap-4">
                     {calendarDays.map((date, idx) => {
                         if (!date) return <div key={`empty-${idx}`} className="aspect-square"></div>;
 
@@ -152,7 +152,7 @@ export default function AttendanceCalendar({ attendance, workReports, onDateClic
                                 `}
                             >
                                 <div className="flex justify-between items-start">
-                                    <span className={`text-sm font-black ${isToday ? 'text-primary-600' : 'text-secondary-600'}`}>
+                                    <span className={`text-[10px] sm:text-sm font-black ${isToday ? 'text-primary-600' : 'text-secondary-600'}`}>
                                         {date.getDate()}
                                     </span>
                                     {att && (

@@ -48,8 +48,8 @@ export default function AttendanceAnalysis({ userRole }: AttendanceAnalysisProps
     return (
         <div className="space-y-6">
             {/* Header & Controls */}
-            <div className="flex flex-col md:flex-row justify-between items-center bg-white p-4 rounded-2xl shadow-sm border border-secondary-100">
-                <div className="flex gap-2 p-1 bg-secondary-50 rounded-xl">
+            <div className="flex flex-col md:flex-row justify-between items-center glass-card-premium p-3 sm:p-4 rounded-2xl shadow-sm border border-secondary-100">
+                <div className="flex gap-2 p-1 bg-gray-50 dark:bg-gray-800 rounded-xl overflow-x-auto w-full md:w-auto">
                     <button
                         onClick={() => setScope('SELF')}
                         className={`px-4 py-2 rounded-lg text-sm font-bold transition-all flex items-center gap-2 ${scope === 'SELF' ? 'bg-white shadow text-primary-600' : 'text-secondary-500 hover:text-secondary-700'}`}
@@ -76,53 +76,53 @@ export default function AttendanceAnalysis({ userRole }: AttendanceAnalysisProps
             </div>
 
             {/* Overview Cards */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="bg-gradient-to-br from-indigo-50 to-indigo-100 p-6 rounded-2xl border border-indigo-200">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+                <div className="glass-card-premium bg-gradient-to-br from-indigo-50/50 to-indigo-100/50 dark:from-indigo-950/20 dark:to-indigo-900/20 p-4 sm:p-6 rounded-2xl border border-indigo-100 dark:border-indigo-900/30 shadow-sm transition-all hover:shadow-md">
                     <div className="flex justify-between items-start mb-2">
-                        <span className="text-xs font-black text-indigo-400 uppercase tracking-wider">Presence</span>
-                        <Calendar className="text-indigo-500" size={20} />
+                        <span className="text-[10px] sm:text-xs font-black text-indigo-400 uppercase tracking-wider">Presence</span>
+                        <Calendar className="text-indigo-500 h-4 w-4 sm:h-5 sm:w-5" />
                     </div>
-                    <div className="text-3xl font-black text-indigo-900">{summary.present} <span className="text-sm font-medium text-indigo-500">/ {summary.totalRecords}</span></div>
-                    <div className="text-xs font-bold text-indigo-600 mt-1">Days Present</div>
+                    <div className="text-xl sm:text-3xl font-black text-indigo-900 dark:text-indigo-100">{summary.present} <span className="text-xs sm:text-sm font-medium text-indigo-400">/ {summary.totalRecords}</span></div>
+                    <div className="text-[10px] sm:text-xs font-bold text-indigo-600 dark:text-indigo-400 mt-1 uppercase tracking-tighter">Days Present</div>
                 </div>
 
-                <div className="bg-gradient-to-br from-rose-50 to-rose-100 p-6 rounded-2xl border border-rose-200">
+                <div className="glass-card-premium bg-gradient-to-br from-rose-50/50 to-rose-100/50 dark:from-rose-950/20 dark:to-rose-900/20 p-4 sm:p-6 rounded-2xl border border-rose-100 dark:border-rose-900/30 shadow-sm transition-all hover:shadow-md">
                     <div className="flex justify-between items-start mb-2">
-                        <span className="text-xs font-black text-rose-400 uppercase tracking-wider">Issues</span>
-                        <AlertTriangle className="text-rose-500" size={20} />
+                        <span className="text-[10px] sm:text-xs font-black text-rose-400 uppercase tracking-wider">Issues</span>
+                        <AlertTriangle className="text-rose-500 h-4 w-4 sm:h-5 sm:w-5" />
                     </div>
-                    <div className="flex gap-4">
+                    <div className="flex gap-2 sm:gap-4 flex-wrap">
                         <div>
-                            <div className="text-2xl font-black text-rose-900">{summary.absent}</div>
-                            <div className="text-[10px] font-bold text-rose-600">Absent</div>
+                            <div className="text-lg sm:text-2xl font-black text-rose-900 dark:text-rose-100">{summary.absent}</div>
+                            <div className="text-[9px] sm:text-[10px] font-bold text-rose-600 dark:text-rose-400 uppercase">Absent</div>
                         </div>
                         <div>
-                            <div className="text-2xl font-black text-amber-900">{summary.late}</div>
-                            <div className="text-[10px] font-bold text-amber-600">Late</div>
+                            <div className="text-lg sm:text-2xl font-black text-amber-900 dark:text-amber-100">{summary.late}</div>
+                            <div className="text-[9px] sm:text-[10px] font-bold text-amber-600 dark:text-amber-400 uppercase">Late</div>
                         </div>
                         <div>
-                            <div className="text-2xl font-black text-orange-900">{summary.short}</div>
-                            <div className="text-[10px] font-bold text-orange-600">Short</div>
+                            <div className="text-lg sm:text-2xl font-black text-orange-900 dark:text-orange-100">{summary.short}</div>
+                            <div className="text-[9px] sm:text-[10px] font-bold text-orange-600 dark:text-orange-400 uppercase">Short</div>
                         </div>
                     </div>
                 </div>
 
-                <div className="bg-gradient-to-br from-emerald-50 to-emerald-100 p-6 rounded-2xl border border-emerald-200">
+                <div className="glass-card-premium bg-gradient-to-br from-emerald-50/50 to-emerald-100/50 dark:from-emerald-950/20 dark:to-emerald-900/20 p-4 sm:p-6 rounded-2xl border border-emerald-100 dark:border-emerald-900/30 shadow-sm transition-all hover:shadow-md">
                     <div className="flex justify-between items-start mb-2">
-                        <span className="text-xs font-black text-emerald-400 uppercase tracking-wider">Utilization</span>
-                        <Clock className="text-emerald-500" size={20} />
+                        <span className="text-[10px] sm:text-xs font-black text-emerald-400 uppercase tracking-wider">Utilization</span>
+                        <Clock className="text-emerald-500 h-4 w-4 sm:h-5 sm:w-5" />
                     </div>
-                    <div className="text-3xl font-black text-emerald-900">{(summary.present / (summary.totalRecords || 1) * 100).toFixed(0)}%</div>
-                    <div className="text-xs font-bold text-emerald-600 mt-1">Attendance Rate</div>
+                    <div className="text-xl sm:text-3xl font-black text-emerald-900 dark:text-emerald-100">{(summary.present / (summary.totalRecords || 1) * 100).toFixed(0)}%</div>
+                    <div className="text-[10px] sm:text-xs font-bold text-emerald-600 dark:text-emerald-400 mt-1 uppercase tracking-tighter">Attendance Rate</div>
                 </div>
 
-                <div className="bg-gradient-to-br from-slate-50 to-slate-100 p-6 rounded-2xl border border-slate-200">
+                <div className="glass-card-premium bg-gradient-to-br from-slate-50/50 to-slate-100/50 dark:from-slate-900/20 dark:to-slate-800/20 p-4 sm:p-6 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm transition-all hover:shadow-md">
                     <div className="flex justify-between items-start mb-2">
-                        <span className="text-xs font-black text-slate-400 uppercase tracking-wider">Avg Late</span>
-                        <Clock className="text-slate-500" size={20} />
+                        <span className="text-[10px] sm:text-xs font-black text-slate-400 uppercase tracking-wider">Avg Late</span>
+                        <Clock className="text-slate-500 h-4 w-4 sm:h-5 sm:w-5" />
                     </div>
-                    <div className="text-3xl font-black text-slate-900">{summary.avgLateMinutes} <span className="text-sm">min</span></div>
-                    <div className="text-xs font-bold text-slate-600 mt-1">Per Late Arrival</div>
+                    <div className="text-xl sm:text-3xl font-black text-slate-900 dark:text-slate-100">{summary.avgLateMinutes} <span className="text-xs sm:text-sm font-medium opacity-60">min</span></div>
+                    <div className="text-[10px] sm:text-xs font-bold text-slate-600 dark:text-slate-400 mt-1 uppercase tracking-tighter">Per Late Arrival</div>
                 </div>
             </div>
 
@@ -130,9 +130,9 @@ export default function AttendanceAnalysis({ userRole }: AttendanceAnalysisProps
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
                 {/* Trend Chart */}
-                <div className="bg-white p-6 rounded-3xl border border-secondary-100 shadow-sm">
-                    <h3 className="text-lg font-black text-secondary-800 mb-6 flex items-center gap-2">
-                        <span className="w-8 h-8 rounded-lg bg-indigo-100 flex items-center justify-center text-indigo-600"><Calendar size={18} /></span>
+                <div className="glass-card-premium px-4 py-6 sm:p-6 rounded-3xl border border-secondary-100 shadow-sm">
+                    <h3 className="text-base sm:text-lg font-black text-secondary-800 dark:text-gray-200 mb-6 flex items-center gap-2">
+                        <span className="w-8 h-8 rounded-lg bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center text-indigo-600 dark:text-indigo-400"><Calendar size={18} /></span>
                         Attendance Trends
                     </h3>
                     <div className="h-[300px] w-full">
@@ -155,10 +155,10 @@ export default function AttendanceAnalysis({ userRole }: AttendanceAnalysisProps
                 </div>
 
                 {/* Balances / Distribution Chart */}
-                <div className="bg-white p-6 rounded-3xl border border-secondary-100 shadow-sm">
-                    <h3 className="text-lg font-black text-secondary-800 mb-6 flex items-center gap-2">
-                        <span className="w-8 h-8 rounded-lg bg-teal-100 flex items-center justify-center text-teal-600"><Building size={18} /></span>
-                        {scope === 'SELF' ? 'My Leave Balance' : 'Team Leave Balances (Top 10)'}
+                <div className="glass-card-premium px-4 py-6 sm:p-6 rounded-3xl border border-secondary-100 shadow-sm">
+                    <h3 className="text-base sm:text-lg font-black text-secondary-800 dark:text-gray-200 mb-6 flex items-center gap-2">
+                        <span className="w-8 h-8 rounded-lg bg-teal-100 dark:bg-teal-900/30 flex items-center justify-center text-teal-600 dark:text-teal-400"><Building size={18} /></span>
+                        {scope === 'SELF' ? 'My Leave Balance' : 'Team Leave Balances'}
                     </h3>
                     <div className="h-[300px] w-full">
                         <ResponsiveContainer width="100%" height="100%">

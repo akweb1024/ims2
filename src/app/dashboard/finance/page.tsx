@@ -88,28 +88,28 @@ export default function FinancePage() {
             <div className="space-y-8">
                 {/* Header */}
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                    <div>
-                        <h1 className="text-3xl font-black text-secondary-900 tracking-tight">Finance Control Tower</h1>
-                        <p className="text-secondary-500 font-medium mt-1">Real-time financial overview and management</p>
+                    <div className="p-1 sm:p-0">
+                        <h1 className="text-2xl sm:text-3xl font-black text-secondary-900 dark:text-gray-100 tracking-tight">Finance Control Tower</h1>
+                        <p className="text-sm sm:text-base text-secondary-500 font-medium mt-1">Real-time financial overview and management</p>
                     </div>
-                    <div className="flex items-center gap-3">
+                    <div className="flex flex-wrap items-center gap-2 sm:gap-3 w-full md:w-auto">
                         <button
                             onClick={refreshData}
-                            className={`p-2.5 rounded-xl bg-white border border-secondary-200 text-secondary-600 hover:text-primary-600 hover:border-primary-200 transition-all shadow-sm ${isRefreshing ? 'animate-spin' : ''}`}
+                            className={`p-2.5 rounded-xl bg-white dark:bg-gray-800 border border-secondary-200 dark:border-gray-700 text-secondary-600 hover:text-primary-600 hover:border-primary-200 transition-all shadow-sm ${isRefreshing ? 'animate-spin' : ''}`}
                             title="Refresh Data"
                         >
                             <RefreshCcw className="w-5 h-5" />
                         </button>
                         <button
                             onClick={() => window.location.href = '/api/finance/export'}
-                            className="flex items-center gap-2 px-4 py-2.5 bg-white border border-secondary-200 text-secondary-700 font-bold rounded-xl hover:bg-secondary-50 transition-all shadow-sm group"
+                            className="flex-1 sm:flex-initial flex items-center justify-center gap-2 px-4 py-2.5 bg-white dark:bg-gray-800 border border-secondary-200 dark:border-gray-700 text-secondary-700 dark:text-gray-300 font-bold rounded-xl hover:bg-secondary-50 dark:hover:bg-gray-700 transition-all shadow-sm group"
                         >
                             <Download className="w-5 h-5 text-secondary-400 group-hover:text-secondary-600" />
                             <span>Export</span>
                         </button>
                         <button
                             onClick={() => { setEditingTransaction(null); setIsModalOpen(true); }}
-                            className="flex items-center gap-2 px-5 py-2.5 bg-primary-600 text-white font-bold rounded-xl hover:bg-primary-700 transition-all shadow-lg hover:shadow-primary-500/30 active:scale-95"
+                            className="flex-1 sm:flex-initial flex items-center justify-center gap-2 px-5 py-2.5 bg-primary-600 text-white font-bold rounded-xl hover:bg-primary-700 transition-all shadow-lg hover:shadow-primary-500/30 active:scale-95"
                         >
                             <Plus className="w-5 h-5" />
                             <span>New Transaction</span>
@@ -157,7 +157,7 @@ export default function FinancePage() {
                 {/* Charts Section */}
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     {/* Main Chart */}
-                    <div className="lg:col-span-2 bg-white/70 backdrop-blur-xl border border-white/60 rounded-3xl p-6 shadow-xl shadow-secondary-200/50">
+                    <div className="lg:col-span-2 glass-card-premium border border-white/60 dark:border-gray-800 rounded-3xl p-6 shadow-xl shadow-secondary-200/50">
                         <div className="flex items-center justify-between mb-6">
                             <div>
                                 <h3 className="text-lg font-bold text-secondary-900">Cash Flow Trends</h3>
@@ -178,12 +178,12 @@ export default function FinancePage() {
                     </div>
 
                     {/* Donut Chart */}
-                    <div className="bg-white/70 backdrop-blur-xl border border-white/60 rounded-3xl p-6 shadow-xl shadow-secondary-200/50">
+                    <div className="glass-card-premium border border-white/60 dark:border-gray-800 rounded-3xl p-6 shadow-xl shadow-secondary-200/50">
                         <div className="mb-6">
-                            <h3 className="text-lg font-bold text-secondary-900">Revenue Composition</h3>
+                            <h3 className="text-lg font-bold text-secondary-900 dark:text-gray-100">Revenue Composition</h3>
                             <p className="text-sm text-secondary-400 font-medium">Source Breakdown</p>
                         </div>
-                        <div className="h-[300px] w-full">
+                        <div className="h-[250px] sm:h-[300px] w-full">
                             <RevenueChart data={analytics?.charts?.revenueComposition || []} />
                         </div>
                     </div>
@@ -198,16 +198,16 @@ export default function FinancePage() {
                         { label: 'Reports', path: 'reports' }
                     ].map((item) => (
                         <Link href={`/dashboard/finance/${item.path}`} key={item.path}>
-                            <div className="bg-white border border-secondary-100 rounded-xl p-4 hover:shadow-md hover:border-primary-200 transition-all cursor-pointer group">
-                                <h4 className="font-bold text-secondary-700 group-hover:text-primary-600 transition-colors">{item.label}</h4>
-                                <p className="text-xs text-secondary-400 mt-1">View Details →</p>
+                            <div className="glass-card-premium border border-secondary-100 dark:border-gray-800 rounded-xl p-4 hover:shadow-md hover:border-primary-200 transition-all cursor-pointer group">
+                                <h4 className="font-bold text-secondary-700 dark:text-gray-300 group-hover:text-primary-600 transition-colors text-sm sm:text-base">{item.label}</h4>
+                                <p className="text-[10px] sm:text-xs text-secondary-400 mt-1">View Details →</p>
                             </div>
                         </Link>
                     ))}
                 </div>
 
                 {/* Transaction Table */}
-                <div className="bg-white/70 backdrop-blur-xl border border-white/60 rounded-3xl p-1 shadow-xl shadow-secondary-200/50 overflow-hidden">
+                <div className="glass-card-premium border border-white/60 dark:border-gray-800 rounded-3xl p-1 shadow-xl shadow-secondary-200/50 overflow-hidden">
                     <div className="p-6 pb-2">
                         <h3 className="text-lg font-bold text-secondary-900">Recent Transactions</h3>
                         <p className="text-sm text-secondary-400 font-medium">Monitor your financial activity</p>
