@@ -10,11 +10,16 @@ export const GET = authorizedRoute([], async (req: NextRequest, user) => {
     const { searchParams } = new URL(req.url);
     const departmentId = searchParams.get('departmentId');
     const designationId = searchParams.get('designationId');
+    const employeeId = searchParams.get('employeeId');
 
     const whereClause: any = {
         isActive: true,
         companyId: user.companyId,
     };
+    
+    if (employeeId) {
+        whereClause.employeeId = employeeId;
+    }
 
     // For non-admin roles, we force the filter to their own department/designation if not provided
     const isRestrictedRole = !['SUPER_ADMIN', 'ADMIN', 'HR', 'MANAGER', 'FINANCE_ADMIN'].includes(user.role);
@@ -93,6 +98,7 @@ export const POST = authorizedRoute(['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'HR'], a
         title, description, points,
         departmentId, designationId,
         departmentIds, designationIds,
+        employeeId,
         calculationType, minThreshold, maxThreshold, pointsPerUnit
     } = body;
 
@@ -103,6 +109,7 @@ export const POST = authorizedRoute(['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'HR'], a
             points: Number(points),
             departmentId: departmentId === 'ALL' ? null : departmentId,
             designationId: designationId === 'ALL' ? null : designationId,
+            employeeId: employeeId || null,
             departmentIds: (departmentIds && Array.isArray(departmentIds) && departmentIds.length > 0 ? departmentIds : null) as any,
             designationIds: (designationIds && Array.isArray(designationIds) && designationIds.length > 0 ? designationIds : null) as any,
             companyId: user.companyId,
@@ -110,7 +117,7 @@ export const POST = authorizedRoute(['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'HR'], a
             minThreshold: minThreshold ? Number(minThreshold) : null,
             maxThreshold: maxThreshold ? Number(maxThreshold) : null,
             pointsPerUnit: pointsPerUnit ? Number(pointsPerUnit) : null
-        }
+        } as any
     });
 
     return NextResponse.json(task);
@@ -122,6 +129,7 @@ export const PUT = authorizedRoute(['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'HR'], as
         id, title, description, points, isActive,
         departmentId, designationId,
         departmentIds, designationIds,
+        employeeId,
         calculationType, minThreshold, maxThreshold, pointsPerUnit
     } = body;
 
@@ -134,13 +142,14 @@ export const PUT = authorizedRoute(['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'HR'], as
             isActive,
             departmentId: departmentId === 'ALL' ? null : departmentId,
             designationId: designationId === 'ALL' ? null : designationId,
+            employeeId: employeeId || null,
             departmentIds: (departmentIds && Array.isArray(departmentIds) && departmentIds.length > 0 ? departmentIds : null) as any,
             designationIds: (designationIds && Array.isArray(designationIds) && designationIds.length > 0 ? designationIds : null) as any,
             calculationType: calculationType as any,
             minThreshold: minThreshold ? Number(minThreshold) : null,
             maxThreshold: maxThreshold ? Number(maxThreshold) : null,
             pointsPerUnit: pointsPerUnit ? Number(pointsPerUnit) : null
-        }
+        } as any
     });
 
     return NextResponse.json(task);

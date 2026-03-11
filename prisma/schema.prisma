@@ -1431,6 +1431,7 @@ model EmployeeProfile {
   taxDeclarations          TaxDeclaration[]
   workPlans                WorkPlan[]
   workReports              WorkReport[]
+  taskTemplates            EmployeeTaskTemplate[]
 }
 
 model EmployeeCompanyDesignation {
@@ -2382,14 +2383,17 @@ model EmployeeTaskTemplate {
   pointsPerUnit    Float?                @default(1)
   departmentIds    Json?
   designationIds   Json?
+  employeeId       String?
   dailyCompletions DailyTaskCompletion[]
   company          Company               @relation(fields: [companyId], references: [id])
   department       Department?           @relation(fields: [departmentId], references: [id])
   designation      Designation?          @relation(fields: [designationId], references: [id])
+  employee         EmployeeProfile?      @relation(fields: [employeeId], references: [id], onDelete: SetNull)
 
   @@index([companyId])
   @@index([departmentId])
   @@index([designationId])
+  @@index([employeeId])
 }
 
 model EmployeePointLog {
