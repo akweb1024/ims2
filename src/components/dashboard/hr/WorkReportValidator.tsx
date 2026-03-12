@@ -70,9 +70,21 @@ export default function WorkReportValidator({ reports, onApprove, onAddComment }
         setRejectedTaskIds([]);
         setManagerComment('');
 
+        // Auto-calculate attendance metric based on 8.5h workday
+        let autoAttendance = 1;
+        const hours = parseFloat(report.hoursSpent) || 0;
+        
+        if (hours >= 8.5) autoAttendance = 3;
+        else if (hours >= 8.0) autoAttendance = 2;
+        else if (hours >= 7.0) autoAttendance = 1;
+        else if (hours >= 6.0) autoAttendance = 0;
+        else if (hours >= 4.0) autoAttendance = -1;
+        else if (hours >= 2.0) autoAttendance = -2;
+        else autoAttendance = -3;
+
         // Compute initial rating from evaluation metrics (or fallback to saved evaluation)
         const defaultEval = report.evaluation || {
-            attendance: 1,
+            attendance: autoAttendance,
             discipline: 1,
             workQuality: 1,
             efficiency: 1,
