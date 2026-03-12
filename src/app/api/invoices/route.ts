@@ -141,30 +141,58 @@ export const POST = authorizedRoute(
         let proformaNumber = '';
         const year = new Date().getFullYear();
 
-        if (brandId) {
-            const updatedBrand = await prisma.brand.update({
-                where: { id: brandId },
-                data: {
-                    invoiceNextNumber: { increment: 1 },
-                    proformaNextNumber: { increment: 1 },
+        // Robust Invoice & Proforma Number Generation with Retry Logic
+        let attempts = 0;
+        const maxAttempts = 5;
+        let createdInvoice = null;
+
+        while (attempts < maxAttempts) {
+            try {
+                if (brandId) {
+                    const updatedBrand = await prisma.brand.update({
+                        where: { id: brandId },
+                        data: {
+                            invoiceNextNumber: { increment: 1 },
+                            proformaNextNumber: { increment: 1 },
+                        }
+                    });
+                    const invPrefix = updatedBrand.invoicePrefix || company.invoicePrefix || 'INV-';
+                    const proPrefix = updatedBrand.proformaPrefix || company.proformaPrefix || 'PRO-';
+                    invoiceNumber = `${invPrefix}${year}-${(updatedBrand.invoiceNextNumber! - 1).toString().padStart(5, '0')}`;
+                    proformaNumber = `${proPrefix}${year}-${(updatedBrand.proformaNextNumber! - 1).toString().padStart(5, '0')}`;
+                } else {
+                    const updatedCompany = await prisma.company.update({
+                        where: { id: company.id },
+                        data: {
+                            invoiceNextNumber: { increment: 1 },
+                            proformaNextNumber: { increment: 1 },
+                        }
+                    });
+                    const invPrefix = updatedCompany.invoicePrefix || 'INV-';
+                    const proPrefix = updatedCompany.proformaPrefix || 'PRO-';
+                    invoiceNumber = `${invPrefix}${year}-${(updatedCompany.invoiceNextNumber - 1).toString().padStart(5, '0')}`;
+                    proformaNumber = `${proPrefix}${year}-${(updatedCompany.proformaNextNumber - 1).toString().padStart(5, '0')}`;
                 }
-            });
-            const invPrefix = updatedBrand.invoicePrefix || company.invoicePrefix || 'INV-';
-            const proPrefix = updatedBrand.proformaPrefix || company.proformaPrefix || 'PRO-';
-            invoiceNumber = `${invPrefix}${year}-${(updatedBrand.invoiceNextNumber! - 1).toString().padStart(5, '0')}`;
-            proformaNumber = `${proPrefix}${year}-${(updatedBrand.proformaNextNumber! - 1).toString().padStart(5, '0')}`;
-        } else {
-            const updatedCompany = await prisma.company.update({
-                where: { id: company.id },
-                data: {
-                    invoiceNextNumber: { increment: 1 },
-                    proformaNextNumber: { increment: 1 },
+
+                // Check for existing invoice with this number (just in case of manual entry)
+                const existing = await prisma.invoice.findFirst({
+                    where: {
+                        OR: [
+                            { invoiceNumber },
+                            { proformaNumber }
+                        ]
+                    }
+                });
+
+                if (existing) {
+                    attempts++;
+                    continue;
                 }
-            });
-            const invPrefix = updatedCompany.invoicePrefix || 'INV-';
-            const proPrefix = updatedCompany.proformaPrefix || 'PRO-';
-            invoiceNumber = `${invPrefix}${year}-${(updatedCompany.invoiceNextNumber - 1).toString().padStart(5, '0')}`;
-            proformaNumber = `${proPrefix}${year}-${(updatedCompany.proformaNextNumber - 1).toString().padStart(5, '0')}`;
+                break; // Unique numbers found
+            } catch (err) {
+                attempts++;
+                if (attempts >= maxAttempts) throw err;
+            }
         }
 
         let brandSnapshot: any = {
