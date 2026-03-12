@@ -60,8 +60,13 @@ services:
       AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
       AWS_REGION: ${AWS_REGION:-us-east-1}
       
+      # Storage
+      STORAGE_ROOT_PATH: /app/uploads
+      
     ports:
       - "${APP_PORT:-3000}:3000"
+    volumes:
+      - app_uploads:/app/uploads
     networks:
       - stm-network
     healthcheck:
@@ -92,6 +97,8 @@ volumes:
   postgres_data:
     driver: local
   redis_data:
+    driver: local
+  app_uploads:
     driver: local
 
 networks:
