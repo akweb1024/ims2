@@ -15,7 +15,6 @@ import DailyTaskTracker from '@/components/dashboard/DailyTaskTracker';
 import EmployeeTransactions from '@/components/dashboard/staff/EmployeeTransactions';
 import { Lock, AlertOctagon, Calendar as CalendarIcon, Zap, ArrowLeft } from 'lucide-react';
 
-import ThanosSnapWrapper from '@/components/animations/ThanosSnapWrapper';
 
 // New Modular Components
 import StaffProfileView from '@/components/dashboard/staff-portal/StaffProfileView';
@@ -53,8 +52,6 @@ export default function StaffPortalPage() {
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState('overview');
     const [checkingIn, setCheckingIn] = useState(false);
-    const [isMaterialized, setIsMaterialized] = useState(false);
-    const [hasInitializedState, setHasInitializedState] = useState(false);
     const [workFromMode, setWorkFromMode] = useState<'OFFICE' | 'REMOTE'>('OFFICE');
     const [managerFilters, setManagerFilters] = useState({
         month: new Date().getMonth() + 1,
@@ -147,17 +144,6 @@ export default function StaffPortalPage() {
         }
     };
 
-    // Calculate initial materialized state after data load
-    useEffect(() => {
-        if (!loading && !hasInitializedState) {
-            if (todayAttendance?.checkIn && !todayAttendance?.checkOut) {
-                setIsMaterialized(true);
-            } else {
-                setIsMaterialized(false);
-            }
-            setHasInitializedState(true);
-        }
-    }, [loading, todayAttendance, hasInitializedState]);
 
     const handleMonthChange = async (year: number, month: number) => {
         const token = localStorage.getItem('token');
@@ -240,11 +226,6 @@ export default function StaffPortalPage() {
             });
             if (res.ok) {
                 await fetchAllData();
-                if (action === 'check-in') {
-                    setIsMaterialized(true);
-                } else if (action === 'check-out') {
-                    setIsMaterialized(false);
-                }
                 // Refresh profile to update button state
                 const userRes = await fetch('/api/hr/profile', {
                     headers: { 'Authorization': `Bearer ${token}` }
@@ -324,7 +305,7 @@ export default function StaffPortalPage() {
                             </div>
                         )}
 
-                        {!isMaterialized && !todayAttendance?.checkIn && (
+                        {!todayAttendance?.checkIn && (
                             <div className="flex gap-2 p-1 bg-secondary-100 rounded-xl mb-1">
                                 <button
                                     onClick={() => setWorkFromMode('OFFICE')}
@@ -341,34 +322,22 @@ export default function StaffPortalPage() {
                             </div>
                         )}
 
-                        {!isMaterialized ? (
+                        {!todayAttendance?.checkIn ? (
                             <button
-                                onClick={async () => {
-                                    if (todayAttendance?.checkOut) {
-                                        setIsMaterialized(true);
-                                    } else {
-                                        await handleAttendance('check-in');
-                                    }
-                                }}
+                                onClick={() => handleAttendance('check-in')}
                                 disabled={checkingIn}
                                 className="btn btn-primary px-8 py-3 rounded-2xl shadow-lg hover:shadow-primary-200 transition-all flex items-center gap-2 group"
                             >
-                                {checkingIn ? '...' : todayAttendance?.checkOut ? 'Rematerialize (Demo)' : `Check In (${workFromMode})`}
+                                {checkingIn ? '...' : `Check In (${workFromMode})`}
                                 <span className="group-hover:translate-x-1 transition-transform">🕒</span>
                             </button>
-                        ) : !todayAttendance?.checkOut || isMaterialized ? (
+                        ) : !todayAttendance?.checkOut ? (
                             <button
-                                onClick={async () => {
-                                    if (!todayAttendance?.checkOut) {
-                                        await handleAttendance('check-out');
-                                    } else {
-                                        setIsMaterialized(false);
-                                    }
-                                }}
+                                onClick={() => handleAttendance('check-out')}
                                 disabled={checkingIn}
-                                className="btn bg-secondary-900 text-white hover:bg-black px-8 py-3 rounded-2xl shadow-xl shadow-secondary-200 opacity-100 transition-all flex items-center gap-2 hover:scale-105 animate-pulse"
+                                className="btn bg-secondary-900 text-white hover:bg-black px-8 py-3 rounded-2xl shadow-xl shadow-secondary-200 opacity-100 transition-all flex items-center gap-2 hover:scale-105"
                             >
-                                {checkingIn ? '...' : todayAttendance?.checkOut ? 'Dematerialize (Demo)' : 'Check Out'} 🚪
+                                {checkingIn ? '...' : 'Check Out'} 🚪
                             </button>
                         ) : (
                             <div className="bg-success-50 text-success-700 px-6 py-3 rounded-2xl border border-success-200 font-bold flex items-center gap-2">
@@ -378,7 +347,6 @@ export default function StaffPortalPage() {
                     </div>
                 </div>
 
-                <ThanosSnapWrapper isSnapped={!isMaterialized} snapDuration={2.5}>
                 {/* Tabs - Scrollable on mobile, wraps on desktop */}
                 <div className="flex overflow-x-auto no-scrollbar lg:flex-wrap gap-2 mb-8 bg-white p-2 rounded-xl shadow-sm border border-secondary-100 whitespace-nowrap">
                     {tabs.map((tab) => {
@@ -762,7 +730,6 @@ export default function StaffPortalPage() {
                         </div>
                     )}
                 </div>
-            </ThanosSnapWrapper>
         </div>
     </DashboardLayout>
     );
