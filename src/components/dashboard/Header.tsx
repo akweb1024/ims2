@@ -78,8 +78,8 @@ export default function Header({
                         {/* Logo */}
                         <Link href="/dashboard" className="flex items-center gap-2 sm:gap-3 group">
                             <div
-                                className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/20 transition-all duration-300 group-hover:shadow-blue-500/40 group-hover:scale-110 rotate-0 group-hover:rotate-6 flex-shrink-0"
-                                style={{ background: 'linear-gradient(135deg, #2563eb 0%, #1e293b 100%)' }}
+                                className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/10 transition-all duration-300 group-hover:shadow-blue-500/20 group-hover:scale-110 flex-shrink-0 border border-slate-700/50"
+                                style={{ background: '#0f172a' }}
                             >
                                 <span className="text-white font-black text-base sm:text-lg leading-none italic">S</span>
                             </div>
@@ -91,31 +91,55 @@ export default function Header({
                             </div>
                         </Link>
 
-                        {/* Module Switcher - Scrollable on tablet/mobile if needed */}
-                        <div className="hidden sm:flex items-center ml-2 sm:ml-4 lg:ml-8 p-1 bg-slate-100/50 rounded-xl border border-slate-200/40 overflow-x-auto no-scrollbar max-w-[200px] md:max-w-md">
-                            {navigationModules.map((mod) => (
-                                <button
-                                    key={mod.id}
-                                    onClick={() => {
-                                        setActiveModule(mod.id);
-                                        const firstLink = mod.categories[0]?.items[0]?.href;
-                                        if (firstLink) router.push(firstLink);
-                                    }}
-                                    className={`
-                                        relative px-2 sm:px-4 py-1.5 sm:py-2 rounded-lg text-[10px] sm:text-xs font-bold tracking-wide
-                                        transition-all duration-300 flex items-center gap-1 sm:gap-2 whitespace-nowrap
-                                        ${activeModule === mod.id
-                                            ? 'text-blue-600 bg-white shadow-sm ring-1 ring-slate-200/50'
-                                            : 'text-slate-400 hover:text-slate-600 hover:bg-white/50'
-                                        }
-                                    `}
-                                >
-                                    <span className={`text-sm sm:text-base ${activeModule === mod.id ? 'scale-110 drop-shadow-sm' : 'grayscale opacity-70 group-hover:grayscale-0'}`}>
-                                        {mod.icon}
-                                    </span>
-                                    <span className="hidden md:block">{mod.name.split(' ')[0]}</span>
-                                </button>
-                            ))}
+                        {/* Module Switcher - Premium Dropdown */}
+                        <div className="relative group/module-switcher hidden sm:block ml-2 sm:ml-4 lg:ml-8">
+                            <button className="flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-50/50 hover:bg-slate-100 transition-all duration-300 border border-slate-200/50 hover:border-slate-300/50 hover:shadow-sm">
+                                <span className="text-xl drop-shadow-sm">
+                                    {navigationModules.find(m => m.id === activeModule)?.icon || '🏠'}
+                                </span>
+                                <span className="text-sm font-semibold text-slate-700">
+                                    {navigationModules.find(m => m.id === activeModule)?.name || 'Select Module'}
+                                </span>
+                                <svg className="w-4 h-4 text-slate-400 group-hover/module-switcher:rotate-180 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                </svg>
+                            </button>
+
+                            {/* Dropdown Menu */}
+                            <div className="absolute top-full left-0 pt-2 w-64 z-50 opacity-0 invisible group-hover/module-switcher:opacity-100 group-hover/module-switcher:visible transition-all duration-200 translate-y-2 group-hover/module-switcher:translate-y-0">
+                                <div className="p-2 rounded-2xl bg-white/95 backdrop-blur-xl border border-slate-200 shadow-premium-lg grid gap-1">
+                                    {navigationModules.map((mod) => (
+                                        <button
+                                            key={mod.id}
+                                            onClick={() => {
+                                                setActiveModule(mod.id);
+                                                const firstLink = mod.categories[0]?.items[0]?.href;
+                                                if (firstLink) router.push(firstLink);
+                                                // Optional: close dropdown logic if needed, hover handles it mostly
+                                            }}
+                                            className={`
+                                                flex items-center gap-3 px-3 py-2.5 rounded-xl text-left transition-all duration-200
+                                                ${activeModule === mod.id 
+                                                    ? 'bg-blue-50 text-blue-700 shadow-sm' 
+                                                    : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                                                }
+                                            `}
+                                        >
+                                            <span className={`text-xl transition-transform duration-200 ${activeModule === mod.id ? 'scale-110 drop-shadow-sm' : 'grayscale group-hover/module-switcher:grayscale-0'}`}>
+                                                {mod.icon}
+                                            </span>
+                                            <span className="font-semibold text-sm">
+                                                {mod.name}
+                                            </span>
+                                            {activeModule === mod.id && (
+                                                <svg className="w-4 h-4 ml-auto text-blue-500 animate-fade-in" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                                                </svg>
+                                            )}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
                         </div>
                     </div>
 
@@ -231,9 +255,8 @@ export default function Header({
                             {/* Dropdown Menu */}
                             <div className="hidden group-hover:block absolute right-0 top-full pt-2 w-[260px] z-50 animate-in fade-in slide-in-from-top-2 duration-200">
                                 <div
+                                    className="bg-white/95 backdrop-blur-xl border border-slate-200"
                                     style={{
-                                        background: 'rgba(255,255,255,0.98)',
-                                        backdropFilter: 'blur(16px)',
                                         boxShadow: '0 20px 60px rgba(0,0,0,0.12), 0 0 0 1px rgba(0,0,0,0.06)',
                                         borderRadius: '16px',
                                         overflow: 'hidden'
@@ -241,13 +264,12 @@ export default function Header({
                                 >
                                     {/* User Info Header */}
                                     <div
-                                        className="px-4 py-4 border-b border-slate-100"
-                                        style={{ background: 'linear-gradient(135deg, #eff6ff 0%, #f8faff 100%)' }}
+                                        className="px-4 py-4 border-b border-slate-100 bg-slate-50/50"
                                     >
                                         <div className="flex items-center gap-3">
                                             <div
-                                                className="w-10 h-10 rounded-full flex items-center justify-center font-bold text-base text-white shadow-lg flex-shrink-0"
-                                                style={{ background: 'linear-gradient(135deg, #2563eb 0%, #7c3aed 100%)' }}
+                                                className="w-10 h-10 rounded-full flex items-center justify-center font-bold text-base text-white shadow-sm flex-shrink-0"
+                                                style={{ background: '#0f172a' }}
                                             >
                                                 {displayRole.charAt(0).toUpperCase()}
                                             </div>
@@ -331,11 +353,10 @@ export default function Header({
                                     <div className="border-t border-slate-100 p-2">
                                         <button
                                             onClick={handleLogout}
-                                            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-semibold text-white rounded-xl transition-all shadow-sm hover:shadow-md"
-                                            style={{ background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)' }}
+                                            className="w-full flex items-center justify-center gap-2 px-4 py-2 text-sm font-semibold text-rose-600 bg-rose-50 hover:bg-rose-100 rounded-xl transition-all"
                                         >
                                             <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
                                             </svg>
                                             Logout
                                         </button>
