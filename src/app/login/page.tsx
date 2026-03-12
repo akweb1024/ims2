@@ -4,8 +4,9 @@ import { useState, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { signIn } from 'next-auth/react';
+import ThanosSnapWrapper from '@/components/animations/ThanosSnapWrapper';
 
-function LoginForm() {
+function LoginForm({ onLoginSuccess }: { onLoginSuccess: (destination: string) => void }) {
     const router = useRouter();
     const searchParams = useSearchParams();
     const [loading, setLoading] = useState(false);
@@ -96,10 +97,10 @@ function LoginForm() {
                 } else {
                     localStorage.setItem('user', JSON.stringify(user));
                     localStorage.setItem('availableCompanies', JSON.stringify(availableCompanies));
-                    window.location.href = finalDestination;
+                    onLoginSuccess(finalDestination);
                 }
             } else {
-                window.location.href = redirectUrl;
+                onLoginSuccess(redirectUrl);
             }
         } catch (err) {
             setError('An error occurred. Please try again.');
@@ -253,16 +254,28 @@ function LoginForm() {
 }
 
 export default function LoginPage() {
+    const [isSnapped, setIsSnapped] = useState(false);
+
+    const handleLoginSuccess = (destination: string) => {
+        setIsSnapped(true);
+        // Wait for animation to complete before redirecting
+        setTimeout(() => {
+            window.location.href = destination;
+        }, 2500);
+    };
+
     return (
         <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
-            <div className="max-w-md w-full bg-white rounded-2xl shadow-xl overflow-hidden">
-                <Suspense fallback={<div className="p-8 text-center">Loading...</div>}>
-                    <LoginForm />
-                </Suspense>
-                <div className="bg-slate-50 p-4 text-center text-xs text-slate-500 border-t border-slate-100">
-                    &copy; {new Date().getFullYear()} STM Management. All rights reserved.
+            <ThanosSnapWrapper isSnapped={isSnapped}>
+                <div className="max-w-md w-full bg-white rounded-2xl shadow-xl overflow-hidden">
+                    <Suspense fallback={<div className="p-8 text-center">Loading...</div>}>
+                        <LoginForm onLoginSuccess={handleLoginSuccess} />
+                    </Suspense>
+                    <div className="bg-slate-50 p-4 text-center text-xs text-slate-500 border-t border-slate-100">
+                        &copy; {new Date().getFullYear()} STM Management. All rights reserved.
+                    </div>
                 </div>
-            </div>
+            </ThanosSnapWrapper>
         </div>
     );
 }

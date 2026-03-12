@@ -144,7 +144,6 @@ export const POST = authorizedRoute(
         // Robust Invoice & Proforma Number Generation with Retry Logic
         let attempts = 0;
         const maxAttempts = 5;
-        let createdInvoice = null;
 
         while (attempts < maxAttempts) {
             try {

@@ -91,17 +91,34 @@ export async function POST() {
                     key_secret: account.key_secret
                 });
 
-                const payments = await rpInstance.payments.all({
-                    from,
-                    count: 100
-                });
+                let hasMore = true;
+                let skip = 0;
+                const count = 100;
 
-                if (payments && payments.items) {
-                    for (const rpPayment of payments.items) {
-                        const existing = await prisma.payment.findUnique({
-                            where: { razorpayPaymentId: rpPayment.id },
-                        });
-                        if (existing) continue;
+                while (hasMore) {
+                    const payments = await rpInstance.payments.all({
+                        from,
+                        count,
+                        skip
+                    });
+
+                    if (!payments || !payments.items || payments.items.length === 0) {
+                        hasMore = false;
+                        break;
+                    }
+
+                    const batch = payments.items;
+                    const batchIds = batch.map((p: any) => p.id);
+
+                    // Bulk check existing payments
+                    const existingPayments = await prisma.payment.findMany({
+                        where: { razorpayPaymentId: { in: batchIds } },
+                        select: { razorpayPaymentId: true }
+                    });
+                    const existingIdSet = new Set(existingPayments.map(p => p.razorpayPaymentId));
+
+                    for (const rpPayment of batch) {
+                        if (existingIdSet.has(rpPayment.id)) continue;
 
                         let companyId = account.companyId; // Default to config owner
 
@@ -137,6 +154,7 @@ export async function POST() {
                                 status: rpPayment.status,
                                 notes: rpPayment.notes ? JSON.stringify(rpPayment.notes) : null,
                                 companyId: companyId || null,
+                                metadata: JSON.stringify(rpPayment)
                             },
                         });
                         totalSynced++;
@@ -149,6 +167,13 @@ export async function POST() {
                                 logger.error(`Failed to post journal for payment`, finErr, { paymentId: savedPayment.id });
                             }
                         }
+                    }
+
+                    if (batch.length < count) {
+                        hasMore = false;
+                    } else {
+                        skip += count;
+                        if (skip > 5000) break; // Safety
                     }
                 }
 

@@ -158,25 +158,11 @@ export async function GET(req: NextRequest) {
         const monthlyAgg = Array.isArray(monthlyAggRaw) ? monthlyAggRaw : [];
         const yearlyAgg = Array.isArray(yearlyAggRaw) ? yearlyAggRaw : [];
 
-        // Month-on-Month Comparison
+        // Month-on-Month Comparison Date Ranges
         const now = new Date();
         const startOfCurrentMonth = new Date(now.getFullYear(), now.getMonth(), 1);
         const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
         const endOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0);
-
-        const [currentMonthStats, lastMonthStats] = await Promise.all([
-            prisma.payment.aggregate({
-                where: { ...where, status: 'captured', paymentDate: { gte: startOfCurrentMonth } },
-                _sum: { amount: true }
-            }),
-            prisma.payment.aggregate({
-                where: { ...where, status: 'captured', paymentDate: { gte: startOfLastMonth, lte: endOfLastMonth } },
-                _sum: { amount: true }
-            })
-        ]);
-
-        const currentMonthRevenue = (currentMonthStats._sum.amount || 0); // Already in units
-        const lastMonthRevenue = (lastMonthStats._sum.amount || 0); // Already in units
 
         // Currency handling logic
         const exchangeRates: Record<string, number> = {
@@ -184,25 +170,54 @@ export async function GET(req: NextRequest) {
             'AUD': 55.4, 'CAD': 61.2, 'JPY': 0.56, 'CNY': 11.5
         };
 
-        let totalRevenueINR = 0;
-        const currencyMap = new Map<string, { amount: number, count: number }>();
 
-        // We fetch captured payments for global stats
-        const allCapturedPayments = await prisma.payment.findMany({
-            where: { ...where, status: 'captured' },
-            select: { amount: true, currency: true }
+
+        // We fetch non-failed payments for global stats and currency conversion
+        const allNonFailedPayments = await prisma.payment.findMany({
+            where: { ...where, status: { not: 'failed' } },
+            select: { amount: true, currency: true, metadata: true, paymentDate: true }
         });
 
-        allCapturedPayments.forEach(p => {
+        const currencyMap = new Map<string, { amount: number, count: number }>();
+        let totalRevenueINR = 0;
+        let currentMonthRevenue = 0;
+        let lastMonthRevenue = 0;
+
+        allNonFailedPayments.forEach(p => {
             const curr = (p.currency || 'INR').toUpperCase();
-            const rate = exchangeRates[curr] || 1;
-            totalRevenueINR += p.amount * rate;
+            
+            let metadata: any = {};
+            try {
+                metadata = p.metadata && typeof p.metadata === 'string' ? JSON.parse(p.metadata) : {};
+            } catch (e) {}
+
+            let inrAmount = 0;
+            if (curr === 'INR') {
+                inrAmount = Number(p.amount);
+            } else if (metadata?.base_amount) {
+                // If it's another currency, Razorpay often provides base_amount in INR paise
+                inrAmount = Number(metadata.base_amount) / 100;
+            } else {
+                // Fallback to static exchange rates
+                const rate = exchangeRates[curr] || 1;
+                inrAmount = Number(p.amount) * rate;
+            }
+
+            totalRevenueINR += inrAmount;
 
             const existing = currencyMap.get(curr) || { amount: 0, count: 0 };
             currencyMap.set(curr, {
-                amount: existing.amount + p.amount,
+                amount: existing.amount + Number(p.amount),
                 count: existing.count + 1
             });
+
+            // Calculate current and last month revenue
+            const pDate = new Date(p.paymentDate);
+            if (pDate >= startOfCurrentMonth) {
+                currentMonthRevenue += inrAmount;
+            } else if (pDate >= startOfLastMonth && pDate <= endOfLastMonth) {
+                lastMonthRevenue += inrAmount;
+            }
         });
 
         const momGrowth = lastMonthRevenue === 0 ? 100 : ((currentMonthRevenue - lastMonthRevenue) / lastMonthRevenue) * 100;

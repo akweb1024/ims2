@@ -25,8 +25,6 @@ export default function RazorpayTrackerPage() {
     const [summarySearch, setSummarySearch] = useState<string>('');
     const [nextSyncIn, setNextSyncIn] = useState<number>(AUTO_SYNC_INTERVAL_MS);
     const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
-    const autoSyncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-    const countdownTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
     const fetchData = useCallback(async () => {
         setLoading(true);
@@ -71,39 +69,37 @@ export default function RazorpayTrackerPage() {
         }
     }, [fetchData, showToast]);
 
-    const startAutoSyncCycle = useCallback(() => {
-        // Clear any existing timers
-        if (autoSyncTimerRef.current) clearTimeout(autoSyncTimerRef.current);
-        if (countdownTimerRef.current) clearInterval(countdownTimerRef.current);
+    const runAutoSyncRef = useRef(runAutoSync);
 
-        setNextSyncIn(AUTO_SYNC_INTERVAL_MS);
-
-        // Countdown every second
-        countdownTimerRef.current = setInterval(() => {
-            setNextSyncIn(prev => {
-                if (prev <= 1000) return AUTO_SYNC_INTERVAL_MS;
-                return prev - 1000;
-            });
-        }, 1000);
-
-        // Auto-sync after 1 hour
-        autoSyncTimerRef.current = setTimeout(() => {
-            runAutoSync();
-            startAutoSyncCycle(); // restart cycle
-        }, AUTO_SYNC_INTERVAL_MS);
+    useEffect(() => {
+        runAutoSyncRef.current = runAutoSync;
     }, [runAutoSync]);
 
     useEffect(() => {
         const user = localStorage.getItem('user');
         if (user) setUserRole(JSON.parse(user).role);
-        fetchData();
-        startAutoSyncCycle();
+        
+        setNextSyncIn(AUTO_SYNC_INTERVAL_MS);
+
+        const intervalId = setInterval(() => {
+            if (runAutoSyncRef.current) {
+                runAutoSyncRef.current();
+            }
+        }, AUTO_SYNC_INTERVAL_MS);
+
+        const countId = setInterval(() => {
+            setNextSyncIn(prev => prev <= 1000 ? AUTO_SYNC_INTERVAL_MS : prev - 1000);
+        }, 1000);
 
         return () => {
-            if (autoSyncTimerRef.current) clearTimeout(autoSyncTimerRef.current);
-            if (countdownTimerRef.current) clearInterval(countdownTimerRef.current);
+            clearInterval(intervalId);
+            clearInterval(countId);
         };
-    }, [fetchData, startAutoSyncCycle]);
+    }, []); // Empty deps so it never resets on filter changes
+
+    useEffect(() => {
+        fetchData();
+    }, [fetchData]);
 
     const handleManualSync = async () => {
         setIsSyncing(true);
@@ -116,7 +112,7 @@ export default function RazorpayTrackerPage() {
             if (res.ok) {
                 showToast(`Sync complete. ${result.syncedCount} new transactions found.`, 'success');
                 fetchData();
-                startAutoSyncCycle(); // reset the auto-sync timer after manual sync
+                setNextSyncIn(AUTO_SYNC_INTERVAL_MS); // reset the countdown visually
             } else {
                 showToast(`Sync failed: ${result.error || 'Unknown error'}`, 'error');
             }
