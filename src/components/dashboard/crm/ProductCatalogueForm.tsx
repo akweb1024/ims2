@@ -16,6 +16,7 @@ import {
   AlertCircle,
   CheckCircle2,
   Globe,
+  Sparkles,
 } from "lucide-react";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
@@ -25,6 +26,7 @@ export interface VariantRow {
   priceINR: number | "";
   priceUSD: number | "";
   year: number | "";
+  duration?: string;
 }
 
 export interface ProductCatalogueFormData {
@@ -66,6 +68,7 @@ export const DEFAULT_FORM_DATA: ProductCatalogueFormData = {
       priceINR: "",
       priceUSD: "",
       year: new Date().getFullYear(),
+      duration: "",
     },
   ],
   domain: "",
@@ -304,6 +307,18 @@ const VariantRowComp = ({
           ))}
         </select>
       </div>
+
+      {/* Duration */}
+      <div className="col-span-12 sm:col-span-12 space-y-1.5">
+        <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+          Duration / Notes (Optional)
+        </label>
+        <TextInput
+          value={row.duration || ""}
+          onChange={(v) => onChange(row.id, "duration", v)}
+          placeholder="e.g. 1 Year, Lifetime, Per Article"
+        />
+      </div>
     </div>
 
     {/* Remove button */}
@@ -336,6 +351,74 @@ export default function ProductCatalogueForm({
 }: ProductCatalogueFormProps) {
   const [domainSearch, setDomainSearch] = useState("");
   const [domainOpen, setDomainOpen] = useState(false);
+  const [templates, setTemplates] = useState<any[]>([]);
+  const [loadingTemplates, setLoadingTemplates] = useState(false);
+
+  const fetchTemplates = useCallback(async () => {
+    if (!value.category) return;
+    setLoadingTemplates(true);
+    try {
+      const res = await fetch(`/api/invoice-products/templates?category=${value.category}`, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        }
+      });
+      if (res.ok) setTemplates(await res.json());
+    } catch (e) {
+      console.error("Failed to fetch templates", e);
+    } finally {
+      setLoadingTemplates(false);
+    }
+  }, [value.category]);
+
+  const applyTemplate = (template: any) => {
+    if (!template.variants || template.variants.length === 0) return;
+    const newVariants = template.variants.map((v: any) => ({
+      id: crypto.randomUUID(),
+      name: v.name,
+      priceINR: v.priceINR,
+      priceUSD: v.priceUSD,
+      year: v.year || new Date().getFullYear(),
+      duration: v.duration || "",
+    }));
+    setField("variants", newVariants);
+  };
+
+  const handleSaveAsTemplate = async () => {
+    const templateName = prompt("Enter a name for this template:");
+    if (!templateName) return;
+
+    try {
+      const res = await fetch("/api/invoice-products/templates", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+        body: JSON.stringify({
+          name: templateName,
+          category: value.category,
+          variants: value.variants.map(v => ({
+            name: v.name,
+            priceINR: Number(v.priceINR) || 0,
+            priceUSD: Number(v.priceUSD) || 0,
+            year: Number(v.year) || null,
+            duration: v.duration || null,
+          }))
+        }),
+      });
+
+      if (res.ok) {
+        alert("Template saved successfully!");
+        fetchTemplates();
+      } else {
+        alert("Failed to save template.");
+      }
+    } catch (e) {
+      console.error(e);
+      alert("Error saving template.");
+    }
+  };
 
   const setField = useCallback(
     (field: keyof ProductCatalogueFormData, v: any) => {
@@ -361,6 +444,7 @@ export default function ProductCatalogueForm({
         priceINR: "",
         priceUSD: "",
         year: new Date().getFullYear(),
+        duration: "",
       },
     ]);
   };
@@ -583,6 +667,58 @@ export default function ProductCatalogueForm({
         {/* VARIABLE pricing */}
         {value.pricingMode === "VARIABLE" && (
           <div className="space-y-3 animate-in fade-in slide-in-from-top-2 duration-200">
+            {/* Template Selector */}
+            <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 mb-4">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <Sparkles size={14} className="text-indigo-500" />
+                  <span className="text-[10px] font-black uppercase tracking-wider text-slate-500">
+                    Pricing Templates
+                  </span>
+                </div>
+                {!value.category && (
+                  <span className="text-[9px] text-slate-400 font-bold uppercase">
+                    Select a category first
+                  </span>
+                )}
+              </div>
+
+              <div className="flex flex-wrap items-center gap-3">
+                <div className="relative flex-1 min-w-[200px]">
+                  <select
+                    disabled={!value.category || loadingTemplates}
+                    onChange={(e) => {
+                      const t = templates.find((t) => t.id === e.target.value);
+                      if (t) applyTemplate(t);
+                    }}
+                    onFocus={fetchTemplates}
+                    className="w-full h-11 rounded-xl border border-slate-200 bg-white pl-3.5 pr-9 text-sm font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 transition-all appearance-none cursor-pointer disabled:bg-slate-50 disabled:cursor-not-allowed"
+                  >
+                    <option value="">— Load from Template —</option>
+                    {templates.map((t) => (
+                      <option key={t.id} value={t.id}>
+                        {t.name} ({t.variants.length} rows)
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDown
+                    size={14}
+                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"
+                  />
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleSaveAsTemplate}
+                  disabled={!value.category || value.variants.filter(v => v.name).length === 0}
+                  className="px-5 h-11 rounded-xl bg-white border border-indigo-200 text-indigo-600 text-xs font-bold hover:bg-indigo-50 transition-all flex items-center gap-2 whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed shadow-sm shadow-indigo-50"
+                >
+                  <Plus size={14} />
+                  Save as Template
+                </button>
+              </div>
+            </div>
+
             {/* Column header hint */}
             <div className="hidden sm:grid grid-cols-12 gap-3 px-14 text-[9px] font-bold uppercase tracking-widest text-slate-300">
               <div className="col-span-4">Variant Name</div>

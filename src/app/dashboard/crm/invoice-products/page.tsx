@@ -447,7 +447,7 @@ export default function InvoiceProductsPage() {
                 priceINR: Number(v.priceINR) || 0,
                 priceUSD: Number(v.priceUSD) || 0,
                 isActive: true,
-                attributes: { year: v.year },
+                attributes: { year: v.year, duration: v.duration },
               })),
           }
         : {}),

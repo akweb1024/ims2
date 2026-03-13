@@ -747,6 +747,32 @@ model VariantAttributeMapping {
   @@index([attributeValueId])
 }
 
+model ProductPricingTemplate {
+  id        String                   @id @default(uuid())
+  name      String
+  category  InvoiceProductCategory
+  variants  PricingTemplateVariant[]
+  createdAt DateTime                 @default(now())
+  updatedAt DateTime                 @updatedAt
+
+  @@index([category])
+}
+
+model PricingTemplateVariant {
+  id         String                  @id @default(uuid())
+  templateId String
+  template   ProductPricingTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  name       String
+  priceINR   Float                   @default(0)
+  priceUSD   Float                   @default(0)
+  year       Int?
+  duration   String?
+  createdAt  DateTime                @default(now())
+  updatedAt  DateTime                @updatedAt
+
+  @@index([templateId])
+}
+
 model ProformaInvoice {
   id                 String               @id @default(uuid())
   proformaNumber     String               @unique
