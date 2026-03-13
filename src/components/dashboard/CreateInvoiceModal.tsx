@@ -133,7 +133,7 @@ export default function CreateInvoiceModal({
     
     setIsFetchingPincode(true);
     try {
-      const response = await fetch(`https://api.postalpincode.in/pincode/${pincode}`);
+      const response = await fetch(`/api/pincode?pincode=${pincode}`);
       const data = await response.json();
       
       if (data && data[0] && data[0].Status === 'Success') {
