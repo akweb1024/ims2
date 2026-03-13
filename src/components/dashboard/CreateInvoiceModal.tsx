@@ -114,6 +114,7 @@ export default function CreateInvoiceModal({
   });
   const [isShippingSame, setIsShippingSame] = useState(true);
   const [creatingCustomerLoading, setCreatingCustomerLoading] = useState(false);
+  const [isFetchingPincode, setIsFetchingPincode] = useState(false);
   const [institutions, setInstitutions] = useState<any[]>([]);
 
   const handleTaxTypeChange = (type: "DOMESTIC" | "INTERNATIONAL") => {
@@ -124,6 +125,46 @@ export default function CreateInvoiceModal({
     } else {
       setCurrency("INR");
       setTaxRate(18);
+    }
+  };
+
+  const handlePincodeLookup = async (pincode: string, target: 'billing' | 'shipping') => {
+    if (pincode.length !== 6) return;
+    
+    setIsFetchingPincode(true);
+    try {
+      const response = await fetch(`https://api.postalpincode.in/pincode/${pincode}`);
+      const data = await response.json();
+      
+      if (data && data[0] && data[0].Status === 'Success') {
+        const detail = data[0].PostOffice[0];
+        const city = detail.District;
+        const state = detail.State;
+        
+        setNewCustomerForm((prev) => {
+          const upd = { ...prev };
+          if (target === 'billing') {
+            upd.billingCity = city;
+            upd.billingState = state;
+            upd.billingCountry = 'India';
+            if (isShippingSame) {
+              upd.shippingCity = city;
+              upd.shippingState = state;
+              upd.shippingCountry = 'India';
+              upd.shippingPincode = pincode;
+            }
+          } else {
+            upd.shippingCity = city;
+            upd.shippingState = state;
+            upd.shippingCountry = 'India';
+          }
+          return upd;
+        });
+      }
+    } catch (err) {
+      console.error('Pincode lookup failed:', err);
+    } finally {
+      setIsFetchingPincode(false);
     }
   };
 
@@ -1132,14 +1173,18 @@ export default function CreateInvoiceModal({
                           className="input-premium w-full bg-white"
                           value={newCustomerForm.billingPincode}
                           onChange={(e) => {
-                            const val = e.target.value;
+                            const val = e.target.value.replace(/\D/g, '').slice(0, 6);
                             setNewCustomerForm((prev) => {
                               const upd = { ...prev, billingPincode: val };
                               if (isShippingSame) upd.shippingPincode = val;
                               return upd;
                             });
+                            if (val.length === 6) {
+                              handlePincodeLookup(val, 'billing');
+                            }
                           }}
                         />
+                        {isFetchingPincode && <span className="text-[10px] text-blue-500 animate-pulse mt-1 block">Fetching details...</span>}
                       </div>
                       <div>
                         <label className="label">Nation</label>
@@ -1251,13 +1296,18 @@ export default function CreateInvoiceModal({
                             <input
                               className="input-premium w-full bg-white"
                               value={newCustomerForm.shippingPincode}
-                              onChange={(e) =>
+                              onChange={(e) => {
+                                const val = e.target.value.replace(/\D/g, '').slice(0, 6);
                                 setNewCustomerForm({
                                   ...newCustomerForm,
-                                  shippingPincode: e.target.value,
-                                })
-                              }
+                                  shippingPincode: val,
+                                });
+                                if (val.length === 6) {
+                                  handlePincodeLookup(val, 'shipping');
+                                }
+                              }}
                             />
+                            {isFetchingPincode && <span className="text-[10px] text-blue-500 animate-pulse mt-1 block">Fetching details...</span>}
                           </div>
                           <div>
                             <label className="label">Nation</label>
