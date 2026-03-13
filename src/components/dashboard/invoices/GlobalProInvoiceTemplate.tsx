@@ -203,22 +203,24 @@ export default function GlobalProInvoiceTemplate({
           >
             {invoiceTitle}
           </div>
-          <div
-            style={{
-              background: statusStyle.bg,
-              color: statusStyle.text,
-              border: `1px solid ${statusStyle.border}`,
-              borderRadius: "12px",
-              padding: "2px 10px",
-              fontSize: "9px",
-              fontWeight: 800,
-              letterSpacing: "1px",
-              textTransform: "uppercase",
-              display: "inline-block",
-            }}
-          >
-            {invoice.status?.replace(/_/g, " ")}
-          </div>
+          {invoice.status !== "UNPAID" && (
+            <div
+              style={{
+                background: statusStyle.bg,
+                color: statusStyle.text,
+                border: `1px solid ${statusStyle.border}`,
+                borderRadius: "12px",
+                padding: "2px 10px",
+                fontSize: "9px",
+                fontWeight: 800,
+                letterSpacing: "1px",
+                textTransform: "uppercase",
+                display: "inline-block",
+              }}
+            >
+              {invoice.status?.replace(/_/g, " ")}
+            </div>
+          )}
         </div>
       </div>
 
