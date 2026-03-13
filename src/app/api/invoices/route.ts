@@ -256,9 +256,9 @@ export const POST = authorizedRoute(
         const companyStateCode = company?.stateCode;
         const placeOfSupplyCode = (customer as any).shippingStateCode || (customer as any).billingStateCode;
         
-        let cgstRate = isUttarPradesh && !isInternational ? 9 : 0;
-        let sgstRate = isUttarPradesh && !isInternational ? 9 : 0;
-        let igstRate = !isUttarPradesh && !isInternational ? 18 : 0;
+        const cgstRate = isUttarPradesh && !isInternational ? 9 : 0;
+        const sgstRate = isUttarPradesh && !isInternational ? 9 : 0;
+        const igstRate = !isUttarPradesh && !isInternational ? 18 : 0;
         
         // Effective tax rate for the whole invoice
         const effectiveTaxRate = taxableSubtotal > 0 ? (tax / taxableSubtotal) * 100 : 0;
