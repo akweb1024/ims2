@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import Link from "next/link";
 import {
   X,
@@ -403,6 +403,75 @@ export default function CreateInvoiceModal({
   const calculateTaxableAmount = () =>
     Math.max(0, calculateTotal() - calculateDiscount());
 
+  const taxBreakdown = useMemo(() => {
+    const customerCountry = selectedCustomer?.billingCountry || "India";
+    const billingState = selectedCustomer?.billingState || "";
+    const billingStateCode = selectedCustomer?.billingStateCode || "";
+    const isInternational = customerCountry.toLowerCase() !== "india";
+    const isUttarPradesh =
+      billingStateCode === "09" ||
+      billingStateCode === "UP" ||
+      billingState.toLowerCase().includes("uttar pradesh");
+
+    const subtotal = calculateTotal();
+    const discountAmount = calculateDiscount();
+    const taxableSubtotal = Math.max(0, subtotal - discountAmount);
+
+    let totalTax = 0;
+    let cgst = 0,
+      sgst = 0,
+      igst = 0;
+
+    items.forEach((item) => {
+      let itemTaxRate = 0;
+      if (!isInternational) {
+        const desc = (item.description || "").toLowerCase();
+        const isOnline =
+          desc.includes("online") ||
+          desc.includes("digital") ||
+          desc.includes("access");
+        const isPrint = desc.includes("print");
+
+        if (isPrint && !isOnline) {
+          itemTaxRate = 0;
+        } else if (isOnline) {
+          itemTaxRate = 18;
+        } else {
+          itemTaxRate = Number(taxRate) || 18;
+        }
+      }
+
+      const itemWeight =
+        subtotal > 0 ? (Number(item.quantity) * Number(item.price)) / subtotal : 0;
+      const itemTaxableAmount =
+        Number(item.quantity) * Number(item.price) - discountAmount * itemWeight;
+      const itemTax = itemTaxableAmount * (itemTaxRate / 100);
+
+      totalTax += itemTax;
+
+      if (itemTaxRate > 0) {
+        if (isUttarPradesh) {
+          cgst += itemTax / 2;
+          sgst += itemTax / 2;
+        } else {
+          igst += itemTax;
+        }
+      }
+    });
+
+    return {
+      tax: totalTax,
+      total: taxableSubtotal + totalTax,
+      cgst,
+      sgst,
+      igst,
+      isInternational,
+      isUttarPradesh,
+      effectiveTaxRate:
+        taxableSubtotal > 0 ? (totalTax / taxableSubtotal) * 100 : 0,
+    };
+  }, [items, selectedCustomer, taxRate, couponResult]);
+
   const applyScoupon = async () => {
     if (!couponCode.trim()) return;
     setCouponLoading(true);
@@ -539,10 +608,10 @@ export default function CreateInvoiceModal({
                 variantId: variantId || null,
               }),
             ),
-            taxRate,
+            taxRate: taxBreakdown.effectiveTaxRate,
             amount: calculateTotal(),
-            tax: calculateTaxableAmount() * (taxRate / 100),
-            total: calculateTaxableAmount() * (1 + taxRate / 100),
+            tax: taxBreakdown.tax,
+            total: taxBreakdown.total,
             currency,
             brandId: selectedBrandId || null,
             // Coupon
@@ -1412,11 +1481,18 @@ export default function CreateInvoiceModal({
                     value={taxType}
                     onChange={(e) => handleTaxTypeChange(e.target.value as any)}
                   >
-                    <option value="DOMESTIC">Domestic (GST 18%)</option>
+                    <option value="DOMESTIC">Domestic (GST Enabled)</option>
                     <option value="INTERNATIONAL">
                       International (Non-Taxable)
                     </option>
                   </select>
+                  <div className="mt-2 p-2 bg-amber-50 rounded-lg border border-amber-100">
+                    <p className="text-[10px] text-amber-700 font-bold flex items-center gap-1.5 uppercase tracking-tighter">
+                      <Zap size={10} className="fill-amber-500" />
+                      TAX NOTE: 0% GST on Print Journals. 18% GST on
+                      Online/Digital access.
+                    </p>
+                  </div>
                 </div>
                 <div>
                   <label className="label">Currency</label>
@@ -1697,30 +1773,69 @@ export default function CreateInvoiceModal({
                     </span>
                   </div>
                 )}
-                <div className="flex justify-between items-center text-sm">
-                  <span className="text-secondary-500 font-medium uppercase tracking-wider">
-                    {taxType === "DOMESTIC"
-                      ? "GST (18%)"
-                      : "Tax (International)"}
-                  </span>
-                  <span className="text-secondary-900 font-bold">
-                    {getCurrencySymbol(currency)}{" "}
-                    {(
-                      calculateTaxableAmount() *
-                      (taxRate / 100)
-                    ).toLocaleString()}
-                  </span>
-                </div>
+                {taxBreakdown.isInternational ? (
+                  <div className="flex justify-between items-center text-sm">
+                    <span className="text-secondary-500 font-medium uppercase tracking-wider">
+                      Tax (International)
+                    </span>
+                    <span className="text-secondary-900 font-bold">
+                      {getCurrencySymbol(currency)} 0
+                    </span>
+                  </div>
+                ) : (
+                  <>
+                    {taxBreakdown.cgst > 0 && (
+                      <div className="flex justify-between items-center text-sm">
+                        <span className="text-secondary-500 font-medium uppercase tracking-wider">
+                          CGST (9%)
+                        </span>
+                        <span className="text-secondary-900 font-bold">
+                          {getCurrencySymbol(currency)}{" "}
+                          {taxBreakdown.cgst.toLocaleString()}
+                        </span>
+                      </div>
+                    )}
+                    {taxBreakdown.sgst > 0 && (
+                      <div className="flex justify-between items-center text-sm">
+                        <span className="text-secondary-500 font-medium uppercase tracking-wider">
+                          SGST (9%)
+                        </span>
+                        <span className="text-secondary-900 font-bold">
+                          {getCurrencySymbol(currency)}{" "}
+                          {taxBreakdown.sgst.toLocaleString()}
+                        </span>
+                      </div>
+                    )}
+                    {taxBreakdown.igst > 0 && (
+                      <div className="flex justify-between items-center text-sm">
+                        <span className="text-secondary-500 font-medium uppercase tracking-wider">
+                          IGST (18%)
+                        </span>
+                        <span className="text-secondary-900 font-bold">
+                          {getCurrencySymbol(currency)}{" "}
+                          {taxBreakdown.igst.toLocaleString()}
+                        </span>
+                      </div>
+                    )}
+                    {taxBreakdown.tax === 0 && !taxBreakdown.isInternational && (
+                      <div className="flex justify-between items-center text-sm">
+                        <span className="text-secondary-500 font-medium uppercase tracking-wider">
+                          GST (0% - Exempt Products)
+                        </span>
+                        <span className="text-secondary-900 font-bold">
+                          {getCurrencySymbol(currency)} 0
+                        </span>
+                      </div>
+                    )}
+                  </>
+                )}
                 <div className="pt-3 border-t border-gray-200 flex justify-between items-center">
                   <span className="text-base font-black text-gray-900 uppercase">
                     Total Amount
                   </span>
                   <span className="text-2xl font-black text-primary-600">
                     {getCurrencySymbol(currency)}{" "}
-                    {(
-                      calculateTaxableAmount() *
-                      (1 + taxRate / 100)
-                    ).toLocaleString()}
+                    {taxBreakdown.total.toLocaleString()}
                   </span>
                 </div>
               </div>

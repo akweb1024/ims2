@@ -990,13 +990,13 @@ export default function GlobalProInvoiceTemplate({
                   {subtotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                 </td>
                 <td style={{ padding: "5px 8px", textAlign: "right", fontSize: "9px", borderRight: "1px solid #e2e8f0" }}>
-                  {(invoice.cgst || taxAmt / 2).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                  {(invoice.cgst ?? (invoice.igst ? 0 : taxAmt / 2)).toLocaleString(undefined, { minimumFractionDigits: 2 })}
                 </td>
                 <td style={{ padding: "5px 8px", textAlign: "right", fontSize: "9px", borderRight: "1px solid #e2e8f0" }}>
-                  {(invoice.sgst || taxAmt / 2).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                  {(invoice.sgst ?? (invoice.igst ? 0 : taxAmt / 2)).toLocaleString(undefined, { minimumFractionDigits: 2 })}
                 </td>
                 <td style={{ padding: "5px 8px", textAlign: "right", fontSize: "9px", borderRight: "1px solid #e2e8f0" }}>
-                  {(invoice.igst || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                  {(invoice.igst ?? (taxAmt > 0 && !invoice.cgst ? taxAmt : 0)).toLocaleString(undefined, { minimumFractionDigits: 2 })}
                 </td>
                 <td style={{ padding: "5px 8px", textAlign: "right", fontSize: "9px", fontWeight: 800 }}>
                   {taxAmt.toLocaleString(undefined, { minimumFractionDigits: 2 })}
