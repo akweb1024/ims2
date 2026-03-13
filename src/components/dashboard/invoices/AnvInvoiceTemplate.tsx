@@ -46,8 +46,8 @@ export default function AnvInvoiceTemplate({
   // Dynamic Invoice URL for QR Code
   const invoiceUrl =
     typeof window !== "undefined"
-      ? `${window.location.origin}/dashboard/crm/invoices/${invoice.id}`
-      : `https://stmjournals.com/invoice.aspx?i=${invoice.id}`;
+      ? `${window.location.origin}/p/${invoice.id}`
+      : `https://stmjournals.com/p/${invoice.id}`;
 
   return (
     <div className="anv-invoice-template bg-white text-black font-serif p-0 border border-black max-w-[800px] mx-auto overflow-hidden">

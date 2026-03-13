@@ -47,8 +47,8 @@ export default function GlobalProInvoiceTemplate({
 
   const invoiceUrl =
     typeof window !== "undefined"
-      ? `${window.location.origin}/dashboard/crm/invoices/${invoice.id}`
-      : `https://app.example.com/invoice/${invoice.id}`;
+      ? `${window.location.origin}/p/${invoice.id}`
+      : `https://stmjournals.com/p/${invoice.id}`;
 
   // Determine accent color based on export/domestic
   const accentColor = isExport ? "#1a56db" : "#0d6efd";
