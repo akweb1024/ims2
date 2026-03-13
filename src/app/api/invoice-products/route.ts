@@ -71,6 +71,7 @@ const productCreateSchema = z.object({
   isFeatured: z.boolean().optional().default(false),
   tags: z.array(z.string().max(50)).max(20).optional().default([]),
   notes: z.string().max(1000).optional().nullable(),
+  domain: z.string().max(200).optional().nullable(),
   attributes: z.any().optional().nullable(),
   variants: z.array(variantCreateSchema).optional().default([]),
 });
@@ -252,6 +253,7 @@ export const POST = authorizedRoute(
             isFeatured: input.isFeatured,
             tags: input.tags,
             notes: input.notes,
+            domain: input.domain,
             companyId: user.companyId,
             createdByUserId: user.id,
           },

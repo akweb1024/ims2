@@ -89,6 +89,35 @@ const DEFAULT_CATEGORIES = [
   { value: "MISC", label: "Miscellaneous", icon: "📦" },
 ];
 
+const PREDEFINED_DOMAINS = [
+  "Agriculture",
+  "Applied Mechanics",
+  "Applied Sciences",
+  "Architecture",
+  "Ayurveda",
+  "Bio Technology",
+  "Chemical Engineering",
+  "Chemistry",
+  "Civil/Construction Engineering",
+  "Computer/IT",
+  "Education and Social Sciences",
+  "Electrical Engineering",
+  "Electronics & Telecommunication Engineering (0)",
+  "Energy",
+  "Law",
+  "Life Sciences",
+  "Management",
+  "Material Science",
+  "Mechanical Engineering",
+  "Medical Sciences",
+  "Multidisciplinary",
+  "Nano Technology",
+  "Nursing",
+  "Pharmacy",
+  "Social Sciences",
+  "Other",
+];
+
 const YEAR_OPTIONS = Array.from(
   { length: 10 },
   (_, i) => new Date().getFullYear() + i - 2,
@@ -465,11 +494,13 @@ export default function ProductCatalogueForm({
   };
 
   // ── Domain autocomplete ──
+  const allDomains = Array.from(new Set([...PREDEFINED_DOMAINS, ...domains]));
+  
   const filteredDomains = domainSearch
-    ? domains.filter((d) =>
+    ? allDomains.filter((d) =>
         d.toLowerCase().includes(domainSearch.toLowerCase()),
       )
-    : domains;
+    : allDomains;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -577,35 +608,58 @@ export default function ProductCatalogueForm({
               type="text"
               value={domainSearch || value.domain}
               onChange={(e) => {
-                setDomainSearch(e.target.value);
-                setField("domain", e.target.value);
+                const val = e.target.value;
+                setDomainSearch(val);
+                setField("domain", val);
                 setDomainOpen(true);
               }}
-              onFocus={() => setDomainOpen(true)}
-              onBlur={() => setTimeout(() => setDomainOpen(false), 150)}
+              onFocus={() => {
+                setDomainOpen(true);
+                if (!domainSearch && !value.domain) setDomainSearch("");
+              }}
+              onBlur={() => setTimeout(() => setDomainOpen(false), 200)}
               placeholder="e.g. Physics, Chemistry, Medical Sciences..."
               className="w-full h-11 rounded-xl border border-slate-200 bg-white pl-9 pr-3.5 text-sm font-medium text-slate-700 placeholder-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 transition-all"
             />
             {/* Domain dropdown */}
-            {domainOpen && filteredDomains.length > 0 && (
-              <div className="absolute top-full left-0 right-0 mt-1.5 bg-white border border-slate-100 rounded-xl shadow-xl z-20 overflow-hidden max-h-44 overflow-y-auto">
-                {filteredDomains.map((d) => (
-                  <button
-                    key={d}
-                    type="button"
-                    onMouseDown={() => {
-                      setField("domain", d);
-                      setDomainSearch("");
-                      setDomainOpen(false);
-                    }}
-                    className="w-full text-left px-4 py-2.5 text-sm text-slate-700 hover:bg-indigo-50 hover:text-indigo-700 transition-colors font-medium"
-                  >
-                    {d}
-                  </button>
-                ))}
+            {domainOpen && (
+              <div className="absolute top-full left-0 right-0 mt-1.5 bg-white border border-slate-100 rounded-xl shadow-xl z-50 overflow-hidden max-h-60 overflow-y-auto">
+                {filteredDomains.length > 0 ? (
+                  filteredDomains.map((d) => (
+                    <button
+                      key={d}
+                      type="button"
+                      onMouseDown={() => {
+                        if (d === "Other") {
+                          setField("domain", "");
+                          setDomainSearch("");
+                          // Focus will stay or we can let user type
+                        } else {
+                          setField("domain", d);
+                          setDomainSearch("");
+                        }
+                        setDomainOpen(false);
+                      }}
+                      className={`w-full text-left px-4 py-2.5 text-sm transition-colors font-medium ${
+                        value.domain === d ? "bg-indigo-50 text-indigo-700" : "text-slate-700 hover:bg-slate-50"
+                      }`}
+                    >
+                      {d}
+                    </button>
+                  ))
+                ) : (
+                  <div className="px-4 py-3 text-xs text-slate-400 italic">
+                    No domains found. Press enter to use &quot;{domainSearch}&quot;
+                  </div>
+                )}
               </div>
             )}
           </div>
+          {value.domain && !PREDEFINED_DOMAINS.includes(value.domain) && (
+            <p className="text-[10px] text-indigo-500 font-medium pl-1 animate-in fade-in slide-in-from-left-1">
+              Custom domain: &quot;{value.domain}&quot; will be saved.
+            </p>
+          )}
         </div>
       </section>
 

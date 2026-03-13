@@ -675,6 +675,7 @@ model InvoiceProduct {
   isFeatured        Boolean                @default(false)
   tags              String[]               @default([])
   notes             String?
+  domain            String?                // Added domain field
   createdByUserId   String?
   updatedByUserId   String?
   createdAt         DateTime               @default(now())

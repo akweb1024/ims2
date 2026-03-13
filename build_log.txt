@@ -1,0 +1,99 @@
+
+> stm-customer@0.1.0 build
+> prisma generate && next build
+
+Loaded Prisma config from prisma.config.ts.
+
+Prisma schema loaded from prisma/schema.prisma.
+
+✔ Generated Prisma Client (v7.3.0) to ./node_modules/@prisma/client in 4.15s
+
+Start by importing your Prisma Client (See: https://pris.ly/d/importing-client)
+
+
+   ▲ Next.js 15.5.9
+   - Environments: .env
+
+   Creating an optimized production build ...
+ ✓ Compiled successfully in 26.0s
+   Linting and checking validity of types ...
+
+Failed to compile.
+
+./src/app/dashboard/company/page.tsx
+184:6  Warning: React Hook useCallback has a missing dependency: 'fetchBrands'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+1155:31  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+1155:31  Warning: img elements must have an alt prop, either with meaningful text, or an empty string for decorative images.  jsx-a11y/alt-text
+1181:31  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+1181:31  Warning: img elements must have an alt prop, either with meaningful text, or an empty string for decorative images.  jsx-a11y/alt-text
+1419:29  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+./src/app/dashboard/crm/invoice-products/attributes/page.tsx
+23:8  Warning: React Hook useEffect has a missing dependency: 'fetchAttributes'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/app/dashboard/crm/invoices/[id]/page.tsx
+693:19  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+723:19  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+./src/app/dashboard/crm/leads/page.tsx
+95:6  Warning: React Hook useCallback has a missing dependency: 'assignedToFilter'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/app/dashboard/customers/[id]/page.tsx
+59:8  Warning: React Hook useEffect has missing dependencies: 'customer.billingAddress', 'customer.billingCity', 'customer.billingPincode', 'customer.shippingAddress', 'customer.shippingCity', and 'customer.shippingPincode'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/app/dashboard/it-management/projects/[id]/page.tsx
+667:45  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+690:57  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+./src/app/dashboard/logistics/inventory/page.tsx
+50:8  Warning: React Hook useEffect has a missing dependency: 'fetchInventory'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/app/dashboard/settings/integrations/page.tsx
+55:8  Warning: React Hook useEffect has a missing dependency: 'fetchIntegrations'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/app/dashboard/supply-chain/purchase-orders/page.tsx
+50:8  Warning: React Hook useEffect has a missing dependency: 'loadData'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/app/dashboard/supply-chain/vendors/page.tsx
+46:8  Warning: React Hook useEffect has a missing dependency: 'fetchVendors'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/components/animations/ThanosSnapWrapper.tsx
+129:6  Warning: React Hook useEffect has a missing dependency: 'performSnap'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/components/dashboard/CreateInvoiceModal.tsx
+514:6  Warning: React Hook useMemo has missing dependencies: 'calculateDiscount' and 'calculateTotal'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/components/dashboard/FeedbackWidget.tsx
+68:19  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+416:59  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+521:67  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+./src/components/dashboard/crm/ProductCatalogueForm.tsx
+652:58  Error: `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`.  react/no-unescaped-entities
+652:73  Error: `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`.  react/no-unescaped-entities
+660:30  Error: `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`.  react/no-unescaped-entities
+660:45  Error: `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`.  react/no-unescaped-entities
+
+./src/components/dashboard/invoices/AnvInvoiceTemplate.tsx
+261:13  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+282:13  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+./src/components/dashboard/invoices/GlobalProInvoiceTemplate.tsx
+110:13  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+133:13  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+./src/components/dashboard/it/ProjectSuggestions.tsx
+58:19  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+189:43  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+./src/components/dashboard/it/WebsiteAuditModal.tsx
+84:8  Warning: React Hook useEffect has a missing dependency: 'fetchAudit'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/components/dashboard/vault/PasswordGenerator.tsx
+67:8  Warning: React Hook useEffect has a missing dependency: 'handleGenerate'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/components/dashboard/vault/VaultDashboard.tsx
+47:8  Warning: React Hook useEffect has a missing dependency: 'fetchAndDecryptItems'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+178:62  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+info  - Need to disable some ESLint rules? Learn more here: https://nextjs.org/docs/app/api-reference/config/eslint#disabling-rules
