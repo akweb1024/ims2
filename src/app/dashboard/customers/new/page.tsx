@@ -21,6 +21,7 @@ export default function NewCustomerPage() {
     const [loading, setLoading] = useState(false);
     const [institutions, setInstitutions] = useState<any[]>([]);
     const [isShippingSame, setIsShippingSame] = useState(true);
+    const [isFetchingPincode, setIsFetchingPincode] = useState(false);
 
     const {
         register,
@@ -105,6 +106,42 @@ export default function NewCustomerPage() {
         };
         fetchInstitutions();
     }, [router]);
+
+    const handlePincodeLookup = async (pincode: string, target: 'billing' | 'shipping') => {
+        if (pincode.length !== 6) return;
+        
+        setIsFetchingPincode(true);
+        try {
+            const response = await fetch(`/api/pincode?pincode=${pincode}`);
+            const data = await response.json();
+            
+            if (data && data[0] && data[0].Status === 'Success') {
+                const detail = data[0].PostOffice[0];
+                const city = detail.District;
+                const state = detail.State;
+                
+                if (target === 'billing') {
+                    setValue('billingCity', city, { shouldValidate: true, shouldDirty: true });
+                    setValue('billingState', state, { shouldValidate: true, shouldDirty: true });
+                    setValue('billingCountry', 'India', { shouldValidate: true, shouldDirty: true });
+                    if (isShippingSame) {
+                        setValue('shippingCity', city, { shouldValidate: true, shouldDirty: true });
+                        setValue('shippingState', state, { shouldValidate: true, shouldDirty: true });
+                        setValue('shippingCountry', 'India', { shouldValidate: true, shouldDirty: true });
+                        setValue('shippingPincode', pincode, { shouldValidate: true, shouldDirty: true });
+                    }
+                } else {
+                    setValue('shippingCity', city, { shouldValidate: true, shouldDirty: true });
+                    setValue('shippingState', state, { shouldValidate: true, shouldDirty: true });
+                    setValue('shippingCountry', 'India', { shouldValidate: true, shouldDirty: true });
+                }
+            }
+        } catch (error) {
+            console.error('Pincode fetch error:', error);
+        } finally {
+            setIsFetchingPincode(false);
+        }
+    };
 
     const onSubmit = async (data: CustomerFormData) => {
         setLoading(true);
@@ -342,7 +379,21 @@ export default function NewCustomerPage() {
                                    <div className="grid grid-cols-2 gap-6">
                                         <FormField label="Sector / City" name="billingCity" type="text" register={register} error={errors.billingCity} className="input-premium" />
                                         <FormField label="Region / State" name="billingState" type="text" register={register} error={errors.billingState} className="input-premium" />
-                                        <FormField label="Zone Code" name="billingPincode" type="text" register={register} error={errors.billingPincode} className="input-premium" />
+                                        <FormField 
+                                            label="Zone Code" 
+                                            name="billingPincode" 
+                                            type="text" 
+                                            register={register} 
+                                            error={errors.billingPincode} 
+                                            className="input-premium" 
+                                            loading={isFetchingPincode}
+                                            onChange={(e) => {
+                                                const val = e.target.value.replace(/\D/g, '').slice(0, 6);
+                                                if (val.length === 6) {
+                                                    handlePincodeLookup(val, 'billing');
+                                                }
+                                            }}
+                                        />
                                         <FormField label="Nation" name="billingCountry" type="text" defaultValue="India" register={register} error={errors.billingCountry} className="input-premium" />
                                    </div>
                               </div>
@@ -387,7 +438,21 @@ export default function NewCustomerPage() {
                                             <div className="grid grid-cols-2 gap-6">
                                                 <FormField label="Sector / City" name="shippingCity" type="text" register={register} error={errors.shippingCity} className="input-premium" />
                                                 <FormField label="Region / State" name="shippingState" type="text" register={register} error={errors.shippingState} className="input-premium" />
-                                                <FormField label="Zone Code" name="shippingPincode" type="text" register={register} error={errors.shippingPincode} className="input-premium" />
+                                                <FormField 
+                                                    label="Zone Code" 
+                                                    name="shippingPincode" 
+                                                    type="text" 
+                                                    register={register} 
+                                                    error={errors.shippingPincode} 
+                                                    className="input-premium" 
+                                                    loading={isFetchingPincode}
+                                                    onChange={(e) => {
+                                                        const val = e.target.value.replace(/\D/g, '').slice(0, 6);
+                                                        if (val.length === 6) {
+                                                            handlePincodeLookup(val, 'shipping');
+                                                        }
+                                                    }}
+                                                />
                                                 <FormField label="Nation" name="shippingCountry" type="text" defaultValue="India" register={register} error={errors.shippingCountry} className="input-premium" />
                                             </div>
                                        </div>

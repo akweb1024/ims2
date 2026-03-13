@@ -15,6 +15,8 @@ interface FormFieldProps {
     helpText?: string;
     disabled?: boolean;
     defaultValue?: string | number;
+    onChange?: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => void;
+    loading?: boolean;
 }
 
 
@@ -32,6 +34,8 @@ export default function FormField({
     helpText,
     disabled = false,
     defaultValue,
+    onChange: customOnChange,
+    loading = false,
 }: FormFieldProps) {
 
     const baseInputClasses = `
@@ -67,7 +71,9 @@ export default function FormField({
             {type === 'textarea' ? (
                 <textarea
                     id={inputId}
-                    {...register(name)}
+                    {...register(name, {
+                        onChange: (e) => customOnChange?.(e)
+                    })}
                     placeholder={placeholder}
                     rows={rows}
                     disabled={disabled}
@@ -79,7 +85,9 @@ export default function FormField({
             ) : type === 'select' ? (
                 <select
                     id={inputId}
-                    {...register(name)}
+                    {...register(name, {
+                        onChange: (e) => customOnChange?.(e)
+                    })}
                     disabled={disabled}
                     className={inputClasses}
                     aria-invalid={error ? 'true' : 'false'}
@@ -96,7 +104,9 @@ export default function FormField({
                 <input
                     id={inputId}
                     type={type}
-                    {...register(name)}
+                    {...register(name, {
+                        onChange: (e) => customOnChange?.(e)
+                    })}
                     placeholder={placeholder}
                     disabled={disabled}
                     defaultValue={defaultValue}
@@ -104,6 +114,13 @@ export default function FormField({
                     aria-invalid={error ? 'true' : 'false'}
                     aria-describedby={error ? errorId : helpText ? helpId : undefined}
                 />
+            )}
+
+            {/* Loading Indicator */}
+            {loading && (
+                <div className="mt-1 flex items-center gap-2 text-[10px] text-blue-500 animate-pulse">
+                    <span>⚡ Fetching details...</span>
+                </div>
             )}
 
             {/* Help Text */}
