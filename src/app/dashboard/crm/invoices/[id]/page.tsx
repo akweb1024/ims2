@@ -6,6 +6,7 @@ import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import FormattedDate from "@/components/common/FormattedDate";
 import CreateInvoiceModal from "@/components/dashboard/CreateInvoiceModal";
 import AnvInvoiceTemplate from "@/components/dashboard/invoices/AnvInvoiceTemplate";
+import GlobalProInvoiceTemplate from "@/components/dashboard/invoices/GlobalProInvoiceTemplate";
 
 // Helper: convert number to Indian words
 // Helper: convert number to words based on currency
@@ -146,8 +147,8 @@ export default function InvoiceDetailPage({
     notes: "",
   });
   const [showEditModal, setShowEditModal] = useState(false);
-  const [templateType, setTemplateType] = useState<"standard" | "anv">(
-    "standard",
+  const [templateType, setTemplateType] = useState<"standard" | "anv" | "globalpro">(
+    "globalpro",
   );
 
   const fetchInvoice = useCallback(async () => {
@@ -625,6 +626,7 @@ export default function InvoiceDetailPage({
             >
               <option value="standard">Standard Template</option>
               <option value="anv">ANV Premium (Raipur Style)</option>
+              <option value="globalpro">🌐 GlobalPro — Indian Business (Global)</option>
             </select>
             <button
               className="btn btn-secondary rounded-full px-6"
@@ -664,6 +666,16 @@ export default function InvoiceDetailPage({
         {templateType === "anv" ? (
           <div className="print-content shadow-2xl">
             <AnvInvoiceTemplate
+              invoice={invoice}
+              identity={identity}
+              currencySymbol={currencySymbol}
+              numberToWords={numberToWords}
+              invoiceTitle={invoiceTitle}
+            />
+          </div>
+        ) : templateType === "globalpro" ? (
+          <div className="print-content shadow-2xl">
+            <GlobalProInvoiceTemplate
               invoice={invoice}
               identity={identity}
               currencySymbol={currencySymbol}

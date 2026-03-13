@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { verifyToken } from '@/lib/auth-legacy';
 import { logger } from '@/lib/logger';
+import { generateFallbackInvoiceNumber } from '@/lib/invoice-number';
 
 export async function POST(request: NextRequest) {
     try {
@@ -193,7 +194,10 @@ export async function POST(request: NextRequest) {
             });
 
             // Create Invoice
-            const invoiceNumber = `INV-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+            const invoiceNumber = generateFallbackInvoiceNumber(
+                company?.name || targetCompanyId || 'GEN',
+                'INV-'
+            );
             const invoice = await tx.invoice.create({
                 data: {
                     subscriptionId: subscription.id,

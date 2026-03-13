@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getAuthenticatedUser } from '@/lib/auth-legacy';
+import { generateFallbackInvoiceNumber } from '@/lib/invoice-number';
 
 export async function POST(req: NextRequest) {
     try {
@@ -87,7 +88,12 @@ export async function POST(req: NextRequest) {
                 },
                 invoices: {
                     create: {
-                        invoiceNumber: `INV-${Date.now()}`,
+                    invoiceNumber: generateFallbackInvoiceNumber(
+                            customerProfile.companyId
+                                ? (await prisma.company.findUnique({ where: { id: customerProfile.companyId }, select: { name: true } }))?.name || 'GEN'
+                                : 'GEN',
+                            'INV-'
+                        ),
                         customerProfileId: customerProfile.id,
                         currency,
                         amount: selectedCurrencyTotal,

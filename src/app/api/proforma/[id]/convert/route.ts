@@ -9,6 +9,7 @@ import {
 } from '@/lib/error-handler';
 import { logger } from '@/lib/logger';
 import { proformaConvertSchema, validateData } from '@/lib/validation/schemas';
+import { generateInvoiceNumbers } from '@/lib/invoice-number';
 
 const db = prisma as any;
 
@@ -125,9 +126,11 @@ export const POST = authorizedRoute(
             const paidOn = new Date(input.paymentDate || new Date());
 
             const result = await db.$transaction(async (tx: any) => {
-                // Sequential invoice number inside tx for race safety
-                const invoiceCount = await tx.invoice.count({ where: { companyId: user.companyId } });
-                const invoiceNumber = `INV-${new Date().getFullYear()}-${String(invoiceCount + 1).padStart(5, '0')}`;
+                // Sequential, entity-code-embedded invoice number (race-condition resistant)
+                const { invoiceNumber } = await generateInvoiceNumbers(
+                    proforma.companyId || user.companyId,
+                    proforma.brandId || null
+                );
 
                 // a. Build subscription items
                 const lineItems: any[] = proforma.lineItems || [];

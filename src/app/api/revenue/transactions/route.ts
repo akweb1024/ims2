@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { authorizedRoute } from '@/lib/middleware-auth';
 import { logger } from '@/lib/logger';
 import { processExpenseAllocations } from '@/lib/allocation';
+import { generateFallbackInvoiceNumber } from '@/lib/invoice-number';
 
 // Helper to generate transaction number
 async function generateTransactionNumber(companyId: string) {
@@ -224,9 +225,10 @@ export const POST = authorizedRoute(['ADMIN', 'SUPER_ADMIN', 'MANAGER', 'TEAM_LE
                 }
 
                 if (targetCustomerProfileId) {
-                    const year = new Date().getFullYear();
-                    const invCount = await prisma.invoice.count();
-                    const invoiceNumber = `INV-AUTO-${year}-${(invCount + 1).toString().padStart(5, '0')}`;
+                    const companyName = user.companyId
+                        ? (await prisma.company.findUnique({ where: { id: user.companyId as string }, select: { name: true } }))?.name || 'GEN'
+                        : 'GEN';
+                    const invoiceNumber = generateFallbackInvoiceNumber(companyName, 'INV-AUTO-');
 
                     const newInvoice = await prisma.invoice.create({
                         data: {

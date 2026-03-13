@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getAuthenticatedUser } from '@/lib/auth-legacy';
+import { generateFallbackInvoiceNumber } from '@/lib/invoice-number';
 
 export async function POST(
     req: NextRequest,
@@ -60,8 +61,11 @@ export async function POST(
                 }
             });
 
-            // Create Invoice
-            const invoiceNumber = `REN-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+            // Create Invoice with entity-code-embedded number
+            const companyForCode = original.companyId
+                ? (await prisma.company.findUnique({ where: { id: original.companyId }, select: { name: true } }))?.name || 'GEN'
+                : 'GEN';
+            const invoiceNumber = generateFallbackInvoiceNumber(companyForCode, 'REN-');
             await tx.invoice.create({
                 data: {
                     subscriptionId: renewal.id,

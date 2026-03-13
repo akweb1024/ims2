@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getAuthenticatedUser } from '@/lib/auth-legacy';
 import { logger } from '@/lib/logger';
+import { generateFallbackInvoiceNumber } from '@/lib/invoice-number';
 
 export async function GET(
     req: NextRequest,
@@ -105,7 +106,10 @@ export async function PATCH(
 
             // If moving to PENDING_PAYMENT and no UNPAID invoice exists, create one
             if (status === 'PENDING_PAYMENT' && !currentSubscription.invoices.some((inv: any) => inv.status !== 'CANCELLED')) {
-                const invoiceNumber = `INV-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+                const companyEntity = currentSubscription.companyId
+                    ? (await prisma.company.findUnique({ where: { id: currentSubscription.companyId }, select: { name: true } }))?.name || 'GEN'
+                    : 'GEN';
+                const invoiceNumber = generateFallbackInvoiceNumber(companyEntity, 'INV-');
                 await tx.invoice.create({
                     data: {
                         subscriptionId: id,
