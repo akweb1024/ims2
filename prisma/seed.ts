@@ -789,6 +789,33 @@ async function main() {
             content: 'For any technical issues, create a support ticket with priority level. Urgent tickets are addressed within 2 hours.',
             category: 'IT',
             targetRole: 'ALL'
+        },
+        {
+            id: 'guide-pricing-templates',
+            title: 'Mastering Pricing Templates',
+            content: `
+              <div class="space-y-4">
+                <p>Pricing Templates allow you to standardize and quickly populate variable pricing for products. This is especially useful for products like <strong>Journal Subscriptions</strong> where you have many standard variants.</p>
+                <div class="bg-indigo-50/50 p-3 rounded-xl border border-indigo-100">
+                  <h6 class="font-bold text-indigo-900 text-[10px] mb-1 uppercase tracking-wider">How to Create</h6>
+                  <ol class="list-decimal ml-4 text-[10px] space-y-1 text-indigo-800">
+                    <li>Open any product in <strong>Variable Pricing</strong> mode.</li>
+                    <li>Fill in the Variant Name, Prices (INR/USD), and Duration.</li>
+                    <li>Click <strong>"Save as Template"</strong> and give it a name.</li>
+                  </ol>
+                </div>
+                <div class="bg-emerald-50/50 p-3 rounded-xl border border-emerald-100">
+                  <h6 class="font-bold text-emerald-900 text-[10px] mb-1 uppercase tracking-wider">How to Use</h6>
+                  <ol class="list-decimal ml-4 text-[10px] space-y-1 text-emerald-800">
+                    <li>Select the product <strong>Category</strong> first.</li>
+                    <li>Use the <strong>"Load from Template"</strong> dropdown.</li>
+                    <li>Variants will auto-sync instantly.</li>
+                  </ol>
+                </div>
+              </div>
+            `,
+            category: 'PRODUCT_CATALOGUE',
+            targetRole: 'ALL'
         }
     ];
 

@@ -18,6 +18,7 @@ import {
   Globe,
   Sparkles,
 } from "lucide-react";
+import GuidelineHelp from "../GuidelineHelp";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 export interface VariantRow {
@@ -667,6 +668,15 @@ export default function ProductCatalogueForm({
         {/* VARIABLE pricing */}
         {value.pricingMode === "VARIABLE" && (
           <div className="space-y-3 animate-in fade-in slide-in-from-top-2 duration-200">
+            {/* Contextual Help */}
+            <GuidelineHelp 
+              variant="inline" 
+              category="PRODUCT_CATALOGUE" 
+              search="Pricing Templates"
+              title="Pricing Template Guide"
+              description="Learn how to standardize your product pricing using global templates."
+            />
+
             {/* Template Selector */}
             <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 mb-4">
               <div className="flex items-center justify-between mb-3">
