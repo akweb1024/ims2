@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { X, TrendingUp, Target, Award, Save } from 'lucide-react';
 
 interface IncrementReviewModalProps {
@@ -54,6 +55,7 @@ export default function IncrementReviewModal({ isOpen, onClose, onSave, incremen
     };
 
     if (!isOpen) return null;
+    if (typeof document === 'undefined') return null;
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -73,7 +75,7 @@ export default function IncrementReviewModal({ isOpen, onClose, onSave, incremen
         }
     };
 
-    return (
+    return createPortal(
         <div className="fixed inset-0 bg-secondary-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
             <div className="bg-white rounded-[2.5rem] w-full max-w-2xl overflow-hidden shadow-2xl animate-in zoom-in duration-200">
                 <div className="bg-gradient-to-r from-primary-600 to-primary-800 p-8 text-white flex justify-between items-center">
@@ -269,6 +271,7 @@ export default function IncrementReviewModal({ isOpen, onClose, onSave, incremen
                     </div>
                 </form>
             </div>
-        </div>
+        </div>,
+        document.body
     );
 }

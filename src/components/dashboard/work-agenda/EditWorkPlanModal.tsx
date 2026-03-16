@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { X, Calendar, Clock, Flag, Eye, Save, Trash2, CheckCircle2, Briefcase, CheckSquare } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 
@@ -124,6 +125,7 @@ export default function EditWorkPlanModal({ plan, onClose, onSuccess }: EditWork
     };
 
     return (
+        (typeof document !== 'undefined' ? createPortal(
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in duration-200">
             <div className="bg-white rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden animate-in zoom-in-95 duration-200">
                 <div className="p-6 border-b border-secondary-100 flex justify-between items-center bg-secondary-50/50">
@@ -290,6 +292,8 @@ export default function EditWorkPlanModal({ plan, onClose, onSuccess }: EditWork
                     </div>
                 </form>
             </div>
-        </div>
+        </div>,
+        document.body
+        ) : null)
     );
 }

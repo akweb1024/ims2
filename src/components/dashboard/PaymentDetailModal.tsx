@@ -1,6 +1,7 @@
 'use client';
 
 import { X } from 'lucide-react';
+import { createPortal } from 'react-dom';
 
 interface PaymentDetailModalProps {
     payment: any;
@@ -26,6 +27,7 @@ export default function PaymentDetailModal({ payment, onClose }: PaymentDetailMo
     const inrValue = payment.amount * rate;
 
     return (
+        (typeof document !== 'undefined' ? createPortal(
         <div className="fixed inset-0 bg-secondary-900/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4 overflow-y-auto no-print-bg">
             <style>{`
                 @media print {
@@ -130,7 +132,9 @@ export default function PaymentDetailModal({ payment, onClose }: PaymentDetailMo
                     </button>
                 </div>
             </div>
-        </div>
+        </div>,
+        document.body
+        ) : null)
     );
 }
 

@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { X, Target, Award } from 'lucide-react';
+import { createPortal } from 'react-dom';
 
 interface KRAKPIModalProps {
     isOpen: boolean;
@@ -14,6 +15,8 @@ export default function KRAKPIModal({ isOpen, onClose, employeeName, kras }: KRA
     if (!isOpen) return null;
 
     return (
+
+        (typeof document !== 'undefined' ? createPortal(
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
             <div className="bg-white rounded-2xl w-full max-w-2xl shadow-2xl overflow-hidden animate-in zoom-in duration-200">
                 <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
@@ -70,5 +73,11 @@ export default function KRAKPIModal({ isOpen, onClose, employeeName, kras }: KRA
                 </div>
             </div>
         </div>
+    ,
+
+        document.body
+
+        ) : null)
+
     );
 }

@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { X, Mail, Phone, ExternalLink, Calendar, MapPin, Download, Sparkles, Save, Clock, ThumbsUp, ThumbsDown } from 'lucide-react';
 import { formatToISTDate, formatToISTTime } from '@/lib/date-utils';
+import { createPortal } from 'react-dom';
 
 interface CandidateProfileModalProps {
     application: any;
@@ -42,6 +43,8 @@ export default function CandidateProfileModal({ application, onClose, onSchedule
     if (!application) return null;
 
     return (
+
+        (typeof document !== 'undefined' ? createPortal(
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-secondary-900/60 backdrop-blur-sm animate-in fade-in duration-300">
             <div className="bg-white w-full max-w-5xl rounded-[2rem] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300 flex flex-col max-h-[90vh]">
                 {/* Header with Cover-like background */}
@@ -266,5 +269,11 @@ export default function CandidateProfileModal({ application, onClose, onSchedule
                 </div>
             </div>
         </div>
+    ,
+
+        document.body
+
+        ) : null)
+
     );
 }

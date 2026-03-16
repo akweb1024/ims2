@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { X, Plus, Trash2, Save, HelpCircle, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 
@@ -145,13 +146,16 @@ export default function ExamManagerModal({ jobId, jobTitle, onClose }: ExamManag
         setFormData({ ...formData, questions: newQs });
     };
 
-    if (loading) return (
+    if (typeof document === 'undefined') return null;
+
+    if (loading) return createPortal(
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-gray-900/50 backdrop-blur-sm">
             <div className="bg-white p-6 rounded-xl animate-pulse">Loading Exam Data...</div>
-        </div>
+        </div>,
+        document.body
     );
 
-    return (
+    return createPortal(
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm animate-in fade-in duration-300">
             <div className="bg-white w-full max-w-4xl rounded-[2rem] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300 flex flex-col max-h-[90vh]">
                 {/* Header */}
@@ -281,6 +285,7 @@ export default function ExamManagerModal({ jobId, jobTitle, onClose }: ExamManag
                     </div>
                 </div>
             </div>
-        </div>
+        </div>,
+        document.body
     );
 }

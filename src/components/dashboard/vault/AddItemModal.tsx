@@ -6,6 +6,7 @@ import { generateItemKey, encryptItemPayload, encryptItemKeyWithRSA } from '@/li
 import { X, Lock, Save, Loader2, KeyRound } from 'lucide-react';
 import toast from 'react-hot-toast';
 import PasswordGenerator from './PasswordGenerator';
+import { createPortal } from 'react-dom';
 
 export default function AddItemModal({ onClose, onSuccess }: { onClose: () => void, onSuccess: () => void }) {
     const { keyring } = useVault();
@@ -84,6 +85,8 @@ export default function AddItemModal({ onClose, onSuccess }: { onClose: () => vo
     };
 
     return (
+
+        (typeof document !== 'undefined' ? createPortal(
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm transition-opacity">
             <div className="bg-white dark:bg-secondary-900 rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden border border-secondary-200 dark:border-secondary-800 animate-in fade-in zoom-in-95 duration-200">
                 <div className="flex items-center justify-between p-5 border-b border-secondary-200 dark:border-secondary-800 bg-secondary-50 dark:bg-secondary-900/50">
@@ -191,5 +194,11 @@ export default function AddItemModal({ onClose, onSuccess }: { onClose: () => vo
                 </form>
             </div>
         </div>
+    ,
+
+        document.body
+
+        ) : null)
+
     );
 }

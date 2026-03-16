@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { X, DollarSign, Calendar, CreditCard, Tag, FileText, User, Landmark, Mail, Phone } from "lucide-react";
+import { createPortal } from 'react-dom';
 
 interface TransactionModalProps {
     isOpen: boolean;
@@ -93,6 +94,8 @@ export default function TransactionModal({ isOpen, onClose, onSuccess, editingTr
     };
 
     return (
+
+        (typeof document !== 'undefined' ? createPortal(
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-secondary-900/60 backdrop-blur-sm animate-in fade-in duration-200">
             <div className="bg-white rounded-3xl w-full max-w-2xl shadow-2xl overflow-hidden animate-in zoom-in duration-300">
                 {/* Header */}
@@ -311,5 +314,11 @@ export default function TransactionModal({ isOpen, onClose, onSuccess, editingTr
                 </form>
             </div>
         </div>
+    ,
+
+        document.body
+
+        ) : null)
+
     );
 }

@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { X, DollarSign, Calendar, FileText, CheckCircle, Calculator, TrendingUp, Award, Zap } from 'lucide-react';
 import { proposeIncrement, getEmployeePerformance } from './actions';
+import { createPortal } from 'react-dom';
 
 interface IncrementProposalModalProps {
     isOpen: boolean;
@@ -99,6 +100,8 @@ export default function IncrementProposalModal({
     };
 
     return (
+
+        (typeof document !== 'undefined' ? createPortal(
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
             <div className="bg-white w-full max-w-xl rounded-2xl shadow-2xl overflow-hidden flex flex-col">
                 <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
@@ -250,5 +253,11 @@ export default function IncrementProposalModal({
                 </form>
             </div>
         </div>
+    ,
+
+        document.body
+
+        ) : null)
+
     );
 }

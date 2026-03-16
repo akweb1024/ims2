@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { createPortal } from "react-dom";
 import Link from "next/link";
 import {
   X,
@@ -683,6 +684,7 @@ export default function CreateInvoiceModal({
   if (!isOpen) return null;
 
   return (
+    (typeof document !== "undefined" ? createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
       <div className="bg-white rounded-3xl w-full max-w-2xl max-h-[90vh] overflow-hidden shadow-2xl flex flex-col">
         {/* Product Catalogue & Variants Overlay */}
@@ -1919,6 +1921,8 @@ export default function CreateInvoiceModal({
           )}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
+    ) : null)
   );
 }

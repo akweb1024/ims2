@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
     X, Globe, Shield, Zap, Search, Layout, BarChart3, AlertCircle, 
@@ -98,6 +99,7 @@ export default function WebsiteAuditModal({ isOpen, onClose, websiteId, websiteN
     };
 
     if (!isOpen) return null;
+    if (typeof document === 'undefined') return null;
 
     const ScoreRing = ({ score, size = 60, stroke = 4 }: { score: number; size?: number; stroke?: number }) => {
         const radius = (size - stroke) / 2;
@@ -119,7 +121,7 @@ export default function WebsiteAuditModal({ isOpen, onClose, websiteId, websiteN
         );
     };
 
-    return (
+    return createPortal(
         <AnimatePresence>
             <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose}
@@ -343,6 +345,7 @@ export default function WebsiteAuditModal({ isOpen, onClose, websiteId, websiteN
                     )}
                 </motion.div>
             </div>
-        </AnimatePresence>
+        </AnimatePresence>,
+        document.body
     );
 }

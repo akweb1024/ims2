@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { X, Upload, Loader2, Link as LinkIcon, FileText, CheckCircle2, Sparkles } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { createPortal } from 'react-dom';
 
 interface AddCandidateModalProps {
     jobs: any[]; // List of active jobs to select from
@@ -92,6 +93,8 @@ export default function AddCandidateModal({ jobs, onClose, onSubmit }: AddCandid
     };
 
     return (
+
+        (typeof document !== 'undefined' ? createPortal(
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-secondary-900/60 backdrop-blur-sm animate-in fade-in duration-300">
             <div className="bg-white w-full max-w-lg rounded-[2rem] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300 flex flex-col">
                 <div className="p-6 border-b border-secondary-50 flex justify-between items-center bg-secondary-50/50">
@@ -232,5 +235,11 @@ export default function AddCandidateModal({ jobs, onClose, onSubmit }: AddCandid
                 </form>
             </div>
         </div>
+    ,
+
+        document.body
+
+        ) : null)
+
     );
 }

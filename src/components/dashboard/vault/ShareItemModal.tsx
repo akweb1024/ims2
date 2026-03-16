@@ -5,6 +5,7 @@ import { encryptItemKeyWithRSA, decryptItemKeyWithRSA } from '@/lib/crypto-vault
 import { useVault } from './VaultContext';
 import { X, Share2, Loader2, Users } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { createPortal } from 'react-dom';
 
 interface Props {
     item: { id: string; title: string; myEncryptedKey: string };
@@ -73,6 +74,8 @@ export default function ShareItemModal({ item, onClose }: Props) {
     };
 
     return (
+
+        (typeof document !== 'undefined' ? createPortal(
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm transition-opacity">
             <div className="bg-white dark:bg-secondary-900 rounded-3xl shadow-2xl w-full max-w-md overflow-hidden border border-secondary-200 dark:border-secondary-800 animate-in fade-in zoom-in-95 duration-200">
                 <div className="flex items-center justify-between p-5 border-b border-secondary-200 dark:border-secondary-800 bg-secondary-50 dark:bg-secondary-900/50">
@@ -148,5 +151,11 @@ export default function ShareItemModal({ item, onClose }: Props) {
                 </div>
             </div>
         </div>
+    ,
+
+        document.body
+
+        ) : null)
+
     );
 }

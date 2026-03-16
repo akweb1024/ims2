@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { X, Calendar, DollarSign, Quote } from 'lucide-react';
+import { createPortal } from 'react-dom';
 
 interface MilestoneModalProps {
     isOpen: boolean;
@@ -88,6 +89,8 @@ export default function MilestoneModal({ isOpen, onClose, projectId, onSuccess, 
     };
 
     return (
+
+        (typeof document !== 'undefined' ? createPortal(
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-md transition-all">
             <div className="card-premium w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-300 p-0 hover:shadow-2xl">
                 <div className="flex items-center justify-between p-6 border-b border-secondary-100 dark:border-secondary-800 bg-secondary-50/30">
@@ -219,5 +222,11 @@ export default function MilestoneModal({ isOpen, onClose, projectId, onSuccess, 
                 </form>
             </div>
         </div>
+    ,
+
+        document.body
+
+        ) : null)
+
     );
 }

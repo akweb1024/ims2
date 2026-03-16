@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Wallet, Info, Calendar, BookOpen, X } from 'lucide-react';
 import FormattedDate from '@/components/common/FormattedDate';
 import LeaveGuidelines from '@/components/dashboard/staff/LeaveGuidelines';
@@ -205,6 +206,7 @@ export default function StaffLeaveManagement({ leaves, fullProfile, onLeaveSubmi
 
             {/* Guidelines Modal */}
             {showGuidelines && (
+                (typeof document !== 'undefined' ? createPortal(
                 <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-secondary-900/60 backdrop-blur-sm">
                     <div className="bg-white rounded-3xl w-full max-w-3xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden border border-secondary-100 animate-in fade-in zoom-in duration-200">
                         <div className="px-6 py-4 border-b border-secondary-100 flex justify-between items-center bg-secondary-50/50 sticky top-0 z-10">
@@ -236,7 +238,9 @@ export default function StaffLeaveManagement({ leaves, fullProfile, onLeaveSubmi
                             </button>
                         </div>
                     </div>
-                </div>
+                </div>,
+                document.body
+                ) : null)
             )}
         </div>
     );

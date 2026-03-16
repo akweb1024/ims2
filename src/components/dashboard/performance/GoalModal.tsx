@@ -5,6 +5,7 @@ import { useState, useEffect } from 'react';
 import { FiX, FiCheck, FiTarget } from 'react-icons/fi';
 import toast from 'react-hot-toast';
 import { Goal } from '@/types/performance';
+import { createPortal } from 'react-dom';
 
 interface GoalModalProps {
     isOpen: boolean;
@@ -102,6 +103,8 @@ export default function GoalModal({ isOpen, onClose, goal, onSuccess, period }: 
     if (!isOpen) return null;
 
     return (
+
+        (typeof document !== 'undefined' ? createPortal(
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-secondary-900/50 backdrop-blur-sm">
             <div className="bg-white rounded-3xl w-full max-w-2xl shadow-2xl overflow-hidden border border-secondary-200">
                 <div className="px-6 py-4 border-b border-secondary-100 flex items-center justify-between bg-secondary-50">
@@ -228,5 +231,11 @@ export default function GoalModal({ isOpen, onClose, goal, onSuccess, period }: 
                 </form>
             </div>
         </div>
+    ,
+
+        document.body
+
+        ) : null)
+
     );
 }

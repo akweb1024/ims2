@@ -2,6 +2,7 @@
 'use client';
 
 import { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 
 interface EmployeeEditModalProps {
@@ -76,6 +77,7 @@ export default function EmployeeEditModal({ employee, isOpen, onClose, onSave }:
     if (!isOpen) return null;
 
     return (
+        (typeof document !== 'undefined' ? createPortal(
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={onClose}>
             <div className="bg-white rounded-3xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden" onClick={(e) => e.stopPropagation()}>
                 {/* Header */}
@@ -507,6 +509,8 @@ export default function EmployeeEditModal({ employee, isOpen, onClose, onSave }:
                     </div>
                 </form>
             </div>
-        </div>
+        </div>,
+        document.body
+        ) : null)
     );
 }

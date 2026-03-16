@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
     X, ShieldCheck, Globe, Zap, Search, AlertCircle, 
@@ -77,8 +78,9 @@ export default function FleetAuditModal({ isOpen, onClose, projects }: FleetAudi
     });
 
     if (!isOpen) return null;
+    if (typeof document === 'undefined') return null;
 
-    return (
+    return createPortal(
         <AnimatePresence>
             <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 md:p-8 overflow-hidden">
                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose}
@@ -344,6 +346,7 @@ export default function FleetAuditModal({ isOpen, onClose, projects }: FleetAudi
                     </div>
                 </motion.div>
             </div>
-        </AnimatePresence>
+        </AnimatePresence>,
+        document.body
     );
 }

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { createPortal } from 'react-dom';
 
 interface PerformanceReviewModalProps {
     isOpen: boolean;
@@ -20,6 +21,8 @@ export default function PerformanceReviewModal({ isOpen, onClose, onSave }: Perf
     if (!isOpen) return null;
 
     return (
+
+        (typeof document !== 'undefined' ? createPortal(
         <div className="fixed inset-0 bg-secondary-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
             <div className="bg-white rounded-3xl w-full max-w-lg overflow-hidden shadow-2xl animate-in zoom-in duration-200">
                 <div className="bg-warning-50 p-6 border-b border-warning-100 flex justify-between items-center">
@@ -59,5 +62,11 @@ export default function PerformanceReviewModal({ isOpen, onClose, onSave }: Perf
                 </form>
             </div>
         </div>
+    ,
+
+        document.body
+
+        ) : null)
+
     );
 }

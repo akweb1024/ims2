@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { Briefcase, Send, CheckCircle, Award, Settings, TrendingUp, Users, DollarSign, Search, X, PlusCircle, FileText, RefreshCw } from 'lucide-react';
 import { useRouter } from 'next/navigation';
@@ -1243,6 +1244,7 @@ export default function SubmitReportPage() {
 
                 {/* Revenue Form Modal */}
                 {showRevenueModal && (
+                    (typeof document !== 'undefined' ? createPortal(
                     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-secondary-900/60 backdrop-blur-sm">
                         <div className="bg-white rounded-3xl w-full max-w-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
                             <form onSubmit={handleRevenueSubmit}>
@@ -1521,7 +1523,9 @@ export default function SubmitReportPage() {
                                 </div>
                             </form>
                         </div>
-                    </div>
+                    </div>,
+                    document.body
+                    ) : null)
                 )}
             </div>
         </DashboardLayout>

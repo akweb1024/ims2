@@ -4,6 +4,7 @@
 import { useState } from 'react';
 import { X, Send } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { createPortal } from 'react-dom';
 
 interface EmailLogModalProps {
     isOpen: boolean;
@@ -56,6 +57,8 @@ export default function EmailLogModal({ isOpen, onClose, products, onSuccess }: 
     };
 
     return (
+
+        (typeof document !== 'undefined' ? createPortal(
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
             <div className="bg-white rounded-2xl w-full max-w-md p-6 shadow-2xl animate-in fade-in zoom-in duration-200">
                 <div className="flex justify-between items-center mb-6">
@@ -114,5 +117,11 @@ export default function EmailLogModal({ isOpen, onClose, products, onSuccess }: 
                 </form>
             </div>
         </div>
+    ,
+
+        document.body
+
+        ) : null)
+
     );
 }

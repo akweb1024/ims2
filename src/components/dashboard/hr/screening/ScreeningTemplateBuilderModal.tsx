@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { X, Plus, Trash2, Wand2, ArrowRight, Settings } from 'lucide-react';
 import { fetchJson } from '@/lib/api-utils';
 import { toast } from 'react-hot-toast';
+import { createPortal } from 'react-dom';
 
 interface TemplateProps {
     template?: any;
@@ -107,6 +108,8 @@ export default function ScreeningTemplateBuilderModal({ template, onClose, onSav
     };
 
     return (
+
+        (typeof document !== 'undefined' ? createPortal(
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm animate-in fade-in duration-300">
             <div className="bg-white w-full max-w-5xl h-[90vh] rounded-[2rem] shadow-2xl overflow-hidden flex flex-col animate-in zoom-in-95 duration-300">
                 <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50/50 shrink-0">
@@ -259,5 +262,11 @@ export default function ScreeningTemplateBuilderModal({ template, onClose, onSav
                 </div>
             </div>
         </div>
+    ,
+
+        document.body
+
+        ) : null)
+
     );
 }

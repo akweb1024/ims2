@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useChat } from './ChatContext';
 import { X, Search, CheckCircle2, User, Building2 } from 'lucide-react';
 
@@ -97,7 +98,9 @@ export default function CreateChatModal({ onClose }: { onClose: () => void }) {
         return name.toLowerCase().includes(search.toLowerCase());
     });
 
-    return (
+    if (typeof document === 'undefined') return null;
+
+    return createPortal(
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm animate-in fade-in duration-200">
             <div className="bg-white rounded-[2rem] w-full max-w-lg shadow-2xl overflow-hidden flex flex-col max-h-[85vh]">
                 <div className="p-6 border-b border-gray-100 flex justify-between items-center">
@@ -201,6 +204,7 @@ export default function CreateChatModal({ onClose }: { onClose: () => void }) {
                     </button>
                 </div>
             </div>
-        </div>
+        </div>,
+        document.body
     );
 }

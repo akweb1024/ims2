@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import {
     X, User, Briefcase, DollarSign, FileText, Monitor, Clock, TrendingUp,
     Phone, Mail, MapPin, Award, Shield, Calendar, Building2, ChevronRight,
@@ -94,7 +95,9 @@ export default function Employee360Modal({ employeeId, onClose, viewAs = 'all' }
     const presentCount = attendance.filter((a: any) => a.status === 'PRESENT').length;
     const leaveCount = attendance.filter((a: any) => a.status === 'LEAVE').length;
 
-    return (
+    if (typeof document === 'undefined') return null;
+
+    return createPortal(
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={onClose}>
             <div
                 className="bg-white rounded-3xl shadow-2xl w-full max-w-5xl h-[92vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-300"
@@ -573,6 +576,7 @@ export default function Employee360Modal({ employeeId, onClose, viewAs = 'all' }
                     </>
                 )}
             </div>
-        </div>
+        </div>,
+        document.body
     );
 }

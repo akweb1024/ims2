@@ -2,6 +2,7 @@
 
 import { ReactNode } from 'react';
 import { useFocusTrap } from '@/hooks/useFocusTrap';
+import { createPortal } from 'react-dom';
 
 interface FocusableModalProps {
     isOpen: boolean;
@@ -41,6 +42,8 @@ export default function FocusableModal({
     };
 
     return (
+
+        (typeof document !== 'undefined' ? createPortal(
         <div
             className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50"
             onClick={onClose}
@@ -79,5 +82,11 @@ export default function FocusableModal({
                 </div>
             </div>
         </div>
+    ,
+
+        document.body
+
+        ) : null)
+
     );
 }

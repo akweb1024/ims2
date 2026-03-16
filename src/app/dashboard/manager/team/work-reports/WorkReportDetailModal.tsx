@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { format } from 'date-fns';
 import { X, MessageSquare, CheckCircle, XCircle, User, Calendar, Building, Clock, Briefcase, TrendingUp, FileText } from 'lucide-react';
 import { useEffect } from 'react';
@@ -121,6 +122,7 @@ export default function WorkReportDetailModal({
     };
 
     return (
+        (typeof document !== 'undefined' ? createPortal(
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
             <div className="bg-white w-full max-w-2xl rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
 
@@ -271,6 +273,8 @@ export default function WorkReportDetailModal({
                     </button>
                 </div>
             </div>
-        </div>
+        </div>,
+        document.body
+        ) : null)
     );
 }

@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { X, Save, MessageSquare, CheckSquare, TriangleAlert, Flag, ThumbsUp, ThumbsDown } from 'lucide-react';
 import { fetchJson } from '@/lib/api-utils';
 import { toast } from 'react-hot-toast';
@@ -100,15 +101,18 @@ export default function InterviewScorecardModal({ interview, onClose }: Intervie
         }
     };
 
+    if (typeof document === 'undefined') return null;
+
     if (loading) {
-        return (
+        return createPortal(
             <div className="fixed inset-0 z-[100] flex items-center justify-center bg-gray-900/60 backdrop-blur-sm">
                 <div className="animate-spin h-10 w-10 border-4 border-primary-500 border-t-transparent rounded-full"></div>
-            </div>
+            </div>,
+            document.body
         );
     }
 
-    return (
+    return createPortal(
         <div className="fixed inset-0 z-[100] flex flex-col md:flex-row p-4 bg-gray-900/60 backdrop-blur-sm animate-in fade-in duration-300">
             {/* Modal Container */}
             <div className="bg-gray-50 flex flex-col w-full max-w-6xl h-full max-h-[90vh] mx-auto rounded-3xl shadow-2xl overflow-hidden mt-auto mb-auto">
@@ -293,6 +297,7 @@ export default function InterviewScorecardModal({ interview, onClose }: Intervie
                     )}
                 </div>
             </div>
-        </div>
+        </div>,
+        document.body
     );
 }

@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { X, Check } from 'lucide-react';
 import { ManuscriptStatus } from '@prisma/client';
+import { createPortal } from 'react-dom';
 
 interface StageActionModalProps {
     isOpen: boolean;
@@ -51,6 +52,8 @@ export default function StageActionModal({ isOpen, onClose, currentStatus, onUpd
     const allowedNextStages = NEXT_STAGES[currentStatus] || [];
 
     return (
+
+        (typeof document !== 'undefined' ? createPortal(
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
             <div className="bg-white rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden animate-in zoom-in duration-200">
                 <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
@@ -116,5 +119,11 @@ export default function StageActionModal({ isOpen, onClose, currentStatus, onUpd
                 </form>
             </div>
         </div>
+    ,
+
+        document.body
+
+        ) : null)
+
     );
 }

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Calendar, User, AlignLeft, CheckSquare, Clock, AlertCircle, Link as LinkIcon, Save, Trash2, Rocket, Zap, ShieldCheck } from 'lucide-react';
 
@@ -163,7 +164,9 @@ export default function TaskDetailModal({
         }
     };
 
-    return (
+    if (typeof document === 'undefined') return null;
+
+    return createPortal(
         <AnimatePresence>
             {isOpen && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 overflow-hidden">
@@ -417,6 +420,7 @@ export default function TaskDetailModal({
                     </motion.div>
                 </div>
             )}
-        </AnimatePresence>
+        </AnimatePresence>,
+        document.body
     );
 }

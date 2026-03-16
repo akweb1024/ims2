@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import RichTextEditor from '@/components/common/RichTextEditor';
+import { createPortal } from 'react-dom';
 
 interface JobPostingModalProps {
     isOpen: boolean;
@@ -47,6 +48,8 @@ export default function JobPostingModal({ isOpen, onClose, job, onSave }: JobPos
     if (!isOpen) return null;
 
     return (
+
+        (typeof document !== 'undefined' ? createPortal(
         <div className="fixed inset-0 bg-secondary-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
             <div className="bg-white rounded-3xl w-full max-w-2xl overflow-hidden shadow-2xl animate-in zoom-in duration-200">
                 <div className="bg-primary-50 p-6 border-b border-primary-100 flex justify-between items-center">
@@ -110,5 +113,11 @@ export default function JobPostingModal({ isOpen, onClose, job, onSave }: JobPos
                 </form>
             </div>
         </div>
+    ,
+
+        document.body
+
+        ) : null)
+
     );
 }

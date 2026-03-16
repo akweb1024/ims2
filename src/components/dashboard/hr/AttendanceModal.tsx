@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { createPortal } from 'react-dom';
 
 interface AttendanceModalProps {
     isOpen: boolean;
@@ -25,6 +26,8 @@ export default function AttendanceModal({ isOpen, onClose, initialData, onSave }
     if (!isOpen) return null;
 
     return (
+
+        (typeof document !== 'undefined' ? createPortal(
         <div className="fixed inset-0 bg-secondary-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
             <div className="bg-white rounded-3xl w-full max-w-md overflow-hidden shadow-2xl animate-in zoom-in duration-200">
                 <div className="bg-secondary-50 p-6 border-b border-secondary-100 flex justify-between items-center">
@@ -52,5 +55,11 @@ export default function AttendanceModal({ isOpen, onClose, initialData, onSave }
                 </form>
             </div>
         </div>
+    ,
+
+        document.body
+
+        ) : null)
+
     );
 }

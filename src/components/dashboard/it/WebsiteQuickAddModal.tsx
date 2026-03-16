@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Globe, Save, Loader2, Link as LinkIcon, Shield, Activity } from 'lucide-react';
+import { createPortal } from 'react-dom';
 
 interface WebsiteQuickAddModalProps {
     isOpen: boolean;
@@ -61,6 +62,8 @@ export default function WebsiteQuickAddModal({ isOpen, onClose, onSuccess }: Web
     if (!isOpen) return null;
 
     return (
+
+        (typeof document !== 'undefined' ? createPortal(
         <AnimatePresence>
             <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose}
@@ -184,5 +187,11 @@ export default function WebsiteQuickAddModal({ isOpen, onClose, onSuccess }: Web
                 </motion.div>
             </div>
         </AnimatePresence>
+    ,
+
+        document.body
+
+        ) : null)
+
     );
 }

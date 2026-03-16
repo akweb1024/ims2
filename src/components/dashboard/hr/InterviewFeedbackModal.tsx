@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { X, Star, Save, MessageSquare } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { useInterviewMutations } from '@/hooks/useRecruitment';
+import { createPortal } from 'react-dom';
 
 interface InterviewFeedbackModalProps {
     interview: any;
@@ -69,6 +70,8 @@ export default function InterviewFeedbackModal({ interview, onClose }: Interview
     };
 
     return (
+
+        (typeof document !== 'undefined' ? createPortal(
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm animate-in fade-in duration-300">
             <div className="bg-white w-full max-w-lg rounded-[2rem] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300 flex flex-col">
                 <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
@@ -160,5 +163,11 @@ export default function InterviewFeedbackModal({ interview, onClose }: Interview
                 </div>
             </div>
         </div>
+    ,
+
+        document.body
+
+        ) : null)
+
     );
 }
