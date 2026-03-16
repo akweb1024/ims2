@@ -10,10 +10,14 @@ interface TeamAnalyticsViewProps {
 
 const TeamAnalyticsView: React.FC<TeamAnalyticsViewProps> = ({ filters }) => {
     const { data: metrics, isLoading: loading } = usePerformanceMetrics(filters.month, filters.year);
+    const summary = metrics?.summary;
 
     if (loading) {
         return <div className="p-20 text-center text-secondary-400 font-bold animate-pulse">Analyzing team metrics...</div>;
     }
+
+    const latestInsight = metrics?.insights?.[0];
+    const topPerformer = metrics?.topEarners?.[0];
 
     return (
         <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-700">
@@ -29,13 +33,13 @@ const TeamAnalyticsView: React.FC<TeamAnalyticsViewProps> = ({ filters }) => {
                         <div className="w-12 h-12 rounded-2xl bg-primary-600 text-white flex items-center justify-center shadow-lg shadow-primary-200">
                             <TrendingUp size={24} />
                         </div>
-                        <h4 className="text-xs font-black text-secondary-400 uppercase tracking-widest">Avg Growth</h4>
+                        <h4 className="text-xs font-black text-secondary-400 uppercase tracking-widest">Overall Achievement</h4>
                     </div>
                     <div className="text-4xl font-black text-secondary-900 mb-2">
-                        {metrics?.averageProgress || 0}%
+                        {summary?.overallAchievement ? summary.overallAchievement.toFixed(0) : 0}%
                     </div>
                     <p className="text-xs font-bold text-success-600 flex items-center gap-1">
-                        <Zap size={10} /> +2.4% from last month
+                        <Zap size={10} /> Target vs revenue this year
                     </p>
                 </div>
 
@@ -48,9 +52,9 @@ const TeamAnalyticsView: React.FC<TeamAnalyticsViewProps> = ({ filters }) => {
                         <h4 className="text-xs font-black text-secondary-400 uppercase tracking-widest">Goal Completion</h4>
                     </div>
                     <div className="text-4xl font-black text-secondary-900 mb-2">
-                        {metrics?.goalSuccessRate || 0}%
+                        {summary?.overallGoalAchievement ? summary.overallGoalAchievement.toFixed(0) : 0}%
                     </div>
-                    <p className="text-xs font-bold text-secondary-400">On-track for quarterly targets</p>
+                    <p className="text-xs font-bold text-secondary-400">Goals achieved across team</p>
                 </div>
 
                 <div className="card-premium p-8 bg-white border border-secondary-100 shadow-sm overflow-hidden relative group">
@@ -59,12 +63,12 @@ const TeamAnalyticsView: React.FC<TeamAnalyticsViewProps> = ({ filters }) => {
                         <div className="w-12 h-12 rounded-2xl bg-indigo-600 text-white flex items-center justify-center shadow-lg shadow-indigo-200">
                             <Award size={24} />
                         </div>
-                        <h4 className="text-xs font-black text-secondary-400 uppercase tracking-widest">Total Achievements</h4>
+                        <h4 className="text-xs font-black text-secondary-400 uppercase tracking-widest">Total Goals</h4>
                     </div>
                     <div className="text-4xl font-black text-secondary-900 mb-2">
-                        {metrics?.totalPoints || 0}
+                        {summary?.totalGoals || 0}
                     </div>
-                    <p className="text-xs font-bold text-indigo-600">Points awarded this period</p>
+                    <p className="text-xs font-bold text-indigo-600">Goals tracked this year</p>
                 </div>
             </div>
 
@@ -74,17 +78,18 @@ const TeamAnalyticsView: React.FC<TeamAnalyticsViewProps> = ({ filters }) => {
                     <div className="space-y-6">
                         <h3 className="text-2xl font-black italic tracking-tight">Manager AI Insight</h3>
                         <p className="text-secondary-300 text-sm leading-relaxed font-medium">
-                            Based on current attendance and task completion patterns, your team&apos;s productivity peaks between 10 AM and 1 PM.
-                            Consider scheduling high-priority sprint reviews or brainstorming sessions during this window for maximum engagement.
+                            {latestInsight?.content || 'No performance insights available yet. Once reports and reviews are captured, insights will appear here.'}
                         </p>
                         <div className="flex gap-4 pt-4">
                             <div className="p-4 bg-white/10 rounded-2xl backdrop-blur-md flex-1">
                                 <p className="text-[10px] font-black text-secondary-400 uppercase tracking-widest mb-1">Top Performer</p>
-                                <p className="text-sm font-bold text-white">Pradeep Kumar (Software)</p>
+                                <p className="text-sm font-bold text-white">
+                                    {topPerformer?.name ? `${topPerformer.name}${topPerformer.designation ? ` (${topPerformer.designation})` : ''}` : 'No leaderboard data yet'}
+                                </p>
                             </div>
                             <div className="p-4 bg-white/10 rounded-2xl backdrop-blur-md flex-1">
                                 <p className="text-[10px] font-black text-secondary-400 uppercase tracking-widest mb-1">Focus Area</p>
-                                <p className="text-sm font-bold text-white">Documentation Lag</p>
+                                <p className="text-sm font-bold text-white">{latestInsight?.type || 'General'}</p>
                             </div>
                         </div>
                     </div>

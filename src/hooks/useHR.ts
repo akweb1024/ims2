@@ -175,9 +175,39 @@ export const useIncrements = (employeeId?: string) => {
 };
 
 export const usePerformanceMetrics = (month?: number, year?: number) => {
+    const targetYear = year ?? new Date().getFullYear();
+    const analyticsParams = new URLSearchParams({
+        scope: 'TEAM',
+        year: String(targetYear)
+    });
+    const pointsParams = new URLSearchParams({
+        mode: 'leaderboard'
+    });
+    if (month && year) {
+        pointsParams.set('month', String(month));
+        pointsParams.set('year', String(year));
+    }
+
     return useQuery<any>({
         queryKey: ['performance-metrics', { month, year }],
-        queryFn: () => fetchJson(`/api/hr/performance/metrics?month=${month}&year=${year}`),
+        queryFn: async () => {
+            const [analytics, points, insights] = await Promise.all([
+                fetchJson(`/api/hr/performance/analytics?${analyticsParams.toString()}`),
+                fetchJson(`/api/hr/points?${pointsParams.toString()}`),
+                fetchJson('/api/hr/performance/insights')
+            ]);
+
+            return {
+                ...analytics,
+                insights: Array.isArray(insights) ? insights : [],
+                topEarners: (points?.leaderboard || []).map((entry: any) => ({
+                    name: entry.name,
+                    points: entry.amount,
+                    employeeId: entry.employeeId,
+                    designation: entry.designation
+                }))
+            };
+        },
     });
 };
 
