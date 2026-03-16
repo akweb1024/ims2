@@ -7,6 +7,14 @@ import { useRouter } from 'next/navigation';
 import RevenueFlowHelp from '@/components/dashboard/hr/RevenueFlowHelp';
 import { toast } from 'react-hot-toast';
 
+const getISTDateString = (date = new Date()) =>
+    new Intl.DateTimeFormat('en-CA', {
+        timeZone: 'Asia/Kolkata',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit'
+    }).format(date);
+
 export default function SubmitReportPage() {
     const router = useRouter();
     const [user, setUser] = useState<any>(null);
@@ -32,7 +40,7 @@ export default function SubmitReportPage() {
     const [revenueFormData, setRevenueFormData] = useState({
         amount: '',
         paymentMethod: 'UPI',
-        date: new Date().toISOString().split('T')[0],
+        date: getISTDateString(),
         customerName: '',
         customerEmail: '',
         customerPhone: '',
@@ -92,7 +100,7 @@ export default function SubmitReportPage() {
         title: '',
         content: '',
         hoursSpent: 0,
-        date: new Date().toISOString().split('T')[0],
+        date: getISTDateString(),
         selfRating: 5,
         meetingsText: ''
     });
@@ -129,7 +137,7 @@ export default function SubmitReportPage() {
             // Fetch My Recent Transactions (Created by self, today, pending claim)
             // We'll fetch slightly broader (last 24h or createdBy=self and unclaimed)
             setLoadingRecentRevenue(true);
-            const today = new Date().toISOString().split('T')[0];
+            const today = getISTDateString();
             fetch(`/api/revenue/transactions?createdBy=self&excludeClaimed=true&startDate=${today}&endDate=${today}`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             })
@@ -167,7 +175,7 @@ export default function SubmitReportPage() {
             fetch('/api/hr/attendance', { headers: { 'Authorization': `Bearer ${token}` } })
                 .then(res => res.json())
                 .then(data => {
-                    const today = new Date().toISOString().split('T')[0];
+                    const today = getISTDateString();
                     const record = data.find((a: any) => a.date.startsWith(today));
                     if (record && record.checkIn) {
                         const checkIn = new Date(record.checkIn);
@@ -217,7 +225,7 @@ export default function SubmitReportPage() {
                 .catch(err => console.error("Error syncing with Daily Task Tracker", err));
 
             // Check if a report already exists for today
-            const todayStr = new Date().toISOString().split('T')[0];
+            const todayStr = getISTDateString();
             fetch(`/api/hr/work-reports?employeeId=self&startDate=${todayStr}&endDate=${todayStr}`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             })
@@ -233,7 +241,7 @@ export default function SubmitReportPage() {
                             title: report.title || '',
                             content: report.content || '',
                             hoursSpent: report.hoursSpent || 0,
-                            date: report.date ? new Date(report.date).toISOString().split('T')[0] : todayStr,
+                            date: report.date ? getISTDateString(new Date(report.date)) : todayStr,
                             selfRating: report.selfRating || 5,
                             meetingsText: report.metrics?.meetingsText || ''
                         });
@@ -459,7 +467,7 @@ export default function SubmitReportPage() {
                 setRevenueFormData({
                     amount: '',
                     paymentMethod: 'UPI',
-                    date: new Date().toISOString().split('T')[0],
+                    date: getISTDateString(),
                     customerName: '',
                     customerEmail: '',
                     customerPhone: '',

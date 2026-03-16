@@ -5,6 +5,23 @@ import { handleApiError, NotFoundError, AuthorizationError, ValidationError } fr
 import { logger } from '@/lib/logger';
 import { getDownlineUserIds } from '@/lib/hierarchy';
 
+const getISTDateString = (date = new Date()) =>
+    new Intl.DateTimeFormat('en-CA', {
+        timeZone: 'Asia/Kolkata',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit'
+    }).format(date);
+
+const getISTDateRange = (dateStr?: string) => {
+    const base = dateStr || getISTDateString();
+    return {
+        base,
+        start: new Date(`${base}T00:00:00+05:30`),
+        end: new Date(`${base}T23:59:59.999+05:30`)
+    };
+};
+
 
 export const GET = authorizedRoute(
     [],
@@ -83,8 +100,8 @@ export const GET = authorizedRoute(
             // Date Filtering
             if (startDate || endDate) {
                 where.date = {};
-                if (startDate) where.date.gte = new Date(startDate);
-                if (endDate) where.date.lte = new Date(endDate);
+                if (startDate) where.date.gte = getISTDateRange(startDate).start;
+                if (endDate) where.date.lte = getISTDateRange(endDate).end;
             }
 
             // Category Filtering
@@ -146,11 +163,8 @@ export const POST = authorizedRoute(
                 return isNaN(num) ? 0 : num;
             };
 
-            const reportDate = body.date ? new Date(body.date) : new Date();
-            const startOfDay = new Date(reportDate);
-            startOfDay.setHours(0, 0, 0, 0);
-            const endOfDay = new Date(reportDate);
-            endOfDay.setHours(23, 59, 59, 999);
+            const { base: reportDateStr, start: startOfDay, end: endOfDay } = getISTDateRange(body.date);
+            const reportDate = startOfDay;
 
             // Check if report already exists for this day
             const existingReport = await prisma.workReport.findFirst({
@@ -183,31 +197,28 @@ export const POST = authorizedRoute(
                     timeZone: 'Asia/Kolkata',
                     hour12: false,
                     hour: 'numeric',
-                    minute: 'numeric',
-                    weekday: 'short'
+                    minute: 'numeric'
                 });
                 const parts = formatter.formatToParts(now);
-                let currentHour = 0, currentMinute = 0, currentWeekday = '';
+                let currentHour = 0, currentMinute = 0;
                 for (const p of parts) {
                     if (p.type === 'hour') currentHour = parseInt(p.value, 10);
                     if (p.type === 'minute') currentMinute = parseInt(p.value, 10);
-                    if (p.type === 'weekday') currentWeekday = p.value;
                 }
                 if (currentHour === 24) currentHour = 0;
-                
-                const isCurrentWeekend = currentWeekday === 'Sat' || currentWeekday === 'Sun';
+
+                const reportWeekday = new Intl.DateTimeFormat('en-US', {
+                    timeZone: 'Asia/Kolkata',
+                    weekday: 'short'
+                }).format(reportDate);
+                const isCurrentWeekend = reportWeekday === 'Sat' || reportWeekday === 'Sun';
                 const isAfter530PM = currentHour > 17 || (currentHour === 17 && currentMinute >= 30);
                 
                 // Ensure attendance for the reported date is checked
-                const targetDayStart = new Date(reportDate);
-                targetDayStart.setHours(0, 0, 0, 0);
-                const targetDayEnd = new Date(reportDate);
-                targetDayEnd.setHours(23, 59, 59, 999);
-                
                 const attendanceRecord = await prisma.attendance.findFirst({
                     where: {
                         employeeId: profile.id,
-                        date: { gte: targetDayStart, lte: targetDayEnd }
+                        date: { gte: startOfDay, lte: endOfDay }
                     }
                 });
                 const hasCheckedOut = !!attendanceRecord?.checkOut;
@@ -232,11 +243,12 @@ export const POST = authorizedRoute(
                 if (!allowed) {
                     logger.warn(`Work report submission blocked`, { 
                         employeeId: profile.id, 
-                        isCurrentWeekend, 
-                        isAfter530PM, 
-                        hasCheckedOut, 
+                        isCurrentWeekend,
+                        isAfter530PM,
+                        hasCheckedOut,
                         istHour: currentHour,
                         istMinute: currentMinute,
+                        reportDate: reportDateStr,
                         reason: rejectReason 
                     });
                     return NextResponse.json({
@@ -300,10 +312,7 @@ export const POST = authorizedRoute(
                 const attendance = await prisma.attendance.findFirst({
                     where: {
                         employeeId: profile.id,
-                        date: {
-                            gte: new Date(reportDate.setHours(0, 0, 0, 0)),
-                            lte: new Date(reportDate.setHours(23, 59, 59, 999))
-                        }
+                        date: { gte: startOfDay, lte: endOfDay }
                     }
                 });
 
@@ -398,7 +407,7 @@ export const POST = authorizedRoute(
                     title: body.title,
                     content: body.content,
                     hoursSpent: hoursSpent,
-                    date: body.date ? new Date(body.date) : new Date(),
+                    date: reportDate,
                     status: 'SUBMITTED',
                     category: body.category || 'GENERAL',
                     keyOutcome: body.keyOutcome || null,
@@ -447,10 +456,7 @@ export const POST = authorizedRoute(
 
             // Sync Work Agenda Checkpoint Completion Status
             if (body.completedAgendaIds && Array.isArray(body.completedAgendaIds)) {
-                const reportDateOnly = body.date ? new Date(body.date) : new Date();
-                reportDateOnly.setHours(0, 0, 0, 0);
-                const reportDateEnd = new Date(reportDateOnly);
-                reportDateEnd.setHours(23, 59, 59, 999);
+                const { start: reportDateOnly, end: reportDateEnd } = getISTDateRange(body.date);
 
                 // Mark checked items as COMPLETED
                 if (body.completedAgendaIds.length > 0) {
@@ -509,12 +515,10 @@ export const PUT = authorizedRoute(
                 }
 
                 // Check if editing on the same day as the report date
-                const today = new Date();
-                today.setHours(0, 0, 0, 0);
-                const reportDate = new Date(existing.date);
-                reportDate.setHours(0, 0, 0, 0);
+                const todayStr = getISTDateString();
+                const reportDateStr = getISTDateString(new Date(existing.date));
 
-                if (today.getTime() !== reportDate.getTime()) {
+                if (todayStr !== reportDateStr) {
                     throw new ValidationError('Work reports can only be edited on the same day they were submitted');
                 }
             }
