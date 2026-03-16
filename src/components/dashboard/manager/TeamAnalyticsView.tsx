@@ -80,6 +80,11 @@ const TeamAnalyticsView: React.FC<TeamAnalyticsViewProps> = ({ filters }) => {
                         <p className="text-secondary-300 text-sm leading-relaxed font-medium">
                             {latestInsight?.content || 'No performance insights available yet. Once reports and reviews are captured, insights will appear here.'}
                         </p>
+                        {latestInsight?.date && (
+                            <p className="text-[10px] font-black uppercase tracking-widest text-secondary-400">
+                                Updated {new Date(latestInsight.date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
+                            </p>
+                        )}
                         <div className="flex gap-4 pt-4">
                             <div className="p-4 bg-white/10 rounded-2xl backdrop-blur-md flex-1">
                                 <p className="text-[10px] font-black text-secondary-400 uppercase tracking-widest mb-1">Top Performer</p>
