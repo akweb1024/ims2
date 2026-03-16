@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getSessionUser } from '@/lib/session';
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import { buildAIPrompt, BASE_APP_PROMPT } from '@/lib/ai/basePrompt';
 
 export async function POST(req: NextRequest) {
     try {
@@ -52,10 +53,10 @@ export async function POST(req: NextRequest) {
         };
 
         // Determine prompt based on contextual intent
-        let prompt = "Read this document and extract its text clearly.";
+        let prompt = buildAIPrompt("Read this document and extract its text clearly.");
         
         if (instructionType === 'RESUME') {
-            prompt = `
+            prompt = buildAIPrompt(`
             You are an expert HR Data Extraction AI. 
             Analyze the following resume document. 
             Extract the data strictly in the following JSON format without any markdown wrappers or additional commentary:
@@ -71,9 +72,9 @@ export async function POST(req: NextRequest) {
                 "educationLevel": "string"
             }
             Ensure the response is valid parsable JSON. If a value isn't found, use null or an empty array.
-            `;
+            `);
         } else if (instructionType === 'INVOICE') {
-             prompt = `
+             prompt = buildAIPrompt(`
              You are an expert Finance AI. Analyze this invoice/receipt document.
              Extract the data strictly in the following JSON format without markdown wrapper:
              {
@@ -84,7 +85,7 @@ export async function POST(req: NextRequest) {
                  "currency": "string",
                  "lineItems": [{"description": "string", "amount": number}]
              }
-             `;
+             `);
         }
 
         const result = await model.generateContent([prompt, imagePart]);

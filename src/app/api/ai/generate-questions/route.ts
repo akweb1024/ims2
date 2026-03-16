@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { getAuthenticatedUser } from '@/lib/auth';
+import { buildAIPrompt } from '@/lib/ai/basePrompt';
 
 // Initialize Gemini API
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
@@ -19,7 +20,7 @@ export async function POST(request: Request) {
 
         const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
 
-        const prompt = `
+        const prompt = buildAIPrompt(`
             You are an expert HR Technical Recruiter. Based on the following inputs, generate exactly ${numQuestions} highly relevant interview questions tailored to the candidate and the job.
 
             **Job Description/Requirements:**
@@ -59,7 +60,7 @@ export async function POST(request: Request) {
             ]
             
             Do NOT wrap the result in \`\`\`json. Return the raw array string directly.
-        `;
+        `);
 
         const result = await model.generateContent(prompt);
         const responseText = result.response.text().trim();
