@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAuthenticatedUser } from '@/lib/auth-legacy';
 import prisma from '@/lib/prisma';
+import { getISTDateRangeForPeriod, normalizePeriod } from '@/lib/date-utils';
 
 // GET - Fetch today's progress for the current user
 export async function GET(req: NextRequest) {
@@ -19,20 +20,19 @@ export async function GET(req: NextRequest) {
             return NextResponse.json({ error: 'Employee profile not found' }, { status: 404 });
         }
 
-        // Get today's date range
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        const tomorrow = new Date(today);
-        tomorrow.setDate(tomorrow.getDate() + 1);
+        const { searchParams } = new URL(req.url);
+        const period = normalizePeriod(searchParams.get('period'));
+        const { start, end } = getISTDateRangeForPeriod(period);
 
-        // Fetch today's completed tasks
+        // Fetch period completed tasks
         const completedTasks = await prisma.dailyTaskCompletion.findMany({
             where: {
                 employeeId: employee.id,
                 completedAt: {
-                    gte: today,
-                    lt: tomorrow
-                }
+                    gte: start,
+                    lte: end
+                },
+                ...(period !== 'YEARLY' ? { task: { frequency: period } } : {})
             },
             include: {
                 task: true

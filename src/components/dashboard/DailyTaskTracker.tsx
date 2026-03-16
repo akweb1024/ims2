@@ -13,6 +13,9 @@ interface Task {
     minThreshold?: number;
     maxThreshold?: number;
     category?: string;
+    frequency?: 'DAILY' | 'MONTHLY' | 'QUARTERLY';
+    targetValue?: number;
+    targetUnit?: 'COUNT' | 'POINTS';
 }
 
 interface CompletedTask {
@@ -27,16 +30,17 @@ export default function DailyTaskTracker() {
     const [scaledValues, setScaledValues] = useState<Record<string, number>>({});
     const [loading, setLoading] = useState(true);
     const [todayPoints, setTodayPoints] = useState(0);
+    const [period, setPeriod] = useState<'DAILY' | 'MONTHLY' | 'QUARTERLY'>('DAILY');
 
     useEffect(() => {
         fetchTasks();
         fetchTodayProgress();
-    }, []);
+    }, [period]);
 
     const fetchTasks = async () => {
         try {
             const token = localStorage.getItem('token');
-            const res = await fetch('/api/hr/tasks/my-tasks', {
+            const res = await fetch(`/api/hr/tasks/my-tasks?period=${period}`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             if (res.ok) {
@@ -53,7 +57,7 @@ export default function DailyTaskTracker() {
     const fetchTodayProgress = async () => {
         try {
             const token = localStorage.getItem('token');
-            const res = await fetch('/api/hr/tasks/today-progress', {
+            const res = await fetch(`/api/hr/tasks/today-progress?period=${period}`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             if (res.ok) {
@@ -175,6 +179,7 @@ export default function DailyTaskTracker() {
     const completedCount = completedTasks.length;
     const totalTasks = tasks.length;
     const completionPercentage = totalTasks > 0 ? Math.round((completedCount / totalTasks) * 100) : 0;
+    const periodLabel = period === 'DAILY' ? 'Daily' : period === 'MONTHLY' ? 'Monthly' : 'Quarterly';
 
     if (loading) {
         return (
@@ -190,6 +195,17 @@ export default function DailyTaskTracker() {
 
     return (
         <div className="space-y-6">
+            <div className="flex items-center gap-2">
+                {(['DAILY', 'MONTHLY', 'QUARTERLY'] as const).map(p => (
+                    <button
+                        key={p}
+                        onClick={() => setPeriod(p)}
+                        className={`btn h-9 px-4 text-xs font-black ${period === p ? 'btn-primary' : 'border border-secondary-200 bg-white text-secondary-700'}`}
+                    >
+                        {p === 'DAILY' ? 'Daily' : p === 'MONTHLY' ? 'Monthly' : 'Quarterly'}
+                    </button>
+                ))}
+            </div>
             {/* Header Stats */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                 <div className="card-premium p-3 sm:p-4 border-l-4 border-indigo-500">
@@ -225,7 +241,7 @@ export default function DailyTaskTracker() {
                 <div className="card-premium p-3 sm:p-4 border-l-4 border-amber-500">
                     <div className="flex items-center justify-between">
                         <div>
-                            <p className="text-[10px] sm:text-xs font-bold text-secondary-400 uppercase">Today</p>
+                            <p className="text-[10px] sm:text-xs font-bold text-secondary-400 uppercase">Period</p>
                             <p className="text-xs sm:text-sm font-black text-secondary-900 truncate">
                                 {new Date().toLocaleDateString(undefined, { day: 'numeric', month: 'short' })}
                             </p>
@@ -238,7 +254,7 @@ export default function DailyTaskTracker() {
             {/* Progress Bar */}
             <div className="card-premium p-6">
                 <div className="flex items-center justify-between mb-2">
-                    <h3 className="font-bold text-lg text-secondary-900">Daily Progress</h3>
+                    <h3 className="font-bold text-lg text-secondary-900">{periodLabel} Progress</h3>
                     <span className="text-sm font-bold text-secondary-500">{completedCount} of {totalTasks} completed</span>
                 </div>
                 <div className="w-full bg-secondary-100 h-2 rounded-full overflow-hidden mb-2">
@@ -254,7 +270,7 @@ export default function DailyTaskTracker() {
                 <div className="flex items-center justify-between mb-6">
                     <h3 className="font-bold text-lg sm:text-xl text-secondary-900 flex items-center gap-2">
                         <Clock className="text-primary-500" size={20} />
-                        Daily Tasks
+                        {periodLabel} Tasks
                     </h3>
                 </div>
 

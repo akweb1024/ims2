@@ -96,9 +96,11 @@ export const POST = authorizedRoute(['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'HR'], a
     const body = await req.json();
     const {
         title, description, points,
+        frequency, targetValue, targetUnit, startDate, endDate,
         departmentId, designationId,
         departmentIds, designationIds,
         employeeId,
+        employeeIds,
         calculationType, minThreshold, maxThreshold, pointsPerUnit
     } = body;
 
@@ -107,9 +109,15 @@ export const POST = authorizedRoute(['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'HR'], a
             title,
             description,
             points: Number(points),
+            frequency: frequency || 'DAILY',
+            targetValue: targetValue !== undefined && targetValue !== null ? Number(targetValue) : 1,
+            targetUnit: targetUnit || 'COUNT',
+            startDate: startDate ? new Date(startDate) : null,
+            endDate: endDate ? new Date(endDate) : null,
             departmentId: departmentId === 'ALL' ? null : departmentId,
             designationId: designationId === 'ALL' ? null : designationId,
             employeeId: employeeId || null,
+            employeeIds: (employeeIds && Array.isArray(employeeIds) && employeeIds.length > 0 ? employeeIds : null) as any,
             departmentIds: (departmentIds && Array.isArray(departmentIds) && departmentIds.length > 0 ? departmentIds : null) as any,
             designationIds: (designationIds && Array.isArray(designationIds) && designationIds.length > 0 ? designationIds : null) as any,
             companyId: user.companyId,
@@ -127,9 +135,11 @@ export const PUT = authorizedRoute(['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'HR'], as
     const body = await req.json();
     const {
         id, title, description, points, isActive,
+        frequency, targetValue, targetUnit, startDate, endDate,
         departmentId, designationId,
         departmentIds, designationIds,
         employeeId,
+        employeeIds,
         calculationType, minThreshold, maxThreshold, pointsPerUnit
     } = body;
 
@@ -140,9 +150,15 @@ export const PUT = authorizedRoute(['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'HR'], as
             description,
             points: Number(points),
             isActive,
+            frequency: frequency || 'DAILY',
+            targetValue: targetValue !== undefined && targetValue !== null ? Number(targetValue) : 1,
+            targetUnit: targetUnit || 'COUNT',
+            startDate: startDate ? new Date(startDate) : null,
+            endDate: endDate ? new Date(endDate) : null,
             departmentId: departmentId === 'ALL' ? null : departmentId,
             designationId: designationId === 'ALL' ? null : designationId,
             employeeId: employeeId || null,
+            employeeIds: (employeeIds && Array.isArray(employeeIds) && employeeIds.length > 0 ? employeeIds : null) as any,
             departmentIds: (departmentIds && Array.isArray(departmentIds) && departmentIds.length > 0 ? departmentIds : null) as any,
             designationIds: (designationIds && Array.isArray(designationIds) && designationIds.length > 0 ? designationIds : null) as any,
             calculationType: calculationType as any,

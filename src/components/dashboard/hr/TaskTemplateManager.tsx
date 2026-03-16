@@ -8,6 +8,8 @@ export default function TaskTemplateManager() {
     const [tasks, setTasks] = useState<any[]>([]);
     const [departments, setDepartments] = useState<any[]>([]);
     const [designations, setDesignations] = useState<any[]>([]);
+    const [employees, setEmployees] = useState<any[]>([]);
+    const [employeeSearch, setEmployeeSearch] = useState('');
     const [isLoading, setIsLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingTask, setEditingTask] = useState<any>(null);
@@ -27,11 +29,18 @@ export default function TaskTemplateManager() {
         title: '',
         description: '',
         points: 10,
+        frequency: 'DAILY',
+        targetValue: 1,
+        targetUnit: 'COUNT',
+        startDate: '',
+        endDate: '',
         departmentId: 'ALL',
         designationId: 'ALL',
         departmentIds: [] as string[],  // NEW: Multi-select
         designationIds: [] as string[], // NEW: Multi-select
-        selectionMode: 'ALL' as 'ALL' | 'SPECIFIC', // NEW: Selection mode
+        selectionMode: 'ALL' as 'ALL' | 'SPECIFIC' | 'INDIVIDUAL', // NEW: Selection mode
+        employeeId: '',
+        employeeIds: [] as string[],
         isActive: true,
         calculationType: 'FLAT',
         minThreshold: 1,
@@ -44,15 +53,27 @@ export default function TaskTemplateManager() {
     const fetchData = useCallback(async () => {
         try {
             const token = localStorage.getItem('token');
-            const [tasksRes, deptsRes, desigsRes] = await Promise.all([
+            const [tasksRes, deptsRes, desigsRes, employeesRes] = await Promise.all([
                 fetch('/api/hr/tasks', { headers: { 'Authorization': `Bearer ${token}` } }),
                 fetch('/api/hr/departments', { headers: { 'Authorization': `Bearer ${token}` } }),
-                fetch('/api/hr/designations', { headers: { 'Authorization': `Bearer ${token}` } })
+                fetch('/api/hr/designations', { headers: { 'Authorization': `Bearer ${token}` } }),
+                fetch('/api/hr/employees', { headers: { 'Authorization': `Bearer ${token}` } })
             ]);
 
             if (tasksRes.ok) setTasks(await tasksRes.json());
             if (deptsRes.ok) setDepartments(await deptsRes.json());
             if (desigsRes.ok) setDesignations(await desigsRes.json());
+            if (employeesRes.ok) {
+                const data = await employeesRes.json();
+                const mapped = (data || []).map((e: any) => ({
+                    id: e.id,
+                    name: e.user?.name || e.user?.email || 'Unnamed',
+                    email: e.user?.email || '',
+                    designation: e.designatRef?.name || '',
+                    department: e.user?.department?.name || ''
+                }));
+                setEmployees(mapped);
+            }
         } catch (error) {
             console.error('Error fetching data:', error);
         } finally {
@@ -67,6 +88,10 @@ export default function TaskTemplateManager() {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
+            if (formData.selectionMode === 'INDIVIDUAL' && formData.employeeIds.length === 0) {
+                alert('Please select at least one employee.');
+                return;
+            }
             const token = localStorage.getItem('token');
             const url = '/api/hr/tasks';
             const method = editingTask ? 'PUT' : 'POST';
@@ -78,6 +103,11 @@ export default function TaskTemplateManager() {
                 title: formData.title,
                 description: formData.description,
                 points: formData.points,
+                frequency: formData.frequency,
+                targetValue: formData.targetValue,
+                targetUnit: formData.targetUnit,
+                startDate: formData.startDate || null,
+                endDate: formData.endDate || null,
                 isActive: formData.isActive,
                 calculationType: formData.calculationType,
                 minThreshold: formData.minThreshold,
@@ -91,12 +121,25 @@ export default function TaskTemplateManager() {
                 body.designationId = 'ALL';
                 body.departmentIds = null;
                 body.designationIds = null;
+                body.employeeId = null;
+                body.employeeIds = null;
             } else {
-                // Multi-select mode
-                body.departmentId = null;
-                body.designationId = null;
-                body.departmentIds = formData.departmentIds.length > 0 ? formData.departmentIds : null;
-                body.designationIds = formData.designationIds.length > 0 ? formData.designationIds : null;
+                if (formData.selectionMode === 'INDIVIDUAL') {
+                    body.employeeId = formData.employeeIds.length === 1 ? formData.employeeIds[0] : null;
+                    body.employeeIds = formData.employeeIds.length > 0 ? formData.employeeIds : null;
+                    body.departmentId = null;
+                    body.designationId = null;
+                    body.departmentIds = null;
+                    body.designationIds = null;
+                } else {
+                    // Multi-select mode
+                    body.employeeId = null;
+                    body.employeeIds = null;
+                    body.departmentId = null;
+                    body.designationId = null;
+                    body.departmentIds = formData.departmentIds.length > 0 ? formData.departmentIds : null;
+                    body.designationIds = formData.designationIds.length > 0 ? formData.designationIds : null;
+                }
             }
 
             const res = await fetch(url, {
@@ -125,11 +168,18 @@ export default function TaskTemplateManager() {
             title: '',
             description: '',
             points: 10,
+            frequency: 'DAILY',
+            targetValue: 1,
+            targetUnit: 'COUNT',
+            startDate: '',
+            endDate: '',
             departmentId: 'ALL',
             designationId: 'ALL',
             departmentIds: [],
             designationIds: [],
             selectionMode: 'ALL',
+            employeeId: '',
+            employeeIds: [],
             isActive: true,
             calculationType: 'FLAT',
             minThreshold: 1,
@@ -160,7 +210,9 @@ export default function TaskTemplateManager() {
         // Determine selection mode
         const hasMultipleDepts = task.departmentIds && Array.isArray(task.departmentIds) && task.departmentIds.length > 0;
         const hasMultipleDesigs = task.designationIds && Array.isArray(task.designationIds) && task.designationIds.length > 0;
-        const selectionMode = (hasMultipleDepts || hasMultipleDesigs) ? 'SPECIFIC' : 'ALL';
+        const selectionMode = (task.employeeId || (Array.isArray(task.employeeIds) && task.employeeIds.length > 0))
+            ? 'INDIVIDUAL'
+            : ((hasMultipleDepts || hasMultipleDesigs) ? 'SPECIFIC' : 'ALL');
 
         const ppu = task.pointsPerUnit || 1;
         const bp = ppu >= 1 ? ppu : 1;
@@ -170,11 +222,20 @@ export default function TaskTemplateManager() {
             title: task.title,
             description: task.description || '',
             points: task.points,
+            frequency: task.frequency || 'DAILY',
+            targetValue: task.targetValue ?? 1,
+            targetUnit: task.targetUnit || 'COUNT',
+            startDate: task.startDate ? new Date(task.startDate).toISOString().split('T')[0] : '',
+            endDate: task.endDate ? new Date(task.endDate).toISOString().split('T')[0] : '',
             departmentId: task.departmentId || 'ALL',
             designationId: task.designationId || 'ALL',
             departmentIds: task.departmentIds || [],
             designationIds: task.designationIds || [],
             selectionMode,
+            employeeId: task.employeeId || '',
+            employeeIds: Array.isArray(task.employeeIds)
+                ? task.employeeIds
+                : (task.employeeId ? [task.employeeId] : []),
             isActive: task.isActive,
             calculationType: task.calculationType || 'FLAT',
             minThreshold: task.minThreshold || 1,
@@ -680,13 +741,78 @@ export default function TaskTemplateManager() {
                                 </div>
                             )}
 
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="label">Frequency</label>
+                                    <select
+                                        className="input"
+                                        value={formData.frequency}
+                                        onChange={e => setFormData({ ...formData, frequency: e.target.value })}
+                                        title="Task Frequency"
+                                    >
+                                        <option value="DAILY">Daily</option>
+                                        <option value="MONTHLY">Monthly</option>
+                                        <option value="QUARTERLY">Quarterly</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="label">Target Unit</label>
+                                    <select
+                                        className="input"
+                                        value={formData.targetUnit}
+                                        onChange={e => setFormData({ ...formData, targetUnit: e.target.value })}
+                                        title="Target Unit"
+                                    >
+                                        <option value="COUNT">Count</option>
+                                        <option value="POINTS">Points</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="label">Target Value</label>
+                                    <input
+                                        type="number"
+                                        className="input"
+                                        min="0"
+                                        value={formData.targetValue}
+                                        onChange={e => setFormData({ ...formData, targetValue: parseFloat(e.target.value) || 0 })}
+                                        placeholder="Target"
+                                        title="Target Value"
+                                    />
+                                </div>
+                                <div className="grid grid-cols-2 gap-2">
+                                    <div>
+                                        <label className="label">Start Date</label>
+                                        <input
+                                            type="date"
+                                            className="input"
+                                            value={formData.startDate}
+                                            onChange={e => setFormData({ ...formData, startDate: e.target.value })}
+                                            title="Start Date"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="label">End Date</label>
+                                        <input
+                                            type="date"
+                                            className="input"
+                                            value={formData.endDate}
+                                            onChange={e => setFormData({ ...formData, endDate: e.target.value })}
+                                            title="End Date"
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+
                             {/* NEW: Selection Mode */}
                             <div className="border-t pt-4">
                                 <label className="label">Assignment Mode</label>
-                                <div className="grid grid-cols-2 gap-3">
+                                <div className="grid grid-cols-3 gap-3">
                                     <button
                                         type="button"
-                                        onClick={() => setFormData({ ...formData, selectionMode: 'ALL', departmentIds: [], designationIds: [] })}
+                                        onClick={() => setFormData({ ...formData, selectionMode: 'ALL', departmentIds: [], designationIds: [], employeeId: '', employeeIds: [] })}
                                         className={`p-4 rounded-xl border-2 transition-all ${formData.selectionMode === 'ALL'
                                             ? 'border-primary-500 bg-primary-50 text-primary-700'
                                             : 'border-secondary-200 hover:border-secondary-300'
@@ -697,7 +823,7 @@ export default function TaskTemplateManager() {
                                     </button>
                                     <button
                                         type="button"
-                                        onClick={() => setFormData({ ...formData, selectionMode: 'SPECIFIC' })}
+                                        onClick={() => setFormData({ ...formData, selectionMode: 'SPECIFIC', employeeId: '', employeeIds: [] })}
                                         className={`p-4 rounded-xl border-2 transition-all ${formData.selectionMode === 'SPECIFIC'
                                             ? 'border-primary-500 bg-primary-50 text-primary-700'
                                             : 'border-secondary-200 hover:border-secondary-300'
@@ -705,6 +831,17 @@ export default function TaskTemplateManager() {
                                     >
                                         <div className="font-bold">Specific Groups</div>
                                         <div className="text-xs text-secondary-500 mt-1">Select departments/roles</div>
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setFormData({ ...formData, selectionMode: 'INDIVIDUAL', departmentIds: [], designationIds: [], employeeIds: [] })}
+                                        className={`p-4 rounded-xl border-2 transition-all ${formData.selectionMode === 'INDIVIDUAL'
+                                            ? 'border-primary-500 bg-primary-50 text-primary-700'
+                                            : 'border-secondary-200 hover:border-secondary-300'
+                                            }`}
+                                    >
+                                        <div className="font-bold">Individual</div>
+                                        <div className="text-xs text-secondary-500 mt-1">Assign to one employee</div>
                                     </button>
                                 </div>
                             </div>
@@ -771,6 +908,60 @@ export default function TaskTemplateManager() {
                                         </p>
                                     </div>
                                 </>
+                            )}
+
+                            {formData.selectionMode === 'INDIVIDUAL' && (
+                                <div>
+                                    <label className="label">Select Employees</label>
+                                    <input
+                                        className="input mb-3"
+                                        placeholder="Search employees..."
+                                        value={employeeSearch}
+                                        onChange={(e) => setEmployeeSearch(e.target.value)}
+                                    />
+                                    <div className="grid grid-cols-2 gap-2 max-h-56 overflow-y-auto p-3 bg-secondary-50 rounded-xl border border-secondary-200">
+                                        {employees
+                                            .filter((emp) => {
+                                                const q = employeeSearch.toLowerCase().trim();
+                                                if (!q) return true;
+                                                return (
+                                                    emp.name?.toLowerCase().includes(q) ||
+                                                    emp.email?.toLowerCase().includes(q) ||
+                                                    emp.department?.toLowerCase().includes(q) ||
+                                                    emp.designation?.toLowerCase().includes(q)
+                                                );
+                                            })
+                                            .map((emp) => (
+                                                <label
+                                                    key={emp.id}
+                                                    className={`flex items-center gap-2 p-3 rounded-lg cursor-pointer border-2 transition-all ${formData.employeeIds.includes(emp.id)
+                                                        ? 'bg-primary-50 border-primary-500'
+                                                        : 'bg-white border-transparent hover:border-secondary-300'
+                                                        }`}
+                                                >
+                                                    <input
+                                                        type="checkbox"
+                                                        className="w-4 h-4 rounded text-primary-600"
+                                                        checked={formData.employeeIds.includes(emp.id)}
+                                                        onChange={() => {
+                                                            setFormData(prev => ({
+                                                                ...prev,
+                                                                employeeIds: prev.employeeIds.includes(emp.id)
+                                                                    ? prev.employeeIds.filter(id => id !== emp.id)
+                                                                    : [...prev.employeeIds, emp.id]
+                                                            }));
+                                                        }}
+                                                    />
+                                                    <span className="text-sm font-bold text-secondary-700">
+                                                        {emp.name} {emp.department ? `• ${emp.department}` : ''} {emp.designation ? `• ${emp.designation}` : ''}
+                                                    </span>
+                                                </label>
+                                            ))}
+                                    </div>
+                                    <p className="text-xs text-secondary-500 mt-2">
+                                        {formData.employeeIds.length} employee(s) selected
+                                    </p>
+                                </div>
                             )}
 
                             <div className="grid grid-cols-2 gap-4">

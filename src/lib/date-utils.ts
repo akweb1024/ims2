@@ -1,101 +1,114 @@
-import { format } from 'date-fns';
+export type Period = 'DAILY' | 'MONTHLY' | 'QUARTERLY' | 'YEARLY';
 
-/**
- * IST offset in milliseconds (5.5 hours * 60 min * 60 sec * 1000 ms)
- */
-const IST_OFFSET_MS = 5.5 * 60 * 60 * 1000;
-
-/**
- * Returns a new Date object that represents the same point in time 
- * but shifted for IST display in environments that don't support timezones well.
- */
-function getISTAdjustedDate(date: Date | string | null | undefined): Date | null {
-    if (!date) return null;
-    const d = typeof date === 'string' ? new Date(date) : date;
-    if (isNaN(d.getTime())) return null;
-
-    // d.getTime() is ALWAYS UTC.
-    return new Date(d.getTime() + IST_OFFSET_MS);
-}
-
-/**
- * Formats a date to a time string in IST
- * @param date - The date to format
- * @param formatStr - Optional format string or options
- */
-export function formatToISTTime(date: Date | string | null | undefined, formatStr: string = 'hh:mm a'): string {
-    try {
-        const d = typeof date === 'string' ? new Date(date) : date;
-        if (!d || isNaN(d.getTime())) return '--:--';
-        return new Intl.DateTimeFormat('en-IN', {
-            timeZone: 'Asia/Kolkata',
-            hour: '2-digit',
-            minute: '2-digit',
-            hour12: true
-        }).format(d);
-    } catch (e) {
-        return '--:--';
-    }
-}
-
-/**
- * Formats a date to a date string in IST
- */
-export function formatToISTDate(date: Date | string | null | undefined): string {
-    try {
-        const d = typeof date === 'string' ? new Date(date) : date;
-        if (!d || isNaN(d.getTime())) return '-';
-        return new Intl.DateTimeFormat('en-IN', {
-            timeZone: 'Asia/Kolkata',
-            day: '2-digit',
-            month: 'short',
-            year: 'numeric'
-        }).format(d);
-    } catch (e) {
-        return '-';
-    }
-}
-
-/**
- * Formats a date and time to IST
- */
-export function formatToISTDateTime(date: Date | string | null | undefined): string {
-    try {
-        const d = typeof date === 'string' ? new Date(date) : date;
-        if (!d || isNaN(d.getTime())) return '-';
-        return new Intl.DateTimeFormat('en-IN', {
-            timeZone: 'Asia/Kolkata',
-            day: '2-digit',
-            month: 'short',
-            year: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit',
-            hour12: true
-        }).format(d);
-    } catch (e) {
-        return '-';
-    }
-}
-
-/**
- * Returns the start of today in IST as a UTC date object that represents 00:00:00 IST
- */
-export function getISTToday(): Date {
-    const now = new Date();
-
-    // Get year, month, day in IST
-    const parts = new Intl.DateTimeFormat('en-GB', {
+const getISTParts = (date = new Date()) => {
+    const parts = new Intl.DateTimeFormat('en-US', {
         timeZone: 'Asia/Kolkata',
         year: 'numeric',
         month: '2-digit',
         day: '2-digit'
-    }).formatToParts(now);
+    }).formatToParts(date);
 
-    const year = parts.find(p => p.type === 'year')?.value;
-    const month = parts.find(p => p.type === 'month')?.value;
-    const day = parts.find(p => p.type === 'day')?.value;
+    const map: Record<string, string> = {};
+    for (const p of parts) {
+        if (p.type !== 'literal') map[p.type] = p.value;
+    }
 
-    // Create a date for 00:00 IST of that day
-    const utcMidnight = new Date(Date.UTC(Number(year), Number(month) - 1, Number(day)));
-    return new Date(utcMidnight.getTime() - IST_OFFSET_MS);
-}
+    const year = parseInt(map.year, 10);
+    const month = parseInt(map.month, 10);
+    const day = parseInt(map.day, 10);
+
+    return { year, month, day };
+};
+
+const makeISTDate = (year: number, month: number, day: number, time = '00:00:00') => {
+    const mm = String(month).padStart(2, '0');
+    const dd = String(day).padStart(2, '0');
+    return new Date(`${year}-${mm}-${dd}T${time}+05:30`);
+};
+
+export const getISTDateRangeForPeriod = (period: Period, baseDate = new Date()) => {
+    const { year, month, day } = getISTParts(baseDate);
+
+    if (period === 'DAILY') {
+        const start = makeISTDate(year, month, day, '00:00:00');
+        const end = new Date(start.getTime() + 24 * 60 * 60 * 1000 - 1);
+        return { start, end };
+    }
+
+    if (period === 'MONTHLY') {
+        const start = makeISTDate(year, month, 1, '00:00:00');
+        const nextMonth = month === 12 ? { year: year + 1, month: 1 } : { year, month: month + 1 };
+        const end = new Date(makeISTDate(nextMonth.year, nextMonth.month, 1, '00:00:00').getTime() - 1);
+        return { start, end };
+    }
+
+    if (period === 'QUARTERLY') {
+        const quarterStartMonth = Math.floor((month - 1) / 3) * 3 + 1;
+        const start = makeISTDate(year, quarterStartMonth, 1, '00:00:00');
+        const nextQuarterMonth = quarterStartMonth + 3;
+        const nextQuarter = nextQuarterMonth > 12
+            ? { year: year + 1, month: nextQuarterMonth - 12 }
+            : { year, month: nextQuarterMonth };
+        const end = new Date(makeISTDate(nextQuarter.year, nextQuarter.month, 1, '00:00:00').getTime() - 1);
+        return { start, end };
+    }
+
+    // YEARLY
+    const start = makeISTDate(year, 1, 1, '00:00:00');
+    const end = new Date(makeISTDate(year + 1, 1, 1, '00:00:00').getTime() - 1);
+    return { start, end };
+};
+
+export const normalizePeriod = (value?: string | null): Period => {
+    const v = (value || '').toUpperCase();
+    if (v === 'MONTHLY' || v === 'QUARTERLY' || v === 'YEARLY') return v as Period;
+    return 'DAILY';
+};
+
+export const formatToISTTime = (date?: Date | string | null, format?: string) => {
+    if (!date) return '—';
+    const d = typeof date === 'string' ? new Date(date) : date;
+    if (Number.isNaN(d.getTime())) return '—';
+
+    if (format === 'MMM') {
+        return new Intl.DateTimeFormat('en-IN', {
+            timeZone: 'Asia/Kolkata',
+            month: 'short'
+        }).format(d);
+    }
+
+    if (format === 'd') {
+        return new Intl.DateTimeFormat('en-IN', {
+            timeZone: 'Asia/Kolkata',
+            day: 'numeric'
+        }).format(d);
+    }
+
+    const hour12 = format === 'hh:mm a';
+    const hour12Opt = format === 'HH:mm' ? false : hour12 ? true : true;
+
+    return new Intl.DateTimeFormat('en-IN', {
+        timeZone: 'Asia/Kolkata',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: hour12Opt
+    }).format(d);
+};
+
+export const formatToISTDate = (date?: Date | string | null) => {
+    if (!date) return '';
+    const d = typeof date === 'string' ? new Date(date) : date;
+    if (Number.isNaN(d.getTime())) return '';
+    return new Intl.DateTimeFormat('en-CA', {
+        timeZone: 'Asia/Kolkata',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit'
+    }).format(d);
+};
+
+export const getISTToday = () => {
+    const now = new Date();
+    const { year, month, day } = getISTParts(now);
+    return makeISTDate(year, month, day, '00:00:00');
+};

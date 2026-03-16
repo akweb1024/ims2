@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getAuthenticatedUser } from '@/lib/auth-legacy';
 import prisma from '@/lib/prisma';
 import { Prisma } from '@prisma/client';
+import { getISTDateRangeForPeriod, normalizePeriod } from '@/lib/date-utils';
 
 // GET - Fetch tasks assigned to the current user
 export async function GET(req: NextRequest) {
@@ -26,47 +27,68 @@ export async function GET(req: NextRequest) {
         }
 
         const userDeptId = (employee as any).user?.departmentId;
+        const { searchParams } = new URL(req.url);
+        const period = normalizePeriod(searchParams.get('period'));
+        const { start, end } = getISTDateRangeForPeriod(period);
 
         // Fetch tasks assigned to this employee (Individual, Designation, or Department based)
         const tasks = await prisma.employeeTaskTemplate.findMany({
             where: {
                 companyId: user.companyId!,
                 isActive: true,
+                ...(period !== 'YEARLY' ? { frequency: period } : {}),
                 OR: [
+                    { startDate: null },
+                    { startDate: { lte: end } }
+                ],
+                AND: [
+                    {
+                        OR: [
+                            { endDate: null },
+                            { endDate: { gte: start } }
+                        ]
+                    },
+                    {
+                OR: [
+                    { employeeIds: { array_contains: employee.id } },
                     { employeeId: employee.id }, // Individual assignment
                     {
                         AND: [
                             { employeeId: null },
+                            { employeeIds: { equals: Prisma.DbNull } },
                             {
                                 OR: [
                                     { designationId: employee.designationId },
                                     { designationIds: { array_contains: employee.designationId } }
                                 ]
-                            }
-                        ]
-                    },
-                    {
-                        AND: [
-                            { employeeId: null },
+                                    }
+                                ]
+                            },
+                            {
+                                AND: [
+                                    { employeeId: null },
                             { designationId: null },
                             { designationIds: { equals: Prisma.DbNull } },
                             {
                                 OR: [
                                     { departmentId: userDeptId },
                                     { departmentIds: { array_contains: userDeptId } }
+                                        ]
+                                    }
                                 ]
-                            }
-                        ]
-                    },
-                    {
-                        AND: [
+                            },
+                            {
+                                AND: [
                             { employeeId: null },
+                            { employeeIds: { equals: Prisma.DbNull } },
                             { designationId: null },
                             { designationIds: { equals: Prisma.DbNull } },
                             { departmentId: null },
-                            { departmentIds: { equals: Prisma.DbNull } }
+                                    { departmentIds: { equals: Prisma.DbNull } }
+                                ]
+                            } // Global tasks
                         ]
-                    } // Global tasks
+                    }
                 ]
             },
             orderBy: { title: 'asc' }

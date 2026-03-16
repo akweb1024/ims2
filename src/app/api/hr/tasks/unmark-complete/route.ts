@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAuthenticatedUser } from '@/lib/auth-legacy';
 import prisma from '@/lib/prisma';
+import { getISTDateRangeForPeriod } from '@/lib/date-utils';
 
 // POST - Unmark a task completion for today
 export async function POST(req: NextRequest) {
@@ -21,20 +22,25 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: 'Employee profile not found' }, { status: 404 });
         }
 
-        // Get today's date range
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        const tomorrow = new Date(today);
-        tomorrow.setDate(tomorrow.getDate() + 1);
+        // Fetch the task to determine frequency window
+        const task = await prisma.employeeTaskTemplate.findUnique({
+            where: { id: taskId }
+        });
 
-        // Find the completion record
+        if (!task) {
+            return NextResponse.json({ error: 'Task not found' }, { status: 404 });
+        }
+
+        const { start, end } = getISTDateRangeForPeriod(task.frequency as any);
+
+        // Find the completion record in this period
         const completion = await prisma.dailyTaskCompletion.findFirst({
             where: {
                 employeeId: employee.id,
                 taskId,
                 completedAt: {
-                    gte: today,
-                    lt: tomorrow
+                    gte: start,
+                    lte: end
                 }
             },
             include: { task: true }

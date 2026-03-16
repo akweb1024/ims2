@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAuthenticatedUser } from '@/lib/auth-legacy';
 import prisma from '@/lib/prisma';
+import { getISTDateRangeForPeriod } from '@/lib/date-utils';
 
 // POST - Mark a task as complete for today
 export async function POST(req: NextRequest) {
@@ -42,26 +43,22 @@ export async function POST(req: NextRequest) {
             }
         }
 
-        // Get today's date range
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        const tomorrow = new Date(today);
-        tomorrow.setDate(tomorrow.getDate() + 1);
+        const { start, end } = getISTDateRangeForPeriod(task.frequency as any);
 
-        // Check if already completed today
+        // Check if already completed in this period
         const existing = await prisma.dailyTaskCompletion.findFirst({
             where: {
                 employeeId: employee.id,
                 taskId,
                 completedAt: {
-                    gte: today,
-                    lt: tomorrow
+                    gte: start,
+                    lte: end
                 }
             }
         });
 
         if (existing) {
-            return NextResponse.json({ error: 'Task already completed today' }, { status: 400 });
+            return NextResponse.json({ error: 'Task already completed in this period' }, { status: 400 });
         }
 
         // Create completion record

@@ -2398,6 +2398,11 @@ model EmployeeTaskTemplate {
   title            String
   description      String?
   points           Int                   @default(0)
+  frequency        TaskFrequency         @default(DAILY)
+  targetValue      Float?                @default(1)
+  targetUnit       TaskTargetUnit        @default(COUNT)
+  startDate        DateTime?
+  endDate          DateTime?
   departmentId     String?
   designationId    String?
   companyId        String
@@ -2411,6 +2416,7 @@ model EmployeeTaskTemplate {
   departmentIds    Json?
   designationIds   Json?
   employeeId       String?
+  employeeIds      Json?
   dailyCompletions DailyTaskCompletion[]
   company          Company               @relation(fields: [companyId], references: [id])
   department       Department?           @relation(fields: [departmentId], references: [id])
@@ -4647,6 +4653,17 @@ enum TaskCalculationType {
   FLAT
   SCALED
   RANGE
+}
+
+enum TaskFrequency {
+  DAILY
+  MONTHLY
+  QUARTERLY
+}
+
+enum TaskTargetUnit {
+  COUNT
+  POINTS
 }
 
 enum UserRole {
