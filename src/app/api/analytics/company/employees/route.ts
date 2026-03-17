@@ -208,6 +208,4 @@ const handler = authorizedRoute(
   },
 );
 
-export async function GET(req: NextRequest, context: any) {
-    return handler(req, context);
-}
+export const GET = handler;
