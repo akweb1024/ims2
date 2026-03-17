@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import FormattedDate from '@/components/common/FormattedDate';
 import { Search, Plus, Store, Mail, Phone, MapPin, Loader2, ArrowRight } from 'lucide-react';
@@ -23,7 +23,7 @@ export default function VendorsPage() {
         status: 'ACTIVE'
     });
 
-    const fetchVendors = async () => {
+    const fetchVendors = useCallback(async () => {
         setLoading(true);
         try {
             const res = await fetch(`/api/supply-chain/vendors?search=${encodeURIComponent(searchTerm)}`);
@@ -38,12 +38,12 @@ export default function VendorsPage() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [searchTerm]);
 
     useEffect(() => {
         const timeout = setTimeout(fetchVendors, 300);
         return () => clearTimeout(timeout);
-    }, [searchTerm]);
+    }, [fetchVendors]);
 
     const handleCreate = async (e: React.FormEvent) => {
         e.preventDefault();

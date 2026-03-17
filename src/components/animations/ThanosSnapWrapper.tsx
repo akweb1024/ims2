@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef, useEffect, ReactNode } from "react";
+import React, { useState, useRef, useEffect, useCallback, ReactNode } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import html2canvas from "html2canvas";
 
@@ -25,7 +25,7 @@ export default function ThanosSnapWrapper({
   // The number of layers for the Thanos Snap
   const layerCount = 42;
 
-  const performSnap = async () => {
+  const performSnap = useCallback(async () => {
     if (!contentRef.current || !containerRef.current) return;
     setIsAnimating(true);
     
@@ -106,9 +106,9 @@ export default function ThanosSnapWrapper({
        setShowContent(false);
        setIsAnimating(false);
     }
-  };
+  }, [snapDuration]);
 
-  const materialize = async () => {
+  const materialize = useCallback(async () => {
     // Simple fade-in for rematerialization
     setIsAnimating(true);
     setShowContent(true);
@@ -117,7 +117,7 @@ export default function ThanosSnapWrapper({
        setIsAnimating(false);
        setLayers([]);
     }, 1000);
-  }
+  }, []);
 
   // Watch for state changes
   useEffect(() => {
@@ -126,7 +126,7 @@ export default function ThanosSnapWrapper({
     } else if (!isSnapped && !showContent && !isAnimating) {
       materialize();
     }
-  }, [isSnapped, showContent, isAnimating]);
+  }, [isSnapped, showContent, isAnimating, performSnap, materialize]);
 
   return (
     <div className="relative w-full" ref={containerRef}>

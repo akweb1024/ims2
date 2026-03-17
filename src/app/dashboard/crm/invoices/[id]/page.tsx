@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, use } from "react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import FormattedDate from "@/components/common/FormattedDate";
@@ -690,10 +691,13 @@ export default function InvoiceDetailPage({
               {/* Left Logo (Brand Strategy) */}
               <div className="w-[150px] flex justify-start pl-2">
                 {identity.brandLogoUrl && (
-                  <img
+                  <Image
                     src={identity.brandLogoUrl}
                     className="max-h-16 w-auto object-contain"
                     alt="Brand Logo"
+                    width={160}
+                    height={64}
+                    unoptimized
                   />
                 )}
               </div>
@@ -720,10 +724,13 @@ export default function InvoiceDetailPage({
               {/* Right Logo (Company Strategy) */}
               <div className="w-[150px] flex justify-end pr-2">
                 {identity.companyLogoUrl && (
-                  <img
+                  <Image
                     src={identity.companyLogoUrl}
                     className="max-h-16 w-auto object-contain"
                     alt="Company Logo"
+                    width={160}
+                    height={64}
+                    unoptimized
                   />
                 )}
               </div>

@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import Image from 'next/image';
 import { useVault } from './VaultContext';
 import { decryptItemKeyWithRSA, decryptItemPayload } from '@/lib/crypto-vault';
 import { Search, Plus, Folder as FolderIcon, KeyRound, Copy, Check, ShieldAlert, Star, Share2 } from 'lucide-react';
@@ -40,13 +41,7 @@ export default function VaultDashboard() {
     const [shareItemTarget, setShareItemTarget] = useState<{ id: string, title: string, myEncryptedKey: string } | null>(null);
     const [copiedId, setCopiedId] = useState<string | null>(null);
 
-    useEffect(() => {
-        if (isUnlocked && privateKey) {
-            fetchAndDecryptItems();
-        }
-    }, [isUnlocked, privateKey]);
-
-    const fetchAndDecryptItems = async () => {
+    const fetchAndDecryptItems = useCallback(async () => {
         setIsLoading(true);
         try {
             const res = await fetch('/api/vault/items');
@@ -80,7 +75,13 @@ export default function VaultDashboard() {
         } finally {
             setIsLoading(false);
         }
-    };
+    }, [privateKey]);
+
+    useEffect(() => {
+        if (isUnlocked && privateKey) {
+            fetchAndDecryptItems();
+        }
+    }, [isUnlocked, privateKey, fetchAndDecryptItems]);
 
     const copyPassword = (id: string, password: string) => {
         navigator.clipboard.writeText(password);
@@ -175,7 +176,18 @@ export default function VaultDashboard() {
                                     <div className="flex items-start justify-between mb-3">
                                         <div className="flex items-center gap-3">
                                             <div className="w-10 h-10 rounded-xl bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center text-primary-600 dark:text-primary-400 shrink-0 border border-primary-200 dark:border-primary-800/50 overflow-hidden">
-                                                {item.icon ? <img src={item.icon} alt="" className="w-5 h-5 object-contain" /> : <KeyRound size={20} />}
+                                                {item.icon ? (
+                                                    <Image
+                                                        src={item.icon}
+                                                        alt={`${item.title || "Vault item"} icon`}
+                                                        width={20}
+                                                        height={20}
+                                                        className="w-5 h-5 object-contain"
+                                                        unoptimized
+                                                    />
+                                                ) : (
+                                                    <KeyRound size={20} />
+                                                )}
                                             </div>
                                             <div>
                                                 <h3 className="font-semibold text-secondary-900 dark:text-white line-clamp-1">{item.title}</h3>
@@ -235,4 +247,3 @@ export default function VaultDashboard() {
         </div>
     );
 }
-

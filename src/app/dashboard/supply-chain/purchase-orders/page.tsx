@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import FormattedDate from '@/components/common/FormattedDate';
 import { Search, Plus, FileText, ShoppingCart, Loader2, ArrowRight, Trash2 } from 'lucide-react';
@@ -23,7 +23,7 @@ export default function PurchaseOrdersPage() {
         items: [{ description: '', quantity: 1, unitPrice: 0 }]
     });
 
-    const loadData = async () => {
+    const loadData = useCallback(async () => {
         setLoading(true);
         try {
             const [poRes, vendorRes] = await Promise.all([
@@ -42,12 +42,12 @@ export default function PurchaseOrdersPage() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [searchTerm, filterStatus]);
 
     useEffect(() => {
         const timeout = setTimeout(loadData, 300);
         return () => clearTimeout(timeout);
-    }, [searchTerm, filterStatus]);
+    }, [loadData]);
 
     const handleCreate = async (e: React.FormEvent) => {
         e.preventDefault();

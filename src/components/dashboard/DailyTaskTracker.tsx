@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { CheckCircle, Circle, Award, TrendingUp, Target, Clock, Calendar } from 'lucide-react';
 
 interface Task {
@@ -32,12 +32,7 @@ export default function DailyTaskTracker() {
     const [todayPoints, setTodayPoints] = useState(0);
     const [period, setPeriod] = useState<'DAILY' | 'MONTHLY' | 'QUARTERLY'>('DAILY');
 
-    useEffect(() => {
-        fetchTasks();
-        fetchTodayProgress();
-    }, [period]);
-
-    const fetchTasks = async () => {
+    const fetchTasks = useCallback(async () => {
         try {
             const token = localStorage.getItem('token');
             const res = await fetch(`/api/hr/tasks/my-tasks?period=${period}`, {
@@ -52,9 +47,9 @@ export default function DailyTaskTracker() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [period]);
 
-    const fetchTodayProgress = async () => {
+    const fetchTodayProgress = useCallback(async () => {
         try {
             const token = localStorage.getItem('token');
             const res = await fetch(`/api/hr/tasks/today-progress?period=${period}`, {
@@ -77,7 +72,12 @@ export default function DailyTaskTracker() {
         } catch (err) {
             console.error('Failed to fetch today progress:', err);
         }
-    };
+    }, [period]);
+
+    useEffect(() => {
+        fetchTasks();
+        fetchTodayProgress();
+    }, [fetchTasks, fetchTodayProgress]);
 
     const isTaskCompleted = (taskId: string) => {
         return completedTasks.some(ct => ct.taskId === taskId);

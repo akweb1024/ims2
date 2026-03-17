@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { CRMPageShell, CRMModal } from '@/components/crm/CRMPageShell';
 import { Layers, Plus, Trash2 } from 'lucide-react';
@@ -13,24 +13,23 @@ export default function GlobalAttributesPage() {
     const [saving, setSaving] = useState(false);
     const [userRole, setUserRole] = useState('EXECUTIVE');
 
-    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : '';
-    const authH = { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' };
-
-    useEffect(() => {
-        const r = localStorage.getItem('userRole');
-        if (r) setUserRole(r);
-        fetchAttributes();
-    }, []);
-
-    const fetchAttributes = async () => {
+    const fetchAttributes = useCallback(async () => {
         setLoading(true);
         try {
+            const token = typeof window !== 'undefined' ? localStorage.getItem('token') : '';
+            const authH = { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' };
             const res = await fetch('/api/invoice-products/attributes', { headers: authH });
             if (res.ok) setAttributes(await res.json());
         } finally {
             setLoading(false);
         }
-    };
+    }, []);
+
+    useEffect(() => {
+        const r = localStorage.getItem('userRole');
+        if (r) setUserRole(r);
+        fetchAttributes();
+    }, [fetchAttributes]);
 
     const handleSave = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -41,6 +40,8 @@ export default function GlobalAttributesPage() {
                 name: name.trim(),
                 terms: terms.split(',').filter(t => t.trim()).map(t => ({ value: t.trim() }))
             };
+            const token = typeof window !== 'undefined' ? localStorage.getItem('token') : '';
+            const authH = { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' };
             const res = await fetch('/api/invoice-products/attributes', {
                 method: 'POST', headers: authH, body: JSON.stringify(payload)
             });

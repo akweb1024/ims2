@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import Image from "next/image";
 import { QRCodeSVG } from "qrcode.react";
 import FormattedDate from "@/components/common/FormattedDate";
 
@@ -258,10 +259,13 @@ export default function AnvInvoiceTemplate({
       <div className="header-box">
         <div className="logo-left">
           {identity.brandLogoUrl && (
-            <img
+            <Image
               src={identity.brandLogoUrl}
               className="max-h-16 w-auto"
               alt="Brand Logo"
+              width={160}
+              height={64}
+              unoptimized
             />
           )}
         </div>
@@ -279,10 +283,13 @@ export default function AnvInvoiceTemplate({
         </div>
         <div className="logo-right text-right">
           {identity.companyLogoUrl && (
-            <img
+            <Image
               src={identity.companyLogoUrl}
               className="max-h-16 w-auto"
               alt="Company Logo"
+              width={160}
+              height={64}
+              unoptimized
             />
           )}
         </div>

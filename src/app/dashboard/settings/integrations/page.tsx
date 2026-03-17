@@ -1,25 +1,25 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { Settings, Plus, Cpu, Webhook, KeyRound, Loader2, Save, Trash2, CheckCircle, AlertTriangle } from 'lucide-react';
 import toast from 'react-hot-toast';
+
+// List of supported integrations hardcoded for UI context
+const SUPPORTED_PROVIDERS = [
+    { id: 'GEMINI', name: 'Google Gemini AI', icon: Cpu, desc: 'Used for intelligent Document OCR and chat.', type: 'AI' },
+    { id: 'PLAGIARISM_SCANNER', name: 'Turnitin / iThenticate', icon: Webhook, desc: 'Used for scanning Journal Articles.', type: 'Webhook' },
+    { id: 'AWS_SES', name: 'Amazon SES', icon: KeyRound, desc: 'Used for batch Marketing Campaigns.', type: 'SMTP' }
+];
 
 export default function IntegrationsGatewayPage() {
     const [integrations, setIntegrations] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState<string | null>(null);
 
-    // List of supported integrations hardcoded for UI context
-    const SUPPORTED_PROVIDERS = [
-        { id: 'GEMINI', name: 'Google Gemini AI', icon: Cpu, desc: 'Used for intelligent Document OCR and chat.', type: 'AI' },
-        { id: 'PLAGIARISM_SCANNER', name: 'Turnitin / iThenticate', icon: Webhook, desc: 'Used for scanning Journal Articles.', type: 'Webhook' },
-        { id: 'AWS_SES', name: 'Amazon SES', icon: KeyRound, desc: 'Used for batch Marketing Campaigns.', type: 'SMTP' }
-    ];
-
     const [formStates, setFormStates] = useState<Record<string, { key: string, value: string, isActive: boolean, isSet: boolean }>>({});
 
-    const fetchIntegrations = async () => {
+    const fetchIntegrations = useCallback(async () => {
         setLoading(true);
         try {
             const res = await fetch('/api/settings/integrations');
@@ -48,11 +48,11 @@ export default function IntegrationsGatewayPage() {
         } finally {
             setLoading(false);
         }
-    };
+    }, []);
 
     useEffect(() => {
         fetchIntegrations();
-    }, []);
+    }, [fetchIntegrations]);
 
     const handleSave = async (provider: string) => {
         const state = formStates[provider];

@@ -34,29 +34,28 @@ export default function CustomerDetailPage({ params }: { params: Promise<{ id: s
     const searchParams = useSearchParams();
 
     useEffect(() => {
-        if (showEditModal) {
-            const token = localStorage.getItem('token');
+        if (!showEditModal || !customer) return;
+        const token = localStorage.getItem('token');
 
-            fetch('/api/users', { headers: { 'Authorization': `Bearer ${token}` } })
-                .then(res => res.json())
-                .then(response => {
-                    const data = Array.isArray(response) ? response : (response.data || []);
-                    setStaffList(data.filter((u: any) => ['EXECUTIVE', 'MANAGER'].includes(u.role)));
-                });
+        fetch('/api/users', { headers: { 'Authorization': `Bearer ${token}` } })
+            .then(res => res.json())
+            .then(response => {
+                const data = Array.isArray(response) ? response : (response.data || []);
+                setStaffList(data.filter((u: any) => ['EXECUTIVE', 'MANAGER'].includes(u.role)));
+            });
 
-            fetch('/api/institutions', { headers: { 'Authorization': `Bearer ${token}` } })
-                .then(res => res.json())
-                .then(data => setInstitutions(Array.isArray(data) ? data : (data.data || [])));
-            
-            // Set initial same as billing state
-            const isSame = !customer.shippingAddress || (
-                customer.shippingAddress === customer.billingAddress &&
-                customer.shippingCity === customer.billingCity &&
-                customer.shippingPincode === customer.billingPincode
-            );
-            setIsShippingSame(isSame);
-        }
-    }, [showEditModal, userRole]);
+        fetch('/api/institutions', { headers: { 'Authorization': `Bearer ${token}` } })
+            .then(res => res.json())
+            .then(data => setInstitutions(Array.isArray(data) ? data : (data.data || [])));
+        
+        // Set initial same as billing state
+        const isSame = !customer.shippingAddress || (
+            customer.shippingAddress === customer.billingAddress &&
+            customer.shippingCity === customer.billingCity &&
+            customer.shippingPincode === customer.billingPincode
+        );
+        setIsShippingSame(isSame);
+    }, [showEditModal, customer]);
 
     useEffect(() => {
         const userData = localStorage.getItem('user');

@@ -435,17 +435,22 @@ export default function CreateInvoiceModal({
     setItems(items.map((i) => (i.id === id ? { ...i, [field]: value } : i)));
   };
 
-  const calculateTotal = () => {
+  const calculateTotal = useCallback(() => {
     return items.reduce(
       (acc, item) => acc + Number(item.quantity) * Number(item.price),
       0,
     );
-  };
+  }, [items]);
 
-  const calculateDiscount = () => couponResult?.discountAmount || 0;
+  const calculateDiscount = useCallback(
+    () => couponResult?.discountAmount || 0,
+    [couponResult],
+  );
 
-  const calculateTaxableAmount = () =>
-    Math.max(0, calculateTotal() - calculateDiscount());
+  const calculateTaxableAmount = useCallback(
+    () => Math.max(0, calculateTotal() - calculateDiscount()),
+    [calculateTotal, calculateDiscount],
+  );
 
   const taxBreakdown = useMemo(() => {
     const customerCountry = selectedCustomer?.billingCountry || "India";
@@ -514,7 +519,7 @@ export default function CreateInvoiceModal({
       effectiveTaxRate:
         taxableSubtotal > 0 ? (totalTax / taxableSubtotal) * 100 : 0,
     };
-  }, [items, selectedCustomer, taxRate, couponResult]);
+  }, [items, selectedCustomer, taxRate, calculateTotal, calculateDiscount]);
 
   const applyScoupon = async () => {
     if (!couponCode.trim()) return;

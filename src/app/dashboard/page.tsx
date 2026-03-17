@@ -68,19 +68,6 @@ export default function DashboardPage() {
         }
     }, [router]);
 
-    useEffect(() => {
-        if (status === 'unauthenticated') {
-            router.push('/login');
-        } else if (status === 'authenticated') {
-            fetchDashboardData();
-            fetchTodayAttendance();
-        }
-    }, [status, router, fetchDashboardData]);
-
-    const todayAttendance = attendance.find(a => {
-        return formatToISTDate(a.date) === formatToISTDate(new Date());
-    });
-
     const fetchTodayAttendance = useCallback(async () => {
         try {
             const token = localStorage.getItem('token');
@@ -98,6 +85,19 @@ export default function DashboardPage() {
             console.error('Failed to fetch attendance for dashboard', err);
         }
     }, []);
+
+    useEffect(() => {
+        if (status === 'unauthenticated') {
+            router.push('/login');
+        } else if (status === 'authenticated') {
+            fetchDashboardData();
+            fetchTodayAttendance();
+        }
+    }, [status, router, fetchDashboardData, fetchTodayAttendance]);
+
+    const todayAttendance = attendance.find(a => {
+        return formatToISTDate(a.date) === formatToISTDate(new Date());
+    });
 
     // Timer Logic
     useEffect(() => {

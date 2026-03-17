@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import FormattedDate from '@/components/common/FormattedDate';
 import { Search, Plus, Package, MapPin, AlertTriangle, Loader2, ArrowRight } from 'lucide-react';
@@ -25,7 +25,7 @@ export default function InventoryLedgerPage() {
         description: ''
     });
 
-    const fetchInventory = async () => {
+    const fetchInventory = useCallback(async () => {
         setLoading(true);
         try {
             const res = await fetch(`/api/logistics/inventory?search=${encodeURIComponent(searchTerm)}`);
@@ -42,12 +42,12 @@ export default function InventoryLedgerPage() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [searchTerm]);
 
     useEffect(() => {
         const timeout = setTimeout(fetchInventory, 300);
         return () => clearTimeout(timeout);
-    }, [searchTerm]);
+    }, [fetchInventory]);
 
     const handleCreate = async (e: React.FormEvent) => {
         e.preventDefault();

@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import Image from "next/image";
 import { QRCodeSVG } from "qrcode.react";
 import FormattedDate from "@/components/common/FormattedDate";
 
@@ -107,7 +108,7 @@ export default function GlobalProInvoiceTemplate({
         {/* Left: Logos */}
         <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
           {identity.brandLogoUrl && (
-            <img
+            <Image
               src={identity.brandLogoUrl}
               style={{
                 maxHeight: "52px",
@@ -118,6 +119,9 @@ export default function GlobalProInvoiceTemplate({
                 padding: "4px",
               }}
               alt="Brand"
+              width={110}
+              height={52}
+              unoptimized
             />
           )}
           {identity.companyLogoUrl && identity.brandLogoUrl && (
@@ -130,7 +134,7 @@ export default function GlobalProInvoiceTemplate({
             />
           )}
           {identity.companyLogoUrl && (
-            <img
+            <Image
               src={identity.companyLogoUrl}
               style={{
                 maxHeight: "52px",
@@ -142,6 +146,9 @@ export default function GlobalProInvoiceTemplate({
                 opacity: 0.9,
               }}
               alt="Company"
+              width={110}
+              height={52}
+              unoptimized
             />
           )}
         </div>

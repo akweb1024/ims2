@@ -93,7 +93,7 @@ export default function LeadsPage() {
     } finally {
       setLoading(false);
     }
-  }, [pagination.page, pagination.limit, search, statusFilter]);
+  }, [pagination.page, pagination.limit, search, statusFilter, assignedToFilter]);
 
   useEffect(() => {
     const fetchEmployees = async () => {

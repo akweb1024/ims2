@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { RefreshCw, Copy, Check } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -62,15 +62,15 @@ export default function PasswordGenerator({ onSelectPassword }: Props) {
     const [password, setPassword] = useState('');
     const [copied, setCopied] = useState(false);
 
-    useEffect(() => {
-        handleGenerate();
-    }, [length, useLower, useUpper, useNumbers, useSymbols]);
-
-    const handleGenerate = () => {
+    const handleGenerate = useCallback(() => {
         const p = generatePassword(length, useLower, useUpper, useNumbers, useSymbols);
         setPassword(p);
         setCopied(false);
-    };
+    }, [length, useLower, useUpper, useNumbers, useSymbols]);
+
+    useEffect(() => {
+        handleGenerate();
+    }, [handleGenerate]);
 
     const handleCopy = () => {
         navigator.clipboard.writeText(password);

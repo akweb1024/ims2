@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
+import Image from 'next/image';
 import Link from 'next/link';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import {
@@ -664,7 +665,14 @@ export default function ProjectDetailPage() {
                                 ].map((node, i) => (
                                     <div key={i} className="flex items-center gap-4 group/item relative">
                                         {node.person?.employeeProfile?.profilePicture ? (
-                                            <img src={node.person.employeeProfile.profilePicture} alt="" className="w-12 h-12 rounded-xl object-cover ring-2 ring-white/10" />
+                                            <Image
+                                                src={node.person.employeeProfile.profilePicture}
+                                                alt={`${node.person?.name || 'Team member'} profile`}
+                                                width={48}
+                                                height={48}
+                                                className="w-12 h-12 rounded-xl object-cover ring-2 ring-white/10"
+                                                unoptimized
+                                            />
                                         ) : (
                                             <div className="w-12 h-12 rounded-xl bg-white/10 flex items-center justify-center text-white/50 font-black border border-white/10">
                                                 {node.person?.name.charAt(0) || '?'}
@@ -687,7 +695,14 @@ export default function ProjectDetailPage() {
                                             {project.taggedEmployees.slice(0, 5).map((emp, j) => (
                                                 <div key={emp.id} className="inline-block h-8 w-8 rounded-lg outline outline-2 outline-slate-900 bg-slate-800 flex items-center justify-center text-[10px] font-black text-white" title={emp.name}>
                                                     {emp.employeeProfile?.profilePicture ? (
-                                                        <img src={emp.employeeProfile.profilePicture} className="h-full w-full object-cover rounded-lg" alt="" />
+                                                        <Image
+                                                            src={emp.employeeProfile.profilePicture}
+                                                            alt={`${emp.name} profile`}
+                                                            width={32}
+                                                            height={32}
+                                                            className="h-full w-full object-cover rounded-lg"
+                                                            unoptimized
+                                                        />
                                                     ) : emp.name.charAt(0)}
                                                 </div>
                                             ))}

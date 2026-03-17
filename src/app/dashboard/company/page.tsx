@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import CompanyClientLayout from "../companies/CompanyClientLayout";
 import CompanyAnalyticsOverview from "@/components/dashboard/company/CompanyAnalyticsOverview";
 import WorkforceAnalytics from "@/components/dashboard/company/WorkforceAnalytics";
@@ -181,7 +182,7 @@ export default function CompanyPage() {
     } finally {
       setLoading(false);
     }
-  }, [companyIdParam]);
+  }, [companyIdParam, fetchBrands]);
 
   useEffect(() => {
     const userData = localStorage.getItem("user");
@@ -1152,9 +1153,13 @@ export default function CompanyPage() {
                           />
                           {invoiceSettings.logoUrl && (
                             <div className="w-12 h-12 rounded-xl bg-secondary-50 border p-1 border-secondary-200 overflow-hidden flex-shrink-0">
-                              <img
+                              <Image
                                 src={invoiceSettings.logoUrl}
+                                alt="Primary logo preview"
+                                width={48}
+                                height={48}
                                 className="w-full h-full object-contain"
+                                unoptimized
                               />
                             </div>
                           )}
@@ -1178,9 +1183,13 @@ export default function CompanyPage() {
                           />
                           {invoiceSettings.invoiceCompanyLogoUrl && (
                             <div className="w-12 h-12 rounded-xl bg-secondary-50 border p-1 border-secondary-200 overflow-hidden flex-shrink-0">
-                              <img
+                              <Image
                                 src={invoiceSettings.invoiceCompanyLogoUrl}
+                                alt="Invoice logo preview"
+                                width={48}
+                                height={48}
                                 className="w-full h-full object-contain"
+                                unoptimized
                               />
                             </div>
                           )}
@@ -1416,10 +1425,13 @@ export default function CompanyPage() {
                       <div className="flex items-center gap-4 mb-4">
                         <div className="w-16 h-16 bg-secondary-50 rounded-2xl flex items-center justify-center p-2 border border-secondary-100 overflow-hidden">
                           {brand.logoUrl ? (
-                            <img
+                            <Image
                               src={brand.logoUrl}
-                              alt={brand.name}
+                              alt={`${brand.name} logo`}
+                              width={64}
+                              height={64}
                               className="max-w-full max-h-full object-contain"
+                              unoptimized
                             />
                           ) : (
                             <span className="text-2xl">🏷️</span>

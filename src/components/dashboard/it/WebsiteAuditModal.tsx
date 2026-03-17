@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
@@ -78,13 +78,7 @@ export default function WebsiteAuditModal({ isOpen, onClose, websiteId, websiteN
     const [auditData, setAuditData] = useState<AuditData | null>(null);
     const [activeTab, setActiveTab] = useState<'overview' | 'seo' | 'aeo' | 'geo' | 'security' | 'traffic'>('overview');
 
-    useEffect(() => {
-        if (isOpen && websiteId) {
-            fetchAudit();
-        }
-    }, [isOpen, websiteId]);
-
-    const fetchAudit = async () => {
+    const fetchAudit = useCallback(async () => {
         setLoading(true);
         try {
             const res = await fetch(`/api/it/monitoring/websites/${websiteId}/analysis`);
@@ -96,7 +90,13 @@ export default function WebsiteAuditModal({ isOpen, onClose, websiteId, websiteN
         } finally {
             setLoading(false);
         }
-    };
+    }, [websiteId]);
+
+    useEffect(() => {
+        if (isOpen && websiteId) {
+            fetchAudit();
+        }
+    }, [isOpen, websiteId, fetchAudit]);
 
     if (!isOpen) return null;
     if (typeof document === 'undefined') return null;

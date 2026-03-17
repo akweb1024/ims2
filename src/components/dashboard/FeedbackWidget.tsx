@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
+import Image from 'next/image';
 import { useSession } from 'next-auth/react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -65,7 +66,16 @@ function AttachmentPreview({ a }: { a: Attachment }) {
         <a href={a.url} target="_blank" rel="noopener noreferrer"
             className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-slate-700/60 border border-white/10 hover:border-blue-500/40 transition-colors text-xs group">
             {isImage
-                ? <img src={a.url} alt={a.filename} className="h-6 w-6 rounded object-cover" />
+                ? (
+                    <Image
+                        src={a.url}
+                        alt={a.filename}
+                        width={24}
+                        height={24}
+                        className="h-6 w-6 rounded object-cover"
+                        unoptimized
+                    />
+                )
                 : <FileText className="h-4 w-4 text-blue-400 shrink-0" />
             }
             <span className="text-slate-300 truncate max-w-[100px] group-hover:text-white">{a.filename}</span>
@@ -413,7 +423,16 @@ export default function FeedbackWidget() {
                                             {pendingFiles.map((f, i) => (
                                                 <div key={i} className="relative flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-slate-700/80 border border-white/10 text-xs max-w-[140px]">
                                                     {previews[i]
-                                                        ? <img src={previews[i]} alt="" className="h-6 w-6 rounded object-cover shrink-0" />
+                                                        ? (
+                                                            <Image
+                                                                src={previews[i]}
+                                                                alt="Attachment preview"
+                                                                width={24}
+                                                                height={24}
+                                                                className="h-6 w-6 rounded object-cover shrink-0"
+                                                                unoptimized
+                                                            />
+                                                        )
                                                         : <FileText className="h-4 w-4 text-blue-400 shrink-0" />
                                                     }
                                                     <span className="text-slate-300 truncate">{f.name}</span>
@@ -518,7 +537,16 @@ export default function FeedbackWidget() {
                                                     {pendingFiles.map((f, i) => (
                                                         <div key={i} className="relative flex items-center gap-1 px-2 py-1 rounded-lg bg-slate-700/80 border border-white/10 text-[10px] max-w-[120px]">
                                                             {previews[i]
-                                                                ? <img src={previews[i]} alt="" className="h-5 w-5 rounded object-cover shrink-0" />
+                                                                ? (
+                                                                    <Image
+                                                                        src={previews[i]}
+                                                                        alt="Attachment preview"
+                                                                        width={20}
+                                                                        height={20}
+                                                                        className="h-5 w-5 rounded object-cover shrink-0"
+                                                                        unoptimized
+                                                                    />
+                                                                )
                                                                 : <FileText className="h-3.5 w-3.5 text-blue-400 shrink-0" />
                                                             }
                                                             <span className="text-slate-400 truncate">{f.name}</span>

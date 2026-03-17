@@ -55,7 +55,16 @@ function AttachPill({ a }: { a: Attachment }) {
         <a href={a.url} target="_blank" rel="noopener noreferrer"
             className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-primary-50 border border-primary-100 hover:border-primary-300 transition-colors text-xs group max-w-[180px]">
             {isImg
-                ? <img src={a.url} alt={a.filename} className="h-5 w-5 rounded object-cover shrink-0" />
+                ? (
+                    <Image
+                        src={a.url}
+                        alt={a.filename}
+                        width={20}
+                        height={20}
+                        className="h-5 w-5 rounded object-cover shrink-0"
+                        unoptimized
+                    />
+                )
                 : <FileText className="h-3.5 w-3.5 text-primary-500 shrink-0" />
             }
             <span className="text-primary-700 font-medium truncate group-hover:text-primary-900">{a.filename}</span>
@@ -186,7 +195,16 @@ export default function ProjectSuggestions({ projectId, suggestions, onUpdate, c
                             {files.map((f, i) => (
                                 <div key={i} className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-primary-50 border border-primary-100 text-xs max-w-[160px]">
                                     {previews[i]
-                                        ? <img src={previews[i]} alt="" className="h-5 w-5 rounded object-cover shrink-0" />
+                                        ? (
+                                            <Image
+                                                src={previews[i]}
+                                                alt="Attachment preview"
+                                                width={20}
+                                                height={20}
+                                                className="h-5 w-5 rounded object-cover shrink-0"
+                                                unoptimized
+                                            />
+                                        )
                                         : <FileText className="h-3.5 w-3.5 text-primary-500 shrink-0" />
                                     }
                                     <span className="text-primary-700 font-medium truncate">{f.name}</span>
