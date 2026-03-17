@@ -216,7 +216,7 @@ export default function CustomersPage() {
     return (
         <DashboardLayout userRole={userRole}>
             <CRMPageShell
-                title="Customer Intelligence"
+                title="Customers"
                 subtitle="Centralized repository of client profiles, organizational structures, and engagement metrics."
                 breadcrumb={[{ label: 'CRM', href: '/dashboard/crm' }, { label: 'Customers Base' }]}
                 icon={<Users className="w-5 h-5" />}
@@ -227,7 +227,7 @@ export default function CustomersPage() {
                     </Link>
                 }
             >
-                {/* Bulk Action Intelligence */}
+                {/* Bulk Actions */}
                 {selectedIds.size > 0 && ['SUPER_ADMIN', 'MANAGER'].includes(userRole) && (
                     <div className="bg-primary-900 text-white p-4 rounded-3xl flex items-center justify-between mb-8 animate-in slide-in-from-top-4 duration-500 shadow-2xl shadow-primary-200 ring-4 ring-primary-50">
                         <div className="flex items-center gap-4 pl-2">
@@ -256,7 +256,7 @@ export default function CustomersPage() {
                     </div>
                 )}
 
-                {/* Filter Matrix */}
+                {/* Filters */}
                 <CRMFilterBar>
                     <CRMSearchInput
                         placeholder="Search names, digital identities or orgs..."
@@ -312,7 +312,7 @@ export default function CustomersPage() {
                     </div>
                 </CRMFilterBar>
 
-                {/* Profiles Matrix */}
+                {/* Customer List */}
                 <div className="crm-card overflow-hidden">
                     <CRMTable>
                         <thead>
@@ -400,7 +400,7 @@ export default function CustomersPage() {
                                                      {customer.organizationName}
                                                 </div>
                                             ) : (
-                                                <span className="text-secondary-300 text-[10px] font-black uppercase tracking-widest italic opacity-60">Unmapped Matrix</span>
+                                                <span className="text-secondary-300 text-[10px] font-black uppercase tracking-widest italic opacity-60">Unassigned</span>
                                             )}
                                         </td>
                                         <td className="py-5">
@@ -434,7 +434,7 @@ export default function CustomersPage() {
                                                  <div className="text-[11px] font-bold text-secondary-600">
                                                       <FormattedDate date={customer.user?.lastLogin} fallback="Phase: Offline" />
                                                  </div>
-                                                 <span className="text-[8px] font-black text-secondary-400 uppercase tracking-widest opacity-60">Sync completed</span>
+                                                 <span className="text-[8px] font-black text-secondary-400 uppercase tracking-widest opacity-60">Updated</span>
                                             </div>
                                         </td>
                                         <td className="text-right py-5 px-6">
@@ -472,11 +472,11 @@ export default function CustomersPage() {
                     />
                 </div>
 
-                {/* Bulk Assign Matrix Modal */}
+                {/* Bulk Assign Modal */}
                 <CRMModal
                     open={showBulkModal}
                     onClose={() => setShowBulkModal(false)}
-                    title="Ownership Matrix Reconfiguration"
+                    title="Update Ownership"
                     subtitle={selectedIds.size > 0
                         ? `Relocating ${selectedIds.size} manually targeted profiles under new executive oversight.`
                         : "Executing global re-assignment task for ALL profiles matching current filter parameters."}
@@ -530,7 +530,7 @@ export default function CustomersPage() {
                                 disabled={actionLoading || !assignTargetId}
                                 className="flex-1 bg-primary-600 text-white px-8 py-3.5 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] shadow-2xl shadow-primary-200 hover:bg-primary-700 disabled:opacity-50 transition-all active:scale-95 flex items-center justify-center gap-2 group"
                             >
-                                {actionLoading ? 'Synchronizing...' : (
+                                {actionLoading ? 'Updating...' : (
                                     <>Initiate Re-assignment <ChevronRight size={14} className="group-hover:translate-x-1 transition-transform" /></>
                                 )}
                             </button>

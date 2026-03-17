@@ -4,6 +4,7 @@ import { useSession } from 'next-auth/react';
 import Link from 'next/link';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { usePathname } from 'next/navigation';
+import { cn } from '@/lib/classnames';
 import { 
     LayoutDashboard, Users, UserPlus, Briefcase, 
     FileText, CheckCircle2, Zap, ShieldCheck,
@@ -47,18 +48,25 @@ export default function CRMClientLayout({ children }: { children: React.ReactNod
                             <Link 
                                 key={tab.href}
                                 href={tab.href} 
-                                className={`flex items-center gap-2.5 px-6 py-2.5 rounded-2xl text-[10px] font-black uppercase tracking-[0.1em] transition-all duration-500 group relative ${
-                                    isActive 
-                                    ? 'bg-white text-secondary-950 shadow-2xl shadow-secondary-200/50 scale-105 border border-secondary-100/50' 
-                                    : 'text-secondary-400 hover:text-secondary-900 hover:bg-white/40'
-                                }`}
+                                className={cn(
+                                    'flex items-center gap-2.5 px-6 py-2.5 rounded-2xl text-[10px] font-black uppercase tracking-[0.1em] transition-all duration-500 group relative',
+                                    isActive
+                                        ? 'bg-white text-secondary-950 shadow-2xl shadow-secondary-200/50 scale-105 border border-secondary-100/50'
+                                        : 'text-secondary-400 hover:text-secondary-900 hover:bg-white/40'
+                                )}
                             >
-                                <span className={`${isActive ? tab.color : 'text-secondary-300 group-hover:text-secondary-600'} transition-all duration-500 group-hover:scale-125 group-hover:rotate-6`}>
+                                <span className={cn(
+                                    'transition-all duration-500 group-hover:scale-125 group-hover:rotate-6',
+                                    isActive ? tab.color : 'text-secondary-300 group-hover:text-secondary-600'
+                                )}>
                                     {tab.icon}
                                 </span>
                                 <span className="relative z-10 italic">{tab.label}</span>
                                 {isActive && (
-                                    <div className={`absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full ${tab.color.replace('text', 'bg')} shadow-[0_0_8px_currentColor]`} />
+                                    <div className={cn(
+                                        'absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full shadow-[0_0_8px_currentColor]',
+                                        tab.color.replace('text', 'bg')
+                                    )} />
                                 )}
                             </Link>
                         );

@@ -7,6 +7,7 @@ import Link from 'next/link';
 import CRMClientLayout from '../../CRMClientLayout';
 import FormattedDate from '@/components/common/FormattedDate';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
+import { cn } from '@/lib/classnames';
 
 export default function DealDetailPage({ params }: { params: Promise<{ id: string }> }) {
     const { id } = use(params);
@@ -132,10 +133,12 @@ export default function DealDetailPage({ params }: { params: Promise<{ id: strin
                                 key={s.id}
                                 disabled={actionLoading}
                                 onClick={() => handleStageUpdate(s.id)}
-                                className={`flex-1 px-4 py-4 text-sm font-bold transition-all relative ${deal.stage === s.id
-                                    ? 'bg-primary-600 text-white'
-                                    : 'bg-white text-secondary-500 hover:bg-secondary-50'
-                                    }`}
+                                className={cn(
+                                    'flex-1 px-4 py-4 text-sm font-bold transition-all relative',
+                                    deal.stage === s.id
+                                        ? 'bg-primary-600 text-white'
+                                        : 'bg-white text-secondary-500 hover:bg-secondary-50'
+                                )}
                             >
                                 <span className="relative z-10">{idx + 1}. {s.label}</span>
                                 {deal.stage === s.id && (

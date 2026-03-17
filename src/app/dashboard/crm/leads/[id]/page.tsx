@@ -9,6 +9,7 @@ import FormattedDate from '@/components/common/FormattedDate';
 import CommunicationForm from '@/components/dashboard/CommunicationForm';
 import { useSession } from 'next-auth/react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
+import { cn } from '@/lib/classnames';
 
 export default function LeadDetailPage({ params }: { params: Promise<{ id: string }> }) {
     const { id } = use(params);
@@ -106,8 +107,10 @@ export default function LeadDetailPage({ params }: { params: Promise<{ id: strin
                         <div>
                             <div className="flex items-center gap-3">
                                 <h1 className="text-3xl font-bold text-secondary-900">{lead.name}</h1>
-                                <span className={`px-2 py-0.5 rounded text-xs font-bold uppercase tracking-wider ${lead.leadStatus === 'CONVERTED' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'
-                                    }`}>
+                                <span className={cn(
+                                    'px-2 py-0.5 rounded text-xs font-bold uppercase tracking-wider',
+                                    lead.leadStatus === 'CONVERTED' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'
+                                )}>
                                     {lead.leadStatus?.replace('_', ' ')}
                                 </span>
                             </div>

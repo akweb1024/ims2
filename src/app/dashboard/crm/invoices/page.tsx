@@ -1,9 +1,10 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { useSearchParams } from 'next/navigation';
+import Link from 'next/link';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import FormattedDate from '@/components/common/FormattedDate';
-import CreateInvoiceModal from '@/components/dashboard/CreateInvoiceModal';
 import {
     CRMPageShell,
     CRMSearchInput,
@@ -32,7 +33,8 @@ export default function InvoicesPage() {
     const [pagination, setPagination] = useState({ page: 1, totalPages: 1 });
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState('');
-    const [showCreateModal, setShowCreateModal] = useState(false);
+    const searchParams = useSearchParams();
+    const openedFromQuery = useRef(false);
 
     const fetchInvoices = useCallback(async () => {
         setLoading(true);
@@ -73,6 +75,15 @@ export default function InvoicesPage() {
         }
         fetchInvoices();
     }, [fetchInvoices]);
+
+    useEffect(() => {
+        if (openedFromQuery.current) return;
+        const shouldOpen = searchParams.get('create');
+        if (shouldOpen === '1' || shouldOpen === 'true') {
+            openedFromQuery.current = true;
+            window.location.href = '/dashboard/crm/invoices/new';
+        }
+    }, [searchParams]);
 
     // Handle debounce for search
     useEffect(() => {
@@ -133,19 +144,19 @@ export default function InvoicesPage() {
                                     <Download size={16} />
                                     Export CSV
                                 </button>
-                                <button
-                                    onClick={() => setShowCreateModal(true)}
+                                <Link
+                                    href="/dashboard/crm/invoices/new"
                                     className="btn btn-primary py-2 px-5 text-xs font-black uppercase tracking-[0.15em] flex items-center gap-2 shadow-lg shadow-primary-200 group grow-0"
                                 >
                                     <Plus size={18} className="group-hover:rotate-90 transition-transform" />
-                                    Generate Invoice
-                                </button>
+                                    Create Invoice
+                                </Link>
                             </>
                         )}
                     </div>
                 }
             >
-                {/* Filters matrix */}
+                {/* Filters */}
                 <CRMFilterBar>
                     <CRMSearchInput
                         value={searchTerm}
@@ -161,28 +172,28 @@ export default function InvoicesPage() {
                             value={statusFilter}
                             onChange={e => setStatusFilter(e.target.value)}
                         >
-                            <option value="">Lifecycle: All</option>
-                            <option value="PAID">Phase: Paid</option>
-                            <option value="UNPAID">Phase: Unpaid</option>
-                            <option value="PARTIALLY_PAID">Phase: Partial</option>
-                            <option value="OVERDUE">Phase: Overdue</option>
-                            <option value="VOID">Phase: Void</option>
+                            <option value="">Status: All</option>
+                            <option value="PAID">Paid</option>
+                            <option value="UNPAID">Unpaid</option>
+                            <option value="PARTIALLY_PAID">Partially Paid</option>
+                            <option value="OVERDUE">Overdue</option>
+                            <option value="VOID">Void</option>
                         </select>
                     </div>
                 </CRMFilterBar>
 
-                {/* Billing Matrix */}
+                {/* Invoices */}
                 <div className="crm-card overflow-hidden">
                     <CRMTable>
                         <thead>
                             <tr className="bg-secondary-50/50">
-                                <th className="text-[10px] font-black uppercase tracking-widest text-secondary-500 py-5">Sequential ID</th>
-                                <th className="text-[10px] font-black uppercase tracking-widest text-secondary-500 py-5">Client Profile</th>
-                                <th className="text-[10px] font-black uppercase tracking-widest text-secondary-500 py-5">Milestone Date</th>
-                                <th className="text-[10px] font-black uppercase tracking-widest text-secondary-500 py-5">Financial Value</th>
-                                <th className="text-[10px] font-black uppercase tracking-widest text-secondary-500 py-5">Lifecycle Status</th>
-                                <th className="text-[10px] font-black uppercase tracking-widest text-secondary-500 py-5">Identity Brand</th>
-                                <th className="text-right text-[10px] font-black uppercase tracking-widest text-secondary-500 py-5 px-6">Operations</th>
+                                <th className="text-[10px] font-black uppercase tracking-widest text-secondary-500 py-5">Invoice ID</th>
+                                <th className="text-[10px] font-black uppercase tracking-widest text-secondary-500 py-5">Customer</th>
+                                <th className="text-[10px] font-black uppercase tracking-widest text-secondary-500 py-5">Due Date</th>
+                                <th className="text-[10px] font-black uppercase tracking-widest text-secondary-500 py-5">Amount</th>
+                                <th className="text-[10px] font-black uppercase tracking-widest text-secondary-500 py-5">Status</th>
+                                <th className="text-[10px] font-black uppercase tracking-widest text-secondary-500 py-5">Company</th>
+                                <th className="text-right text-[10px] font-black uppercase tracking-widest text-secondary-500 py-5 px-6">Actions</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-secondary-50">
@@ -191,7 +202,7 @@ export default function InvoicesPage() {
                             ) : error ? (
                                 <CRMTableError message={error} onRetry={fetchInvoices} colSpan={7} />
                             ) : invoices.length === 0 ? (
-                                <CRMTableEmpty icon={<FileText size={48} />} message="No billing intelligence found in current matrix parameters" colSpan={7} />
+                                <CRMTableEmpty icon={<FileText size={48} />} message="No invoices found for the current filters" colSpan={7} />
                             ) : (
                                 invoices.map(inv => (
                                     <tr key={inv.id} className="group hover:bg-secondary-50/30 transition-all border-l-4 border-transparent hover:border-primary-500">
@@ -265,11 +276,6 @@ export default function InvoicesPage() {
                 </div>
             </CRMPageShell>
 
-            <CreateInvoiceModal
-                isOpen={showCreateModal}
-                onClose={() => setShowCreateModal(false)}
-                onSuccess={() => fetchInvoices()}
-            />
         </DashboardLayout>
     );
 }

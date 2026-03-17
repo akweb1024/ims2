@@ -50,6 +50,7 @@ interface CreateInvoiceModalProps {
   onClose: () => void;
   onSuccess: () => void;
   editId?: string;
+  renderMode?: "modal" | "page";
 }
 
 export default function CreateInvoiceModal({
@@ -57,6 +58,7 @@ export default function CreateInvoiceModal({
   onClose,
   onSuccess,
   editId,
+  renderMode = "modal",
 }: CreateInvoiceModalProps) {
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
@@ -683,10 +685,8 @@ export default function CreateInvoiceModal({
 
   if (!isOpen) return null;
 
-  return (
-    (typeof document !== "undefined" ? createPortal(
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-      <div className="bg-white rounded-3xl w-full max-w-2xl max-h-[90vh] overflow-hidden shadow-2xl flex flex-col">
+  const modalBody = (
+      <div className="bg-white rounded-3xl w-full max-w-2xl max-h-[90vh] overflow-hidden shadow-2xl flex flex-col relative">
         {/* Product Catalogue & Variants Overlay */}
         {showProductModal && (
           <div className="absolute inset-0 z-[60] bg-white flex flex-col animate-slideIn">
@@ -1921,8 +1921,24 @@ export default function CreateInvoiceModal({
           )}
         </div>
       </div>
-    </div>,
-    document.body
-    ) : null)
+  );
+
+  if (renderMode === "page") {
+    return (
+      <div className="min-h-screen bg-secondary-50 p-6">
+        <div className="max-w-4xl mx-auto">{modalBody}</div>
+      </div>
+    );
+  }
+
+  return (
+    (typeof document !== "undefined"
+      ? createPortal(
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+            {modalBody}
+          </div>,
+          document.body
+        )
+      : null)
   );
 }

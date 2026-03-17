@@ -1,6 +1,8 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import {
   CRMPageShell,
@@ -37,6 +39,7 @@ import {
   UploadCloud,
   DownloadCloud,
 } from "lucide-react";
+import { cn } from "@/lib/classnames";
 import FormattedDate from "@/components/common/FormattedDate";
 import VariantAdminPanel from "@/components/dashboard/crm/VariantAdminPanel";
 import ProductCatalogueForm, {
@@ -256,6 +259,8 @@ export default function InvoiceProductsPage() {
   const [fxRate, setFxRate] = useState(83.5);
   const [fxInput, setFxInput] = useState("");
   const [fxCurrency, setFxCurrency] = useState<"INR" | "USD">("INR");
+  const searchParams = useSearchParams();
+  const openedFromQuery = useRef(false);
 
   const token =
     typeof window !== "undefined" ? localStorage.getItem("token") : "";
@@ -332,12 +337,12 @@ export default function InvoiceProductsPage() {
     fetchAttributes();
   }, [fetchProducts, fetchAttributes]);
 
-  const openCreate = () => {
+  const openCreate = useCallback(() => {
     setEditingProduct(null);
     setForm(EMPTY_FORM);
     setCatalogueForm(DEFAULT_FORM_DATA);
     setShowModal(true);
-  };
+  }, []);
 
   const openEdit = (p: InvoiceProduct) => {
     setEditingProduct(p);
@@ -408,6 +413,15 @@ export default function InvoiceProductsPage() {
     setShowModal(true);
   };
 
+  useEffect(() => {
+    if (openedFromQuery.current) return;
+    const shouldOpen = searchParams.get("create");
+    if (shouldOpen === "1" || shouldOpen === "true") {
+      openedFromQuery.current = true;
+      openCreate();
+    }
+  }, [searchParams, openCreate]);
+
   const buildPayload = (currentForm: ProductCatalogueFormData) => {
     // Merge new catalogueForm fields with legacy form fields
     const isVariable = currentForm.pricingMode === "VARIABLE";
@@ -473,7 +487,7 @@ export default function InvoiceProductsPage() {
       if (!res.ok) {
         const errData = await res.json().catch(() => null);
         console.error("API Error Response:", errData);
-        throw new Error(errData?.error || "Save failed");
+        throw new Error(errData?.message || errData?.error || "Save failed");
       }
       setShowModal(false);
       fetchProducts();
@@ -657,7 +671,7 @@ export default function InvoiceProductsPage() {
         subtitle="Manage billable products, courses, and tactical services across dual-currency domains."
         breadcrumb={[
           { label: "CRM", href: "/dashboard/crm" },
-          { label: "Product Registry" },
+          { label: "Products" },
         ]}
         icon={<Box className="w-5 h-5" />}
         actions={
@@ -707,20 +721,20 @@ export default function InvoiceProductsPage() {
                 <DownloadCloud size={14} /> Export
               </button>
             </div>
-            <button
-              onClick={openCreate}
+            <Link
+              href="/dashboard/crm/invoice-products/new"
               className="bg-primary-600 text-white px-8 py-3.5 rounded-2xl text-[11px] font-black uppercase tracking-[0.2em] shadow-2xl shadow-primary-200 hover:bg-primary-700 transition-all flex items-center gap-3 active:scale-95 group"
             >
               <Plus
                 size={18}
                 className="group-hover:rotate-90 transition-transform"
               />
-              Initialize Product
-            </button>
+              Add Product
+            </Link>
           </div>
         }
       >
-        {/* Global Statistics Matrix */}
+        {/* Product Overview */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           <CRMStatCard
             label="Total Assets"
@@ -741,7 +755,7 @@ export default function InvoiceProductsPage() {
             trend={{ value: "Identity", label: "verified", isPositive: true }}
           />
           <CRMStatCard
-            label="Featured Nodes"
+            label="Featured Products"
             value={products.filter((p) => p.isFeatured).length}
             icon={<Sparkles size={22} />}
             accent="bg-amber-900 text-white shadow-amber-100"
@@ -792,8 +806,8 @@ export default function InvoiceProductsPage() {
                 value={fxCurrency}
                 onChange={(e) => setFxCurrency(e.target.value as "INR" | "USD")}
               >
-                <option value="INR">INR Hub</option>
-                <option value="USD">USD Hub</option>
+                <option value="INR">INR</option>
+                <option value="USD">USD</option>
               </select>
               <div className="hidden sm:flex items-center justify-center w-12 text-primary-400">
                 <ArrowRight size={24} className="animate-pulse" />
@@ -831,9 +845,14 @@ export default function InvoiceProductsPage() {
                   setCategoryFilter("");
                   setPage(1);
                 }}
-                className={`px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all border ${categoryFilter === "" ? "bg-secondary-950 text-white border-secondary-950 shadow-xl" : "bg-white text-secondary-500 border-secondary-200 hover:border-primary-300"}`}
+                className={cn(
+                  "px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all border",
+                  categoryFilter === ""
+                    ? "bg-secondary-950 text-white border-secondary-950 shadow-xl"
+                    : "bg-white text-secondary-500 border-secondary-200 hover:border-primary-300"
+                )}
               >
-                Universal Matrix{" "}
+                All Products{" "}
                 <span className="ml-2 opacity-40">[{total}]</span>
               </button>
               {CATEGORIES.map((cat) => (
@@ -843,7 +862,12 @@ export default function InvoiceProductsPage() {
                     setCategoryFilter(cat.value);
                     setPage(1);
                   }}
-                  className={`px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all border ${categoryFilter === cat.value ? "bg-primary-600 text-white border-primary-600 shadow-xl" : "bg-white text-secondary-500 border-secondary-200 hover:shadow-lg"}`}
+                  className={cn(
+                    "px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all border",
+                    categoryFilter === cat.value
+                      ? "bg-primary-600 text-white border-primary-600 shadow-xl"
+                      : "bg-white text-secondary-500 border-secondary-200 hover:shadow-lg"
+                  )}
                 >
                   {cat.icon} {cat.label}
                 </button>
@@ -869,13 +893,23 @@ export default function InvoiceProductsPage() {
               <div className="flex items-center gap-2 p-1 bg-secondary-100 rounded-xl">
                 <button
                   onClick={() => setSortBy("name")}
-                  className={`p-2 rounded-lg transition-all ${sortBy === "name" ? "bg-white shadow-sm text-primary-600" : "text-secondary-400 hover:text-secondary-600"}`}
+                  className={cn(
+                    "p-2 rounded-lg transition-all",
+                    sortBy === "name"
+                      ? "bg-white shadow-sm text-primary-600"
+                      : "text-secondary-400 hover:text-secondary-600"
+                  )}
                 >
                   <BarChart3 size={18} />
                 </button>
                 <button
                   onClick={() => setSortBy("createdAt")}
-                  className={`p-2 rounded-lg transition-all ${sortBy === "createdAt" ? "bg-white shadow-sm text-primary-600" : "text-secondary-400 hover:text-secondary-600"}`}
+                  className={cn(
+                    "p-2 rounded-lg transition-all",
+                    sortBy === "createdAt"
+                      ? "bg-white shadow-sm text-primary-600"
+                      : "text-secondary-400 hover:text-secondary-600"
+                  )}
                 >
                   <Activity size={18} />
                 </button>
@@ -883,7 +917,7 @@ export default function InvoiceProductsPage() {
             </div>
           </div>
 
-          {/* Bulk Matrix Actions */}
+          {/* Bulk Actions */}
           {selected.size > 0 && (
             <div className="bg-primary-50 p-4 px-6 rounded-3xl border border-primary-100 flex items-center justify-between animate-in slide-in-from-top-4">
               <div className="flex items-center gap-4">
@@ -891,7 +925,7 @@ export default function InvoiceProductsPage() {
                   {selected.size}
                 </div>
                 <span className="text-[10px] font-black uppercase tracking-[0.2em] text-primary-900 italic">
-                  Nodes selected for bulk propagation
+                  Products selected for bulk update
                 </span>
               </div>
               <div className="flex items-center gap-3">
@@ -917,7 +951,7 @@ export default function InvoiceProductsPage() {
             </div>
           )}
 
-          {/* Registry Flux */}
+          {/* Products */}
           <div className="bg-white rounded-[3rem] border border-secondary-100 shadow-2xl shadow-secondary-100/50 overflow-hidden relative">
             {loading ? (
               <div className="py-40 flex flex-col items-center justify-center">
@@ -932,7 +966,7 @@ export default function InvoiceProductsPage() {
                   <Box size={48} strokeWidth={1} />
                 </div>
                 <h3 className="text-xl font-black text-secondary-900 uppercase tracking-tight">
-                  Registry Node Empty
+                  No products found
                 </h3>
                 <p className="text-[10px] font-black text-secondary-400 uppercase tracking-[0.3em] mt-3">
                   No asset parameters found in the current sector mapping.
@@ -955,7 +989,7 @@ export default function InvoiceProductsPage() {
                         />
                       </th>
                       <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-secondary-400 italic">
-                        Identity Node
+                        Product
                       </th>
                       <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-secondary-400 italic">
                         Sub-Sector
@@ -1130,14 +1164,14 @@ export default function InvoiceProductsPage() {
               </div>
             )}
 
-            {/* Registry Pagination */}
+            {/* Pagination */}
             {totalPages > 1 && (
               <div className="p-8 border-t border-secondary-100 flex items-center justify-between bg-secondary-50/30">
                 <p className="text-[10px] font-black text-secondary-400 uppercase tracking-[0.2em]">
                   Mapping {(page - 1) * pageSize + 1}–
                   {Math.min(page * pageSize, total)}{" "}
                   <span className="mx-1 text-secondary-200">/</span> Total
-                  Registry Nodes: {total}
+                  Total Products: {total}
                 </p>
                 <div className="flex items-center gap-4">
                   <button

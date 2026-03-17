@@ -19,6 +19,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import GuidelineHelp from "../GuidelineHelp";
+import { showError, showSuccess } from "@/lib/toast";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 export interface VariantRow {
@@ -383,6 +384,8 @@ export default function ProductCatalogueForm({
   const [domainOpen, setDomainOpen] = useState(false);
   const [templates, setTemplates] = useState<any[]>([]);
   const [loadingTemplates, setLoadingTemplates] = useState(false);
+  const [selectedTemplateId, setSelectedTemplateId] = useState("");
+  const [templateMessage, setTemplateMessage] = useState<string | null>(null);
 
   const fetchTemplates = useCallback(async () => {
     if (!value.category) return;
@@ -411,7 +414,11 @@ export default function ProductCatalogueForm({
       year: v.year || new Date().getFullYear(),
       duration: v.duration || "",
     }));
+    setField("pricingMode", "VARIABLE");
+    setField("fixedPriceINR", "");
+    setField("fixedPriceUSD", "");
     setField("variants", newVariants);
+    setTemplateMessage(`Applied template: ${template.name}`);
   };
 
   const handleSaveAsTemplate = async () => {
@@ -439,14 +446,36 @@ export default function ProductCatalogueForm({
       });
 
       if (res.ok) {
-        alert("Template saved successfully!");
+        showSuccess("Template saved successfully!");
+        setTemplateMessage(`Saved template: ${templateName}`);
         fetchTemplates();
       } else {
-        alert("Failed to save template.");
+        const err = await res.json().catch(() => null);
+        showError(err?.message || err?.error || "Failed to save template.");
       }
     } catch (e) {
       console.error(e);
-      alert("Error saving template.");
+      showError("Error saving template.");
+    }
+  };
+
+  const handleDeleteTemplate = async (id: string) => {
+    try {
+      const res = await fetch(`/api/invoice-products/templates?id=${id}`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => null);
+        throw new Error(err?.message || err?.error || "Delete failed");
+      }
+      showSuccess("Template deleted");
+      setTemplates((prev) => prev.filter((t) => t.id !== id));
+      if (selectedTemplateId === id) setSelectedTemplateId("");
+    } catch (e: any) {
+      showError(e.message || "Failed to delete template");
     }
   };
 
@@ -752,7 +781,9 @@ export default function ProductCatalogueForm({
                   <select
                     disabled={!value.category || loadingTemplates}
                     onChange={(e) => {
-                      const t = templates.find((t) => t.id === e.target.value);
+                      const selectedId = e.target.value;
+                      setSelectedTemplateId(selectedId);
+                      const t = templates.find((t) => t.id === selectedId);
                       if (t) applyTemplate(t);
                     }}
                     onFocus={fetchTemplates}
@@ -781,6 +812,56 @@ export default function ProductCatalogueForm({
                   Save as Template
                 </button>
               </div>
+
+              <div className="mt-3 flex flex-wrap items-center gap-3 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                <span>Step 1: Choose Category</span>
+                <span className="text-slate-300">•</span>
+                <span>Step 2: Select Template</span>
+                <span className="text-slate-300">•</span>
+                <span>Step 3: Variants auto-fill</span>
+              </div>
+
+              {templateMessage && (
+                <div className="mt-3 text-[11px] font-semibold text-emerald-600">
+                  {templateMessage}
+                </div>
+              )}
+
+              {templates.length > 0 && (
+                <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {templates.map((t) => (
+                    <div
+                      key={t.id}
+                      className="bg-white border border-slate-200 rounded-xl p-3 flex items-center justify-between gap-3"
+                    >
+                      <div className="min-w-0">
+                        <p className="text-xs font-bold text-slate-800 truncate">
+                          {t.name}
+                        </p>
+                        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">
+                          {t.variants.length} rows
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => applyTemplate(t)}
+                          className="px-3 py-1 rounded-lg bg-indigo-50 text-indigo-600 text-[10px] font-bold uppercase tracking-widest"
+                        >
+                          Use
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteTemplate(t.id)}
+                          className="px-3 py-1 rounded-lg bg-rose-50 text-rose-600 text-[10px] font-bold uppercase tracking-widest"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* Column header hint */}

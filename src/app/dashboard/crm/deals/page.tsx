@@ -10,6 +10,7 @@ import {
     CRMModal,
     CRMStatCard
 } from '@/components/crm/CRMPageShell';
+import { cn } from '@/lib/classnames';
 import { 
     Briefcase, Plus, TrendingUp, User, 
     Calendar, CheckCircle2, History, IndianRupee,
@@ -160,12 +161,12 @@ export default function DealsPage() {
                 <div className="mt-12 flex flex-col lg:flex-row lg:items-center justify-between gap-6 border-b border-secondary-100 pb-8">
                      <div className="flex flex-wrap gap-2.5">
                          {STAGES.map(stage => (
-                             <div key={stage.id} className="flex items-center gap-2.5 px-5 py-2.5 rounded-xl border border-secondary-200 bg-white shadow-sm">
-                                  <div className={`w-2 h-2 rounded-full ${stage.accent.replace('text', 'bg')}`} />
-                                  <span className="text-[10px] font-black uppercase tracking-wider text-secondary-900">{stage.label}</span>
-                                  <span className="h-4 w-px bg-secondary-100" />
-                                  <span className="text-[9px] font-black text-primary-600">{deals.filter(d => d.stage === stage.id).length}</span>
-                             </div>
+                                 <div key={stage.id} className="flex items-center gap-2.5 px-5 py-2.5 rounded-xl border border-secondary-200 bg-white shadow-sm">
+                                      <div className={cn('w-2 h-2 rounded-full', stage.accent.replace('text', 'bg'))} />
+                                      <span className="text-[10px] font-black uppercase tracking-wider text-secondary-900">{stage.label}</span>
+                                      <span className="h-4 w-px bg-secondary-100" />
+                                      <span className="text-[9px] font-black text-primary-600">{deals.filter(d => d.stage === stage.id).length}</span>
+                                 </div>
                          ))}
                      </div>
 
@@ -187,13 +188,22 @@ export default function DealsPage() {
                         const totalValue = getStageTotal(stage.id);
                         
                         return (
-                            <div key={stage.id} className={`flex-1 min-w-[340px] max-w-[420px] flex flex-col rounded-[3rem] border-2 ${stage.color.replace('50/20', '50/40')} shadow-xl shadow-transparent hover:shadow-secondary-100/30 transition-all duration-700 group/column`}>
+                            <div key={stage.id} className={cn(
+                                'flex-1 min-w-[340px] max-w-[420px] flex flex-col rounded-[3rem] border-2 shadow-xl shadow-transparent hover:shadow-secondary-100/30 transition-all duration-700 group/column',
+                                stage.color.replace('50/20', '50/40')
+                            )}>
                                 {/* Column Header */}
                                 <div className="p-8 border-b border-secondary-100/50 bg-white/40 backdrop-blur-md rounded-t-[2.8rem] flex flex-col gap-4">
                                     <div className="flex justify-between items-center">
                                         <div className="flex items-center gap-3">
-                                            <div className={`w-2.5 h-2.5 rounded-full ${stage.accent.replace('text', 'bg')} shadow-[0_0_10px_currentColor] animate-pulse`} />
-                                            <h3 className={`font-black text-[11px] uppercase tracking-[0.25em] italic ${stage.accent}`}>{stage.label}</h3>
+                                            <div className={cn(
+                                                'w-2.5 h-2.5 rounded-full shadow-[0_0_10px_currentColor] animate-pulse',
+                                                stage.accent.replace('text', 'bg')
+                                            )} />
+                                            <h3 className={cn(
+                                                'font-black text-[11px] uppercase tracking-[0.25em] italic',
+                                                stage.accent
+                                            )}>{stage.label}</h3>
                                         </div>
                                         <div className="bg-white/80 w-10 h-10 flex items-center justify-center rounded-2xl text-[11px] font-black text-secondary-950 border border-secondary-100 shadow-sm">
                                             {stageDeals.length}

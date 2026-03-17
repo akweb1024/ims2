@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import FormattedDate from "@/components/common/FormattedDate";
 import CRMClientLayout from "../CRMClientLayout";
+import { cn } from "@/lib/classnames";
 import {
   CRMPageShell,
   CRMSearchInput,
@@ -246,7 +247,12 @@ export default function LeadsPage() {
                     setStatusFilter(opt.value);
                     setPagination((p) => ({ ...p, page: 1 }));
                   }}
-                  className={`px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all border ${statusFilter === opt.value ? "bg-secondary-950 text-white border-secondary-950 shadow-xl" : "bg-white text-secondary-400 border-secondary-200 hover:border-primary-300"}`}
+                  className={cn(
+                    "px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all border",
+                    statusFilter === opt.value
+                      ? "bg-secondary-950 text-white border-secondary-950 shadow-xl"
+                      : "bg-white text-secondary-400 border-secondary-200 hover:border-primary-300"
+                  )}
                 >
                   {opt.label}
                 </button>

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
@@ -12,7 +13,7 @@ import { CRMPageShell } from '@/components/crm/CRMPageShell';
 import { 
     UserPlus, ArrowLeft, Save, X, Info, ShieldCheck, 
     Globe, MapPin, Building2, CreditCard, ClipboardList,
-    ChevronRight, Zap, Target
+    ChevronRight, Zap, Target, Plus, FileText
 } from 'lucide-react';
 
 export default function NewCustomerPage() {
@@ -205,27 +206,41 @@ export default function NewCustomerPage() {
     return (
         <DashboardLayout userRole={userRole}>
             <CRMPageShell
-                title="Initialize Customer Profile"
-                subtitle="Establish a new identity node within the global customer relationship matrix."
+                title="Create Customer"
+                subtitle="Add a new customer profile with contact and address details."
                 breadcrumb={[
                     { label: 'CRM', href: '/dashboard/crm' },
-                    { label: 'Customer Matrix', href: '/dashboard/customers' },
-                    { label: 'Node Initialization' }
+                    { label: 'Customers', href: '/dashboard/customers' },
+                    { label: 'New Customer' }
                 ]}
                 icon={<UserPlus className="w-5 h-5" />}
                 actions={
-                    <button
-                        onClick={() => router.back()}
-                        className="flex items-center gap-2.5 px-6 py-3 bg-secondary-50 text-secondary-500 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] border border-secondary-200 hover:bg-white hover:text-secondary-900 transition-all shadow-sm"
-                    >
-                        <ArrowLeft size={14} /> Abandon Initialization
-                    </button>
+                    <div className="flex flex-wrap items-center gap-3">
+                        <Link
+                            href="/dashboard/crm/invoice-products/new"
+                            className="flex items-center gap-2.5 px-6 py-3 bg-white text-secondary-700 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] border border-secondary-200 hover:bg-secondary-50 hover:text-secondary-900 transition-all shadow-sm"
+                        >
+                            <Plus size={14} /> Add Product to Catalogue
+                        </Link>
+                        <Link
+                            href="/dashboard/crm/invoices/new"
+                            className="flex items-center gap-2.5 px-6 py-3 bg-primary-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] shadow-2xl shadow-primary-200 hover:bg-primary-700 transition-all"
+                        >
+                            <FileText size={14} /> Create New Invoice
+                        </Link>
+                        <button
+                            onClick={() => router.back()}
+                            className="flex items-center gap-2.5 px-6 py-3 bg-secondary-50 text-secondary-500 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] border border-secondary-200 hover:bg-white hover:text-secondary-900 transition-all shadow-sm"
+                        >
+                            <ArrowLeft size={14} /> Back
+                        </button>
+                    </div>
                 }
             >
                 <form onSubmit={handleSubmit(onSubmit)} className="max-w-5xl mx-auto space-y-12 pb-32">
-                    {/* Basic Intelligence Node */}
+                    {/* Customer Details */}
                     <div className="bg-white rounded-[3rem] border border-secondary-100 shadow-2xl shadow-secondary-100/50 relative overflow-hidden group">
-                         {/* Header Matrix */}
+                         {/* Header */}
                          <div className="p-8 border-b border-secondary-50 bg-secondary-50/30 flex items-center justify-between">
                               <div className="flex items-center gap-4">
                                    <div className="w-12 h-12 rounded-2xl bg-primary-600 text-white flex items-center justify-center shadow-lg shadow-primary-200">
@@ -267,7 +282,7 @@ export default function NewCustomerPage() {
                                   />
 
                                   <FormField
-                                      label="Primary Vector (Phone)"
+                                      label="Primary Phone"
                                       name="phone"
                                       type="tel"
                                       placeholder="+X XXXXX XXXXX"
@@ -325,7 +340,7 @@ export default function NewCustomerPage() {
                                   />
 
                                   <FormField
-                                      label="Global Matrix Bind (Institution)"
+                                      label="Institution"
                                       name="institutionId"
                                       type="select"
                                       register={register}
@@ -343,17 +358,17 @@ export default function NewCustomerPage() {
                          </div>
                     </div>
 
-                    {/* Operational Coordinates (Address) */}
+                    {/* Address */}
                     <div className="grid grid-cols-1 xl:grid-cols-2 gap-12">
-                         {/* Billing Matrix */}
+                         {/* Billing Address */}
                          <div className="bg-white rounded-[3rem] border border-secondary-100 shadow-xl shadow-secondary-100/50 relative overflow-hidden">
                               <div className="p-8 border-b border-secondary-50 bg-indigo-50/20 flex items-center gap-4">
                                    <div className="w-12 h-12 rounded-2xl bg-indigo-600 text-white flex items-center justify-center shadow-lg shadow-indigo-100">
                                         <CreditCard size={24} />
                                    </div>
                                    <div className="flex flex-col">
-                                        <span className="text-[9px] font-black uppercase tracking-[0.3em] text-indigo-600 mb-1 leading-none">Fiscal Hub</span>
-                                        <h3 className="text-xl font-black text-secondary-900 uppercase tracking-tight italic">Billing Matrix</h3>
+                                        <span className="text-[9px] font-black uppercase tracking-[0.3em] text-indigo-600 mb-1 leading-none">Billing</span>
+                                        <h3 className="text-xl font-black text-secondary-900 uppercase tracking-tight italic">Billing Address</h3>
                                    </div>
                               </div>
                               <div className="p-10 space-y-8">
@@ -399,7 +414,7 @@ export default function NewCustomerPage() {
                               </div>
                          </div>
 
-                         {/* Shipping Matrix */}
+                         {/* Shipping Address */}
                          <div className="bg-white rounded-[3rem] border border-secondary-100 shadow-xl shadow-secondary-100/50 relative overflow-hidden">
                               <div className="p-8 border-b border-secondary-50 bg-blue-50/20 flex items-center justify-between">
                                    <div className="flex items-center gap-4">
@@ -407,8 +422,8 @@ export default function NewCustomerPage() {
                                              <Globe size={24} />
                                         </div>
                                         <div className="flex flex-col">
-                                             <span className="text-[9px] font-black uppercase tracking-[0.3em] text-blue-600 mb-1 leading-none">Deployment Hub</span>
-                                             <h3 className="text-xl font-black text-secondary-900 uppercase tracking-tight italic">Shipping Matrix</h3>
+                                             <span className="text-[9px] font-black uppercase tracking-[0.3em] text-blue-600 mb-1 leading-none">Shipping</span>
+                                             <h3 className="text-xl font-black text-secondary-900 uppercase tracking-tight italic">Shipping Address</h3>
                                         </div>
                                    </div>
                                    <div className="flex items-center gap-3">
@@ -462,14 +477,14 @@ export default function NewCustomerPage() {
                                                  <Zap size={32} />
                                             </div>
                                             <h4 className="text-[12px] font-black text-secondary-900 uppercase tracking-[0.2em] mb-2 leading-none">Coordinates Synced</h4>
-                                            <p className="text-[10px] font-black text-secondary-300 uppercase tracking-widest leading-relaxed">System is mirroring the Fiscal Hub parameters for global deployment.</p>
+                                            <p className="text-[10px] font-black text-secondary-300 uppercase tracking-widest leading-relaxed">Shipping address is currently the same as billing.</p>
                                        </div>
                                    )}
                               </div>
                          </div>
                     </div>
 
-                    {/* Strategic notes Node */}
+                    {/* Notes */}
                     <div className="bg-white rounded-[3rem] border border-secondary-100 shadow-2xl shadow-secondary-100/50 relative overflow-hidden">
                          <div className="p-8 border-b border-secondary-50 bg-purple-50/20 flex items-center gap-4">
                               <div className="w-12 h-12 rounded-2xl bg-purple-600 text-white flex items-center justify-center shadow-lg shadow-purple-100">
@@ -505,7 +520,7 @@ export default function NewCustomerPage() {
                                 {Object.keys(errors).length > 0 ? (
                                     <>
                                         <span className="text-[10px] font-black text-danger-500 uppercase tracking-[0.2em] mb-1">Integrity Errors Detected</span>
-                                        <p className="text-[9px] font-black text-white/40 uppercase tracking-widest">{Object.keys(errors).length} Nodes currently invalid</p>
+                                        <p className="text-[9px] font-black text-white/40 uppercase tracking-widest">{Object.keys(errors).length} fields need attention</p>
                                     </>
                                 ) : isValid ? (
                                     <>
@@ -536,7 +551,7 @@ export default function NewCustomerPage() {
                             >
                                 {loading ? 'Initializing...' : (
                                     <>
-                                        Propagate Identity Node <ChevronRight size={16} className="group-hover/btn:translate-x-1 transition-transform" />
+                                        Create Customer <ChevronRight size={16} className="group-hover/btn:translate-x-1 transition-transform" />
                                     </>
                                 )}
                             </button>
