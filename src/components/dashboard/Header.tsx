@@ -1,10 +1,11 @@
 'use client';
 
+import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import GlobalSearch from './GlobalSearch';
 import { NavModule } from '@/config/navigation';
-import { formatToISTTime } from '@/lib/date-utils';
+import { formatToISTDate, formatToISTTime } from '@/lib/date-utils';
 
 interface HeaderProps {
     sidebarOpen: boolean;
@@ -45,6 +46,71 @@ export default function Header({
 }: HeaderProps) {
     const router = useRouter();
     const unreadCount = notifications.filter(n => !n.isRead).length;
+    const [attendance, setAttendance] = useState<any[]>([]);
+    const [elapsedTime, setElapsedTime] = useState('00h 00m 00s');
+    const [remainingTime, setRemainingTime] = useState('08h 30m 00s');
+
+    const isStaff = user && !['CUSTOMER', 'AGENCY'].includes(user.role);
+    const todayAttendance = attendance.find(a => {
+        return formatToISTDate(a.date) === formatToISTDate(new Date());
+    });
+
+    const fetchTodayAttendance = useCallback(async () => {
+        if (!isStaff) return;
+        try {
+            const token = localStorage.getItem('token');
+            const headers: any = {};
+            if (token) headers['Authorization'] = `Bearer ${token}`;
+
+            const now = new Date();
+            const month = now.getMonth() + 1;
+            const year = now.getFullYear();
+            const res = await fetch(`/api/hr/attendance?year=${year}&month=${month}`, { headers });
+            if (res.ok) {
+                setAttendance(await res.json());
+            }
+        } catch (err) {
+            console.error('Failed to fetch attendance for header', err);
+        }
+    }, [isStaff]);
+
+    // Timer Logic
+    useEffect(() => {
+        if (todayAttendance?.checkIn && !todayAttendance?.checkOut) {
+            const calculateTime = () => {
+                const now = new Date();
+                const checkIn = new Date(todayAttendance.checkIn);
+                const diffMs = now.getTime() - checkIn.getTime();
+
+                const hours = Math.floor(diffMs / (1000 * 60 * 60));
+                const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+                const seconds = Math.floor((diffMs % (1000 * 60)) / 1000);
+                setElapsedTime(`${hours}h ${minutes}m ${seconds}s`);
+
+                const targetMs = 8.5 * 60 * 60 * 1000;
+                const remainingMs = targetMs - diffMs;
+
+                if (remainingMs > 0) {
+                    const rHours = Math.floor(remainingMs / (1000 * 60 * 60));
+                    const rMinutes = Math.floor((remainingMs % (1000 * 60 * 60)) / (1000 * 60));
+                    const rSeconds = Math.floor((remainingMs % (1000 * 60)) / 1000);
+                    setRemainingTime(`${rHours}h ${rMinutes}m ${rSeconds}s`);
+                } else {
+                    setRemainingTime('Overtime');
+                }
+            };
+
+            calculateTime();
+            const interval = setInterval(calculateTime, 1000);
+            return () => clearInterval(interval);
+        }
+    }, [todayAttendance]);
+
+    useEffect(() => {
+        fetchTodayAttendance();
+        const interval = setInterval(fetchTodayAttendance, 2 * 60 * 1000);
+        return () => clearInterval(interval);
+    }, [fetchTodayAttendance]);
 
     return (
         <nav
@@ -149,6 +215,26 @@ export default function Header({
                         <div className="hidden xl:block">
                             <GlobalSearch />
                         </div>
+
+                        {/* Attendance Timer Indicator */}
+                        {isStaff && (
+                            <button
+                                onClick={() => router.push('/dashboard/staff-portal')}
+                                className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-xl border border-slate-200 bg-white/80 hover:bg-white shadow-sm text-slate-700 hover:text-blue-600 transition-all"
+                                title="View attendance details"
+                            >
+                                <span className="text-sm">⏱️</span>
+                                {todayAttendance?.checkIn && !todayAttendance?.checkOut ? (
+                                    <span className="text-[11px] font-black uppercase tracking-widest">
+                                        {elapsedTime} · {remainingTime === 'Overtime' ? 'Overtime' : `Left ${remainingTime}`}
+                                    </span>
+                                ) : (
+                                    <span className="text-[11px] font-black uppercase tracking-widest">
+                                        Not Checked In
+                                    </span>
+                                )}
+                            </button>
+                        )}
 
                         {/* Notification Bell */}
                         <div className="relative group">

@@ -12,11 +12,12 @@ export const authConfig = {
             const userRole = (auth?.user as any)?.role;
             const companyId = (auth?.user as any)?.companyId;
             const isStaff = isLoggedIn && !['CUSTOMER', 'AGENCY'].includes(userRole);
+            const shouldRedirectToStaffPortal = userRole === 'EMPLOYEE';
             const hasCompany = !!companyId || userRole === 'SUPER_ADMIN';
 
             if (isAuthPage) {
                 if (isLoggedIn) {
-                    const destination = (isStaff && hasCompany) ? "/dashboard/staff-portal" : "/dashboard";
+                    const destination = (shouldRedirectToStaffPortal && hasCompany) ? "/dashboard/staff-portal" : "/dashboard";
                     return Response.redirect(new URL(destination, nextUrl));
                 }
                 return true;
@@ -26,7 +27,7 @@ export const authConfig = {
                 if (!isLoggedIn) return false; // Redirect to login
 
                 // If accessing dashboard root, redirect staff to staff portal if they have a company
-                if (nextUrl.pathname === "/dashboard" && isStaff && hasCompany) {
+                if (nextUrl.pathname === "/dashboard" && shouldRedirectToStaffPortal && hasCompany) {
                     return Response.redirect(new URL("/dashboard/staff-portal", nextUrl));
                 }
 

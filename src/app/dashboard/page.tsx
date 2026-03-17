@@ -10,6 +10,7 @@ import CashflowWidget from '@/components/dashboard/finance/CashflowWidget';
 import AIInsightsWidget from '@/components/dashboard/AIInsightsWidget';
 import { useSession } from 'next-auth/react';
 import RevenueMismatchAlert from '@/components/dashboard/RevenueMismatchAlert';
+import { formatToISTDate } from '@/lib/date-utils';
 
 export default function DashboardPage() {
     const router = useRouter();
@@ -20,6 +21,11 @@ export default function DashboardPage() {
         recentActivities: [],
         upcomingRenewals: []
     });
+    const [attendance, setAttendance] = useState<any[]>([]);
+    const [checkingIn, setCheckingIn] = useState(false);
+    const [workFromMode, setWorkFromMode] = useState<'OFFICE' | 'REMOTE'>('OFFICE');
+    const [elapsedTime, setElapsedTime] = useState('00h 00m 00s');
+    const [remainingTime, setRemainingTime] = useState('08h 30m 00s');
 
     const [error, setError] = useState<string | null>(null);
 
@@ -67,8 +73,110 @@ export default function DashboardPage() {
             router.push('/login');
         } else if (status === 'authenticated') {
             fetchDashboardData();
+            fetchTodayAttendance();
         }
     }, [status, router, fetchDashboardData]);
+
+    const todayAttendance = attendance.find(a => {
+        return formatToISTDate(a.date) === formatToISTDate(new Date());
+    });
+
+    const fetchTodayAttendance = useCallback(async () => {
+        try {
+            const token = localStorage.getItem('token');
+            const headers: any = {};
+            if (token) headers['Authorization'] = `Bearer ${token}`;
+
+            const now = new Date();
+            const month = now.getMonth() + 1;
+            const year = now.getFullYear();
+            const res = await fetch(`/api/hr/attendance?year=${year}&month=${month}`, { headers });
+            if (res.ok) {
+                setAttendance(await res.json());
+            }
+        } catch (err) {
+            console.error('Failed to fetch attendance for dashboard', err);
+        }
+    }, []);
+
+    // Timer Logic
+    useEffect(() => {
+        if (todayAttendance?.checkIn && !todayAttendance?.checkOut) {
+            const calculateTime = () => {
+                const now = new Date();
+                const checkIn = new Date(todayAttendance.checkIn);
+                const diffMs = now.getTime() - checkIn.getTime();
+
+                // Calculate Working Hours
+                const hours = Math.floor(diffMs / (1000 * 60 * 60));
+                const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+                const seconds = Math.floor((diffMs % (1000 * 60)) / 1000);
+                setElapsedTime(`${hours}h ${minutes}m ${seconds}s`);
+
+                // Calculate Remaining (Target: 8h 30m)
+                const targetMs = 8.5 * 60 * 60 * 1000;
+                const remainingMs = targetMs - diffMs;
+
+                if (remainingMs > 0) {
+                    const rHours = Math.floor(remainingMs / (1000 * 60 * 60));
+                    const rMinutes = Math.floor((remainingMs % (1000 * 60 * 60)) / (1000 * 60));
+                    const rSeconds = Math.floor((remainingMs % (1000 * 60)) / 1000);
+                    setRemainingTime(`${rHours}h ${rMinutes}m ${rSeconds}s`);
+                } else {
+                    setRemainingTime('Overtime');
+                }
+            };
+
+            calculateTime();
+            const interval = setInterval(calculateTime, 1000);
+            return () => clearInterval(interval);
+        }
+    }, [todayAttendance]);
+
+    const handleAttendance = async (action: 'check-in' | 'check-out') => {
+        setCheckingIn(true);
+        try {
+            let locationData: any = {};
+            if ("geolocation" in navigator) {
+                try {
+                    const pos = await new Promise<GeolocationPosition>((resolve, reject) => {
+                        navigator.geolocation.getCurrentPosition(resolve, reject);
+                    });
+                    locationData = {
+                        latitude: pos.coords.latitude,
+                        longitude: pos.coords.longitude
+                    };
+                } catch (e) {
+                }
+            }
+
+            const token = localStorage.getItem('token');
+            const headers: any = {};
+            if (token) headers['Authorization'] = `Bearer ${token}`;
+            headers['Content-Type'] = 'application/json';
+
+            const res = await fetch('/api/hr/attendance', {
+                method: 'POST',
+                headers,
+                body: JSON.stringify({
+                    action,
+                    workFrom: workFromMode,
+                    ...locationData
+                })
+            });
+
+            if (res.ok) {
+                await fetchTodayAttendance();
+            } else {
+                const err = await res.json();
+                alert(err.error);
+            }
+        } catch (err) {
+            console.error(err);
+        } finally {
+            setCheckingIn(false);
+        }
+    };
 
     if (status === 'loading' || loadingData) {
         return (
@@ -104,6 +212,7 @@ export default function DashboardPage() {
     const { stats, recentActivities, upcomingRenewals } = data;
     const userRole = (session?.user as any)?.role;
     const userName = session?.user?.name || session?.user?.email?.split('@')[0] || 'User';
+    const isStaff = !['CUSTOMER', 'AGENCY'].includes(userRole);
 
     return (
         <DashboardLayout userRole={userRole}>
@@ -155,6 +264,71 @@ export default function DashboardPage() {
                         )}
                     </div>
                 </div>
+
+                {/* Check In/Out + Timer */}
+                {isStaff && (
+                    <div className="card-premium p-6 md:p-8 bg-white border border-secondary-100 shadow-sm flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+                        <div>
+                            <h2 className="text-xl font-black text-secondary-900">Attendance Control</h2>
+                            <p className="text-secondary-500 text-sm font-medium">Track your shift time right from the dashboard.</p>
+                        </div>
+
+                        <div className="flex flex-col items-start md:items-end gap-3">
+                            {todayAttendance?.checkIn && !todayAttendance.checkOut && (
+                                <div className="flex gap-4">
+                                    <div className="text-right">
+                                        <p className="text-[10px] font-black text-secondary-400 uppercase tracking-widest">Working</p>
+                                        <p className="font-black text-secondary-900 text-lg">{elapsedTime}</p>
+                                    </div>
+                                    <div className="text-right">
+                                        <p className="text-[10px] font-black text-secondary-400 uppercase tracking-widest">Remaining</p>
+                                        <p className={`font-black text-lg ${remainingTime === 'Overtime' ? 'text-success-600' : 'text-primary-600'}`}>{remainingTime}</p>
+                                    </div>
+                                </div>
+                            )}
+
+                            {!todayAttendance?.checkIn && (
+                                <div className="flex gap-2 p-1 bg-secondary-100 rounded-xl">
+                                    <button
+                                        onClick={() => setWorkFromMode('OFFICE')}
+                                        className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${workFromMode === 'OFFICE' ? 'bg-white text-primary-600 shadow-sm' : 'text-secondary-500 hover:text-secondary-700'}`}
+                                    >
+                                        Office
+                                    </button>
+                                    <button
+                                        onClick={() => setWorkFromMode('REMOTE')}
+                                        className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${workFromMode === 'REMOTE' ? 'bg-white text-primary-600 shadow-sm' : 'text-secondary-500 hover:text-secondary-700'}`}
+                                    >
+                                        Remote
+                                    </button>
+                                </div>
+                            )}
+
+                            {!todayAttendance?.checkIn ? (
+                                <button
+                                    onClick={() => handleAttendance('check-in')}
+                                    disabled={checkingIn}
+                                    className="btn btn-primary px-6 py-3 rounded-2xl shadow-lg hover:shadow-primary-200 transition-all flex items-center gap-2 group"
+                                >
+                                    {checkingIn ? '...' : `Check In (${workFromMode})`}
+                                    <span className="group-hover:translate-x-1 transition-transform">🕒</span>
+                                </button>
+                            ) : !todayAttendance?.checkOut ? (
+                                <button
+                                    onClick={() => handleAttendance('check-out')}
+                                    disabled={checkingIn}
+                                    className="btn bg-secondary-900 text-white hover:bg-black px-6 py-3 rounded-2xl shadow-xl shadow-secondary-200 transition-all flex items-center gap-2 hover:scale-105"
+                                >
+                                    {checkingIn ? '...' : 'Check Out'} 🚪
+                                </button>
+                            ) : (
+                                <div className="bg-success-50 text-success-700 px-6 py-3 rounded-2xl border border-success-200 font-bold flex items-center gap-2">
+                                    ✅ Shift Completed
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                )}
 
                 {/* HR Quick Stats for Staff */}
                 {data.hrStats && (
