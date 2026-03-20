@@ -217,13 +217,13 @@ export default function CustomersPage() {
         <DashboardLayout userRole={userRole}>
             <CRMPageShell
                 title="Customers"
-                subtitle="Centralized repository of client profiles, organizational structures, and engagement metrics."
-                breadcrumb={[{ label: 'CRM', href: '/dashboard/crm' }, { label: 'Customers Base' }]}
+                subtitle="View existing customers, who owns each account, and recent activity."
+                breadcrumb={[{ label: 'CRM', href: '/dashboard/crm' }, { label: 'Customers' }]}
                 icon={<Users className="w-5 h-5" />}
                 actions={
                     <Link href="/dashboard/customers/new" className="btn btn-primary py-2 px-5 text-xs font-black uppercase tracking-[0.15em] flex items-center gap-2 shadow-lg shadow-primary-200 group grow-0">
                         <Plus size={18} className="group-hover:rotate-90 transition-transform" />
-                        Establish Profile
+                        Add Customer
                     </Link>
                 }
             >
@@ -235,8 +235,8 @@ export default function CustomersPage() {
                                  <CheckSquare size={20} />
                             </div>
                             <div className="flex flex-col">
-                                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-primary-400">Batch Selection Active</span>
-                                <span className="text-sm font-bold tracking-tight">{selectedIds.size} Target Profiles Categorized</span>
+                                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-primary-400">Selection active</span>
+                                <span className="text-sm font-bold tracking-tight">{selectedIds.size} customers selected</span>
                             </div>
                         </div>
                         <div className="flex items-center gap-3 pr-1">
@@ -244,13 +244,13 @@ export default function CustomersPage() {
                                 onClick={() => setSelectedIds(new Set())}
                                 className="px-4 py-2 text-[10px] font-black uppercase tracking-widest text-primary-300 hover:text-white transition-colors"
                             >
-                                De-select All
+                                Clear selection
                             </button>
                             <button
                                 onClick={() => setShowBulkModal(true)}
                                 className="bg-primary-600 text-white px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-xl shadow-black/20 hover:bg-primary-500 transition-all hover:-translate-y-0.5 active:translate-y-0"
                             >
-                                Re-assign Ownership
+                                Reassign owner
                             </button>
                         </div>
                     </div>
@@ -259,7 +259,7 @@ export default function CustomersPage() {
                 {/* Filters */}
                 <CRMFilterBar>
                     <CRMSearchInput
-                        placeholder="Search names, digital identities or orgs..."
+                        placeholder="Search name, email, company, or institution..."
                         value={search}
                         onChange={setSearch}
                     />
@@ -293,10 +293,10 @@ export default function CustomersPage() {
                                 value={typeFilter}
                                 onChange={(e) => setTypeFilter(e.target.value)}
                              >
-                                <option value="">Profiles: All</option>
-                                <option value="INDIVIDUAL">Type: Individual</option>
-                                <option value="INSTITUTION">Type: Institution</option>
-                                <option value="AGENCY">Type: Agency</option>
+                                <option value="">All customer types</option>
+                                <option value="INDIVIDUAL">Individual</option>
+                                <option value="INSTITUTION">Institution</option>
+                                <option value="AGENCY">Agency</option>
                              </select>
                         </div>
                         
@@ -306,7 +306,7 @@ export default function CustomersPage() {
                                 className="flex items-center gap-2 px-4 py-2 bg-secondary-50 text-secondary-600 border border-secondary-200 border-dashed rounded-xl hover:bg-secondary-100 hover:border-primary-300 transition-all text-[10px] font-black uppercase tracking-widest"
                                 title="Assign all customers matching the current filters"
                             >
-                                <Target size={14} /> Global Assign
+                                <Target size={14} /> Assign filtered results
                             </button>
                         )}
                     </div>
@@ -329,12 +329,12 @@ export default function CustomersPage() {
                                         </div>
                                     </th>
                                 )}
-                                <th className="text-[10px] font-black uppercase tracking-widest text-secondary-500 py-5">Corporate Identity</th>
-                                <th className="text-[10px] font-black uppercase tracking-widest text-secondary-500 py-5">Classification</th>
-                                <th className="text-[10px] font-black uppercase tracking-widest text-secondary-500 py-5">Meta Alignment</th>
-                                <th className="text-[10px] font-black uppercase tracking-widest text-secondary-500 py-5">Active Ownership</th>
-                                <th className="text-[10px] font-black uppercase tracking-widest text-secondary-500 py-5">Sub. Units</th>
-                                <th className="text-[10px] font-black uppercase tracking-widest text-secondary-500 py-5">Last Lifecycle sync</th>
+                                <th className="text-[10px] font-black uppercase tracking-widest text-secondary-500 py-5">Customer</th>
+                                <th className="text-[10px] font-black uppercase tracking-widest text-secondary-500 py-5">Type</th>
+                                <th className="text-[10px] font-black uppercase tracking-widest text-secondary-500 py-5">Company / Institution</th>
+                                <th className="text-[10px] font-black uppercase tracking-widest text-secondary-500 py-5">Owner</th>
+                                <th className="text-[10px] font-black uppercase tracking-widest text-secondary-500 py-5">Subscriptions</th>
+                                <th className="text-[10px] font-black uppercase tracking-widest text-secondary-500 py-5">Last activity</th>
                                 <th className="text-right text-[10px] font-black uppercase tracking-widest text-secondary-500 py-5 px-6">Operations</th>
                             </tr>
                         </thead>
@@ -344,7 +344,7 @@ export default function CustomersPage() {
                             ) : error ? (
                                 <CRMTableError message={error} onRetry={fetchCustomers} colSpan={['SUPER_ADMIN', 'MANAGER'].includes(userRole) ? 8 : 7} />
                             ) : customers.length === 0 ? (
-                                <CRMTableEmpty icon={<Users size={48} />} message="No customer intelligence found in current matrix parameters" colSpan={['SUPER_ADMIN', 'MANAGER'].includes(userRole) ? 8 : 7} />
+                                <CRMTableEmpty icon={<Users size={48} />} message="No customers found for the current filters." colSpan={['SUPER_ADMIN', 'MANAGER'].includes(userRole) ? 8 : 7} />
                             ) : (
                                 customers.map((customer) => (
                                     <tr key={customer.id} className={`group hover:bg-secondary-50/30 transition-all border-l-4 ${selectedIds.has(customer.id) ? 'bg-primary-50/40 border-primary-500' : 'border-transparent hover:border-primary-500'}`}>
@@ -400,7 +400,7 @@ export default function CustomersPage() {
                                                      {customer.organizationName}
                                                 </div>
                                             ) : (
-                                                <span className="text-secondary-300 text-[10px] font-black uppercase tracking-widest italic opacity-60">Unassigned</span>
+                                                    <span className="text-secondary-300 text-[10px] font-black uppercase tracking-widest italic opacity-60">Not linked</span>
                                             )}
                                         </td>
                                         <td className="py-5">
@@ -415,7 +415,7 @@ export default function CustomersPage() {
                                                          </span>
                                                     </div>
                                                 ) : (
-                                                    <span className="text-secondary-300 text-[10px] font-black uppercase tracking-widest">Autonomous</span>
+                                                    <span className="text-secondary-300 text-[10px] font-black uppercase tracking-widest">Unassigned</span>
                                                 )}
                                                 {customer.assignments?.length > 1 && (
                                                     <span className="text-[8px] text-success-600 font-black uppercase tracking-widest mt-1 pl-8">
@@ -432,7 +432,7 @@ export default function CustomersPage() {
                                         <td className="py-5 text-center">
                                             <div className="flex flex-col items-start gap-1">
                                                  <div className="text-[11px] font-bold text-secondary-600">
-                                                      <FormattedDate date={customer.user?.lastLogin} fallback="Phase: Offline" />
+                                                      <FormattedDate date={customer.user?.lastLogin} fallback="No recent activity" />
                                                  </div>
                                                  <span className="text-[8px] font-black text-secondary-400 uppercase tracking-widest opacity-60">Updated</span>
                                             </div>
@@ -443,14 +443,14 @@ export default function CustomersPage() {
                                                     onClick={() => handleStartChat(customer.userId)}
                                                     disabled={actionLoading || !customer.userId}
                                                     variant="primary"
-                                                    title="Initiate Real-time Comm"
+                                                    title="Start chat"
                                                 >
                                                     <MessageSquare size={16} />
                                                 </CRMRowAction>
                                                 <CRMRowAction
                                                     href={`/dashboard/customers/${customer.id}`}
                                                     variant="secondary"
-                                                    title="Access Detailed Dossier"
+                                                    title="View customer"
                                                 >
                                                     <Eye size={16} />
                                                 </CRMRowAction>
@@ -468,7 +468,7 @@ export default function CustomersPage() {
                         total={pagination.total}
                         limit={pagination.limit}
                         onPageChange={(p) => setPagination({ ...pagination, page: p })}
-                        entityName="strategic profiles"
+                        entityName="customers"
                     />
                 </div>
 
@@ -476,10 +476,10 @@ export default function CustomersPage() {
                 <CRMModal
                     open={showBulkModal}
                     onClose={() => setShowBulkModal(false)}
-                    title="Update Ownership"
+                    title="Change customer owner"
                     subtitle={selectedIds.size > 0
-                        ? `Relocating ${selectedIds.size} manually targeted profiles under new executive oversight.`
-                        : "Executing global re-assignment task for ALL profiles matching current filter parameters."}
+                        ? `Assign ${selectedIds.size} selected customers to a different team member.`
+                        : "Assign all customers matching the current filters to a different team member."}
                 >
                     {selectedIds.size === 0 && (
                         <div className="bg-danger-50 border border-danger-100 p-5 rounded-3xl mb-8 flex items-start gap-4 shadow-sm">
@@ -487,9 +487,9 @@ export default function CustomersPage() {
                                  <X size={20} className="animate-pulse" />
                             </div>
                             <div>
-                                <p className="text-xs font-black text-danger-900 uppercase tracking-widest mb-1 leading-none">High-Impact Protocol</p>
+                                <p className="text-xs font-black text-danger-900 uppercase tracking-widest mb-1 leading-none">Large change</p>
                                 <p className="text-[10px] text-danger-700/80 font-bold leading-relaxed uppercase tracking-tight">
-                                    Warning: This protocol will affect the entire filtered dataset. Ensure all parameters are correctly verified before initiating.
+                                    This will update every customer in the current filtered list. Please double-check the filters before continuing.
                                 </p>
                             </div>
                         </div>
@@ -497,7 +497,7 @@ export default function CustomersPage() {
 
                     <div className="space-y-6">
                         <div className="space-y-2">
-                            <label className="text-[10px] font-black uppercase text-secondary-400 tracking-[0.2em] mb-2 block">Target Executive Oversight</label>
+                            <label className="text-[10px] font-black uppercase text-secondary-400 tracking-[0.2em] mb-2 block">Assign to</label>
                             <div className="relative group">
                                 <div className="absolute left-4 top-1/2 -translate-y-1/2 text-secondary-300 group-focus-within:text-primary-500 transition-colors">
                                      <UserCheck size={18} />
@@ -506,9 +506,9 @@ export default function CustomersPage() {
                                     className="input w-full pl-12 font-bold text-xs p-4 bg-secondary-50 border-secondary-100 hover:bg-white hover:border-primary-200 focus:ring-4 focus:ring-primary-50 transition-all cursor-pointer"
                                     value={assignTargetId}
                                     onChange={(e) => setAssignTargetId(e.target.value)}
-                                    title="Select Oversight"
+                                    title="Select team member"
                                 >
-                                    <option value="">-- Deploy to Executive --</option>
+                                    <option value="">Select team member</option>
                                     {executives.map(ex => (
                                         <option key={ex.id} value={ex.id}>
                                             {ex.email} [{ex.role.replace('_', ' ')}]
@@ -523,7 +523,7 @@ export default function CustomersPage() {
                                 onClick={() => setShowBulkModal(false)}
                                 className="flex-1 px-4 py-3.5 rounded-2xl text-[10px] font-black uppercase tracking-widest text-secondary-500 hover:bg-secondary-50 transition-all border border-secondary-200"
                             >
-                                Terminate
+                                Cancel
                             </button>
                             <button
                                 onClick={handleBulkAssign}
@@ -531,7 +531,7 @@ export default function CustomersPage() {
                                 className="flex-1 bg-primary-600 text-white px-8 py-3.5 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] shadow-2xl shadow-primary-200 hover:bg-primary-700 disabled:opacity-50 transition-all active:scale-95 flex items-center justify-center gap-2 group"
                             >
                                 {actionLoading ? 'Updating...' : (
-                                    <>Initiate Re-assignment <ChevronRight size={14} className="group-hover:translate-x-1 transition-transform" /></>
+                                    <>Save assignment <ChevronRight size={14} className="group-hover:translate-x-1 transition-transform" /></>
                                 )}
                             </button>
                         </div>

@@ -20,7 +20,7 @@ export default function CRMClientLayout({ children }: { children: React.ReactNod
             <div className="min-h-screen flex items-center justify-center bg-secondary-950">
                 <div className="flex flex-col items-center gap-6">
                     <div className="w-16 h-16 border-4 border-white/5 border-t-primary-500 rounded-full animate-spin shadow-2xl shadow-primary-500/20" />
-                    <p className="text-[10px] font-black uppercase tracking-[0.4em] text-primary-400 animate-pulse italic">Synchronizing Intelligence Matrix</p>
+                    <p className="text-[10px] font-black uppercase tracking-[0.4em] text-primary-400 animate-pulse italic">Loading CRM workspace</p>
                 </div>
             </div>
         );
@@ -29,11 +29,11 @@ export default function CRMClientLayout({ children }: { children: React.ReactNod
     const userRole = (session?.user as any)?.role || 'CUSTOMER';
 
     const tabs = [
-        { label: 'Intelligence', href: '/dashboard/crm', icon: <LayoutDashboard size={14} />, color: 'text-primary-500' },
-        { label: 'Leads Matrix', href: '/dashboard/crm/leads', icon: <UserPlus size={14} />, color: 'text-indigo-500' },
-        { label: 'Deal Pipeline', href: '/dashboard/crm/deals', icon: <Briefcase size={14} />, color: 'text-purple-500' },
-        { label: 'Customer Base', href: '/dashboard/customers', icon: <Users size={14} />, color: 'text-emerald-500' },
-        { label: 'Product Registry', href: '/dashboard/crm/invoice-products', icon: <Layers size={14} />, color: 'text-amber-500' },
+        { label: 'Overview', href: '/dashboard/crm', icon: <LayoutDashboard size={14} />, color: 'text-primary-500' },
+        { label: 'Prospects', href: '/dashboard/crm/leads', icon: <UserPlus size={14} />, color: 'text-indigo-500' },
+        { label: 'Opportunities', href: '/dashboard/crm/deals', icon: <Briefcase size={14} />, color: 'text-purple-500' },
+        { label: 'Customers', href: '/dashboard/customers', icon: <Users size={14} />, color: 'text-emerald-500' },
+        { label: 'Products', href: '/dashboard/crm/invoice-products', icon: <Layers size={14} />, color: 'text-amber-500' },
         { label: 'Subscriptions', href: '/dashboard/crm/subscriptions', icon: <Activity size={14} />, color: 'text-rose-500' },
     ];
 
@@ -76,7 +76,7 @@ export default function CRMClientLayout({ children }: { children: React.ReactNod
                 <div className="ml-auto flex items-center gap-10">
                      <div className="hidden xl:flex items-center gap-4 px-6 py-2 bg-emerald-50/50 rounded-2xl border border-emerald-100/50 shadow-inner">
                           <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_12px_rgba(34,197,94,0.8)]" />
-                          <span className="text-[9px] font-black uppercase tracking-[0.3em] text-emerald-700 italic">Live Telemetry active</span>
+                          <span className="text-[9px] font-black uppercase tracking-[0.3em] text-emerald-700 italic">Live updates on</span>
                      </div>
                      <div className="flex items-center gap-3">
                           <div className="w-10 h-10 rounded-2xl bg-secondary-950 text-white flex items-center justify-center hover:bg-primary-600 transition-all cursor-pointer shadow-xl shadow-secondary-950/20 active:scale-95 group">

@@ -93,8 +93,8 @@ export default function CustomerDetailPage({ params }: { params: Promise<{ id: s
         { id: 'overview', name: 'Overview', icon: '📋' },
         ...(customer.customerType === 'AGENCY' ? [{ id: 'performance', name: 'Performance', icon: '📈' }] : []),
         { id: 'subscriptions', name: 'Subscriptions', icon: '📚' },
-        { id: 'communication', name: 'Communication', icon: '💬' },
-        { id: 'billing', name: 'Billing & History', icon: '💰' },
+        { id: 'communication', name: 'Follow-up', icon: '💬' },
+        { id: 'billing', name: 'Billing', icon: '💰' },
     ];
 
     const handleStartChat = async () => {
@@ -270,15 +270,15 @@ export default function CustomerDetailPage({ params }: { params: Promise<{ id: s
                 {showEditModal && (
                     <div className="fixed inset-0 z-50 flex items-center justify-center bg-secondary-900/50 backdrop-blur-sm p-4">
                         <div className="bg-white rounded-3xl p-8 max-w-2xl w-full shadow-2xl max-h-[90vh] overflow-y-auto">
-                            <h2 className="text-2xl font-bold text-secondary-900 mb-6">Edit Customer Profile</h2>
+                            <h2 className="text-2xl font-bold text-secondary-900 mb-6">Edit customer</h2>
                             <form onSubmit={handleUpdate} className="space-y-6">
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div>
-                                        <label className="label">Primary Contact Name</label>
+                                        <label className="label">Contact name</label>
                                         <input name="name" className="input" defaultValue={customer.name} required />
                                     </div>
                                     <div>
-                                        <label className="label">Organization Name</label>
+                                        <label className="label">Company / organization</label>
                                         <input name="organizationName" className="input" defaultValue={customer.organizationName} />
                                     </div>
                                     <div>
@@ -295,7 +295,7 @@ export default function CustomerDetailPage({ params }: { params: Promise<{ id: s
                                     </div>
                                     
                                     <div className="md:col-span-2 pt-4 border-t border-secondary-100">
-                                        <h4 className="font-bold text-secondary-900 mb-2">Detailed Address (Indian Law / Shipping)</h4>
+                                        <h4 className="font-bold text-secondary-900 mb-2">Address and tax details</h4>
                                     </div>
 
                                     <div>
@@ -342,7 +342,7 @@ export default function CustomerDetailPage({ params }: { params: Promise<{ id: s
                                                 <div className={`w-8 h-4 rounded-full relative transition-colors duration-300 ${isShippingSame ? 'bg-primary-600' : 'bg-secondary-200'}`}>
                                                     <div className={`absolute top-0.5 w-3 h-3 bg-white rounded-full transition-all duration-300 ${isShippingSame ? 'left-4.5' : 'left-0.5'}`}></div>
                                                 </div>
-                                                <span className="text-[10px] font-black uppercase tracking-tight">Same as Billing</span>
+                                                <span className="text-[10px] font-black uppercase tracking-tight">Same as billing</span>
                                             </button>
                                         </div>
                                         
@@ -375,15 +375,15 @@ export default function CustomerDetailPage({ params }: { params: Promise<{ id: s
                                             </>
                                         ) : (
                                             <div className="md:col-span-2 py-4 text-center">
-                                                <p className="text-xs text-primary-600 font-bold italic">Synchronized with Billing Address</p>
+                                                <p className="text-xs text-primary-600 font-bold italic">Using the billing address</p>
                                             </div>
                                         )}
                                     </div>
 
                                     <div>
-                                        <label className="label">Link to Institution</label>
+                                        <label className="label">Link to institution</label>
                                         <select name="institutionId" className="input" defaultValue={customer.institutionId || ''}>
-                                            <option value="">-- None / Individual --</option>
+                                            <option value="">None / individual customer</option>
                                             {institutions.map(inst => (
                                                 <option key={inst.id} value={inst.id}>{inst.name} ({inst.code})</option>
                                             ))}
@@ -391,9 +391,9 @@ export default function CustomerDetailPage({ params }: { params: Promise<{ id: s
                                     </div>
 
                                     <div>
-                                        <label className="label">Designation</label>
+                                        <label className="label">Role / designation</label>
                                         <select name="designation" className="input" defaultValue={customer.designation || ''}>
-                                            <option value="">-- Select Designation --</option>
+                                            <option value="">Select role</option>
                                             {[
                                                 'STUDENT', 'TEACHER', 'FACULTY', 'HOD', 'PRINCIPAL', 'DEAN',
                                                 'RESEARCHER', 'LIBRARIAN', 'ACCOUNTANT', 'DIRECTOR', 'REGISTRAR',
@@ -407,8 +407,8 @@ export default function CustomerDetailPage({ params }: { params: Promise<{ id: s
                                     {/* Assignment - Only for Admins/Managers */}
                                     {['SUPER_ADMIN', 'MANAGER'].includes(userRole) && (
                                         <div className="md:col-span-2 pt-4 border-t border-secondary-100">
-                                            <h4 className="font-bold text-secondary-900 mb-2">Customer Assignment</h4>
-                                            <label className="label">Assign to Executives (Ctrl+Click to multi-select)</label>
+                                            <h4 className="font-bold text-secondary-900 mb-2">Customer ownership</h4>
+                                            <label className="label">Assign to team members (Ctrl+Click to select more than one)</label>
                                             <select
                                                 name="assignedToUserIds"
                                                 multiple
@@ -423,7 +423,7 @@ export default function CustomerDetailPage({ params }: { params: Promise<{ id: s
                                                 ))}
                                             </select>
                                             <p className="text-[10px] text-secondary-500 mt-1 italic">
-                                                Selected executives will have full visibility of this customer.
+                                                Selected team members will be able to work on this customer.
                                             </p>
                                         </div>
                                     )}
@@ -431,7 +431,7 @@ export default function CustomerDetailPage({ params }: { params: Promise<{ id: s
 
                                 {customer.customerType === 'INSTITUTION' && (
                                     <div className="pt-4 border-t border-secondary-100">
-                                        <h4 className="font-bold text-secondary-900 mb-4">Institutional Details</h4>
+                                        <h4 className="font-bold text-secondary-900 mb-4">Institution details</h4>
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                             <div>
                                                 <label className="label">VSP Name</label>
@@ -474,10 +474,10 @@ export default function CustomerDetailPage({ params }: { params: Promise<{ id: s
                 {editingLog && (
                     <div className="fixed inset-0 z-50 flex items-center justify-center bg-secondary-900/50 backdrop-blur-sm p-4">
                         <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl">
-                            <h3 className="text-xl font-bold text-secondary-900 mb-4">Update Communication</h3>
+                            <h3 className="text-xl font-bold text-secondary-900 mb-4">Update follow-up</h3>
                             <form onSubmit={handleUpdateLog} className="space-y-4">
                                 <div>
-                                    <label className="label">Next Follow-up Date</label>
+                                    <label className="label">Next follow-up date</label>
                                     <input
                                         type="date"
                                         name="nextFollowUpDate"
@@ -502,7 +502,7 @@ export default function CustomerDetailPage({ params }: { params: Promise<{ id: s
                                     </select>
                                 </div>
                                 <div>
-                                    <label className="label">Update Notes</label>
+                                    <label className="label">Notes</label>
                                     <textarea
                                         name="notes"
                                         className="input h-20"
@@ -557,7 +557,7 @@ export default function CustomerDetailPage({ params }: { params: Promise<{ id: s
                             <div className="space-y-6">
                                 {/* Profile Info */}
                                 <div className="card-premium">
-                                    <h3 className="text-lg font-bold text-secondary-900 mb-4">Profile Information</h3>
+                                    <h3 className="text-lg font-bold text-secondary-900 mb-4">Customer details</h3>
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                         <div>
                                             <label className="text-sm text-secondary-500">Organization</label>
@@ -591,7 +591,7 @@ export default function CustomerDetailPage({ params }: { params: Promise<{ id: s
                                         </div>
 
                                         <div>
-                                            <label className="text-sm text-secondary-500">Account Manager(s)</label>
+                                            <label className="text-sm text-secondary-500">Owner(s)</label>
                                             <div className="flex flex-wrap gap-1 mt-1">
                                                 {customer.assignedExecutives?.length > 0 ? (
                                                     customer.assignedExecutives.map((exec: any) => (
@@ -610,7 +610,7 @@ export default function CustomerDetailPage({ params }: { params: Promise<{ id: s
                                 {/* Type Specific Info */}
                                 {customer.customerType === 'INSTITUTION' && customer.institutionDetails && (
                                     <div className="card-premium">
-                                        <h3 className="text-lg font-bold text-secondary-900 mb-4">Institutional Details</h3>
+                                        <h3 className="text-lg font-bold text-secondary-900 mb-4">Institution details</h3>
                                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                                             <div>
                                                 <label className="text-sm text-secondary-500">Category</label>
@@ -655,7 +655,7 @@ export default function CustomerDetailPage({ params }: { params: Promise<{ id: s
                                 {customer.subscriptions.length > 0 && (
                                     <div className="space-y-4">
                                         <h4 className="text-base font-bold text-secondary-900 border-l-4 border-primary-500 pl-3">
-                                            Active Subscriptions
+                                            Active subscriptions
                                         </h4>
                                         {customer.subscriptions.map((sub: any) => (
                                             <div key={sub.id} className="card-premium border-l-4 border-primary-500 hover:shadow-md transition-shadow">
@@ -677,7 +677,7 @@ export default function CustomerDetailPage({ params }: { params: Promise<{ id: s
                                                             href={`/dashboard/crm/subscriptions/${sub.id}`}
                                                             className="text-xs text-primary-600 font-bold hover:underline"
                                                         >
-                                                            View Details →
+                                                            View subscription →
                                                         </Link>
                                                     </div>
                                                 </div>
@@ -709,7 +709,7 @@ export default function CustomerDetailPage({ params }: { params: Promise<{ id: s
                             <div className="space-y-6">
                                 {/* Log New Communication */}
                                 <div className="card-premium" ref={formRef}>
-                                    <h3 className="text-lg font-bold text-secondary-900 mb-4 border-l-4 border-primary-500 pl-3">Log New Communication</h3>
+                                    <h3 className="text-lg font-bold text-secondary-900 mb-4 border-l-4 border-primary-500 pl-3">Add follow-up</h3>
                                     <CommunicationForm
                                         customerId={customer.id}
                                         previousFollowUpId={activeFollowUpId}
@@ -721,9 +721,9 @@ export default function CustomerDetailPage({ params }: { params: Promise<{ id: s
 
                                 {/* Communication History */}
                                 <div className="space-y-4">
-                                    <h3 className="text-lg font-bold text-secondary-900 border-l-4 border-secondary-400 pl-3">Communication History</h3>
+                                    <h3 className="text-lg font-bold text-secondary-900 border-l-4 border-secondary-400 pl-3">Follow-up history</h3>
                                     {customer.communications?.length === 0 ? (
-                                        <p className="text-secondary-500 text-center py-8">No communication logs found.</p>
+                                        <p className="text-secondary-500 text-center py-8">No follow-up history yet.</p>
                                     ) : (
                                         customer.communications?.map((log: any) => (
                                             <div key={log.id} className="card-premium">

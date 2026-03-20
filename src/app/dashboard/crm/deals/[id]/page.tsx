@@ -88,8 +88,8 @@ export default function DealDetailPage({ params }: { params: Promise<{ id: strin
     if (!deal) return null;
 
     const stages = [
-        { id: 'DISCOVERY', label: 'Discovery' },
-        { id: 'PROPOSAL', label: 'Proposal' },
+        { id: 'DISCOVERY', label: 'New opportunity' },
+        { id: 'PROPOSAL', label: 'Proposal sent' },
         { id: 'NEGOTIATION', label: 'Negotiation' },
         { id: 'CLOSED_WON', label: 'Won' },
         { id: 'CLOSED_LOST', label: 'Lost' }
@@ -120,7 +120,7 @@ export default function DealDetailPage({ params }: { params: Promise<{ id: strin
                             disabled={actionLoading}
                             className="btn btn-secondary text-red-600 border-red-200 hover:bg-red-50"
                         >
-                            Delete Deal
+                            Delete opportunity
                         </button>
                     </div>
                 </div>
@@ -153,7 +153,7 @@ export default function DealDetailPage({ params }: { params: Promise<{ id: strin
                     <div className="lg:col-span-2 space-y-6">
                         <Card>
                             <CardHeader>
-                                <CardTitle>Deal Details</CardTitle>
+                                <CardTitle>Opportunity details</CardTitle>
                             </CardHeader>
                             <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div>
@@ -161,7 +161,7 @@ export default function DealDetailPage({ params }: { params: Promise<{ id: strin
                                     <p className="text-2xl font-black text-primary-600">₹{deal.value?.toLocaleString()}</p>
                                 </div>
                                 <div>
-                                    <label className="text-sm text-secondary-500">Expected Close</label>
+                                    <label className="text-sm text-secondary-500">Expected close date</label>
                                     <p className="font-medium">
                                         {deal.expectedCloseDate ? <FormattedDate date={deal.expectedCloseDate} /> : 'Not set'}
                                     </p>
@@ -175,8 +175,8 @@ export default function DealDetailPage({ params }: { params: Promise<{ id: strin
                                     <p className="font-medium uppercase">{deal.currency}</p>
                                 </div>
                                 <div className="md:col-span-2">
-                                    <label className="text-sm text-secondary-500">Notes / Scope</label>
-                                    <p className="mt-1 text-secondary-700 whitespace-pre-wrap">{deal.notes || 'No description provided'}</p>
+                                    <label className="text-sm text-secondary-500">Notes</label>
+                                    <p className="mt-1 text-secondary-700 whitespace-pre-wrap">{deal.notes || 'No notes added yet'}</p>
                                 </div>
                             </CardContent>
                         </Card>
@@ -185,7 +185,7 @@ export default function DealDetailPage({ params }: { params: Promise<{ id: strin
                     <div className="space-y-6">
                         <Card>
                             <CardHeader>
-                                <CardTitle>Customer Contact</CardTitle>
+                                <CardTitle>Related contact</CardTitle>
                             </CardHeader>
                             <CardContent className="space-y-4">
                                 <div>
@@ -196,7 +196,7 @@ export default function DealDetailPage({ params }: { params: Promise<{ id: strin
                                     href={`/dashboard/crm/${deal.customer?.leadStatus ? 'leads' : 'customers'}/${deal.customerId}`}
                                     className="btn btn-secondary w-full text-center"
                                 >
-                                    View Full Profile
+                                    View full profile
                                 </Link>
                             </CardContent>
                         </Card>

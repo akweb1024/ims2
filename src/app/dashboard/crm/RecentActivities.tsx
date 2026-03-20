@@ -41,10 +41,10 @@ export default async function RecentActivities({ user }: { user: any }) {
         ...comms.map(c => ({
             id: c.id,
             type: 'COMMUNICATION',
-            title: c.subject || 'Intelligence Pulse',
+            title: c.subject || 'Follow-up update',
             detail: c.notes,
             date: c.createdAt,
-            user: c.user?.name || 'System NODE',
+            user: c.user?.name || 'System',
             icon: <MessageSquare size={14} className="text-primary-400" />,
             meta: (
                 <Link href={`/dashboard/customers/${c.customerProfile.id}`} className="hover:text-primary-600 font-black transition-all flex items-center gap-1.5 group/link truncate">
@@ -63,7 +63,7 @@ export default async function RecentActivities({ user }: { user: any }) {
             };
             const icon = icons[a.entity] || <Settings size={14} className="text-secondary-400" />;
             
-            let detail = `${a.entity} parameters updated in registry.`;
+            let detail = `${a.entity} was updated.`;
             if (a.changes && typeof a.changes === 'object') {
                 const changesObj = a.changes as Record<string, any>;
                 const keys = Object.keys(changesObj);
@@ -71,9 +71,9 @@ export default async function RecentActivities({ user }: { user: any }) {
                     const firstKey = keys[0];
                     const change = changesObj[firstKey];
                     if (change && typeof change === 'object' && 'from' in change && 'to' in change) {
-                        detail = `Node configuration changed [${firstKey.replace(/_/g, ' ').toUpperCase()}] from "${change.from || 'NULL'}" to "${change.to || 'NULL'}"`;
+                        detail = `${firstKey.replace(/_/g, ' ')} changed from "${change.from || 'empty'}" to "${change.to || 'empty'}".`;
                     } else {
-                        detail = `Structural update: ${keys.length} data fields propagation on ${a.entity}`;
+                        detail = `${keys.length} field(s) were updated on ${a.entity}.`;
                     }
                 }
             }
@@ -81,14 +81,14 @@ export default async function RecentActivities({ user }: { user: any }) {
             return {
                 id: a.id,
                 type: 'AUDIT',
-                title: `${a.action.replace(/_/g, ' ')} node`,
+                title: `${a.action.replace(/_/g, ' ')}`,
                 detail: detail,
                 date: a.createdAt,
-                user: a.user?.name || 'Security Daemon',
+                user: a.user?.name || 'System',
                 icon: icon,
                 meta: (
                     <span className="text-[9px] font-black uppercase tracking-[0.2em] text-secondary-400 italic flex items-center gap-1.5 whitespace-nowrap">
-                        <History size={10} /> {a.entity} Log
+                        <History size={10} /> {a.entity} activity
                     </span>
                 )
             };
@@ -101,7 +101,7 @@ export default async function RecentActivities({ user }: { user: any }) {
                 <div className="w-16 h-16 bg-secondary-50 text-secondary-200 border border-secondary-100/50 rounded-2xl flex items-center justify-center mb-6">
                     <History size={32} strokeWidth={1} />
                 </div>
-                <p className="text-[10px] font-black uppercase tracking-[0.4em] text-secondary-300 italic">Historical Archives Empty</p>
+                <p className="text-[10px] font-black uppercase tracking-[0.4em] text-secondary-300 italic">No recent activity</p>
             </div>
         );
     }
@@ -148,7 +148,7 @@ export default async function RecentActivities({ user }: { user: any }) {
                     href="/dashboard/audit" 
                     className="flex items-center gap-2.5 text-primary-600 hover:text-primary-700 text-[10px] font-black uppercase tracking-[0.3em] italic transition-all group/btn"
                 >
-                    Access Identity Archives 
+                    View full activity log
                     <ArrowRight size={14} className="group-hover/btn:translate-x-1 transition-transform" />
                 </Link>
             </div>

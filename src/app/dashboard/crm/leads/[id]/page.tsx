@@ -41,23 +41,17 @@ export default function LeadDetailPage({ params }: { params: Promise<{ id: strin
         fetchLead();
     }, [fetchLead]);
 
-    const handleConvert = async () => {
-        if (!confirm('Are you sure you want to convert this lead to a customer?')) return;
-
-        setActionLoading(true);
-        try {
-            const res = await fetch(`/api/crm/leads/${id}/convert`, { method: 'POST' });
-            if (res.ok) {
-                alert('Lead converted successfully!');
-                fetchLead();
-            } else {
-                alert('Failed to convert lead');
-            }
-        } catch (error) {
-            console.error('Conversion error:', error);
-        } finally {
-            setActionLoading(false);
-        }
+    const getStatusLabel = (status: string) => {
+        const labels: Record<string, string> = {
+            NEW: 'New',
+            CONTACTED: 'Contacted',
+            QUALIFIED: 'Qualified',
+            PROPOSAL_SENT: 'Proposal sent',
+            NEGOTIATION: 'In discussion',
+            CONVERTED: 'Moved forward',
+            LOST: 'Not moving forward',
+        };
+        return labels[status] || status?.replaceAll('_', ' ');
     };
 
     const handleDelete = async () => {
@@ -111,7 +105,7 @@ export default function LeadDetailPage({ params }: { params: Promise<{ id: strin
                                     'px-2 py-0.5 rounded text-xs font-bold uppercase tracking-wider',
                                     lead.leadStatus === 'CONVERTED' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'
                                 )}>
-                                    {lead.leadStatus?.replace('_', ' ')}
+                                    {getStatusLabel(lead.leadStatus)}
                                 </span>
                             </div>
                             <div className="flex items-center mt-1 space-x-3 text-secondary-500">
@@ -127,13 +121,12 @@ export default function LeadDetailPage({ params }: { params: Promise<{ id: strin
                     </div>
                     <div className="flex space-x-3">
                         {lead.leadStatus !== 'CONVERTED' && (
-                            <button
-                                onClick={handleConvert}
-                                disabled={actionLoading}
+                            <Link
+                                href={`/dashboard/crm/deals?leadId=${lead.id}`}
                                 className="btn btn-primary"
                             >
-                                Convert to Customer
-                            </button>
+                                Create Opportunity
+                            </Link>
                         )}
                         <button
                             onClick={handleDelete}
@@ -169,7 +162,7 @@ export default function LeadDetailPage({ params }: { params: Promise<{ id: strin
                         {activeTab === 'overview' && (
                             <Card>
                                 <CardHeader>
-                                    <CardTitle>Lead Information</CardTitle>
+                                    <CardTitle>Prospect details</CardTitle>
                                 </CardHeader>
                                 <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     <div>
@@ -177,7 +170,7 @@ export default function LeadDetailPage({ params }: { params: Promise<{ id: strin
                                         <p className="font-medium">{lead.name}</p>
                                     </div>
                                     <div>
-                                        <label className="text-sm text-secondary-500">Lead Score</label>
+                                        <label className="text-sm text-secondary-500">Prospect score</label>
                                         <p className="font-medium text-primary-600">{lead.leadScore || 0}</p>
                                     </div>
                                     <div>
@@ -185,7 +178,7 @@ export default function LeadDetailPage({ params }: { params: Promise<{ id: strin
                                         <p className="font-medium uppercase">{lead.source}</p>
                                     </div>
                                     <div>
-                                        <label className="text-sm text-secondary-500">Assigned To</label>
+                                        <label className="text-sm text-secondary-500">Owner</label>
                                         <p className="font-medium">{lead.assignedTo?.name || 'Unassigned'}</p>
                                     </div>
                                     <div className="md:col-span-2">
@@ -200,7 +193,7 @@ export default function LeadDetailPage({ params }: { params: Promise<{ id: strin
                             <div className="space-y-6">
                                 <Card>
                                     <CardHeader>
-                                        <CardTitle>Log Communication</CardTitle>
+                                        <CardTitle>Add follow-up</CardTitle>
                                     </CardHeader>
                                     <CardContent>
                                         <CommunicationForm
@@ -214,7 +207,7 @@ export default function LeadDetailPage({ params }: { params: Promise<{ id: strin
                                     <h3 className="font-bold text-lg text-secondary-900 border-l-4 border-primary-500 pl-3">Timeline</h3>
                                     {lead.communications?.length === 0 ? (
                                         <div className="text-center py-12 card-premium text-secondary-500">
-                                            No communication history found.
+                                            No follow-up history yet.
                                         </div>
                                     ) : (
                                         lead.communications.map((log: any) => (
@@ -250,14 +243,14 @@ export default function LeadDetailPage({ params }: { params: Promise<{ id: strin
                         {activeTab === 'deals' && (
                             <div className="space-y-4">
                                 <div className="flex justify-between items-center">
-                                    <h3 className="font-bold text-lg">Associated Deals</h3>
+                                    <h3 className="font-bold text-lg">Related opportunities</h3>
                                     <Link href="/dashboard/crm/deals" className="btn btn-secondary py-1 text-xs">
-                                        Pipeline View
+                                        Open opportunities
                                     </Link>
                                 </div>
                                 {lead.deals?.length === 0 ? (
                                     <div className="text-center py-12 card-premium text-secondary-500">
-                                        No deals started with this lead.
+                                        No opportunities created for this prospect yet.
                                     </div>
                                 ) : (
                                     lead.deals.map((deal: any) => (
@@ -269,7 +262,7 @@ export default function LeadDetailPage({ params }: { params: Promise<{ id: strin
                                             <div className="text-right">
                                                 <div className="font-bold text-primary-600">₹{deal.value?.toLocaleString()}</div>
                                                 <Link href={`/dashboard/crm/deals/${deal.id}`} className="text-xs text-primary-600 font-bold hover:underline">
-                                                    View Details →
+                                                    View opportunity →
                                                 </Link>
                                             </div>
                                         </div>
@@ -282,7 +275,7 @@ export default function LeadDetailPage({ params }: { params: Promise<{ id: strin
                     <div className="space-y-6">
                         <Card>
                             <CardHeader>
-                                <CardTitle>Contact Details</CardTitle>
+                                <CardTitle>Contact details</CardTitle>
                             </CardHeader>
                             <CardContent className="space-y-4">
                                 <div className="flex items-center gap-3">
@@ -300,7 +293,7 @@ export default function LeadDetailPage({ params }: { params: Promise<{ id: strin
                                     </div>
                                     <div>
                                         <p className="text-xs text-secondary-500">Phone</p>
-                                        <p className="font-medium">{lead.primaryPhone || 'No phone'}</p>
+                                        <p className="font-medium">{lead.primaryPhone || 'No phone number added'}</p>
                                     </div>
                                 </div>
                             </CardContent>

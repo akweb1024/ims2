@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import FormattedDate from '@/components/common/FormattedDate';
 import CRMClientLayout from '../CRMClientLayout';
@@ -21,14 +21,15 @@ import {
 
 // Stages definition with improved aesthetics
 const STAGES = [
-    { id: 'DISCOVERY', label: 'Discovery Phase', color: 'border-primary-100/50 bg-primary-100/5', accent: 'text-primary-600', probability: '20%' },
-    { id: 'PROPOSAL', label: 'Proposal Stage', color: 'border-indigo-100/50 bg-indigo-100/5', accent: 'text-indigo-600', probability: '50%' },
-    { id: 'NEGOTIATION', label: 'Negotiation Matrix', color: 'border-purple-100/50 bg-purple-100/5', accent: 'text-purple-600', probability: '80%' },
-    { id: 'CLOSED_WON', label: 'Target Acquired', color: 'border-emerald-100/50 bg-emerald-100/5', accent: 'text-emerald-600', probability: '100%' },
+    { id: 'DISCOVERY', label: 'New opportunity', color: 'border-primary-100/50 bg-primary-100/5', accent: 'text-primary-600', probability: '20%' },
+    { id: 'PROPOSAL', label: 'Proposal sent', color: 'border-indigo-100/50 bg-indigo-100/5', accent: 'text-indigo-600', probability: '50%' },
+    { id: 'NEGOTIATION', label: 'Negotiation', color: 'border-purple-100/50 bg-purple-100/5', accent: 'text-purple-600', probability: '80%' },
+    { id: 'CLOSED_WON', label: 'Won', color: 'border-emerald-100/50 bg-emerald-100/5', accent: 'text-emerald-600', probability: '100%' },
     { id: 'CLOSED_LOST', label: 'Lost Opportunity', color: 'border-rose-100/50 bg-rose-100/5', accent: 'text-rose-600', probability: '0%' }
 ];
 
 export default function DealsPage() {
+    const searchParams = useSearchParams();
     const [deals, setDeals] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [showCreateModal, setShowCreateModal] = useState(false);
@@ -38,6 +39,7 @@ export default function DealsPage() {
     const [newDeal, setNewDeal] = useState({
         title: '', value: 0, customerId: '', stage: 'DISCOVERY', notes: '', expectedCloseDate: ''
     });
+    const leadIdFromQuery = searchParams.get('leadId');
 
     const fetchDeals = useCallback(async () => {
         setLoading(true);
@@ -67,6 +69,21 @@ export default function DealsPage() {
     useEffect(() => {
         fetchDeals(); fetchLeadsForSelect();
     }, [fetchDeals]);
+
+    useEffect(() => {
+        if (!leadIdFromQuery || leads.length === 0) return;
+
+        const selectedLead = leads.find((lead) => lead.id === leadIdFromQuery);
+        if (!selectedLead) return;
+
+        setNewDeal((current) => ({
+            ...current,
+            customerId: selectedLead.id,
+            title: current.title || `${selectedLead.organizationName || selectedLead.name} opportunity`,
+            notes: current.notes || `Created from prospect: ${selectedLead.name}${selectedLead.organizationName ? ` (${selectedLead.organizationName})` : ''}`,
+        }));
+        setShowCreateModal(true);
+    }, [leadIdFromQuery, leads]);
 
     const handleCreateDeal = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -101,63 +118,61 @@ export default function DealsPage() {
     return (
         <CRMClientLayout>
             <CRMPageShell
-                title="Deal Pipeline Architecture"
-                subtitle="Visualize and orchestrate the lifecycle of ongoing opportunities and historical conversion matrices."
+                title="Opportunities"
+                subtitle="Track active sales opportunities from first discussion to won or lost."
                 icon={<Briefcase className="w-5 h-5" />}
-                breadcrumb={[{ label: 'CRM', href: '/dashboard/crm' }, { label: 'Deals Pipeline' }]}
+                breadcrumb={[{ label: 'CRM', href: '/dashboard/crm' }, { label: 'Opportunities' }]}
                 actions={
                     <div className="flex items-center gap-3">
                          <div className="hidden lg:flex items-center gap-3 bg-secondary-950 px-4 py-2 rounded-2xl border border-white/5 shadow-inner">
                              <div className="flex items-center gap-2">
                                   <div className="w-2 h-2 bg-indigo-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(99,102,241,0.8)]" />
-                                  <span className="text-[9px] font-black uppercase tracking-widest text-indigo-400">Pipeline Sync</span>
+                                  <span className="text-[9px] font-black uppercase tracking-widest text-indigo-400">Sales pipeline</span>
                              </div>
                              <div className="h-4 w-px bg-white/10" />
-                             <span className="text-[9px] font-black uppercase tracking-widest text-secondary-400 opacity-60">Status: Nominal</span>
+                             <span className="text-[9px] font-black uppercase tracking-widest text-secondary-400 opacity-60">Status: active</span>
                          </div>
                          <button
                             onClick={() => setShowCreateModal(true)}
                             className="bg-primary-600 text-white px-8 py-3.5 rounded-2xl text-[11px] font-black uppercase tracking-[0.2em] shadow-2xl shadow-primary-200 hover:bg-primary-700 transition-all flex items-center gap-3 active:scale-95 group"
                         >
                             <Plus size={18} className="group-hover:rotate-90 transition-transform" />
-                            Initialize Opportunity
+                            Add Opportunity
                         </button>
                     </div>
                 }
             >
-                {/* Visual Intelligence Matrix */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                     <CRMStatCard
-                        label="Pipeline Volume"
+                        label="Pipeline value"
                         value={`₹${totalPipelineValue.toLocaleString()}`}
                         icon={<TrendingUp size={22} />}
                         accent="bg-indigo-900 text-white shadow-indigo-100"
-                        trend={{ value: 'Real-time', label: 'valuation', isPositive: true }}
+                        trend={{ value: 'Live', label: 'total', isPositive: true }}
                     />
                     <CRMStatCard
-                        label="Active Opportunities"
+                        label="Open opportunities"
                         value={deals.filter(d => !['CLOSED_WON', 'CLOSED_LOST'].includes(d.stage)).length}
                         icon={<Activity size={22} />}
                         accent="bg-primary-950 text-white shadow-primary-100"
-                        trend={{ value: 'Protocol', label: 'In-flow', isPositive: true }}
+                        trend={{ value: 'Still', label: 'in progress', isPositive: true }}
                     />
                     <CRMStatCard
-                        label="Conversion Nodes"
+                        label="Won"
                         value={deals.filter(d => d.stage === 'CLOSED_WON').length}
                         icon={<ShieldCheck size={22} />}
                         accent="bg-emerald-900 text-white shadow-emerald-100"
-                        trend={{ value: 'Target', label: 'Acquired', isPositive: true }}
+                        trend={{ value: 'Deals', label: 'closed won', isPositive: true }}
                     />
                     <CRMStatCard
-                        label="Matrix Density"
+                        label="Stages"
                         value={STAGES.length}
                         icon={<Layers size={22} />}
                         accent="bg-secondary-900 text-white shadow-secondary-100"
-                        trend={{ value: 'Sectors', label: 'mapped', isPositive: true }}
+                        trend={{ value: 'In this', label: 'pipeline', isPositive: true }}
                     />
                 </div>
 
-                {/* Operations bar */}
                 <div className="mt-12 flex flex-col lg:flex-row lg:items-center justify-between gap-6 border-b border-secondary-100 pb-8">
                      <div className="flex flex-wrap gap-2.5">
                          {STAGES.map(stage => (
@@ -172,8 +187,8 @@ export default function DealsPage() {
 
                      <div className="flex items-center gap-3">
                           <div className="flex bg-secondary-100 p-1 rounded-xl">
-                               <button className="px-5 py-2 rounded-lg text-[10px] font-black uppercase tracking-wider bg-white shadow-sm text-primary-600">Pipeline View</button>
-                               <button className="px-5 py-2 rounded-lg text-[10px] font-black uppercase tracking-wider text-secondary-400 hover:text-secondary-600 transition-all">Matrix List</button>
+                               <button className="px-5 py-2 rounded-lg text-[10px] font-black uppercase tracking-wider bg-white shadow-sm text-primary-600">Board view</button>
+                               <button className="px-5 py-2 rounded-lg text-[10px] font-black uppercase tracking-wider text-secondary-400 hover:text-secondary-600 transition-all">List view</button>
                           </div>
                           <button className="p-3 bg-secondary-100 text-secondary-500 rounded-xl hover:bg-secondary-200 transition-all">
                                <Archive size={18} />
@@ -181,7 +196,6 @@ export default function DealsPage() {
                      </div>
                 </div>
 
-                {/* Board Matrix */}
                 <div className="mt-8 flex gap-8 h-[calc(100vh-320px)] min-w-full overflow-x-auto pb-10 custom-scrollbar group/matrix">
                     {STAGES.map(stage => {
                         const stageDeals = deals.filter(d => d.stage === stage.id);
@@ -211,14 +225,14 @@ export default function DealsPage() {
                                     </div>
                                     <div className="flex items-center justify-between">
                                          <div className="flex flex-col">
-                                              <span className="text-[8px] font-black text-secondary-400 uppercase tracking-widest mb-1 pl-0.5">Projected Yield</span>
+                                              <span className="text-[8px] font-black text-secondary-400 uppercase tracking-widest mb-1 pl-0.5">Total value</span>
                                               <div className="text-lg font-black text-secondary-950 flex items-center italic">
                                                   <IndianRupee size={16} className="opacity-30 mr-1" />
                                                   {totalValue.toLocaleString()}
                                               </div>
                                          </div>
                                          <div className="bg-secondary-950 px-3 py-1.5 rounded-xl text-[9px] font-black text-white uppercase tracking-widest group-hover/column:bg-primary-600 transition-colors">
-                                             {stage.probability} Prob. Matrix
+                                             {stage.probability} win chance
                                          </div>
                                     </div>
                                 </div>
@@ -257,14 +271,14 @@ export default function DealsPage() {
                                             
                                             <div className="flex justify-between items-end pt-5 border-t border-secondary-50 relative z-10">
                                                 <div className="flex flex-col gap-1">
-                                                    <span className="text-[8px] font-black text-secondary-300 uppercase tracking-widest pl-0.5">Target Milestone</span>
+                                                    <span className="text-[8px] font-black text-secondary-300 uppercase tracking-widest pl-0.5">Expected close</span>
                                                     <div className="text-[10px] font-black text-secondary-900 flex items-center gap-1.5 italic">
                                                         <Calendar size={12} className="text-secondary-300" />
                                                         <FormattedDate date={deal.expectedCloseDate} />
                                                     </div>
                                                 </div>
                                                 <div className="flex flex-col items-end">
-                                                    <span className="text-[8px] font-black text-secondary-300 uppercase tracking-widest mb-1 pr-0.5">Value Matrix</span>
+                                                    <span className="text-[8px] font-black text-secondary-300 uppercase tracking-widest mb-1 pr-0.5">Deal value</span>
                                                     <div className="text-base font-black text-indigo-700 leading-none flex items-center italic">
                                                         <IndianRupee size={14} className="opacity-30 mr-0.5" />
                                                         {deal.value?.toLocaleString()}
@@ -279,7 +293,7 @@ export default function DealsPage() {
                                             <div className="w-20 h-20 bg-secondary-100/50 rounded-[2rem] flex items-center justify-center mb-6 border border-secondary-200/50">
                                                  <Layers size={40} strokeWidth={1} />
                                             </div>
-                                            <p className="text-[10px] font-black uppercase tracking-[0.4em] text-secondary-500 italic">No Active Signal</p>
+                                            <p className="text-[10px] font-black uppercase tracking-[0.4em] text-secondary-500 italic">No opportunities yet</p>
                                         </div>
                                     )}
                                 </div>
@@ -288,12 +302,11 @@ export default function DealsPage() {
                     })}
                 </div>
 
-                {/* Create Deal Modal */}
                 <CRMModal
                     open={showCreateModal}
                     onClose={() => setShowCreateModal(false)}
-                    title="Initialize Opportunity Node"
-                    subtitle="Register a fresh potential deal into the tactical operational pipeline matrix."
+                    title="Add Opportunity"
+                    subtitle="Create a sales opportunity for a qualified prospect and track it through the pipeline."
                 >
                     <form onSubmit={handleCreateDeal} className="space-y-8 py-2">
                         <div className="bg-secondary-950 p-8 rounded-[2.5rem] border border-white/5 shadow-2xl relative overflow-hidden">
@@ -301,27 +314,27 @@ export default function DealsPage() {
                                   <Briefcase size={140} className="text-white" />
                              </div>
                              <div className="space-y-2 relative z-10">
-                                  <label className="text-[10px] font-black uppercase tracking-[0.3em] text-primary-400 pl-1">Deal Designation (Title)</label>
+                                  <label className="text-[10px] font-black uppercase tracking-[0.3em] text-primary-400 pl-1">Opportunity name</label>
                                   <input
                                       type="text" required
                                       className="input h-14 bg-white/5 border-white/10 text-white font-black text-sm uppercase tracking-tight focus:bg-white/10"
                                       value={newDeal.title}
                                       onChange={(e) => setNewDeal({ ...newDeal, title: e.target.value })}
-                                      placeholder="e.g. Q4 STRATEGIC LICENSE EXPANSION"
+                                      placeholder="e.g. Q4 renewal with ABC Hospital"
                                   />
                              </div>
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 px-2">
                             <div className="space-y-2">
-                                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-secondary-400 pl-1">Target Identity Node</label>
+                                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-secondary-400 pl-1">Prospect</label>
                                 <select
                                     required
                                     className="input h-14 bg-secondary-50 border-secondary-100 font-black text-xs uppercase tracking-widest italic pr-10"
                                     value={newDeal.customerId}
                                     onChange={(e) => setNewDeal({ ...newDeal, customerId: e.target.value })}
                                 >
-                                    <option value="">Select Target Context</option>
+                                    <option value="">Select a prospect</option>
                                     {leads.map(l => (
                                         <option key={l.id} value={l.id}>
                                             {l.name.toUpperCase()} {l.organizationName ? `[${l.organizationName.toUpperCase()}]` : ''}
@@ -330,7 +343,7 @@ export default function DealsPage() {
                                 </select>
                             </div>
                             <div className="space-y-2">
-                                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-secondary-400 pl-1">Financial Valuation (₹)</label>
+                                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-secondary-400 pl-1">Deal value (₹)</label>
                                 <div className="relative group">
                                      <div className="absolute left-5 top-1/2 -translate-y-1/2 text-secondary-400 group-focus-within:text-primary-600 transition-colors">
                                          <IndianRupee size={18} />
@@ -347,7 +360,7 @@ export default function DealsPage() {
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 px-2">
                             <div className="space-y-2">
-                                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-secondary-400 pl-1">Operational Stage</label>
+                                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-secondary-400 pl-1">Stage</label>
                                 <select
                                     className="input h-14 bg-secondary-50 border-secondary-100 font-black text-xs uppercase tracking-widest italic pr-10"
                                     value={newDeal.stage}
@@ -359,7 +372,7 @@ export default function DealsPage() {
                                 </select>
                             </div>
                             <div className="space-y-2">
-                                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-secondary-400 pl-1">Target Milestone (Close Date)</label>
+                                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-secondary-400 pl-1">Expected close date</label>
                                 <div className="relative group">
                                      <div className="absolute left-5 top-1/2 -translate-y-1/2 text-secondary-400 group-focus-within:text-primary-600 transition-colors">
                                          <Calendar size={18} />
@@ -375,10 +388,10 @@ export default function DealsPage() {
                         </div>
 
                         <div className="space-y-2 px-2">
-                            <label className="text-[10px] font-black uppercase tracking-[0.2em] text-secondary-400 pl-1">Deal Context (Metadata)</label>
+                            <label className="text-[10px] font-black uppercase tracking-[0.2em] text-secondary-400 pl-1">Notes</label>
                             <textarea
                                 className="input font-medium text-xs p-5 min-h-[120px] resize-none bg-secondary-50 border-secondary-100 italic"
-                                placeholder="Detail any strategic intelligence gathered regarding this opportunity..."
+                                placeholder="Add helpful notes for the sales team..."
                                 value={newDeal.notes}
                                 onChange={(e) => setNewDeal({ ...newDeal, notes: e.target.value })}
                             />
@@ -390,16 +403,16 @@ export default function DealsPage() {
                                 onClick={() => setShowCreateModal(false)}
                                 className="flex-1 px-4 py-4 rounded-2xl border-2 border-secondary-200 text-[10px] font-black uppercase tracking-[0.2em] text-secondary-400 hover:bg-secondary-50 transition-all font-mono"
                             >
-                                Terminate
+                                Cancel
                             </button>
                             <button
                                 type="submit"
                                 disabled={createLoading}
                                 className="flex-1 bg-primary-600 text-white px-8 py-4 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] shadow-2xl shadow-primary-200 hover:bg-primary-700 hover:-translate-y-1 transition-all flex items-center justify-center gap-3 active:scale-95 group/btn"
                             >
-                                {createLoading ? 'Synchronizing...' : (
+                                {createLoading ? 'Saving...' : (
                                     <>
-                                        Propagate Opportunity <ChevronRight size={16} className="group-hover/btn:translate-x-1 transition-transform" />
+                                        Save opportunity <ChevronRight size={16} className="group-hover/btn:translate-x-1 transition-transform" />
                                     </>
                                 )}
                             </button>

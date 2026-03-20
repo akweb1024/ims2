@@ -43,8 +43,8 @@ export default async function AlertsPanel({ user }: { user: any }) {
                       <div className="w-16 h-16 bg-white border border-secondary-100 text-secondary-200 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:scale-110 group-hover:bg-success-50 group-hover:text-success-500 group-hover:border-success-100 transition-all duration-500 shadow-sm">
                            <Bell size={32} />
                       </div>
-                      <p className="text-secondary-400 font-black uppercase tracking-[0.2em] text-[10px]">Matrix Optimized</p>
-                      <p className="text-secondary-300 text-[11px] mt-1 italic">No critical alerts pending resolution.</p>
+                      <p className="text-secondary-400 font-black uppercase tracking-[0.2em] text-[10px]">All clear</p>
+                      <p className="text-secondary-300 text-[11px] mt-1 italic">No urgent alerts right now.</p>
                  </div>
             </div>
         );
@@ -62,8 +62,8 @@ export default async function AlertsPanel({ user }: { user: any }) {
                         <AlertCircle size={20} className="animate-pulse" />
                     </div>
                     <div>
-                        <h3 className="text-xs font-black uppercase tracking-[0.2em] text-danger-700">Critical Intelligence</h3>
-                        <p className="text-[10px] text-danger-600/60 font-medium">Resolution required for optimal performance.</p>
+                        <h3 className="text-xs font-black uppercase tracking-[0.2em] text-danger-700">Needs attention</h3>
+                        <p className="text-[10px] text-danger-600/60 font-medium">Items that need follow-up today.</p>
                     </div>
                 </div>
 
@@ -71,8 +71,8 @@ export default async function AlertsPanel({ user }: { user: any }) {
                     {overdueInvoices.length > 0 && (
                         <div className="space-y-4">
                             <div className="flex items-center justify-between">
-                                <h4 className="text-[9px] font-black text-danger-500 uppercase tracking-widest bg-danger-50 px-3 py-1 rounded-full border border-danger-100">Overdue Phase Invoices</h4>
-                                <span className="text-[10px] font-black text-danger-700/60">{overdueInvoices.length} ACTIVE</span>
+                                <h4 className="text-[9px] font-black text-danger-500 uppercase tracking-widest bg-danger-50 px-3 py-1 rounded-full border border-danger-100">Overdue invoices</h4>
+                                <span className="text-[10px] font-black text-danger-700/60">{overdueInvoices.length} open</span>
                             </div>
                             <div className="space-y-2">
                                 {overdueInvoices.map(inv => (
@@ -85,12 +85,12 @@ export default async function AlertsPanel({ user }: { user: any }) {
                                                 <Link href={`/dashboard/crm/invoices/${inv.id}`} className="font-bold text-xs text-secondary-900 group-hover:text-danger-600 transition-colors uppercase tracking-tight truncate max-w-[120px]">
                                                     {inv.invoiceNumber}
                                                 </Link>
-                                                <p className="text-[10px] text-secondary-500 font-medium truncate max-w-[100px]">{inv.subscription?.customerProfile?.name || 'Unmapped'}</p>
+                                                <p className="text-[10px] text-secondary-500 font-medium truncate max-w-[100px]">{inv.subscription?.customerProfile?.name || 'No customer linked'}</p>
                                             </div>
                                         </div>
                                         <div className="flex flex-col items-end shrink-0 pl-4">
                                             <span className="font-black text-xs text-danger-600">₹{inv.total.toLocaleString()}</span>
-                                            <span className="text-[9px] font-bold text-danger-400/60 uppercase">DUE {new Date(inv.dueDate).toLocaleDateString()}</span>
+                                            <span className="text-[9px] font-bold text-danger-400/60 uppercase">Due {new Date(inv.dueDate).toLocaleDateString()}</span>
                                         </div>
                                     </div>
                                 ))}
@@ -101,8 +101,8 @@ export default async function AlertsPanel({ user }: { user: any }) {
                     {todaysFollowUps.length > 0 && (
                         <div className="space-y-4">
                             <div className="flex items-center justify-between">
-                                <h4 className="text-[9px] font-black text-primary-500 uppercase tracking-widest bg-primary-50 px-3 py-1 rounded-full border border-primary-100">Tasks Reaching Milestone</h4>
-                                <span className="text-[10px] font-black text-primary-700/60">{todaysFollowUps.length} DUE</span>
+                                <h4 className="text-[9px] font-black text-primary-500 uppercase tracking-widest bg-primary-50 px-3 py-1 rounded-full border border-primary-100">Today&apos;s follow-ups</h4>
+                                <span className="text-[10px] font-black text-primary-700/60">{todaysFollowUps.length} due</span>
                             </div>
                             <div className="space-y-2">
                                 {todaysFollowUps.map(fu => (
@@ -132,7 +132,7 @@ export default async function AlertsPanel({ user }: { user: any }) {
                 
                 <div className="mt-10 pt-6 border-t border-danger-100/50 flex justify-center">
                     <Link href="/dashboard/follow-ups" className="flex items-center gap-1.5 text-danger-600 hover:text-danger-700 text-[10px] font-black uppercase tracking-widest transition-all hover:gap-2">
-                        Resolve Critical Cycles <ArrowRight size={14} />
+                        Open follow-up list <ArrowRight size={14} />
                     </Link>
                 </div>
             </div>

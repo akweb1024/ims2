@@ -72,27 +72,27 @@ export default async function CRMMetrics({ user }: { user: any }) {
     return (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             <CRMStatCard
-                label="Active Leads"
+                label="Active prospects"
                 value={activeLeads}
                 icon={<Target size={22} />}
                 accent="bg-primary-950 text-white shadow-primary-100"
-                trend={{ value: 'Protocol', label: 'In-flow', isPositive: true }}
+                trend={{ value: 'Ready', label: 'for follow-up', isPositive: true }}
             />
 
             <CRMStatCard
-                label="Pipeline Value"
+                label="Open pipeline value"
                 value={`₹${totalPipeline.toLocaleString()}`}
                 icon={<Briefcase size={22} />}
                 accent="bg-indigo-900 text-white shadow-indigo-100"
-                trend={{ value: 'Projected', label: 'Yield', isPositive: true }}
+                trend={{ value: 'Current', label: 'opportunities', isPositive: true }}
             />
 
             <CRMStatCard
-                label="Revenue (MTD)"
+                label="Revenue this month"
                 value={`₹${currentRevenue.toLocaleString()}`}
                 icon={<IndianRupee size={22} />}
                 accent="bg-emerald-900 text-white shadow-emerald-100"
-                trend={{ value: `${achievementPercent}%`, label: 'Performance', isPositive: achievementPercent >= 100 }}
+                trend={{ value: `${achievementPercent}%`, label: 'of target', isPositive: achievementPercent >= 100 }}
             >
                 <div className="mt-4 h-1.5 w-full bg-white/10 rounded-full overflow-hidden">
                     <div
@@ -103,11 +103,11 @@ export default async function CRMMetrics({ user }: { user: any }) {
             </CRMStatCard>
 
             <CRMStatCard
-                label="Total Customers"
+                label="Total customers"
                 value={totalCustomers}
                 icon={<Users size={22} />}
                 accent="bg-secondary-900 text-white shadow-secondary-100"
-                trend={{ value: `+${newCustomersThisMonth}`, label: 'Density Growth', isPositive: true }}
+                trend={{ value: `+${newCustomersThisMonth}`, label: 'added this month', isPositive: true }}
             />
         </div>
     );
