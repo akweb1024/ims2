@@ -90,34 +90,8 @@ const DEFAULT_CATEGORIES = [
   { value: "MISC", label: "Miscellaneous", icon: "📦" },
 ];
 
-const PREDEFINED_DOMAINS = [
-  "Agriculture",
-  "Applied Mechanics",
-  "Applied Sciences",
-  "Architecture",
-  "Ayurveda",
-  "Bio Technology",
-  "Chemical Engineering",
-  "Chemistry",
-  "Civil/Construction Engineering",
-  "Computer/IT",
-  "Education and Social Sciences",
-  "Electrical Engineering",
-  "Electronics & Telecommunication Engineering (0)",
-  "Energy",
-  "Law",
-  "Life Sciences",
-  "Management",
-  "Material Science",
-  "Mechanical Engineering",
-  "Medical Sciences",
-  "Multidisciplinary",
-  "Nano Technology",
-  "Nursing",
-  "Pharmacy",
-  "Social Sciences",
-  "Other",
-];
+// Refined to fetch from API in the component
+const PREDEFINED_DOMAINS: string[] = []; 
 
 const YEAR_OPTIONS = Array.from(
   { length: 10 },
@@ -386,6 +360,53 @@ export default function ProductCatalogueForm({
   const [loadingTemplates, setLoadingTemplates] = useState(false);
   const [selectedTemplateId, setSelectedTemplateId] = useState("");
   const [templateMessage, setTemplateMessage] = useState<string | null>(null);
+  const [availableDomains, setAvailableDomains] = useState<string[]>([]);
+  const [loadingDomains, setLoadingDomains] = useState(false);
+  const [isAddingDomain, setIsAddingDomain] = useState(false);
+  const [newDomainName, setNewDomainName] = useState("");
+
+  const fetchDomains = useCallback(async () => {
+    setLoadingDomains(true);
+    try {
+      const res = await fetch("/api/journals/domains", {
+        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setAvailableDomains(data.map((d: any) => d.name));
+      }
+    } catch (e) {
+      console.error("Failed to fetch domains", e);
+    } finally {
+      setLoadingDomains(false);
+    }
+  }, []);
+
+  const handleAddDomain = async () => {
+    if (!newDomainName.trim()) return;
+    try {
+      const res = await fetch("/api/journals/domains", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+        body: JSON.stringify({ name: newDomainName.trim() }),
+      });
+      if (res.ok) {
+        showSuccess("Domain added successfully");
+        setField("domain", newDomainName.trim());
+        setNewDomainName("");
+        setIsAddingDomain(false);
+        fetchDomains();
+      } else {
+        const err = await res.json();
+        showError(err.message || "Failed to add domain");
+      }
+    } catch (e) {
+      showError("Error adding domain");
+    }
+  };
 
   const fetchTemplates = useCallback(async () => {
     if (!value.category) return;
@@ -523,7 +544,7 @@ export default function ProductCatalogueForm({
   };
 
   // ── Domain autocomplete ──
-  const allDomains = Array.from(new Set([...PREDEFINED_DOMAINS, ...domains]));
+  const allDomains = Array.from(new Set([...availableDomains, ...domains]));
   
   const filteredDomains = domainSearch
     ? allDomains.filter((d) =>
@@ -644,6 +665,7 @@ export default function ProductCatalogueForm({
               }}
               onFocus={() => {
                 setDomainOpen(true);
+                fetchDomains();
                 if (!domainSearch && !value.domain) setDomainSearch("");
               }}
               onBlur={() => setTimeout(() => setDomainOpen(false), 200)}
