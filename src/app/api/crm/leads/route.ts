@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { authorizedRoute } from "@/lib/middleware-auth";
 import { handleApiError, ValidationError } from "@/lib/error-handler";
 import { logger } from "@/lib/logger";
+import { resolveLeadOwner } from "@/lib/crm/lead-assignment";
 import { z } from "zod";
 
 const createLeadSchema = z.object({
@@ -120,6 +121,13 @@ export const POST = authorizedRoute(
         });
       }
 
+      const assignedOwnerId = await resolveLeadOwner({
+        companyId: user.companyId,
+        preferredUserId: validatedData.assignedToUserId,
+        fallbackUserId: user.id,
+        changedByUserId: user.id,
+      });
+
       const lead = await prisma.customerProfile.create({
         data: {
           userId: leadUser.id,
@@ -132,7 +140,7 @@ export const POST = authorizedRoute(
           leadStatus: validatedData.status,
           leadScore: validatedData.score,
           source: validatedData.source,
-          assignedToUserId: validatedData.assignedToUserId || user.id,
+          assignedToUserId: assignedOwnerId || undefined,
           notes: validatedData.notes,
         },
       });

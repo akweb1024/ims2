@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { handleApiError, AuthorizationError, NotFoundError, ConflictError } from "@/lib/error-handler";
 import { logger } from "@/lib/logger";
+import { resolveLeadOwner } from "@/lib/crm/lead-assignment";
 import { z } from "zod";
 
 const publicLeadSchema = z.object({
@@ -117,6 +118,12 @@ export async function POST(req: NextRequest) {
     const normalizedEmail = data.email.trim().toLowerCase();
     const normalizedPhone = data.phone?.trim() || "";
     const combinedNotes = buildNotes(data);
+    const assignedOwnerId = await resolveLeadOwner({
+      companyId: company.id,
+      preferredUserId: data.assignedToUserId,
+      fallbackUserId: null,
+      changedByUserId: null,
+    });
 
     const existingProfile = await prisma.customerProfile.findFirst({
       where: {
@@ -143,7 +150,7 @@ export async function POST(req: NextRequest) {
           leadStatus: existingProfile.leadStatus === null ? null : data.status,
           leadScore: data.score ?? existingProfile.leadScore,
           source: data.source || existingProfile.source,
-          assignedToUserId: data.assignedToUserId ?? existingProfile.assignedToUserId,
+          assignedToUserId: assignedOwnerId ?? existingProfile.assignedToUserId,
           notes: [existingProfile.notes, combinedNotes].filter(Boolean).join("\n\n") || existingProfile.notes,
           tags: data.tags.length > 0 ? data.tags.join(", ") : existingProfile.tags,
           updatedAt: new Date(),
@@ -224,7 +231,7 @@ export async function POST(req: NextRequest) {
         leadStatus: data.status,
         leadScore: data.score,
         source: data.source,
-        assignedToUserId: data.assignedToUserId || undefined,
+        assignedToUserId: assignedOwnerId || undefined,
         notes: combinedNotes || undefined,
         tags: data.tags.length > 0 ? data.tags.join(", ") : undefined,
       },

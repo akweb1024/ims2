@@ -6,6 +6,7 @@ import RecentActivities from './RecentActivities';
 import CustomerGrowthChart from './CustomerGrowthChart';
 import AlertsPanel from './AlertsPanel';
 import CRMClientLayout from './CRMClientLayout';
+import LeadAssignmentSettings from './LeadAssignmentSettings';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
 import { prisma } from '@/lib/prisma';
 import { CRMPageShell } from '@/components/crm/CRMPageShell';
@@ -109,6 +110,8 @@ export default async function CRMDashboardPage() {
                             <p className="text-sm text-secondary-500 mt-2">Manage active accounts, subscriptions, billing, and follow-up.</p>
                         </Link>
                     </div>
+
+                    <LeadAssignmentSettings />
 
                     <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
                         <div className="lg:col-span-8 space-y-10">
