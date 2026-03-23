@@ -607,6 +607,30 @@ export default function WorkReportValidator({ reports, onApprove, onAddComment }
                                     />
                                 </div>
                             </div>
+
+                            <div className="space-y-4 pt-4 border-t border-secondary-100">
+                                <h4 className="font-bold text-lg text-secondary-900 flex items-center gap-2">
+                                    <MessageSquare className="text-primary-600" size={18} />
+                                    Clarification Comment
+                                </h4>
+                                <div className="flex gap-3">
+                                    <textarea
+                                        className="input"
+                                        rows={2}
+                                        placeholder="Add a clarification comment without approving yet..."
+                                        value={commentText}
+                                        onChange={(e) => setCommentText(e.target.value)}
+                                        title="Clarification Comment"
+                                    />
+                                    <button
+                                        onClick={() => handleAddComment(selectedReport.id)}
+                                        type="button"
+                                        className="btn btn-secondary px-4 py-3 self-start"
+                                    >
+                                        Post Comment
+                                    </button>
+                                </div>
+                            </div>
                         </div>
 
                         {/* Modal Footer */}

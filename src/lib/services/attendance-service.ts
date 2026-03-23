@@ -4,7 +4,7 @@ import { processLateArrival, processShortLeave } from '@/lib/utils/leave-ledger-
 
 export interface AttendanceUpsertInput {
     employeeId: string;
-    companyId: string;
+    companyId?: string | null;
     date: Date;
     checkIn?: Date | null;
     checkOut?: Date | null;
@@ -15,6 +15,7 @@ export interface AttendanceUpsertInput {
     locationName?: string | null;
     remarks?: string | null;
     isManual?: boolean;
+    skipSideEffects?: boolean;
 }
 
 /**
@@ -45,7 +46,7 @@ export async function upsertAttendanceRecord(
     const {
         employeeId, date, checkIn, checkOut, workFrom,
         status, latitude, longitude, locationName,
-        companyId, isManual, remarks
+        companyId, isManual, remarks, skipSideEffects
     } = input;
 
     // 1. Fetch Shift Roster for calculation
@@ -73,7 +74,7 @@ export async function upsertAttendanceRecord(
     // 2. Geofencing check (if not manual and not remote)
     if (!isManual && workFrom !== 'REMOTE' && latitude && longitude) {
         const company = await tx.company.findUnique({
-            where: { id: companyId },
+            where: { id: companyId! },
             select: { latitude: true, longitude: true }
         });
 
@@ -138,7 +139,7 @@ export async function upsertAttendanceRecord(
             isShort,
             shiftId,
             remarks: remarks ?? undefined,
-            companyId: companyId
+            companyId: companyId || undefined
         },
         create: {
             employeeId,
@@ -158,7 +159,7 @@ export async function upsertAttendanceRecord(
             isShort,
             shiftId,
             remarks: remarks ?? null,
-            companyId: companyId
+            companyId: companyId || undefined
         }
     });
 
@@ -167,7 +168,7 @@ export async function upsertAttendanceRecord(
     // and to prevent double-penalization for the same day.
     const isFirstTimeCheckOut = payloadCheckOut != null && existing?.checkOut == null;
 
-    if (isFirstTimeCheckOut || isManual) {
+    if (!skipSideEffects && (isFirstTimeCheckOut || isManual)) {
         if (lateMinutes >= 31) {
             await processLateArrival(employeeId, lateMinutes, companyId);
         }

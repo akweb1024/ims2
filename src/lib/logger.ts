@@ -17,16 +17,6 @@ const pinoOptions = {
             return { level: label.toUpperCase() };
         },
     },
-    ...(isDevelopment && {
-        transport: {
-            target: 'pino-pretty',
-            options: {
-                colorize: true,
-                ignore: 'pid,hostname',
-                translateTime: 'SYS:standard',
-            },
-        },
-    }),
 };
 
 // Create pino instance
@@ -132,4 +122,3 @@ export async function logApiRoute(
         throw error;
     }
 }
-

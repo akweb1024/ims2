@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getAuthenticatedUser } from '@/lib/auth-legacy';
 import prisma from '@/lib/prisma';
 import { getISTDateRangeForPeriod, normalizePeriod } from '@/lib/date-utils';
+import { getEmployeeTaskTemplateColumns, hasTaskTemplateColumn } from '@/lib/task-template-columns';
 
 // GET - Fetch today's progress for the current user
 export async function GET(req: NextRequest) {
@@ -23,6 +24,15 @@ export async function GET(req: NextRequest) {
         const { searchParams } = new URL(req.url);
         const period = normalizePeriod(searchParams.get('period'));
         const { start, end } = getISTDateRangeForPeriod(period);
+        const taskColumns = await getEmployeeTaskTemplateColumns();
+
+        const taskSelect = {
+            id: true,
+            points: true,
+            ...(hasTaskTemplateColumn(taskColumns, 'calculationType') ? { calculationType: true } : {}),
+            ...(hasTaskTemplateColumn(taskColumns, 'maxThreshold') ? { maxThreshold: true } : {}),
+            ...(hasTaskTemplateColumn(taskColumns, 'pointsPerUnit') ? { pointsPerUnit: true } : {})
+        };
 
         // Fetch period completed tasks
         const completedTasks = await prisma.dailyTaskCompletion.findMany({
@@ -35,18 +45,24 @@ export async function GET(req: NextRequest) {
                 ...(period !== 'YEARLY' ? { task: { frequency: period } } : {})
             },
             include: {
-                task: true
+                task: {
+                    select: taskSelect
+                }
             }
         });
 
         // Calculate total points
         const totalPoints = completedTasks.reduce((sum: number, ct) => {
-            if (ct.task.calculationType === 'SCALED') {
+            const calculationType = ct.task.calculationType ?? 'FLAT';
+            const pointsPerUnit = ct.task.pointsPerUnit ?? 1;
+            const maxThreshold = ct.task.maxThreshold ?? null;
+
+            if (calculationType === 'SCALED') {
                 const quantity = ct.quantity || 0;
-                const effectiveQty = ct.task.maxThreshold && quantity > ct.task.maxThreshold
-                    ? ct.task.maxThreshold
+                const effectiveQty = maxThreshold && quantity > maxThreshold
+                    ? maxThreshold
                     : quantity;
-                return sum + Math.floor(effectiveQty * (ct.task.pointsPerUnit || 0));
+                return sum + Math.floor(effectiveQty * pointsPerUnit);
             }
             return sum + ct.task.points;
         }, 0);

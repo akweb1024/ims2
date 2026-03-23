@@ -13,6 +13,7 @@ interface LeaveBalance {
     employeeName: string;
     employeeEmail: string;
     department: string;
+    unifiedBalance: number;
     annual: number;
     sick: number;
     casual: number;
@@ -68,7 +69,7 @@ export default function BalanceLeave({ filters }: BalanceLeaveProps) {
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div>
                     <h2 className="text-lg font-semibold text-secondary-900">Employee Leave Ledger</h2>
-                    <p className="text-sm text-secondary-500">Track employee leave balances and ledger history - Auto-credited monthly</p>
+                    <p className="text-sm text-secondary-500">Track employee leave balances and ledger history. Unified balance is the authoritative usable balance; category buckets are reference views.</p>
                 </div>
                 <div className="flex items-center gap-2 px-4 py-2 bg-blue-50 border border-blue-200 rounded-lg">
                     <span className="text-sm text-blue-700">
@@ -142,17 +143,11 @@ export default function BalanceLeave({ filters }: BalanceLeaveProps) {
                                         <th className="px-6 py-3 text-center text-xs font-semibold text-secondary-500 uppercase tracking-wider">Sick</th>
                                         <th className="px-6 py-3 text-center text-xs font-semibold text-secondary-500 uppercase tracking-wider">Casual</th>
                                         <th className="px-6 py-3 text-center text-xs font-semibold text-secondary-500 uppercase tracking-wider">Compensatory</th>
-                                        <th className="px-6 py-3 text-center text-xs font-semibold text-secondary-500 uppercase tracking-wider">Total Available</th>
+                                        <th className="px-6 py-3 text-center text-xs font-semibold text-secondary-500 uppercase tracking-wider">Unified Balance</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-secondary-200">
                                     {leaveBalances.map((balance) => {
-                                        const totalAvailable =
-                                            getAvailable(balance.annual, balance.used.annual, balance.pending.annual) +
-                                            getAvailable(balance.sick, balance.used.sick, balance.pending.sick) +
-                                            getAvailable(balance.casual, balance.used.casual, balance.pending.casual) +
-                                            getAvailable(balance.compensatory, balance.used.compensatory, balance.pending.compensatory);
-
                                         return (
                                             <tr key={balance.id} className="hover:bg-secondary-50 transition-colors">
                                                 <td className="px-6 py-4">
@@ -199,8 +194,12 @@ export default function BalanceLeave({ filters }: BalanceLeaveProps) {
                                                     </div>
                                                 </td>
                                                 <td className="px-6 py-4 text-center">
-                                                    <span className="px-3 py-1 bg-primary-100 text-primary-700 rounded-full text-sm font-bold">
-                                                        {totalAvailable}
+                                                    <span className={`px-3 py-1 rounded-full text-sm font-bold ${
+                                                        balance.unifiedBalance < 0
+                                                            ? 'bg-rose-100 text-rose-700'
+                                                            : 'bg-primary-100 text-primary-700'
+                                                    }`}>
+                                                        {balance.unifiedBalance}
                                                     </span>
                                                 </td>
                                             </tr>
@@ -217,6 +216,9 @@ export default function BalanceLeave({ filters }: BalanceLeaveProps) {
                     </div>
                 )
             }
+            <div className="rounded-xl border border-secondary-200 bg-secondary-50 px-4 py-3 text-xs text-secondary-700">
+                The rightmost value is the actual balance used by approval, deductions, and carry-forward logic. Category columns help HR review leave mix and pending requests, but they are not a second independent balance.
+            </div>
         </div >
     );
 }

@@ -41,6 +41,7 @@ export const GET = authorizedRoute(
                     },
                     employeeProfile: {
                         select: {
+                            id: true,
                             leaveBalance: true,
                             currentLeaveBalance: true,
                             initialLeaveBalance: true,
@@ -55,10 +56,12 @@ export const GET = authorizedRoute(
             });
 
             // Fetch pending leaves for all relevant employees to calculate bucket-specific pending counts
-            const empIds = employees.map(e => e.id);
+            const profileIds = employees
+                .map(e => e.employeeProfile?.id)
+                .filter((id): id is string => Boolean(id));
             const pendingLeavesRaw = await prisma.leaveRequest.findMany({
                 where: {
-                    employeeId: { in: empIds },
+                    employeeId: { in: profileIds },
                     status: 'PENDING'
                 },
                 select: {
@@ -93,7 +96,7 @@ export const GET = authorizedRoute(
             const balances = employees.map((emp: any) => {
                 const metrics = emp.employeeProfile?.metrics as any || {};
                 const leaveBalances = metrics.leaveBalances || {};
-                const pending = pendingMap[emp.id] || { sick: 0, casual: 0, annual: 0, compensatory: 0 };
+                const pending = pendingMap[emp.employeeProfile?.id || ''] || { sick: 0, casual: 0, annual: 0, compensatory: 0 };
 
                 return {
                     id: emp.id,
@@ -101,6 +104,7 @@ export const GET = authorizedRoute(
                     employeeName: emp.name,
                     employeeEmail: emp.email,
                     department: emp.department?.name || 'N/A',
+                    unifiedBalance: emp.employeeProfile?.currentLeaveBalance ?? emp.employeeProfile?.leaveBalance ?? 0,
                     // Use stored balances or defaults
                     annual: leaveBalances.annual?.total ?? 20,
                     sick: leaveBalances.sick?.total ?? 10,

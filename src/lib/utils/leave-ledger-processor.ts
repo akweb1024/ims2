@@ -84,8 +84,8 @@ export async function processShortLeave(
     shortLeaveMinutes: number,
     companyId?: string | null
 ): Promise<void> {
-    if (shortLeaveMinutes !== 90) {
-        return; // Only process 90-minute short leaves
+    if (shortLeaveMinutes < 90) {
+        return; // Only process short leaves of 90 minutes or more
     }
 
     const { month, year } = getCurrentMonthYear();
@@ -153,4 +153,110 @@ export async function resetMonthlyCounters(): Promise<void> {
 
     // This is handled automatically when creating new ledger entries
     // No explicit reset needed as each month has its own ledger
+}
+
+export async function reconcileAttendanceLedgerForMonth(
+    employeeId: string,
+    date: Date,
+    companyId?: string | null
+): Promise<void> {
+    const month = date.getMonth() + 1;
+    const year = date.getFullYear();
+
+    const monthStart = new Date(date);
+    monthStart.setDate(1);
+    monthStart.setHours(0, 0, 0, 0);
+
+    const monthEnd = new Date(year, month, 0, 23, 59, 59, 999);
+
+    const records = await prisma.attendance.findMany({
+        where: {
+            employeeId,
+            date: {
+                gte: monthStart,
+                lte: monthEnd
+            }
+        },
+        orderBy: { date: 'asc' }
+    });
+
+    let lateArrivalCount = 0;
+    let shortLeaveCount = 0;
+    let lateDeductions = 0;
+    let shortLeaveDeductions = 0;
+
+    for (const record of records) {
+        if (record.lateMinutes >= 31) {
+            lateDeductions += calculateLateDeduction(record.lateMinutes, lateArrivalCount);
+            lateArrivalCount += 1;
+        }
+
+        if (record.shortMinutes >= 90) {
+            shortLeaveDeductions += calculateShortLeaveDeduction(record.shortMinutes, shortLeaveCount);
+            shortLeaveCount += 1;
+        }
+    }
+
+    const existingLedger = await prisma.leaveLedger.findUnique({
+        where: {
+            employeeId_month_year: {
+                employeeId,
+                month,
+                year
+            }
+        }
+    });
+
+    const { displayBalance } = calculateLeaveBalance(
+        existingLedger?.openingBalance || 0,
+        existingLedger?.autoCredit || 0,
+        existingLedger?.takenLeaves || 0,
+        lateDeductions,
+        shortLeaveDeductions
+    );
+
+    await prisma.leaveLedger.upsert({
+        where: {
+            employeeId_month_year: {
+                employeeId,
+                month,
+                year
+            }
+        },
+        update: {
+            lateArrivalCount,
+            shortLeaveCount,
+            lateDeductions,
+            shortLeaveDeductions,
+            closingBalance: displayBalance,
+            companyId: existingLedger?.companyId || companyId || undefined
+        },
+        create: {
+            employeeId,
+            month,
+            year,
+            openingBalance: 0,
+            autoCredit: 0,
+            takenLeaves: 0,
+            closingBalance: displayBalance,
+            lateArrivalCount,
+            shortLeaveCount,
+            lateDeductions,
+            shortLeaveDeductions,
+            companyId: companyId || undefined
+        }
+    });
+
+    const currentMonth = new Date().getMonth() + 1;
+    const currentYear = new Date().getFullYear();
+
+    if (month === currentMonth && year === currentYear) {
+        await prisma.employeeProfile.update({
+            where: { id: employeeId },
+            data: {
+                currentLeaveBalance: displayBalance,
+                leaveBalance: displayBalance
+            }
+        });
+    }
 }

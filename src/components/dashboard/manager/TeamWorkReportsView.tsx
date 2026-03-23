@@ -6,8 +6,8 @@ import WorkReportValidator from '@/components/dashboard/hr/WorkReportValidator';
 import { toast } from 'react-hot-toast';
 
 const TeamWorkReportsView: React.FC = () => {
-    const { data: reports = [], isLoading: loading } = useWorkReports({ status: 'PENDING' });
-    const { updateStatus } = useWorkReportMutations();
+    const { data: reports = [], isLoading: loading } = useWorkReports({ status: 'SUBMITTED' });
+    const { updateStatus, addComment } = useWorkReportMutations();
 
     const handleApprove = async (
         id: string,
@@ -35,8 +35,13 @@ const TeamWorkReportsView: React.FC = () => {
     };
 
     const handleAddComment = async (id: string, content: string) => {
-        // Implement if needed, or leave as placeholder if API not ready for standalone comments in this view
-        toast('Comment feature coming soon');
+        try {
+            await addComment.mutateAsync({ reportId: id, content });
+            toast.success('Comment added');
+        } catch (err) {
+            console.error(err);
+            toast.error('Failed to add comment');
+        }
     };
 
     if (loading) {

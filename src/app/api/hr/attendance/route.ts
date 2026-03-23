@@ -7,6 +7,7 @@ import { attendanceCorrectionSchema, selfServiceAttendanceSchema } from '@/lib/v
 import { getDownlineUserIds } from '@/lib/hierarchy';
 import { getISTToday } from '@/lib/date-utils';
 import { upsertAttendanceRecord } from '@/lib/services/attendance-service';
+import { reconcileAttendanceLedgerForMonth } from '@/lib/utils/leave-ledger-processor';
 
 export const GET = authorizedRoute(
     [],
@@ -204,15 +205,23 @@ export const PATCH = authorizedRoute(
                 }
             }
 
-            const data: any = {};
-            if (checkIn) data.checkIn = checkIn;
-            if (checkOut !== undefined) data.checkOut = checkOut;
-            if (status) data.status = status;
-
-            const updated = await prisma.attendance.update({
-                where: { id },
-                data
+            const updated = await upsertAttendanceRecord({
+                employeeId: existing.employeeId,
+                companyId: existing.companyId || user.companyId,
+                date: existing.date,
+                checkIn: checkIn ?? null,
+                checkOut: checkOut ?? null,
+                status,
+                workFrom: (existing.workFrom as any) || 'OFFICE',
+                latitude: existing.latitude,
+                longitude: existing.longitude,
+                locationName: existing.locationName,
+                remarks: existing.remarks,
+                isManual: true,
+                skipSideEffects: true
             });
+
+            await reconcileAttendanceLedgerForMonth(existing.employeeId, existing.date, existing.companyId || user.companyId);
 
             return NextResponse.json(updated);
         } catch (error) {

@@ -24,7 +24,7 @@ export default function LeaveGuidelines() {
                             <span className="w-8 h-8 rounded-lg bg-indigo-100 text-indigo-600 flex items-center justify-center font-black"><CheckCircle2 size={16} /></span>
                             <h4 className="font-bold text-secondary-900">Unified Pool</h4>
                         </div>
-                        <p className="text-xs text-secondary-500 font-medium">Your total balance acts as a unified pool, providing flexibility. Certain categories (like casual or sick) represent internal tracking metrics.</p>
+                        <p className="text-xs text-secondary-500 font-medium">Your total balance acts as the single authoritative pool used for approvals, deductions, and carry-forward. Category labels such as casual or sick are tracking references to help planning and reporting.</p>
                     </div>
                 </div>
             </div>
@@ -76,11 +76,11 @@ export default function LeaveGuidelines() {
                 <div className="bg-white p-4 rounded-xl border border-orange-100/50">
                     <div className="flex items-start gap-3">
                         <div className="mt-0.5">
-                            <span className="w-6 h-6 rounded bg-rose-100 text-rose-700 flex items-center justify-center text-[10px] font-black">&gt;90m</span>
+                            <span className="w-6 h-6 rounded bg-rose-100 text-rose-700 flex items-center justify-center text-[10px] font-black">90m+</span>
                         </div>
                         <div>
-                            <h4 className="text-sm font-bold text-secondary-900">Short Leave (More than 90 mins)</h4>
-                            <p className="text-xs text-secondary-500 mt-1 mb-3">Checking in over 90 minutes late or checking out over 90 minutes early constitutes a Short Leave.</p>
+                            <h4 className="text-sm font-bold text-secondary-900">Short Leave (90 mins or more)</h4>
+                            <p className="text-xs text-secondary-500 mt-1 mb-3">Checking in 90 minutes or more late or checking out 90 minutes or more early constitutes a Short Leave.</p>
                             
                             <div className="bg-orange-50/50 p-3 rounded-lg border border-orange-100">
                                 <h5 className="text-[10px] font-black text-orange-800 uppercase tracking-widest mb-2">Monthly Allowance</h5>

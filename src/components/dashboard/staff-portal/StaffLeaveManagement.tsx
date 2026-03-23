@@ -63,7 +63,7 @@ export default function StaffLeaveManagement({ leaves, fullProfile, onLeaveSubmi
                             </div>
                             <div className="flex items-center gap-2 bg-white/10 px-3 py-1.5 rounded-lg text-[10px] font-bold mt-2">
                                 <Info size={12} />
-                                <span>Main balance used for all leave types</span>
+                                <span>This unified balance is the authoritative usable leave balance</span>
                             </div>
                         </div>
                     </div>
@@ -94,6 +94,9 @@ export default function StaffLeaveManagement({ leaves, fullProfile, onLeaveSubmi
                                 {Math.max(0, (fullProfile?.metrics?.leaveBalances?.compensatory?.total || 5) - (fullProfile?.metrics?.leaveBalances?.compensatory?.used || 0))}
                             </p>
                         </div>
+                    </div>
+                    <div className="bg-indigo-50 border border-indigo-100 rounded-xl px-4 py-3 text-xs text-indigo-900 font-medium">
+                        Category cards are planning references for annual, sick, casual, and compensatory usage. Approval, deduction, and carry-forward decisions use the unified balance shown above.
                     </div>
                 </div>
 

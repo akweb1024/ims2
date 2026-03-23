@@ -88,14 +88,14 @@ export default function WorkReportManagement({ filters }: WorkReportManagementPr
     };
 
     const filteredReports = workReports.filter(report => {
-        if (activeTab === 'pending') return report.status === 'SUBMITTED' || report.status === 'PENDING';
+        if (activeTab === 'pending') return report.status === 'SUBMITTED';
         if (activeTab === 'approved') return report.status === 'APPROVED';
         if (activeTab === 'rejected') return report.status === 'REJECTED';
         return true;
     });
 
     const summary = {
-        pending: workReports.filter(r => r.status === 'SUBMITTED' || r.status === 'PENDING').length,
+        pending: workReports.filter(r => r.status === 'SUBMITTED').length,
         approved: workReports.filter(r => r.status === 'APPROVED').length,
         rejected: workReports.filter(r => r.status === 'REJECTED').length,
         totalHours: workReports.reduce((sum, r) => sum + r.totalHours, 0)
@@ -217,7 +217,7 @@ export default function WorkReportManagement({ filters }: WorkReportManagementPr
                                         </div>
                                     ))}
                                 </div>
-                                {(report.status === 'SUBMITTED' || report.status === 'PENDING') && (
+                                {report.status === 'SUBMITTED' && (
                                     <div className="flex justify-end gap-2">
                                         <button
                                             onClick={() => handleReportAction(report.id, 'REJECTED', 'Please provide more details')}

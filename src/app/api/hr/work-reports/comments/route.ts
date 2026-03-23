@@ -29,7 +29,7 @@ export const POST = authorizedRoute(
                 if (['SUPER_ADMIN', 'ADMIN'].includes(user.role)) {
                     isAuthorized = true;
                 } else if (['MANAGER', 'TEAM_LEADER'].includes(user.role)) {
-                    const subIds = await getDownlineUserIds(user.id, user.companyId || undefined);
+                    const subIds = await getDownlineUserIds(user.id, null);
                     if (subIds.includes(report.employee.userId)) {
                         isAuthorized = true;
                     }

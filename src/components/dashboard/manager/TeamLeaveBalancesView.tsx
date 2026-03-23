@@ -35,7 +35,7 @@ const TeamLeaveBalancesView: React.FC<TeamLeaveBalancesViewProps> = ({ filters, 
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
                 <div>
                     <h2 className="text-3xl font-black text-secondary-900 tracking-tight">Team Leave Balances</h2>
-                    <p className="text-secondary-500 font-medium">Monthly balance ledger for {new Date(2024, filters.month - 1).toLocaleString('default', { month: 'long' })} {filters.year}</p>
+                    <p className="text-secondary-500 font-medium">Monthly balance ledger for {new Date(2024, filters.month - 1).toLocaleString('default', { month: 'long' })} {filters.year}. This ledger is the source for the team&apos;s usable leave balance.</p>
                 </div>
 
                 <div className="flex items-center gap-4 bg-white p-2 rounded-2xl shadow-sm border border-secondary-100">
@@ -160,7 +160,7 @@ const TeamLeaveBalancesView: React.FC<TeamLeaveBalancesViewProps> = ({ filters, 
                 <div className="space-y-1">
                     <p className="text-sm font-black text-secondary-900 uppercase tracking-wider">Manager Insights</p>
                     <p className="text-xs text-secondary-500 leading-relaxed">
-                        These balances are synchronized with HR records. If a team member has a negative balance, future check-ins will trigger automatic leave deductions.
+                        These ledger balances are the authoritative usable balances for the month. Category-wise leave summaries in other screens are reference views, while this ledger drives deductions, carry-forward, and negative-balance visibility.
                     </p>
                 </div>
             </div>

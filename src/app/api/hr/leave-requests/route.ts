@@ -161,7 +161,7 @@ export const PATCH = authorizedRoute(
 
             // Access Control: Manager/TL can only approve/deny their own team
             if (['MANAGER', 'TEAM_LEADER'].includes(user.role)) {
-                const subIds = await getDownlineUserIds(user.id, user.companyId || undefined);
+                const subIds = await getDownlineUserIds(user.id, null);
                 if (!subIds.includes(existing.employee.userId)) {
                     return createErrorResponse('Forbidden: Not in your team', 403);
                 }

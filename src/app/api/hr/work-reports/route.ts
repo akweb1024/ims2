@@ -32,6 +32,7 @@ export const GET = authorizedRoute(
             const startDate = searchParams.get('startDate');
             const endDate = searchParams.get('endDate');
             const category = searchParams.get('category');
+            const status = searchParams.get('status');
             let targetEmployeeId = employeeId;
 
             // Handle 'self' keyword early
@@ -107,6 +108,11 @@ export const GET = authorizedRoute(
             // Category Filtering
             if (category && category !== 'ALL') {
                 where.category = category;
+            }
+
+            // Status Filtering
+            if (status && status !== 'ALL') {
+                where.status = status === 'PENDING' ? 'SUBMITTED' : status;
             }
 
             const reports = await prisma.workReport.findMany({
@@ -591,7 +597,7 @@ export const PATCH = authorizedRoute(
 
             // Access Control: Manager/TL can only review their own team
             if (['MANAGER', 'TEAM_LEADER'].includes(user.role)) {
-                const subIds = await getDownlineUserIds(user.id, user.companyId || undefined);
+                const subIds = await getDownlineUserIds(user.id, null);
                 if (!subIds.includes(existing.employee.userId)) {
                     throw new AuthorizationError('Forbidden: This employee is not in your team');
                 }
