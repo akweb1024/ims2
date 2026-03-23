@@ -9,6 +9,10 @@ type RegistrationInput = {
     organization?: string | null;
 };
 
+type ConferenceScopedRegistrationInput = RegistrationInput & {
+    conferenceId: string;
+};
+
 export async function ensureConferenceLeadForRegistration({
     companyId,
     conferenceTitle,
@@ -158,6 +162,87 @@ export async function buildConferenceRegistrationFollowupSummary({
                 .filter(Boolean)
                 .sort((a, b) => new Date(a!).getTime() - new Date(b!).getTime())[0] || null,
             latestPrediction,
+        };
+    });
+}
+
+export async function buildConferenceFollowupSummaryByConference({
+    conferences,
+    registrations,
+}: {
+    conferences: Array<{ id: string; companyId?: string | null }>;
+    registrations: Array<ConferenceScopedRegistrationInput>;
+}) {
+    const registrationsByConferenceId = new Map<string, ConferenceScopedRegistrationInput[]>();
+
+    for (const registration of registrations) {
+        const existing = registrationsByConferenceId.get(registration.conferenceId) || [];
+        existing.push(registration);
+        registrationsByConferenceId.set(registration.conferenceId, existing);
+    }
+
+    const summariesByConferenceId = new Map<string, Awaited<ReturnType<typeof buildConferenceRegistrationFollowupSummary>>[number][]>();
+
+    for (const conference of conferences) {
+        const conferenceRegistrations = registrationsByConferenceId.get(conference.id) || [];
+
+        if (!conference.companyId || conferenceRegistrations.length === 0) {
+            summariesByConferenceId.set(conference.id, []);
+            continue;
+        }
+
+        const summary = await buildConferenceRegistrationFollowupSummary({
+            companyId: conference.companyId,
+            registrations: conferenceRegistrations,
+        });
+
+        summariesByConferenceId.set(conference.id, summary);
+    }
+
+    const healthPriority: Record<string, number> = {
+        CRITICAL: 4,
+        AT_RISK: 3,
+        GOOD: 2,
+        EXCELLENT: 1,
+    };
+    const getHealthPriority = (health?: string | null) => {
+        if (!health) return 0;
+        return healthPriority[health] || 0;
+    };
+
+    return conferences.map((conference) => {
+        const registrationSummaries = summariesByConferenceId.get(conference.id) || [];
+        const withPredictions = registrationSummaries.filter((item) => item.latestPrediction);
+        const latestPredictions = withPredictions
+            .map((item) => item.latestPrediction)
+            .filter((item): item is NonNullable<typeof item> => Boolean(item));
+
+        const highestRiskPrediction = latestPredictions.length === 0
+            ? null
+            : latestPredictions.reduce((current, item) => {
+                return getHealthPriority(item.customerHealth) > getHealthPriority(current.customerHealth) ? item : current;
+            });
+
+        const nextFollowUpDate = registrationSummaries
+            .map((item) => item.nextFollowUpDate)
+            .filter(Boolean)
+            .sort((a, b) => new Date(a!).getTime() - new Date(b!).getTime())[0] || null;
+
+        return {
+            conferenceId: conference.id,
+            totalFollowUps: registrationSummaries.reduce((sum, item) => sum + item.followUpCount, 0),
+            pendingFollowUps: registrationSummaries.reduce((sum, item) => sum + item.pendingFollowUpCount, 0),
+            overdueFollowUps: registrationSummaries.reduce((sum, item) => sum + item.overdueFollowUpCount, 0),
+            trackedRegistrations: withPredictions.length,
+            nextFollowUpDate,
+            highestRiskPrediction: highestRiskPrediction ? {
+                renewalLikelihood: highestRiskPrediction.renewalLikelihood,
+                upsellPotential: highestRiskPrediction.upsellPotential,
+                churnRisk: highestRiskPrediction.churnRisk,
+                customerHealth: highestRiskPrediction.customerHealth,
+                insights: highestRiskPrediction.insights,
+                recommendedActions: highestRiskPrediction.recommendedActions,
+            } : null,
         };
     });
 }

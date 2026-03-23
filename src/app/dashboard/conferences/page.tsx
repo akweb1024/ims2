@@ -6,8 +6,9 @@ import Link from 'next/link';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import {
     Calendar, MapPin, Users, FileText, Plus, Search,
-    Filter, Eye, Edit2, Trash2, CheckCircle, Clock, X
+    Filter, Eye, Edit2, Trash2, CheckCircle, Clock, X, AlertCircle, Brain
 } from 'lucide-react';
+import { getHealthBadgeColor } from '@/lib/predictions';
 
 export default function ConferencesPage() {
     const router = useRouter();
@@ -103,6 +104,16 @@ export default function ConferencesPage() {
     );
 
     const canCreate = ['SUPER_ADMIN', 'ADMIN', 'MANAGER'].includes(userRole);
+
+    const totalPendingFollowups = filteredConferences.reduce(
+        (sum, conference) => sum + (conference.followup?.pendingFollowUps || 0),
+        0
+    );
+
+    const totalOverdueFollowups = filteredConferences.reduce(
+        (sum, conference) => sum + (conference.followup?.overdueFollowUps || 0),
+        0
+    );
 
     const getStatusBadge = (status: string) => {
         const badges: Record<string, { bg: string; text: string; icon: any }> = {
@@ -208,6 +219,24 @@ export default function ConferencesPage() {
                     </div>
                 </div>
 
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="card-premium p-5">
+                        <p className="text-sm font-medium text-secondary-500">Conference Pipeline</p>
+                        <p className="text-3xl font-black text-secondary-900 mt-2">{filteredConferences.length}</p>
+                        <p className="text-xs text-secondary-500 mt-1">Visible conferences in current filters</p>
+                    </div>
+                    <div className="card-premium p-5 border border-amber-200 bg-amber-50/60">
+                        <p className="text-sm font-medium text-amber-700">Pending Follow-ups</p>
+                        <p className="text-3xl font-black text-amber-900 mt-2">{totalPendingFollowups}</p>
+                        <p className="text-xs text-amber-700 mt-1">Scheduled conference follow-ups still open</p>
+                    </div>
+                    <div className="card-premium p-5 border border-red-200 bg-red-50/60">
+                        <p className="text-sm font-medium text-red-700">Overdue Follow-ups</p>
+                        <p className="text-3xl font-black text-red-900 mt-2">{totalOverdueFollowups}</p>
+                        <p className="text-xs text-red-700 mt-1">Require immediate attention inside conference module</p>
+                    </div>
+                </div>
+
                 {/* Conference Grid */}
                 {filteredConferences.length === 0 ? (
                     <div className="card-premium p-12 text-center">
@@ -284,6 +313,56 @@ export default function ConferencesPage() {
                                         </div>
                                     </div>
 
+                                    <div className="mb-4 rounded-xl border border-secondary-200 bg-white p-3 space-y-2">
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex items-center gap-2 text-sm font-semibold text-secondary-800">
+                                                <Brain size={14} className="text-primary-600" />
+                                                Conference Follow-ups
+                                            </div>
+                                            {conference.followup?.highestRiskPrediction && (
+                                                <span className={`inline-flex px-2 py-1 rounded-full text-[10px] font-bold border ${getHealthBadgeColor(conference.followup.highestRiskPrediction.customerHealth)}`}>
+                                                    {conference.followup.highestRiskPrediction.customerHealth}
+                                                </span>
+                                            )}
+                                        </div>
+
+                                        {conference.followup?.totalFollowUps ? (
+                                            <>
+                                                <div className="grid grid-cols-3 gap-2 text-center">
+                                                    <div className="rounded-lg bg-secondary-50 p-2">
+                                                        <div className="text-lg font-black text-secondary-900">{conference.followup.totalFollowUps}</div>
+                                                        <div className="text-[10px] uppercase tracking-wide text-secondary-500">Total</div>
+                                                    </div>
+                                                    <div className="rounded-lg bg-amber-50 p-2">
+                                                        <div className="text-lg font-black text-amber-900">{conference.followup.pendingFollowUps}</div>
+                                                        <div className="text-[10px] uppercase tracking-wide text-amber-700">Pending</div>
+                                                    </div>
+                                                    <div className="rounded-lg bg-red-50 p-2">
+                                                        <div className="text-lg font-black text-red-900">{conference.followup.overdueFollowUps}</div>
+                                                        <div className="text-[10px] uppercase tracking-wide text-red-700">Overdue</div>
+                                                    </div>
+                                                </div>
+
+                                                {conference.followup.nextFollowUpDate && (
+                                                    <div className="text-xs text-secondary-600">
+                                                        Next follow-up: <span className="font-semibold text-secondary-900">{new Date(conference.followup.nextFollowUpDate).toLocaleString()}</span>
+                                                    </div>
+                                                )}
+
+                                                {conference.followup.highestRiskPrediction?.recommendedActions?.[0] && (
+                                                    <div className="flex items-start gap-2 rounded-lg bg-primary-50 p-2 text-xs text-primary-800">
+                                                        <AlertCircle size={14} className="mt-0.5 shrink-0" />
+                                                        <span>{conference.followup.highestRiskPrediction.recommendedActions[0]}</span>
+                                                    </div>
+                                                )}
+                                            </>
+                                        ) : (
+                                            <div className="text-xs text-secondary-500">
+                                                No conference follow-up logged yet. Manage follow-ups from this conference&apos;s registrations.
+                                            </div>
+                                        )}
+                                    </div>
+
                                     {/* Actions */}
                                     <div className="flex gap-2">
                                         <Link
@@ -291,6 +370,12 @@ export default function ConferencesPage() {
                                             className="btn btn-sm btn-primary flex-1"
                                         >
                                             <Eye size={14} /> View
+                                        </Link>
+                                        <Link
+                                            href={`/dashboard/conferences/${conference.id}/registrations`}
+                                            className="btn btn-sm btn-secondary flex-1"
+                                        >
+                                            <Users size={14} /> Follow-ups
                                         </Link>
                                         {canCreate && (
                                             <button

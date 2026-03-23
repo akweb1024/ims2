@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { authorizedRoute } from '@/lib/middleware-auth';
 import { createErrorResponse } from '@/lib/api-utils';
+import { buildConferenceFollowupSummaryByConference } from '@/lib/conference-followups';
 
 export const GET = authorizedRoute(
     [],
@@ -53,7 +54,40 @@ export const GET = authorizedRoute(
                 orderBy: { startDate: 'asc' }
             });
 
-            return NextResponse.json(conferences);
+            const conferenceIds = conferences.map((conference) => conference.id);
+
+            const registrations = conferenceIds.length === 0 ? [] : await prisma.conferenceRegistration.findMany({
+                where: {
+                    conferenceId: { in: conferenceIds },
+                },
+                select: {
+                    id: true,
+                    conferenceId: true,
+                    name: true,
+                    email: true,
+                    phone: true,
+                    organization: true,
+                },
+            });
+
+            const followupSummary = await buildConferenceFollowupSummaryByConference({
+                conferences: conferences.map((conference) => ({
+                    id: conference.id,
+                    companyId: conference.companyId,
+                })),
+                registrations,
+            });
+
+            const summaryByConferenceId = new Map(
+                followupSummary.map((item) => [item.conferenceId, item])
+            );
+
+            return NextResponse.json(
+                conferences.map((conference) => ({
+                    ...conference,
+                    followup: summaryByConferenceId.get(conference.id) || null,
+                }))
+            );
         } catch (error) {
             return createErrorResponse(error);
         }
