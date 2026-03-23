@@ -1,19 +1,18 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { useRouter, useParams } from 'next/navigation';
+import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
+import ConferenceShell from '@/components/dashboard/conferences/ConferenceShell';
 import ConversationChecklist from '@/components/dashboard/ConversationChecklist';
 import { getHealthBadgeColor } from '@/lib/predictions';
 import {
-    ArrowLeft, Search, Filter, CheckCircle, Clock,
-    Download, Brain, AlertTriangle, MessageSquare, X
+    ArrowLeft, Search, CheckCircle, Clock,
+    Download, Brain, AlertTriangle, MessageSquare, X, Users, Sparkles, Calendar
 } from 'lucide-react';
 
 export default function RegistrationManagementPage() {
     const params = useParams();
-    const router = useRouter();
     const conferenceId = params.id as string;
 
     const [loading, setLoading] = useState(true);
@@ -194,122 +193,146 @@ export default function RegistrationManagementPage() {
     if (loading) return <div className="p-8 text-center">Loading...</div>;
 
     return (
-        <DashboardLayout userRole={userRole}>
-            <div className="space-y-6">
-                {/* Header */}
-                <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                        <Link href={`/dashboard/conferences/${conferenceId}`} className="btn btn-secondary btn-sm">
-                            <ArrowLeft size={16} /> Back
-                        </Link>
-                        <div>
-                            <h1 className="text-2xl font-black text-secondary-900">Registration Management</h1>
-                            <p className="text-secondary-500">{conference?.title}</p>
-                        </div>
-                    </div>
+        <ConferenceShell
+            userRole={userRole}
+            title="Registration Follow-ups"
+            subtitle={`Manage attendee conversations, follow-up pressure, and event-day readiness for ${conference?.title || 'this conference'} without switching into CRM.`}
+            badge="Registrant workspace"
+            actions={
+                <div className="flex flex-wrap items-center gap-2">
+                    <Link href={`/dashboard/conferences/${conferenceId}`} className="btn btn-secondary btn-sm">
+                        <ArrowLeft size={16} /> Back
+                    </Link>
                     <button onClick={exportData} className="btn btn-secondary flex items-center gap-2">
                         <Download size={16} /> Export CSV
                     </button>
                 </div>
-
-                {/* Filters */}
-                <div className="card-premium p-4 flex flex-wrap gap-4 items-center">
-                    <div className="relative flex-1 min-w-[200px]">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-secondary-400" size={18} />
-                        <input
-                            type="text"
-                            placeholder="Search attendees..."
-                            className="input pl-10 w-full"
-                            value={searchTerm}
-                            onChange={e => setSearchTerm(e.target.value)}
-                        />
+            }
+            stats={
+                <div className="grid grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+                    <div className="rounded-[1.5rem] border border-white/80 bg-white/80 p-5 shadow-sm backdrop-blur">
+                        <div className="flex items-center gap-2 text-slate-500 text-sm"><Users size={16} /> Total Registrations</div>
+                        <p className="mt-3 text-3xl font-black text-slate-950">{registrations.length}</p>
                     </div>
-                    <select
-                        className="input"
-                        value={statusFilter}
-                        onChange={e => setStatusFilter(e.target.value)}
-                    >
-                        <option value="all">All Statuses</option>
-                        <option value="REGISTERED">Registered</option>
-                        <option value="CHECKED_IN">Checked In</option>
-                        <option value="CANCELLED">Cancelled</option>
-                    </select>
-                    <select
-                        className="input"
-                        value={ticketFilter}
-                        onChange={e => setTicketFilter(e.target.value)}
-                    >
-                        <option value="all">All Ticket Types</option>
-                        {conference?.ticketTypes.map((t: any) => (
-                            <option key={t.id} value={t.id}>{t.name}</option>
-                        ))}
-                    </select>
-                </div>
-
-                {/* Stats */}
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                    <div className="bg-primary-50 p-4 rounded-xl border border-primary-100">
-                        <p className="text-primary-600 text-sm font-bold uppercase">Total Registrations</p>
-                        <p className="text-3xl font-black text-secondary-900">{registrations.length}</p>
-                    </div>
-                    <div className="bg-success-50 p-4 rounded-xl border border-success-100">
-                        <p className="text-success-600 text-sm font-bold uppercase">Checked In</p>
-                        <p className="text-3xl font-black text-secondary-900">
+                    <div className="rounded-[1.5rem] border border-emerald-200 bg-emerald-50/80 p-5 shadow-sm">
+                        <div className="flex items-center gap-2 text-emerald-700 text-sm"><CheckCircle size={16} /> Checked In</div>
+                        <p className="mt-3 text-3xl font-black text-emerald-900">
                             {registrations.filter(r => r.status === 'CHECKED_IN').length}
                         </p>
                     </div>
-                    <div className="bg-purple-50 p-4 rounded-xl border border-purple-100">
-                        <p className="text-purple-600 text-sm font-bold uppercase">Total Revenue</p>
-                        <p className="text-3xl font-black text-secondary-900">
-                            {/* Assuming mostly consistent currency for simplicity in dashboard total */}
+                    <div className="rounded-[1.5rem] border border-amber-200 bg-amber-50/80 p-5 shadow-sm">
+                        <div className="flex items-center gap-2 text-amber-700 text-sm"><Clock size={16} /> Pending Check-in</div>
+                        <p className="mt-3 text-3xl font-black text-amber-900">
+                            {registrations.filter(r => r.status === 'REGISTERED').length}
+                        </p>
+                    </div>
+                    <div className="rounded-[1.5rem] border border-purple-200 bg-purple-50/80 p-5 shadow-sm">
+                        <div className="flex items-center gap-2 text-purple-700 text-sm"><Calendar size={16} /> Revenue</div>
+                        <p className="mt-3 text-3xl font-black text-purple-900">
                             {registrations.reduce((acc, r) => acc + r.amountPaid, 0).toLocaleString()}
                         </p>
                     </div>
-                    <div className="bg-amber-50 p-4 rounded-xl border border-amber-100">
-                        <p className="text-amber-600 text-sm font-bold uppercase">Pending Follow-ups</p>
-                        <p className="text-3xl font-black text-secondary-900">
+                    <div className="rounded-[1.5rem] border border-sky-200 bg-sky-50/80 p-5 shadow-sm">
+                        <div className="flex items-center gap-2 text-sky-700 text-sm"><Sparkles size={16} /> Pending Follow-ups</div>
+                        <p className="mt-3 text-3xl font-black text-sky-900">
                             {registrations.reduce((acc, r) => acc + (r.followup?.pendingFollowUpCount || 0), 0)}
                         </p>
                     </div>
                 </div>
+            }
+        >
+            <div className="space-y-6">
+                <div className="rounded-[1.75rem] border border-slate-200 bg-white/90 p-5 shadow-[0_16px_50px_rgba(15,23,42,0.06)] backdrop-blur">
+                    <div className="grid grid-cols-1 xl:grid-cols-12 gap-4 items-end">
+                        <div className="xl:col-span-6">
+                            <label className="text-[11px] font-black uppercase tracking-[0.22em] text-slate-500">Search Attendees</label>
+                            <div className="relative mt-2">
+                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                                <input
+                                    type="text"
+                                    placeholder="Search by attendee, email, or organization..."
+                                    className="input h-12 pl-10 w-full rounded-2xl border-slate-200 bg-slate-50/70"
+                                    value={searchTerm}
+                                    onChange={e => setSearchTerm(e.target.value)}
+                                />
+                            </div>
+                        </div>
+                        <div className="xl:col-span-3">
+                            <label className="text-[11px] font-black uppercase tracking-[0.22em] text-slate-500">Registration Status</label>
+                            <select
+                                className="input mt-2 h-12 w-full rounded-2xl border-slate-200 bg-slate-50/70"
+                                value={statusFilter}
+                                onChange={e => setStatusFilter(e.target.value)}
+                            >
+                                <option value="all">All Statuses</option>
+                                <option value="REGISTERED">Registered</option>
+                                <option value="CHECKED_IN">Checked In</option>
+                                <option value="CANCELLED">Cancelled</option>
+                            </select>
+                        </div>
+                        <div className="xl:col-span-3">
+                            <label className="text-[11px] font-black uppercase tracking-[0.22em] text-slate-500">Ticket Type</label>
+                            <select
+                                className="input mt-2 h-12 w-full rounded-2xl border-slate-200 bg-slate-50/70"
+                                value={ticketFilter}
+                                onChange={e => setTicketFilter(e.target.value)}
+                            >
+                                <option value="all">All Ticket Types</option>
+                                {conference?.ticketTypes.map((t: any) => (
+                                    <option key={t.id} value={t.id}>{t.name}</option>
+                                ))}
+                            </select>
+                        </div>
+                    </div>
+                </div>
 
                 {/* Table */}
-                <div className="card-premium overflow-hidden">
-                    <table className="w-full">
-                        <thead className="bg-secondary-50 border-b border-secondary-200">
+                <div className="overflow-hidden rounded-[1.75rem] border border-slate-200 bg-white shadow-[0_16px_50px_rgba(15,23,42,0.06)]">
+                    <div className="flex items-center justify-between gap-4 border-b border-slate-200 bg-[linear-gradient(135deg,_rgba(248,250,252,0.95),_rgba(240,249,255,0.85))] px-5 py-4">
+                        <div>
+                            <h3 className="text-lg font-black text-slate-900">Attendee Queue</h3>
+                            <p className="text-sm text-slate-500">Review readiness and follow-up state without leaving the conference workspace.</p>
+                        </div>
+                        <div className="rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700">
+                            {filteredRegs.length} in view
+                        </div>
+                    </div>
+                    <div className="overflow-x-auto">
+                    <table className="w-full min-w-[900px]">
+                        <thead className="bg-slate-50/90 border-b border-slate-200">
                             <tr>
-                                <th className="text-left p-4 text-xs font-bold uppercase text-secondary-500">Attendee</th>
-                                <th className="text-left p-4 text-xs font-bold uppercase text-secondary-500">Ticket Type</th>
-                                <th className="text-left p-4 text-xs font-bold uppercase text-secondary-500">Status</th>
-                                <th className="text-left p-4 text-xs font-bold uppercase text-secondary-500">Date</th>
-                                <th className="text-left p-4 text-xs font-bold uppercase text-secondary-500">Follow-up</th>
-                                <th className="text-right p-4 text-xs font-bold uppercase text-secondary-500">Action</th>
+                                <th className="text-left p-4 text-xs font-bold uppercase tracking-[0.18em] text-slate-500">Attendee</th>
+                                <th className="text-left p-4 text-xs font-bold uppercase tracking-[0.18em] text-slate-500">Ticket Type</th>
+                                <th className="text-left p-4 text-xs font-bold uppercase tracking-[0.18em] text-slate-500">Status</th>
+                                <th className="text-left p-4 text-xs font-bold uppercase tracking-[0.18em] text-slate-500">Date</th>
+                                <th className="text-left p-4 text-xs font-bold uppercase tracking-[0.18em] text-slate-500">Follow-up</th>
+                                <th className="text-right p-4 text-xs font-bold uppercase tracking-[0.18em] text-slate-500">Action</th>
                             </tr>
                         </thead>
                         <tbody>
                             {filteredRegs.length === 0 ? (
                                 <tr>
-                                    <td colSpan={6} className="p-8 text-center text-secondary-500">No registrations found.</td>
+                                    <td colSpan={6} className="p-10 text-center text-slate-500">No registrations found.</td>
                                 </tr>
                             ) : (
                                 filteredRegs.map(reg => (
-                                    <tr key={reg.id} className="border-b border-secondary-100 hover:bg-secondary-50">
+                                    <tr key={reg.id} className="border-b border-slate-100 transition-colors hover:bg-slate-50/70">
                                         <td className="p-4">
                                             <div className="flex items-center gap-3">
-                                                <div className="w-10 h-10 rounded-full bg-primary-100 text-primary-600 flex items-center justify-center font-bold">
+                                                <div className="w-10 h-10 rounded-full bg-sky-100 text-sky-700 flex items-center justify-center font-bold">
                                                     {reg.name.charAt(0)}
                                                 </div>
                                                 <div>
-                                                    <p className="font-bold text-secondary-900">{reg.name}</p>
-                                                    <p className="text-xs text-secondary-500">{reg.email}</p>
+                                                    <p className="font-bold text-slate-900">{reg.name}</p>
+                                                    <p className="text-xs text-slate-500">{reg.email}</p>
                                                     {reg.organization && (
-                                                        <p className="text-xs text-secondary-400">{reg.organization}</p>
+                                                        <p className="text-xs text-slate-400">{reg.organization}</p>
                                                     )}
                                                 </div>
                                             </div>
                                         </td>
                                         <td className="p-4">
-                                            <span className="bg-secondary-100 text-secondary-700 px-2 py-1 rounded text-xs font-medium">
+                                            <span className="bg-slate-100 text-slate-700 px-3 py-1 rounded-full text-xs font-medium">
                                                 {reg.ticketType.name}
                                             </span>
                                         </td>
@@ -324,9 +347,9 @@ export default function RegistrationManagementPage() {
                                                 </span>
                                             )}
                                         </td>
-                                        <td className="p-4 text-sm text-secondary-600">
+                                        <td className="p-4 text-sm text-slate-600">
                                             {new Date(reg.createdAt).toLocaleDateString()}
-                                            <div className="text-xs text-secondary-400">
+                                            <div className="text-xs text-slate-400">
                                                 {new Date(reg.createdAt).toLocaleTimeString()}
                                             </div>
                                         </td>
@@ -337,7 +360,7 @@ export default function RegistrationManagementPage() {
                                                         {reg.followup.latestPrediction.customerHealth}
                                                     </span>
                                                     {reg.followup.nextFollowUpDate && (
-                                                        <div className="text-[11px] text-secondary-500">
+                                                        <div className="text-[11px] text-slate-500">
                                                             Next: {new Date(reg.followup.nextFollowUpDate).toLocaleDateString()}
                                                         </div>
                                                     )}
@@ -348,7 +371,7 @@ export default function RegistrationManagementPage() {
                                                     )}
                                                 </div>
                                             ) : (
-                                                <span className="text-xs text-secondary-400">No follow-up yet</span>
+                                                <span className="text-xs text-slate-400">No follow-up yet</span>
                                             )}
                                         </td>
                                         <td className="p-4 text-right">
@@ -374,6 +397,7 @@ export default function RegistrationManagementPage() {
                             )}
                         </tbody>
                     </table>
+                    </div>
                 </div>
 
                 {selectedRegistration && (
@@ -532,6 +556,6 @@ export default function RegistrationManagementPage() {
                     </div>
                 )}
             </div>
-        </DashboardLayout>
+        </ConferenceShell>
     );
 }

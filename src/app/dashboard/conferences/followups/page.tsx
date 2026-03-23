@@ -2,9 +2,8 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
-import ConferenceModuleNav from '@/components/dashboard/conferences/ConferenceModuleNav';
-import { AlertCircle, Calendar, ChevronRight, MessageSquare } from 'lucide-react';
+import ConferenceShell from '@/components/dashboard/conferences/ConferenceShell';
+import { AlertCircle, Calendar, ChevronRight, AlarmClock, Sparkles, Activity } from 'lucide-react';
 import { getHealthBadgeColor } from '@/lib/predictions';
 
 export default function ConferenceFollowupsPage() {
@@ -45,21 +44,26 @@ export default function ConferenceFollowupsPage() {
         tone: 'danger' | 'primary' | 'success';
     }) => {
         const toneClasses = {
-            danger: 'bg-red-50 border-red-200 text-red-900',
-            primary: 'bg-blue-50 border-blue-200 text-blue-900',
-            success: 'bg-emerald-50 border-emerald-200 text-emerald-900',
+            danger: 'border-red-200 bg-[linear-gradient(180deg,_rgba(254,242,242,0.96),_rgba(255,255,255,0.95))] text-red-900',
+            primary: 'border-blue-200 bg-[linear-gradient(180deg,_rgba(239,246,255,0.96),_rgba(255,255,255,0.95))] text-blue-900',
+            success: 'border-emerald-200 bg-[linear-gradient(180deg,_rgba(236,253,245,0.96),_rgba(255,255,255,0.95))] text-emerald-900',
         };
 
         return (
-            <div className={`rounded-3xl border p-5 ${toneClasses[tone]}`}>
-                <div className="mb-4">
-                    <div className="text-[11px] font-black uppercase tracking-[0.2em]">{title}</div>
-                    <div className="text-3xl font-black mt-2">{items.length}</div>
+            <section className={`rounded-[1.75rem] border p-5 shadow-[0_16px_50px_rgba(15,23,42,0.05)] ${toneClasses[tone]}`}>
+                <div className="mb-4 flex items-end justify-between gap-4">
+                    <div>
+                        <div className="text-[11px] font-black uppercase tracking-[0.2em]">{title}</div>
+                        <div className="mt-2 text-3xl font-black">{items.length}</div>
+                    </div>
+                    <div className="text-xs font-semibold opacity-80">
+                        {tone === 'danger' ? 'Needs attention first' : tone === 'primary' ? 'Do today' : 'Keep warm'}
+                    </div>
                 </div>
 
                 <div className="space-y-3">
                     {items.length === 0 ? (
-                        <div className="rounded-2xl bg-white/80 border border-white p-4 text-xs text-secondary-500">
+                        <div className="rounded-2xl border border-white bg-white/80 p-4 text-xs text-slate-500">
                             No items in this queue.
                         </div>
                     ) : (
@@ -69,103 +73,102 @@ export default function ConferenceFollowupsPage() {
                                 href={item.type === 'CONFERENCE'
                                     ? `/dashboard/conferences/${item.conferenceId}`
                                     : `/dashboard/conferences/${item.conferenceId}/registrations`}
-                                className="block rounded-2xl bg-white/85 border border-white p-4 hover:shadow-lg transition-all"
+                                className="block rounded-2xl border border-white bg-white/90 p-4 transition-all hover:-translate-y-0.5 hover:shadow-lg"
                             >
                                 <div className="flex items-start justify-between gap-3">
                                     <div className="min-w-0">
-                                        <div className="text-[10px] font-black uppercase tracking-[0.18em] text-secondary-400">
+                                        <div className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-400">
                                             {item.type === 'CONFERENCE' ? 'Conference Follow-up' : 'Registrant Follow-up'}
                                         </div>
-                                        <div className="font-bold text-secondary-900 truncate">{item.subject}</div>
-                                        <div className="text-xs text-secondary-600 mt-1 truncate">{item.conferenceTitle}</div>
+                                        <div className="truncate font-bold text-slate-900">{item.subject}</div>
+                                        <div className="mt-1 truncate text-xs text-slate-600">{item.conferenceTitle}</div>
                                         {item.attendeeName && (
-                                            <div className="text-xs text-secondary-500 mt-1">
+                                            <div className="mt-1 text-xs text-slate-500">
                                                 Lead: {item.attendeeName}
                                             </div>
                                         )}
-                                        <div className="text-xs text-secondary-500 mt-2">
+                                        <div className="mt-2 text-xs text-slate-500">
                                             Due: {new Date(item.nextFollowUpDate).toLocaleString()}
                                         </div>
                                     </div>
-                                    <div className="flex flex-col items-end gap-2 shrink-0">
+                                    <div className="flex shrink-0 flex-col items-end gap-2">
                                         {item.customerHealth && (
-                                            <span className={`inline-flex px-2 py-1 rounded-full text-[10px] font-bold border ${getHealthBadgeColor(item.customerHealth)}`}>
+                                            <span className={`inline-flex rounded-full border px-2 py-1 text-[10px] font-bold ${getHealthBadgeColor(item.customerHealth)}`}>
                                                 {item.customerHealth}
                                             </span>
                                         )}
-                                        <ChevronRight size={16} className="text-secondary-400" />
+                                        <ChevronRight size={16} className="text-slate-400" />
                                     </div>
                                 </div>
                             </Link>
                         ))
                     )}
                 </div>
-            </div>
+            </section>
         );
     };
 
     return (
-        <DashboardLayout userRole={userRole}>
-            <div className="space-y-6">
-                <div>
-                    <h1 className="text-3xl font-black text-secondary-900">Conference Follow-up Matrix</h1>
-                    <p className="text-secondary-500 mt-1">
-                        A focused queue for conference-level and registration-level follow-up work.
-                    </p>
-                </div>
-
-                <ConferenceModuleNav />
-
+        <ConferenceShell
+            userRole={userRole}
+            title="Conference Follow-ups"
+            subtitle="Work the conference follow-up pipeline from one focused action queue. This separates urgent execution from browsing so the day’s next moves are easier to spot."
+            badge="Follow-up matrix"
+            stats={
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                    <div className="card-premium p-5">
-                        <p className="text-sm text-secondary-500">Total Items</p>
-                        <p className="text-3xl font-black text-secondary-900 mt-2">{matrix?.meta?.total || 0}</p>
+                    <div className="rounded-[1.5rem] border border-white/80 bg-white/80 p-5 shadow-sm backdrop-blur">
+                        <div className="flex items-center gap-2 text-slate-500 text-sm"><Activity size={16} /> Total Items</div>
+                        <p className="text-3xl font-black text-slate-950 mt-3">{matrix?.meta?.total || 0}</p>
                     </div>
-                    <div className="card-premium p-5 border border-red-200 bg-red-50/60">
-                        <p className="text-sm text-red-700">Overdue</p>
-                        <p className="text-3xl font-black text-red-900 mt-2">{matrix?.missed.length || 0}</p>
+                    <div className="rounded-[1.5rem] border border-red-200 bg-red-50/80 p-5 shadow-sm">
+                        <div className="flex items-center gap-2 text-red-700 text-sm"><AlarmClock size={16} /> Overdue</div>
+                        <p className="text-3xl font-black text-red-900 mt-3">{matrix?.missed.length || 0}</p>
                     </div>
-                    <div className="card-premium p-5 border border-blue-200 bg-blue-50/60">
-                        <p className="text-sm text-blue-700">Due Today</p>
-                        <p className="text-3xl font-black text-blue-900 mt-2">{matrix?.today.length || 0}</p>
+                    <div className="rounded-[1.5rem] border border-blue-200 bg-blue-50/80 p-5 shadow-sm">
+                        <div className="flex items-center gap-2 text-blue-700 text-sm"><Calendar size={16} /> Due Today</div>
+                        <p className="text-3xl font-black text-blue-900 mt-3">{matrix?.today.length || 0}</p>
                     </div>
-                    <div className="card-premium p-5 border border-emerald-200 bg-emerald-50/60">
-                        <p className="text-sm text-emerald-700">Upcoming</p>
-                        <p className="text-3xl font-black text-emerald-900 mt-2">{matrix?.upcoming.length || 0}</p>
+                    <div className="rounded-[1.5rem] border border-emerald-200 bg-emerald-50/80 p-5 shadow-sm">
+                        <div className="flex items-center gap-2 text-emerald-700 text-sm"><Sparkles size={16} /> Upcoming</div>
+                        <p className="text-3xl font-black text-emerald-900 mt-3">{matrix?.upcoming.length || 0}</p>
                     </div>
                 </div>
-
+            }
+        >
+            <div className="space-y-6">
                 {loading ? (
-                    <div className="card-premium p-12 text-center text-secondary-500">Loading follow-up matrix...</div>
+                    <div className="rounded-[1.75rem] border border-slate-200 bg-white p-12 text-center text-slate-500 shadow-[0_16px_50px_rgba(15,23,42,0.06)]">
+                        Loading follow-up matrix...
+                    </div>
                 ) : (
-                    <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
+                    <div className="grid grid-cols-1 xl:grid-cols-3 gap-5">
                         <MatrixColumn title="Overdue Horizon" items={matrix?.missed || []} tone="danger" />
                         <MatrixColumn title="Today Queue" items={matrix?.today || []} tone="primary" />
                         <MatrixColumn title="Upcoming Flow" items={matrix?.upcoming || []} tone="success" />
                     </div>
                 )}
 
-                <div className="card-premium p-6">
-                    <div className="flex items-center gap-2 text-secondary-900">
-                        <AlertCircle size={18} className="text-primary-600" />
-                        <h2 className="text-lg font-black">Navigation Logic</h2>
+                <div className="rounded-[1.75rem] border border-slate-200 bg-white p-6 shadow-[0_16px_50px_rgba(15,23,42,0.06)]">
+                    <div className="flex items-center gap-2 text-slate-900">
+                        <AlertCircle size={18} className="text-sky-600" />
+                        <h2 className="text-lg font-black">How This Queue Works</h2>
                     </div>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4 text-sm text-secondary-600">
-                        <div className="rounded-2xl bg-secondary-50 p-4">
-                            <div className="font-bold text-secondary-900">Conference item</div>
-                            <div className="mt-1">Opens the conference detail page for conference-level actions.</div>
+                    <div className="mt-4 grid grid-cols-1 gap-4 text-sm text-slate-600 md:grid-cols-3">
+                        <div className="rounded-2xl border border-slate-100 bg-slate-50/80 p-4">
+                            <div className="font-bold text-slate-900">Conference item</div>
+                            <div className="mt-1">Opens the conference detail page for conference-level follow-up and planning actions.</div>
                         </div>
-                        <div className="rounded-2xl bg-secondary-50 p-4">
-                            <div className="font-bold text-secondary-900">Registrant item</div>
-                            <div className="mt-1">Opens registrations for that conference so you can continue lead follow-up.</div>
+                        <div className="rounded-2xl border border-slate-100 bg-slate-50/80 p-4">
+                            <div className="font-bold text-slate-900">Registrant item</div>
+                            <div className="mt-1">Opens the registrations workspace so you can continue lead follow-up without leaving the conference module.</div>
                         </div>
-                        <div className="rounded-2xl bg-secondary-50 p-4">
-                            <div className="font-bold text-secondary-900">Clear separation</div>
-                            <div className="mt-1">This page is only for action queues, not for browsing all conference cards.</div>
+                        <div className="rounded-2xl border border-slate-100 bg-slate-50/80 p-4">
+                            <div className="font-bold text-slate-900">Clear separation</div>
+                            <div className="mt-1">This page is action-first by design, while `/all` stays focused on browsing and portfolio management.</div>
                         </div>
                     </div>
                 </div>
             </div>
-        </DashboardLayout>
+        </ConferenceShell>
     );
 }

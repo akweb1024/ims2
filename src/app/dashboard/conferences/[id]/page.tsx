@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
+import ConferenceShell from '@/components/dashboard/conferences/ConferenceShell';
 import ConversationChecklist from '@/components/dashboard/ConversationChecklist';
 import { getHealthBadgeColor } from '@/lib/predictions';
 import {
@@ -352,62 +352,104 @@ export default function ConferenceDetailPage() {
     if (!conference) return <div className="p-8 text-center">Conference not found</div>;
 
     return (
-        <DashboardLayout userRole={userRole}>
-            <div className="space-y-6">
-                {/* Header */}
-                <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                        <Link href="/dashboard/conferences" className="btn btn-secondary btn-sm">
-                            <ArrowLeft size={16} /> Back
-                        </Link>
-                        <div>
-                            <h1 className="text-3xl font-black text-secondary-900">{conference.title}</h1>
-                            <p className="text-secondary-500">Conference Management</p>
-                        </div>
-                    </div>
-                    <div className="flex gap-2">
-                        <button
-                            onClick={openConferenceFollowups}
+        <ConferenceShell
+            userRole={userRole}
+            title={conference.title}
+            subtitle="Run the conference from one workspace: registrations, papers, committee work, publishing readiness, and conference-level follow-up all stay connected here."
+            badge="Conference command center"
+            actions={
+                <div className="flex flex-wrap gap-2">
+                    <Link href="/dashboard/conferences/all" className="btn btn-secondary btn-sm">
+                        <ArrowLeft size={16} /> Back
+                    </Link>
+                    <button
+                        onClick={openConferenceFollowups}
+                        className="btn btn-secondary flex items-center gap-2"
+                    >
+                        <MessageSquare size={16} /> Conference Follow-up
+                    </button>
+                    <Link
+                        href={`/dashboard/conferences/${conferenceId}/submit`}
+                        className="btn btn-primary flex items-center gap-2"
+                    >
+                        <FileText size={16} /> Submit Paper
+                    </Link>
+                    <Link
+                        href={`/dashboard/conferences/${conferenceId}/registrations`}
+                        className="btn btn-secondary flex items-center gap-2"
+                    >
+                        <Users size={16} /> Registrations
+                    </Link>
+                    {['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'REVIEWER'].includes(userRole) && (
+                        <Link
+                            href={`/dashboard/conferences/${conferenceId}/papers`}
                             className="btn btn-secondary flex items-center gap-2"
                         >
-                            <MessageSquare size={16} /> Conference Follow-up
+                            <Users size={16} /> Manage Papers
+                        </Link>
+                    )}
+                    {canEdit && !editMode && (
+                        <button onClick={() => setEditMode(true)} className="btn btn-primary">
+                            <Edit2 size={16} /> Edit
                         </button>
-                        <Link
-                            href={`/dashboard/conferences/${conferenceId}/submit`}
-                            className="btn btn-primary flex items-center gap-2"
-                        >
-                            <FileText size={16} /> Submit Paper
-                        </Link>
-                        <Link
-                            href={`/dashboard/conferences/${conferenceId}/registrations`}
-                            className="btn btn-secondary flex items-center gap-2"
-                        >
-                            <Users size={16} /> Registrations
-                        </Link>
-                        {['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'REVIEWER'].includes(userRole) && (
-                            <Link
-                                href={`/dashboard/conferences/${conferenceId}/papers`}
-                                className="btn btn-secondary flex items-center gap-2"
-                            >
-                                <Users size={16} /> Manage Papers
-                            </Link>
-                        )}
-
-                        {canEdit && !editMode && (
-                            <button onClick={() => setEditMode(true)} className="btn btn-primary">
-                                <Edit2 size={16} /> Edit
+                    )}
+                    {editMode && (
+                        <>
+                            <button onClick={handleUpdate} className="btn btn-success">
+                                <Save size={16} /> Save
                             </button>
-                        )}
-                        {editMode && (
-                            <>
-                                <button onClick={handleUpdate} className="btn btn-success">
-                                    <Save size={16} /> Save
-                                </button>
-                                <button onClick={() => { setEditMode(false); setEditData(conference); }} className="btn btn-secondary">
-                                    <X size={16} /> Cancel
-                                </button>
-                            </>
-                        )}
+                            <button onClick={() => { setEditMode(false); setEditData(conference); }} className="btn btn-secondary">
+                                <X size={16} /> Cancel
+                            </button>
+                        </>
+                    )}
+                </div>
+            }
+            stats={
+                <div className="grid grid-cols-2 xl:grid-cols-5 gap-4">
+                    <div className="rounded-[1.5rem] border border-white/80 bg-white/80 p-5 shadow-sm backdrop-blur">
+                        <div className="text-sm text-slate-500">Status</div>
+                        <p className="mt-3 text-3xl font-black text-slate-950">{conference.status}</p>
+                    </div>
+                    <div className="rounded-[1.5rem] border border-white/80 bg-white/80 p-5 shadow-sm backdrop-blur">
+                        <div className="text-sm text-slate-500">Registrations</div>
+                        <p className="mt-3 text-3xl font-black text-slate-950">{conference._count.registrations}</p>
+                    </div>
+                    <div className="rounded-[1.5rem] border border-white/80 bg-white/80 p-5 shadow-sm backdrop-blur">
+                        <div className="text-sm text-slate-500">Papers</div>
+                        <p className="mt-3 text-3xl font-black text-slate-950">{conference._count.papers}</p>
+                    </div>
+                    <div className="rounded-[1.5rem] border border-amber-200 bg-amber-50/80 p-5 shadow-sm">
+                        <div className="text-sm text-amber-700">Pending Follow-ups</div>
+                        <p className="mt-3 text-3xl font-black text-amber-900">{followupDetails?.summary?.pendingFollowUps || 0}</p>
+                    </div>
+                    <div className="rounded-[1.5rem] border border-red-200 bg-red-50/80 p-5 shadow-sm">
+                        <div className="text-sm text-red-700">Overdue</div>
+                        <p className="mt-3 text-3xl font-black text-red-900">{followupDetails?.summary?.overdueFollowUps || 0}</p>
+                    </div>
+                </div>
+            }
+        >
+            <div className="space-y-6">
+                <div className="rounded-[1.75rem] border border-slate-200 bg-white/90 p-5 shadow-[0_16px_50px_rgba(15,23,42,0.06)] backdrop-blur">
+                    <div className="flex flex-wrap items-center justify-between gap-4">
+                        <div>
+                            <div className="inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-[11px] font-black uppercase tracking-[0.2em] text-slate-600">
+                                {conference.mode.replace('_', ' ')} conference
+                            </div>
+                            <div className="mt-3 text-sm text-slate-500">
+                                {new Date(conference.startDate).toLocaleDateString()} to {new Date(conference.endDate).toLocaleDateString()}
+                                {conference.venue ? ` • ${conference.venue}` : ''}
+                            </div>
+                        </div>
+                        <div className="flex flex-wrap gap-2 text-sm text-slate-500">
+                            {conference.organizer ? <span>Organizer: {conference.organizer}</span> : null}
+                            {conference.website ? (
+                                <a href={conference.website} target="_blank" rel="noreferrer" className="font-semibold text-sky-700">
+                                    Visit website
+                                </a>
+                            ) : null}
+                        </div>
                     </div>
                 </div>
 
@@ -415,7 +457,7 @@ export default function ConferenceDetailPage() {
 
                 {/* Registration CTA (Public) */}
                 {conference.status === 'PUBLISHED' && (
-                    <div className="card-premium p-8 bg-gradient-to-r from-primary-600 to-purple-600 text-white shadow-xl shadow-primary-200">
+                    <div className="rounded-[1.75rem] border border-sky-200 bg-[linear-gradient(135deg,_#0284c7_0%,_#2563eb_52%,_#0f172a_100%)] p-8 text-white shadow-xl shadow-sky-200/50">
                         <div className="flex flex-col md:flex-row items-center justify-between gap-6">
                             <div>
                                 <h2 className="text-3xl font-black mb-2">Registration is Open!</h2>
@@ -432,7 +474,7 @@ export default function ConferenceDetailPage() {
                 )}
 
                 {/* Status Banner */}
-                <div className={`p-4 rounded-2xl ${conference.status === 'PUBLISHED' ? 'bg-success-50 border border-success-200' :
+                <div className={`rounded-[1.75rem] p-5 ${conference.status === 'PUBLISHED' ? 'bg-success-50 border border-success-200' :
                     conference.status === 'DRAFT' ? 'bg-warning-50 border border-warning-200' :
                         'bg-primary-50 border border-primary-200'
                     }`}>
@@ -501,7 +543,7 @@ export default function ConferenceDetailPage() {
                     </div>
                 </div>
 
-                <div className="card-premium p-6">
+                <div className="rounded-[1.75rem] border border-slate-200 bg-white p-6 shadow-[0_16px_50px_rgba(15,23,42,0.06)]">
                     <div className="flex items-start justify-between gap-4">
                         <div>
                             <div className="flex items-center gap-2 text-secondary-900">
@@ -521,20 +563,20 @@ export default function ConferenceDetailPage() {
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-5">
-                        <div className="rounded-2xl bg-secondary-50 p-4">
-                            <div className="text-sm text-secondary-500">Total Follow-ups</div>
-                            <div className="text-3xl font-black text-secondary-900 mt-2">{followupDetails?.summary?.totalFollowUps || 0}</div>
+                        <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-4">
+                            <div className="text-sm text-slate-500">Total Follow-ups</div>
+                            <div className="text-3xl font-black text-slate-900 mt-2">{followupDetails?.summary?.totalFollowUps || 0}</div>
                         </div>
-                        <div className="rounded-2xl bg-amber-50 p-4">
+                        <div className="rounded-2xl border border-amber-200 bg-amber-50/80 p-4">
                             <div className="text-sm text-amber-700">Pending</div>
                             <div className="text-3xl font-black text-amber-900 mt-2">{followupDetails?.summary?.pendingFollowUps || 0}</div>
                         </div>
-                        <div className="rounded-2xl bg-red-50 p-4">
+                        <div className="rounded-2xl border border-red-200 bg-red-50/80 p-4">
                             <div className="text-sm text-red-700">Overdue</div>
                             <div className="text-3xl font-black text-red-900 mt-2">{followupDetails?.summary?.overdueFollowUps || 0}</div>
                         </div>
-                        <div className="rounded-2xl bg-primary-50 p-4">
-                            <div className="text-sm text-primary-700">Conference Health</div>
+                        <div className="rounded-2xl border border-sky-200 bg-sky-50/80 p-4">
+                            <div className="text-sm text-sky-700">Conference Health</div>
                             <div className="mt-2">
                                 {followupDetails?.summary?.latestPrediction?.customerHealth ? (
                                     <span className={`inline-flex px-3 py-1 rounded-full text-xs font-bold border ${getHealthBadgeColor(followupDetails.summary.latestPrediction.customerHealth)}`}>
@@ -549,12 +591,13 @@ export default function ConferenceDetailPage() {
                 </div>
 
                 {/* Tabs */}
-                <div className="flex gap-2 border-b border-secondary-200">
+                <div className="overflow-x-auto rounded-[1.5rem] border border-slate-200 bg-white/90 p-2 shadow-[0_16px_40px_rgba(15,23,42,0.05)]">
+                    <div className="flex min-w-max gap-2">
                     <button
                         onClick={() => setActiveTab('overview')}
-                        className={`px-6 py-3 font-bold transition-colors ${activeTab === 'overview'
-                            ? 'text-primary-600 border-b-2 border-primary-600'
-                            : 'text-secondary-500 hover:text-secondary-900'
+                        className={`inline-flex items-center rounded-2xl px-5 py-3 font-bold transition-all ${activeTab === 'overview'
+                            ? 'bg-sky-600 text-white shadow-lg shadow-sky-200'
+                            : 'text-secondary-500 hover:bg-slate-50 hover:text-secondary-900'
                             }`}
                     >
                         <Settings size={16} className="inline mr-2" />
@@ -562,9 +605,9 @@ export default function ConferenceDetailPage() {
                     </button>
                     <button
                         onClick={() => setActiveTab('tickets')}
-                        className={`px-6 py-3 font-bold transition-colors ${activeTab === 'tickets'
-                            ? 'text-primary-600 border-b-2 border-primary-600'
-                            : 'text-secondary-500 hover:text-secondary-900'
+                        className={`inline-flex items-center rounded-2xl px-5 py-3 font-bold transition-all ${activeTab === 'tickets'
+                            ? 'bg-sky-600 text-white shadow-lg shadow-sky-200'
+                            : 'text-secondary-500 hover:bg-slate-50 hover:text-secondary-900'
                             }`}
                     >
                         <Ticket size={16} className="inline mr-2" />
@@ -572,9 +615,9 @@ export default function ConferenceDetailPage() {
                     </button>
                     <button
                         onClick={() => setActiveTab('tracks')}
-                        className={`px-6 py-3 font-bold transition-colors ${activeTab === 'tracks'
-                            ? 'text-primary-600 border-b-2 border-primary-600'
-                            : 'text-secondary-500 hover:text-secondary-900'
+                        className={`inline-flex items-center rounded-2xl px-5 py-3 font-bold transition-all ${activeTab === 'tracks'
+                            ? 'bg-sky-600 text-white shadow-lg shadow-sky-200'
+                            : 'text-secondary-500 hover:bg-slate-50 hover:text-secondary-900'
                             }`}
                     >
                         <Tag size={16} className="inline mr-2" />
@@ -582,9 +625,9 @@ export default function ConferenceDetailPage() {
                     </button>
                     <button
                         onClick={() => setActiveTab('sponsors')}
-                        className={`px-6 py-3 font-bold transition-colors ${activeTab === 'sponsors'
-                            ? 'text-primary-600 border-b-2 border-primary-600'
-                            : 'text-secondary-500 hover:text-secondary-900'
+                        className={`inline-flex items-center rounded-2xl px-5 py-3 font-bold transition-all ${activeTab === 'sponsors'
+                            ? 'bg-sky-600 text-white shadow-lg shadow-sky-200'
+                            : 'text-secondary-500 hover:bg-slate-50 hover:text-secondary-900'
                             }`}
                     >
                         <Award size={16} className="inline mr-2" />
@@ -592,14 +635,15 @@ export default function ConferenceDetailPage() {
                     </button>
                     <button
                         onClick={() => setActiveTab('committee')}
-                        className={`px-6 py-3 font-bold transition-colors ${activeTab === 'committee'
-                            ? 'text-primary-600 border-b-2 border-primary-600'
-                            : 'text-secondary-500 hover:text-secondary-900'
+                        className={`inline-flex items-center rounded-2xl px-5 py-3 font-bold transition-all ${activeTab === 'committee'
+                            ? 'bg-sky-600 text-white shadow-lg shadow-sky-200'
+                            : 'text-secondary-500 hover:bg-slate-50 hover:text-secondary-900'
                             }`}
                     >
                         <Users size={16} className="inline mr-2" />
                         Committee ({committeeMembers.length || 0})
                     </button>
+                    </div>
                 </div>
 
                 {/* Tab Content */}
@@ -1285,7 +1329,7 @@ export default function ConferenceDetailPage() {
                         </div>
                     </div>
                 )}
-            </div >
-        </DashboardLayout >
+            </div>
+        </ConferenceShell>
     );
 }
