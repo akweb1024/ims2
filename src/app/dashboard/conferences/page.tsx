@@ -1,460 +1,146 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
+import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
-import {
-    Calendar, MapPin, Users, FileText, Plus, Search,
-    Filter, Eye, Edit2, Trash2, CheckCircle, Clock, X, AlertCircle, Brain
-} from 'lucide-react';
-import { getHealthBadgeColor } from '@/lib/predictions';
+import ConferenceModuleNav from '@/components/dashboard/conferences/ConferenceModuleNav';
+import { Calendar, MessageSquare, AlertCircle, ArrowRight, Plus } from 'lucide-react';
 
-export default function ConferencesPage() {
-    const router = useRouter();
-    const [conferences, setConferences] = useState<any[]>([]);
-    const [loading, setLoading] = useState(true);
+export default function ConferencesHubPage() {
     const [userRole, setUserRole] = useState('');
-    const [searchTerm, setSearchTerm] = useState('');
-    const [statusFilter, setStatusFilter] = useState('all');
-    const [modeFilter, setModeFilter] = useState('all');
-    const [showCreateModal, setShowCreateModal] = useState(false);
+    const [stats, setStats] = useState({
+        totalConferences: 0,
+        pendingFollowUps: 0,
+        overdueFollowUps: 0,
+        activeToday: 0,
+    });
 
-    const fetchConferences = useCallback(async () => {
+    const fetchStats = useCallback(async () => {
         try {
             const token = localStorage.getItem('token');
-            let url = '/api/conferences?';
+            const [conferenceRes, matrixRes] = await Promise.all([
+                fetch('/api/conferences', { headers: { Authorization: `Bearer ${token}` } }),
+                fetch('/api/conferences/follow-up-matrix', { headers: { Authorization: `Bearer ${token}` } }),
+            ]);
 
-            if (statusFilter !== 'all') url += `status=${statusFilter}&`;
-            if (modeFilter !== 'all') url += `mode=${modeFilter}&`;
+            const conferences = conferenceRes.ok ? await conferenceRes.json() : [];
+            const matrix = matrixRes.ok ? await matrixRes.json() : { missed: [], today: [], upcoming: [] };
 
-            const res = await fetch(url, {
-                headers: { 'Authorization': `Bearer ${token}` }
+            setStats({
+                totalConferences: conferences.length,
+                pendingFollowUps: [...matrix.today, ...matrix.upcoming].length,
+                overdueFollowUps: matrix.missed.length,
+                activeToday: matrix.today.length,
             });
-
-            if (res.ok) {
-                const data = await res.json();
-                setConferences(data);
-            }
         } catch (error) {
             console.error(error);
-        } finally {
-            setLoading(false);
         }
-    }, [statusFilter, modeFilter]);
+    }, []);
 
     useEffect(() => {
         const user = localStorage.getItem('user');
         if (user) setUserRole(JSON.parse(user).role);
-        fetchConferences();
-    }, [fetchConferences]);
-
-    const handleCreateConference = async (e: React.FormEvent) => {
-        e.preventDefault();
-        const form = e.target as HTMLFormElement;
-        const formData = new FormData(form);
-        const data = Object.fromEntries(formData);
-
-        try {
-            const token = localStorage.getItem('token');
-            const res = await fetch('/api/conferences', {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(data)
-            });
-
-            if (res.ok) {
-                const conference = await res.json();
-                setShowCreateModal(false);
-                router.push(`/dashboard/conferences/${conference.id}`);
-            } else {
-                const error = await res.json();
-                alert(error.error || 'Failed to create conference');
-            }
-        } catch (error) {
-            console.error(error);
-            alert('Failed to create conference');
-        }
-    };
-
-    const handleDelete = async (id: string) => {
-        if (!confirm('Are you sure you want to delete this conference?')) return;
-
-        try {
-            const token = localStorage.getItem('token');
-            const res = await fetch(`/api/conferences/${id}`, {
-                method: 'DELETE',
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-
-            if (res.ok) {
-                fetchConferences();
-            }
-        } catch (error) {
-            console.error(error);
-        }
-    };
-
-    const filteredConferences = conferences.filter(conf =>
-        conf.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        conf.description.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+        fetchStats();
+    }, [fetchStats]);
 
     const canCreate = ['SUPER_ADMIN', 'ADMIN', 'MANAGER'].includes(userRole);
-
-    const totalPendingFollowups = filteredConferences.reduce(
-        (sum, conference) => sum + (conference.followup?.pendingFollowUps || 0),
-        0
-    );
-
-    const totalOverdueFollowups = filteredConferences.reduce(
-        (sum, conference) => sum + (conference.followup?.overdueFollowUps || 0),
-        0
-    );
-
-    const getStatusBadge = (status: string) => {
-        const badges: Record<string, { bg: string; text: string; icon: any }> = {
-            DRAFT: { bg: 'bg-secondary-100', text: 'text-secondary-700', icon: Clock },
-            PUBLISHED: { bg: 'bg-success-100', text: 'text-success-700', icon: CheckCircle },
-            ONGOING: { bg: 'bg-primary-100', text: 'text-primary-700', icon: Calendar },
-            COMPLETED: { bg: 'bg-purple-100', text: 'text-purple-700', icon: CheckCircle },
-            CANCELLED: { bg: 'bg-danger-100', text: 'text-danger-700', icon: X }
-        };
-
-        const badge = badges[status] || badges.DRAFT;
-        const Icon = badge.icon;
-
-        return (
-            <span className={`px-3 py-1 rounded-full text-xs font-bold ${badge.bg} ${badge.text} flex items-center gap-1`}>
-                <Icon size={12} />
-                {status}
-            </span>
-        );
-    };
-
-    const getModeBadge = (mode: string) => {
-        const colors: Record<string, string> = {
-            IN_PERSON: 'bg-blue-100 text-blue-700',
-            VIRTUAL: 'bg-green-100 text-green-700',
-            HYBRID: 'bg-purple-100 text-purple-700'
-        };
-
-        return (
-            <span className={`px-2 py-1 rounded text-xs font-medium ${colors[mode] || colors.IN_PERSON}`}>
-                {mode.replace('_', ' ')}
-            </span>
-        );
-    };
-
-    if (loading) return <div className="p-8 text-center">Loading conferences...</div>;
 
     return (
         <DashboardLayout userRole={userRole}>
             <div className="space-y-6">
-                {/* Header */}
-                <div className="flex justify-between items-start">
+                <div className="flex items-start justify-between gap-4">
                     <div>
-                        <h1 className="text-3xl font-black text-secondary-900">Conferences & Events</h1>
-                        <p className="text-secondary-500">Manage academic conferences and workshops</p>
+                        <h1 className="text-3xl font-black text-secondary-900">Conference Hub</h1>
+                        <p className="text-secondary-500 mt-1">
+                            A cleaner workspace for conference operations, follow-ups, and execution.
+                        </p>
                     </div>
                     {canCreate && (
-                        <button
-                            onClick={() => setShowCreateModal(true)}
-                            className="btn btn-primary flex items-center gap-2"
-                        >
+                        <Link href="/dashboard/conferences/all" className="btn btn-primary flex items-center gap-2">
                             <Plus size={16} /> New Conference
-                        </button>
+                        </Link>
                     )}
                 </div>
 
-                {/* Filters */}
-                <div className="card-premium p-6">
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                        {/* Search */}
-                        <div className="md:col-span-2">
-                            <div className="relative">
-                                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-secondary-400" size={20} />
-                                <input
-                                    type="text"
-                                    placeholder="Search conferences..."
-                                    value={searchTerm}
-                                    onChange={(e) => setSearchTerm(e.target.value)}
-                                    className="input pl-10 w-full"
-                                />
-                            </div>
-                        </div>
+                <ConferenceModuleNav />
 
-                        {/* Status Filter */}
-                        <div>
-                            <select
-                                value={statusFilter}
-                                onChange={(e) => setStatusFilter(e.target.value)}
-                                className="input w-full"
-                            >
-                                <option value="all">All Status</option>
-                                <option value="DRAFT">Draft</option>
-                                <option value="PUBLISHED">Published</option>
-                                <option value="ONGOING">Ongoing</option>
-                                <option value="COMPLETED">Completed</option>
-                                <option value="CANCELLED">Cancelled</option>
-                            </select>
-                        </div>
-
-                        {/* Mode Filter */}
-                        <div>
-                            <select
-                                value={modeFilter}
-                                onChange={(e) => setModeFilter(e.target.value)}
-                                className="input w-full"
-                            >
-                                <option value="all">All Modes</option>
-                                <option value="IN_PERSON">In-Person</option>
-                                <option value="VIRTUAL">Virtual</option>
-                                <option value="HYBRID">Hybrid</option>
-                            </select>
-                        </div>
-                    </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                     <div className="card-premium p-5">
-                        <p className="text-sm font-medium text-secondary-500">Conference Pipeline</p>
-                        <p className="text-3xl font-black text-secondary-900 mt-2">{filteredConferences.length}</p>
-                        <p className="text-xs text-secondary-500 mt-1">Visible conferences in current filters</p>
+                        <p className="text-sm text-secondary-500">Total Conferences</p>
+                        <p className="text-3xl font-black text-secondary-900 mt-2">{stats.totalConferences}</p>
                     </div>
-                    <div className="card-premium p-5 border border-amber-200 bg-amber-50/60">
-                        <p className="text-sm font-medium text-amber-700">Pending Follow-ups</p>
-                        <p className="text-3xl font-black text-amber-900 mt-2">{totalPendingFollowups}</p>
-                        <p className="text-xs text-amber-700 mt-1">Scheduled conference follow-ups still open</p>
+                    <div className="card-premium p-5">
+                        <p className="text-sm text-secondary-500">Follow-ups Active</p>
+                        <p className="text-3xl font-black text-secondary-900 mt-2">{stats.pendingFollowUps}</p>
                     </div>
                     <div className="card-premium p-5 border border-red-200 bg-red-50/60">
-                        <p className="text-sm font-medium text-red-700">Overdue Follow-ups</p>
-                        <p className="text-3xl font-black text-red-900 mt-2">{totalOverdueFollowups}</p>
-                        <p className="text-xs text-red-700 mt-1">Require immediate attention inside conference module</p>
+                        <p className="text-sm text-red-700">Overdue Follow-ups</p>
+                        <p className="text-3xl font-black text-red-900 mt-2">{stats.overdueFollowUps}</p>
+                    </div>
+                    <div className="card-premium p-5 border border-blue-200 bg-blue-50/60">
+                        <p className="text-sm text-blue-700">Due Today</p>
+                        <p className="text-3xl font-black text-blue-900 mt-2">{stats.activeToday}</p>
                     </div>
                 </div>
 
-                {/* Conference Grid */}
-                {filteredConferences.length === 0 ? (
-                    <div className="card-premium p-12 text-center">
-                        <Calendar size={64} className="mx-auto text-secondary-300 mb-4" />
-                        <h3 className="text-xl font-bold text-secondary-900 mb-2">No Conferences Found</h3>
-                        <p className="text-secondary-500 mb-6">
-                            {searchTerm ? 'Try adjusting your search or filters' : 'Get started by creating your first conference'}
-                        </p>
-                        {canCreate && !searchTerm && (
-                            <button
-                                onClick={() => setShowCreateModal(true)}
-                                className="btn btn-primary"
-                            >
-                                Create Conference
-                            </button>
-                        )}
-                    </div>
-                ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {filteredConferences.map((conference) => (
-                            <div key={conference.id} className="card-premium group hover:border-primary-200 transition-all">
-                                {/* Banner */}
-                                <div
-                                    className="h-32 rounded-t-2xl relative overflow-hidden"
-                                    style={{
-                                        backgroundColor: conference.primaryColor || '#3B82F6',
-                                        backgroundImage: conference.bannerUrl ? `url(${conference.bannerUrl})` : 'none',
-                                        backgroundSize: 'cover',
-                                        backgroundPosition: 'center'
-                                    }}
-                                >
-                                    <div className="absolute top-2 right-2 flex gap-2">
-                                        {getStatusBadge(conference.status)}
-                                    </div>
-                                    <div className="absolute bottom-2 left-2">
-                                        {getModeBadge(conference.mode)}
-                                    </div>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+                    <Link
+                        href="/dashboard/conferences/all"
+                        className="card-premium p-6 hover:shadow-xl transition-all border border-secondary-200 hover:border-primary-200"
+                    >
+                        <div className="flex items-start justify-between gap-4">
+                            <div>
+                                <div className="flex items-center gap-2 text-secondary-900">
+                                    <Calendar size={18} className="text-primary-600" />
+                                    <h2 className="text-xl font-black">All Conferences</h2>
                                 </div>
-
-                                {/* Content */}
-                                <div className="p-6">
-                                    <h3 className="font-bold text-lg text-secondary-900 line-clamp-2 mb-2 group-hover:text-primary-600 transition-colors">
-                                        {conference.title}
-                                    </h3>
-                                    <p className="text-sm text-secondary-600 line-clamp-2 mb-4">
-                                        {conference.description}
-                                    </p>
-
-                                    {/* Info */}
-                                    <div className="space-y-2 mb-4">
-                                        <div className="flex items-center gap-2 text-sm text-secondary-500">
-                                            <Calendar size={14} />
-                                            <span>
-                                                {new Date(conference.startDate).toLocaleDateString()} - {new Date(conference.endDate).toLocaleDateString()}
-                                            </span>
-                                        </div>
-                                        {conference.venue && (
-                                            <div className="flex items-center gap-2 text-sm text-secondary-500">
-                                                <MapPin size={14} />
-                                                <span className="line-clamp-1">{conference.venue}</span>
-                                            </div>
-                                        )}
-                                    </div>
-
-                                    {/* Stats */}
-                                    <div className="grid grid-cols-2 gap-2 mb-4 p-3 bg-secondary-50 rounded-xl">
-                                        <div className="text-center">
-                                            <p className="text-2xl font-black text-secondary-900">{conference._count.registrations}</p>
-                                            <p className="text-xs text-secondary-500">Registrations</p>
-                                        </div>
-                                        <div className="text-center">
-                                            <p className="text-2xl font-black text-secondary-900">{conference._count.papers}</p>
-                                            <p className="text-xs text-secondary-500">Papers</p>
-                                        </div>
-                                    </div>
-
-                                    <div className="mb-4 rounded-xl border border-secondary-200 bg-white p-3 space-y-2">
-                                        <div className="flex items-center justify-between">
-                                            <div className="flex items-center gap-2 text-sm font-semibold text-secondary-800">
-                                                <Brain size={14} className="text-primary-600" />
-                                                Conference Follow-ups
-                                            </div>
-                                            {conference.followup?.highestRiskPrediction && (
-                                                <span className={`inline-flex px-2 py-1 rounded-full text-[10px] font-bold border ${getHealthBadgeColor(conference.followup.highestRiskPrediction.customerHealth)}`}>
-                                                    {conference.followup.highestRiskPrediction.customerHealth}
-                                                </span>
-                                            )}
-                                        </div>
-
-                                        {conference.followup?.totalFollowUps ? (
-                                            <>
-                                                <div className="grid grid-cols-3 gap-2 text-center">
-                                                    <div className="rounded-lg bg-secondary-50 p-2">
-                                                        <div className="text-lg font-black text-secondary-900">{conference.followup.totalFollowUps}</div>
-                                                        <div className="text-[10px] uppercase tracking-wide text-secondary-500">Total</div>
-                                                    </div>
-                                                    <div className="rounded-lg bg-amber-50 p-2">
-                                                        <div className="text-lg font-black text-amber-900">{conference.followup.pendingFollowUps}</div>
-                                                        <div className="text-[10px] uppercase tracking-wide text-amber-700">Pending</div>
-                                                    </div>
-                                                    <div className="rounded-lg bg-red-50 p-2">
-                                                        <div className="text-lg font-black text-red-900">{conference.followup.overdueFollowUps}</div>
-                                                        <div className="text-[10px] uppercase tracking-wide text-red-700">Overdue</div>
-                                                    </div>
-                                                </div>
-
-                                                {conference.followup.nextFollowUpDate && (
-                                                    <div className="text-xs text-secondary-600">
-                                                        Next follow-up: <span className="font-semibold text-secondary-900">{new Date(conference.followup.nextFollowUpDate).toLocaleString()}</span>
-                                                    </div>
-                                                )}
-
-                                                {conference.followup.highestRiskPrediction?.recommendedActions?.[0] && (
-                                                    <div className="flex items-start gap-2 rounded-lg bg-primary-50 p-2 text-xs text-primary-800">
-                                                        <AlertCircle size={14} className="mt-0.5 shrink-0" />
-                                                        <span>{conference.followup.highestRiskPrediction.recommendedActions[0]}</span>
-                                                    </div>
-                                                )}
-                                            </>
-                                        ) : (
-                                            <div className="text-xs text-secondary-500">
-                                                No conference follow-up logged yet. Manage follow-ups from this conference&apos;s registrations.
-                                            </div>
-                                        )}
-                                    </div>
-
-                                    {/* Actions */}
-                                    <div className="flex gap-2">
-                                        <Link
-                                            href={`/dashboard/conferences/${conference.id}`}
-                                            className="btn btn-sm btn-primary flex-1"
-                                        >
-                                            <Eye size={14} /> View
-                                        </Link>
-                                        <Link
-                                            href={`/dashboard/conferences/${conference.id}/registrations`}
-                                            className="btn btn-sm btn-secondary flex-1"
-                                        >
-                                            <Users size={14} /> Follow-ups
-                                        </Link>
-                                        {canCreate && (
-                                            <button
-                                                onClick={() => handleDelete(conference.id)}
-                                                className="btn btn-sm btn-danger"
-                                            >
-                                                <Trash2 size={14} />
-                                            </button>
-                                        )}
-                                    </div>
-                                </div>
+                                <p className="text-secondary-500 mt-2">
+                                    See every conference in one place with filters, status, and operational summary.
+                                </p>
                             </div>
-                        ))}
-                    </div>
-                )}
+                            <ArrowRight size={18} className="text-secondary-400" />
+                        </div>
+                    </Link>
 
-                {/* Create Modal */}
-                {showCreateModal && (
-                    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-                        <div className="bg-white rounded-3xl p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-                            <div className="flex justify-between items-center mb-6">
-                                <h3 className="text-2xl font-bold">Create New Conference</h3>
-                                <button onClick={() => setShowCreateModal(false)} className="text-secondary-400 hover:text-secondary-900">
-                                    <X size={24} />
-                                </button>
+                    <Link
+                        href="/dashboard/conferences/followups"
+                        className="card-premium p-6 hover:shadow-xl transition-all border border-secondary-200 hover:border-primary-200"
+                    >
+                        <div className="flex items-start justify-between gap-4">
+                            <div>
+                                <div className="flex items-center gap-2 text-secondary-900">
+                                    <MessageSquare size={18} className="text-primary-600" />
+                                    <h2 className="text-xl font-black">Follow-up Matrix</h2>
+                                </div>
+                                <p className="text-secondary-500 mt-2">
+                                    Focus only on overdue, today, and upcoming conference-related follow-ups without list clutter.
+                                </p>
                             </div>
-                            <form onSubmit={handleCreateConference} className="space-y-4">
-                                <div>
-                                    <label className="label">Conference Title *</label>
-                                    <input name="title" className="input" required placeholder="e.g., International Conference on AI 2026" />
-                                </div>
-                                <div>
-                                    <label className="label">Description *</label>
-                                    <textarea name="description" className="input h-24" required placeholder="Brief description of the conference..." />
-                                </div>
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div>
-                                        <label className="label">Start Date *</label>
-                                        <input name="startDate" type="date" className="input" required />
-                                    </div>
-                                    <div>
-                                        <label className="label">End Date *</label>
-                                        <input name="endDate" type="date" className="input" required />
-                                    </div>
-                                </div>
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div>
-                                        <label className="label">Mode</label>
-                                        <select name="mode" className="input">
-                                            <option value="IN_PERSON">In-Person</option>
-                                            <option value="VIRTUAL">Virtual</option>
-                                            <option value="HYBRID">Hybrid</option>
-                                        </select>
-                                    </div>
-                                    <div>
-                                        <label className="label">Max Attendees</label>
-                                        <input name="maxAttendees" type="number" className="input" placeholder="Leave empty for unlimited" />
-                                    </div>
-                                </div>
-                                <div>
-                                    <label className="label">Venue</label>
-                                    <input name="venue" className="input" placeholder="e.g., Grand Hotel, New York" />
-                                </div>
-                                <div>
-                                    <label className="label">Organizer</label>
-                                    <input name="organizer" className="input" placeholder="e.g., IEEE Computer Society" />
-                                </div>
-                                <div>
-                                    <label className="label">Website</label>
-                                    <input name="website" type="url" className="input" placeholder="https://conference.example.com" />
-                                </div>
-                                <div className="flex gap-2 pt-4">
-                                    <button type="submit" className="btn btn-primary flex-1">Create Conference</button>
-                                    <button type="button" onClick={() => setShowCreateModal(false)} className="btn btn-secondary">Cancel</button>
-                                </div>
-                            </form>
+                            <ArrowRight size={18} className="text-secondary-400" />
+                        </div>
+                    </Link>
+                </div>
+
+                <div className="card-premium p-6">
+                    <div className="flex items-center gap-2 text-secondary-900">
+                        <AlertCircle size={18} className="text-primary-600" />
+                        <h2 className="text-lg font-black">How To Use This Module</h2>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4 text-sm text-secondary-600">
+                        <div className="rounded-2xl bg-secondary-50 p-4">
+                            <div className="font-bold text-secondary-900">1. Use `All Conferences`</div>
+                            <div className="mt-1">For browsing, creating, and opening conferences.</div>
+                        </div>
+                        <div className="rounded-2xl bg-secondary-50 p-4">
+                            <div className="font-bold text-secondary-900">2. Use `Follow-up Matrix`</div>
+                            <div className="mt-1">For daily follow-up execution and queue management.</div>
+                        </div>
+                        <div className="rounded-2xl bg-secondary-50 p-4">
+                            <div className="font-bold text-secondary-900">3. Use conference detail pages</div>
+                            <div className="mt-1">For conference-level follow-up and registration-level follow-up actions.</div>
                         </div>
                     </div>
-                )}
+                </div>
             </div>
         </DashboardLayout>
     );

@@ -5,10 +5,12 @@ import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
+import ConversationChecklist from '@/components/dashboard/ConversationChecklist';
+import { getHealthBadgeColor } from '@/lib/predictions';
 import {
     ArrowLeft, Calendar, MapPin, Users, FileText, DollarSign,
     Globe, Palette, Settings, Ticket, Tag, Award, CheckCircle,
-    Plus, Edit2, Trash2, Save, X, ExternalLink, HelpCircle
+    Plus, Edit2, Trash2, Save, X, ExternalLink, HelpCircle, Brain, MessageSquare, AlertCircle
 } from 'lucide-react';
 
 export default function ConferenceDetailPage() {
@@ -30,6 +32,11 @@ export default function ConferenceDetailPage() {
     const [showCommitteeModal, setShowCommitteeModal] = useState(false);
     const [committeeMembers, setCommitteeMembers] = useState<any[]>([]);
     const [users, setUsers] = useState<any[]>([]);
+    const [showFollowupModal, setShowFollowupModal] = useState(false);
+    const [followupDetails, setFollowupDetails] = useState<any>(null);
+    const [followupLoading, setFollowupLoading] = useState(false);
+    const [submittingFollowup, setSubmittingFollowup] = useState(false);
+    const [checkedItems, setCheckedItems] = useState<string[]>([]);
 
 
 
@@ -112,12 +119,94 @@ export default function ConferenceDetailPage() {
         }
     }, [conferenceId]);
 
+    const fetchConferenceFollowups = useCallback(async () => {
+        try {
+            setFollowupLoading(true);
+            const token = localStorage.getItem('token');
+            const res = await fetch(`/api/conferences/${conferenceId}/follow-ups`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            if (!res.ok) {
+                throw new Error('Failed to load conference follow-ups');
+            }
+
+            const data = await res.json();
+            setFollowupDetails(data);
+            setCheckedItems([]);
+        } catch (error) {
+            console.error(error);
+        } finally {
+            setFollowupLoading(false);
+        }
+    }, [conferenceId]);
+
+    const openConferenceFollowups = useCallback(async () => {
+        setShowFollowupModal(true);
+        await fetchConferenceFollowups();
+    }, [fetchConferenceFollowups]);
+
+    const closeConferenceFollowups = () => {
+        setShowFollowupModal(false);
+        setFollowupDetails(null);
+        setCheckedItems([]);
+    };
+
+    const handleConferenceFollowupSubmit = async (form: FormData) => {
+        if (checkedItems.length === 0) {
+            alert('Please check at least one item in the conversation checklist');
+            return;
+        }
+
+        try {
+            setSubmittingFollowup(true);
+            const token = localStorage.getItem('token');
+            const payload = {
+                channel: form.get('channel'),
+                type: 'COMMENT',
+                subject: form.get('subject'),
+                notes: form.get('notes'),
+                outcome: form.get('outcome') || null,
+                nextFollowUpDate: form.get('nextFollowUpDate') || null,
+                checklist: {
+                    checkedItems,
+                },
+                previousFollowUpId: followupDetails?.followups?.find((item: any) => item.nextFollowUpDate && !item.isFollowUpCompleted)?.id || null,
+            };
+
+            const res = await fetch(`/api/conferences/${conferenceId}/follow-ups`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(payload),
+            });
+
+            if (!res.ok) {
+                const error = await res.json().catch(() => null);
+                throw new Error(error?.error || 'Failed to save follow-up');
+            }
+
+            await fetchConferenceFollowups();
+            fetchConference();
+        } catch (error: any) {
+            alert(error?.message || 'Failed to save conference follow-up');
+        } finally {
+            setSubmittingFollowup(false);
+        }
+    };
+
 
     useEffect(() => {
         const user = localStorage.getItem('user');
         if (user) setUserRole(JSON.parse(user).role);
         fetchConference();
     }, [conferenceId, fetchConference]);
+
+    useEffect(() => {
+        fetchConferenceFollowups().catch(() => undefined);
+    }, [fetchConferenceFollowups]);
 
     useEffect(() => {
         if (activeTab === 'committee') {
@@ -277,6 +366,12 @@ export default function ConferenceDetailPage() {
                         </div>
                     </div>
                     <div className="flex gap-2">
+                        <button
+                            onClick={openConferenceFollowups}
+                            className="btn btn-secondary flex items-center gap-2"
+                        >
+                            <MessageSquare size={16} /> Conference Follow-up
+                        </button>
                         <Link
                             href={`/dashboard/conferences/${conferenceId}/submit`}
                             className="btn btn-primary flex items-center gap-2"
@@ -402,6 +497,53 @@ export default function ConferenceDetailPage() {
                                     <CheckCircle size={16} /> Publish
                                 </button>
                             )}
+                        </div>
+                    </div>
+                </div>
+
+                <div className="card-premium p-6">
+                    <div className="flex items-start justify-between gap-4">
+                        <div>
+                            <div className="flex items-center gap-2 text-secondary-900">
+                                <Brain size={18} className="text-primary-600" />
+                                <h3 className="text-lg font-black">Conference-Level Follow-up</h3>
+                            </div>
+                            <p className="text-sm text-secondary-500 mt-1">
+                                Track sponsor outreach, organizer updates, campaign progress, and conference-wide action items here.
+                            </p>
+                        </div>
+                        <button
+                            onClick={openConferenceFollowups}
+                            className="btn btn-primary"
+                        >
+                            <MessageSquare size={16} /> Manage Follow-up
+                        </button>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-5">
+                        <div className="rounded-2xl bg-secondary-50 p-4">
+                            <div className="text-sm text-secondary-500">Total Follow-ups</div>
+                            <div className="text-3xl font-black text-secondary-900 mt-2">{followupDetails?.summary?.totalFollowUps || 0}</div>
+                        </div>
+                        <div className="rounded-2xl bg-amber-50 p-4">
+                            <div className="text-sm text-amber-700">Pending</div>
+                            <div className="text-3xl font-black text-amber-900 mt-2">{followupDetails?.summary?.pendingFollowUps || 0}</div>
+                        </div>
+                        <div className="rounded-2xl bg-red-50 p-4">
+                            <div className="text-sm text-red-700">Overdue</div>
+                            <div className="text-3xl font-black text-red-900 mt-2">{followupDetails?.summary?.overdueFollowUps || 0}</div>
+                        </div>
+                        <div className="rounded-2xl bg-primary-50 p-4">
+                            <div className="text-sm text-primary-700">Conference Health</div>
+                            <div className="mt-2">
+                                {followupDetails?.summary?.latestPrediction?.customerHealth ? (
+                                    <span className={`inline-flex px-3 py-1 rounded-full text-xs font-bold border ${getHealthBadgeColor(followupDetails.summary.latestPrediction.customerHealth)}`}>
+                                        {followupDetails.summary.latestPrediction.customerHealth}
+                                    </span>
+                                ) : (
+                                    <span className="text-sm text-secondary-500">No signal yet</span>
+                                )}
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -965,6 +1107,184 @@ export default function ConferenceDetailPage() {
                         </div>
                     )
                 }
+
+                {showFollowupModal && (
+                    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+                        <div className="bg-white rounded-3xl p-6 max-w-6xl w-full max-h-[92vh] overflow-y-auto">
+                            <div className="flex items-center justify-between mb-6">
+                                <div>
+                                    <h2 className="text-2xl font-black text-secondary-900">Conference Follow-up</h2>
+                                    <p className="text-secondary-500">{conference.title}</p>
+                                </div>
+                                <button onClick={closeConferenceFollowups} className="text-secondary-400 hover:text-secondary-900">
+                                    <X size={24} />
+                                </button>
+                            </div>
+
+                            {followupLoading ? (
+                                <div className="py-12 text-center text-secondary-500">Loading conference follow-ups...</div>
+                            ) : (
+                                <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+                                    <div className="space-y-4">
+                                        <div className="card-premium p-5">
+                                            <div className="flex items-center gap-2 mb-4">
+                                                <Brain size={18} className="text-primary-600" />
+                                                <h3 className="font-black text-secondary-900">Conference Analytics</h3>
+                                            </div>
+
+                                            {followupDetails?.summary?.latestPrediction ? (
+                                                <div className="space-y-4">
+                                                    <div className="grid grid-cols-3 gap-3">
+                                                        <div className="rounded-xl bg-secondary-50 p-3 text-center">
+                                                            <div className="text-xs text-secondary-500">Renewal</div>
+                                                            <div className="text-2xl font-black text-secondary-900">{followupDetails.summary.latestPrediction.renewalLikelihood}</div>
+                                                        </div>
+                                                        <div className="rounded-xl bg-secondary-50 p-3 text-center">
+                                                            <div className="text-xs text-secondary-500">Upsell</div>
+                                                            <div className="text-2xl font-black text-secondary-900">{followupDetails.summary.latestPrediction.upsellPotential}</div>
+                                                        </div>
+                                                        <div className="rounded-xl bg-secondary-50 p-3 text-center">
+                                                            <div className="text-xs text-secondary-500">Churn</div>
+                                                            <div className="text-2xl font-black text-secondary-900">{followupDetails.summary.latestPrediction.churnRisk}</div>
+                                                        </div>
+                                                    </div>
+
+                                                    <div className={`inline-flex px-3 py-1 rounded-full text-xs font-bold border ${getHealthBadgeColor(followupDetails.summary.latestPrediction.customerHealth)}`}>
+                                                        {followupDetails.summary.latestPrediction.customerHealth}
+                                                    </div>
+
+                                                    <div className="text-sm text-secondary-600">
+                                                        Pending follow-ups: <span className="font-bold text-secondary-900">{followupDetails.summary.pendingFollowUps}</span>
+                                                    </div>
+                                                    {followupDetails.summary.nextFollowUpDate && (
+                                                        <div className="text-sm text-secondary-600">
+                                                            Next scheduled: <span className="font-bold text-secondary-900">{new Date(followupDetails.summary.nextFollowUpDate).toLocaleString()}</span>
+                                                        </div>
+                                                    )}
+
+                                                    {(followupDetails.summary.latestPrediction.recommendedActions || []).length > 0 && (
+                                                        <div>
+                                                            <div className="text-sm font-bold text-secondary-900 mb-2">Recommended Actions</div>
+                                                            <ul className="space-y-2">
+                                                                {(followupDetails.summary.latestPrediction.recommendedActions || []).map((action: string, idx: number) => (
+                                                                    <li key={idx} className="text-sm text-secondary-700 flex items-start gap-2">
+                                                                        <AlertCircle size={14} className="mt-0.5 text-primary-600 shrink-0" />
+                                                                        <span>{action}</span>
+                                                                    </li>
+                                                                ))}
+                                                            </ul>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            ) : (
+                                                <div className="text-sm text-secondary-500">
+                                                    No conference-level analytics yet. Add the first conference follow-up to generate AI insights.
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        <div className="card-premium p-5">
+                                            <div className="flex items-center gap-2 mb-4">
+                                                <MessageSquare size={18} className="text-primary-600" />
+                                                <h3 className="font-black text-secondary-900">Conference Follow-up History</h3>
+                                            </div>
+
+                                            {(followupDetails?.followups || []).length === 0 ? (
+                                                <div className="text-sm text-secondary-500">No conference-level follow-up remarks yet.</div>
+                                            ) : (
+                                                <div className="space-y-3">
+                                                    {followupDetails.followups.map((log: any) => (
+                                                        <div key={log.id} className="rounded-2xl border border-secondary-200 p-4">
+                                                            <div className="flex items-start justify-between gap-3">
+                                                                <div>
+                                                                    <div className="font-bold text-secondary-900">{log.subject}</div>
+                                                                    <div className="text-xs text-secondary-500 mt-1">
+                                                                        {new Date(log.createdAt).toLocaleString()}
+                                                                        {log.user?.name ? ` · ${log.user.name}` : ''}
+                                                                    </div>
+                                                                </div>
+                                                                {log.checklist?.customerHealth && (
+                                                                    <span className={`inline-flex px-2 py-1 rounded-full text-[10px] font-bold border ${getHealthBadgeColor(log.checklist.customerHealth)}`}>
+                                                                        {log.checklist.customerHealth}
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                            <div className="text-sm text-secondary-700 mt-3">{log.notes}</div>
+                                                            {log.nextFollowUpDate && !log.isFollowUpCompleted && (
+                                                                <div className="text-xs text-amber-700 mt-3">
+                                                                    Next: {new Date(log.nextFollowUpDate).toLocaleString()}
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    <div className="card-premium p-5">
+                                        <h3 className="font-black text-secondary-900 mb-4">Add Conference Follow-up</h3>
+                                        <form
+                                            className="space-y-4"
+                                            onSubmit={async (event) => {
+                                                event.preventDefault();
+                                                await handleConferenceFollowupSubmit(new FormData(event.currentTarget));
+                                                event.currentTarget.reset();
+                                                setCheckedItems([]);
+                                            }}
+                                        >
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                <div>
+                                                    <label className="label">Channel</label>
+                                                    <select name="channel" className="input" defaultValue="INTERNAL">
+                                                        <option value="INTERNAL">Internal</option>
+                                                        <option value="EMAIL">Email</option>
+                                                        <option value="PHONE">Phone</option>
+                                                        <option value="WHATSAPP">WhatsApp</option>
+                                                        <option value="MEETING">Meeting</option>
+                                                    </select>
+                                                </div>
+                                                <div>
+                                                    <label className="label">Outcome</label>
+                                                    <select name="outcome" className="input" defaultValue="FOLLOW_UP_REQUIRED">
+                                                        <option value="">Select outcome...</option>
+                                                        <option value="FOLLOW_UP_REQUIRED">Follow-up required</option>
+                                                        <option value="READY_TO_LAUNCH">Ready to launch</option>
+                                                        <option value="SPONSOR_PIPELINE_ACTIVE">Sponsor pipeline active</option>
+                                                        <option value="REGISTRATION_PUSH_REQUIRED">Registration push required</option>
+                                                        <option value="ON_TRACK">On track</option>
+                                                        <option value="AT_RISK">At risk</option>
+                                                    </select>
+                                                </div>
+                                            </div>
+
+                                            <div>
+                                                <label className="label">Subject</label>
+                                                <input name="subject" className="input" placeholder="Conference planning or outreach update" required />
+                                            </div>
+
+                                            <div>
+                                                <label className="label">Remark / Notes</label>
+                                                <textarea name="notes" className="input h-28" placeholder="Write the conference-level follow-up here..." required />
+                                            </div>
+
+                                            <div>
+                                                <label className="label">Next Follow-up Date</label>
+                                                <input type="datetime-local" name="nextFollowUpDate" className="input" />
+                                            </div>
+
+                                            <ConversationChecklist checkedItems={checkedItems} onChange={setCheckedItems} />
+
+                                            <button type="submit" className="btn btn-primary w-full" disabled={submittingFollowup}>
+                                                {submittingFollowup ? 'Saving...' : 'Save Conference Follow-up'}
+                                            </button>
+                                        </form>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                )}
             </div >
         </DashboardLayout >
     );

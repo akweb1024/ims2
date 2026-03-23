@@ -83,6 +83,78 @@ export async function ensureConferenceLeadForRegistration({
     });
 }
 
+export async function ensureConferenceManagementProfile({
+    conferenceId,
+    companyId,
+    conferenceTitle,
+    organizer,
+}: {
+    conferenceId: string;
+    companyId: string;
+    conferenceTitle: string;
+    organizer?: string | null;
+}) {
+    const syntheticEmail = `conference+${conferenceId}@internal.local`;
+    const syntheticPhone = conferenceId.slice(0, 12);
+
+    const existingProfile = await prisma.customerProfile.findFirst({
+        where: {
+            companyId,
+            primaryEmail: {
+                equals: syntheticEmail,
+                mode: 'insensitive',
+            },
+        },
+    });
+
+    if (existingProfile) {
+        return existingProfile;
+    }
+
+    let user = await prisma.user.findUnique({
+        where: { email: syntheticEmail },
+        include: {
+            customerProfile: {
+                select: { id: true, companyId: true },
+            },
+        },
+    });
+
+    if (!user) {
+        user = await prisma.user.create({
+            data: {
+                email: syntheticEmail,
+                name: `${conferenceTitle} Conference`,
+                password: `TEMP_PASSWORD_${Date.now()}`,
+                role: 'CUSTOMER',
+                companyId,
+                isActive: true,
+            },
+            include: {
+                customerProfile: {
+                    select: { id: true, companyId: true },
+                },
+            },
+        });
+    }
+
+    return prisma.customerProfile.create({
+        data: {
+            userId: user.id,
+            companyId,
+            customerType: 'INDIVIDUAL',
+            name: `${conferenceTitle} Conference`,
+            primaryEmail: syntheticEmail,
+            primaryPhone: syntheticPhone,
+            organizationName: organizer || conferenceTitle,
+            leadStatus: 'NEW',
+            source: 'CONFERENCE_INTERNAL',
+            notes: `Internal conference management profile for ${conferenceTitle}.`,
+            tags: ['conference-management', conferenceTitle].filter(Boolean).join(', '),
+        },
+    });
+}
+
 export async function buildConferenceRegistrationFollowupSummary({
     companyId,
     registrations,
@@ -320,6 +392,144 @@ export async function createConferenceFollowup({
     return {
         logId: log.id,
         customerProfileId: lead.id,
+        predictions,
+    };
+}
+
+export async function getConferenceManagementFollowups({
+    conferenceId,
+    companyId,
+    conferenceTitle,
+    organizer,
+}: {
+    conferenceId: string;
+    companyId: string;
+    conferenceTitle: string;
+    organizer?: string | null;
+}) {
+    const profile = await ensureConferenceManagementProfile({
+        conferenceId,
+        companyId,
+        conferenceTitle,
+        organizer,
+    });
+
+    const followups = await prisma.communicationLog.findMany({
+        where: {
+            customerProfileId: profile.id,
+            category: 'CONFERENCE_MANAGEMENT_FOLLOWUP',
+            referenceId: conferenceId,
+        },
+        include: {
+            checklist: true,
+            user: {
+                select: { id: true, name: true, email: true },
+            },
+        },
+        orderBy: { createdAt: 'desc' },
+    });
+
+    const latestChecklist = followups[0]?.checklist;
+
+    return {
+        customerProfileId: profile.id,
+        followups,
+        summary: {
+            totalFollowUps: followups.length,
+            pendingFollowUps: followups.filter((log) => log.nextFollowUpDate && !log.isFollowUpCompleted).length,
+            overdueFollowUps: followups.filter((log) => log.nextFollowUpDate && !log.isFollowUpCompleted && new Date(log.nextFollowUpDate) < new Date()).length,
+            nextFollowUpDate: followups
+                .filter((log) => log.nextFollowUpDate && !log.isFollowUpCompleted)
+                .map((log) => log.nextFollowUpDate)
+                .sort((a, b) => new Date(a!).getTime() - new Date(b!).getTime())[0] || null,
+            latestPrediction: latestChecklist ? {
+                renewalLikelihood: latestChecklist.renewalLikelihood,
+                upsellPotential: latestChecklist.upsellPotential,
+                churnRisk: latestChecklist.churnRisk,
+                customerHealth: latestChecklist.customerHealth,
+                insights: Array.isArray(latestChecklist.insights) ? latestChecklist.insights : [],
+                recommendedActions: Array.isArray(latestChecklist.recommendedActions) ? latestChecklist.recommendedActions : [],
+            } : null,
+        },
+    };
+}
+
+export async function createConferenceManagementFollowup({
+    conferenceId,
+    companyId,
+    userId,
+    conferenceTitle,
+    organizer,
+    payload,
+}: {
+    conferenceId: string;
+    companyId: string;
+    userId: string;
+    conferenceTitle: string;
+    organizer?: string | null;
+    payload: {
+        channel: string;
+        type?: 'COMMENT' | 'EMAIL' | 'CALL' | 'INVOICE_SENT' | 'CATALOGUE_SENT' | 'MEETING';
+        subject: string;
+        notes: string;
+        outcome?: string | null;
+        nextFollowUpDate?: string | null;
+        checklist: {
+            checkedItems: string[];
+        };
+        previousFollowUpId?: string | null;
+    };
+}) {
+    const profile = await ensureConferenceManagementProfile({
+        conferenceId,
+        companyId,
+        conferenceTitle,
+        organizer,
+    });
+
+    const predictions = calculatePredictions(payload.checklist.checkedItems);
+
+    const log = await prisma.communicationLog.create({
+        data: {
+            customerProfileId: profile.id,
+            userId,
+            channel: payload.channel,
+            type: payload.type || 'COMMENT',
+            subject: payload.subject,
+            notes: payload.notes,
+            outcome: payload.outcome || null,
+            nextFollowUpDate: payload.nextFollowUpDate ? new Date(payload.nextFollowUpDate) : null,
+            category: 'CONFERENCE_MANAGEMENT_FOLLOWUP',
+            referenceId: conferenceId,
+            date: new Date(),
+            companyId,
+        },
+    });
+
+    await prisma.conversationChecklist.create({
+        data: {
+            communicationLogId: log.id,
+            checkedItems: payload.checklist.checkedItems,
+            renewalLikelihood: predictions.renewalLikelihood,
+            upsellPotential: predictions.upsellPotential,
+            churnRisk: predictions.churnRisk,
+            customerHealth: predictions.customerHealth,
+            insights: predictions.insights,
+            recommendedActions: predictions.recommendedActions,
+            companyId,
+        },
+    });
+
+    if (payload.previousFollowUpId) {
+        await prisma.communicationLog.update({
+            where: { id: payload.previousFollowUpId },
+            data: { isFollowUpCompleted: true },
+        });
+    }
+
+    return {
+        logId: log.id,
+        customerProfileId: profile.id,
         predictions,
     };
 }

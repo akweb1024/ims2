@@ -281,7 +281,7 @@ export const ALL_MODULES: NavModule[] = [
             {
                 title: 'Events',
                 items: [
-                    { name: 'Total Conferences', href: '/dashboard/conferences', icon: '🎤', roles: ['*'] },
+                    { name: 'Conference Hub', href: '/dashboard/conferences', icon: '🎤', roles: ['*'] },
                 ]
             }
         ]
