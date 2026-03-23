@@ -4,9 +4,11 @@ import { useState, useEffect, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
+import ConversationChecklist from '@/components/dashboard/ConversationChecklist';
+import { getHealthBadgeColor } from '@/lib/predictions';
 import {
     ArrowLeft, Search, Filter, CheckCircle, Clock,
-    Download, User, Mail, DollarSign, Calendar
+    Download, Brain, AlertTriangle, MessageSquare, X
 } from 'lucide-react';
 
 export default function RegistrationManagementPage() {
@@ -18,6 +20,11 @@ export default function RegistrationManagementPage() {
     const [conference, setConference] = useState<any>(null);
     const [registrations, setRegistrations] = useState<any[]>([]);
     const [userRole, setUserRole] = useState('');
+    const [selectedRegistration, setSelectedRegistration] = useState<any>(null);
+    const [followupDetails, setFollowupDetails] = useState<any>(null);
+    const [followupLoading, setFollowupLoading] = useState(false);
+    const [submittingFollowup, setSubmittingFollowup] = useState(false);
+    const [checkedItems, setCheckedItems] = useState<string[]>([]);
 
     // Filters
     const [searchTerm, setSearchTerm] = useState('');
@@ -46,6 +53,88 @@ export default function RegistrationManagementPage() {
         if (user) setUserRole(JSON.parse(user).role);
         fetchData();
     }, [fetchData]);
+
+    const openFollowup = async (registration: any) => {
+        setSelectedRegistration(registration);
+        setFollowupLoading(true);
+        setCheckedItems([]);
+
+        try {
+            const token = localStorage.getItem('token');
+            const res = await fetch(
+                `/api/conferences/${conferenceId}/registrations/${registration.id}/follow-ups`,
+                { headers: { 'Authorization': `Bearer ${token}` } }
+            );
+
+            if (res.ok) {
+                setFollowupDetails(await res.json());
+            } else {
+                alert('Failed to load follow-up details');
+            }
+        } catch (error) {
+            console.error(error);
+            alert('Failed to load follow-up details');
+        } finally {
+            setFollowupLoading(false);
+        }
+    };
+
+    const closeFollowup = () => {
+        setSelectedRegistration(null);
+        setFollowupDetails(null);
+        setCheckedItems([]);
+    };
+
+    const handleFollowupSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+        e.preventDefault();
+        if (!selectedRegistration) return;
+        if (checkedItems.length === 0) {
+            alert('Please check at least one checklist item');
+            return;
+        }
+
+        setSubmittingFollowup(true);
+        try {
+            const token = localStorage.getItem('token');
+            const formData = new FormData(e.currentTarget);
+            const payload = {
+                channel: formData.get('channel'),
+                type: 'COMMENT',
+                subject: formData.get('subject'),
+                notes: formData.get('notes'),
+                outcome: formData.get('outcome') || null,
+                nextFollowUpDate: formData.get('nextFollowUpDate') || null,
+                checklist: {
+                    checkedItems,
+                },
+            };
+
+            const res = await fetch(
+                `/api/conferences/${conferenceId}/registrations/${selectedRegistration.id}/follow-ups`,
+                {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(payload),
+                }
+            );
+
+            if (!res.ok) {
+                const error = await res.json();
+                throw new Error(error.error || 'Failed to save follow-up');
+            }
+
+            await fetchData();
+            await openFollowup(selectedRegistration);
+        } catch (error: any) {
+            console.error(error);
+            alert(error.message || 'Failed to save follow-up');
+        } finally {
+            setSubmittingFollowup(false);
+        }
+    };
 
     const handleCheckIn = async (id: string) => {
         if (!confirm('Confirm Check-in for this attendee?')) return;
@@ -176,6 +265,12 @@ export default function RegistrationManagementPage() {
                             {registrations.reduce((acc, r) => acc + r.amountPaid, 0).toLocaleString()}
                         </p>
                     </div>
+                    <div className="bg-amber-50 p-4 rounded-xl border border-amber-100">
+                        <p className="text-amber-600 text-sm font-bold uppercase">Pending Follow-ups</p>
+                        <p className="text-3xl font-black text-secondary-900">
+                            {registrations.reduce((acc, r) => acc + (r.followup?.pendingFollowUpCount || 0), 0)}
+                        </p>
+                    </div>
                 </div>
 
                 {/* Table */}
@@ -187,13 +282,14 @@ export default function RegistrationManagementPage() {
                                 <th className="text-left p-4 text-xs font-bold uppercase text-secondary-500">Ticket Type</th>
                                 <th className="text-left p-4 text-xs font-bold uppercase text-secondary-500">Status</th>
                                 <th className="text-left p-4 text-xs font-bold uppercase text-secondary-500">Date</th>
+                                <th className="text-left p-4 text-xs font-bold uppercase text-secondary-500">Follow-up</th>
                                 <th className="text-right p-4 text-xs font-bold uppercase text-secondary-500">Action</th>
                             </tr>
                         </thead>
                         <tbody>
                             {filteredRegs.length === 0 ? (
                                 <tr>
-                                    <td colSpan={5} className="p-8 text-center text-secondary-500">No registrations found.</td>
+                                    <td colSpan={6} className="p-8 text-center text-secondary-500">No registrations found.</td>
                                 </tr>
                             ) : (
                                 filteredRegs.map(reg => (
@@ -234,15 +330,44 @@ export default function RegistrationManagementPage() {
                                                 {new Date(reg.createdAt).toLocaleTimeString()}
                                             </div>
                                         </td>
-                                        <td className="p-4 text-right">
-                                            {reg.status === 'REGISTERED' && (
-                                                <button
-                                                    onClick={() => handleCheckIn(reg.id)}
-                                                    className="btn btn-sm btn-primary"
-                                                >
-                                                    Check In
-                                                </button>
+                                        <td className="p-4">
+                                            {reg.followup?.latestPrediction ? (
+                                                <div className="space-y-1">
+                                                    <span className={`inline-flex px-2 py-1 rounded-full text-[10px] font-bold border ${getHealthBadgeColor(reg.followup.latestPrediction.customerHealth)}`}>
+                                                        {reg.followup.latestPrediction.customerHealth}
+                                                    </span>
+                                                    {reg.followup.nextFollowUpDate && (
+                                                        <div className="text-[11px] text-secondary-500">
+                                                            Next: {new Date(reg.followup.nextFollowUpDate).toLocaleDateString()}
+                                                        </div>
+                                                    )}
+                                                    {reg.followup.overdueFollowUpCount > 0 && (
+                                                        <div className="text-[11px] text-red-600 font-bold">
+                                                            {reg.followup.overdueFollowUpCount} overdue
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            ) : (
+                                                <span className="text-xs text-secondary-400">No follow-up yet</span>
                                             )}
+                                        </td>
+                                        <td className="p-4 text-right">
+                                            <div className="flex justify-end gap-2">
+                                                <button
+                                                    onClick={() => openFollowup(reg)}
+                                                    className="btn btn-sm btn-secondary"
+                                                >
+                                                    Follow-up
+                                                </button>
+                                                {reg.status === 'REGISTERED' && (
+                                                    <button
+                                                        onClick={() => handleCheckIn(reg.id)}
+                                                        className="btn btn-sm btn-primary"
+                                                    >
+                                                        Check In
+                                                    </button>
+                                                )}
+                                            </div>
                                         </td>
                                     </tr>
                                 ))
@@ -250,6 +375,162 @@ export default function RegistrationManagementPage() {
                         </tbody>
                     </table>
                 </div>
+
+                {selectedRegistration && (
+                    <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4">
+                        <div className="bg-white rounded-2xl shadow-2xl max-w-6xl w-full max-h-[90vh] overflow-y-auto">
+                            <div className="flex items-center justify-between p-6 border-b border-secondary-100">
+                                <div>
+                                    <h2 className="text-2xl font-black text-secondary-900">Conference Follow-up</h2>
+                                    <p className="text-secondary-500">{selectedRegistration.name} · {selectedRegistration.email}</p>
+                                </div>
+                                <button onClick={closeFollowup} className="btn btn-secondary btn-sm">
+                                    <X size={16} />
+                                </button>
+                            </div>
+
+                            {followupLoading ? (
+                                <div className="p-8 text-center text-secondary-500">Loading follow-up details...</div>
+                            ) : (
+                                <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 p-6">
+                                    <div className="space-y-6">
+                                        <div className="card-premium p-5 space-y-4">
+                                            <div className="flex items-center gap-2">
+                                                <Brain size={18} className="text-primary-600" />
+                                                <h3 className="font-black text-secondary-900">Lead Analytics</h3>
+                                            </div>
+                                            {followupDetails?.analytics?.latestPrediction ? (
+                                                <div className="space-y-3">
+                                                    <div className="grid grid-cols-3 gap-3">
+                                                        <div className="bg-primary-50 rounded-xl p-3">
+                                                            <div className="text-[11px] font-bold uppercase text-primary-600">Renewal</div>
+                                                            <div className="text-2xl font-black text-secondary-900">{followupDetails.analytics.latestPrediction.renewalLikelihood}</div>
+                                                        </div>
+                                                        <div className="bg-green-50 rounded-xl p-3">
+                                                            <div className="text-[11px] font-bold uppercase text-green-600">Upsell</div>
+                                                            <div className="text-2xl font-black text-secondary-900">{followupDetails.analytics.latestPrediction.upsellPotential}</div>
+                                                        </div>
+                                                        <div className="bg-red-50 rounded-xl p-3">
+                                                            <div className="text-[11px] font-bold uppercase text-red-600">Churn</div>
+                                                            <div className="text-2xl font-black text-secondary-900">{followupDetails.analytics.latestPrediction.churnRisk}</div>
+                                                        </div>
+                                                    </div>
+                                                    <div className={`inline-flex px-3 py-1 rounded-full text-xs font-bold border ${getHealthBadgeColor(followupDetails.analytics.latestPrediction.customerHealth)}`}>
+                                                        {followupDetails.analytics.latestPrediction.customerHealth}
+                                                    </div>
+                                                    <div className="text-sm text-secondary-600">
+                                                        Pending follow-ups: <span className="font-bold">{followupDetails.analytics.pendingFollowUpCount}</span>
+                                                    </div>
+                                                    {followupDetails.analytics.nextFollowUpDate && (
+                                                        <div className="text-sm text-secondary-600">
+                                                            Next scheduled: <span className="font-bold">{new Date(followupDetails.analytics.nextFollowUpDate).toLocaleString()}</span>
+                                                        </div>
+                                                    )}
+                                                    <div className="space-y-2">
+                                                        <div className="text-sm font-bold text-secondary-800">Recommended Actions</div>
+                                                        <ul className="space-y-1 text-sm text-secondary-600">
+                                                            {followupDetails.analytics.latestPrediction.recommendedActions.map((action: string, idx: number) => (
+                                                                <li key={idx}>• {action}</li>
+                                                            ))}
+                                                        </ul>
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                <div className="text-sm text-secondary-500">No analytics yet. Log the first follow-up to generate insights.</div>
+                                            )}
+                                        </div>
+
+                                        <div className="card-premium p-5 space-y-4">
+                                            <div className="flex items-center gap-2">
+                                                <MessageSquare size={18} className="text-primary-600" />
+                                                <h3 className="font-black text-secondary-900">Follow-up History</h3>
+                                            </div>
+                                            <div className="space-y-3 max-h-[320px] overflow-y-auto">
+                                                {(followupDetails?.followups || []).length === 0 ? (
+                                                    <div className="text-sm text-secondary-500">No follow-up remarks yet.</div>
+                                                ) : (
+                                                    followupDetails.followups.map((log: any) => (
+                                                        <div key={log.id} className="border border-secondary-100 rounded-xl p-4">
+                                                            <div className="flex items-center justify-between gap-3">
+                                                                <div className="font-bold text-secondary-900">{log.subject}</div>
+                                                                {log.nextFollowUpDate && !log.isFollowUpCompleted && (
+                                                                    <span className="text-[11px] font-bold text-amber-700 bg-amber-50 px-2 py-1 rounded-full">
+                                                                        Next: {new Date(log.nextFollowUpDate).toLocaleDateString()}
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                            <div className="text-sm text-secondary-600 mt-2 whitespace-pre-wrap">{log.notes}</div>
+                                                            {log.checklist?.customerHealth && (
+                                                                <div className="mt-3">
+                                                                    <span className={`inline-flex px-2 py-1 rounded-full text-[10px] font-bold border ${getHealthBadgeColor(log.checklist.customerHealth)}`}>
+                                                                        {log.checklist.customerHealth}
+                                                                    </span>
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    ))
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="card-premium p-5">
+                                        <h3 className="font-black text-secondary-900 mb-4">Add Follow-up Remark</h3>
+                                        <form onSubmit={handleFollowupSubmit} className="space-y-4">
+                                            <div>
+                                                <label className="label">Channel</label>
+                                                <select name="channel" className="input" defaultValue="Phone" required>
+                                                    <option>Phone</option>
+                                                    <option>Email</option>
+                                                    <option>WhatsApp</option>
+                                                    <option>In-Person</option>
+                                                </select>
+                                            </div>
+                                            <div>
+                                                <label className="label">Outcome</label>
+                                                <select name="outcome" className="input" defaultValue="Follow-up required">
+                                                    <option value="">Select outcome...</option>
+                                                    <option>Interested</option>
+                                                    <option>Follow-up required</option>
+                                                    <option>Responded</option>
+                                                    <option>No Answer</option>
+                                                    <option>Converted</option>
+                                                    <option>Lost</option>
+                                                </select>
+                                            </div>
+                                            <div>
+                                                <label className="label">Subject</label>
+                                                <input name="subject" className="input" required placeholder="Conference follow-up discussion" />
+                                            </div>
+                                            <div>
+                                                <label className="label">Remark / Notes</label>
+                                                <textarea name="notes" className="input h-28" required placeholder="Write the follow-up remark here..." />
+                                            </div>
+                                            <div>
+                                                <label className="label">Next Follow-up Date</label>
+                                                <input type="datetime-local" name="nextFollowUpDate" className="input" />
+                                            </div>
+                                            <ConversationChecklist
+                                                checkedItems={checkedItems}
+                                                onChange={setCheckedItems}
+                                                showPredictions={true}
+                                            />
+                                            <div className="flex justify-end">
+                                                <button
+                                                    type="submit"
+                                                    disabled={submittingFollowup}
+                                                    className="btn btn-primary"
+                                                >
+                                                    {submittingFollowup ? 'Saving...' : 'Save Follow-up'}
+                                                </button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                )}
             </div>
         </DashboardLayout>
     );

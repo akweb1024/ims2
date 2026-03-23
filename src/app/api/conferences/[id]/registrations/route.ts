@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { authorizedRoute } from '@/lib/middleware-auth';
 import { createErrorResponse } from '@/lib/api-utils';
+import { buildConferenceRegistrationFollowupSummary } from '@/lib/conference-followups';
 
 export const GET = authorizedRoute(
     [],
@@ -27,6 +28,15 @@ export const GET = authorizedRoute(
                 ];
             }
 
+            const conference = await prisma.conference.findUnique({
+                where: { id: conferenceId },
+                select: { id: true, companyId: true },
+            });
+
+            if (!conference) {
+                return createErrorResponse('Conference not found', 404);
+            }
+
             const registrations = await prisma.conferenceRegistration.findMany({
                 where,
                 include: {
@@ -42,7 +52,29 @@ export const GET = authorizedRoute(
                 orderBy: { createdAt: 'desc' }
             });
 
-            return NextResponse.json(registrations);
+            const followupSummary = conference.companyId
+                ? await buildConferenceRegistrationFollowupSummary({
+                    companyId: conference.companyId,
+                    registrations: registrations.map((registration) => ({
+                        id: registration.id,
+                        name: registration.name,
+                        email: registration.email,
+                        phone: registration.phone,
+                        organization: registration.organization,
+                    })),
+                })
+                : [];
+
+            const summaryByRegistrationId = new Map(
+                followupSummary.map((item) => [item.registrationId, item])
+            );
+
+            return NextResponse.json(
+                registrations.map((registration) => ({
+                    ...registration,
+                    followup: summaryByRegistrationId.get(registration.id) || null,
+                }))
+            );
         } catch (error) {
             return createErrorResponse(error);
         }
