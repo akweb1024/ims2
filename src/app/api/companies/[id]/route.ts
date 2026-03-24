@@ -14,7 +14,7 @@ export const GET = authorizedRoute(
                 return createErrorResponse('Forbidden', 403);
             }
 
-            const [company, revenueAgg, projectCount, ticketCount, recentProjects, recentTickets, recentRevenue, performance] = await Promise.all([
+            const [company, revenueAgg, projectCount, ticketCount, recentProjects, recentTickets, recentRevenue, performance, relationshipOwner] = await Promise.all([
                 prisma.company.findUnique({
                     where: { id },
                     include: {
@@ -58,6 +58,25 @@ export const GET = authorizedRoute(
                         { month: 'desc' }
                     ],
                     take: 6
+                }),
+                prisma.user.findFirst({
+                    where: {
+                        companyId: id,
+                        isActive: true,
+                        role: {
+                            in: ['ADMIN', 'MANAGER', 'TEAM_LEADER', 'HR_MANAGER', 'EXECUTIVE']
+                        }
+                    },
+                    orderBy: [
+                        { role: 'asc' },
+                        { createdAt: 'asc' }
+                    ],
+                    select: {
+                        id: true,
+                        name: true,
+                        email: true,
+                        role: true
+                    }
                 })
             ]);
 
@@ -78,6 +97,39 @@ export const GET = authorizedRoute(
                 ...recentRevenue.map((r: any) => ({ id: `r-${r.id}`, title: `Revenue transaction ₹${r.amount} ${r.status.toLowerCase()}`, date: r.createdAt, type: 'finance' }))
             ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).slice(0, 5);
 
+            const renewalProbability = Math.max(35, Math.min(
+                98,
+                Math.round(
+                    (latestPerformance?.satisfactionScore || 60) * 0.45 +
+                    (latestPerformance?.taskCompletionRate || 50) * 0.2 +
+                    (latestPerformance?.attendanceRate || 70) * 0.15 +
+                    Math.max(0, latestPerformance?.monthOverMonthGrowth || 0) * 0.2
+                )
+            ));
+
+            const churnRisk =
+                (latestPerformance?.satisfactionScore || 0) >= 80 && (latestPerformance?.attritionRate || 0) < 10
+                    ? 'Low'
+                    : (latestPerformance?.satisfactionScore || 0) >= 60
+                        ? 'Medium'
+                        : 'High';
+
+            const upsellOpportunity =
+                (latestPerformance?.profitMargin || 0) >= 20 && (latestPerformance?.monthOverMonthGrowth || 0) >= 0
+                    ? 'High'
+                    : (latestPerformance?.profitMargin || 0) >= 10
+                        ? 'Moderate'
+                        : 'Low';
+
+            const aiRecommendation =
+                projectCount > 0
+                    ? 'Focus on delivery updates and milestone communication to maintain confidence.'
+                    : ticketCount > 0
+                        ? 'Prioritize support resolution and close the feedback loop with stakeholders.'
+                        : (latestPerformance?.satisfactionScore || 0) >= 80
+                            ? 'This account looks healthy. Use the next check-in to explore expansion opportunities.'
+                            : 'Schedule a relationship review with key stakeholders and document current blockers.';
+
             const responseData = {
                 ...company,
                 stats: {
@@ -88,6 +140,37 @@ export const GET = authorizedRoute(
                     totalEmployees: company._count.users || 0
                 },
                 recentActivity,
+                recentProjects: recentProjects.map((project: any) => ({
+                    id: project.id,
+                    name: project.name,
+                    status: project.status,
+                    priority: project.priority,
+                    startDate: project.startDate,
+                    endDate: project.endDate,
+                    createdAt: project.createdAt,
+                })),
+                recentTickets: recentTickets.map((ticket: any) => ({
+                    id: ticket.id,
+                    title: ticket.title,
+                    status: ticket.status,
+                    priority: ticket.priority,
+                    category: ticket.category,
+                    createdAt: ticket.createdAt,
+                })),
+                recentRevenue: recentRevenue.map((transaction: any) => ({
+                    id: transaction.id,
+                    amount: transaction.amount,
+                    status: transaction.status,
+                    paymentMethod: transaction.paymentMethod,
+                    description: transaction.description,
+                    createdAt: transaction.createdAt,
+                })),
+                relationshipOwner: relationshipOwner ? {
+                    id: relationshipOwner.id,
+                    name: relationshipOwner.name || relationshipOwner.email,
+                    email: relationshipOwner.email,
+                    role: relationshipOwner.role
+                } : null,
                 trendData,
                 sentiment: {
                     score: latestPerformance?.averagePerformance ? latestPerformance.averagePerformance * 10 : 75,
@@ -98,6 +181,19 @@ export const GET = authorizedRoute(
                         negative: 10
                     },
                     keywords: ['Reliable', 'Active', 'Growing']
+                },
+                intelligence: {
+                    renewalProbability,
+                    churnRisk,
+                    upsellOpportunity,
+                    recommendation: aiRecommendation,
+                    topDepartment: latestPerformance?.topDepartment || null,
+                    topPerformer: latestPerformance?.topPerformer || null,
+                    reportSubmissionRate: latestPerformance?.reportSubmissionRate || 0,
+                    taskCompletionRate: latestPerformance?.taskCompletionRate || 0,
+                    attendanceRate: latestPerformance?.attendanceRate || 0,
+                    profitMargin: latestPerformance?.profitMargin || 0,
+                    revenuePerEmployee: latestPerformance?.revenuePerEmployee || 0,
                 }
             };
 

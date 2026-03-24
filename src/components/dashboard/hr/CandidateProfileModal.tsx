@@ -42,6 +42,11 @@ export default function CandidateProfileModal({ application, onClose, onSchedule
 
     if (!application) return null;
 
+    const resumeUrl = typeof application.resumeUrl === 'string' ? application.resumeUrl.trim() : '';
+    const hasResume = Boolean(resumeUrl);
+    const isInternalResume = hasResume && (resumeUrl.startsWith('/api/files/') || resumeUrl.startsWith('/uploads/'));
+    const resumeFilename = hasResume ? decodeURIComponent(resumeUrl.split('/').pop() || 'resume') : 'resume';
+
     return (
 
         (typeof document !== 'undefined' ? createPortal(
@@ -184,14 +189,26 @@ export default function CandidateProfileModal({ application, onClose, onSchedule
                                     </div>
                                 </div>
 
-                                {application.resumeUrl && (
-                                    <a
-                                        href={application.resumeUrl}
-                                        target="_blank"
-                                        className="btn bg-secondary-900 hover:bg-black text-white px-5 py-3 rounded-xl font-bold uppercase text-[10px] tracking-widest shadow-xl flex items-center gap-2"
-                                    >
-                                        <Download size={16} /> Download Resume
-                                    </a>
+                                {hasResume && (
+                                    <div className="flex flex-wrap gap-3">
+                                        <a
+                                            href={resumeUrl}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="btn bg-secondary-900 hover:bg-black text-white px-5 py-3 rounded-xl font-bold uppercase text-[10px] tracking-widest shadow-xl flex items-center gap-2"
+                                        >
+                                            <ExternalLink size={16} /> Preview Resume
+                                        </a>
+                                        <a
+                                            href={resumeUrl}
+                                            {...(isInternalResume ? { download: resumeFilename } : {})}
+                                            target={isInternalResume ? undefined : '_blank'}
+                                            rel={isInternalResume ? undefined : 'noopener noreferrer'}
+                                            className="btn btn-secondary px-5 py-3 rounded-xl font-bold uppercase text-[10px] tracking-widest flex items-center gap-2"
+                                        >
+                                            <Download size={16} /> {isInternalResume ? 'Download Resume' : 'Open Source Link'}
+                                        </a>
+                                    </div>
                                 )}
                             </div>
 

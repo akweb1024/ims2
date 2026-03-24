@@ -2,20 +2,22 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
-import { Settings, Plus, Cpu, Webhook, KeyRound, Loader2, Save, Trash2, CheckCircle, AlertTriangle } from 'lucide-react';
+import { Settings, Cpu, Webhook, KeyRound, Loader2, Save, CheckCircle, AlertTriangle, PlugZap } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 // List of supported integrations hardcoded for UI context
 const SUPPORTED_PROVIDERS = [
     { id: 'GEMINI', name: 'Google Gemini AI', icon: Cpu, desc: 'Used for intelligent Document OCR and chat.', type: 'AI' },
     { id: 'PLAGIARISM_SCANNER', name: 'Turnitin / iThenticate', icon: Webhook, desc: 'Used for scanning Journal Articles.', type: 'Webhook' },
-    { id: 'AWS_SES', name: 'Amazon SES', icon: KeyRound, desc: 'Used for batch Marketing Campaigns.', type: 'SMTP' }
+    { id: 'AWS_SES', name: 'Amazon SES', icon: KeyRound, desc: 'Used for batch Marketing Campaigns.', type: 'SMTP' },
+    { id: 'WHATSAPP_TWILIO', name: 'WhatsApp via Twilio', icon: Webhook, desc: 'Used for operational and HR WhatsApp notifications.', type: 'Messaging' }
 ];
 
 export default function IntegrationsGatewayPage() {
     const [integrations, setIntegrations] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState<string | null>(null);
+    const [testing, setTesting] = useState<string | null>(null);
 
     const [formStates, setFormStates] = useState<Record<string, { key: string, value: string, isActive: boolean, isSet: boolean }>>({});
 
@@ -85,6 +87,29 @@ export default function IntegrationsGatewayPage() {
             toast.error('Network error. Try again.');
         } finally {
             setSaving(null);
+        }
+    };
+
+    const handleTest = async (provider: string) => {
+        setTesting(provider);
+        try {
+            const res = await fetch('/api/settings/integrations/test', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ provider })
+            });
+
+            const data = await res.json();
+            if (res.ok) {
+                toast.success(data.message || `${provider} connection verified.`);
+            } else {
+                toast.error(data.error || data.message || `Failed to verify ${provider}.`);
+            }
+        } catch (error) {
+            console.error(error);
+            toast.error('Network error while testing integration.');
+        } finally {
+            setTesting(null);
         }
     };
 
@@ -176,20 +201,42 @@ export default function IntegrationsGatewayPage() {
                                             </div>
                                         </div>
 
-                                        {provider.id === 'AWS_SES' && (
+                                        {(provider.id === 'AWS_SES' || provider.id === 'WHATSAPP_TWILIO') && (
                                             <div className="space-y-2 mt-4">
-                                                <label className="text-[10px] font-black tracking-widest text-secondary-400 uppercase">Sender Identity (Email Endpoint)</label>
+                                                <label className="text-[10px] font-black tracking-widest text-secondary-400 uppercase">
+                                                    {provider.id === 'AWS_SES' ? 'Sender Identity (Email Endpoint)' : 'Provider Config JSON'}
+                                                </label>
                                                 <input 
                                                     type="text" 
-                                                    placeholder="noreply@stm.com"
+                                                    placeholder={provider.id === 'AWS_SES'
+                                                        ? 'noreply@stm.com'
+                                                        : '{"accountSid":"AC...","from":"whatsapp:+14155238886"}'}
                                                     className="input-premium w-full text-sm font-medium"
                                                     value={state.value}
                                                     onChange={e => setFormStates({...formStates, [provider.id]: { ...state, value: e.target.value }})}
                                                 />
+                                                {provider.id === 'WHATSAPP_TWILIO' && (
+                                                    <p className="text-xs font-medium text-secondary-500">
+                                                        Save the Twilio auth token in the secret field above. Use JSON here for `accountSid` and `from`.
+                                                    </p>
+                                                )}
                                             </div>
                                         )}
 
-                                        <div className="flex justify-end pt-2">
+                                        <div className="flex justify-end gap-3 pt-2">
+                                            {['GEMINI', 'PLAGIARISM_SCANNER', 'AWS_SES', 'WHATSAPP_TWILIO'].includes(provider.id) && (
+                                                <button
+                                                    onClick={() => handleTest(provider.id)}
+                                                    disabled={testing === provider.id}
+                                                    className="px-5 py-2 rounded-xl font-bold flex items-center gap-2 transition-all border border-secondary-200 text-secondary-700 hover:bg-secondary-50"
+                                                >
+                                                    {testing === provider.id ? (
+                                                        <><Loader2 size={16} className="animate-spin" /> Testing...</>
+                                                    ) : (
+                                                        <><PlugZap size={16} /> Test Connection</>
+                                                    )}
+                                                </button>
+                                            )}
                                             <button 
                                                 onClick={() => handleSave(provider.id)}
                                                 disabled={saving === provider.id || (!state.key && !state.isSet)}

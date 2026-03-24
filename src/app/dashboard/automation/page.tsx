@@ -1,16 +1,78 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import {
     Cpu, Play, CheckCircle2, AlertCircle,
     RefreshCw, GitBranch, DollarSign, Users,
-    Clock, Settings, Terminal
+    Clock, Terminal
 } from 'lucide-react';
+
+type AutomationJob = {
+    id: string;
+    key: string;
+    action: string;
+    title: string;
+    description: string;
+    icon: string | null;
+    color: string | null;
+    scheduleLabel: string | null;
+    lastRunLabel: string;
+    latestRun: {
+        id: string;
+        status: string;
+        message: string | null;
+        stats: Record<string, any> | null;
+    } | null;
+};
+
+type AutomationRun = {
+    id: string;
+    status: string;
+    message: string | null;
+    startedAt: string;
+    job: {
+        title: string;
+        action: string;
+    };
+    triggeredUser?: {
+        name?: string | null;
+        email: string;
+    } | null;
+};
+
+const iconMap = {
+    DollarSign,
+    Users,
+    GitBranch,
+    Cpu,
+} as const;
 
 export default function AutomationPage() {
     const [running, setRunning] = useState<string | null>(null);
     const [results, setResults] = useState<Record<string, any>>({});
+    const [jobs, setJobs] = useState<AutomationJob[]>([]);
+    const [recentRuns, setRecentRuns] = useState<AutomationRun[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    const loadAutomationData = async () => {
+        setLoading(true);
+        try {
+            const res = await fetch('/api/automation');
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Failed to load automation jobs');
+            setJobs(data.jobs || []);
+            setRecentRuns(data.recentRuns || []);
+        } catch (error) {
+            console.error(error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        loadAutomationData();
+    }, []);
 
     const runAction = async (action: string, id: string) => {
         setRunning(id);
@@ -22,42 +84,13 @@ export default function AutomationPage() {
             });
             const data = await res.json();
             setResults(prev => ({ ...prev, [id]: data }));
+            await loadAutomationData();
         } catch (err) {
             console.error(err);
         } finally {
             setRunning(null);
         }
     };
-
-    const automations = [
-        {
-            id: 'finance-reconcile',
-            action: 'AUTO_RECONCILE',
-            title: 'Auto-Reconciliation Engine',
-            description: 'Matches bank statements with ledger entries using fuzzy logic.',
-            icon: <DollarSign size={24} />,
-            color: 'bg-emerald-50 text-emerald-600',
-            lastRun: '2 hours ago'
-        },
-        {
-            id: 'churn-analysis',
-            action: 'CHURN_ANALYSIS',
-            title: 'Customer Churn Predictor',
-            description: 'Analyzes engagement metrics to flag at-risk accounts.',
-            icon: <Users size={24} />,
-            color: 'bg-rose-50 text-rose-600',
-            lastRun: '1 day ago'
-        },
-        {
-            id: 'github-sync',
-            action: 'GITHUB_SYNC',
-            title: 'Code-to-Cash Sync',
-            description: 'Correlates GitHub commits with project milestones and billing.',
-            icon: <GitBranch size={24} />,
-            color: 'bg-purple-50 text-purple-600',
-            lastRun: '15 mins ago'
-        }
-    ];
 
     return (
         <DashboardLayout>
@@ -86,33 +119,44 @@ export default function AutomationPage() {
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    {automations.map((job) => (
+                    {loading ? (
+                        <div className="lg:col-span-2 rounded-[2rem] border border-gray-100 bg-white p-12 text-center text-gray-500 shadow-sm">
+                            <RefreshCw className="mx-auto mb-4 animate-spin" size={24} />
+                            <p className="font-bold">Loading automation registry...</p>
+                        </div>
+                    ) : jobs.map((job) => {
+                        const Icon = iconMap[(job.icon as keyof typeof iconMap) || 'Cpu'] || Cpu;
+                        const latestResult = results[job.id];
+                        return (
                         <div key={job.id} className="bg-white dark:bg-gray-800 rounded-[2rem] p-6 shadow-sm border border-gray-100 dark:border-gray-700 flex flex-col justify-between group hover:shadow-lg transition-all">
                             <div>
                                 <div className="flex justify-between items-start mb-4">
-                                    <div className={`p-3 rounded-2xl ${job.color} group-hover:scale-110 transition-transform`}>
-                                        {job.icon}
+                                    <div className={`p-3 rounded-2xl ${job.color || 'bg-slate-50 text-slate-600'} group-hover:scale-110 transition-transform`}>
+                                        <Icon size={24} />
                                     </div>
                                     <div className="text-right">
                                         <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Last Run</div>
-                                        <div className="text-xs font-bold text-gray-600 dark:text-gray-300">{job.lastRun}</div>
+                                        <div className="text-xs font-bold text-gray-600 dark:text-gray-300">{job.lastRunLabel}</div>
                                     </div>
                                 </div>
                                 <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">{job.title}</h3>
                                 <p className="text-gray-500 dark:text-gray-400 text-sm mb-6 leading-relaxed">
                                     {job.description}
                                 </p>
+                                <div className="text-[11px] font-bold uppercase tracking-widest text-gray-400">
+                                    Schedule: {job.scheduleLabel || 'Manual'}
+                                </div>
                             </div>
 
                             <div>
-                                {results[job.id] ? (
+                                {latestResult ? (
                                     <div className="bg-gray-50 dark:bg-gray-700/50 rounded-xl p-4 border border-gray-100 dark:border-gray-600 animate-in zoom-in-95 duration-300">
-                                        <div className="flex items-center gap-2 mb-2 text-green-600 font-bold text-sm">
-                                            <CheckCircle2 size={16} /> Success
+                                        <div className={`flex items-center gap-2 mb-2 font-bold text-sm ${latestResult.success ? 'text-green-600' : 'text-rose-600'}`}>
+                                            {latestResult.success ? <CheckCircle2 size={16} /> : <AlertCircle size={16} />} {latestResult.success ? 'Success' : 'Failed'}
                                         </div>
-                                        <p className="text-xs text-gray-600 dark:text-gray-300">{results[job.id].message}</p>
+                                        <p className="text-xs text-gray-600 dark:text-gray-300">{latestResult.message || latestResult.error}</p>
                                         <div className="mt-3 flex gap-2">
-                                            {Object.entries(results[job.id].stats || {}).map(([key, val]) => (
+                                            {Object.entries(latestResult.stats || {}).map(([key, val]) => (
                                                 <span key={key} className="text-[10px] bg-white dark:bg-gray-600 px-2 py-1 rounded shadow-sm border border-gray-100 dark:border-gray-500 uppercase font-bold text-gray-500 dark:text-gray-400">
                                                     {key}: <span className="text-gray-900 dark:text-white">{val as any}</span>
                                                 </span>
@@ -128,7 +172,7 @@ export default function AutomationPage() {
                                 ) : (
                                     <div className="flex items-center justify-between pt-4 border-t border-gray-50 dark:border-gray-700">
                                         <div className="flex items-center gap-2 text-xs font-bold text-gray-400">
-                                            <Clock size={14} /> Scheduled: Midnight
+                                            <Clock size={14} /> Scheduled: {job.scheduleLabel || 'Manual'}
                                         </div>
                                         <button
                                             onClick={() => runAction(job.action, job.id)}
@@ -148,16 +192,19 @@ export default function AutomationPage() {
                                 )}
                             </div>
                         </div>
-                    ))}
+                    )})}
 
-                    {/* Console / Log Placeholder */}
                     <div className="bg-gray-900 rounded-[2rem] p-6 text-green-400 font-mono text-xs shadow-inner overflow-hidden relative">
                         <div className="absolute top-4 right-4 text-gray-600"><Terminal size={16} /></div>
-                        <div className="opacity-50 space-y-1">
-                            <p>[03:15:00] Cron: daily_backup started</p>
-                            <p>[03:15:42] Cron: daily_backup completed (2.4GB)</p>
-                            <p>[04:00:00] Cron: user_sync started</p>
-                            <p>[04:00:05] Cron: user_sync completed (no changes)</p>
+                        <div className="opacity-80 space-y-1">
+                            {recentRuns.length > 0 ? recentRuns.map((run) => (
+                                <p key={run.id}>
+                                    [{new Date(run.startedAt).toLocaleTimeString()}] {run.job.action}: {run.status.toLowerCase()}
+                                    {run.message ? ` - ${run.message}` : ''}
+                                </p>
+                            )) : (
+                                <p>[idle] No automation runs recorded yet.</p>
+                            )}
                         </div>
                     </div>
                 </div>
@@ -165,4 +212,3 @@ export default function AutomationPage() {
         </DashboardLayout>
     );
 }
-

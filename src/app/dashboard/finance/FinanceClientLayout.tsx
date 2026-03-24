@@ -10,7 +10,8 @@ import {
     BookText,
     FileText,
     PieChart,
-    CreditCard
+    CreditCard,
+    HandCoins
 } from 'lucide-react';
 
 interface FinanceClientLayoutProps {
@@ -27,6 +28,7 @@ export default function FinanceClientLayout({ children }: FinanceClientLayoutPro
         { name: 'Ledger', href: '/dashboard/finance/ledger', icon: FileText },
         { name: 'Invoices', href: '/dashboard/crm/invoices', icon: FileText },
         { name: 'Payments', href: '/dashboard/payments', icon: CreditCard },
+        { name: 'Payouts', href: '/dashboard/finance/payouts', icon: HandCoins },
         { name: 'Reports', href: '/dashboard/finance/reports', icon: PieChart },
     ];
 

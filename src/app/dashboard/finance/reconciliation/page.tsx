@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import {
     ArrowRightLeft, CheckCircle2, XCircle, AlertCircle,
@@ -9,10 +9,12 @@ import {
 import toast from 'react-hot-toast';
 
 interface Transaction {
-    id: string; // Temporary ID for CSV line
+    id: string;
+    externalId?: string | null;
     date: string;
     description: string;
     amount: number;
+    signedAmount?: number;
     type: 'CREDIT' | 'DEBIT';
     status: 'MATCHED' | 'UNMATCHED' | 'PENDING';
     matchConfidence?: number;
@@ -24,11 +26,44 @@ interface Transaction {
     };
 }
 
+interface ReconciliationSession {
+    id: string;
+    sourceFileName?: string | null;
+    status: string;
+    totalTransactions: number;
+    matchedCount: number;
+    pendingCount: number;
+    unmatchedCount: number;
+    createdAt: string;
+    uploadedBy?: {
+        id: string;
+        name?: string | null;
+        email: string;
+    } | null;
+}
+
 export default function ReconciliationPage() {
     const [transactions, setTransactions] = useState<Transaction[]>([]);
     const [loading, setLoading] = useState(false);
     const [stats, setStats] = useState({ unmatched: 0, pending: 0, matched: 0 });
     const [file, setFile] = useState<File | null>(null);
+    const [sessions, setSessions] = useState<ReconciliationSession[]>([]);
+    const [currentSession, setCurrentSession] = useState<ReconciliationSession | null>(null);
+
+    useEffect(() => {
+        fetchSessions();
+    }, []);
+
+    const fetchSessions = async () => {
+        try {
+            const res = await fetch('/api/finance/reconciliation/sessions');
+            if (res.ok) {
+                setSessions(await res.json());
+            }
+        } catch (error) {
+            console.error(error);
+        }
+    };
 
     const parseCSV = (text: string) => {
         const lines = text.split('\n');
@@ -102,35 +137,24 @@ export default function ReconciliationPage() {
                 const res = await fetch('/api/finance/reconciliation/match', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ transactions: apiPayload })
+                    body: JSON.stringify({ transactions: apiPayload, sourceFileName: file.name })
                 });
 
                 if (res.ok) {
-                    const matches = await res.json();
-                    // Merge matches back
-                    // API returns list with status/suggestion
-                    // We map by ID or index, assuming order preserved or ID passed back.
-                    // API implementation passed back "...txn" so ID is there.
-                    setTransactions(matches);
-
-                    // Update stats
-                    const p = matches.filter((t: any) => t.status === 'MATCHED').length; // Actually API returns MATCHED if found candidate, but we show as PENDING review?
-                    // My API returns MATCHED. But UI mocks showed "PENDING" with suggestion.
-                    // Let's treat API MATCHED as "PENDING REVIEW" in UI.
-
-                    const uiData = matches.map((m: any) => ({
+                    const payload = await res.json();
+                    const uiData = payload.transactions.map((m: any) => ({
                         ...m,
-                        status: m.status === 'MATCHED' ? 'PENDING' : 'UNMATCHED',
-                        amount: Math.abs(parseFloat(m.amount)) // Ensure positive for display
+                        date: new Date(m.date).toISOString().split('T')[0],
+                        amount: Math.abs(Number(m.amount)),
                     }));
-
                     setTransactions(uiData);
-
+                    setCurrentSession(payload.session);
                     setStats({
-                        matched: 0,
-                        pending: uiData.filter((t: any) => t.status === 'PENDING').length,
-                        unmatched: uiData.filter((t: any) => t.status === 'UNMATCHED').length
+                        matched: payload.session.matchedCount,
+                        pending: payload.session.pendingCount,
+                        unmatched: payload.session.unmatchedCount
                     });
+                    fetchSessions();
 
                     toast.success('Analysis Complete');
                 } else {
@@ -150,19 +174,25 @@ export default function ReconciliationPage() {
         const txn = transactions.find(t => t.id === txnId);
         if (!txn || !txn.suggestedMatch) return;
 
-        // Call API
         try {
-            const res = await fetch('/api/finance/reconciliation/confirm', {
-                method: 'POST',
+            const res = await fetch(`/api/finance/reconciliation/lines/${txnId}`, {
+                method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ journalEntryId: txn.suggestedMatch.id })
+                body: JSON.stringify({ action: 'ACCEPT' })
             });
 
             if (res.ok) {
+                const payload = await res.json();
                 setTransactions(prev => prev.map(t =>
                     t.id === txnId ? { ...t, status: 'MATCHED' } : t
                 ));
-                setStats(prev => ({ ...prev, pending: prev.pending - 1, matched: prev.matched + 1 }));
+                setStats({
+                    matched: payload.session.matchedCount,
+                    pending: payload.session.pendingCount,
+                    unmatched: payload.session.unmatchedCount,
+                });
+                setCurrentSession(payload.session);
+                fetchSessions();
                 toast.success('Reconciled!');
             } else {
                 toast.error('Failed to confirm');
@@ -172,11 +202,33 @@ export default function ReconciliationPage() {
         }
     };
 
-    const handleIgnore = (id: string) => {
-        setTransactions(prev => prev.map(t =>
-            t.id === id ? { ...t, status: 'UNMATCHED', matchConfidence: 0, suggestedMatch: undefined } : t
-        ));
-        setStats(prev => ({ ...prev, pending: prev.pending - 1, unmatched: prev.unmatched + 1 }));
+    const handleIgnore = async (id: string) => {
+        try {
+            const res = await fetch(`/api/finance/reconciliation/lines/${id}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'IGNORE' })
+            });
+
+            if (!res.ok) {
+                throw new Error('Failed to ignore reconciliation line');
+            }
+
+            const payload = await res.json();
+            setTransactions(prev => prev.map(t =>
+                t.id === id ? { ...t, status: 'UNMATCHED', matchConfidence: 0, suggestedMatch: undefined } : t
+            ));
+            setStats({
+                matched: payload.session.matchedCount,
+                pending: payload.session.pendingCount,
+                unmatched: payload.session.unmatchedCount,
+            });
+            setCurrentSession(payload.session);
+            fetchSessions();
+        } catch (error) {
+            console.error(error);
+            toast.error('Failed to ignore line');
+        }
     };
 
     return (
@@ -234,6 +286,63 @@ export default function ReconciliationPage() {
                         <p className="text-4xl font-black text-gray-900">{stats.matched}</p>
                         <p className="text-sm text-gray-500 mt-2">Successfully processed</p>
                     </div>
+                </div>
+
+                <div className="bg-white rounded-[2rem] border border-gray-100 shadow-sm p-6">
+                    <div className="flex items-center justify-between mb-4">
+                        <div>
+                            <h3 className="text-lg font-bold text-gray-900">Recent Reconciliation Sessions</h3>
+                            <p className="text-sm text-gray-500">Saved imports and their current review status.</p>
+                        </div>
+                        {currentSession && (
+                            <span className="text-xs font-black uppercase tracking-widest px-3 py-1 rounded-full bg-blue-50 text-blue-600">
+                                Active Session: {currentSession.id.slice(0, 8)}
+                            </span>
+                        )}
+                    </div>
+
+                    {sessions.length === 0 ? (
+                        <div className="text-sm text-gray-400 italic">No saved reconciliation sessions yet.</div>
+                    ) : (
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                            {sessions.map((session) => (
+                                <div key={session.id} className="rounded-2xl border border-gray-100 p-4 bg-gray-50/50">
+                                    <div className="flex items-start justify-between gap-3">
+                                        <div>
+                                            <p className="font-bold text-gray-900">
+                                                {session.sourceFileName || `Session ${session.id.slice(0, 8)}`}
+                                            </p>
+                                            <p className="text-xs text-gray-500 mt-1">
+                                                {new Date(session.createdAt).toLocaleString()}
+                                                {session.uploadedBy?.email ? ` • ${session.uploadedBy.name || session.uploadedBy.email}` : ''}
+                                            </p>
+                                        </div>
+                                        <span className="text-[10px] font-black uppercase tracking-widest px-2 py-1 rounded-full bg-white border border-gray-200 text-gray-600">
+                                            {session.status.replace(/_/g, ' ')}
+                                        </span>
+                                    </div>
+                                    <div className="grid grid-cols-4 gap-3 mt-4 text-center">
+                                        <div>
+                                            <p className="text-[10px] uppercase font-black text-gray-400">Total</p>
+                                            <p className="text-lg font-black text-gray-900">{session.totalTransactions}</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-[10px] uppercase font-black text-gray-400">Matched</p>
+                                            <p className="text-lg font-black text-green-600">{session.matchedCount}</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-[10px] uppercase font-black text-gray-400">Pending</p>
+                                            <p className="text-lg font-black text-orange-500">{session.pendingCount}</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-[10px] uppercase font-black text-gray-400">Unmatched</p>
+                                            <p className="text-lg font-black text-red-500">{session.unmatchedCount}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
                 </div>
 
                 <div className="bg-white rounded-[2.5rem] shadow-sm border border-gray-100 overflow-hidden">

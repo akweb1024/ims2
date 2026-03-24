@@ -56,6 +56,10 @@ model Company {
   campaignAudiences           CampaignAudience[]
   chatRooms                   ChatRoom[]
   communications              CommunicationLog[]
+  commissionPayouts           CommissionPayout[]
+  reconciliationSessions      BankReconciliationSession[]
+  automationJobs              AutomationJob[]
+  automationRuns              AutomationRun[]
   integrations                CompanyIntegration[]
   companyPerformance          CompanyPerformance[]
   potential                   CompanyPotential?
@@ -144,6 +148,52 @@ model CompanyIntegration {
   @@index([companyId])
 }
 
+model AutomationJob {
+  id              String          @id @default(uuid())
+  companyId       String?
+  key             String
+  action          String
+  title           String
+  description     String
+  category        String?
+  icon            String?
+  color           String?
+  scheduleLabel   String?
+  isActive        Boolean         @default(true)
+  requiresCronKey Boolean         @default(false)
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  company         Company?        @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  runs            AutomationRun[]
+
+  @@unique([companyId, key])
+  @@index([companyId])
+  @@index([action])
+}
+
+model AutomationRun {
+  id            String         @id @default(uuid())
+  jobId          String
+  companyId      String?
+  triggeredBy    String?
+  status         String
+  startedAt      DateTime      @default(now())
+  completedAt    DateTime?
+  durationMs     Int?
+  message        String?
+  stats          Json?
+  error          String?
+  createdAt      DateTime      @default(now())
+  job            AutomationJob @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  company        Company?      @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  triggeredUser  User?         @relation("AutomationRunTrigger", fields: [triggeredBy], references: [id])
+
+  @@index([jobId])
+  @@index([companyId])
+  @@index([triggeredBy])
+  @@index([startedAt])
+}
+
 model Department {
   id                     String                       @id @default(uuid())
   companyId              String
@@ -178,135 +228,140 @@ model Department {
 }
 
 model User {
-  id                        String                      @id @default(uuid())
-  email                     String                      @unique
-  password                  String
-  role                      UserRole                    @default(EXECUTIVE)
-  isActive                  Boolean                     @default(true)
-  emailVerified             Boolean                     @default(false)
-  lastLogin                 DateTime?
-  theme                     String                      @default("light")
-  notificationsEnabled      Boolean                     @default(true)
-  companyId                 String?
-  departmentId              String?
-  managerId                 String?
-  createdAt                 DateTime                    @default(now())
-  updatedAt                 DateTime                    @updatedAt
-  name                      String?
-  allowedModules            String[]                    @default(["CORE"])
-  roles                     UserRole[]                  @default([EXECUTIVE])
-  announcements             Announcement[]
-  auditLogs                 AuditLog[]
-  certificates              Certificate[]
-  sentMessages              ChatMessage[]
-  chatParticipants          ChatParticipant[]
-  coAuthorInvitations       CoAuthorInvitation[]
-  communications            CommunicationLog[]          @relation("UserCommunications")
-  committeeRoles            ConferenceCommitteeMember[]
-  conferenceRegistrations   ConferenceRegistration[]
-  mentoredCourses           Course[]                    @relation("CourseMentor")
-  courseDiscussions         CourseDiscussion[]
-  courseEnrollments         CourseEnrollment[]
-  courseNotes               CourseNote[]
-  customerAssignments       CustomerAssignment[]        @relation("EmployeeAssignments")
-  assignedCustomers         CustomerProfile[]           @relation("AssignedCustomers")
-  customerProfile           CustomerProfile?
-  deals                     Deal[]
-  headOfDepartments         Department[]                @relation("DepartmentHead")
-  discussionReplies         DiscussionReply[]
-  editorialMemberships      EditorialBoardMember[]
-  authoredComments          EmployeeComment[]
-  reviewedGoals             EmployeeGoal[]              @relation("GoalReviewer")
-  employeeProfile           EmployeeProfile?
-  createdFinanceRecords     FinancialRecord[]           @relation("FinanceCreator")
-  goalEvaluations           GoalEvaluation[]
-  assignedAssets            ITAsset[]
-  itPerformanceMetrics      ITPerformanceMetric[]       @relation("ITPerformance")
-  managedProjects           ITProject[]                 @relation("ProjectManager")
-  ledProjects               ITProject[]                 @relation("TeamLead")
-  itProjectComments         ITProjectComment[]          @relation("ITProjectComments")
-  itProjectSuggestions      ITProjectSuggestion[]
-  itResolutions             ITSupportTicket[]           @relation("ITResolver")
-  itRequests                ITSupportTicket[]           @relation("ITRequestor")
-  assignedITTasks           ITTask[]                    @relation("ITTaskAssignee")
-  createdITTasks            ITTask[]                    @relation("ITTaskCreator")
-  reportedITTasks           ITTask[]                    @relation("ITTaskReporter")
-  itTaskComments            ITTaskComment[]             @relation("ITTaskComments")
-  itTaskStatusChanges       ITTaskStatusHistory[]       @relation("ITStatusChanger")
-  itTimeEntries             ITTimeEntry[]               @relation("ITTimeEntries")
-  assignedInstitutions      Institution[]               @relation("InstitutionOwner")
-  mentoredInternships       Internship[]                @relation("InternshipMentor")
-  internshipApplications    InternshipApplication[]
-  screeningsSubmitted       InterviewScreening[]        @relation("ScreeningSubmitter")
-  assignedIssues            Issue[]                     @relation("IssueAssignee")
-  reportedIssues            Issue[]                     @relation("IssueReporter")
-  issueFollowUps            IssueFollowUp[]
-  managedJournals           Journal[]                   @relation("JournalEditor")
-  managedJournalsAsManager  Journal[]                   @relation("JournalManager")
-  postedJournalEntries      JournalEntry[]
-  reviewerProfiles          JournalReviewer[]           @relation("ReviewerProfile")
-  knowledgeArticles         KnowledgeArticle[]
-  sentLMSEmails             LMSEmailLog[]
-  mentorPayments            LMSMentorPayment[]          @relation("MentorPayments")
-  approvedLeaves            LeaveRequest[]              @relation("LeaveApprover")
-  sentCommunications        ManuscriptCommunication[]   @relation("SentCommunications")
-  receivedCommunications    ManuscriptCommunication[]   @relation("ReceivedCommunications")
-  manuscriptDrafts          ManuscriptDraft[]
-  manuscriptRevisions       ManuscriptRevision[]
-  manuscriptStatusChanges   ManuscriptStatusHistory[]
-  mentorSessions            MentorSession[]             @relation("SessionMentor")
-  notifications             Notification[]
-  paperReviews              PaperReview[]
-  passwordResetTokens       PasswordResetToken[]
-  peerReviewsGiven          PeerReview[]                @relation("PeerReviewer")
-  evaluationsConducted      PerformanceEvaluation[]     @relation("EvaluatorUser")
-  performanceReviews        PerformanceReview[]         @relation("Reviewer")
-  plagiarismReports         PlagiarismReport[]          @relation("PlagiarismChecker")
-  businessLedProjects       Project[]                   @relation("BusinessTeamLead")
-  businessProjects          Project[]                   @relation("BusinessProjectManager")
-  projectMemberships        ProjectMember[]
-  pushSubscriptions         PushSubscription[]
-  qualityReports            QualityReport[]             @relation("QualityChecker")
-  quizAttempts              QuizAttempt[]
-  interviewsConducted       RecruitmentInterview[]      @relation("RecruitmentInterviewer")
-  redGreenEntriesRecorded   RedGreenDiary[]             @relation("DiaryRecorder")
-  redGreenEntriesTarget     RedGreenDiary[]             @relation("DiaryTarget")
-  reviews                   Review[]
-  assignedReviews           ReviewAssignment[]          @relation("AssignedReviews")
-  issuedCertificates        ReviewCertificate[]         @relation("IssuedCertificates")
-  validatedReports          ReviewReport[]              @relation("ValidatedReports")
-  incrementReviews          SalaryIncrementReview[]     @relation("IncrementReviewer")
-  screeningTemplatesCreated ScreeningTemplate[]
-  assignedByTasks           StageAssignment[]           @relation("TaskAssigner")
-  assignedTasks             StageAssignment[]           @relation("TaskAssignee")
-  movedStocks               StockMovement[]             @relation("StockMover")
-  assignedSubscriptions     Subscription[]              @relation("AssignedSalesExecutive")
-  assignedTickets           SupportTicket[]             @relation("AssignedTickets")
-  createdTasks              Task[]                      @relation("TaskAssigner")
-  tasks                     Task[]
-  managedTeamMembers        TeamMember[]                @relation("ManagerTeamMembers")
-  teamMemberships           TeamMember[]                @relation("UserTeamMemberships")
-  company                   Company?                    @relation("PrimaryCompany", fields: [companyId], references: [id])
-  department                Department?                 @relation("DepartmentMembers", fields: [departmentId], references: [id])
-  manager                   User?                       @relation("ManagementChain", fields: [managerId], references: [id])
-  subordinates              User[]                      @relation("ManagementChain")
-  lessonProgress            UserLessonProgress[]
-  managedWarehouses         Warehouse[]                 @relation("WarehouseManager")
-  workPlanComments          WorkPlanComment[]
-  workReportComments        WorkReportComment[]         @relation("WorkReportCommentAuthor")
-  mentoredWorkshops         Workshop[]                  @relation("WorkshopMentor")
-  workshopEnrollments       WorkshopEnrollment[]
-  assignedToCustomers       CustomerProfile[]           @relation("CustomerToExecutives")
-  taggedITProjects          ITProject[]                 @relation("ProjectTaggedEmployees")
-  companies                 Company[]                   @relation("UserCompanies")
-  feedbacks                 UserFeedback[]              @relation("UserFeedbacks")
-  feedbackMessages          FeedbackMessage[]           @relation("FeedbackMessageSender")
-  files                     FileRecord[]
-  vaultKeyring              VaultKeyring?           @relation("UserVaultKeyring")
-  vaultFolders              VaultFolder[]           @relation("UserVaultFolders")
-  ownedVaultItems           VaultItem[]             @relation("OwnerVaultItems")
-  vaultAccessReceived       VaultAccess[]           @relation("VaultAccessReceived")
-  vaultAccessGranted        VaultAccess[]           @relation("VaultAccessGranted")
+  id                             String                      @id @default(uuid())
+  email                          String                      @unique
+  password                       String
+  role                           UserRole                    @default(EXECUTIVE)
+  isActive                       Boolean                     @default(true)
+  emailVerified                  Boolean                     @default(false)
+  lastLogin                      DateTime?
+  theme                          String                      @default("light")
+  notificationsEnabled           Boolean                     @default(true)
+  companyId                      String?
+  departmentId                   String?
+  managerId                      String?
+  createdAt                      DateTime                    @default(now())
+  updatedAt                      DateTime                    @updatedAt
+  name                           String?
+  allowedModules                 String[]                    @default(["CORE"])
+  roles                          UserRole[]                  @default([EXECUTIVE])
+  announcements                  Announcement[]
+  auditLogs                      AuditLog[]
+  certificates                   Certificate[]
+  sentMessages                   ChatMessage[]
+  chatParticipants               ChatParticipant[]
+  coAuthorInvitations            CoAuthorInvitation[]
+  communications                 CommunicationLog[]          @relation("UserCommunications")
+  knowledgeArticleRevisions      KnowledgeArticleRevision[]  @relation("KnowledgeArticleRevisionEditor")
+  committeeRoles                 ConferenceCommitteeMember[]
+  conferenceRegistrations        ConferenceRegistration[]
+  uploadedReconciliationSessions BankReconciliationSession[] @relation("ReconciliationSessionUploader")
+  automationRunsTriggered        AutomationRun[]             @relation("AutomationRunTrigger")
+  mentoredCourses                Course[]                    @relation("CourseMentor")
+  courseDiscussions              CourseDiscussion[]
+  courseEnrollments              CourseEnrollment[]
+  courseNotes                    CourseNote[]
+  customerAssignments            CustomerAssignment[]        @relation("EmployeeAssignments")
+  assignedCustomers              CustomerProfile[]           @relation("AssignedCustomers")
+  commissionPayoutRequests       CommissionPayout[]          @relation("CommissionPayoutRequester")
+  commissionPayoutReviews        CommissionPayout[]          @relation("CommissionPayoutReviewer")
+  customerProfile                CustomerProfile?
+  deals                          Deal[]
+  headOfDepartments              Department[]                @relation("DepartmentHead")
+  discussionReplies              DiscussionReply[]
+  editorialMemberships           EditorialBoardMember[]
+  authoredComments               EmployeeComment[]
+  reviewedGoals                  EmployeeGoal[]              @relation("GoalReviewer")
+  employeeProfile                EmployeeProfile?
+  createdFinanceRecords          FinancialRecord[]           @relation("FinanceCreator")
+  goalEvaluations                GoalEvaluation[]
+  assignedAssets                 ITAsset[]
+  itPerformanceMetrics           ITPerformanceMetric[]       @relation("ITPerformance")
+  managedProjects                ITProject[]                 @relation("ProjectManager")
+  ledProjects                    ITProject[]                 @relation("TeamLead")
+  itProjectComments              ITProjectComment[]          @relation("ITProjectComments")
+  itProjectSuggestions           ITProjectSuggestion[]
+  itResolutions                  ITSupportTicket[]           @relation("ITResolver")
+  itRequests                     ITSupportTicket[]           @relation("ITRequestor")
+  assignedITTasks                ITTask[]                    @relation("ITTaskAssignee")
+  createdITTasks                 ITTask[]                    @relation("ITTaskCreator")
+  reportedITTasks                ITTask[]                    @relation("ITTaskReporter")
+  itTaskComments                 ITTaskComment[]             @relation("ITTaskComments")
+  itTaskStatusChanges            ITTaskStatusHistory[]       @relation("ITStatusChanger")
+  itTimeEntries                  ITTimeEntry[]               @relation("ITTimeEntries")
+  assignedInstitutions           Institution[]               @relation("InstitutionOwner")
+  mentoredInternships            Internship[]                @relation("InternshipMentor")
+  internshipApplications         InternshipApplication[]
+  screeningsSubmitted            InterviewScreening[]        @relation("ScreeningSubmitter")
+  assignedIssues                 Issue[]                     @relation("IssueAssignee")
+  reportedIssues                 Issue[]                     @relation("IssueReporter")
+  issueFollowUps                 IssueFollowUp[]
+  managedJournals                Journal[]                   @relation("JournalEditor")
+  managedJournalsAsManager       Journal[]                   @relation("JournalManager")
+  postedJournalEntries           JournalEntry[]
+  reviewerProfiles               JournalReviewer[]           @relation("ReviewerProfile")
+  knowledgeArticles              KnowledgeArticle[]
+  sentLMSEmails                  LMSEmailLog[]
+  mentorPayments                 LMSMentorPayment[]          @relation("MentorPayments")
+  approvedLeaves                 LeaveRequest[]              @relation("LeaveApprover")
+  sentCommunications             ManuscriptCommunication[]   @relation("SentCommunications")
+  receivedCommunications         ManuscriptCommunication[]   @relation("ReceivedCommunications")
+  manuscriptDrafts               ManuscriptDraft[]
+  manuscriptRevisions            ManuscriptRevision[]
+  manuscriptStatusChanges        ManuscriptStatusHistory[]
+  mentorSessions                 MentorSession[]             @relation("SessionMentor")
+  notifications                  Notification[]
+  paperReviews                   PaperReview[]
+  passwordResetTokens            PasswordResetToken[]
+  peerReviewsGiven               PeerReview[]                @relation("PeerReviewer")
+  evaluationsConducted           PerformanceEvaluation[]     @relation("EvaluatorUser")
+  performanceReviews             PerformanceReview[]         @relation("Reviewer")
+  plagiarismReports              PlagiarismReport[]          @relation("PlagiarismChecker")
+  businessLedProjects            Project[]                   @relation("BusinessTeamLead")
+  businessProjects               Project[]                   @relation("BusinessProjectManager")
+  projectMemberships             ProjectMember[]
+  pushSubscriptions              PushSubscription[]
+  qualityReports                 QualityReport[]             @relation("QualityChecker")
+  quizAttempts                   QuizAttempt[]
+  interviewsConducted            RecruitmentInterview[]      @relation("RecruitmentInterviewer")
+  redGreenEntriesRecorded        RedGreenDiary[]             @relation("DiaryRecorder")
+  redGreenEntriesTarget          RedGreenDiary[]             @relation("DiaryTarget")
+  reviews                        Review[]
+  assignedReviews                ReviewAssignment[]          @relation("AssignedReviews")
+  issuedCertificates             ReviewCertificate[]         @relation("IssuedCertificates")
+  validatedReports               ReviewReport[]              @relation("ValidatedReports")
+  incrementReviews               SalaryIncrementReview[]     @relation("IncrementReviewer")
+  screeningTemplatesCreated      ScreeningTemplate[]
+  assignedByTasks                StageAssignment[]           @relation("TaskAssigner")
+  assignedTasks                  StageAssignment[]           @relation("TaskAssignee")
+  movedStocks                    StockMovement[]             @relation("StockMover")
+  assignedSubscriptions          Subscription[]              @relation("AssignedSalesExecutive")
+  assignedTickets                SupportTicket[]             @relation("AssignedTickets")
+  createdTasks                   Task[]                      @relation("TaskAssigner")
+  tasks                          Task[]
+  managedTeamMembers             TeamMember[]                @relation("ManagerTeamMembers")
+  teamMemberships                TeamMember[]                @relation("UserTeamMemberships")
+  company                        Company?                    @relation("PrimaryCompany", fields: [companyId], references: [id])
+  department                     Department?                 @relation("DepartmentMembers", fields: [departmentId], references: [id])
+  manager                        User?                       @relation("ManagementChain", fields: [managerId], references: [id])
+  subordinates                   User[]                      @relation("ManagementChain")
+  lessonProgress                 UserLessonProgress[]
+  managedWarehouses              Warehouse[]                 @relation("WarehouseManager")
+  workPlanComments               WorkPlanComment[]
+  workReportComments             WorkReportComment[]         @relation("WorkReportCommentAuthor")
+  mentoredWorkshops              Workshop[]                  @relation("WorkshopMentor")
+  workshopEnrollments            WorkshopEnrollment[]
+  assignedToCustomers            CustomerProfile[]           @relation("CustomerToExecutives")
+  taggedITProjects               ITProject[]                 @relation("ProjectTaggedEmployees")
+  companies                      Company[]                   @relation("UserCompanies")
+  feedbacks                      UserFeedback[]              @relation("UserFeedbacks")
+  feedbackMessages               FeedbackMessage[]           @relation("FeedbackMessageSender")
+  files                          FileRecord[]
+  vaultKeyring                   VaultKeyring?               @relation("UserVaultKeyring")
+  vaultFolders                   VaultFolder[]               @relation("UserVaultFolders")
+  ownedVaultItems                VaultItem[]                 @relation("OwnerVaultItems")
+  vaultAccessReceived            VaultAccess[]               @relation("VaultAccessReceived")
+  vaultAccessGranted             VaultAccess[]               @relation("VaultAccessGranted")
 
   @@index([email])
   @@index([role])
@@ -362,17 +417,47 @@ model Announcement {
 }
 
 model KnowledgeArticle {
-  id         String   @id @default(uuid())
+  id           String                 @id @default(uuid())
+  title        String
+  content      String
+  category     String
+  targetRole   String                 @default("ALL")
+  authorId     String
+  views        Int                    @default(0)
+  status       KnowledgeArticleStatus @default(PUBLISHED)
+  version      Int                    @default(1)
+  publishedAt  DateTime?
+  reviewedAt   DateTime?
+  lastEditedBy String?
+  isActive     Boolean                @default(true)
+  createdAt    DateTime               @default(now())
+  updatedAt    DateTime               @updatedAt
+  author       User                   @relation(fields: [authorId], references: [id])
+  revisions    KnowledgeArticleRevision[]
+
+  @@index([category])
+  @@index([status])
+  @@index([targetRole])
+}
+
+model KnowledgeArticleRevision {
+  id         String           @id @default(uuid())
+  articleId  String
+  editorId   String?
+  version    Int
   title      String
   content    String
   category   String
-  targetRole String   @default("ALL")
-  authorId   String
-  views      Int      @default(0)
-  isActive   Boolean  @default(true)
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-  author     User     @relation(fields: [authorId], references: [id])
+  targetRole String
+  status     KnowledgeArticleStatus
+  notes      String?
+  createdAt  DateTime         @default(now())
+  article    KnowledgeArticle @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  editor     User?            @relation("KnowledgeArticleRevisionEditor", fields: [editorId], references: [id])
+
+  @@index([articleId])
+  @@index([editorId])
+  @@index([createdAt])
 }
 
 model CustomerProfile {
@@ -417,6 +502,7 @@ model CustomerProfile {
   agencyId            String?
   agencyDetails       AgencyDetails?
   communications      CommunicationLog[]
+  commissionPayouts   CommissionPayout[]
   assignments         CustomerAssignment[]
   agencyPartner       CustomerProfile?     @relation("AgencyToSubCustomers", fields: [agencyId], references: [id])
   subCustomers        CustomerProfile[]    @relation("AgencyToSubCustomers")
@@ -440,6 +526,34 @@ model CustomerProfile {
   @@index([institutionId])
   @@index([agencyId])
   @@index([designation])
+}
+
+model CommissionPayout {
+  id                String                 @id @default(uuid())
+  companyId         String?
+  agencyProfileId   String
+  requestedByUserId String
+  reviewedByUserId  String?
+  amount            Float
+  currency          String                 @default("INR")
+  status            CommissionPayoutStatus @default(REQUESTED)
+  method            String?                @default("Bank Transfer")
+  notes             String?
+  paymentReference  String?
+  requestedAt       DateTime               @default(now())
+  reviewedAt        DateTime?
+  paidAt            DateTime?
+  createdAt         DateTime               @default(now())
+  updatedAt         DateTime               @updatedAt
+  agencyProfile     CustomerProfile        @relation(fields: [agencyProfileId], references: [id], onDelete: Cascade)
+  company           Company?               @relation(fields: [companyId], references: [id])
+  requestedBy       User                   @relation("CommissionPayoutRequester", fields: [requestedByUserId], references: [id], onDelete: Cascade)
+  reviewedBy        User?                  @relation("CommissionPayoutReviewer", fields: [reviewedByUserId], references: [id])
+
+  @@index([agencyProfileId])
+  @@index([companyId])
+  @@index([status])
+  @@index([requestedByUserId])
 }
 
 model InstitutionDetails {
@@ -675,14 +789,14 @@ model InvoiceProduct {
   isFeatured        Boolean                @default(false)
   tags              String[]               @default([])
   notes             String?
-  domain            String?                // Added domain field
+  domain            String? // Added domain field
   createdByUserId   String?
   updatedByUserId   String?
   createdAt         DateTime               @default(now())
   updatedAt         DateTime               @updatedAt
   subscriptionItems SubscriptionItem[]
-  
-  productAttributes Json?                  // Specific attributes configuration for this product
+
+  productAttributes Json? // Specific attributes configuration for this product
   attributes        ProductAttribute[]
   variants          ProductVariant[]
 
@@ -692,46 +806,46 @@ model InvoiceProduct {
 }
 
 model ProductAttribute {
-  id        String                 @id @default(uuid())
+  id        String                  @id @default(uuid())
   productId String
-  product   InvoiceProduct         @relation(fields: [productId], references: [id], onDelete: Cascade)
+  product   InvoiceProduct          @relation(fields: [productId], references: [id], onDelete: Cascade)
   name      String
   values    ProductAttributeValue[]
-  createdAt DateTime               @default(now())
-  updatedAt DateTime               @updatedAt
+  createdAt DateTime                @default(now())
+  updatedAt DateTime                @updatedAt
 
   @@unique([productId, name])
   @@index([productId])
 }
 
 model ProductAttributeValue {
-  id          String                  @id @default(uuid())
+  id          String                    @id @default(uuid())
   attributeId String
-  attribute   ProductAttribute        @relation(fields: [attributeId], references: [id], onDelete: Cascade)
+  attribute   ProductAttribute          @relation(fields: [attributeId], references: [id], onDelete: Cascade)
   value       String
   variants    VariantAttributeMapping[]
-  createdAt   DateTime                @default(now())
-  updatedAt   DateTime                @updatedAt
+  createdAt   DateTime                  @default(now())
+  updatedAt   DateTime                  @updatedAt
 
   @@unique([attributeId, value])
   @@index([attributeId])
 }
 
 model ProductVariant {
-  id               String                    @id @default(uuid())
-  productId        String
-  product          InvoiceProduct            @relation(fields: [productId], references: [id], onDelete: Cascade)
-  sku              String?                   @unique
-  priceINR         Float?
-  priceUSD         Float?
-  stockQuantity    Int?
-  manageStock      Boolean                   @default(false)
-  isActive         Boolean                   @default(true)
-  imageUrl         String?
-  attributes       Json                      // E.g., { "Size": "M", "Color": "Red", "Custom": "Yes" }
-  attributeValues  VariantAttributeMapping[]
-  createdAt        DateTime                  @default(now())
-  updatedAt        DateTime                  @updatedAt
+  id              String                    @id @default(uuid())
+  productId       String
+  product         InvoiceProduct            @relation(fields: [productId], references: [id], onDelete: Cascade)
+  sku             String?                   @unique
+  priceINR        Float?
+  priceUSD        Float?
+  stockQuantity   Int?
+  manageStock     Boolean                   @default(false)
+  isActive        Boolean                   @default(true)
+  imageUrl        String?
+  attributes      Json // E.g., { "Size": "M", "Color": "Red", "Custom": "Yes" }
+  attributeValues VariantAttributeMapping[]
+  createdAt       DateTime                  @default(now())
+  updatedAt       DateTime                  @updatedAt
 
   @@index([productId])
   @@index([isActive])
@@ -760,16 +874,16 @@ model ProductPricingTemplate {
 }
 
 model PricingTemplateVariant {
-  id         String                  @id @default(uuid())
+  id         String                 @id @default(uuid())
   templateId String
   template   ProductPricingTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
   name       String
-  priceINR   Float                   @default(0)
-  priceUSD   Float                   @default(0)
+  priceINR   Float                  @default(0)
+  priceUSD   Float                  @default(0)
   year       Int?
   duration   String?
-  createdAt  DateTime                @default(now())
-  updatedAt  DateTime                @updatedAt
+  createdAt  DateTime               @default(now())
+  updatedAt  DateTime               @updatedAt
 
   @@index([templateId])
 }
@@ -4214,19 +4328,20 @@ model Account {
 }
 
 model JournalEntry {
-  id          String        @id @default(uuid())
-  companyId   String
-  entryNumber String        @unique
-  date        DateTime
-  description String
-  reference   String?
-  status      String        @default("DRAFT")
-  postedBy    String?
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
-  company     Company       @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  user        User?         @relation(fields: [postedBy], references: [id])
-  lines       JournalLine[]
+  id                  String                   @id @default(uuid())
+  companyId           String
+  entryNumber         String                   @unique
+  date                DateTime
+  description         String
+  reference           String?
+  status              String                   @default("DRAFT")
+  postedBy            String?
+  createdAt           DateTime                 @default(now())
+  updatedAt           DateTime                 @updatedAt
+  company             Company                  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  user                User?                    @relation(fields: [postedBy], references: [id])
+  lines               JournalLine[]
+  reconciliationLines BankReconciliationLine[]
 
   @@index([companyId])
   @@index([date])
@@ -4245,6 +4360,55 @@ model JournalLine {
 
   @@index([journalEntryId])
   @@index([accountId])
+}
+
+model BankReconciliationSession {
+  id                String                   @id @default(uuid())
+  companyId         String
+  uploadedByUserId  String?
+  sourceFileName    String?
+  sourceType        String                   @default("CSV")
+  status            String                   @default("ANALYZED")
+  totalTransactions Int                      @default(0)
+  matchedCount      Int                      @default(0)
+  pendingCount      Int                      @default(0)
+  unmatchedCount    Int                      @default(0)
+  createdAt         DateTime                 @default(now())
+  updatedAt         DateTime                 @updatedAt
+  reviewedAt        DateTime?
+  company           Company                  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  uploadedBy        User?                    @relation("ReconciliationSessionUploader", fields: [uploadedByUserId], references: [id])
+  lines             BankReconciliationLine[]
+
+  @@index([companyId, createdAt])
+  @@index([uploadedByUserId])
+  @@index([status])
+}
+
+model BankReconciliationLine {
+  id              String                    @id @default(uuid())
+  sessionId       String
+  journalEntryId  String?
+  lineNumber      Int
+  externalId      String?
+  transactionDate DateTime
+  description     String
+  amount          Float
+  transactionType String
+  status          String                    @default("PENDING")
+  matchConfidence Float?
+  notes           String?
+  rawData         Json?
+  createdAt       DateTime                  @default(now())
+  updatedAt       DateTime                  @updatedAt
+  reconciledAt    DateTime?
+  ignoredAt       DateTime?
+  session         BankReconciliationSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  journalEntry    JournalEntry?             @relation(fields: [journalEntryId], references: [id])
+
+  @@index([sessionId, status])
+  @@index([journalEntryId])
+  @@index([transactionDate])
 }
 
 model TaxRate {
@@ -4511,7 +4675,7 @@ model ITProjectSuggestion {
   authorEmail String?
   userId      String?
   content     String
-  attachments Json?            // stored as [{url,filename,size,mimeType}]
+  attachments Json? // stored as [{url,filename,size,mimeType}]
   status      SuggestionStatus @default(PENDING)
   createdAt   DateTime         @default(now())
   updatedAt   DateTime         @updatedAt
@@ -4692,6 +4856,13 @@ enum CustomerType {
   INDIVIDUAL
   INSTITUTION
   AGENCY
+}
+
+enum KnowledgeArticleStatus {
+  DRAFT
+  IN_REVIEW
+  PUBLISHED
+  ARCHIVED
 }
 
 enum LeadStatus {
@@ -5047,6 +5218,14 @@ enum ClaimStatus {
   DUPLICATE
 }
 
+enum CommissionPayoutStatus {
+  REQUESTED
+  APPROVED
+  REJECTED
+  PAID
+  CANCELLED
+}
+
 enum AccountType {
   ASSET
   LIABILITY
@@ -5077,18 +5256,18 @@ enum SuggestionStatus {
 // ─── Feedback System ──────────────────────────────────────────────────────────
 
 model UserFeedback {
-  id          String            @id @default(uuid())
-  userId      String
-  companyId   String?
-  category    String            @default("GENERAL")
-  priority    String            @default("MEDIUM")
-  status      String            @default("OPEN")
-  title       String?
-  createdAt   DateTime          @default(now())
-  updatedAt   DateTime          @updatedAt
-  resolvedAt  DateTime?
-  user        User              @relation("UserFeedbacks", fields: [userId], references: [id])
-  messages    FeedbackMessage[]
+  id         String            @id @default(uuid())
+  userId     String
+  companyId  String?
+  category   String            @default("GENERAL")
+  priority   String            @default("MEDIUM")
+  status     String            @default("OPEN")
+  title      String?
+  createdAt  DateTime          @default(now())
+  updatedAt  DateTime          @updatedAt
+  resolvedAt DateTime?
+  user       User              @relation("UserFeedbacks", fields: [userId], references: [id])
+  messages   FeedbackMessage[]
 
   @@index([userId])
   @@index([status])
@@ -5126,21 +5305,21 @@ model FeedbackAttachment {
 // ─── Unified File Storage ──────────────────────────────────────────────────
 
 model FileRecord {
-  id           String   @id @default(uuid())
-  filename     String                          // original user filename
-  storedName   String                          // uuid-based filename on disk
-  url          String                          // served URL (/uploads/... or /api/files/...)
-  path         String                          // absolute disk path
+  id           String    @id @default(uuid())
+  filename     String // original user filename
+  storedName   String // uuid-based filename on disk
+  url          String // served URL (/uploads/... or /api/files/...)
+  path         String // absolute disk path
   mimeType     String
-  size         Int                             // bytes
-  category     String   @default("general")   // profile_pictures|documents|feedback|general|other
-  context      String?                         // e.g. "feedback:threadId", "project:id"
-  checksum     String?                         // MD5 hex for integrity verification
-  syncedAt     DateTime?                       // last time confirmed on storage
+  size         Int // bytes
+  category     String    @default("general") // profile_pictures|documents|feedback|general|other
+  context      String? // e.g. "feedback:threadId", "project:id"
+  checksum     String? // MD5 hex for integrity verification
+  syncedAt     DateTime? // last time confirmed on storage
   uploadedById String?
-  uploadedBy   User?    @relation(fields: [uploadedById], references: [id], onDelete: SetNull)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  uploadedBy   User?     @relation(fields: [uploadedById], references: [id], onDelete: SetNull)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
 
   @@index([uploadedById])
   @@index([category])
@@ -5155,66 +5334,66 @@ model VaultKeyring {
   userId           String   @unique
   encryptedPrivKey String   @db.Text // Encrypted RSA private key
   publicKey        String   @db.Text // Public RSA key for sharing
-  salt             String            // Salt used for deriving the wrapping key
-  iv               String            // IV used for encrypting the private key
+  salt             String // Salt used for deriving the wrapping key
+  iv               String // IV used for encrypting the private key
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
   user             User     @relation("UserVaultKeyring", fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model VaultFolder {
-  id          String      @id @default(uuid())
-  userId      String
-  name        String
-  color       String?     @default("#3b82f6")
-  icon        String?     @default("folder")
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
-  user        User        @relation("UserVaultFolders", fields: [userId], references: [id], onDelete: Cascade)
-  items       VaultItem[]
+  id        String      @id @default(uuid())
+  userId    String
+  name      String
+  color     String?     @default("#3b82f6")
+  icon      String?     @default("folder")
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+  user      User        @relation("UserVaultFolders", fields: [userId], references: [id], onDelete: Cascade)
+  items     VaultItem[]
 
   @@unique([userId, name])
   @@index([userId])
 }
 
 model VaultItem {
-  id              String         @id @default(uuid())
-  ownerId         String
-  folderId        String?
-  type            String         @default("LOGIN") // LOGIN, NOTE, CARD, IDENTITY
-  title           String         // Plaintext title for searching/display
-  username        String?        // Plaintext username for searching (often email)
-  website         String?        // Plaintext URL or app name
-  icon            String?        // Plaintext icon/favicon URL
-  encryptedData   String         @db.Text // AES-GCM encrypted payload (password, notes, custom fields)
-  encryptedKey    String         @db.Text // AES key encrypted with owner's public RSA key
-  iv              String         // Initialization vector for AES-GCM
-  isFavorite      Boolean        @default(false)
-  isShared        Boolean        @default(false)
+  id                 String    @id @default(uuid())
+  ownerId            String
+  folderId           String?
+  type               String    @default("LOGIN") // LOGIN, NOTE, CARD, IDENTITY
+  title              String // Plaintext title for searching/display
+  username           String? // Plaintext username for searching (often email)
+  website            String? // Plaintext URL or app name
+  icon               String? // Plaintext icon/favicon URL
+  encryptedData      String    @db.Text // AES-GCM encrypted payload (password, notes, custom fields)
+  encryptedKey       String    @db.Text // AES key encrypted with owner's public RSA key
+  iv                 String // Initialization vector for AES-GCM
+  isFavorite         Boolean   @default(false)
+  isShared           Boolean   @default(false)
   lastPasswordUpdate DateTime?
-  createdAt       DateTime       @default(now())
-  updatedAt       DateTime       @updatedAt
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
 
-  owner           User           @relation("OwnerVaultItems", fields: [ownerId], references: [id], onDelete: Cascade)
-  folder          VaultFolder?   @relation(fields: [folderId], references: [id], onDelete: SetNull)
-  sharedAccess    VaultAccess[]
+  owner        User          @relation("OwnerVaultItems", fields: [ownerId], references: [id], onDelete: Cascade)
+  folder       VaultFolder?  @relation(fields: [folderId], references: [id], onDelete: SetNull)
+  sharedAccess VaultAccess[]
 
   @@index([ownerId])
   @@index([folderId])
 }
 
 model VaultAccess {
-  id              String    @id @default(uuid())
-  itemId          String
-  grantedToId     String
-  grantedById     String
-  encryptedKey    String    @db.Text // AES key encrypted with grantedTo user's public RSA key
-  canEdit         Boolean   @default(false)
-  createdAt       DateTime  @default(now())
+  id           String   @id @default(uuid())
+  itemId       String
+  grantedToId  String
+  grantedById  String
+  encryptedKey String   @db.Text // AES key encrypted with grantedTo user's public RSA key
+  canEdit      Boolean  @default(false)
+  createdAt    DateTime @default(now())
 
-  item            VaultItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
-  grantedTo       User      @relation("VaultAccessReceived", fields: [grantedToId], references: [id], onDelete: Cascade)
-  grantedBy       User      @relation("VaultAccessGranted", fields: [grantedById], references: [id], onDelete: Cascade)
+  item      VaultItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  grantedTo User      @relation("VaultAccessReceived", fields: [grantedToId], references: [id], onDelete: Cascade)
+  grantedBy User      @relation("VaultAccessGranted", fields: [grantedById], references: [id], onDelete: Cascade)
 
   @@unique([itemId, grantedToId])
   @@index([grantedToId])

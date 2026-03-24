@@ -9,18 +9,23 @@ export async function GET(req: NextRequest) {
 
         const { searchParams } = new URL(req.url);
         const category = searchParams.get('category');
+        const status = searchParams.get('status');
+        const search = searchParams.get('search');
+        const isPrivileged = ['SUPER_ADMIN', 'ADMIN'].includes(user.role);
 
         const articles = await prisma.knowledgeArticle.findMany({
             where: {
                 isActive: true,
                 category: category || undefined,
+                status: isPrivileged ? (status as any || undefined) : 'PUBLISHED',
+                title: search ? { contains: search, mode: 'insensitive' } : undefined,
                 OR: [
                     { targetRole: 'ALL' },
                     { targetRole: user.role === 'CUSTOMER' ? 'CUSTOMER' : 'STAFF' }
                 ]
             },
             include: {
-                author: { select: { email: true } }
+                author: { select: { id: true, email: true, name: true } }
             },
             orderBy: { createdAt: 'desc' }
         });
@@ -39,7 +44,7 @@ export async function POST(req: NextRequest) {
         }
 
         const body = await req.json();
-        const { title, content, category, targetRole } = body;
+        const { title, content, category, targetRole, status } = body;
 
         const article = await prisma.knowledgeArticle.create({
             data: {
@@ -47,7 +52,23 @@ export async function POST(req: NextRequest) {
                 content,
                 category,
                 targetRole: targetRole || 'ALL',
-                authorId: user.id
+                authorId: user.id,
+                status: status || 'PUBLISHED',
+                publishedAt: (status || 'PUBLISHED') === 'PUBLISHED' ? new Date() : null,
+                reviewedAt: (status || 'PUBLISHED') === 'IN_REVIEW' ? new Date() : null,
+                lastEditedBy: user.id,
+                revisions: {
+                    create: {
+                        editorId: user.id,
+                        version: 1,
+                        title,
+                        content,
+                        category,
+                        targetRole: targetRole || 'ALL',
+                        status: status || 'PUBLISHED',
+                        notes: 'Initial article creation',
+                    }
+                }
             }
         });
 

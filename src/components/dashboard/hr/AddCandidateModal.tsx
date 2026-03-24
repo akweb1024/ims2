@@ -10,6 +10,12 @@ interface AddCandidateModalProps {
 }
 
 export default function AddCandidateModal({ jobs, onClose, onSubmit }: AddCandidateModalProps) {
+    const MAX_RESUME_SIZE_MB = 10;
+    const allowedResumeTypes = [
+        'application/pdf',
+        'application/msword',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    ];
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [uploadMode, setUploadMode] = useState<'FILE' | 'URL'>('FILE');
     const [formData, setFormData] = useState({
@@ -23,11 +29,43 @@ export default function AddCandidateModal({ jobs, onClose, onSubmit }: AddCandid
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files[0]) {
-            setFormData({ ...formData, resumeFile: e.target.files[0] });
+            const file = e.target.files[0];
+            if (!allowedResumeTypes.includes(file.type)) {
+                toast.error('Please upload a PDF, DOC, or DOCX resume.');
+                e.target.value = '';
+                return;
+            }
+
+            if (file.size > MAX_RESUME_SIZE_MB * 1024 * 1024) {
+                toast.error(`Resume file must be ${MAX_RESUME_SIZE_MB}MB or smaller.`);
+                e.target.value = '';
+                return;
+            }
+
+            setFormData({ ...formData, resumeFile: file, resumeUrl: '' });
         }
     };
 
     const [isExtracting, setIsExtracting] = useState(false);
+
+    const uploadResumeFile = async (file: File) => {
+        const payload = new FormData();
+        payload.append('file', file);
+        payload.append('category', 'documents');
+        payload.append('context', 'recruitment_resume');
+
+        const response = await fetch('/api/upload', {
+            method: 'POST',
+            body: payload,
+        });
+
+        const result = await response.json();
+        if (!response.ok) {
+            throw new Error(result.error || 'Failed to upload resume');
+        }
+
+        return result.url as string;
+    };
 
     const handleAIExtract = async () => {
         if (!formData.resumeFile) return toast.error("Please upload a resume first.");
@@ -69,12 +107,13 @@ export default function AddCandidateModal({ jobs, onClose, onSubmit }: AddCandid
         e.preventDefault();
         setIsSubmitting(true);
         try {
-            // If file is selected, we mock the upload URL for now
             let finalResumeUrl = formData.resumeUrl;
             if (uploadMode === 'FILE' && formData.resumeFile) {
-                // In a real app, upload to S3 here and get URL
-                // For now, create a fake local URL or just use a placeholder
-                finalResumeUrl = `https://internal-storage.mock/${formData.resumeFile.name.replace(/\s+/g, '-')}`;
+                finalResumeUrl = await uploadResumeFile(formData.resumeFile);
+            }
+
+            if (uploadMode === 'URL' && formData.resumeUrl && !/^https?:\/\//i.test(formData.resumeUrl)) {
+                throw new Error('Resume link must start with http:// or https://');
             }
 
             await onSubmit({
@@ -85,8 +124,9 @@ export default function AddCandidateModal({ jobs, onClose, onSubmit }: AddCandid
                 resumeUrl: finalResumeUrl
             });
             onClose();
-        } catch (error) {
+        } catch (error: any) {
             console.error(error);
+            toast.error(error.message || 'Failed to add candidate');
         } finally {
             setIsSubmitting(false);
         }
@@ -206,7 +246,7 @@ export default function AddCandidateModal({ jobs, onClose, onSubmit }: AddCandid
                                                 <Upload size={20} />
                                             </div>
                                             <p className="text-xs font-bold text-secondary-600 relative z-10">Click to upload resume</p>
-                                            <p className="text-[10px] text-secondary-400 mt-1 relative z-10">PDF, image up to 10MB</p>
+                                            <p className="text-[10px] text-secondary-400 mt-1 relative z-10">PDF, DOC, or DOCX up to 10MB</p>
                                         </>
                                     )}
                                 </div>

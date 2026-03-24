@@ -119,7 +119,8 @@ export async function createNotification({
 
                     await sendWhatsApp({
                         to: targetPhone,
-                        message: `*${title}*\n${message}\n${link ? `Link: ${process.env.NEXT_PUBLIC_APP_URL}${link}` : ''}`
+                        message: `*${title}*\n${message}\n${link ? `Link: ${process.env.NEXT_PUBLIC_APP_URL}${link}` : ''}`,
+                        companyId: user.companyId
                     });
                 }
             }

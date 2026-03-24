@@ -89,6 +89,38 @@ export default function CustomerDetailPage({ params }: { params: Promise<{ id: s
 
     if (!customer) return null;
 
+    const agencyTimeline = [
+        ...customer.subscriptions.map((sub: any) => ({
+            id: `subscription-${sub.id}`,
+            date: sub.createdAt || sub.startDate,
+            title: `Subscription ${sub.status.replace(/_/g, ' ')}`,
+            description: `${sub.items[0]?.journal?.name || 'Subscription package'} • ${sub.currency === 'INR' ? '₹' : '$'}${sub.total.toLocaleString()}`,
+            tone: sub.status === 'ACTIVE' ? 'success' : 'primary',
+        })),
+        ...customer.invoices.map((invoice: any) => ({
+            id: `invoice-${invoice.id}`,
+            date: invoice.createdAt,
+            title: `Invoice ${invoice.status}`,
+            description: `${invoice.invoiceNumber} • ${invoice.currency === 'INR' ? '₹' : '$'}${invoice.total.toLocaleString()}`,
+            tone: invoice.status === 'PAID' ? 'success' : 'warning',
+        })),
+        ...(customer.communications || []).map((log: any) => ({
+            id: `communication-${log.id}`,
+            date: log.date || log.createdAt,
+            title: `${log.channel || 'Follow-up'} interaction`,
+            description: log.subject || log.notes || 'Customer communication logged',
+            tone: 'secondary',
+        })),
+    ]
+        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+        .slice(0, 8);
+
+    const latestSubscription = customer.subscriptions?.[0] || null;
+    const latestInvoice = customer.invoices?.[0] || null;
+    const nextRenewal = customer.subscriptions
+        ?.filter((sub: any) => new Date(sub.endDate).getTime() >= Date.now())
+        .sort((a: any, b: any) => new Date(a.endDate).getTime() - new Date(b.endDate).getTime())[0] || null;
+
     const tabs = [
         { id: 'overview', name: 'Overview', icon: '📋' },
         ...(customer.customerType === 'AGENCY' ? [{ id: 'performance', name: 'Performance', icon: '📈' }] : []),
@@ -606,6 +638,79 @@ export default function CustomerDetailPage({ params }: { params: Promise<{ id: s
                                         </div>
                                     </div>
                                 </div>
+
+                                {userRole === 'AGENCY' && (
+                                    <>
+                                        <div className="card-premium">
+                                            <h3 className="text-lg font-bold text-secondary-900 mb-4">Agency relationship summary</h3>
+                                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                                <div className="bg-secondary-50 border border-secondary-100 rounded-xl p-4">
+                                                    <p className="text-[10px] font-black text-secondary-400 uppercase tracking-widest mb-1">Latest Subscription</p>
+                                                    <p className="font-bold text-secondary-900">
+                                                        {latestSubscription ? latestSubscription.status.replace(/_/g, ' ') : 'No subscriptions'}
+                                                    </p>
+                                                    <p className="text-xs text-secondary-500 mt-1">
+                                                        {latestSubscription
+                                                            ? `${latestSubscription.currency === 'INR' ? '₹' : '$'}${latestSubscription.total.toLocaleString()}`
+                                                            : 'Nothing billed yet'}
+                                                    </p>
+                                                </div>
+                                                <div className="bg-primary-50 border border-primary-100 rounded-xl p-4">
+                                                    <p className="text-[10px] font-black text-primary-500 uppercase tracking-widest mb-1">Next Renewal Horizon</p>
+                                                    <p className="font-bold text-secondary-900">
+                                                        {nextRenewal ? <FormattedDate date={nextRenewal.endDate} /> : 'No upcoming renewal'}
+                                                    </p>
+                                                    <p className="text-xs text-secondary-500 mt-1">
+                                                        {nextRenewal ? nextRenewal.items[0]?.journal?.name || 'Active package' : 'No active subscription'}
+                                                    </p>
+                                                </div>
+                                                <div className="bg-success-50 border border-success-100 rounded-xl p-4">
+                                                    <p className="text-[10px] font-black text-success-600 uppercase tracking-widest mb-1">Latest Invoice State</p>
+                                                    <p className="font-bold text-secondary-900">
+                                                        {latestInvoice ? latestInvoice.status : 'No invoice'}
+                                                    </p>
+                                                    <p className="text-xs text-secondary-500 mt-1">
+                                                        {latestInvoice
+                                                            ? `${latestInvoice.currency === 'INR' ? '₹' : '$'}${latestInvoice.total.toLocaleString()}`
+                                                            : 'No billing yet'}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="card-premium">
+                                            <h3 className="text-lg font-bold text-secondary-900 mb-4">Relationship timeline</h3>
+                                            {agencyTimeline.length === 0 ? (
+                                                <p className="text-sm text-secondary-500 text-center py-8">No relationship activity recorded yet.</p>
+                                            ) : (
+                                                <div className="space-y-4">
+                                                    {agencyTimeline.map((event) => (
+                                                        <div key={event.id} className="flex items-start gap-4 p-4 rounded-xl border border-secondary-100 bg-white">
+                                                            <div className={`mt-1 h-3 w-3 rounded-full ${
+                                                                event.tone === 'success'
+                                                                    ? 'bg-success-500'
+                                                                    : event.tone === 'warning'
+                                                                        ? 'bg-warning-500'
+                                                                        : event.tone === 'primary'
+                                                                            ? 'bg-primary-500'
+                                                                            : 'bg-secondary-300'
+                                                            }`} />
+                                                            <div className="flex-1 min-w-0">
+                                                                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-1">
+                                                                    <p className="font-bold text-secondary-900">{event.title}</p>
+                                                                    <span className="text-xs text-secondary-500">
+                                                                        <FormattedDate date={event.date} />
+                                                                    </span>
+                                                                </div>
+                                                                <p className="text-sm text-secondary-600 mt-1 line-clamp-2">{event.description}</p>
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </div>
+                                    </>
+                                )}
 
                                 {/* Type Specific Info */}
                                 {customer.customerType === 'INSTITUTION' && customer.institutionDetails && (

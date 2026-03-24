@@ -22,6 +22,12 @@ import CashFlowChart from '@/components/dashboard/finance/CashFlowChart';
 import RevenueChart from '@/components/dashboard/finance/RevenueChart';
 import TransactionModal from '@/components/dashboard/finance/TransactionModal';
 
+const calculateMonthOverMonthChange = (current: number, previous: number) => {
+    if (!previous && !current) return 0;
+    if (!previous) return 100;
+    return Number((((current - previous) / Math.abs(previous)) * 100).toFixed(1));
+};
+
 export default function FinancePage() {
     const { data: session } = useSession();
     const [analytics, setAnalytics] = useState<any>(null);
@@ -82,6 +88,14 @@ export default function FinancePage() {
                 .finally(() => setLoading(false));
         }
     }, [session, fetchAnalytics, fetchTransactions]);
+
+    const cashFlowSeries = analytics?.charts?.cashFlow || [];
+    const currentMonth = cashFlowSeries[cashFlowSeries.length - 1];
+    const previousMonth = cashFlowSeries[cashFlowSeries.length - 2];
+    const netCashFlowTrend = calculateMonthOverMonthChange(
+        (currentMonth?.revenue || 0) - (currentMonth?.expense || 0),
+        (previousMonth?.revenue || 0) - (previousMonth?.expense || 0)
+    );
 
     return (
         <FinanceClientLayout>
@@ -150,7 +164,7 @@ export default function FinancePage() {
                         icon={<Wallet className="w-6 h-6" />}
                         subtitle="Liquid Position"
                         loading={loading}
-                        trend={analytics?.stats?.burnRate ? Math.round((analytics?.stats?.netCashFlow / analytics.stats.burnRate) * 10) / 10 : 0} // Fake trend calculation for demo
+                        trend={netCashFlowTrend}
                     />
                 </div>
 

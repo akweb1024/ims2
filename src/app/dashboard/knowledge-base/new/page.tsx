@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
+import { KNOWLEDGE_BASE_CATEGORIES } from '@/lib/knowledge-base';
 
 export default function NewArticlePage() {
     const router = useRouter();
@@ -11,10 +12,10 @@ export default function NewArticlePage() {
         title: '',
         category: 'FAQ',
         content: '',
-        targetRole: 'ALL'
+        targetRole: 'ALL',
+        status: 'PUBLISHED'
     });
 
-    const categories = ['FAQ', 'SOP', 'Product Guide', 'Internal Policy'];
     const roles = ['ALL', 'STAFF', 'CUSTOMER', 'AGENCY'];
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -85,7 +86,11 @@ export default function NewArticlePage() {
                                     value={formData.category}
                                     onChange={e => setFormData({ ...formData, category: e.target.value })}
                                 >
-                                    {categories.map(c => <option key={c} value={c}>{c}</option>)}
+                                    {KNOWLEDGE_BASE_CATEGORIES.map((category) => (
+                                        <option key={category.value} value={category.value}>
+                                            {category.label}
+                                        </option>
+                                    ))}
                                 </select>
                             </div>
                         </div>
@@ -105,6 +110,26 @@ export default function NewArticlePage() {
                                             onChange={e => setFormData({ ...formData, targetRole: e.target.value })}
                                         />
                                         {role}
+                                    </label>
+                                ))}
+                            </div>
+                        </div>
+
+                        <div>
+                            <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">
+                                Lifecycle Status
+                            </label>
+                            <div className="flex gap-4">
+                                {['DRAFT', 'IN_REVIEW', 'PUBLISHED'].map(status => (
+                                    <label key={status} className={`cursor-pointer px-4 py-2 rounded-lg border-2 font-bold text-sm transition-all ${formData.status === status ? 'border-indigo-600 bg-indigo-50 text-indigo-700' : 'border-slate-100 hover:border-slate-300 text-slate-500'}`}>
+                                        <input
+                                            type="radio"
+                                            className="hidden"
+                                            value={status}
+                                            checked={formData.status === status}
+                                            onChange={e => setFormData({ ...formData, status: e.target.value })}
+                                        />
+                                        {status}
                                     </label>
                                 ))}
                             </div>
@@ -135,7 +160,7 @@ export default function NewArticlePage() {
                                 disabled={loading}
                                 className="bg-indigo-600 hover:bg-indigo-700 text-white px-8 py-3 rounded-xl font-bold transition-all shadow-lg hover:shadow-indigo-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                             >
-                                {loading ? 'Publishing...' : 'Publish Article'}
+                                {loading ? 'Saving...' : formData.status === 'PUBLISHED' ? 'Publish Article' : 'Save Article'}
                             </button>
                         </div>
                     </form>

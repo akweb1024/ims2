@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { FileText, Send, Plus, Eye, CheckCircle, Download, Copy } from 'lucide-react';
 import { HR_PRESETS } from '@/lib/hr-presets';
 
@@ -13,7 +13,97 @@ export default function DocumentManager({ employees }: { employees: any[] }) {
     const [mode, setMode] = useState<'SINGLE' | 'BULK'>('SINGLE');
     const [selectedTemplate, setSelectedTemplate] = useState('');
     const [selectedEmployee, setSelectedEmployee] = useState('');
-    const [bulkTarget, setBulkTarget] = useState('ALL'); // ALL, DEPT (simplified for now)
+    const [bulkTarget, setBulkTarget] = useState<'ALL' | 'DESIGNATION' | 'EMPLOYEE_TYPE'>('ALL');
+    const [bulkDesignation, setBulkDesignation] = useState('');
+    const [bulkEmployeeType, setBulkEmployeeType] = useState('');
+    const [previewTemplateId, setPreviewTemplateId] = useState<string | null>(null);
+
+    const designationOptions = useMemo(
+        () =>
+            Array.from(
+                new Set(
+                    employees
+                        .map((employee) => employee.designation)
+                        .filter((value): value is string => Boolean(value))
+                )
+            ).sort(),
+        [employees]
+    );
+
+    const employeeTypeOptions = useMemo(
+        () =>
+            Array.from(
+                new Set(
+                    employees
+                        .map((employee) => employee.employeeType)
+                        .filter((value): value is string => Boolean(value))
+                )
+            ).sort(),
+        [employees]
+    );
+
+    const sampleEmployee = useMemo(() => {
+        if (mode === 'SINGLE' && selectedEmployee) {
+            return employees.find((employee) => employee.id === selectedEmployee) || employees[0];
+        }
+
+        if (mode === 'BULK' && bulkTarget === 'DESIGNATION' && bulkDesignation) {
+            return employees.find((employee) => employee.designation === bulkDesignation) || employees[0];
+        }
+
+        if (mode === 'BULK' && bulkTarget === 'EMPLOYEE_TYPE' && bulkEmployeeType) {
+            return employees.find((employee) => employee.employeeType === bulkEmployeeType) || employees[0];
+        }
+
+        return employees[0];
+    }, [employees, selectedEmployee, mode, bulkTarget, bulkDesignation, bulkEmployeeType]);
+
+    const activeTemplate = useMemo(
+        () => templates.find((template) => template.id === selectedTemplate) || null,
+        [templates, selectedTemplate]
+    );
+
+    const previewTemplate = useMemo(
+        () => templates.find((template) => template.id === previewTemplateId) || null,
+        [templates, previewTemplateId]
+    );
+
+    const hydrateTemplate = (content: string, employee?: any) => {
+        if (!employee) return content;
+
+        const vars: Record<string, string> = {
+            name: employee.user?.name || employee.user?.email?.split('@')[0] || 'Employee Name',
+            email: employee.user?.email || 'employee@example.com',
+            designation: employee.designation || 'Specialist',
+            salary: (employee.baseSalary || 0).toLocaleString('en-IN', { style: 'currency', currency: 'INR' }),
+            joiningDate: employee.dateOfJoining ? new Date(employee.dateOfJoining).toLocaleDateString('en-GB') : 'Date to be decided',
+            employeeId: employee.employeeId || employee.id || 'EMP-001',
+            companyName: employee.user?.company?.name || 'STM Journal Solutions',
+            address: employee.address || 'Address not provided',
+            phone: employee.phoneNumber || employee.user?.phone || 'Phone not provided',
+            panNumber: employee.panNumber || 'PAN not available',
+            date: new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }),
+        };
+
+        let output = content;
+        Object.entries(vars).forEach(([key, value]) => {
+            output = output.replace(new RegExp(`{{${key}}}`, 'g'), value || '');
+        });
+
+        return output;
+    };
+
+    const bulkTargetEmployees = useMemo(() => {
+        if (bulkTarget === 'DESIGNATION' && bulkDesignation) {
+            return employees.filter((employee) => employee.designation === bulkDesignation);
+        }
+
+        if (bulkTarget === 'EMPLOYEE_TYPE' && bulkEmployeeType) {
+            return employees.filter((employee) => employee.employeeType === bulkEmployeeType);
+        }
+
+        return employees;
+    }, [employees, bulkTarget, bulkDesignation, bulkEmployeeType]);
 
     useEffect(() => {
         fetchTemplates();
@@ -62,8 +152,12 @@ export default function DocumentManager({ employees }: { employees: any[] }) {
             body.employeeId = selectedEmployee;
         } else {
             endpoint = '/api/hr/documents/issue-bulk';
-            body.filters = { all: true }; // Simplified for MVP
-            // TODO: If we added Dept selector, we would pass departmentId here
+            body.filters =
+                bulkTarget === 'DESIGNATION' && bulkDesignation
+                    ? { designation: bulkDesignation }
+                    : bulkTarget === 'EMPLOYEE_TYPE' && bulkEmployeeType
+                        ? { employeeType: bulkEmployeeType }
+                        : { all: true };
         }
 
         const res = await fetch(endpoint, {
@@ -77,6 +171,8 @@ export default function DocumentManager({ employees }: { employees: any[] }) {
             alert(mode === 'SINGLE' ? 'Document Issued Successfully!' : `Issued to ${data.total} employees!`);
             setSelectedTemplate('');
             setSelectedEmployee('');
+            setBulkDesignation('');
+            setBulkEmployeeType('');
         } else {
             alert('Failed to issue document');
         }
@@ -188,7 +284,13 @@ export default function DocumentManager({ employees }: { employees: any[] }) {
                                         <span className="text-[10px] bg-secondary-200 px-2 rounded-full">{t.type}</span>
                                     </div>
                                     <div className="opacity-0 group-hover:opacity-100 flex gap-2">
-                                        <button className="text-secondary-400 hover:text-primary-600"><Eye size={14} /></button> {/* Preview TODO */}
+                                        <button
+                                            onClick={() => setPreviewTemplateId(t.id)}
+                                            className="text-secondary-400 hover:text-primary-600"
+                                            title="Preview template"
+                                        >
+                                            <Eye size={14} />
+                                        </button>
                                     </div>
                                 </div>
                             ))}
@@ -246,20 +348,65 @@ export default function DocumentManager({ employees }: { employees: any[] }) {
                         ) : (
                             <div className="p-4 bg-primary-50 border border-primary-200 rounded-xl">
                                 <label className="label text-primary-800">Target Audience</label>
-                                <div className="flex gap-4 mt-2">
+                                <div className="flex flex-wrap gap-4 mt-2">
                                     <label className="flex items-center gap-2 cursor-pointer">
                                         <input type="radio" checked={bulkTarget === 'ALL'} onChange={() => setBulkTarget('ALL')} className="radio radio-primary radio-sm" />
                                         <span className="text-sm font-bold">All Employees</span>
                                     </label>
-                                    {/* Placeholder for future Dept filter */}
-                                    {/* <label className="flex items-center gap-2 opacity-50 cursor-not-allowed">
-                                         <input type="radio" disabled className="radio radio-primary radio-sm" />
-                                         <span className="text-sm">By Department (Pro)</span>
-                                     </label> */}
+                                    <label className="flex items-center gap-2 cursor-pointer">
+                                        <input type="radio" checked={bulkTarget === 'DESIGNATION'} onChange={() => setBulkTarget('DESIGNATION')} className="radio radio-primary radio-sm" />
+                                        <span className="text-sm font-bold">By Designation</span>
+                                    </label>
+                                    <label className="flex items-center gap-2 cursor-pointer">
+                                        <input type="radio" checked={bulkTarget === 'EMPLOYEE_TYPE'} onChange={() => setBulkTarget('EMPLOYEE_TYPE')} className="radio radio-primary radio-sm" />
+                                        <span className="text-sm font-bold">By Employee Type</span>
+                                    </label>
                                 </div>
+                                {bulkTarget === 'DESIGNATION' && (
+                                    <select
+                                        className="input w-full bg-white mt-4"
+                                        value={bulkDesignation}
+                                        onChange={(e) => setBulkDesignation(e.target.value)}
+                                    >
+                                        <option value="">-- Choose Designation --</option>
+                                        {designationOptions.map((designation) => (
+                                            <option key={designation} value={designation}>{designation}</option>
+                                        ))}
+                                    </select>
+                                )}
+                                {bulkTarget === 'EMPLOYEE_TYPE' && (
+                                    <select
+                                        className="input w-full bg-white mt-4"
+                                        value={bulkEmployeeType}
+                                        onChange={(e) => setBulkEmployeeType(e.target.value)}
+                                    >
+                                        <option value="">-- Choose Employee Type --</option>
+                                        {employeeTypeOptions.map((employeeType) => (
+                                            <option key={employeeType} value={employeeType}>{employeeType.replace(/_/g, ' ')}</option>
+                                        ))}
+                                    </select>
+                                )}
                                 <p className="text-[10px] mt-2 text-primary-600">
-                                    This will issue the selected document to <strong>{employees.length}</strong> active employees.
+                                    This will issue the selected document to <strong>{bulkTargetEmployees.length}</strong> active employees.
                                 </p>
+                            </div>
+                        )}
+
+                        {activeTemplate && sampleEmployee && (
+                            <div className="rounded-2xl border border-secondary-200 bg-white overflow-hidden">
+                                <div className="flex items-center justify-between px-4 py-3 border-b border-secondary-100 bg-secondary-50">
+                                    <div>
+                                        <p className="text-[10px] font-black text-secondary-400 uppercase tracking-widest">Live Preview</p>
+                                        <p className="text-sm font-bold text-secondary-900">
+                                            {activeTemplate.title} for {sampleEmployee.user?.name || sampleEmployee.user?.email || 'Sample Employee'}
+                                        </p>
+                                    </div>
+                                    <span className="badge badge-primary">{mode}</span>
+                                </div>
+                                <div
+                                    className="p-5 max-h-72 overflow-y-auto text-sm text-secondary-700 prose prose-sm max-w-none"
+                                    dangerouslySetInnerHTML={{ __html: hydrateTemplate(activeTemplate.content, sampleEmployee) }}
+                                />
                             </div>
                         )}
 
@@ -274,7 +421,12 @@ export default function DocumentManager({ employees }: { employees: any[] }) {
 
                         <button
                             onClick={issueDocument}
-                            disabled={!selectedTemplate || (mode === 'SINGLE' && !selectedEmployee)}
+                            disabled={
+                                !selectedTemplate ||
+                                (mode === 'SINGLE' && !selectedEmployee) ||
+                                (mode === 'BULK' && bulkTarget === 'DESIGNATION' && !bulkDesignation) ||
+                                (mode === 'BULK' && bulkTarget === 'EMPLOYEE_TYPE' && !bulkEmployeeType)
+                            }
                             className="btn btn-primary w-full py-3 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             Generate & Issue Document
@@ -282,6 +434,29 @@ export default function DocumentManager({ employees }: { employees: any[] }) {
                     </div>
                 </div>
             </div>
+
+            {previewTemplate && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-secondary-900/60 backdrop-blur-sm p-4">
+                    <div className="bg-white rounded-[2rem] shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
+                        <div className="flex items-center justify-between px-6 py-4 border-b border-secondary-100 bg-secondary-50">
+                            <div>
+                                <h4 className="text-lg font-black text-secondary-900">{previewTemplate.title}</h4>
+                                <p className="text-xs text-secondary-500">Template preview with sample employee data</p>
+                            </div>
+                            <button onClick={() => setPreviewTemplateId(null)} className="btn btn-sm btn-outline">Close</button>
+                        </div>
+                        <div className="p-6 overflow-y-auto max-h-[calc(90vh-88px)]">
+                            <div className="mb-4 text-xs text-secondary-500">
+                                Previewing as <strong>{sampleEmployee?.user?.name || sampleEmployee?.user?.email || 'Sample Employee'}</strong>
+                            </div>
+                            <div
+                                className="prose prose-sm max-w-none text-secondary-700"
+                                dangerouslySetInnerHTML={{ __html: hydrateTemplate(previewTemplate.content, sampleEmployee) }}
+                            />
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

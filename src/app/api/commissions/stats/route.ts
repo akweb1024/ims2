@@ -21,7 +21,9 @@ export async function GET(req: NextRequest) {
                     totalEarned: 0,
                     pendingPayout: 0,
                     rate: 10,
-                    recentPayouts: []
+                    recentPayouts: [],
+                    totalPaid: 0,
+                    committedPayouts: 0
                 });
             }
             agencyId = profile.agencyDetails.id;
@@ -44,14 +46,45 @@ export async function GET(req: NextRequest) {
         const commissionRate = 10; // 10% default
         const totalEarned = totalValue * (commissionRate / 100);
 
-        // For now, let's assume all earned is pending payout since we don't have a Payout model yet
-        // In a real app, you'd subtract already paid amounts
+        const payoutWhere: any = {};
+        if (decoded.companyId) payoutWhere.companyId = decoded.companyId;
+        if (decoded.role === 'AGENCY') {
+            const agencyProfile = await prisma.customerProfile.findUnique({
+                where: { userId: decoded.id }
+            });
+            if (agencyProfile) {
+                payoutWhere.agencyProfileId = agencyProfile.id;
+            }
+        }
+
+        const [paidAgg, committedAgg, recentPayouts] = await Promise.all([
+            prisma.commissionPayout.aggregate({
+                where: { ...payoutWhere, status: 'PAID' },
+                _sum: { amount: true }
+            }),
+            prisma.commissionPayout.aggregate({
+                where: { ...payoutWhere, status: { in: ['REQUESTED', 'APPROVED'] } },
+                _sum: { amount: true }
+            }),
+            prisma.commissionPayout.findMany({
+                where: payoutWhere,
+                orderBy: { requestedAt: 'desc' },
+                take: 10
+            })
+        ]);
+
+        const totalPaid = paidAgg._sum.amount || 0;
+        const committedPayouts = committedAgg._sum.amount || 0;
+        const availableForPayout = Math.max(totalEarned - totalPaid - committedPayouts, 0);
 
         return NextResponse.json({
             totalEarned,
-            pendingPayout: totalEarned, // Assumption for demo
+            pendingPayout: availableForPayout,
             rate: commissionRate,
-            payoutsCount: 0
+            payoutsCount: recentPayouts.length,
+            recentPayouts,
+            totalPaid,
+            committedPayouts
         });
 
     } catch (error: any) {

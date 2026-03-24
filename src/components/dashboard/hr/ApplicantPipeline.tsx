@@ -115,6 +115,17 @@ export default function ApplicantPipeline() {
         };
     }, [applications]);
 
+    const getResumeLinkMeta = (resumeUrl?: string | null) => {
+        if (!resumeUrl) return null;
+        const href = resumeUrl.trim();
+        if (!href) return null;
+
+        const isInternal = href.startsWith('/api/files/') || href.startsWith('/uploads/');
+        const filename = decodeURIComponent(href.split('/').pop() || 'resume');
+
+        return { href, isInternal, filename };
+    };
+
     return (
         <div className="space-y-6 h-full flex flex-col animate-in fade-in duration-500">
             {/* Header & Metrics */}
@@ -252,11 +263,24 @@ export default function ApplicantPipeline() {
                                             {/* Actions Footer */}
                                             <div className="pt-3 border-t border-gray-50 flex justify-between items-center relative z-10">
                                                 <div className="flex gap-1" onClick={(e) => e.stopPropagation()}>
-                                                    {app.resumeUrl && (
-                                                        <a href={app.resumeUrl} target="_blank" className="p-1.5 rounded-lg text-gray-400 hover:bg-purple-50 hover:text-purple-600 transition-colors" title="Resume" onClick={(e) => e.stopPropagation()}>
-                                                            <FileText size={14} />
-                                                        </a>
-                                                    )}
+                                                    {(() => {
+                                                        const resumeMeta = getResumeLinkMeta(app.resumeUrl);
+                                                        if (!resumeMeta) return null;
+
+                                                        return (
+                                                            <a
+                                                                href={resumeMeta.href}
+                                                                target={resumeMeta.isInternal ? undefined : '_blank'}
+                                                                rel={resumeMeta.isInternal ? undefined : 'noopener noreferrer'}
+                                                                {...(resumeMeta.isInternal ? { download: resumeMeta.filename } : {})}
+                                                                className="p-1.5 rounded-lg text-gray-400 hover:bg-purple-50 hover:text-purple-600 transition-colors"
+                                                                title={resumeMeta.isInternal ? 'Download Resume' : 'Open Resume Link'}
+                                                                onClick={(e) => e.stopPropagation()}
+                                                            >
+                                                                <FileText size={14} />
+                                                            </a>
+                                                        );
+                                                    })()}
                                                     <a href={`mailto:${app.applicantEmail}`} className="p-1.5 rounded-lg text-gray-400 hover:bg-purple-50 hover:text-purple-600 transition-colors" title="Email" onClick={(e) => e.stopPropagation()}>
                                                         <Mail size={14} />
                                                     </a>

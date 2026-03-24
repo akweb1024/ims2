@@ -32,6 +32,37 @@ interface CompanyDetails {
         healthScore: number;
     };
     recentActivity: any[];
+    recentProjects: {
+        id: string;
+        name: string;
+        status: string;
+        priority: string | null;
+        startDate: string | null;
+        endDate: string | null;
+        createdAt: string;
+    }[];
+    recentTickets: {
+        id: string;
+        title: string;
+        status: string;
+        priority: string | null;
+        category: string | null;
+        createdAt: string;
+    }[];
+    recentRevenue: {
+        id: string;
+        amount: number;
+        status: string;
+        paymentMethod: string | null;
+        description: string | null;
+        createdAt: string;
+    }[];
+    relationshipOwner: {
+        id: string;
+        name: string;
+        email: string;
+        role: string;
+    } | null;
     sentiment: {
         score: number;
         trend: 'UP' | 'DOWN' | 'STABLE';
@@ -39,6 +70,19 @@ interface CompanyDetails {
         keywords: string[];
     };
     trendData: { month: string; revenue: number }[];
+    intelligence: {
+        renewalProbability: number;
+        churnRisk: string;
+        upsellOpportunity: string;
+        recommendation: string;
+        topDepartment: string | null;
+        topPerformer: string | null;
+        reportSubmissionRate: number;
+        taskCompletionRate: number;
+        attendanceRate: number;
+        profitMargin: number;
+        revenuePerEmployee: number;
+    };
 }
 
 export default function CompanyDetailsPage() {
@@ -68,16 +112,23 @@ export default function CompanyDetailsPage() {
         }
     }, [id]);
 
-    const mockChartData = [
-        { month: 'Jan', revenue: 45000 },
-        { month: 'Feb', revenue: 52000 },
-        { month: 'Mar', revenue: 48000 },
-        { month: 'Apr', revenue: 61000 },
-        { month: 'May', revenue: 55000 },
-        { month: 'Jun', revenue: 67000 },
+    const SENTIMENT_COLORS = ['#10b981', '#f59e0b', '#ef4444']; // Green, Amber, Red
+    const sentimentData = [
+        { name: 'Positive', value: company?.sentiment.breakdown.positive ?? 0 },
+        { name: 'Neutral', value: company?.sentiment.breakdown.neutral ?? 0 },
+        { name: 'Negative', value: company?.sentiment.breakdown.negative ?? 0 },
     ];
 
-    const SENTIMENT_COLORS = ['#10b981', '#f59e0b', '#ef4444']; // Green, Amber, Red
+    const hasTrendData = Boolean(company?.trendData?.length);
+    const hasRecentProjects = Boolean(company?.recentProjects?.length);
+    const hasRecentTickets = Boolean(company?.recentTickets?.length);
+    const hasRecentRevenue = Boolean(company?.recentRevenue?.length);
+    const relationshipOwnerInitials = company?.relationshipOwner?.name
+        ?.split(' ')
+        .filter(Boolean)
+        .slice(0, 2)
+        .map((part) => part[0]?.toUpperCase())
+        .join('') || 'NA';
 
     if (loading) {
         return (
@@ -218,8 +269,9 @@ export default function CompanyDetailsPage() {
                                             </select>
                                         </div>
                                         <div className="h-80 w-full bg-gray-50/50 rounded-2xl p-4 border border-gray-100">
+                                            {hasTrendData ? (
                                             <ResponsiveContainer width="100%" height="100%">
-                                                <AreaChart data={company.trendData && company.trendData.length > 0 ? company.trendData : mockChartData}>
+                                                <AreaChart data={company.trendData}>
                                                     <defs>
                                                         <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
                                                             <stop offset="5%" stopColor="#6366f1" stopOpacity={0.2} />
@@ -233,6 +285,16 @@ export default function CompanyDetailsPage() {
                                                     <Area type="monotone" dataKey="revenue" stroke="#6366f1" strokeWidth={3} fillOpacity={1} fill="url(#colorRevenue)" />
                                                 </AreaChart>
                                             </ResponsiveContainer>
+                                            ) : (
+                                                <div className="flex h-full items-center justify-center rounded-2xl border border-dashed border-gray-200 bg-white text-center">
+                                                    <div>
+                                                        <p className="text-sm font-bold text-gray-700">No revenue trend history yet</p>
+                                                        <p className="mt-1 text-xs font-medium text-gray-500">
+                                                            This chart will appear after monthly company performance data is recorded.
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
                                 </div>
@@ -240,7 +302,7 @@ export default function CompanyDetailsPage() {
                                     <div>
                                         <h3 className="text-lg font-black text-gray-900 dark:text-white mb-6">Recent Activity</h3>
                                         <div className="space-y-4">
-                                            {company.recentActivity.map((activity, i) => (
+                                            {company.recentActivity.length > 0 ? company.recentActivity.map((activity) => (
                                                 <div key={activity.id} className="flex items-start gap-4 p-4 bg-white border border-gray-100 rounded-2xl shadow-sm hover:shadow-md transition-all">
                                                     <div className={`mt-1 p-2 rounded-xl shrink-0 ${activity.type === 'project' ? 'bg-blue-50 text-blue-600' :
                                                         activity.type === 'finance' ? 'bg-green-50 text-green-600' : 'bg-amber-50 text-amber-600'
@@ -261,21 +323,36 @@ export default function CompanyDetailsPage() {
                                                         </p>
                                                     </div>
                                                 </div>
-                                            ))}
+                                            )) : (
+                                                <div className="rounded-2xl border border-dashed border-gray-200 bg-gray-50 px-5 py-8 text-center">
+                                                    <p className="text-sm font-bold text-gray-700">No recent activity recorded</p>
+                                                    <p className="mt-1 text-xs font-medium text-gray-500">
+                                                        Project updates, ticket activity, and revenue events will appear here.
+                                                    </p>
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
 
                                     <div className="p-6 bg-gray-50 dark:bg-gray-700/30 rounded-[2rem] border border-gray-100">
                                         <h3 className="text-sm font-black text-gray-400 uppercase tracking-widest mb-4">Account Manager</h3>
-                                        <div className="flex items-center gap-4">
-                                            <div className="h-12 w-12 bg-gradient-to-tr from-gray-200 to-gray-300 rounded-full flex items-center justify-center border-2 border-white shadow-sm">
-                                                <span className="text-gray-600 font-bold">JD</span>
+                                        {company.relationshipOwner ? (
+                                            <div className="flex items-center gap-4">
+                                                <div className="h-12 w-12 bg-gradient-to-tr from-gray-200 to-gray-300 rounded-full flex items-center justify-center border-2 border-white shadow-sm">
+                                                    <span className="text-gray-600 font-bold">{relationshipOwnerInitials}</span>
+                                                </div>
+                                                <div>
+                                                    <p className="text-sm font-bold text-gray-900 dark:text-white">{company.relationshipOwner.name}</p>
+                                                    <p className="text-xs text-gray-500 font-medium">{company.relationshipOwner.role.replaceAll('_', ' ')}</p>
+                                                    <p className="text-xs text-gray-400 font-medium mt-1">{company.relationshipOwner.email}</p>
+                                                </div>
                                             </div>
-                                            <div>
-                                                <p className="text-sm font-bold text-gray-900 dark:text-white">John Doe</p>
-                                                <p className="text-xs text-gray-500 font-medium">Senior Account Executive</p>
+                                        ) : (
+                                            <div className="rounded-2xl border border-dashed border-gray-200 bg-white px-4 py-5 text-center">
+                                                <p className="text-sm font-bold text-gray-700">No relationship owner assigned</p>
+                                                <p className="mt-1 text-xs text-gray-500">Assign an active company user to make ownership visible here.</p>
                                             </div>
-                                        </div>
+                                        )}
                                     </div>
                                 </div>
                             </div>
@@ -305,27 +382,23 @@ export default function CompanyDetailsPage() {
                                     <div className="md:col-span-2 bg-white border border-gray-100 rounded-[2.5rem] p-6 shadow-sm">
                                         <h3 className="font-bold text-gray-900 mb-4 ml-2">Communication Tone Analysis</h3>
                                         <div className="h-48 flex items-center gap-8">
-                                            <div className="h-full w-48 shrink-0">
-                                                <ResponsiveContainer width="100%" height="100%">
-                                                    <PieChart>
-                                                        <Pie
-                                                            data={[
-                                                                { name: 'Positive', value: company.sentiment.breakdown.positive },
-                                                                { name: 'Neutral', value: company.sentiment.breakdown.neutral },
-                                                                { name: 'Negative', value: company.sentiment.breakdown.negative },
-                                                            ]}
-                                                            innerRadius={40}
-                                                            outerRadius={60}
-                                                            paddingAngle={5}
-                                                            dataKey="value"
-                                                        >
-                                                            {mockChartData.map((entry, index) => (
-                                                                <Cell key={`cell-${index}`} fill={SENTIMENT_COLORS[index % SENTIMENT_COLORS.length]} />
-                                                            ))}
-                                                        </Pie>
-                                                        <Tooltip />
-                                                    </PieChart>
-                                                </ResponsiveContainer>
+                                            <div className="shrink-0">
+                                                <PieChart width={192} height={192}>
+                                                    <Pie
+                                                        data={sentimentData}
+                                                        cx={96}
+                                                        cy={96}
+                                                        innerRadius={40}
+                                                        outerRadius={60}
+                                                        paddingAngle={5}
+                                                        dataKey="value"
+                                                    >
+                                                        {sentimentData.map((entry, index) => (
+                                                            <Cell key={`cell-${index}`} fill={SENTIMENT_COLORS[index % SENTIMENT_COLORS.length]} />
+                                                        ))}
+                                                    </Pie>
+                                                    <Tooltip />
+                                                </PieChart>
                                             </div>
                                             <div className="flex-1 space-y-3">
                                                 <div>
@@ -384,34 +457,144 @@ export default function CompanyDetailsPage() {
                                         <div className="relative z-10">
                                             <h3 className="font-bold text-xl mb-4">AI Prediction</h3>
                                             <p className="text-indigo-200 leading-relaxed mb-6">
-                                                Based on current sentiment and ticket resolution velocity, this client has a <span className="text-white font-black">92% probability of renewal</span> in Q4.
+                                                Based on current performance and customer signals, this company has a
+                                                <span className="text-white font-black"> {company.intelligence.renewalProbability}% renewal likelihood</span>
+                                                {' '}and is currently in a
+                                                <span className="text-white font-black"> {company.stats.healthScore >= 80 ? ' strong' : company.stats.healthScore >= 60 ? ' watchlist' : ' high-risk'} relationship band</span>.
+                                            </p>
+                                            <p className="text-sm text-indigo-100 leading-relaxed mb-6">
+                                                {company.intelligence.recommendation}
                                             </p>
                                             <div className="flex gap-4">
                                                 <div className="bg-white/10 backdrop-blur-md px-4 py-2 rounded-xl text-xs font-bold">
-                                                    Churn Risk: Low
+                                                    Churn Risk: {company.intelligence.churnRisk}
                                                 </div>
                                                 <div className="bg-white/10 backdrop-blur-md px-4 py-2 rounded-xl text-xs font-bold">
-                                                    Upsell Opportunity: High
+                                                    Upsell Opportunity: {company.intelligence.upsellOpportunity}
                                                 </div>
                                             </div>
                                         </div>
                                         <Zap className="absolute -bottom-6 -right-6 w-48 h-48 text-indigo-800 opacity-50 rotate-12" />
                                     </div>
                                 </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                                    <div className="rounded-3xl border border-gray-100 bg-white p-5 shadow-sm">
+                                        <p className="text-xs font-black uppercase tracking-widest text-gray-400">Top Department</p>
+                                        <p className="mt-2 text-sm font-bold text-gray-900">{company.intelligence.topDepartment || 'Not enough data'}</p>
+                                    </div>
+                                    <div className="rounded-3xl border border-gray-100 bg-white p-5 shadow-sm">
+                                        <p className="text-xs font-black uppercase tracking-widest text-gray-400">Top Performer</p>
+                                        <p className="mt-2 text-sm font-bold text-gray-900">{company.intelligence.topPerformer || 'Not enough data'}</p>
+                                    </div>
+                                    <div className="rounded-3xl border border-gray-100 bg-white p-5 shadow-sm">
+                                        <p className="text-xs font-black uppercase tracking-widest text-gray-400">Task Completion</p>
+                                        <p className="mt-2 text-sm font-bold text-gray-900">{company.intelligence.taskCompletionRate.toFixed(1)}%</p>
+                                    </div>
+                                    <div className="rounded-3xl border border-gray-100 bg-white p-5 shadow-sm">
+                                        <p className="text-xs font-black uppercase tracking-widest text-gray-400">Attendance Rate</p>
+                                        <p className="mt-2 text-sm font-bold text-gray-900">{company.intelligence.attendanceRate.toFixed(1)}%</p>
+                                    </div>
+                                </div>
                             </div>
                         )}
 
                         {activeTab === 'projects' && (
-                            <div className="text-center py-20 bg-gray-50 rounded-3xl border border-dashed border-gray-200">
-                                <Server className="h-12 w-12 mx-auto mb-3 text-gray-300" />
-                                <p className="text-gray-400 font-medium">Projects Module - Loading Active Projects...</p>
+                            <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                                {hasRecentProjects ? company.recentProjects.map((project) => (
+                                    <div key={project.id} className="rounded-3xl border border-gray-100 bg-white p-6 shadow-sm">
+                                        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                                            <div>
+                                                <p className="text-lg font-black text-gray-900 dark:text-white">{project.name}</p>
+                                                <p className="mt-1 text-sm font-medium text-gray-500">
+                                                    Created {new Date(project.createdAt).toLocaleDateString()} {project.startDate ? `• Starts ${new Date(project.startDate).toLocaleDateString()}` : ''}
+                                                </p>
+                                            </div>
+                                            <div className="flex flex-wrap gap-2">
+                                                <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-bold uppercase tracking-wider text-blue-700">
+                                                    {project.status}
+                                                </span>
+                                                {project.priority && (
+                                                    <span className="rounded-full bg-amber-50 px-3 py-1 text-xs font-bold uppercase tracking-wider text-amber-700">
+                                                        {project.priority}
+                                                    </span>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+                                )) : (
+                                    <div className="text-center py-20 bg-gray-50 rounded-3xl border border-dashed border-gray-200">
+                                        <Server className="h-12 w-12 mx-auto mb-3 text-gray-300" />
+                                        <p className="text-gray-500 font-semibold">No active project activity yet</p>
+                                        <p className="mt-2 text-sm text-gray-400">Projects linked to this company will appear here.</p>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        {activeTab === 'tickets' && (
+                            <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                                {hasRecentTickets ? company.recentTickets.map((ticket) => (
+                                    <div key={ticket.id} className="rounded-3xl border border-gray-100 bg-white p-6 shadow-sm">
+                                        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                                            <div>
+                                                <p className="text-lg font-black text-gray-900 dark:text-white">{ticket.title}</p>
+                                                <p className="mt-1 text-sm font-medium text-gray-500">
+                                                    Logged {new Date(ticket.createdAt).toLocaleDateString()} {ticket.category ? `• ${ticket.category}` : ''}
+                                                </p>
+                                            </div>
+                                            <div className="flex flex-wrap gap-2">
+                                                <span className="rounded-full bg-amber-50 px-3 py-1 text-xs font-bold uppercase tracking-wider text-amber-700">
+                                                    {ticket.status}
+                                                </span>
+                                                {ticket.priority && (
+                                                    <span className="rounded-full bg-rose-50 px-3 py-1 text-xs font-bold uppercase tracking-wider text-rose-700">
+                                                        {ticket.priority}
+                                                    </span>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+                                )) : (
+                                    <div className="text-center py-20 bg-gray-50 rounded-3xl border border-dashed border-gray-200">
+                                        <AlertCircle className="h-12 w-12 mx-auto mb-3 text-gray-300" />
+                                        <p className="text-gray-500 font-semibold">No open support activity yet</p>
+                                        <p className="mt-2 text-sm text-gray-400">Recent tickets for this company will appear here.</p>
+                                    </div>
+                                )}
                             </div>
                         )}
 
                         {activeTab === 'financials' && (
-                            <div className="text-center py-20 bg-gray-50 rounded-3xl border border-dashed border-gray-200">
-                                <DollarSign className="h-12 w-12 mx-auto mb-3 text-gray-300" />
-                                <p className="text-gray-400 font-medium">Financials Module - Loading Invoices & Statements...</p>
+                            <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                                {hasRecentRevenue ? company.recentRevenue.map((transaction) => (
+                                    <div key={transaction.id} className="rounded-3xl border border-gray-100 bg-white p-6 shadow-sm">
+                                        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                                            <div>
+                                                <p className="text-lg font-black text-gray-900 dark:text-white">₹{transaction.amount.toLocaleString()}</p>
+                                                <p className="mt-1 text-sm font-medium text-gray-500">
+                                                    {transaction.description || 'Revenue transaction'} • {new Date(transaction.createdAt).toLocaleDateString()}
+                                                </p>
+                                            </div>
+                                            <div className="flex flex-wrap gap-2">
+                                                <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold uppercase tracking-wider text-emerald-700">
+                                                    {transaction.status}
+                                                </span>
+                                                {transaction.paymentMethod && (
+                                                    <span className="rounded-full bg-slate-50 px-3 py-1 text-xs font-bold uppercase tracking-wider text-slate-700">
+                                                        {transaction.paymentMethod}
+                                                    </span>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+                                )) : (
+                                    <div className="text-center py-20 bg-gray-50 rounded-3xl border border-dashed border-gray-200">
+                                        <DollarSign className="h-12 w-12 mx-auto mb-3 text-gray-300" />
+                                        <p className="text-gray-500 font-semibold">No verified revenue transactions yet</p>
+                                        <p className="mt-2 text-sm text-gray-400">Financial history will populate here once transactions are recorded.</p>
+                                    </div>
+                                )}
                             </div>
                         )}
                     </div>

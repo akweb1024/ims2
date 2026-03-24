@@ -46,6 +46,14 @@ export const POST = authorizedRoute(
                     // No extra filters needed beyond company check
                 }
 
+                if (filters.designation && typeof filters.designation === 'string') {
+                    whereClause.designation = filters.designation;
+                }
+
+                if (filters.employeeType && typeof filters.employeeType === 'string') {
+                    whereClause.employeeType = filters.employeeType;
+                }
+
                 targetEmployees = await prisma.employeeProfile.findMany({
                     where: whereClause,
                     include: { user: true }

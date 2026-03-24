@@ -106,6 +106,20 @@ export async function GET(
             return NextResponse.json({ error: 'Forbidden: You are not assigned to this customer' }, { status: 403 });
         }
 
+        if (decoded.role === 'AGENCY') {
+            const agencyProfile = await prisma.customerProfile.findUnique({
+                where: { userId: decoded.id },
+                select: { id: true }
+            });
+
+            const isOwnAgencyRecord = agencyProfile?.id === customer.id;
+            const isAgencyClient = customer.agencyId === agencyProfile?.id;
+
+            if (!agencyProfile || (!isOwnAgencyRecord && !isAgencyClient)) {
+                return NextResponse.json({ error: 'Forbidden: This client is not linked to your agency' }, { status: 403 });
+            }
+        }
+
         // Apply restricted visibility for communications
         if (decoded.role === 'EXECUTIVE') {
             (customer as any).communications = (customer as any).communications.map((log: any) => {
