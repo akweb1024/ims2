@@ -1,5 +1,7 @@
 'use client';
 
+import Link from 'next/link';
+
 type HelpContent = {
     title: string;
     description: string;
@@ -132,7 +134,9 @@ export default function HelpSidebar({ isOpen, onClose, activeTab }: { isOpen: bo
                 </div>
 
                 <div className="p-6 border-t border-secondary-100 bg-secondary-50/30">
-                    <a href="/dashboard/knowledge-base" className="text-xs font-bold text-primary-600 hover:underline block text-center">Visit Full Knowledge Base →</a>
+                    <Link href="/dashboard/knowledge-base" className="block text-center text-xs font-bold text-primary-600 hover:underline">
+                        Visit Full Knowledge Base →
+                    </Link>
                 </div>
             </div>
         </div>

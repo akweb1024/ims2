@@ -1,6 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import FormattedDate from '@/components/common/FormattedDate';
 import { KNOWLEDGE_BASE_LIBRARY_TABS, getKnowledgeCategoryLabel } from '@/lib/knowledge-base';
@@ -33,6 +35,7 @@ const getArticlePreview = (content: string) =>
 const getLatestReviewNote = (article: any) => article.revisions?.[0];
 
 export default function KnowledgeBasePage() {
+    const router = useRouter();
     const [articles, setArticles] = useState<any[]>([]);
     const [loading, setLoading] = useState(false);
     const [actioningId, setActioningId] = useState<string | null>(null);
@@ -139,7 +142,7 @@ export default function KnowledgeBasePage() {
                     </div>
                     {['SUPER_ADMIN', 'ADMIN'].includes(userRole) && (
                         <button
-                            onClick={() => window.location.href = '/dashboard/knowledge-base/new'}
+                            onClick={() => router.push('/dashboard/knowledge-base/new')}
                             className="btn btn-primary shadow-xl"
                         >
                             + Create Article
@@ -240,10 +243,10 @@ export default function KnowledgeBasePage() {
                                         </svg>
                                     </span>
                                 </div>
-                                <a href={`/dashboard/knowledge-base/${article.id}`} className="block">
+                                <Link href={`/dashboard/knowledge-base/${article.id}`} className="block">
                                     <h3 className="text-xl font-bold text-secondary-900 mb-3 group-hover:text-primary-600 transition-colors">{article.title}</h3>
                                     <p className="text-secondary-600 text-sm line-clamp-3 mb-6 flex-1">{getArticlePreview(article.content)}</p>
-                                </a>
+                                </Link>
                                 {isPrivileged && activeCategory !== 'MY WORK' && (
                                     <div className="mb-5 flex flex-wrap gap-2">
                                         {article.status !== 'IN_REVIEW' && (

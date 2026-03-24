@@ -32,6 +32,7 @@ export const ALL_MODULES: NavModule[] = [
                     { name: 'Staff Portal', href: '/dashboard/staff-portal', icon: '🏢', roles: ['*'] },
                     { name: 'Direct Chat', href: '/dashboard/chat', icon: '💬', roles: ['*'] },
                     { name: 'File Manager', href: '/dashboard/files', icon: '🗂️', roles: ['*'] },
+                    { name: 'Knowledge Base', href: '/dashboard/knowledge-base', icon: '📚', roles: ['*'] },
                     { name: 'Automation', href: '/dashboard/automation', icon: '⚡', roles: ['SUPER_ADMIN'] },
                     { name: 'Team Dashboard', href: '/dashboard/manager/team', icon: '👥', roles: ['MANAGER', 'TEAM_LEADER'] },
                 ]

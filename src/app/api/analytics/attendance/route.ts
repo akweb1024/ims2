@@ -4,6 +4,8 @@ import { authorizedRoute } from "@/lib/middleware-auth";
 import { createErrorResponse } from "@/lib/api-utils";
 import { startOfMonth, endOfMonth, subMonths, format } from "date-fns";
 
+export const dynamic = "force-dynamic";
+
 export const GET = authorizedRoute(
   [
     "SUPER_ADMIN",
