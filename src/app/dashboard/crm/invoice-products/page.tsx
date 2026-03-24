@@ -166,6 +166,7 @@ interface InvoiceProduct {
   isFeatured: boolean;
   tags: string[];
   notes?: string;
+  attributes?: any;
   productAttributes?: any[];
   variants?: any[];
   createdAt: string;
@@ -380,6 +381,7 @@ export default function InvoiceProductsPage() {
 
     // Populate the new catalogue form from existing product data
     const isVariable = p.type === "VARIABLE";
+    const subscriptionOptions = (p.attributes as any)?.subscriptionOptions || {};
     setCatalogueForm({
       name: p.name,
       sku: p.sku || "",
@@ -408,6 +410,9 @@ export default function InvoiceProductsPage() {
       category: p.category || "",
       hsnCode: p.hsnCode || "",
       sacCode: p.sacCode || "",
+      subscriptionFrequency: subscriptionOptions.frequency || "ANNUAL",
+      subscriptionYear: subscriptionOptions.year || new Date().getFullYear(),
+      subscriptionMode: subscriptionOptions.mode || "PRINT",
     });
 
     setShowModal(true);
@@ -425,6 +430,17 @@ export default function InvoiceProductsPage() {
   const buildPayload = (currentForm: ProductCatalogueFormData) => {
     // Merge new catalogueForm fields with legacy form fields
     const isVariable = currentForm.pricingMode === "VARIABLE";
+    const journalSubscriptionAttributes =
+      (currentForm.category || form.category) === "JOURNAL_SUBSCRIPTION"
+        ? {
+            subscriptionOptions: {
+              frequency: currentForm.subscriptionFrequency || "ANNUAL",
+              year:
+                Number(currentForm.subscriptionYear) || new Date().getFullYear(),
+              mode: currentForm.subscriptionMode || "PRINT",
+            },
+          }
+        : null;
     return {
       name: currentForm.name.trim() || form.name.trim(),
       type: isVariable ? "VARIABLE" : "SIMPLE",
@@ -451,6 +467,7 @@ export default function InvoiceProductsPage() {
         .map((t: string) => t.trim())
         .filter(Boolean),
       notes: form.notes || null,
+      attributes: journalSubscriptionAttributes,
       priceTiers: null,
       ...(isVariable && currentForm.variants.length > 0
         ? {

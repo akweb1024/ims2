@@ -44,6 +44,9 @@ export interface ProductCatalogueFormData {
   category: string;
   hsnCode: string;
   sacCode: string;
+  subscriptionFrequency: string;
+  subscriptionYear: number | "";
+  subscriptionMode: string;
 }
 
 interface ProductCatalogueFormProps {
@@ -77,6 +80,9 @@ export const DEFAULT_FORM_DATA: ProductCatalogueFormData = {
   category: "",
   hsnCode: "",
   sacCode: "",
+  subscriptionFrequency: "ANNUAL",
+  subscriptionYear: new Date().getFullYear(),
+  subscriptionMode: "PRINT",
 };
 
 const DEFAULT_CATEGORIES = [
@@ -97,6 +103,17 @@ const YEAR_OPTIONS = Array.from(
   { length: 10 },
   (_, i) => new Date().getFullYear() + i - 2,
 );
+
+const SUBSCRIPTION_FREQUENCY_OPTIONS = [
+  { value: "ANNUAL", label: "Annual" },
+  { value: "ISSUE_WISE", label: "Issue Wise" },
+];
+
+const SUBSCRIPTION_MODE_OPTIONS = [
+  { value: "PRINT", label: "Print" },
+  { value: "DIGITAL", label: "Digital" },
+  { value: "PRINT_DIGITAL", label: "Print + Digital" },
+];
 
 // ─── Sub-component: Field Label ──────────────────────────────────────────────
 const FieldLabel = ({
@@ -557,6 +574,8 @@ export default function ProductCatalogueForm({
     onSubmit?.(value);
   };
 
+  const isJournalSubscription = value.category === "JOURNAL_SUBSCRIPTION";
+
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       {/* ── Section 1: Identity ─────────────────────────────────────── */}
@@ -627,7 +646,25 @@ export default function ProductCatalogueForm({
               <select
                 required
                 value={value.category}
-                onChange={(e) => setField("category", e.target.value)}
+                onChange={(e) => {
+                  const nextCategory = e.target.value;
+                  onChange({
+                    ...value,
+                    category: nextCategory,
+                    subscriptionFrequency:
+                      nextCategory === "JOURNAL_SUBSCRIPTION"
+                        ? value.subscriptionFrequency || "ANNUAL"
+                        : "",
+                    subscriptionYear:
+                      nextCategory === "JOURNAL_SUBSCRIPTION"
+                        ? value.subscriptionYear || new Date().getFullYear()
+                        : "",
+                    subscriptionMode:
+                      nextCategory === "JOURNAL_SUBSCRIPTION"
+                        ? value.subscriptionMode || "PRINT"
+                        : "",
+                  });
+                }}
                 className="w-full h-11 rounded-xl border border-slate-200 bg-white pl-3.5 pr-9 text-sm font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 transition-all appearance-none cursor-pointer"
               >
                 <option value="">— Select a category —</option>
@@ -645,6 +682,71 @@ export default function ProductCatalogueForm({
             </div>
           </div>
         </div>
+
+        {isJournalSubscription && (
+          <div className="rounded-2xl border border-indigo-100 bg-indigo-50/60 p-4 space-y-4 animate-in fade-in slide-in-from-top-2 duration-200">
+            <div className="flex items-center gap-2.5">
+              <div className="w-7 h-7 rounded-lg bg-indigo-100 text-indigo-600 flex items-center justify-center">
+                <Layers size={14} />
+              </div>
+              <div>
+                <h4 className="text-sm font-bold text-slate-800 tracking-tight">
+                  Subscription Options
+                </h4>
+                <p className="text-[11px] text-slate-500">
+                  Configure the journal subscription structure for invoicing.
+                </p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="space-y-1.5">
+                <FieldLabel required>Frequency</FieldLabel>
+                <select
+                  value={value.subscriptionFrequency}
+                  onChange={(e) => setField("subscriptionFrequency", e.target.value)}
+                  className="w-full h-11 rounded-xl border border-slate-200 bg-white px-3.5 text-sm font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 transition-all"
+                >
+                  {SUBSCRIPTION_FREQUENCY_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="space-y-1.5">
+                <FieldLabel required>Year</FieldLabel>
+                <select
+                  value={value.subscriptionYear}
+                  onChange={(e) => setField("subscriptionYear", parseInt(e.target.value, 10))}
+                  className="w-full h-11 rounded-xl border border-slate-200 bg-white px-3.5 text-sm font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 transition-all"
+                >
+                  {YEAR_OPTIONS.map((year) => (
+                    <option key={year} value={year}>
+                      {year}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="space-y-1.5">
+                <FieldLabel required>Mode</FieldLabel>
+                <select
+                  value={value.subscriptionMode}
+                  onChange={(e) => setField("subscriptionMode", e.target.value)}
+                  className="w-full h-11 rounded-xl border border-slate-200 bg-white px-3.5 text-sm font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 transition-all"
+                >
+                  {SUBSCRIPTION_MODE_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Domain */}
         <div className="space-y-1.5">

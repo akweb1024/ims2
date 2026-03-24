@@ -13,6 +13,16 @@ import { ArrowLeft, PackagePlus } from "lucide-react";
 
 const buildPayload = (form: ProductCatalogueFormData) => {
   const isVariable = form.pricingMode === "VARIABLE";
+  const journalSubscriptionAttributes =
+    form.category === "JOURNAL_SUBSCRIPTION"
+      ? {
+          subscriptionOptions: {
+            frequency: form.subscriptionFrequency || "ANNUAL",
+            year: Number(form.subscriptionYear) || new Date().getFullYear(),
+            mode: form.subscriptionMode || "PRINT",
+          },
+        }
+      : null;
   return {
     name: form.name.trim(),
     type: isVariable ? "VARIABLE" : "SIMPLE",
@@ -36,7 +46,7 @@ const buildPayload = (form: ProductCatalogueFormData) => {
     tags: [],
     notes: null,
     domain: form.domain || null,
-    attributes: null,
+    attributes: journalSubscriptionAttributes,
     priceTiers: null,
     variants: isVariable
       ? form.variants
