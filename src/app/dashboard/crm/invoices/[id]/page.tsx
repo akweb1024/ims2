@@ -8,6 +8,7 @@ import FormattedDate from "@/components/common/FormattedDate";
 import CreateInvoiceModal from "@/components/dashboard/CreateInvoiceModal";
 import AnvInvoiceTemplate from "@/components/dashboard/invoices/AnvInvoiceTemplate";
 import GlobalProInvoiceTemplate from "@/components/dashboard/invoices/GlobalProInvoiceTemplate";
+import { buildInvoiceTaxContext } from "@/lib/invoice-tax";
 
 // Helper: convert number to Indian words
 // Helper: convert number to words based on currency
@@ -304,6 +305,9 @@ export default function InvoiceDetailPage({
     customer.country ||
     "India";
   const isExport = invoiceCountry.toLowerCase() !== "india";
+  const taxContext = buildInvoiceTaxContext(customer, {
+    stateCode: invoice.companyStateCode || company.stateCode,
+  });
 
   // Tax detection
   const hasBreakedDownTax = invoice.cgstRate > 0 || invoice.sgstRate > 0;
@@ -1040,6 +1044,20 @@ export default function InvoiceDetailPage({
               The sum of {currencySymbol}
               {grandTotal.toLocaleString()}/- is a payment on account of
               subscription by {identity.paymentMode || "NEFT/RTGS"}.
+            </div>
+            <div className="px-4 py-3 text-[10px] border-b border-gray-700 bg-blue-50/60 leading-relaxed">
+              <div className="font-black uppercase tracking-widest text-[9px] text-blue-900">
+                Tax Rule Summary
+              </div>
+              <div className="mt-2">
+                {taxContext.customerSegmentLabel}: {taxContext.taxNote}
+              </div>
+              <div className="mt-1">
+                {taxContext.isDomestic ? "For India" : "Non Indian Customer"}: {taxContext.gstApplicabilityLabel}
+              </div>
+              <div className="mt-1">
+                {taxContext.isDomestic ? (taxContext.isSameStateSupply ? "Uttar Pradesh" : "Other State") : "Jurisdiction"}: {taxContext.jurisdictionLabel}
+              </div>
             </div>
 
             {/* TERMS AND SIGNATURE */}

@@ -44,6 +44,11 @@ const getCurrencySymbol = (curr: string) => {
 };
 import { CustomerType } from "@/types";
 import GuidelineHelp from "./GuidelineHelp";
+import {
+  buildInvoiceTaxContext,
+  calculateInvoiceTaxBreakdown,
+  resolveItemTaxCategory,
+} from "@/lib/invoice-tax";
 
 interface CreateInvoiceModalProps {
   isOpen: boolean;
@@ -70,11 +75,19 @@ export default function CreateInvoiceModal({
   const [searching, setSearching] = useState(false);
   const [brands, setBrands] = useState<any[]>([]);
   const [selectedBrandId, setSelectedBrandId] = useState<string>("");
+  const [companyStateCode, setCompanyStateCode] = useState<string>("");
 
   // Step 2: Invoice Details
   const [dueDate, setDueDate] = useState("");
   const [items, setItems] = useState([
-    { id: 1, description: "", hsnCode: "", quantity: 1, price: 0 },
+    {
+      id: 1,
+      description: "",
+      hsnCode: "",
+      quantity: 1,
+      price: 0,
+      taxCategory: "STANDARD",
+    },
   ]);
   const [description, setDescription] = useState("");
   const [journalResults, setJournalResults] = useState<{
@@ -247,6 +260,17 @@ export default function CreateInvoiceModal({
       updateItem(targetItemId, "productId", p.id);
       updateItem(targetItemId, "variantId", v?.id);
       updateItem(targetItemId, "hsnCode", p.hsnCode || p.sacCode || "");
+      updateItem(targetItemId, "productCategory", p.category || null);
+      updateItem(targetItemId, "productTags", p.tags || []);
+      updateItem(
+        targetItemId,
+        "taxCategory",
+        resolveItemTaxCategory({
+          description: finalDesc,
+          productCategory: p.category,
+          productTags: p.tags || [],
+        }),
+      );
       setProductResults((prev) => ({ ...prev, [targetItemId]: [] }));
     } else {
       const newItem = {
@@ -257,6 +281,13 @@ export default function CreateInvoiceModal({
         price: price,
         productId: p.id,
         variantId: v?.id,
+        productCategory: p.category || null,
+        productTags: p.tags || [],
+        taxCategory: resolveItemTaxCategory({
+          description: finalDesc,
+          productCategory: p.category,
+          productTags: p.tags || [],
+        }),
       };
       setItems((prev) => {
         if (prev.length === 1 && !prev[0].description && prev[0].price === 0)
@@ -336,6 +367,23 @@ export default function CreateInvoiceModal({
         console.error("Failed to fetch brands", err);
       }
     };
+    const fetchCompanySettings = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        const rawUser = localStorage.getItem("user");
+        const companyId = rawUser ? JSON.parse(rawUser).companyId : null;
+        if (!companyId) return;
+        const res = await fetch(`/api/companies/${companyId}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setCompanyStateCode(data.stateCode || "");
+        }
+      } catch (err) {
+        console.error("Failed to fetch company settings", err);
+      }
+    };
     const fetchInstitutions = async () => {
       try {
         const token = localStorage.getItem("token");
@@ -353,6 +401,7 @@ export default function CreateInvoiceModal({
 
     if (isOpen) {
       fetchBrands();
+      fetchCompanySettings();
       fetchInstitutions();
     }
   }, [isOpen]);
@@ -410,7 +459,14 @@ export default function CreateInvoiceModal({
       setSelectedCustomer(null);
       setDueDate("");
       setItems([
-        { id: 1, description: "", hsnCode: "", quantity: 1, price: 0 },
+        {
+          id: 1,
+          description: "",
+          hsnCode: "",
+          quantity: 1,
+          price: 0,
+          taxCategory: "STANDARD",
+        },
       ]);
       setDescription("");
       setCouponResult(null);
@@ -421,7 +477,14 @@ export default function CreateInvoiceModal({
   const handleAddItem = () => {
     setItems([
       ...items,
-      { id: Date.now(), description: "", hsnCode: "", quantity: 1, price: 0 },
+      {
+        id: Date.now(),
+        description: "",
+        hsnCode: "",
+        quantity: 1,
+        price: 0,
+        taxCategory: "STANDARD",
+      },
     ]);
   };
 
@@ -453,73 +516,19 @@ export default function CreateInvoiceModal({
   );
 
   const taxBreakdown = useMemo(() => {
-    const customerCountry = selectedCustomer?.billingCountry || "India";
-    const billingState = selectedCustomer?.billingState || "";
-    const billingStateCode = selectedCustomer?.billingStateCode || "";
-    const isInternational = customerCountry.toLowerCase() !== "india";
-    const isUttarPradesh =
-      billingStateCode === "09" ||
-      billingStateCode === "UP" ||
-      billingState.toLowerCase().includes("uttar pradesh");
-
-    const subtotal = calculateTotal();
-    const discountAmount = calculateDiscount();
-    const taxableSubtotal = Math.max(0, subtotal - discountAmount);
-
-    let totalTax = 0;
-    let cgst = 0,
-      sgst = 0,
-      igst = 0;
-
-    items.forEach((item) => {
-      let itemTaxRate = 0;
-      if (!isInternational) {
-        const desc = (item.description || "").toLowerCase();
-        const isOnline =
-          desc.includes("online") ||
-          desc.includes("digital") ||
-          desc.includes("access");
-        const isPrint = desc.includes("print");
-
-        if (isPrint && !isOnline) {
-          itemTaxRate = 0;
-        } else if (isOnline) {
-          itemTaxRate = 18;
-        } else {
-          itemTaxRate = Number(taxRate) || 18;
-        }
-      }
-
-      const itemWeight =
-        subtotal > 0 ? (Number(item.quantity) * Number(item.price)) / subtotal : 0;
-      const itemTaxableAmount =
-        Number(item.quantity) * Number(item.price) - discountAmount * itemWeight;
-      const itemTax = itemTaxableAmount * (itemTaxRate / 100);
-
-      totalTax += itemTax;
-
-      if (itemTaxRate > 0) {
-        if (isUttarPradesh) {
-          cgst += itemTax / 2;
-          sgst += itemTax / 2;
-        } else {
-          igst += itemTax;
-        }
-      }
+    return calculateInvoiceTaxBreakdown({
+      customer: selectedCustomer || {},
+      company: { stateCode: companyStateCode },
+      items,
+      discountAmount: calculateDiscount(),
+      defaultTaxRate: Number(taxRate) || 18,
     });
+  }, [items, selectedCustomer, taxRate, calculateDiscount, companyStateCode]);
 
-    return {
-      tax: totalTax,
-      total: taxableSubtotal + totalTax,
-      cgst,
-      sgst,
-      igst,
-      isInternational,
-      isUttarPradesh,
-      effectiveTaxRate:
-        taxableSubtotal > 0 ? (totalTax / taxableSubtotal) * 100 : 0,
-    };
-  }, [items, selectedCustomer, taxRate, calculateTotal, calculateDiscount]);
+  const taxContext = useMemo(
+    () => buildInvoiceTaxContext(selectedCustomer || {}, { stateCode: companyStateCode }),
+    [selectedCustomer, companyStateCode],
+  );
 
   const applyScoupon = async () => {
     if (!couponCode.trim()) return;
@@ -647,6 +656,9 @@ export default function CreateInvoiceModal({
                 price,
                 productId,
                 variantId,
+                taxCategory,
+                productCategory,
+                productTags,
               }: any) => ({
                 id,
                 description,
@@ -655,6 +667,9 @@ export default function CreateInvoiceModal({
                 price,
                 productId: productId || null,
                 variantId: variantId || null,
+                taxCategory: taxCategory || null,
+                productCategory: productCategory || null,
+                productTags: productTags || [],
               }),
             ),
             taxRate: taxBreakdown.effectiveTaxRate,
@@ -1830,7 +1845,7 @@ export default function CreateInvoiceModal({
                     </span>
                   </div>
                 )}
-                {taxBreakdown.isInternational ? (
+                {taxBreakdown.isExport ? (
                   <div className="flex justify-between items-center text-sm">
                     <span className="text-secondary-500 font-medium uppercase tracking-wider">
                       Tax (International)
@@ -1874,7 +1889,7 @@ export default function CreateInvoiceModal({
                         </span>
                       </div>
                     )}
-                    {taxBreakdown.tax === 0 && !taxBreakdown.isInternational && (
+                    {taxBreakdown.tax === 0 && !taxBreakdown.isExport && (
                       <div className="flex justify-between items-center text-sm">
                         <span className="text-secondary-500 font-medium uppercase tracking-wider">
                           GST (0% - Exempt Products)
@@ -1886,6 +1901,20 @@ export default function CreateInvoiceModal({
                     )}
                   </>
                 )}
+                <div className="rounded-2xl border border-primary-100 bg-primary-50/60 px-4 py-3 text-xs text-primary-900">
+                  <div className="font-black uppercase tracking-widest text-[10px]">
+                    Tax Rule Summary
+                  </div>
+                  <div className="mt-2 font-medium">
+                    {taxContext.customerSegmentLabel}: {taxContext.taxNote}
+                  </div>
+                  <div className="mt-1">
+                    {taxContext.isDomestic ? "For India" : "Non Indian Customer"}: {taxContext.gstApplicabilityLabel}
+                  </div>
+                  <div className="mt-1">
+                    {taxContext.isDomestic ? (taxContext.isSameStateSupply ? "Uttar Pradesh" : "Other State") : "Jurisdiction"}: {taxContext.jurisdictionLabel}
+                  </div>
+                </div>
                 <div className="pt-3 border-t border-gray-200 flex justify-between items-center">
                   <span className="text-base font-black text-gray-900 uppercase">
                     Total Amount

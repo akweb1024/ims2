@@ -6,6 +6,7 @@ import { InvoiceStatus } from '@/types';
 import { FinanceService } from '@/lib/services/finance';
 import { logger } from '@/lib/logger';
 import { generateInvoiceNumbers } from '@/lib/invoice-number';
+import { calculateInvoiceTaxBreakdown } from '@/lib/invoice-tax';
 
 export const GET = authorizedRoute(
     [],
@@ -110,20 +111,10 @@ export const POST = authorizedRoute(
             throw new ValidationError('customerProfileId and at least one lineItem are required');
         }
 
-        // Calculate Totals
-        let subtotal = 0;
-        const processedItems = lineItems.map((item: any) => {
-            const amount = Number(item.quantity) * Number(item.price);
-            subtotal += amount;
-            return {
-                ...item,
-                amount
-            };
-        });
-
-        // Initial placeholder totals, will be refined after customer/location check
-        let tax = 0;
-        let total = subtotal - Number(discountAmount || 0);
+        const processedItems = lineItems.map((item: any) => ({
+            ...item,
+            amount: Number(item.quantity) * Number(item.price),
+        }));
 
         const customer = await prisma.customerProfile.findUnique({
             where: { id: customerProfileId }
@@ -200,68 +191,52 @@ export const POST = authorizedRoute(
             }
         }
 
-        const customerCountry = (customer as any).billingCountry || 'India';
-        const billingState = (customer as any).billingState || '';
-        const billingStateCode = (customer as any).billingStateCode || '';
-        const isInternational = customerCountry.toLowerCase() !== 'india';
-        const isUttarPradesh = billingStateCode === '09' || billingStateCode === 'UP' || billingState.toLowerCase().includes('uttar pradesh');
-        
-        // Final Tax Calculation per item based on location and format
-        const discountTotal = Number(discountAmount || 0);
-        const taxableSubtotal = subtotal - discountTotal;
-        let totalTax = 0;
-        let cgst = 0, sgst = 0, igst = 0;
+        const productIds: string[] = Array.from(
+            new Set(
+                processedItems
+                    .map((item: any) => item.productId)
+                    .filter((value: any): value is string => typeof value === 'string' && value.length > 0)
+            )
+        );
+        const productMetadata = new Map<string, { id: string; category?: string | null; tags?: string[] | null; taxRate?: number | null }>();
 
-        const finalProcessedItems = processedItems.map((item: any) => {
-            let itemTaxRate = 0;
-            if (!isInternational) {
-                const desc = (item.description || '').toLowerCase();
-                const isOnline = desc.includes('online') || desc.includes('digital') || desc.includes('access');
-                const isPrint = desc.includes('print');
-                
-                if (isPrint && !isOnline) {
-                    itemTaxRate = 0;
-                } else if (isOnline) {
-                    itemTaxRate = 18;
-                } else {
-                    itemTaxRate = Number(taxRate) || 18;
-                }
-            }
+        if (productIds.length > 0) {
+            const products = await prisma.invoiceProduct.findMany({
+                where: { id: { in: productIds } },
+                select: { id: true, category: true, tags: true, taxRate: true }
+            });
+            products.forEach((product) => {
+                productMetadata.set(product.id, {
+                    id: product.id,
+                    category: product.category,
+                    tags: Array.isArray(product.tags) ? (product.tags as string[]) : [],
+                    taxRate: product.taxRate,
+                });
+            });
+        }
 
-            const itemWeight = subtotal > 0 ? item.amount / subtotal : 0;
-            const itemTaxableAmount = item.amount - (discountTotal * itemWeight);
-            const itemTax = itemTaxableAmount * (itemTaxRate / 100);
-            
-            totalTax += itemTax;
-            
-            if (itemTaxRate > 0) {
-                if (isUttarPradesh) {
-                    cgst += itemTax / 2;
-                    sgst += itemTax / 2;
-                } else {
-                    igst += itemTax;
-                }
-            }
-
-            return {
-                ...item,
-                taxRate: itemTaxRate,
-                taxAmount: itemTax
-            };
+        const taxBreakdown = calculateInvoiceTaxBreakdown({
+            customer,
+            company,
+            items: processedItems,
+            discountAmount: Number(discountAmount || 0),
+            defaultTaxRate: Number(taxRate) || 18,
+            productMetadata,
         });
 
-        tax = totalTax;
-        total = taxableSubtotal + tax;
-
-        const companyStateCode = company?.stateCode;
-        const placeOfSupplyCode = (customer as any).shippingStateCode || (customer as any).billingStateCode;
-        
-        const cgstRate = isUttarPradesh && !isInternational ? 9 : 0;
-        const sgstRate = isUttarPradesh && !isInternational ? 9 : 0;
-        const igstRate = !isUttarPradesh && !isInternational ? 18 : 0;
-        
-        // Effective tax rate for the whole invoice
-        const effectiveTaxRate = taxableSubtotal > 0 ? (tax / taxableSubtotal) * 100 : 0;
+        const subtotal = taxBreakdown.subtotal;
+        const tax = taxBreakdown.tax;
+        const total = taxBreakdown.total;
+        const finalProcessedItems = taxBreakdown.lineItems;
+        const companyStateCode = taxBreakdown.companyStateCode || company?.stateCode;
+        const placeOfSupplyCode = taxBreakdown.placeOfSupplyCode || (customer as any).shippingStateCode || (customer as any).billingStateCode;
+        const cgst = taxBreakdown.cgst;
+        const sgst = taxBreakdown.sgst;
+        const igst = taxBreakdown.igst;
+        const cgstRate = taxBreakdown.cgstRate;
+        const sgstRate = taxBreakdown.sgstRate;
+        const igstRate = taxBreakdown.igstRate;
+        const effectiveTaxRate = taxBreakdown.effectiveTaxRate;
 
         const newInvoice = await (prisma.invoice as any).create({
             data: {

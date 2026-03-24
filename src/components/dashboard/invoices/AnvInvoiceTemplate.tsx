@@ -4,6 +4,7 @@ import React from "react";
 import Image from "next/image";
 import { QRCodeSVG } from "qrcode.react";
 import FormattedDate from "@/components/common/FormattedDate";
+import { buildInvoiceTaxContext } from "@/lib/invoice-tax";
 
 interface AnvInvoiceTemplateProps {
   invoice: any;
@@ -35,6 +36,9 @@ export default function AnvInvoiceTemplate({
     customer.country ||
     "India";
   const isExport = invoiceCountry.toLowerCase() !== "india";
+  const taxContext = buildInvoiceTaxContext(customer, {
+    stateCode: invoice.companyStateCode || identity?.stateCode,
+  });
 
   const subtotal = invoice.amount || 0;
   const taxAmt = invoice.tax || 0;
@@ -536,6 +540,11 @@ export default function AnvInvoiceTemplate({
             <li>All subscription amount mentioned is as per year fee.</li>
             <li>Missing numbers will not be supplied after six months.</li>
             <li>Publisher is not responsible for foreign delivery issues.</li>
+            <li>{taxContext.customerSegmentLabel}: {taxContext.taxNote}</li>
+            <li>{taxContext.isDomestic ? "For India" : "Non Indian Customer"}: {taxContext.gstApplicabilityLabel}</li>
+            {taxContext.isDomestic && (
+              <li>{taxContext.isSameStateSupply ? "Uttar Pradesh" : "Other State"}: {taxContext.jurisdictionLabel}</li>
+            )}
             <li>Subject to Raipur Jurisdiction only.</li>
           </ol>
           <div className="mt-2 text-[9px] font-bold p-1 bg-gray-50 border border-dotted border-black">

@@ -4,6 +4,7 @@ import React from "react";
 import Image from "next/image";
 import { QRCodeSVG } from "qrcode.react";
 import FormattedDate from "@/components/common/FormattedDate";
+import { buildInvoiceTaxContext } from "@/lib/invoice-tax";
 
 interface GlobalProInvoiceTemplateProps {
   invoice: any;
@@ -35,6 +36,9 @@ export default function GlobalProInvoiceTemplate({
     customer.country ||
     "India";
   const isExport = invoiceCountry.toLowerCase() !== "india";
+  const taxContext = buildInvoiceTaxContext(customer, {
+    stateCode: invoice.companyStateCode || identity?.stateCode,
+  });
 
   const subtotal = invoice.amount || 0;
   const taxAmt = invoice.tax || 0;
@@ -1059,7 +1063,11 @@ export default function GlobalProInvoiceTemplate({
               <>
                 <li>Payment is due within the period specified above.</li>
                 <li>All prices are in {invoice.currency || "INR"} unless stated otherwise.</li>
-                <li>GST will be charged as applicable under Indian tax laws.</li>
+                <li>{taxContext.customerSegmentLabel}: {taxContext.taxNote}</li>
+                <li>{taxContext.isDomestic ? "For India" : "Non Indian Customer"}: {taxContext.gstApplicabilityLabel}</li>
+                {taxContext.isDomestic && (
+                  <li>{taxContext.isSameStateSupply ? "Uttar Pradesh" : "Other State"}: {taxContext.jurisdictionLabel}</li>
+                )}
                 <li>
                   {isExport
                     ? "This is an export invoice — zero-rated supply under GST (IGST Act)."
@@ -1082,6 +1090,8 @@ export default function GlobalProInvoiceTemplate({
             }}
           >
             📌 Payment Ref: {invoice.description || `Payment for services rendered to ${customer.name || "client"}`}
+            <br />
+            {taxContext.customerSegmentLabel}: {taxContext.taxNote}
           </div>
         </div>
 
