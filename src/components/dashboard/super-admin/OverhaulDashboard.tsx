@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
+import Link from 'next/link';
 import { 
     LayoutDashboard, 
     TrendingUp, 
@@ -15,13 +16,12 @@ import {
     ArrowDownRight,
     Search,
     Bell,
-    ChevronRight,
-    ExternalLink,
     PieChart as PieChartIcon,
     BarChart3,
     Activity,
     ClipboardCheck,
-    Cpu
+    Cpu,
+    ShieldCheck
 } from 'lucide-react';
 import { 
     ResponsiveContainer, 
@@ -41,6 +41,50 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { format } from 'date-fns';
 
 interface DashboardStats {
+    period: number;
+    comparison: {
+        currentStart: string;
+        currentEnd: string;
+        previousStart: string;
+        previousEnd: string;
+    };
+    kpis: {
+        revenue: {
+            current: number;
+            previous: number;
+            deltaPercent: number;
+            direction: 'up' | 'down' | 'neutral';
+            comparisonLabel: string;
+        };
+        workforce: {
+            current: number;
+            previous: number;
+            deltaPercent: number;
+            direction: 'up' | 'down' | 'neutral';
+            comparisonLabel: string;
+        };
+        itProjects: {
+            current: number;
+            previous: number;
+            deltaPercent: number;
+            direction: 'up' | 'down' | 'neutral';
+            comparisonLabel: string;
+        };
+        publication: {
+            current: number;
+            previous: number;
+            deltaPercent: number;
+            direction: 'up' | 'down' | 'neutral';
+            comparisonLabel: string;
+        };
+    };
+    health: {
+        overall: 'healthy' | 'watch' | 'neutral';
+        finance: { status: string; label: string };
+        hr: { status: string; label: string };
+        it: { status: string; label: string };
+        publication: { status: string; label: string };
+    };
     finance: {
         invoices: any[];
         transactions: any[];
@@ -111,42 +155,69 @@ export default function SuperAdminOverhaulDashboard() {
         return [
             { 
                 label: 'Total Group Revenue', 
-                value: `₹${(stats.finance.summary.totalRevenue / 100000).toFixed(1)}L`, 
-                change: '+12.5%', 
-                up: true, 
+                value: `₹${(stats.kpis.revenue.current / 100000).toFixed(1)}L`,
+                change: stats.kpis.revenue.deltaPercent,
+                direction: stats.kpis.revenue.direction,
+                comparisonLabel: stats.kpis.revenue.comparisonLabel,
                 icon: TrendingUp,
                 color: 'text-indigo-600',
                 bg: 'bg-indigo-50'
             },
             { 
                 label: 'Global Workforce', 
-                value: stats.hr.headcount.reduce((acc, c) => acc + c.count, 0).toString(), 
-                change: '+3.2%', 
-                up: true, 
+                value: stats.kpis.workforce.current.toString(),
+                change: stats.kpis.workforce.deltaPercent,
+                direction: stats.kpis.workforce.direction,
+                comparisonLabel: stats.kpis.workforce.comparisonLabel,
                 icon: Users,
                 color: 'text-emerald-600',
                 bg: 'bg-emerald-50'
             },
             { 
                 label: 'Active IT Projects', 
-                value: stats.it.projects.reduce((acc, p) => acc + p.count, 0).toString(), 
-                change: '-2', 
-                up: false, 
+                value: stats.kpis.itProjects.current.toString(),
+                change: stats.kpis.itProjects.deltaPercent,
+                direction: stats.kpis.itProjects.direction,
+                comparisonLabel: stats.kpis.itProjects.comparisonLabel,
                 icon: HardDrive,
                 color: 'text-amber-600',
                 bg: 'bg-amber-50'
             },
             { 
                 label: 'Pub. Throughput', 
-                value: stats.publication.articles.reduce((acc, a) => acc + a.count, 0).toString(), 
-                change: '+18.4%', 
-                up: true, 
+                value: stats.kpis.publication.current.toString(),
+                change: stats.kpis.publication.deltaPercent,
+                direction: stats.kpis.publication.direction,
+                comparisonLabel: stats.kpis.publication.comparisonLabel,
                 icon: BookOpen,
                 color: 'text-rose-600',
                 bg: 'bg-rose-50'
             }
         ];
     }, [stats]);
+
+    const filteredRecentActivity = useMemo(() => {
+        if (!stats?.recentActivity) return [];
+        if (activeDomain === 'ALL') return stats.recentActivity;
+
+        const domainMatchers = {
+            FINANCE: ['invoice', 'revenue', 'payment', 'financial'],
+            HR: ['employee', 'attendance', 'leave', 'payroll', 'increment'],
+            IT: ['it', 'ticket', 'asset', 'project', 'service'],
+            PUB: ['journal', 'article', 'publication', 'review', 'manuscript']
+        };
+
+        return stats.recentActivity.filter((log) =>
+            domainMatchers[activeDomain].some((token) =>
+                `${log.entity} ${log.action}`.toLowerCase().includes(token)
+            )
+        );
+    }, [activeDomain, stats]);
+
+    const showRevenueSection = activeDomain === 'ALL' || activeDomain === 'FINANCE';
+    const showITSection = activeDomain === 'ALL' || activeDomain === 'IT';
+    const showHRSection = activeDomain === 'ALL' || activeDomain === 'HR';
+    const showPublicationSection = activeDomain === 'ALL' || activeDomain === 'PUB';
 
     if (loading) return <FullScreenLoader />;
 
@@ -156,7 +227,7 @@ export default function SuperAdminOverhaulDashboard() {
             <header className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-10">
                 <div>
                     <h1 className="text-4xl font-extrabold text-slate-900 tracking-tight">Enterprise Command</h1>
-                    <p className="text-slate-500 font-medium">Consolidated Cross-Domain Analytics</p>
+                    <p className="text-slate-500 font-medium">Cross-domain admin intelligence for the selected {stats?.period || 6}-month window</p>
                 </div>
 
                 <div className="flex items-center gap-4">
@@ -179,10 +250,10 @@ export default function SuperAdminOverhaulDashboard() {
                         <RefreshCcw size={20} className="text-slate-600" />
                     </button>
                     
-                    <button className="flex items-center gap-2 px-6 py-3 bg-indigo-600 text-white rounded-2xl shadow-lg shadow-indigo-100 font-bold hover:bg-indigo-700 transition-all active:scale-95">
-                        <Activity size={18} />
-                        Live Status
-                    </button>
+                    <div className={`flex items-center gap-2 px-6 py-3 rounded-2xl font-bold transition-all ${stats?.health.overall === 'watch' ? 'bg-amber-100 text-amber-800 border border-amber-200' : 'bg-emerald-100 text-emerald-800 border border-emerald-200'}`}>
+                        <ShieldCheck size={18} />
+                        {stats?.health.overall === 'watch' ? 'Attention Needed' : 'Systems Healthy'}
+                    </div>
                 </div>
             </header>
 
@@ -219,6 +290,7 @@ export default function SuperAdminOverhaulDashboard() {
                     {/* Left Column - Main Charts */}
                     <div className="lg:col-span-2 space-y-8">
                         {/* Revenue and Performance Section */}
+                        {showRevenueSection && (
                         <section className="bg-white rounded-[2rem] p-8 border border-slate-200 shadow-xl shadow-slate-100 relative overflow-hidden">
                             <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-50 rounded-full blur-3xl -mr-32 -mt-32 opacity-60" />
                             
@@ -226,13 +298,16 @@ export default function SuperAdminOverhaulDashboard() {
                                 <div className="flex items-center justify-between mb-8">
                                     <div>
                                         <h3 className="text-xl font-black text-slate-800 tracking-tight">Revenue Dynamics</h3>
-                                        <p className="text-sm text-slate-500">Consolidated growth across all business units</p>
+                                        <p className="text-sm text-slate-500">Consolidated revenue across the selected reporting window</p>
                                     </div>
                                     <div className="flex items-center gap-2">
-                                        <div className="flex items-center gap-1.5 px-3 py-1 bg-emerald-50 text-emerald-600 rounded-full text-xs font-black">
+                                        <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black ${stats?.health.finance.status === 'healthy' ? 'bg-emerald-50 text-emerald-600' : 'bg-slate-100 text-slate-600'}`}>
                                             <TrendingUp size={12} />
-                                            Active Growth
+                                            {stats?.health.finance.label}
                                         </div>
+                                        <Link href="/dashboard/super-admin/financials" className="text-xs font-black text-indigo-600 hover:text-indigo-700">
+                                            Open financial analysis
+                                        </Link>
                                     </div>
                                 </div>
 
@@ -276,14 +351,21 @@ export default function SuperAdminOverhaulDashboard() {
                                 </div>
                             </div>
                         </section>
+                        )}
 
                         {/* Domain Specific Insights */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                             {/* IT Infrastructure Status */}
+                            {showITSection && (
                             <section className="bg-white rounded-[2rem] p-8 border border-slate-200 shadow-xl shadow-slate-100">
                                 <div className="flex items-center justify-between mb-6">
                                     <h3 className="text-lg font-black text-slate-800 tracking-tight">IT Infrastructure</h3>
-                                    <span className="p-2 bg-slate-50 rounded-xl"><Cpu size={18} className="text-slate-400" /></span>
+                                    <div className="flex items-center gap-3">
+                                        <span className="text-xs font-black text-slate-500">{stats?.health.it.label}</span>
+                                        <Link href="/dashboard/it-management/projects" className="text-xs font-black text-indigo-600 hover:text-indigo-700">
+                                            Open IT ops
+                                        </Link>
+                                    </div>
                                 </div>
                                 <div className="space-y-6">
                                     {stats?.it.projects.map((p, idx) => (
@@ -293,22 +375,35 @@ export default function SuperAdminOverhaulDashboard() {
                                                 <span>{p.count}</span>
                                             </div>
                                             <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
+                                                {(() => {
+                                                    const totalProjects = stats.it.projects.reduce((a,c)=>a+c.count,0);
+                                                    const width = totalProjects > 0 ? `${(p.count / totalProjects) * 100}%` : '0%';
+                                                    return (
                                                 <motion.div 
                                                     initial={{ width: 0 }}
-                                                    animate={{ width: `${(p.count / stats.it.projects.reduce((a,c)=>a+c.count,0)) * 100}%` }}
+                                                    animate={{ width }}
                                                     className={`h-full ${p.status === 'ACTIVE' ? 'bg-indigo-500' : p.status === 'COMPLETED' ? 'bg-emerald-500' : 'bg-slate-300'}`}
                                                 />
+                                                    );
+                                                })()}
                                             </div>
                                         </div>
                                     ))}
                                 </div>
                             </section>
+                            )}
 
                             {/* Human Resource Metrics */}
+                            {showHRSection && (
                             <section className="bg-white rounded-[2rem] p-8 border border-slate-200 shadow-xl shadow-slate-100">
                                 <div className="flex items-center justify-between mb-6">
                                     <h3 className="text-lg font-black text-slate-800 tracking-tight">Talent Ecosystem</h3>
-                                    <span className="p-2 bg-slate-50 rounded-xl"><Users size={18} className="text-slate-400" /></span>
+                                    <div className="flex items-center gap-3">
+                                        <span className="text-xs font-black text-slate-500">{stats?.health.hr.label}</span>
+                                        <Link href="/dashboard/staff-management?tab=analytics" className="text-xs font-black text-indigo-600 hover:text-indigo-700">
+                                            Open staff analytics
+                                        </Link>
+                                    </div>
                                 </div>
                                 <div className="grid grid-cols-2 gap-4">
                                     <div className="bg-emerald-50 p-4 rounded-2xl">
@@ -321,12 +416,40 @@ export default function SuperAdminOverhaulDashboard() {
                                     </div>
                                 </div>
                             </section>
+                            )}
+
+                            {showPublicationSection && (
+                            <section className="bg-white rounded-[2rem] p-8 border border-slate-200 shadow-xl shadow-slate-100 md:col-span-2">
+                                <div className="flex items-center justify-between mb-6">
+                                    <h3 className="text-lg font-black text-slate-800 tracking-tight">Publication Throughput</h3>
+                                    <div className="flex items-center gap-3">
+                                        <span className="text-xs font-black text-slate-500">{stats?.health.publication.label}</span>
+                                        <Link href="/dashboard/publication" className="text-xs font-black text-indigo-600 hover:text-indigo-700">
+                                            Open publication ops
+                                        </Link>
+                                    </div>
+                                </div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    {stats?.publication.articles?.length ? stats.publication.articles.map((item, idx) => (
+                                        <div key={idx} className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                                            <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">{item.status}</p>
+                                            <p className="mt-2 text-2xl font-black text-slate-900">{item.count}</p>
+                                        </div>
+                                    )) : (
+                                        <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-6 text-sm text-slate-500 md:col-span-2">
+                                            No publication activity found in the selected period.
+                                        </div>
+                                    )}
+                                </div>
+                            </section>
+                            )}
                         </div>
                     </div>
 
                     {/* Right Column - Activity & Distribution */}
                     <div className="space-y-8">
                         {/* Domain Distribution */}
+                        {showHRSection && (
                         <section className="bg-white rounded-[2rem] p-8 border border-slate-200 shadow-xl shadow-slate-100">
                             <h3 className="text-lg font-black text-slate-800 mb-6 tracking-tight">Workforce Diversity</h3>
                             <div className="h-[250px] relative">
@@ -363,6 +486,7 @@ export default function SuperAdminOverhaulDashboard() {
                                 ))}
                             </div>
                         </section>
+                        )}
 
                         {/* Recent Activity Log */}
                         <section className="bg-white rounded-[2rem] p-8 border border-slate-200 shadow-xl shadow-slate-100 flex-1">
@@ -371,11 +495,11 @@ export default function SuperAdminOverhaulDashboard() {
                                 <Activity size={18} className="text-indigo-400" />
                             </div>
                             <div className="space-y-6">
-                                {stats?.recentActivity.map((log, idx) => (
+                                {filteredRecentActivity.length ? filteredRecentActivity.map((log, idx) => (
                                     <div key={idx} className="flex gap-4 group">
                                         <div className="flex flex-col items-center">
                                             <div className="w-2 h-2 rounded-full bg-slate-300 mt-1.5 group-hover:bg-indigo-400 transition-colors" />
-                                            {idx !== stats.recentActivity.length - 1 && <div className="w-[1px] h-full bg-slate-100" />}
+                                            {idx !== filteredRecentActivity.length - 1 && <div className="w-[1px] h-full bg-slate-100" />}
                                         </div>
                                         <div className="pb-6">
                                             <p className="text-sm font-black text-slate-800 leading-tight mb-1">{log.action}</p>
@@ -388,11 +512,15 @@ export default function SuperAdminOverhaulDashboard() {
                                             </div>
                                         </div>
                                     </div>
-                                ))}
+                                )) : (
+                                    <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-6 text-sm text-slate-500">
+                                        No audit events match this dashboard tab in the selected period.
+                                    </div>
+                                )}
                             </div>
-                            <button className="w-full py-4 mt-6 bg-slate-50 rounded-2xl text-xs font-black text-indigo-600 hover:bg-slate-100 transition-all uppercase tracking-widest border border-slate-100 active:scale-[0.98]">
+                            <Link href="/dashboard/super-admin/audit-logs" className="block w-full py-4 mt-6 bg-slate-50 rounded-2xl text-center text-xs font-black text-indigo-600 hover:bg-slate-100 transition-all uppercase tracking-widest border border-slate-100 active:scale-[0.98]">
                                 View All Audit Logs
-                            </button>
+                            </Link>
                         </section>
                     </div>
                 </div>
@@ -401,7 +529,9 @@ export default function SuperAdminOverhaulDashboard() {
     );
 }
 
-function KPICard({ label, value, change, up, icon: Icon, color, bg }: any) {
+function KPICard({ label, value, change, direction, comparisonLabel, icon: Icon, color, bg }: any) {
+    const isPositive = direction === 'up';
+    const isNegative = direction === 'down';
     return (
         <motion.div 
             whileHover={{ y: -5, scale: 1.02 }}
@@ -411,13 +541,14 @@ function KPICard({ label, value, change, up, icon: Icon, color, bg }: any) {
                 <div className={`p-3 rounded-2xl ${bg}`}>
                     <Icon size={24} className={color} />
                 </div>
-                <div className={`flex items-center gap-1 text-[10px] font-black ${up ? 'text-emerald-600 bg-emerald-50' : 'text-rose-600 bg-rose-50'} px-2 py-1 rounded-full`}>
-                    {up ? <ArrowUpRight size={12} /> : <ArrowDownRight size={12} />}
-                    {change}
+                <div className={`flex items-center gap-1 text-[10px] font-black px-2 py-1 rounded-full ${isPositive ? 'text-emerald-600 bg-emerald-50' : isNegative ? 'text-rose-600 bg-rose-50' : 'text-slate-600 bg-slate-100'}`}>
+                    {isPositive ? <ArrowUpRight size={12} /> : isNegative ? <ArrowDownRight size={12} /> : <Activity size={12} />}
+                    {typeof change === 'number' ? `${change >= 0 ? '+' : ''}${change}%` : change}
                 </div>
             </div>
             <p className="text-slate-500 text-xs font-black uppercase tracking-widest mb-1">{label}</p>
             <h2 className="text-3xl font-black text-slate-900 tracking-tight">{value}</h2>
+            <p className="mt-2 text-xs font-bold text-slate-500">{comparisonLabel}</p>
         </motion.div>
     );
 }
