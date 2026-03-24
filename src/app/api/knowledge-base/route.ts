@@ -25,7 +25,14 @@ export async function GET(req: NextRequest) {
                 ]
             },
             include: {
-                author: { select: { id: true, email: true, name: true } }
+                author: { select: { id: true, email: true, name: true } },
+                revisions: {
+                    orderBy: { createdAt: 'desc' },
+                    take: 1,
+                    include: {
+                        editor: { select: { id: true, email: true, name: true } }
+                    }
+                }
             },
             orderBy: { createdAt: 'desc' }
         });
