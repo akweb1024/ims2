@@ -3,22 +3,31 @@ import { prisma } from '@/lib/prisma';
 import { authorizedRoute } from '@/lib/middleware-auth';
 import { createErrorResponse } from '@/lib/api-utils';
 
+const PERIOD_MONTHS = {
+    '3m': 3,
+    '6m': 6,
+    '12m': 12,
+} as const;
+
 export const GET = authorizedRoute(
     ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'FINANCE_ADMIN'],
     async (req: NextRequest, user) => {
         try {
             const companyId = user.companyId;
             const now = new Date();
-            const twelveMonthsAgo = new Date();
-            twelveMonthsAgo.setMonth(now.getMonth() - 11);
-            twelveMonthsAgo.setDate(1);
+            const requestedPeriod = (req.nextUrl.searchParams.get('period') || '12m') as keyof typeof PERIOD_MONTHS;
+            const period = requestedPeriod in PERIOD_MONTHS ? requestedPeriod : '12m';
+            const monthsToInclude = PERIOD_MONTHS[period];
+            const rangeStart = new Date();
+            rangeStart.setMonth(now.getMonth() - (monthsToInclude - 1));
+            rangeStart.setDate(1);
 
             // 1. Fetch Expenses (FinancialRecord where type is EXPENSE)
             const expenses = await prisma.financialRecord.findMany({
                 where: {
                     companyId: companyId || undefined,
                     type: 'EXPENSE',
-                    date: { gte: twelveMonthsAgo },
+                    date: { gte: rangeStart },
                     status: 'COMPLETED'
                 },
                 orderBy: { date: 'asc' }
@@ -29,7 +38,7 @@ export const GET = authorizedRoute(
             const revenues = await prisma.revenueTransaction.findMany({
                 where: {
                     companyId: companyId || undefined,
-                    paymentDate: { gte: twelveMonthsAgo }
+                    paymentDate: { gte: rangeStart }
                 },
                 orderBy: { paymentDate: 'asc' }
             });
@@ -47,23 +56,22 @@ export const GET = authorizedRoute(
 
             const netCashFlow = totalVerifiedRevenue - totalExpenses;
 
-            // Burn Rate (Average Monthly Expense over last 3 months)
-            // Simplified logic: Total Expenses / 12 (or however many months found)
-            // Better: Filter last 3 months
+            // Burn Rate (Average Monthly Expense over the trailing three months, or fewer if the period is shorter)
             const threeMonthsAgo = new Date();
             threeMonthsAgo.setMonth(now.getMonth() - 3);
             const recentExpenses = expenses
                 .filter(e => e.date >= threeMonthsAgo)
                 .reduce((sum, e) => sum + e.amount, 0);
-            const burnRate = recentExpenses / 3;
+            const burnRateWindow = Math.min(3, monthsToInclude);
+            const burnRate = recentExpenses / burnRateWindow;
 
             // 4. Monthly Trend Data (Revenue vs Expense)
             const monthlyData: Record<string, { month: string, revenue: number, expense: number, pending: number }> = {};
 
-            // Initialize last 12 months map
-            for (let i = 0; i < 12; i++) {
-                const d = new Date(twelveMonthsAgo);
-                d.setMonth(twelveMonthsAgo.getMonth() + i);
+            // Initialize selected period map
+            for (let i = 0; i < monthsToInclude; i++) {
+                const d = new Date(rangeStart);
+                d.setMonth(rangeStart.getMonth() + i);
                 const key = `${d.getFullYear()}-${(d.getMonth() + 1).toString().padStart(2, '0')}`;
                 monthlyData[key] = {
                     month: d.toLocaleString('default', { month: 'short', year: '2-digit' }),
@@ -97,9 +105,10 @@ export const GET = authorizedRoute(
 
             // 5. Forecast (Simple Projection)
             // Based on avg growth of verified revenue
-            const last3MonthsData = actuals.slice(-3);
-            const avgRev = last3MonthsData.reduce((a, b) => a + b.revenue, 0) / 3 || 0;
-            const avgExp = last3MonthsData.reduce((a, b) => a + b.expense, 0) / 3 || 0;
+            const trailingWindow = actuals.slice(-Math.min(3, actuals.length));
+            const divisor = trailingWindow.length || 1;
+            const avgRev = trailingWindow.reduce((a, b) => a + b.revenue, 0) / divisor || 0;
+            const avgExp = trailingWindow.reduce((a, b) => a + b.expense, 0) / divisor || 0;
 
             const forecast = [];
             for (let i = 1; i <= 3; i++) {
@@ -151,6 +160,7 @@ export const GET = authorizedRoute(
             })).sort((a, b) => b.value - a.value);
 
             return NextResponse.json({
+                period,
                 stats: {
                     totalVerifiedRevenue,
                     totalPendingRevenue,

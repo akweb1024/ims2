@@ -34,6 +34,7 @@ export default function FinancePage() {
     const [transactions, setTransactions] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [isRefreshing, setIsRefreshing] = useState(false);
+    const [analyticsPeriod, setAnalyticsPeriod] = useState<'3m' | '6m' | '12m'>('12m');
 
     // Filters for transactions
     const [filters, setFilters] = useState({
@@ -48,7 +49,7 @@ export default function FinancePage() {
 
     const fetchAnalytics = useCallback(async () => {
         try {
-            const res = await fetch('/api/finance/analytics');
+            const res = await fetch(`/api/finance/analytics?period=${analyticsPeriod}`);
             if (!res.ok) throw new Error('Failed to fetch analytics');
             const data = await res.json();
             setAnalytics(data);
@@ -56,7 +57,7 @@ export default function FinancePage() {
             console.error(error);
             toast.error('Failed to load financial insights');
         }
-    }, []);
+    }, [analyticsPeriod]);
 
     const fetchTransactions = useCallback(async () => {
         try {
@@ -175,9 +176,28 @@ export default function FinancePage() {
                         <div className="flex items-center justify-between mb-6">
                             <div>
                                 <h3 className="text-lg font-bold text-secondary-900">Cash Flow Trends</h3>
-                                <p className="text-sm text-secondary-400 font-medium">Income vs Expenses over time</p>
+                                <p className="text-sm text-secondary-400 font-medium">
+                                    Income vs Expenses over the selected {analytics?.period || analyticsPeriod} window
+                                </p>
                             </div>
-                            <div className="flex gap-2">
+                            <div className="flex flex-wrap gap-2">
+                                {[
+                                    { id: '3m', label: '3 Months' },
+                                    { id: '6m', label: '6 Months' },
+                                    { id: '12m', label: '12 Months' },
+                                ].map((periodOption) => (
+                                    <button
+                                        key={periodOption.id}
+                                        onClick={() => setAnalyticsPeriod(periodOption.id as typeof analyticsPeriod)}
+                                        className={`px-3 py-1 rounded-full text-xs font-bold border transition-all ${
+                                            analyticsPeriod === periodOption.id
+                                                ? 'bg-primary-600 text-white border-primary-600 shadow-sm'
+                                                : 'bg-white text-secondary-500 border-secondary-200 hover:border-primary-200 hover:text-primary-600'
+                                        }`}
+                                    >
+                                        {periodOption.label}
+                                    </button>
+                                ))}
                                 <span className="px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 text-xs font-bold border border-emerald-100 flex items-center gap-1">
                                     <div className="w-2 h-2 rounded-full bg-emerald-500"></div> Revenue
                                 </span>
