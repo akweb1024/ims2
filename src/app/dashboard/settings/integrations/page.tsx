@@ -4,14 +4,14 @@ import { useState, useEffect, useCallback } from 'react';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { Settings, Cpu, Webhook, KeyRound, Loader2, Save, CheckCircle, AlertTriangle, PlugZap } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { SUPPORTED_INTEGRATION_PROVIDERS } from '@/lib/integrations';
 
-// List of supported integrations hardcoded for UI context
-const SUPPORTED_PROVIDERS = [
-    { id: 'GEMINI', name: 'Google Gemini AI', icon: Cpu, desc: 'Used for intelligent Document OCR and chat.', type: 'AI' },
-    { id: 'PLAGIARISM_SCANNER', name: 'Turnitin / iThenticate', icon: Webhook, desc: 'Used for scanning Journal Articles.', type: 'Webhook' },
-    { id: 'AWS_SES', name: 'Amazon SES', icon: KeyRound, desc: 'Used for batch Marketing Campaigns.', type: 'SMTP' },
-    { id: 'WHATSAPP_TWILIO', name: 'WhatsApp via Twilio', icon: Webhook, desc: 'Used for operational and HR WhatsApp notifications.', type: 'Messaging' }
-];
+const PROVIDER_ICONS = {
+    GEMINI: Cpu,
+    PLAGIARISM_SCANNER: Webhook,
+    AWS_SES: KeyRound,
+    WHATSAPP_TWILIO: Webhook,
+} as const;
 
 export default function IntegrationsGatewayPage() {
     const [integrations, setIntegrations] = useState<any[]>([]);
@@ -36,7 +36,7 @@ export default function IntegrationsGatewayPage() {
                 });
                 
                 // Initialize empty states for ones not pulled yet
-                SUPPORTED_PROVIDERS.forEach(p => {
+                SUPPORTED_INTEGRATION_PROVIDERS.forEach(p => {
                     if (!states[p.id]) states[p.id] = { key: '', value: '', isActive: false, isSet: false };
                 });
                 
@@ -152,9 +152,10 @@ export default function IntegrationsGatewayPage() {
                     </div>
                 ) : (
                     <div className="space-y-6">
-                        {SUPPORTED_PROVIDERS.map((provider) => {
+                        {SUPPORTED_INTEGRATION_PROVIDERS.map((provider) => {
                             const state = formStates[provider.id] || { key: '', value: '', isActive: false, isSet: false };
-                            const Icon = provider.icon;
+                            const integrationMeta = integrations.find((item: any) => item.provider === provider.id);
+                            const Icon = PROVIDER_ICONS[provider.id];
 
                             return (
                                 <div key={provider.id} className="bg-white rounded-[2rem] p-6 shadow-xl shadow-secondary-200/50 border border-secondary-100 transition-all flex flex-col md:flex-row gap-8 items-start relative overflow-hidden group">
@@ -204,13 +205,11 @@ export default function IntegrationsGatewayPage() {
                                         {(provider.id === 'AWS_SES' || provider.id === 'WHATSAPP_TWILIO') && (
                                             <div className="space-y-2 mt-4">
                                                 <label className="text-[10px] font-black tracking-widest text-secondary-400 uppercase">
-                                                    {provider.id === 'AWS_SES' ? 'Sender Identity (Email Endpoint)' : 'Provider Config JSON'}
+                                                    {provider.valueLabel}
                                                 </label>
                                                 <input 
                                                     type="text" 
-                                                    placeholder={provider.id === 'AWS_SES'
-                                                        ? 'noreply@stm.com'
-                                                        : '{"accountSid":"AC...","from":"whatsapp:+14155238886"}'}
+                                                    placeholder={provider.valuePlaceholder}
                                                     className="input-premium w-full text-sm font-medium"
                                                     value={state.value}
                                                     onChange={e => setFormStates({...formStates, [provider.id]: { ...state, value: e.target.value }})}
@@ -220,6 +219,34 @@ export default function IntegrationsGatewayPage() {
                                                         Save the Twilio auth token in the secret field above. Use JSON here for `accountSid` and `from`.
                                                     </p>
                                                 )}
+                                            </div>
+                                        )}
+
+                                        {integrationMeta && (
+                                            <div className="rounded-2xl border border-secondary-100 bg-secondary-50/70 px-4 py-3 text-xs text-secondary-600 space-y-1">
+                                                <div>
+                                                    <span className="font-black uppercase tracking-widest text-[10px] text-secondary-400">Last Rotated</span>
+                                                    <div className="mt-1 font-medium text-secondary-800">
+                                                        {integrationMeta.lastRotatedAt ? new Date(integrationMeta.lastRotatedAt).toLocaleString() : 'Never'}
+                                                    </div>
+                                                </div>
+                                                <div>
+                                                    <span className="font-black uppercase tracking-widest text-[10px] text-secondary-400">Last Test</span>
+                                                    <div className="mt-1 font-medium text-secondary-800">
+                                                        {integrationMeta.lastTestedAt ? new Date(integrationMeta.lastTestedAt).toLocaleString() : 'Never tested'}
+                                                    </div>
+                                                </div>
+                                                <div>
+                                                    <span className="font-black uppercase tracking-widest text-[10px] text-secondary-400">Latest Result</span>
+                                                    <div className={`mt-1 inline-flex rounded-lg px-2 py-1 text-[10px] font-black uppercase tracking-widest ${integrationMeta.lastTestStatus === 'SUCCESS' ? 'bg-emerald-100 text-emerald-700' : integrationMeta.lastTestStatus === 'FAILED' ? 'bg-danger-100 text-danger-700' : 'bg-secondary-100 text-secondary-500'}`}>
+                                                        {integrationMeta.lastTestStatus || 'Unknown'}
+                                                    </div>
+                                                    {integrationMeta.lastTestMessage && (
+                                                        <p className="mt-2 text-secondary-600 leading-relaxed">
+                                                            {integrationMeta.lastTestMessage}
+                                                        </p>
+                                                    )}
+                                                </div>
                                             </div>
                                         )}
 

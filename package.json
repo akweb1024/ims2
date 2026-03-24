@@ -18,7 +18,7 @@
     "prisma:migrate": "prisma migrate deploy",
     "prisma:migrate:dev": "prisma migrate dev",
     "seed": "tsx prisma/seed.ts",
-    "test": "echo \"No tests configured yet\" && exit 0",
+    "test": "playwright test e2e/auth.spec.ts",
     "test:e2e": "playwright test",
     "docker:build": "docker build -t stm-customer:latest .",
     "docker:up": "docker-compose up -d",

@@ -57,7 +57,25 @@ function LoginForm({ onLoginSuccess }: { onLoginSuccess: (destination: string) =
         setError('');
 
         try {
-            // 1. Call NextAuth signIn
+            // 1. Validate credentials and fetch full login context using the legacy API
+            const loginRes = await fetch('/api/auth/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    email: formData.email,
+                    password: formData.password,
+                }),
+            });
+
+            const loginData = await loginRes.json();
+
+            if (!loginRes.ok) {
+                setError(loginData.error || 'Invalid email or password');
+                setLoading(false);
+                return;
+            }
+
+            // 2. Establish the NextAuth session used by the current dashboard
             const result = await signIn('credentials', {
                 email: formData.email,
                 password: formData.password,
@@ -65,42 +83,37 @@ function LoginForm({ onLoginSuccess }: { onLoginSuccess: (destination: string) =
             });
 
             if (result?.error) {
-                setError('Invalid email or password');
+                setError('Session could not be established. Please try again.');
                 setLoading(false);
                 return;
             }
 
-            // 2. Check if company selection is required
-            // We'll call /api/auth/me to see the current state
-            const meRes = await fetch('/api/auth/me');
-            const meData = await meRes.json();
+            const { user, availableCompanies = [], token } = loginData;
 
-            if (meRes.ok) {
-                const { user, availableCompanies } = meData;
+            // 3. Determine final destination
+            const userRole = user.role;
+            const isStaff = !['CUSTOMER', 'AGENCY'].includes(userRole);
 
-                // 3. Determine final destination
-                const userRole = user.role;
-                const isStaff = !['CUSTOMER', 'AGENCY'].includes(userRole);
-                
-                // If the redirectUrl is one of the defaults, adjust it based on role
-                let finalDestination = redirectUrl;
-                if (redirectUrl === '/dashboard' || redirectUrl === '/dashboard/staff-portal') {
-                    finalDestination = isStaff ? '/dashboard/staff-portal' : '/dashboard';
-                }
+            let finalDestination = redirectUrl;
+            if (redirectUrl === '/dashboard' || redirectUrl === '/dashboard/staff-portal') {
+                finalDestination = isStaff ? '/dashboard/staff-portal' : '/dashboard';
+            }
 
-                // Requires company selection if user has access to multiple companies
-                const requiresSelection = Array.isArray(availableCompanies) && availableCompanies.length > 1 && !user.companyId;
+            const requiresSelection = Array.isArray(availableCompanies) && availableCompanies.length > 1 && !user.companyId;
 
-                if (requiresSelection) {
-                    setAvailableCompanies(availableCompanies);
-                    setShowCompanySelection(true);
-                } else {
-                    localStorage.setItem('user', JSON.stringify(user));
-                    localStorage.setItem('availableCompanies', JSON.stringify(availableCompanies));
-                    onLoginSuccess(finalDestination);
-                }
+            if (token) {
+                localStorage.setItem('token', token);
+            }
+
+            if (requiresSelection) {
+                localStorage.setItem('user', JSON.stringify(user));
+                localStorage.setItem('availableCompanies', JSON.stringify(availableCompanies));
+                setAvailableCompanies(availableCompanies);
+                setShowCompanySelection(true);
             } else {
-                onLoginSuccess(redirectUrl);
+                localStorage.setItem('user', JSON.stringify(user));
+                localStorage.setItem('availableCompanies', JSON.stringify(availableCompanies));
+                onLoginSuccess(finalDestination);
             }
         } catch (err) {
             setError('An error occurred. Please try again.');

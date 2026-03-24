@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getSessionUser } from '@/lib/session';
+import { SUPPORTED_INTEGRATION_PROVIDER_IDS } from '@/lib/integrations';
 
 export async function GET(req: NextRequest) {
     try {
@@ -18,6 +19,17 @@ export async function GET(req: NextRequest) {
             orderBy: { provider: 'asc' }
         });
 
+        const integrationIds = integrations.map((integration: any) => integration.id);
+        const auditLogs = integrationIds.length > 0
+            ? await prisma.auditLog.findMany({
+                where: {
+                    entity: 'integration',
+                    entityId: { in: integrationIds }
+                },
+                orderBy: { createdAt: 'desc' }
+            })
+            : [];
+
         // Blank out the actual keys on GET for security. We will just show if it's "Active" or has a value.
         const safeIntegrations = (integrations as any[]).map((i: any) => ({
             id: i.id,
@@ -25,6 +37,28 @@ export async function GET(req: NextRequest) {
             isActive: i.isActive,
             isSet: !!i.key,
             updatedAt: i.updatedAt,
+            lastRotatedAt: i.updatedAt,
+            lastTestedAt: auditLogs.find((log) => log.entityId === i.id && log.action === 'test')?.createdAt || null,
+            lastTestStatus: (() => {
+                const latestTest = auditLogs.find((log) => log.entityId === i.id && log.action === 'test');
+                if (!latestTest) return null;
+                try {
+                    const parsed = typeof latestTest.changes === 'string' ? JSON.parse(latestTest.changes) : latestTest.changes;
+                    return parsed?.ok ? 'SUCCESS' : 'FAILED';
+                } catch {
+                    return null;
+                }
+            })(),
+            lastTestMessage: (() => {
+                const latestTest = auditLogs.find((log) => log.entityId === i.id && log.action === 'test');
+                if (!latestTest) return null;
+                try {
+                    const parsed = typeof latestTest.changes === 'string' ? JSON.parse(latestTest.changes) : latestTest.changes;
+                    return parsed?.message || null;
+                } catch {
+                    return null;
+                }
+            })(),
             // Keep value null generally unless editing specific configurations
             value: i.value 
         }));
@@ -53,12 +87,17 @@ export async function POST(req: NextRequest) {
              return NextResponse.json({ error: 'Provider is required' }, { status: 400 });
         }
 
+        const normalizedProvider = String(provider).toUpperCase();
+        if (!SUPPORTED_INTEGRATION_PROVIDER_IDS.includes(normalizedProvider as any)) {
+            return NextResponse.json({ error: 'Unsupported provider' }, { status: 400 });
+        }
+
         // Upsert the integration key securely
         const integration = await (prisma as any).companyIntegration.upsert({
             where: {
                 companyId_provider: {
                     companyId,
-                    provider: provider.toUpperCase()
+                    provider: normalizedProvider
                 }
             },
             update: {
@@ -68,10 +107,25 @@ export async function POST(req: NextRequest) {
             },
             create: {
                 companyId,
-                provider: provider.toUpperCase(),
+                provider: normalizedProvider,
                 key: key || '',
                 value,
                 isActive: isActive ?? true
+            }
+        });
+
+        await prisma.auditLog.create({
+            data: {
+                userId: user.id,
+                action: key ? 'rotate' : 'update',
+                entity: 'integration',
+                entityId: integration.id,
+                changes: JSON.stringify({
+                    provider: integration.provider,
+                    hasSecret: Boolean(key),
+                    hasValue: value !== undefined,
+                    isActive: integration.isActive
+                })
             }
         });
 
@@ -81,7 +135,8 @@ export async function POST(req: NextRequest) {
             provider: integration.provider,
             isActive: integration.isActive,
             isSet: !!integration.key,
-            updatedAt: integration.updatedAt
+            updatedAt: integration.updatedAt,
+            lastRotatedAt: integration.updatedAt
         });
 
     } catch (error: any) {

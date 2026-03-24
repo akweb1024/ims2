@@ -162,6 +162,7 @@ export async function POST(req: NextRequest) {
         }
 
         let result: { ok: boolean; message: string };
+        const integration = await getCompanyIntegration(companyId, provider);
         if (provider === 'WHATSAPP_TWILIO') {
             result = await testTwilioConnection(companyId);
         } else if (provider === 'AWS_SES') {
@@ -179,7 +180,7 @@ export async function POST(req: NextRequest) {
                 userId: user.id,
                 action: 'test',
                 entity: 'integration',
-                entityId: `${companyId}:${provider}`,
+                entityId: integration?.id || `${companyId}:${provider}`,
                 changes: JSON.stringify({
                     provider,
                     ok: result.ok,
