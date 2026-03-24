@@ -366,7 +366,7 @@ export default function ConferenceDetailPage() {
                         onClick={openConferenceFollowups}
                         className="btn btn-secondary flex items-center gap-2"
                     >
-                        <MessageSquare size={16} /> Conference Follow-up
+                        <MessageSquare size={16} /> Add Conference Remark
                     </button>
                     <Link
                         href={`/dashboard/conferences/${conferenceId}/submit`}
@@ -558,7 +558,7 @@ export default function ConferenceDetailPage() {
                             onClick={openConferenceFollowups}
                             className="btn btn-primary"
                         >
-                            <MessageSquare size={16} /> Manage Follow-up
+                            <MessageSquare size={16} /> Add Conference Remark
                         </button>
                     </div>
 
