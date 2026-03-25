@@ -26,6 +26,9 @@ export const GET = authorizedRoute(
     async (req: NextRequest, user, { params }: { params: Promise<{ id: string }> }) => {
         try {
             const { id } = await params;
+            const { searchParams } = new URL(req.url);
+            const page = Number.parseInt(searchParams.get('page') || '1', 10);
+            const pageSize = Number.parseInt(searchParams.get('pageSize') || '10', 10);
 
             const conference = await prisma.conference.findUnique({
                 where: { id },
@@ -64,12 +67,15 @@ export const GET = authorizedRoute(
                 companyId: conference.companyId,
                 conferenceTitle: conference.title,
                 organizer: conference.organizer,
+                page,
+                pageSize,
             });
 
             return NextResponse.json({
                 conference,
                 customerProfileId: result.customerProfileId,
                 followups: result.followups,
+                pagination: result.pagination,
                 summary: result.summary,
             });
         } catch (error) {

@@ -401,11 +401,15 @@ export async function getConferenceManagementFollowups({
     companyId,
     conferenceTitle,
     organizer,
+    page = 1,
+    pageSize = 10,
 }: {
     conferenceId: string;
     companyId: string;
     conferenceTitle: string;
     organizer?: string | null;
+    page?: number;
+    pageSize?: number;
 }) {
     const profile = await ensureConferenceManagementProfile({
         conferenceId,
@@ -414,31 +418,60 @@ export async function getConferenceManagementFollowups({
         organizer,
     });
 
-    const followups = await prisma.communicationLog.findMany({
-        where: {
-            customerProfileId: profile.id,
-            category: 'CONFERENCE_MANAGEMENT_FOLLOWUP',
-            referenceId: conferenceId,
-        },
-        include: {
-            checklist: true,
-            user: {
-                select: { id: true, name: true, email: true },
-            },
-        },
-        orderBy: { createdAt: 'desc' },
-    });
+    const followupWhere = {
+        customerProfileId: profile.id,
+        category: 'CONFERENCE_MANAGEMENT_FOLLOWUP' as const,
+        referenceId: conferenceId,
+    };
 
-    const latestChecklist = followups[0]?.checklist;
+    const normalizedPage = Math.max(1, page);
+    const normalizedPageSize = Math.min(100, Math.max(10, pageSize));
+    const skip = (normalizedPage - 1) * normalizedPageSize;
+
+    const [allFollowups, followups] = await Promise.all([
+        prisma.communicationLog.findMany({
+            where: followupWhere,
+            include: {
+                checklist: true,
+                user: {
+                    select: { id: true, name: true, email: true },
+                },
+            },
+            orderBy: { createdAt: 'desc' },
+        }),
+        prisma.communicationLog.findMany({
+            where: followupWhere,
+            include: {
+                checklist: true,
+                user: {
+                    select: { id: true, name: true, email: true },
+                },
+            },
+            orderBy: { createdAt: 'desc' },
+            skip,
+            take: normalizedPageSize,
+        }),
+    ]);
+
+    const latestChecklist = allFollowups[0]?.checklist;
+    const totalFollowUps = allFollowups.length;
 
     return {
         customerProfileId: profile.id,
         followups,
+        pagination: {
+            page: normalizedPage,
+            pageSize: normalizedPageSize,
+            totalItems: totalFollowUps,
+            totalPages: Math.max(1, Math.ceil(totalFollowUps / normalizedPageSize)),
+            hasPreviousPage: normalizedPage > 1,
+            hasNextPage: skip + followups.length < totalFollowUps,
+        },
         summary: {
-            totalFollowUps: followups.length,
-            pendingFollowUps: followups.filter((log) => log.nextFollowUpDate && !log.isFollowUpCompleted).length,
-            overdueFollowUps: followups.filter((log) => log.nextFollowUpDate && !log.isFollowUpCompleted && new Date(log.nextFollowUpDate) < new Date()).length,
-            nextFollowUpDate: followups
+            totalFollowUps,
+            pendingFollowUps: allFollowups.filter((log) => log.nextFollowUpDate && !log.isFollowUpCompleted).length,
+            overdueFollowUps: allFollowups.filter((log) => log.nextFollowUpDate && !log.isFollowUpCompleted && new Date(log.nextFollowUpDate) < new Date()).length,
+            nextFollowUpDate: allFollowups
                 .filter((log) => log.nextFollowUpDate && !log.isFollowUpCompleted)
                 .map((log) => log.nextFollowUpDate)
                 .sort((a, b) => new Date(a!).getTime() - new Date(b!).getTime())[0] || null,

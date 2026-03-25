@@ -6,6 +6,7 @@ import CRMClientLayout from "../../CRMClientLayout";
 import { CRMPageShell } from "@/components/crm/CRMPageShell";
 import ProductCatalogueForm, {
   DEFAULT_FORM_DATA,
+  PREDEFINED_DOMAINS,
   type ProductCatalogueFormData,
 } from "@/components/dashboard/crm/ProductCatalogueForm";
 import { showError, showSuccess } from "@/lib/toast";
@@ -62,6 +63,61 @@ const buildPayload = (form: ProductCatalogueFormData) => {
   };
 };
 
+const normalizeDomainName = (domain: string) => domain.trim();
+
+const buildDomainCode = (domain: string) => {
+  const tokens = normalizeDomainName(domain)
+    .split(/[^A-Za-z0-9]+/)
+    .filter(Boolean);
+  const acronym = tokens.map((token) => token[0]).join("").toUpperCase();
+  const compact = normalizeDomainName(domain)
+    .replace(/[^A-Za-z0-9]+/g, "")
+    .toUpperCase();
+  return (acronym || compact).slice(0, 12) || "DOMAIN";
+};
+
+const ensureJournalDomainExists = async (domain: string) => {
+  const normalized = normalizeDomainName(domain);
+  if (!normalized) return;
+
+  const existingRes = await fetch("/api/journals/domains", {
+    credentials: "include",
+  });
+  if (!existingRes.ok) return;
+
+  const existingDomains = await existingRes.json();
+  const knownDomains = Array.isArray(existingDomains)
+    ? existingDomains
+    : Array.isArray(existingDomains?.data)
+      ? existingDomains.data
+      : [];
+
+  const alreadyExists = knownDomains.some((item: any) => {
+    const name = typeof item === "string" ? item : item?.name;
+    return String(name || "").trim().toLowerCase() === normalized.toLowerCase();
+  });
+
+  if (alreadyExists) return;
+
+  const createRes = await fetch("/api/journals/domains", {
+    method: "POST",
+    credentials: "include",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      name: normalized,
+      code: buildDomainCode(normalized),
+      isActive: true,
+    }),
+  });
+
+  if (!createRes.ok && createRes.status !== 409) {
+    const err = await createRes.json().catch(() => null);
+    throw new Error(err?.error || err?.message || "Failed to create domain");
+  }
+};
+
 export default function NewInvoiceProductPage() {
   const router = useRouter();
   const [form, setForm] = useState<ProductCatalogueFormData>(
@@ -76,6 +132,15 @@ export default function NewInvoiceProductPage() {
     }
     setSaving(true);
     try {
+      if (
+        data.domain.trim() &&
+        !PREDEFINED_DOMAINS.some(
+          (domain) => domain.toLowerCase() === data.domain.trim().toLowerCase(),
+        )
+      ) {
+        await ensureJournalDomainExists(data.domain);
+      }
+
       const token = localStorage.getItem("token");
       const res = await fetch("/api/invoice-products", {
         method: "POST",
@@ -118,7 +183,7 @@ export default function NewInvoiceProductPage() {
           </button>
         }
       >
-        <div className="max-w-5xl mx-auto">
+        <div className="max-w-6xl mx-auto">
           <ProductCatalogueForm
             value={form}
             onChange={setForm}

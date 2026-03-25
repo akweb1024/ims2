@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo, useEffect } from "react";
 import {
   Plus,
   Trash2,
@@ -96,8 +96,34 @@ const DEFAULT_CATEGORIES = [
   { value: "MISC", label: "Miscellaneous", icon: "📦" },
 ];
 
-// Refined to fetch from API in the component
-const PREDEFINED_DOMAINS: string[] = []; 
+export const PREDEFINED_DOMAINS: string[] = [
+  "Agriculture",
+  "Applied Mechanics",
+  "Applied Sciences",
+  "Architecture",
+  "Ayurveda",
+  "Biotechnology",
+  "Chemical",
+  "Chemistry",
+  "Civil and Construction",
+  "Computer/IT/Mobile",
+  "Education and Social Sciences",
+  "Electrical Engineering",
+  "Electronics & Telecom",
+  "Electronics and Telecommunication",
+  "Energy",
+  "Law",
+  "Life Science",
+  "Management",
+  "Material Sciences",
+  "Mechanical Engineering",
+  "Medical",
+  "Multidisciplinary",
+  "Nanotechnology",
+  "Nursing",
+  "Pharmacy",
+  "Physics and Applied Mechanics",
+];
 
 const YEAR_OPTIONS = Array.from(
   { length: 10 },
@@ -114,6 +140,25 @@ const SUBSCRIPTION_MODE_OPTIONS = [
   { value: "DIGITAL", label: "Digital" },
   { value: "PRINT_DIGITAL", label: "Print + Digital" },
 ];
+
+const normalizeDomainList = (payload: any): string[] => {
+  const rawItems = Array.isArray(payload)
+    ? payload
+    : Array.isArray(payload?.data)
+      ? payload.data
+      : [];
+
+  return Array.from<string>(
+    new Set(
+      rawItems
+        .map((item: any) => {
+          if (typeof item === "string") return item.trim();
+          return (item?.name || item?.domain || item?.label || "").trim();
+        })
+        .filter(Boolean),
+    ),
+  ).sort((a, b) => a.localeCompare(b));
+};
 
 // ─── Sub-component: Field Label ──────────────────────────────────────────────
 const FieldLabel = ({
@@ -386,11 +431,11 @@ export default function ProductCatalogueForm({
     setLoadingDomains(true);
     try {
       const res = await fetch("/api/journals/domains", {
-        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+        credentials: "include",
       });
       if (res.ok) {
         const data = await res.json();
-        setAvailableDomains(data.map((d: any) => d.name));
+        setAvailableDomains(normalizeDomainList(data));
       }
     } catch (e) {
       console.error("Failed to fetch domains", e);
@@ -441,6 +486,10 @@ export default function ProductCatalogueForm({
       setLoadingTemplates(false);
     }
   }, [value.category]);
+
+  useEffect(() => {
+    fetchDomains();
+  }, [fetchDomains]);
 
   const applyTemplate = (template: any) => {
     if (!template.variants || template.variants.length === 0) return;
@@ -561,7 +610,17 @@ export default function ProductCatalogueForm({
   };
 
   // ── Domain autocomplete ──
-  const allDomains = Array.from(new Set([...availableDomains, ...domains]));
+  const allDomains = useMemo(
+    () =>
+      Array.from(
+        new Set(
+          [...PREDEFINED_DOMAINS, ...availableDomains, ...domains].filter(
+            Boolean,
+          ),
+        ),
+      ).sort((a, b) => a.localeCompare(b)),
+    [availableDomains, domains],
+  );
   
   const filteredDomains = domainSearch
     ? allDomains.filter((d) =>
@@ -699,7 +758,7 @@ export default function ProductCatalogueForm({
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1.2fr)_220px_minmax(0,1.2fr)]">
               <div className="space-y-1.5">
                 <FieldLabel required>Frequency</FieldLabel>
                 <select
@@ -772,11 +831,16 @@ export default function ProductCatalogueForm({
               }}
               onBlur={() => setTimeout(() => setDomainOpen(false), 200)}
               placeholder="e.g. Physics, Chemistry, Medical Sciences..."
-              className="w-full h-11 rounded-xl border border-slate-200 bg-white pl-9 pr-3.5 text-sm font-medium text-slate-700 placeholder-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 transition-all"
+              className="w-full min-w-0 h-11 rounded-xl border border-slate-200 bg-white pl-9 pr-3.5 text-sm font-medium text-slate-700 placeholder-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 transition-all"
             />
             {/* Domain dropdown */}
             {domainOpen && (
               <div className="absolute top-full left-0 right-0 mt-1.5 bg-white border border-slate-100 rounded-xl shadow-xl z-50 overflow-hidden max-h-60 overflow-y-auto">
+                {loadingDomains && filteredDomains.length === 0 ? (
+                  <div className="px-4 py-3 text-xs text-slate-400 italic">
+                    Loading domains...
+                  </div>
+                ) : null}
                 {filteredDomains.length > 0 ? (
                   filteredDomains.map((d) => (
                     <button

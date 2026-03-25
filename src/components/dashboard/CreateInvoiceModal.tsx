@@ -26,6 +26,7 @@ import {
   ClipboardList,
   ShieldCheck,
   Zap,
+  Filter,
 } from "lucide-react";
 
 const getCurrencySymbol = (curr: string) => {
@@ -58,6 +59,19 @@ interface CreateInvoiceModalProps {
   renderMode?: "modal" | "page";
 }
 
+interface InvoiceItem {
+  id: number;
+  description: string;
+  hsnCode: string;
+  quantity: number;
+  price: number;
+  taxCategory: string;
+  productId?: string;
+  variantId?: string;
+  productCategory?: string | null;
+  productTags?: string[];
+}
+
 export default function CreateInvoiceModal({
   isOpen,
   onClose,
@@ -79,7 +93,7 @@ export default function CreateInvoiceModal({
 
   // Step 2: Invoice Details
   const [dueDate, setDueDate] = useState("");
-  const [items, setItems] = useState([
+  const [items, setItems] = useState<InvoiceItem[]>([
     {
       id: 1,
       description: "",
@@ -185,10 +199,14 @@ export default function CreateInvoiceModal({
   };
 
   const [showProductModal, setShowProductModal] = useState(false);
-  const [productResults, setProductResults] = useState<{
-    [key: number]: any[];
-  }>({});
+  const [productResults, setProductResults] = useState<{ [key: number]: any[] }>({});
   const [catSearch, setCatSearch] = useState("");
+  const [catCategoryFilter, setCatCategoryFilter] = useState("");
+  const [catDomainFilter, setCatDomainFilter] = useState("");
+  const [subscriptionFrequencyFilter, setSubscriptionFrequencyFilter] =
+    useState("");
+  const [subscriptionYearFilter, setSubscriptionYearFilter] = useState("");
+  const [subscriptionModeFilter, setSubscriptionModeFilter] = useState("");
   const [catProducts, setCatProducts] = useState<any[]>([]);
   const [selectedProductForVariant, setSelectedProductForVariant] =
     useState<any>(null);
@@ -223,8 +241,14 @@ export default function CreateInvoiceModal({
     setCatLoading(true);
     try {
       const token = localStorage.getItem("token");
+      const params = new URLSearchParams({
+        q: query,
+        isActive: "true",
+        pageSize: "50",
+      });
+      if (catCategoryFilter) params.set("category", catCategoryFilter);
       const res = await fetch(
-        `/api/invoice-products?q=${encodeURIComponent(query)}&isActive=true&pageSize=10`,
+        `/api/invoice-products?${params.toString()}`,
         {
           headers: { Authorization: `Bearer ${token}` },
         },
@@ -236,11 +260,80 @@ export default function CreateInvoiceModal({
     } finally {
       setCatLoading(false);
     }
-  }, []);
+  }, [catCategoryFilter]);
 
   useEffect(() => {
-    if (showProductModal) fetchCatalogue(catSearch);
-  }, [showProductModal, catSearch, fetchCatalogue]);
+    if (showProductModal || step === 2) fetchCatalogue(catSearch);
+  }, [showProductModal, catSearch, catCategoryFilter, fetchCatalogue, step]);
+
+  const invoiceProductCategories = useMemo(
+    () => [
+      { value: "", label: "All Categories" },
+      { value: "JOURNAL_SUBSCRIPTION", label: "Journal Subscription" },
+      { value: "COURSE", label: "Course" },
+      { value: "WORKSHOP", label: "Workshop" },
+      { value: "DOI_SERVICE", label: "DOI Service" },
+      { value: "APC", label: "APC" },
+      { value: "CERTIFICATE", label: "Certificate" },
+      { value: "DIGITAL_SERVICE", label: "Digital Service" },
+      { value: "MISC", label: "Miscellaneous" },
+    ],
+    [],
+  );
+
+  const availableCatalogueDomains = useMemo(
+    () =>
+      Array.from(
+        new Set(
+          catProducts
+            .map((product: any) => product.domain)
+            .filter((domain: string | null | undefined) => Boolean(domain)),
+        ),
+      ).sort((a, b) => a.localeCompare(b)),
+    [catProducts],
+  );
+
+  const visibleCatalogueProducts = useMemo(() => {
+    return catProducts.filter((product: any) => {
+      if (catDomainFilter && product.domain !== catDomainFilter) {
+        return false;
+      }
+
+      if (catCategoryFilter !== "JOURNAL_SUBSCRIPTION") return true;
+
+      const subscriptionOptions = product.attributes?.subscriptionOptions || {};
+
+      if (
+        subscriptionFrequencyFilter &&
+        subscriptionOptions.frequency !== subscriptionFrequencyFilter
+      ) {
+        return false;
+      }
+
+      if (
+        subscriptionYearFilter &&
+        String(subscriptionOptions.year || "") !== subscriptionYearFilter
+      ) {
+        return false;
+      }
+
+      if (
+        subscriptionModeFilter &&
+        subscriptionOptions.mode !== subscriptionModeFilter
+      ) {
+        return false;
+      }
+
+      return true;
+    });
+  }, [
+    catProducts,
+    catCategoryFilter,
+    catDomainFilter,
+    subscriptionFrequencyFilter,
+    subscriptionYearFilter,
+    subscriptionModeFilter,
+  ]);
 
   // Unified product selection handler
   const finalizeProductSelection = (p: any, v?: any, targetItemId?: number) => {
@@ -320,6 +413,52 @@ export default function CreateInvoiceModal({
     } else {
       finalizeProductSelection(p, undefined, targetItemId);
     }
+  };
+
+  const isMeaningfulItem = useCallback(
+    (item: any) => Boolean(item.description?.trim()) || Number(item.price) > 0,
+    [],
+  );
+
+  const selectedCatalogueProductIds = useMemo(
+    () => new Set(items.filter((item) => item.productId).map((item) => item.productId)),
+    [items],
+  );
+
+  const selectedProductCount = useMemo(
+    () => items.filter((item) => item.productId).length,
+    [items],
+  );
+
+  const hasSelectedProducts = selectedProductCount > 0;
+
+  const toggleCatalogueProduct = (product: any) => {
+    const existingItem = items.find((item) => item.productId === product.id);
+    if (existingItem) {
+      if (items.length === 1) {
+        setItems([
+          {
+            id: Date.now(),
+            description: "",
+            hsnCode: "",
+            quantity: 1,
+            price: 0,
+            taxCategory: "STANDARD",
+          },
+        ]);
+      } else {
+        setItems((prev) => prev.filter((item) => item.id !== existingItem.id));
+      }
+      return;
+    }
+
+    if (product.variants && product.variants.length > 0) {
+      const defaultVariant = product.variants[0];
+      finalizeProductSelection(product, defaultVariant);
+      return;
+    }
+
+    finalizeProductSelection(product);
   };
 
   useEffect(() => {
@@ -428,7 +567,7 @@ export default function CreateInvoiceModal({
             data.customerProfile || data.subscription?.customerProfile,
           );
           // If editing, skip customer selection step
-          setStep(2);
+          setStep(3);
 
           if (data.couponCode) {
             setCouponCode(data.couponCode);
@@ -706,7 +845,7 @@ export default function CreateInvoiceModal({
   if (!isOpen) return null;
 
   const modalBody = (
-      <div className="bg-white rounded-3xl w-full max-w-2xl max-h-[90vh] overflow-hidden shadow-2xl flex flex-col relative">
+      <div className="bg-white rounded-3xl w-full max-w-1xl  overflow-hidden shadow-2xl flex flex-col relative">
         {/* Product Catalogue & Variants Overlay */}
         {showProductModal && (
           <div className="absolute inset-0 z-[60] bg-white flex flex-col animate-slideIn">
@@ -909,7 +1048,7 @@ export default function CreateInvoiceModal({
               {editId ? "Edit Invoice" : "Create New Invoice"}
             </h2>
             <p className="text-sm text-gray-500">
-              Step {step}: {step === 1 ? "Select Customer" : "Invoice Details"}
+              Step {step}: {step === 1 ? "Customer Detail" : step === 2 ? "Products Detail" : "Summary"}
             </p>
           </div>
           <button
@@ -918,6 +1057,52 @@ export default function CreateInvoiceModal({
           >
             <X size={20} className="text-gray-400" />
           </button>
+        </div>
+
+        <div className="border-b border-gray-100 bg-white/80 px-4 py-4 sm:px-6">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+            {[
+              { id: 1, title: "Customer Detail", hint: selectedCustomer ? selectedCustomer.name : "Choose customer" },
+              { id: 2, title: "Products Detail", hint: hasSelectedProducts ? `${selectedProductCount} selected` : "Pick products" },
+              { id: 3, title: "Summary", hint: "Review and create" },
+            ].map((phase) => (
+              <button
+                key={phase.id}
+                type="button"
+                disabled={
+                  phase.id > step &&
+                  !(
+                    (phase.id === 2 && selectedCustomer) ||
+                    (phase.id === 3 && selectedCustomer && hasSelectedProducts)
+                  )
+                }
+                onClick={() => {
+                  if (phase.id === 2 && !selectedCustomer) return;
+                  if (phase.id === 3 && (!selectedCustomer || !hasSelectedProducts)) return;
+                  setStep(phase.id);
+                }}
+                className={`min-w-0 rounded-2xl border px-3 py-3 text-left transition-all sm:px-4 ${
+                  step === phase.id
+                    ? "border-primary-200 bg-primary-50 shadow-sm"
+                    : "border-gray-200 bg-gray-50 hover:bg-white"
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <div className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-black ${
+                    step > phase.id ? "bg-emerald-100 text-emerald-700" : step === phase.id ? "bg-primary-600 text-white" : "bg-white text-gray-500 border border-gray-200"
+                  }`}>
+                    {step > phase.id ? <CheckCircle2 size={14} /> : phase.id}
+                  </div>
+                  <div>
+                    <div className="text-[11px] font-black uppercase tracking-[0.18em] leading-tight text-gray-700 sm:text-xs">
+                      {phase.title}
+                    </div>
+                    <div className="truncate text-xs text-gray-500">{phase.hint}</div>
+                  </div>
+                </div>
+              </button>
+            ))}
+          </div>
         </div>
 
         <div className="flex-1 overflow-y-auto p-6 scrollbar-hide">
@@ -1474,6 +1659,245 @@ export default function CreateInvoiceModal({
                 </>
               )}
             </div>
+          ) : step === 2 ? (
+            <div className="space-y-6">
+              <div className="rounded-2xl border border-primary-100 bg-primary-50/70 p-4">
+                <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                  <div>
+                    <h3 className="text-lg font-bold text-gray-900">Products Detail</h3>
+                    <p className="text-sm text-gray-500">
+                      Filter the catalogue and select multiple products with one pass. Selected items will be added to the invoice summary.
+                    </p>
+                  </div>
+                  <div className="rounded-xl bg-white px-4 py-3 border border-primary-100">
+                    <div className="text-[10px] font-black uppercase tracking-widest text-primary-600">Selected Products</div>
+                    <div className="text-2xl font-black text-primary-700">{selectedProductCount}</div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                  <div
+                    className={`grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3 ${
+                      catCategoryFilter === "JOURNAL_SUBSCRIPTION"
+                        ? "2xl:grid-cols-[minmax(0,1.3fr)_minmax(180px,220px)_minmax(180px,220px)_minmax(150px,180px)_minmax(180px,220px)_minmax(180px,220px)]"
+                        : ""
+                    }`}
+                  >
+                    <div className="relative">
+                      <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+                      <input
+                        type="text"
+                        value={catSearch}
+                        onChange={(e) => setCatSearch(e.target.value)}
+                        placeholder="Search catalogue products..."
+                        className="input-premium w-full min-w-0 pl-11"
+                      />
+                    </div>
+                    <div className="relative">
+                      <Filter size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+                      <select
+                        value={catCategoryFilter}
+                        onChange={(e) => {
+                          const nextCategory = e.target.value;
+                          setCatCategoryFilter(nextCategory);
+                          if (nextCategory !== "JOURNAL_SUBSCRIPTION") {
+                            setSubscriptionFrequencyFilter("");
+                            setSubscriptionYearFilter("");
+                            setSubscriptionModeFilter("");
+                          }
+                        }}
+                        className="input-premium w-full min-w-0 pl-11"
+                      >
+                        {invoiceProductCategories.map((category) => (
+                          <option key={category.value || "ALL"} value={category.value}>
+                            {category.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="relative">
+                      <Globe size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+                      <select
+                        value={catDomainFilter}
+                        onChange={(e) => setCatDomainFilter(e.target.value)}
+                        className="input-premium w-full min-w-0 pl-11"
+                      >
+                        <option value="">All Domains</option>
+                        {availableCatalogueDomains.map((domain) => (
+                          <option key={domain} value={domain}>
+                            {domain}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    {catCategoryFilter === "JOURNAL_SUBSCRIPTION" && (
+                      <>
+                        <select
+                          value={subscriptionFrequencyFilter}
+                          onChange={(e) => setSubscriptionFrequencyFilter(e.target.value)}
+                          className="input-premium w-full min-w-0"
+                        >
+                          <option value="">All Frequencies</option>
+                          <option value="ANNUAL">Annual</option>
+                          <option value="ISSUE_WISE">Issue Wise</option>
+                        </select>
+                        <select
+                          value={subscriptionYearFilter}
+                          onChange={(e) => setSubscriptionYearFilter(e.target.value)}
+                          className="input-premium w-full min-w-0"
+                        >
+                          <option value="">All Years</option>
+                          {Array.from(
+                            { length: 10 },
+                            (_, i) => new Date().getFullYear() + i - 2,
+                          ).map((year) => (
+                            <option key={year} value={year}>
+                              {year}
+                            </option>
+                          ))}
+                        </select>
+                        <select
+                          value={subscriptionModeFilter}
+                          onChange={(e) => setSubscriptionModeFilter(e.target.value)}
+                          className="input-premium w-full min-w-0"
+                        >
+                          <option value="">All Modes</option>
+                          <option value="PRINT">Print</option>
+                          <option value="DIGITAL">Digital</option>
+                          <option value="PRINT_DIGITAL">Print + Digital</option>
+                        </select>
+                      </>
+                    )}
+                  </div>
+
+                  <div className="grid grid-cols-1 gap-3 xl:grid-cols-2">
+                    {catLoading ? (
+                      <div className="col-span-full rounded-2xl border border-dashed border-gray-200 bg-gray-50 p-8 text-center text-sm text-gray-500">
+                        Loading product catalogue...
+                      </div>
+                    ) : visibleCatalogueProducts.length === 0 ? (
+                      <div className="col-span-full rounded-2xl border border-dashed border-gray-200 bg-gray-50 p-8 text-center text-sm text-gray-500">
+                        No products matched the current filters.
+                      </div>
+                    ) : (
+                      visibleCatalogueProducts.map((product: any) => {
+                        const selected = selectedCatalogueProductIds.has(product.id);
+                        const hasVariants = product.variants && product.variants.length > 0;
+                        const displayPrice = currency === "USD" ? product.priceUSD : product.priceINR;
+                        const subscriptionOptions = product.attributes?.subscriptionOptions || null;
+                        return (
+                          <button
+                            key={product.id}
+                            type="button"
+                            onClick={() => toggleCatalogueProduct(product)}
+                            className={`rounded-2xl border p-4 text-left transition-all ${
+                              selected
+                                ? "border-primary-300 bg-primary-50 shadow-sm"
+                                : "border-gray-200 bg-white hover:border-primary-200 hover:shadow-sm"
+                            }`}
+                          >
+                            <div className="flex items-start justify-between gap-3">
+                              <div className="min-w-0">
+                                <div className="flex items-center gap-3">
+                                  <input
+                                    type="checkbox"
+                                    checked={selected}
+                                    readOnly
+                                    className="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                                  />
+                                  <div>
+                                    <div className="font-bold text-gray-900 truncate">{product.name}</div>
+                                    <div className="text-[10px] font-black uppercase tracking-widest text-gray-400">
+                                      {product.category?.replace(/_/g, " ")}
+                                    </div>
+                                  </div>
+                                </div>
+                                {product.sku && (
+                                  <div className="mt-2 text-[11px] font-mono text-gray-500">{product.sku}</div>
+                                )}
+                                {product.domain && (
+                                  <div className="mt-2 inline-flex rounded-full bg-slate-100 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-600">
+                                    {product.domain}
+                                  </div>
+                                )}
+                              </div>
+                              <div className="text-right shrink-0">
+                                <div className="text-sm font-black text-primary-700">
+                                  {getCurrencySymbol(currency)}{Number(displayPrice || 0).toLocaleString()}
+                                </div>
+                                <div className="text-[10px] text-gray-400">
+                                  {hasVariants ? `${product.variants.length} variants` : "Single pricing"}
+                                </div>
+                              </div>
+                            </div>
+                            {hasVariants && (
+                              <div className="mt-3 rounded-xl bg-amber-50 px-3 py-2 text-[11px] text-amber-700">
+                                Variable product detected. Selecting it will add the first available variant, and you can refine it in Summary.
+                              </div>
+                            )}
+                            {product.category === "JOURNAL_SUBSCRIPTION" && subscriptionOptions && (
+                              <div className="mt-3 flex flex-wrap gap-2">
+                                <span className="rounded-full bg-indigo-50 px-3 py-1 text-[10px] font-black uppercase tracking-widest text-indigo-700">
+                                  {subscriptionOptions.frequency === "ISSUE_WISE" ? "Issue Wise" : "Annual"}
+                                </span>
+                                {subscriptionOptions.year && (
+                                  <span className="rounded-full border border-gray-200 bg-white px-3 py-1 text-[10px] font-black uppercase tracking-widest text-gray-600">
+                                    Year {subscriptionOptions.year}
+                                  </span>
+                                )}
+                                {subscriptionOptions.mode && (
+                                  <span className="rounded-full border border-gray-200 bg-white px-3 py-1 text-[10px] font-black uppercase tracking-widest text-gray-600">
+                                    {subscriptionOptions.mode === "PRINT_DIGITAL" ? "Print + Digital" : subscriptionOptions.mode}
+                                  </span>
+                                )}
+                              </div>
+                            )}
+                          </button>
+                        );
+                      })
+                    )}
+                  </div>
+
+                <div className="rounded-2xl border border-gray-200 bg-white p-5">
+                  <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+                    <div className="flex items-center gap-2">
+                      <Package size={16} className="text-primary-600" />
+                      <div>
+                        <h4 className="font-bold text-gray-900">Selected Items</h4>
+                        <div className="text-xs text-gray-500">
+                          Review the products you picked before moving to summary.
+                        </div>
+                      </div>
+                    </div>
+                    <div className="rounded-xl border border-gray-100 bg-gray-50 px-4 py-3">
+                      <div className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2">Customer in Focus</div>
+                      <div className="font-bold text-gray-900">{selectedCustomer?.name}</div>
+                      <div className="text-sm text-primary-600">{selectedCustomer?.organizationName || selectedCustomer?.primaryEmail}</div>
+                    </div>
+                  </div>
+
+                  <div className="mt-4">
+                    {hasSelectedProducts ? (
+                      <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+                        {items.filter((item) => item.productId).map((item) => (
+                          <div key={item.id} className="rounded-xl border border-gray-100 bg-gray-50 p-3">
+                            <div className="font-semibold text-gray-900">{item.description}</div>
+                            <div className="mt-1 text-xs text-gray-500">
+                              Qty {item.quantity} · {getCurrencySymbol(currency)} {Number(item.price || 0).toLocaleString()}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="rounded-xl border border-dashed border-gray-200 bg-gray-50 p-6 text-sm text-gray-500">
+                        No products selected yet. Use the checkboxes above to build the invoice.
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
           ) : (
             <div className="space-y-6">
               <div className="flex items-center justify-between bg-primary-50 p-4 rounded-xl border border-primary-100">
@@ -1936,15 +2360,34 @@ export default function CreateInvoiceModal({
           >
             Cancel
           </button>
-          {step === 1 ? (
+          {step > 1 && (
+            <button
+              type="button"
+              onClick={() => setStep((current) => Math.max(1, current - 1))}
+              className="btn bg-white border border-gray-200 text-gray-700 hover:bg-gray-50"
+            >
+              Previous
+            </button>
+          )}
+          {step === 1 && (
             <button
               disabled={!selectedCustomer}
               onClick={() => setStep(2)}
               className="btn btn-primary px-8 disabled:opacity-50"
             >
-              Next Step
+              Next: Products
             </button>
-          ) : (
+          )}
+          {step === 2 && (
+            <button
+              disabled={!hasSelectedProducts}
+              onClick={() => setStep(3)}
+              className="btn btn-primary px-8 disabled:opacity-50"
+            >
+              Next: Summary
+            </button>
+          )}
+          {step === 3 && (
             <button
               onClick={handleSubmit}
               disabled={loading}
@@ -1959,8 +2402,8 @@ export default function CreateInvoiceModal({
 
   if (renderMode === "page") {
     return (
-      <div className="min-h-screen bg-secondary-50 p-6">
-        <div className="max-w-4xl mx-auto">{modalBody}</div>
+      <div className="min-h-screen bg-secondary-50 p-4 sm:p-6">
+        <div className="w-full max-w-none">{modalBody}</div>
       </div>
     );
   }

@@ -37,6 +37,8 @@ export default function ConferenceDetailPage() {
     const [followupLoading, setFollowupLoading] = useState(false);
     const [submittingFollowup, setSubmittingFollowup] = useState(false);
     const [checkedItems, setCheckedItems] = useState<string[]>([]);
+    const [followupPage, setFollowupPage] = useState(1);
+    const [followupPageSize, setFollowupPageSize] = useState(10);
 
 
 
@@ -119,11 +121,15 @@ export default function ConferenceDetailPage() {
         }
     }, [conferenceId]);
 
-    const fetchConferenceFollowups = useCallback(async () => {
+    const fetchConferenceFollowups = useCallback(async (page = followupPage, pageSize = followupPageSize) => {
         try {
             setFollowupLoading(true);
             const token = localStorage.getItem('token');
-            const res = await fetch(`/api/conferences/${conferenceId}/follow-ups`, {
+            const params = new URLSearchParams({
+                page: String(page),
+                pageSize: String(pageSize),
+            });
+            const res = await fetch(`/api/conferences/${conferenceId}/follow-ups?${params.toString()}`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
 
@@ -139,11 +145,13 @@ export default function ConferenceDetailPage() {
         } finally {
             setFollowupLoading(false);
         }
-    }, [conferenceId]);
+    }, [conferenceId, followupPage, followupPageSize]);
 
     const openConferenceFollowups = useCallback(async () => {
+        setFollowupPage(1);
+        setFollowupPageSize(10);
         setShowFollowupModal(true);
-        await fetchConferenceFollowups();
+        await fetchConferenceFollowups(1, 10);
     }, [fetchConferenceFollowups]);
 
     const closeConferenceFollowups = () => {
@@ -205,8 +213,8 @@ export default function ConferenceDetailPage() {
     }, [conferenceId, fetchConference]);
 
     useEffect(() => {
-        fetchConferenceFollowups().catch(() => undefined);
-    }, [fetchConferenceFollowups]);
+        fetchConferenceFollowups(followupPage, followupPageSize).catch(() => undefined);
+    }, [fetchConferenceFollowups, followupPage, followupPageSize]);
 
     useEffect(() => {
         if (activeTab === 'committee') {
@@ -1228,9 +1236,35 @@ export default function ConferenceDetailPage() {
                                         </div>
 
                                         <div className="card-premium p-5">
-                                            <div className="flex items-center gap-2 mb-4">
-                                                <MessageSquare size={18} className="text-primary-600" />
-                                                <h3 className="font-black text-secondary-900">Conference Follow-up History</h3>
+                                            <div className="flex flex-col gap-4 mb-4 md:flex-row md:items-center md:justify-between">
+                                                <div className="flex items-center gap-2">
+                                                    <MessageSquare size={18} className="text-primary-600" />
+                                                    <div>
+                                                        <h3 className="font-black text-secondary-900">Conference Follow-up History</h3>
+                                                        <div className="text-xs text-secondary-500">
+                                                            Showing the latest {followupDetails?.pagination?.pageSize || followupPageSize} remarks per page
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div className="flex items-center gap-2 text-sm">
+                                                    <label className="text-secondary-500 font-medium" htmlFor="conference-followup-page-size">
+                                                        Comments per page
+                                                    </label>
+                                                    <select
+                                                        id="conference-followup-page-size"
+                                                        className="input h-10 w-24"
+                                                        value={followupPageSize}
+                                                        onChange={(event) => {
+                                                            const nextPageSize = Number(event.target.value);
+                                                            setFollowupPage(1);
+                                                            setFollowupPageSize(nextPageSize);
+                                                        }}
+                                                    >
+                                                        {[10, 20, 40, 100].map((size) => (
+                                                            <option key={size} value={size}>{size}</option>
+                                                        ))}
+                                                    </select>
+                                                </div>
                                             </div>
 
                                             {(followupDetails?.followups || []).length === 0 ? (
@@ -1261,6 +1295,52 @@ export default function ConferenceDetailPage() {
                                                             )}
                                                         </div>
                                                     ))}
+
+                                                    <div className="flex flex-col gap-3 border-t border-secondary-100 pt-4 md:flex-row md:items-center md:justify-between">
+                                                        <div className="text-xs text-secondary-500">
+                                                            Showing{' '}
+                                                            <span className="font-bold text-secondary-900">
+                                                                {followupDetails.pagination?.totalItems
+                                                                    ? ((followupDetails.pagination.page - 1) * followupDetails.pagination.pageSize) + 1
+                                                                    : 0}
+                                                            </span>
+                                                            {' '}to{' '}
+                                                            <span className="font-bold text-secondary-900">
+                                                                {followupDetails.pagination?.totalItems
+                                                                    ? Math.min(
+                                                                        followupDetails.pagination.page * followupDetails.pagination.pageSize,
+                                                                        followupDetails.pagination.totalItems
+                                                                    )
+                                                                    : 0}
+                                                            </span>
+                                                            {' '}of{' '}
+                                                            <span className="font-bold text-secondary-900">
+                                                                {followupDetails.pagination?.totalItems || 0}
+                                                            </span>
+                                                            {' '}remarks
+                                                        </div>
+                                                        <div className="flex items-center gap-2">
+                                                            <button
+                                                                type="button"
+                                                                className="btn btn-secondary"
+                                                                disabled={!followupDetails.pagination?.hasPreviousPage || followupLoading}
+                                                                onClick={() => setFollowupPage((current) => Math.max(1, current - 1))}
+                                                            >
+                                                                Previous
+                                                            </button>
+                                                            <div className="text-xs font-bold text-secondary-500">
+                                                                Page {followupDetails.pagination?.page || followupPage} of {followupDetails.pagination?.totalPages || 1}
+                                                            </div>
+                                                            <button
+                                                                type="button"
+                                                                className="btn btn-secondary"
+                                                                disabled={!followupDetails.pagination?.hasNextPage || followupLoading}
+                                                                onClick={() => setFollowupPage((current) => current + 1)}
+                                                            >
+                                                                Next
+                                                            </button>
+                                                        </div>
+                                                    </div>
                                                 </div>
                                             )}
                                         </div>

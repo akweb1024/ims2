@@ -44,6 +44,7 @@ import FormattedDate from "@/components/common/FormattedDate";
 import VariantAdminPanel from "@/components/dashboard/crm/VariantAdminPanel";
 import ProductCatalogueForm, {
   DEFAULT_FORM_DATA,
+  PREDEFINED_DOMAINS,
   type ProductCatalogueFormData,
 } from "@/components/dashboard/crm/ProductCatalogueForm";
 
@@ -166,6 +167,7 @@ interface InvoiceProduct {
   isFeatured: boolean;
   tags: string[];
   notes?: string;
+  domain?: string;
   attributes?: any;
   productAttributes?: any[];
   variants?: any[];
@@ -485,12 +487,79 @@ export default function InvoiceProductsPage() {
     };
   };
 
+  const normalizeDomainName = (domain: string) => domain.trim();
+
+  const buildDomainCode = (domain: string) => {
+    const tokens = normalizeDomainName(domain)
+      .split(/[^A-Za-z0-9]+/)
+      .filter(Boolean);
+    const acronym = tokens.map((token) => token[0]).join("").toUpperCase();
+    const compact = normalizeDomainName(domain)
+      .replace(/[^A-Za-z0-9]+/g, "")
+      .toUpperCase();
+    return (acronym || compact).slice(0, 12) || "DOMAIN";
+  };
+
+  const ensureJournalDomainExists = async (domain: string) => {
+    const normalized = normalizeDomainName(domain);
+    if (!normalized) return;
+
+    const existingRes = await fetch("/api/journals/domains", {
+      credentials: "include",
+    });
+    if (!existingRes.ok) return;
+
+    const existingDomains = await existingRes.json();
+    const knownDomains = Array.isArray(existingDomains)
+      ? existingDomains
+      : Array.isArray(existingDomains?.data)
+        ? existingDomains.data
+        : [];
+
+    const alreadyExists = knownDomains.some((item: any) => {
+      const name = typeof item === "string" ? item : item?.name;
+      return (
+        String(name || "").trim().toLowerCase() === normalized.toLowerCase()
+      );
+    });
+
+    if (alreadyExists) return;
+
+    const createRes = await fetch("/api/journals/domains", {
+      method: "POST",
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        name: normalized,
+        code: buildDomainCode(normalized),
+        isActive: true,
+      }),
+    });
+
+    if (!createRes.ok && createRes.status !== 409) {
+      const err = await createRes.json().catch(() => null);
+      throw new Error(err?.error || err?.message || "Failed to create domain");
+    }
+  };
+
   const handleSave = async (submittedData?: ProductCatalogueFormData) => {
     const dataToUse = submittedData || catalogueForm;
     const productName = (dataToUse.name || form.name || "").trim();
     if (!productName) return;
     setSaving(true);
     try {
+      if (
+        dataToUse.domain.trim() &&
+        !PREDEFINED_DOMAINS.some(
+          (domain) =>
+            domain.toLowerCase() === dataToUse.domain.trim().toLowerCase(),
+        )
+      ) {
+        await ensureJournalDomainExists(dataToUse.domain);
+      }
+
       const payload = buildPayload(dataToUse);
       const url = editingProduct
         ? `/api/invoice-products/${editingProduct.id}`
@@ -573,11 +642,62 @@ export default function InvoiceProductsPage() {
     : null;
 
   const downloadTemplate = () => {
+    const templateHeaders = [
+      "name",
+      "type",
+      "category",
+      "pricingModel",
+      "priceINR",
+      "priceUSD",
+      "taxRate",
+      "hsnCode",
+      "sacCode",
+      "sku",
+      "domain",
+      "subscriptionFrequency",
+      "subscriptionYear",
+      "subscriptionMode",
+      "notes",
+    ];
     const csvContent =
       "data:text/csv;charset=utf-8," +
-      "name,type,category,pricingModel,priceINR,priceUSD,taxRate,hsnCode,sku\n" +
-      "Sample Subscription,SIMPLE,JOURNAL_SUBSCRIPTION,FIXED,1500,20,18,4901,SUB-001\n" +
-      "Sample Course,SIMPLE,COURSE,FIXED,3000,40,18,9983,CRS-001";
+      [
+        templateHeaders.join(","),
+        [
+          "Sample Subscription",
+          "SIMPLE",
+          "JOURNAL_SUBSCRIPTION",
+          "FIXED",
+          "1500",
+          "20",
+          "18",
+          "4901",
+          "",
+          "SUB-001",
+          "Physics and Applied Mechanics",
+          "ANNUAL",
+          String(new Date().getFullYear()),
+          "PRINT",
+          "Sample journal subscription product",
+        ].join(","),
+        [
+          "Sample Course",
+          "SIMPLE",
+          "COURSE",
+          "FIXED",
+          "3000",
+          "40",
+          "18",
+          "",
+          "9983",
+          "CRS-001",
+          "Education and Social Sciences",
+          "",
+          "",
+          "",
+          "Sample course product",
+        ].join(","),
+      ].join("\n");
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
     link.setAttribute("href", encodedUri);
@@ -589,26 +709,67 @@ export default function InvoiceProductsPage() {
 
   const handleExportCSV = () => {
     if (products.length === 0) return alert("No products to export.");
+    const escapeCsv = (value: unknown) =>
+      `"${String(value ?? "").replace(/"/g, '""')}"`;
+
     const headers = [
       "ID",
       "Name",
       "Type",
       "Category",
+      "Pricing Model",
       "Price (INR)",
       "Price (USD)",
+      "Tax Rate",
+      "Tax Included",
       "SKU",
       "HSN Code",
+      "SAC Code",
+      "Billing Cycle",
+      "Unit",
+      "Min Quantity",
+      "Max Quantity",
+      "Domain",
+      "Subscription Frequency",
+      "Subscription Year",
+      "Subscription Mode",
+      "Tags",
+      "Notes",
+      "Is Featured",
+      "Created At",
+      "Updated At",
       "Status",
     ];
     const rows = products.map((p) => [
       p.id,
-      `"${p.name.replace(/"/g, '""')}"`,
-      p.type,
-      p.category,
+      escapeCsv(p.name),
+      escapeCsv(p.type),
+      escapeCsv(p.category),
+      escapeCsv(p.pricingModel || ""),
       p.priceINR,
       p.priceUSD,
-      p.sku || "",
-      p.hsnCode || "",
+      p.taxRate ?? "",
+      p.taxIncluded ? "YES" : "NO",
+      escapeCsv(p.sku || ""),
+      escapeCsv(p.hsnCode || ""),
+      escapeCsv(p.sacCode || ""),
+      escapeCsv(p.billingCycle || ""),
+      escapeCsv(p.unit || ""),
+      p.minQuantity ?? "",
+      p.maxQuantity ?? "",
+      escapeCsv(p.domain || ""),
+      escapeCsv(p.attributes?.subscriptionOptions?.frequency || ""),
+      p.attributes?.subscriptionOptions?.year || "",
+      escapeCsv(p.attributes?.subscriptionOptions?.mode || ""),
+      escapeCsv(Array.isArray(p.tags) ? p.tags.join(", ") : ""),
+      escapeCsv(p.notes || ""),
+      p.isFeatured ? "YES" : "NO",
+      escapeCsv(
+        p.createdAt ? new Date(p.createdAt).toISOString().split("T")[0] : "",
+      ),
+      escapeCsv(
+        p.updatedAt ? new Date(p.updatedAt).toISOString().split("T")[0] : "",
+      ),
       p.isActive ? "ACTIVE" : "INACTIVE",
     ]);
     const csvContent =
