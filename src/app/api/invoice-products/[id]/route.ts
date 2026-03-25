@@ -73,7 +73,8 @@ const updateSchema = z.object({
   isFeatured: z.boolean().optional(),
   tags: z.array(z.string().max(50)).max(20).optional(),
   notes: z.string().max(1000).optional().nullable(),
-  attributes: z.any().optional().nullable(),
+  domain: z.string().max(200).optional().nullable(),
+  productAttributes: z.any().optional().nullable(),
   variants: z.array(variantUpdateSchema).optional(),
 });
 
@@ -198,6 +199,11 @@ export const PATCH = authorizedRoute(
             isFeatured: input.isFeatured,
             tags: input.tags,
             notes: input.notes,
+            domain: input.domain,
+            productAttributes:
+              input.productAttributes !== undefined
+                ? input.productAttributes
+                : undefined,
             updatedByUserId: user.id,
           },
         });

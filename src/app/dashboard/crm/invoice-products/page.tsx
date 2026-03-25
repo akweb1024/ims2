@@ -383,7 +383,7 @@ export default function InvoiceProductsPage() {
 
     // Populate the new catalogue form from existing product data
     const isVariable = p.type === "VARIABLE";
-    const subscriptionOptions = (p.attributes as any)?.subscriptionOptions || {};
+    const subscriptionOptions = (p.productAttributes as any)?.subscriptionOptions || {};
     setCatalogueForm({
       name: p.name,
       sku: p.sku || "",
@@ -408,7 +408,7 @@ export default function InvoiceProductsPage() {
                 year: new Date().getFullYear(),
               },
             ],
-      domain: "",
+      domain: p.domain || "",
       category: p.category || "",
       hsnCode: p.hsnCode || "",
       sacCode: p.sacCode || "",
@@ -469,7 +469,8 @@ export default function InvoiceProductsPage() {
         .map((t: string) => t.trim())
         .filter(Boolean),
       notes: form.notes || null,
-      attributes: journalSubscriptionAttributes,
+      domain: currentForm.domain?.trim() || null,
+      productAttributes: journalSubscriptionAttributes,
       priceTiers: null,
       ...(isVariable && currentForm.variants.length > 0
         ? {
@@ -758,9 +759,9 @@ export default function InvoiceProductsPage() {
       p.minQuantity ?? "",
       p.maxQuantity ?? "",
       escapeCsv(p.domain || ""),
-      escapeCsv(p.attributes?.subscriptionOptions?.frequency || ""),
-      p.attributes?.subscriptionOptions?.year || "",
-      escapeCsv(p.attributes?.subscriptionOptions?.mode || ""),
+      escapeCsv((p.productAttributes as any)?.subscriptionOptions?.frequency || ""),
+      (p.productAttributes as any)?.subscriptionOptions?.year || "",
+      escapeCsv((p.productAttributes as any)?.subscriptionOptions?.mode || ""),
       escapeCsv(Array.isArray(p.tags) ? p.tags.join(", ") : ""),
       escapeCsv(p.notes || ""),
       p.isFeatured ? "YES" : "NO",

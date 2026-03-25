@@ -339,7 +339,7 @@ export default function CreateInvoiceModal({
 
       if (catCategoryFilter !== "JOURNAL_SUBSCRIPTION") return true;
 
-      const subscriptionOptions = product.attributes?.subscriptionOptions || {};
+      const subscriptionOptions = product.productAttributes?.subscriptionOptions || {};
 
       if (
         subscriptionFrequencyFilter &&
@@ -1832,7 +1832,7 @@ export default function CreateInvoiceModal({
                         const selected = selectedCatalogueProductIds.has(product.id);
                         const hasVariants = product.variants && product.variants.length > 0;
                         const displayPrice = currency === "USD" ? product.priceUSD : product.priceINR;
-                        const subscriptionOptions = product.attributes?.subscriptionOptions || null;
+                        const subscriptionOptions = product.productAttributes?.subscriptionOptions || null;
                         return (
                           <button
                             key={product.id}
