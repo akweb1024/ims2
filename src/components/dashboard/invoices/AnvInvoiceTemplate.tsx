@@ -43,6 +43,18 @@ export default function AnvInvoiceTemplate({
   const subtotal = invoice.amount || 0;
   const taxAmt = invoice.tax || 0;
   const grandTotal = invoice.total || 0;
+  const cgstRate =
+    invoice.cgstRate ?? (taxContext.isDomestic && taxContext.isSameStateSupply ? 9 : 0);
+  const sgstRate =
+    invoice.sgstRate ?? (taxContext.isDomestic && taxContext.isSameStateSupply ? 9 : 0);
+  const igstRate =
+    invoice.igstRate ?? (taxContext.isDomestic && !taxContext.isSameStateSupply ? 18 : 0);
+  const cgstAmount =
+    invoice.cgst ?? (igstRate > 0 ? 0 : taxAmt > 0 ? taxAmt / 2 : 0);
+  const sgstAmount =
+    invoice.sgst ?? (igstRate > 0 ? 0 : taxAmt > 0 ? taxAmt / 2 : 0);
+  const igstAmount =
+    invoice.igst ?? (igstRate > 0 && taxAmt > 0 ? taxAmt : 0);
   const displayInvoiceNumber =
     invoice.status === "PAID"
       ? invoice.invoiceNumber
@@ -463,12 +475,34 @@ export default function AnvInvoiceTemplate({
               {subtotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}
             </span>
           </div>
-          <div className="row-total">
-            <span className="total-label text-[10px]">Total GST:</span>
-            <span className="total-val text-[11px] font-bold">
-              {taxAmt.toLocaleString(undefined, { minimumFractionDigits: 2 })}
-            </span>
-          </div>
+          {isExport ? (
+            <div className="border border-blue-200 bg-blue-50 px-3 py-2 text-[10px] leading-relaxed text-blue-900 rounded">
+              <div className="font-bold">Export Invoice / Proforma Invoice</div>
+              <div>Non-Indian Customer: GST not applicable.</div>
+            </div>
+          ) : igstRate > 0 ? (
+            <div className="row-total">
+              <span className="total-label text-[10px]">IGST ({igstRate}%):</span>
+              <span className="total-val text-[11px] font-bold">
+                {igstAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+              </span>
+            </div>
+          ) : (
+            <>
+              <div className="row-total">
+                <span className="total-label text-[10px]">CGST ({cgstRate}%):</span>
+                <span className="total-val text-[11px] font-bold">
+                  {cgstAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                </span>
+              </div>
+              <div className="row-total">
+                <span className="total-label text-[10px]">SGST ({sgstRate}%):</span>
+                <span className="total-val text-[11px] font-bold">
+                  {sgstAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                </span>
+              </div>
+            </>
+          )}
           <div className="row-total grand-total">
             <span className="total-label">Grand Total:</span>
             <span className="total-val">
@@ -490,9 +524,9 @@ export default function AnvInvoiceTemplate({
                 <th>Sr.No</th>
                 <th style={{ textAlign: "left" }}>HSN/SAC</th>
                 <th>Taxable Val</th>
-                <th>CGST (Amt)</th>
-                <th>SGST (Amt)</th>
-                <th>IGST (Amt)</th>
+                <th>{`CGST (${cgstRate}%)`}</th>
+                <th>{`SGST (${sgstRate}%)`}</th>
+                <th>{`IGST (${igstRate}%)`}</th>
                 <th>Total Tax</th>
               </tr>
             </thead>
@@ -508,17 +542,17 @@ export default function AnvInvoiceTemplate({
                   })}
                 </td>
                 <td>
-                  {(invoice.cgst || taxAmt / 2).toLocaleString(undefined, {
+                  {cgstAmount.toLocaleString(undefined, {
                     minimumFractionDigits: 2,
                   })}
                 </td>
                 <td>
-                  {(invoice.sgst || taxAmt / 2).toLocaleString(undefined, {
+                  {sgstAmount.toLocaleString(undefined, {
                     minimumFractionDigits: 2,
                   })}
                 </td>
                 <td>
-                  {(invoice.igst || 0).toLocaleString(undefined, {
+                  {igstAmount.toLocaleString(undefined, {
                     minimumFractionDigits: 2,
                   })}
                 </td>

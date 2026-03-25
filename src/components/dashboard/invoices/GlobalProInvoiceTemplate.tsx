@@ -44,6 +44,18 @@ export default function GlobalProInvoiceTemplate({
   const taxAmt = invoice.tax || 0;
   const grandTotal = invoice.total || 0;
   const discount = invoice.discount || 0;
+  const cgstRate =
+    invoice.cgstRate ?? (taxContext.isDomestic && taxContext.isSameStateSupply ? 9 : 0);
+  const sgstRate =
+    invoice.sgstRate ?? (taxContext.isDomestic && taxContext.isSameStateSupply ? 9 : 0);
+  const igstRate =
+    invoice.igstRate ?? (taxContext.isDomestic && !taxContext.isSameStateSupply ? 18 : 0);
+  const cgstAmount =
+    invoice.cgst ?? (igstRate > 0 ? 0 : taxAmt > 0 ? taxAmt / 2 : 0);
+  const sgstAmount =
+    invoice.sgst ?? (igstRate > 0 ? 0 : taxAmt > 0 ? taxAmt / 2 : 0);
+  const igstAmount =
+    invoice.igst ?? (igstRate > 0 && taxAmt > 0 ? taxAmt : 0);
 
   const displayInvoiceNumber =
     invoice.status === "PAID"
@@ -905,22 +917,77 @@ export default function GlobalProInvoiceTemplate({
               </span>
             </div>
           )}
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              marginBottom: "5px",
-              fontSize: "10px",
-            }}
-          >
-            <span style={{ color: "#64748b", fontWeight: 600 }}>
-              {isExport ? "GST (Export 0%):" : "Total GST:"}
-            </span>
-            <span style={{ fontWeight: 700 }}>
-              {currencySymbol}
-              {taxAmt.toLocaleString(undefined, { minimumFractionDigits: 2 })}
-            </span>
-          </div>
+          {isExport ? (
+            <div
+              style={{
+                marginBottom: "6px",
+                padding: "8px 10px",
+                borderRadius: "8px",
+                background: "#eff6ff",
+                border: "1px solid #bfdbfe",
+                fontSize: "10px",
+                color: "#1e3a8a",
+                lineHeight: 1.5,
+              }}
+            >
+              <div style={{ fontWeight: 700 }}>
+                Export Invoice / Proforma Invoice
+              </div>
+              <div>Non-Indian Customer: GST not applicable.</div>
+            </div>
+          ) : igstRate > 0 ? (
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                marginBottom: "5px",
+                fontSize: "10px",
+              }}
+            >
+              <span style={{ color: "#64748b", fontWeight: 600 }}>
+                IGST ({igstRate}%):
+              </span>
+              <span style={{ fontWeight: 700 }}>
+                {currencySymbol}
+                {igstAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+              </span>
+            </div>
+          ) : (
+            <>
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  marginBottom: "5px",
+                  fontSize: "10px",
+                }}
+              >
+                <span style={{ color: "#64748b", fontWeight: 600 }}>
+                  CGST ({cgstRate}%):
+                </span>
+                <span style={{ fontWeight: 700 }}>
+                  {currencySymbol}
+                  {cgstAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                </span>
+              </div>
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  marginBottom: "5px",
+                  fontSize: "10px",
+                }}
+              >
+                <span style={{ color: "#64748b", fontWeight: 600 }}>
+                  SGST ({sgstRate}%):
+                </span>
+                <span style={{ fontWeight: 700 }}>
+                  {currencySymbol}
+                  {sgstAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                </span>
+              </div>
+            </>
+          )}
           <div
             style={{
               borderTop: `2px solid ${accentColor}`,
@@ -975,7 +1042,15 @@ export default function GlobalProInvoiceTemplate({
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
             <thead>
               <tr style={{ background: "#f1f5f9" }}>
-                {["Sr.", "HSN/SAC", "Taxable Value", "CGST (Amt)", "SGST (Amt)", "IGST (Amt)", "Total Tax"].map(
+                {[
+                  "Sr.",
+                  "HSN/SAC",
+                  "Taxable Value",
+                  `CGST (${cgstRate}%)`,
+                  `SGST (${sgstRate}%)`,
+                  `IGST (${igstRate}%)`,
+                  "Total Tax",
+                ].map(
                   (h, i) => (
                     <th
                       key={i}
@@ -1003,13 +1078,13 @@ export default function GlobalProInvoiceTemplate({
                   {subtotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                 </td>
                 <td style={{ padding: "5px 8px", textAlign: "right", fontSize: "9px", borderRight: "1px solid #e2e8f0" }}>
-                  {(invoice.cgst ?? (invoice.igst ? 0 : taxAmt / 2)).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                  {cgstAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                 </td>
                 <td style={{ padding: "5px 8px", textAlign: "right", fontSize: "9px", borderRight: "1px solid #e2e8f0" }}>
-                  {(invoice.sgst ?? (invoice.igst ? 0 : taxAmt / 2)).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                  {sgstAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                 </td>
                 <td style={{ padding: "5px 8px", textAlign: "right", fontSize: "9px", borderRight: "1px solid #e2e8f0" }}>
-                  {(invoice.igst ?? (taxAmt > 0 && !invoice.cgst ? taxAmt : 0)).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                  {igstAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                 </td>
                 <td style={{ padding: "5px 8px", textAlign: "right", fontSize: "9px", fontWeight: 800 }}>
                   {taxAmt.toLocaleString(undefined, { minimumFractionDigits: 2 })}
