@@ -51,6 +51,44 @@ import {
   resolveItemTaxCategory,
 } from "@/lib/invoice-tax";
 
+const customerDesignationOptions = [
+  { value: "", label: "Select designation" },
+  { value: "STUDENT", label: "Student" },
+  { value: "TEACHER", label: "Teacher" },
+  { value: "FACULTY", label: "Faculty" },
+  { value: "HOD", label: "HOD" },
+  { value: "PRINCIPAL", label: "Principal" },
+  { value: "DEAN", label: "Dean" },
+  { value: "RESEARCHER", label: "Researcher" },
+  { value: "LIBRARIAN", label: "Librarian" },
+  { value: "ACCOUNTANT", label: "Accountant" },
+  { value: "DIRECTOR", label: "Director" },
+  { value: "REGISTRAR", label: "Registrar" },
+  { value: "VICE_CHANCELLOR", label: "Vice Chancellor" },
+  { value: "CHANCELLOR", label: "Chancellor" },
+  { value: "STAFF", label: "Staff" },
+  { value: "OTHER", label: "Other" },
+];
+
+const normalizeCustomerDesignation = (value: string) => {
+  const normalized = value.trim().toUpperCase().replace(/[\s-]+/g, "_");
+  if (!normalized) return null;
+
+  const aliasMap: Record<string, string> = {
+    DIR: "DIRECTOR",
+    PROF: "FACULTY",
+    PROFESSOR: "FACULTY",
+    VC: "VICE_CHANCELLOR",
+  };
+
+  const resolved = aliasMap[normalized] || normalized;
+  const validValues = new Set(
+    customerDesignationOptions.map((option) => option.value).filter(Boolean),
+  );
+
+  return validValues.has(resolved) ? resolved : "OTHER";
+};
+
 interface CreateInvoiceModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -712,7 +750,11 @@ export default function CreateInvoiceModal({
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(newCustomerForm),
+        body: JSON.stringify({
+          ...newCustomerForm,
+          institutionId: newCustomerForm.institutionId || null,
+          designation: normalizeCustomerDesignation(newCustomerForm.designation),
+        }),
       });
 
       if (res.ok) {
@@ -1241,9 +1283,8 @@ export default function CreateInvoiceModal({
                       </div>
                       <div>
                         <label className="label">Functional Designation</label>
-                        <input
+                        <select
                           className="input-premium w-full bg-white"
-                          placeholder="EX: LIBRARIAN / DIRECTOR"
                           value={newCustomerForm.designation}
                           onChange={(e) =>
                             setNewCustomerForm({
@@ -1251,7 +1292,13 @@ export default function CreateInvoiceModal({
                               designation: e.target.value,
                             })
                           }
-                        />
+                        >
+                          {customerDesignationOptions.map((option) => (
+                            <option key={option.value || "blank"} value={option.value}>
+                              {option.label}
+                            </option>
+                          ))}
+                        </select>
                       </div>
                     </div>
 
