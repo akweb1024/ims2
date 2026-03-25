@@ -18,7 +18,7 @@ export async function ensureConferenceLeadForRegistration({
     conferenceTitle,
     registration,
 }: {
-    companyId: string;
+    companyId?: string | null;
     conferenceTitle: string;
     registration: RegistrationInput;
 }) {
@@ -90,7 +90,7 @@ export async function ensureConferenceManagementProfile({
     organizer,
 }: {
     conferenceId: string;
-    companyId: string;
+    companyId?: string | null;
     conferenceTitle: string;
     organizer?: string | null;
 }) {
@@ -159,7 +159,7 @@ export async function buildConferenceRegistrationFollowupSummary({
     companyId,
     registrations,
 }: {
-    companyId: string;
+    companyId?: string | null;
     registrations: Array<RegistrationInput>;
 }) {
     const emails = Array.from(new Set(registrations.map((registration) => registration.email.trim().toLowerCase())));
@@ -326,7 +326,7 @@ export async function createConferenceFollowup({
     registration,
     payload,
 }: {
-    companyId: string;
+    companyId?: string | null;
     userId: string;
     conferenceTitle: string;
     registration: RegistrationInput;
@@ -405,7 +405,7 @@ export async function getConferenceManagementFollowups({
     pageSize = 10,
 }: {
     conferenceId: string;
-    companyId: string;
+    companyId?: string | null;
     conferenceTitle: string;
     organizer?: string | null;
     page?: number;
@@ -496,7 +496,7 @@ export async function createConferenceManagementFollowup({
     payload,
 }: {
     conferenceId: string;
-    companyId: string;
+    companyId?: string | null;
     userId: string;
     conferenceTitle: string;
     organizer?: string | null;

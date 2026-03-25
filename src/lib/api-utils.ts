@@ -11,10 +11,30 @@ export function createErrorResponse(
     error: unknown,
     statusOrPath: number | string = 500
 ): NextResponse {
+    if (typeof statusOrPath === 'number') {
+        const status = statusOrPath;
+        const message =
+            typeof error === 'string'
+                ? error
+                : error instanceof Error
+                    ? error.message
+                    : 'Internal Server Error';
+
+        return NextResponse.json(
+            {
+                error: message,
+                message,
+                statusCode: status,
+                timestamp: new Date().toISOString(),
+            },
+            { status }
+        );
+    }
+
     // If called with a numeric status (legacy: createErrorResponse(error, 404))
     // we wrap the error in a form handleApiError understands, or we can just
     // call handleApiError with a synthetic path.
-    const path = typeof statusOrPath === 'string' ? statusOrPath : '/api/unknown';
+    const path = statusOrPath;
     return handleApiError(error, path);
 }
 

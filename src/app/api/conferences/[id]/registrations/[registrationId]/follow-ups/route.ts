@@ -46,15 +46,6 @@ export const GET = authorizedRoute(
                 return createErrorResponse('Registration not found', 404);
             }
 
-            if (!registration.conference.companyId) {
-                return NextResponse.json({
-                    registration,
-                    customerProfileId: null,
-                    followups: [],
-                    analytics: null,
-                });
-            }
-
             const lead = await ensureConferenceLeadForRegistration({
                 companyId: registration.conference.companyId,
                 conferenceTitle: registration.conference.title,
@@ -126,10 +117,6 @@ export const POST = authorizedRoute(
 
             if (!registration || registration.conferenceId !== id) {
                 return createErrorResponse('Registration not found', 404);
-            }
-
-            if (!registration.conference.companyId) {
-                return createErrorResponse('Conference company is required for follow-up tracking', 400);
             }
 
             const result = await createConferenceFollowup({

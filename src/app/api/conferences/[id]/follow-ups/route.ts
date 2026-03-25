@@ -53,15 +53,6 @@ export const GET = authorizedRoute(
                 return createErrorResponse('Conference not found', 404);
             }
 
-            if (!conference.companyId) {
-                return NextResponse.json({
-                    conference,
-                    customerProfileId: null,
-                    followups: [],
-                    summary: null,
-                });
-            }
-
             const result = await getConferenceManagementFollowups({
                 conferenceId: conference.id,
                 companyId: conference.companyId,
@@ -103,10 +94,6 @@ export const POST = authorizedRoute(
 
             if (!conference) {
                 return createErrorResponse('Conference not found', 404);
-            }
-
-            if (!conference.companyId) {
-                return createErrorResponse('Conference company is required for follow-up tracking', 400);
             }
 
             const result = await createConferenceManagementFollowup({
