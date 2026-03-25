@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import {
   X,
   Search,
@@ -117,6 +118,9 @@ export default function CreateInvoiceModal({
   editId,
   renderMode = "modal",
 }: CreateInvoiceModalProps) {
+  const searchParams = useSearchParams();
+  const prefilledCustomerId = searchParams.get("customerId");
+  const invoiceContext = searchParams.get("context");
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
 
@@ -582,6 +586,27 @@ export default function CreateInvoiceModal({
       fetchInstitutions();
     }
   }, [isOpen]);
+
+  useEffect(() => {
+    const fetchPrefilledCustomer = async () => {
+      if (!isOpen || editId || !prefilledCustomerId) return;
+      try {
+        const token = localStorage.getItem("token");
+        const res = await fetch(`/api/customers/${prefilledCustomerId}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!res.ok) return;
+        const data = await res.json();
+        setSelectedCustomer(data);
+        setCustomerSearch(data.name || "");
+        setStep(2);
+      } catch (err) {
+        console.error("Failed to prefill customer", err);
+      }
+    };
+
+    fetchPrefilledCustomer();
+  }, [isOpen, editId, prefilledCustomerId]);
 
   // Populate data for editing
   useEffect(() => {
@@ -1708,6 +1733,12 @@ export default function CreateInvoiceModal({
             </div>
           ) : step === 2 ? (
             <div className="space-y-6">
+              {invoiceContext === "agency" && selectedCustomer && (
+                <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                  You are creating an invoice directly from the agency workspace for{" "}
+                  <span className="font-bold">{selectedCustomer.name}</span>.
+                </div>
+              )}
               <div className="rounded-2xl border border-primary-100 bg-primary-50/70 p-4">
                 <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                   <div>

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useCRMMutations } from '@/hooks/useCRM';
 import ConversationChecklist from './ConversationChecklist';
 import { calculatePredictions } from '@/lib/predictions';
@@ -7,14 +7,35 @@ interface CommunicationFormProps {
     customerId: string;
     previousFollowUpId?: string | null;
     onSuccess?: () => void;
+    defaults?: {
+        type?: string;
+        channel?: string;
+        subject?: string;
+        outcome?: string;
+        notes?: string;
+        nextFollowUpDate?: string;
+    };
+    submitLabel?: string;
+    helperText?: string;
 }
 
-export default function CommunicationForm({ customerId, previousFollowUpId, onSuccess }: CommunicationFormProps) {
-    const [type, setType] = useState('COMMENT');
+export default function CommunicationForm({
+    customerId,
+    previousFollowUpId,
+    onSuccess,
+    defaults,
+    submitLabel,
+    helperText,
+}: CommunicationFormProps) {
+    const [type, setType] = useState(defaults?.type || 'COMMENT');
     const [loading, setLoading] = useState(false);
     const [checkedItems, setCheckedItems] = useState<string[]>([]);
 
     const { createCommunication } = useCRMMutations();
+
+    useEffect(() => {
+        setType(defaults?.type || 'COMMENT');
+    }, [defaults?.type]);
 
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
@@ -80,6 +101,11 @@ export default function CommunicationForm({ customerId, previousFollowUpId, onSu
                     <span>Replying to a scheduled follow-up task</span>
                 </div>
             )}
+            {helperText && (
+                <div className="rounded-xl border border-secondary-200 bg-secondary-50 px-4 py-3 text-sm text-secondary-700">
+                    {helperText}
+                </div>
+            )}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 
                 {/* Type Selection */}
@@ -104,25 +130,32 @@ export default function CommunicationForm({ customerId, previousFollowUpId, onSu
 
                 <div>
                     <label className="label">Channel</label>
-                    <select name="channel" className="input" required>
-                        <option>Email</option>
-                        <option>Phone</option>
-                        <option>WhatsApp</option>
-                        <option>App Notification</option>
-                        <option>In-Person</option>
+                    <select
+                        name="channel"
+                        className="input"
+                        required
+                        defaultValue={defaults?.channel || 'Email'}
+                    >
+                        {['Email', 'Phone', 'WhatsApp', 'App Notification', 'In-Person'].map((channelOption) => (
+                            <option key={channelOption} value={channelOption}>
+                                {channelOption}
+                            </option>
+                        ))}
                     </select>
                 </div>
 
                 <div>
                     <label className="label">Outcome</label>
-                    <select name="outcome" className="input">
-                        <option value="">Select outcome...</option>
-                        <option>Interested</option>
-                        <option>Follow-up required</option>
-                        <option>Renewal confirmed</option>
-                        <option>Complaint</option>
-                        <option>Responded</option>
-                        <option>No Answer</option>
+                    <select
+                        name="outcome"
+                        className="input"
+                        defaultValue={defaults?.outcome || ''}
+                    >
+                        {['', 'Interested', 'Follow-up required', 'Renewal confirmed', 'Complaint', 'Responded', 'No Answer'].map((outcomeOption) => (
+                            <option key={outcomeOption || 'EMPTY'} value={outcomeOption}>
+                                {outcomeOption || 'Select outcome...'}
+                            </option>
+                        ))}
                     </select>
                 </div>
 
@@ -149,17 +182,35 @@ export default function CommunicationForm({ customerId, previousFollowUpId, onSu
 
                 <div className="md:col-span-2">
                     <label className="label">Subject</label>
-                    <input type="text" name="subject" className="input" required placeholder="e.g. Renewal Discussion" />
+                    <input
+                        type="text"
+                        name="subject"
+                        className="input"
+                        required
+                        placeholder="e.g. Renewal Discussion"
+                        defaultValue={defaults?.subject || ''}
+                    />
                 </div>
 
                 <div className="md:col-span-2">
                     <label className="label">Message / Notes</label>
-                    <textarea name="notes" className="input h-24" required placeholder="Details of the interaction..."></textarea>
+                    <textarea
+                        name="notes"
+                        className="input h-24"
+                        required
+                        placeholder="Details of the interaction..."
+                        defaultValue={defaults?.notes || ''}
+                    ></textarea>
                 </div>
 
                 <div>
                     <label className="label">Next Follow-up Date</label>
-                    <input type="date" name="nextFollowUpDate" className="input" />
+                    <input
+                        type="date"
+                        name="nextFollowUpDate"
+                        className="input"
+                        defaultValue={defaults?.nextFollowUpDate || ''}
+                    />
                 </div>
 
                 <div>
@@ -205,7 +256,7 @@ export default function CommunicationForm({ customerId, previousFollowUpId, onSu
                     disabled={loading}
                     className="btn btn-primary px-8"
                 >
-                    {loading ? 'Logging...' : 'Log Communication'}
+                    {loading ? 'Logging...' : submitLabel || 'Log Communication'}
                 </button>
             </div>
         </form>

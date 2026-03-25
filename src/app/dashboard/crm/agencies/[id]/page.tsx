@@ -20,6 +20,8 @@ export default function AgencyDetailPage({ params }: { params: Promise<{ id: str
     const [actionLoading, setActionLoading] = useState(false);
     const [editingLog, setEditingLog] = useState<any>(null);
     const [activeFollowUpId, setActiveFollowUpId] = useState<string | null>(null);
+    const [selectedCommunicationPreset, setSelectedCommunicationPreset] = useState('relationship');
+    const [historyFilter, setHistoryFilter] = useState<'all' | 'open' | 'completed'>('all');
 
     const formRef = useRef<HTMLDivElement>(null);
     const searchParams = useSearchParams();
@@ -119,6 +121,63 @@ export default function AgencyDetailPage({ params }: { params: Promise<{ id: str
     // Calculate Stats
     const totalSales = customer.agencyDetails?.subscriptions?.reduce((acc: number, sub: any) => acc + sub.total, 0) || 0;
     const activeSubs = customer.agencyDetails?.subscriptions?.filter((s: any) => s.status === 'ACTIVE').length || 0;
+    const communications = customer.communications || [];
+    const openFollowUps = communications.filter((log: any) => log.nextFollowUpDate && !log.isFollowUpCompleted);
+    const completedFollowUps = communications.filter((log: any) => log.isFollowUpCompleted);
+    const nextFollowUp = [...openFollowUps]
+        .sort((a: any, b: any) => new Date(a.nextFollowUpDate).getTime() - new Date(b.nextFollowUpDate).getTime())[0];
+    const communicationPresets = [
+        {
+            id: 'relationship',
+            title: 'Relationship Update',
+            helper: 'Use this to capture check-ins, negotiation notes, and important context from the agency.',
+            defaults: {
+                type: 'COMMENT',
+                channel: 'Phone',
+                subject: 'Agency relationship check-in',
+                outcome: 'Follow-up required',
+            }
+        },
+        {
+            id: 'invoice',
+            title: 'Invoice Follow-up',
+            helper: 'Use this after a quotation, proforma, or invoice is shared with the agency.',
+            defaults: {
+                type: 'INVOICE_SENT',
+                channel: 'Email',
+                subject: 'Invoice follow-up and payment readiness',
+                outcome: 'Interested',
+            }
+        },
+        {
+            id: 'meeting',
+            title: 'Meeting Note',
+            helper: 'Capture meeting outcomes, expectations, and the next promised action.',
+            defaults: {
+                type: 'MEETING',
+                channel: 'In-Person',
+                subject: 'Agency meeting summary',
+                outcome: 'Responded',
+            }
+        },
+        {
+            id: 'renewal',
+            title: 'Renewal Push',
+            helper: 'Use this when the conversation is about renewals, validity, or contract continuation.',
+            defaults: {
+                type: 'CALL',
+                channel: 'Phone',
+                subject: 'Renewal planning discussion',
+                outcome: 'Renewal confirmed',
+            }
+        }
+    ];
+    const activePreset = communicationPresets.find((preset) => preset.id === selectedCommunicationPreset) || communicationPresets[0];
+    const filteredHistory = communications.filter((log: any) => {
+        if (historyFilter === 'open') return Boolean(log.nextFollowUpDate) && !log.isFollowUpCompleted;
+        if (historyFilter === 'completed') return Boolean(log.isFollowUpCompleted);
+        return true;
+    });
 
     return (
         <DashboardLayout userRole="ADMIN">
@@ -160,10 +219,10 @@ export default function AgencyDetailPage({ params }: { params: Promise<{ id: str
                             Edit Profile
                         </button>
                         <Link
-                            href={`/dashboard/crm/subscriptions/new?agencyId=${customer.agencyDetails?.id}`}
+                            href={`/dashboard/crm/invoices/new?customerId=${customer.id}&context=agency`}
                             className="btn btn-primary"
                         >
-                            New Subscription
+                            Create Invoice
                         </Link>
                     </div>
                 </div>
@@ -350,10 +409,10 @@ export default function AgencyDetailPage({ params }: { params: Promise<{ id: str
                                     <div className="card-premium text-center py-12">
                                         <p className="text-secondary-500">No subscriptions sold by this agency yet.</p>
                                         <Link
-                                            href={`/dashboard/crm/subscriptions/new?agencyId=${customer.agencyDetails?.id}`}
+                                            href={`/dashboard/crm/invoices/new?customerId=${customer.id}&context=agency`}
                                             className="btn btn-primary mt-4"
                                         >
-                                            Create New Subscription
+                                            Create First Invoice
                                         </Link>
                                     </div>
                                 ) : (
@@ -442,21 +501,115 @@ export default function AgencyDetailPage({ params }: { params: Promise<{ id: str
                         {/* COMMUNICATION TAB */}
                         {activeTab === 'communication' && (
                             <div className="space-y-6">
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                    <div className="card-premium">
+                                        <div className="text-xs font-black uppercase tracking-widest text-secondary-400">Total Logged</div>
+                                        <div className="mt-2 text-3xl font-black text-secondary-900">{communications.length}</div>
+                                        <div className="text-sm text-secondary-500">All relationship and billing conversations</div>
+                                    </div>
+                                    <div className="card-premium">
+                                        <div className="text-xs font-black uppercase tracking-widest text-warning-500">Open Follow-ups</div>
+                                        <div className="mt-2 text-3xl font-black text-warning-700">{openFollowUps.length}</div>
+                                        <div className="text-sm text-secondary-500">
+                                            {nextFollowUp ? (
+                                                <>Next due on <FormattedDate date={nextFollowUp.nextFollowUpDate} /></>
+                                            ) : (
+                                                'No pending follow-up date is scheduled'
+                                            )}
+                                        </div>
+                                    </div>
+                                    <div className="card-premium">
+                                        <div className="text-xs font-black uppercase tracking-widest text-success-500">Completed</div>
+                                        <div className="mt-2 text-3xl font-black text-success-700">{completedFollowUps.length}</div>
+                                        <div className="text-sm text-secondary-500">Finished follow-up loops and resolved items</div>
+                                    </div>
+                                </div>
+
+                                <div className="card-premium">
+                                    <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                                        <div>
+                                            <h3 className="text-lg font-bold text-secondary-900 mb-1 border-l-4 border-primary-500 pl-3">Communication Playbooks</h3>
+                                            <p className="text-sm text-secondary-500">
+                                                Choose a preset to prefill the communication form with the most common agency workflows.
+                                            </p>
+                                        </div>
+                                        <Link
+                                            href={`/dashboard/crm/invoices/new?customerId=${customer.id}&context=agency`}
+                                            className="btn btn-secondary bg-white"
+                                        >
+                                            Create Invoice From Agency
+                                        </Link>
+                                    </div>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3 mt-4">
+                                        {communicationPresets.map((preset) => (
+                                            <button
+                                                key={preset.id}
+                                                type="button"
+                                                onClick={() => setSelectedCommunicationPreset(preset.id)}
+                                                className={`rounded-2xl border p-4 text-left transition-all ${
+                                                    preset.id === selectedCommunicationPreset
+                                                        ? 'border-primary-300 bg-primary-50 shadow-sm'
+                                                        : 'border-secondary-200 bg-white hover:border-primary-200'
+                                                }`}
+                                            >
+                                                <div className="text-xs font-black uppercase tracking-widest text-primary-600">{preset.title}</div>
+                                                <div className="mt-2 text-sm text-secondary-600">{preset.helper}</div>
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+
                                 <div className="card-premium" ref={formRef}>
-                                    <h3 className="text-lg font-bold text-secondary-900 mb-4 border-l-4 border-primary-500 pl-3">Log New Communication</h3>
+                                    <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-4">
+                                        <div>
+                                            <h3 className="text-lg font-bold text-secondary-900 border-l-4 border-primary-500 pl-3">Log New Communication</h3>
+                                            <p className="text-sm text-secondary-500 mt-2">
+                                                Current preset: <span className="font-bold text-secondary-800">{activePreset.title}</span>
+                                            </p>
+                                        </div>
+                                        {activeFollowUpId && (
+                                            <span className="badge badge-warning">Replying to pending follow-up</span>
+                                        )}
+                                    </div>
                                     <CommunicationForm
+                                        key={`${selectedCommunicationPreset}-${activeFollowUpId || 'fresh'}`}
                                         customerId={customer.id}
                                         previousFollowUpId={activeFollowUpId}
+                                        defaults={activePreset.defaults}
+                                        helperText={activePreset.helper}
+                                        submitLabel="Save Agency Communication"
                                         onSuccess={() => setActiveFollowUpId(null)}
                                     />
                                 </div>
 
                                 <div className="space-y-4">
-                                    <h3 className="text-lg font-bold text-secondary-900 border-l-4 border-secondary-400 pl-3">History</h3>
-                                    {customer.communications?.length === 0 ? (
+                                    <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                                        <h3 className="text-lg font-bold text-secondary-900 border-l-4 border-secondary-400 pl-3">History</h3>
+                                        <div className="flex flex-wrap gap-2">
+                                            {[
+                                                { id: 'all', label: 'All' },
+                                                { id: 'open', label: 'Open Follow-ups' },
+                                                { id: 'completed', label: 'Completed' },
+                                            ].map((filter) => (
+                                                <button
+                                                    key={filter.id}
+                                                    type="button"
+                                                    onClick={() => setHistoryFilter(filter.id as any)}
+                                                    className={`px-3 py-1.5 rounded-full text-xs font-black uppercase tracking-wider transition-all ${
+                                                        historyFilter === filter.id
+                                                            ? 'bg-secondary-900 text-white'
+                                                            : 'bg-secondary-100 text-secondary-600 hover:bg-secondary-200'
+                                                    }`}
+                                                >
+                                                    {filter.label}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+                                    {filteredHistory.length === 0 ? (
                                         <p className="text-secondary-500 text-center py-8">No communication logs found.</p>
                                     ) : (
-                                        customer.communications?.map((log: any) => (
+                                        filteredHistory.map((log: any) => (
                                             <div key={log.id} className="card-premium">
                                                 <div className="flex justify-between items-start mb-3">
                                                     <div className="flex items-center space-x-3">
@@ -476,12 +629,32 @@ export default function AgencyDetailPage({ params }: { params: Promise<{ id: str
                                                             </p>
                                                         </div>
                                                     </div>
-                                                    {log.outcome && (
-                                                        <span className="badge badge-secondary text-[10px] uppercase">{log.outcome}</span>
-                                                    )}
+                                                    <div className="flex flex-col items-end gap-2">
+                                                        {log.outcome && (
+                                                            <span className="badge badge-secondary text-[10px] uppercase">{log.outcome}</span>
+                                                        )}
+                                                        <span className="text-[10px] font-black uppercase tracking-wider text-secondary-400">
+                                                            {log.type?.replace('_', ' ')} via {log.channel}
+                                                        </span>
+                                                    </div>
                                                 </div>
                                                 <div className="text-sm text-secondary-700 bg-secondary-50 p-3 rounded-lg border border-secondary-100 italic">
                                                     &quot;{log.notes}&quot;
+                                                </div>
+                                                <div className="mt-3 flex flex-wrap gap-2">
+                                                    {log.nextFollowUpDate && (
+                                                        <span className={`badge text-[10px] ${log.isFollowUpCompleted ? 'badge-success' : 'badge-warning'}`}>
+                                                            Next Follow-up: <FormattedDate date={log.nextFollowUpDate} />
+                                                        </span>
+                                                    )}
+                                                    {log.referenceId && (
+                                                        <span className="badge badge-secondary text-[10px] uppercase">Ref: {log.referenceId}</span>
+                                                    )}
+                                                    {log.checklist?.customerHealth && (
+                                                        <span className="badge badge-secondary text-[10px] uppercase">
+                                                            Health: {log.checklist.customerHealth}
+                                                        </span>
+                                                    )}
                                                 </div>
                                             </div>
                                         ))
@@ -510,7 +683,17 @@ export default function AgencyDetailPage({ params }: { params: Promise<{ id: str
                                             <tbody>
                                                 {(!customer.invoices || customer.invoices.length === 0) ? (
                                                     <tr>
-                                                        <td colSpan={6} className="text-center py-8 text-secondary-500">No invoices found for this agency.</td>
+                                                        <td colSpan={6} className="text-center py-8 text-secondary-500">
+                                                            <div className="flex flex-col items-center gap-3">
+                                                                <span>No invoices found for this agency.</span>
+                                                                <Link
+                                                                    href={`/dashboard/crm/invoices/new?customerId=${customer.id}&context=agency`}
+                                                                    className="btn btn-primary"
+                                                                >
+                                                                    Create Agency Invoice
+                                                                </Link>
+                                                            </div>
+                                                        </td>
                                                     </tr>
                                                 ) : (
                                                     customer.invoices
