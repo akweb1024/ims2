@@ -120,6 +120,7 @@ export default function CreateInvoiceModal({
 }: CreateInvoiceModalProps) {
   const searchParams = useSearchParams();
   const prefilledCustomerId = searchParams.get("customerId");
+  const prefilledInstitutionId = searchParams.get("institutionId");
   const invoiceContext = searchParams.get("context");
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
@@ -188,6 +189,7 @@ export default function CreateInvoiceModal({
   const [creatingCustomerLoading, setCreatingCustomerLoading] = useState(false);
   const [isFetchingPincode, setIsFetchingPincode] = useState(false);
   const [institutions, setInstitutions] = useState<any[]>([]);
+  const [prefilledInstitution, setPrefilledInstitution] = useState<any>(null);
 
   const handleTaxTypeChange = (type: "DOMESTIC" | "INTERNATIONAL") => {
     setTaxType(type);
@@ -506,7 +508,11 @@ export default function CreateInvoiceModal({
   useEffect(() => {
     const searchCustomers = async () => {
       if (customerSearch.length < 2) {
-        setCustomers([]);
+        setCustomers(
+          prefilledInstitution?.linkedPaidCustomers
+            ? prefilledInstitution.linkedPaidCustomers
+            : [],
+        );
         return;
       }
       setSearching(true);
@@ -531,7 +537,7 @@ export default function CreateInvoiceModal({
 
     const timer = setTimeout(searchCustomers, 500);
     return () => clearTimeout(timer);
-  }, [customerSearch]);
+  }, [customerSearch, prefilledInstitution]);
 
   useEffect(() => {
     const fetchBrands = async () => {
@@ -607,6 +613,39 @@ export default function CreateInvoiceModal({
 
     fetchPrefilledCustomer();
   }, [isOpen, editId, prefilledCustomerId]);
+
+  useEffect(() => {
+    const fetchPrefilledInstitution = async () => {
+      if (!isOpen || editId || !prefilledInstitutionId || prefilledCustomerId) {
+        return;
+      }
+      try {
+        const token = localStorage.getItem("token");
+        const res = await fetch(`/api/institutions?id=${prefilledInstitutionId}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!res.ok) return;
+        const data = await res.json();
+        setPrefilledInstitution(data);
+        setCustomers(data.linkedPaidCustomers || []);
+        setNewCustomerForm((prev) => ({
+          ...prev,
+          institutionId: data.id,
+          organizationName: prev.organizationName || data.name || "",
+          billingCity: prev.billingCity || data.city || "",
+          billingState: prev.billingState || data.state || "",
+          billingCountry: prev.billingCountry || data.country || "India",
+          shippingCity: prev.shippingCity || data.city || "",
+          shippingState: prev.shippingState || data.state || "",
+          shippingCountry: prev.shippingCountry || data.country || "India",
+        }));
+      } catch (err) {
+        console.error("Failed to prefill institution", err);
+      }
+    };
+
+    fetchPrefilledInstitution();
+  }, [isOpen, editId, prefilledInstitutionId, prefilledCustomerId]);
 
   // Populate data for editing
   useEffect(() => {
@@ -1655,6 +1694,15 @@ export default function CreateInvoiceModal({
                 </form>
               ) : (
                 <>
+                  {invoiceContext === "institution" && prefilledInstitution && (
+                    <div className="rounded-2xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-800">
+                      You are creating an invoice from the institution workspace for{" "}
+                      <span className="font-bold">{prefilledInstitution.name}</span>.
+                      {prefilledInstitution.linkedPaidCustomers?.length
+                        ? " Select a linked customer below or create a new customer already mapped to this institution."
+                        : " Create a new customer profile already mapped to this institution to continue."}
+                    </div>
+                  )}
                   <div className="relative">
                     <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">
                       <Search size={20} />
@@ -1670,6 +1718,18 @@ export default function CreateInvoiceModal({
                   </div>
 
                   <div className="space-y-3 max-h-80 overflow-y-auto pr-2 custom-scrollbar">
+                    {!customerSearch &&
+                      invoiceContext === "institution" &&
+                      prefilledInstitution?.linkedPaidCustomers?.length > 0 && (
+                        <div className="rounded-2xl border border-sky-100 bg-sky-50/70 p-4">
+                          <div className="text-[10px] font-black uppercase tracking-widest text-sky-600">
+                            Linked Customers
+                          </div>
+                          <p className="mt-1 text-sm text-sky-800">
+                            Quick-pick a paid customer already related to this institution.
+                          </p>
+                        </div>
+                      )}
                     {customers.map((c) => (
                       <button
                         key={c.id}
@@ -1737,6 +1797,12 @@ export default function CreateInvoiceModal({
                 <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
                   You are creating an invoice directly from the agency workspace for{" "}
                   <span className="font-bold">{selectedCustomer.name}</span>.
+                </div>
+              )}
+              {invoiceContext === "institution" && prefilledInstitution && (
+                <div className="rounded-2xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-800">
+                  Institution in focus: <span className="font-bold">{prefilledInstitution.name}</span>
+                  {selectedCustomer ? ` for ${selectedCustomer.name}.` : "."}
                 </div>
               )}
               <div className="rounded-2xl border border-primary-100 bg-primary-50/70 p-4">
