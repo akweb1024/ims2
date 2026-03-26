@@ -174,15 +174,20 @@ export default function LeadsPage() {
     return labels[status] || status?.replaceAll("_", " ");
   };
 
+  const getEmployeeLabel = (emp: any) => {
+    const raw = (emp?.name || emp?.email || "").toString().trim();
+    return raw ? raw.toUpperCase() : "UNNAMED USER";
+  };
+
   return (
     <CRMClientLayout>
       <CRMPageShell
-        title="Prospects"
+        title="Lead"
         subtitle="Track people or companies you may sell to, assign follow-up, and move qualified prospects into opportunities."
         icon={<UserPlus className="w-5 h-5" />}
         breadcrumb={[
           { label: "CRM", href: "/dashboard/crm" },
-          { label: "Prospects" },
+          { label: "Lead" },
         ]}
         actions={
           <div className="flex items-center gap-3">
@@ -280,11 +285,11 @@ export default function LeadsPage() {
                 className="h-12 px-4 bg-secondary-50 border border-secondary-100 rounded-xl text-[10px] font-black uppercase tracking-widest text-secondary-600 focus:ring-2 focus:ring-primary-500 outline-none min-w-[180px]"
               >
                   <option value="">All owners</option>
-                {employees.map((emp) => (
-                  <option key={emp.id} value={emp.id}>
-                    {emp.name || emp.email}
-                  </option>
-                ))}
+                    {employees.map((emp) => (
+                      <option key={emp.id} value={emp.id}>
+                        {getEmployeeLabel(emp)}
+                      </option>
+                    ))}
               </select>
               <CRMSearchInput
                 value={search}
@@ -524,7 +529,7 @@ export default function LeadsPage() {
                         value={emp.id}
                         className="bg-secondary-900 text-white"
                       >
-                        {emp.name.toUpperCase()}
+                        {getEmployeeLabel(emp)}
                       </option>
                     ))}
                   </select>
@@ -584,7 +589,7 @@ export default function LeadsPage() {
                   <option value="">Select owner</option>
                   {employees.map((emp) => (
                     <option key={emp.id} value={emp.id}>
-                      {emp.name || emp.email} ({emp.role})
+                      {getEmployeeLabel(emp)} ({emp.role})
                     </option>
                   ))}
                 </select>

@@ -250,6 +250,63 @@ export default function InstitutionDetailPage() {
         </div>
     );
 
+    const renderOverviewSection = () => (
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+            <div className="xl:col-span-2 space-y-6">
+                <div className="crm-card p-6">
+                    <h2 className="text-lg font-black text-secondary-900 mb-4 border-l-4 border-primary-500 pl-3">Institution Snapshot</h2>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="rounded-2xl border border-secondary-100 bg-secondary-50 p-4">
+                            <div className="text-[10px] font-black uppercase tracking-[0.18em] text-secondary-400">Affiliation</div>
+                            <div className="mt-2 text-lg font-black text-secondary-900">{institution.affiliationStatus?.replace(/_/g, ' ') || 'SELF AFFILIATED'}</div>
+                            <div className="mt-1 text-xs text-secondary-500">
+                                {institution.university ? `Linked to ${institution.university.name}` : 'No parent university linked.'}
+                            </div>
+                        </div>
+                        <div className="rounded-2xl border border-secondary-100 bg-secondary-50 p-4">
+                            <div className="text-[10px] font-black uppercase tracking-[0.18em] text-secondary-400">Network</div>
+                            <div className="mt-2 text-lg font-black text-secondary-900">{institution.analytics?.affiliatedInstitutionCount || 0} Institutions</div>
+                            <div className="mt-1 text-xs text-secondary-500">
+                                Revenue with network: ₹{Math.round(institution.analytics?.revenueWithNetwork || 0).toLocaleString()}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="crm-card p-6">
+                    <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between mb-4">
+                        <h2 className="text-lg font-black text-secondary-900 border-l-4 border-primary-500 pl-3">Paid Customer Preview</h2>
+                        <Link href={createInvoiceHref} className="btn btn-primary">
+                            Create Invoice For Institution
+                        </Link>
+                    </div>
+                    <div className="space-y-3">
+                        {institution.linkedPaidCustomers?.length ? institution.linkedPaidCustomers.slice(0, 5).map((customer: any) => (
+                            <div key={customer.id} className="rounded-2xl border border-secondary-100 bg-secondary-50 p-4 flex items-center justify-between gap-4">
+                                <div>
+                                    <div className="font-black text-secondary-900">{customer.name}</div>
+                                    <div className="text-sm text-secondary-500">{customer.organizationName || customer.primaryEmail}</div>
+                                </div>
+                                <div className="text-right">
+                                    <div className="text-[10px] font-black uppercase tracking-[0.18em] text-secondary-400">Revenue</div>
+                                    <div className="mt-1 font-black text-secondary-900">₹{Math.round(customer.revenue || 0).toLocaleString()}</div>
+                                </div>
+                            </div>
+                        )) : (
+                            <div className="rounded-2xl border border-dashed border-secondary-200 bg-secondary-50 p-4 text-sm text-secondary-500">
+                                No paid customers are linked to this institution yet.
+                            </div>
+                        )}
+                    </div>
+                </div>
+            </div>
+
+            <div className="space-y-6">
+                {renderProfileSidebar()}
+            </div>
+        </div>
+    );
+
     const renderProfileSidebar = () => (
         <>
             <div className="crm-card p-6">
@@ -390,8 +447,8 @@ export default function InstitutionDetailPage() {
                         </div>
                     </div>
 
-                    <div className="crm-card p-3">
-                        <div className="grid grid-cols-2 gap-3 xl:grid-cols-5">
+                    <div className="border-b border-secondary-200">
+                        <nav className="flex space-x-6 overflow-x-auto px-2">
                             {tabs.map((tab) => {
                                 const isActive = activeTab === tab.id;
                                 return (
@@ -399,48 +456,55 @@ export default function InstitutionDetailPage() {
                                         key={tab.id}
                                         type="button"
                                         onClick={() => setActiveTab(tab.id)}
-                                        className={`rounded-2xl border px-4 py-3 text-left transition-all ${
+                                        className={`py-4 px-1 border-b-2 font-medium text-sm transition-all flex items-center space-x-2 whitespace-nowrap ${
                                             isActive
-                                                ? 'border-primary-200 bg-primary-50 shadow-sm'
-                                                : 'border-secondary-100 bg-white hover:border-primary-100 hover:bg-primary-50/40'
+                                                ? 'border-primary-600 text-primary-600'
+                                                : 'border-transparent text-secondary-500 hover:text-secondary-700 hover:border-secondary-300'
                                         }`}
                                     >
-                                        <div className="text-[10px] font-black uppercase tracking-[0.18em] text-secondary-400">{tab.icon} {tab.name}</div>
-                                        <div className={`mt-1 text-sm font-black ${isActive ? 'text-primary-700' : 'text-secondary-900'}`}>{tab.name}</div>
-                                        <div className="mt-1 text-xs text-secondary-500">{tab.hint}</div>
+                                        <span>{tab.icon}</span>
+                                        <span>{tab.name}</span>
                                     </button>
                                 );
                             })}
-                        </div>
+                        </nav>
                     </div>
 
-                    <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-                        <div className="xl:col-span-2 space-y-6">
-                            {(activeTab === 'overview' || activeTab === 'affiliations') && renderAffiliationSection()}
-                            {(activeTab === 'overview' || activeTab === 'customers') && renderCustomersSection()}
-                            {(activeTab === 'overview' || activeTab === 'activity') && (
-                                <InstitutionActivityDashboard institutionId={institution.id} />
-                            )}
-                        </div>
+                    {activeTab === 'overview' && renderOverviewSection()}
 
-                        <div className="space-y-6">
-                            {(activeTab === 'overview' || activeTab === 'profile') && renderProfileSidebar()}
+                    {activeTab === 'affiliations' && renderAffiliationSection()}
 
-                            {activeTab === 'customers' && (
+                    {activeTab === 'customers' && (
+                        <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+                            <div className="xl:col-span-2">
+                                {renderCustomersSection()}
+                            </div>
+                            <div className="space-y-6">
                                 <div className="crm-card p-6">
                                     <h2 className="text-lg font-black text-secondary-900 mb-4 border-l-4 border-primary-500 pl-3">Commercial Actions</h2>
                                     <div className="space-y-4">
                                         <div className="rounded-2xl border border-secondary-100 bg-secondary-50 p-4 text-sm text-secondary-600">
-                                            Use the institution context to create an invoice for an existing linked customer or initialize a new customer already mapped to this institution.
+                                            Create invoices directly from this institution context for linked customers.
                                         </div>
                                         <Link href={createInvoiceHref} className="btn btn-primary w-full justify-center">
                                             Create Invoice
                                         </Link>
                                     </div>
                                 </div>
-                            )}
+                                {renderProfileSidebar()}
+                            </div>
                         </div>
-                    </div>
+                    )}
+
+                    {activeTab === 'activity' && (
+                        <InstitutionActivityDashboard institutionId={institution.id} />
+                    )}
+
+                    {activeTab === 'profile' && (
+                        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+                            {renderProfileSidebar()}
+                        </div>
+                    )}
                 </div>
             </CRMPageShell>
         </DashboardLayout>

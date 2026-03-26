@@ -18,7 +18,7 @@
     "prisma:migrate": "prisma migrate deploy",
     "prisma:migrate:dev": "prisma migrate dev",
     "seed": "tsx prisma/seed.ts",
-    "test": "playwright test e2e/auth.spec.ts",
+    "test": "playwright test e2e/auth.spec.ts e2e/crm-invoice-flows.spec.ts e2e/conference-followups.spec.ts",
     "test:e2e": "playwright test",
     "docker:build": "docker build -t stm-customer:latest .",
     "docker:up": "docker-compose up -d",

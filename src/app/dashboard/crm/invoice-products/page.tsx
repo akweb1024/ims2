@@ -839,9 +839,19 @@ export default function InvoiceProductsPage() {
         });
         const data = await res.json();
         if (res.ok) {
-          alert(
-            data.message || `Successfully imported ${data.count} products.`,
-          );
+          if (Array.isArray(data.failedRows) && data.failedRows.length > 0) {
+            const preview = data.failedRows
+              .slice(0, 8)
+              .map((row: any) => `Line ${row.row}: ${row.error}`)
+              .join("\n");
+            alert(
+              `${data.message || "Import completed with errors."}\n\n${preview}${data.failedRows.length > 8 ? "\n..." : ""}`,
+            );
+          } else {
+            alert(
+              data.message || `Successfully imported ${data.count} products.`,
+            );
+          }
           fetchProducts();
         } else {
           alert(data.error || "Failed to import products.");
@@ -858,8 +868,8 @@ export default function InvoiceProductsPage() {
   return (
     <DashboardLayout userRole={userRole}>
       <CRMPageShell
-        title="Invoice Product Catalogue"
-        subtitle="Manage billable products, courses, and tactical services across dual-currency domains."
+        title="Invoice Products"
+        subtitle="Manage billable products, categories, pricing, and import/export from one place."
         breadcrumb={[
           { label: "CRM", href: "/dashboard/crm" },
           { label: "Products" },
@@ -869,7 +879,7 @@ export default function InvoiceProductsPage() {
           <div className="flex items-center gap-3">
             <div className="hidden lg:flex items-center gap-3 bg-white/40 backdrop-blur-md px-4 py-2 rounded-2xl border border-secondary-200">
               <span className="text-[9px] font-black uppercase tracking-widest text-secondary-400">
-                USD Protocol
+                FX Rate
               </span>
               <div className="flex items-center gap-1.5 font-black text-xs text-primary-600">
                 <span>1 USD = ₹</span>
@@ -928,7 +938,7 @@ export default function InvoiceProductsPage() {
         {/* Product Overview */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           <CRMStatCard
-            label="Total Assets"
+            label="Total Products"
             value={total}
             icon={<Layers size={22} />}
             accent="bg-primary-950 text-white shadow-primary-100"
@@ -939,7 +949,7 @@ export default function InvoiceProductsPage() {
             }}
           />
           <CRMStatCard
-            label="Active Status"
+            label="Active Products"
             value={products.filter((p) => p.isActive).length}
             icon={<ShieldCheck size={22} />}
             accent="bg-emerald-900 text-white shadow-emerald-100"
@@ -953,7 +963,7 @@ export default function InvoiceProductsPage() {
             trend={{ value: "Promotion", label: "ready", isPositive: true }}
           />
           <CRMStatCard
-            label="Asset Valuation"
+            label="Currency Mode"
             value="Dual-FX"
             icon={<DollarSign size={22} />}
             accent="bg-indigo-900 text-white shadow-indigo-100"
@@ -961,8 +971,8 @@ export default function InvoiceProductsPage() {
           />
         </div>
 
-        {/* Tactical FX Engine */}
-        <div className="mt-8 bg-secondary-950 p-8 rounded-[3rem] border border-white/5 shadow-2xl relative overflow-hidden group">
+        {/* Currency Converter */}
+        <div className="mt-8 bg-secondary-950 p-6 rounded-[2rem] border border-white/5 shadow-xl relative overflow-hidden group">
           <div className="absolute right-0 top-0 w-1/3 h-full bg-gradient-to-l from-primary-500/10 to-transparent pointer-events-none" />
           <div className="flex flex-col lg:flex-row items-center justify-between gap-10">
             <div className="flex items-center gap-6">
@@ -970,11 +980,11 @@ export default function InvoiceProductsPage() {
                 <Calculator size={32} />
               </div>
               <div>
-                <h3 className="text-xl font-black text-white uppercase tracking-tight italic leading-none">
-                  Valuation Parity Engine
+                <h3 className="text-xl font-black text-white tracking-tight leading-none">
+                  Currency Converter
                 </h3>
-                <p className="text-[9px] font-black text-primary-400 uppercase tracking-[0.4em] mt-2">
-                  Real-time Cross-Domain Currency Translation
+                <p className="text-[10px] font-bold text-primary-300 mt-2">
+                  Convert INR and USD values using your working rate.
                 </p>
               </div>
             </div>
@@ -987,7 +997,7 @@ export default function InvoiceProductsPage() {
                 <input
                   type="number"
                   className="w-full bg-white/5 border border-white/10 h-16 rounded-[1.2rem] pl-10 pr-6 text-white font-black text-lg focus:outline-none focus:bg-white/10 focus:ring-primary-500/20 transition-all placeholder-white/20"
-                  placeholder="Input amount..."
+                  placeholder="Enter amount"
                   value={fxInput}
                   onChange={(e) => setFxInput(e.target.value)}
                 />
@@ -1013,13 +1023,13 @@ export default function InvoiceProductsPage() {
                     </p>
                     <p className="text-[8px] font-black text-white/40 uppercase tracking-widest mt-0.5">
                       {fxCurrency === "INR"
-                        ? "USD PROJECTION"
-                        : "INR PROJECTION"}
+                        ? "USD value"
+                        : "INR value"}
                     </p>
                   </>
                 ) : (
-                  <p className="text-white/20 font-black text-lg tracking-widest uppercase">
-                    Parity Null
+                  <p className="text-white/30 font-black text-base tracking-wide">
+                    No value yet
                   </p>
                 )}
               </div>
@@ -1028,7 +1038,7 @@ export default function InvoiceProductsPage() {
         </div>
 
         {/* Operations bar */}
-        <div className="mt-12 space-y-8">
+        <div className="mt-8 space-y-6">
           <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-6 border-b border-secondary-100 pb-8">
             <div className="flex flex-wrap gap-2">
               <button
@@ -1073,7 +1083,7 @@ export default function InvoiceProductsPage() {
                 />
                 <input
                   className="h-12 w-full sm:w-[320px] bg-secondary-50 border-secondary-100 rounded-2xl pl-12 pr-6 text-sm font-bold text-secondary-950 placeholder-secondary-300 focus:bg-white focus:ring-primary-500/20 transition-all border focus:border-primary-100"
-                  placeholder="Search identity node..."
+                  placeholder="Search by name, SKU, or domain..."
                   value={q}
                   onChange={(e) => {
                     setQ(e.target.value);
@@ -1124,19 +1134,19 @@ export default function InvoiceProductsPage() {
                   onClick={() => handleBulk("ACTIVATE")}
                   className="px-5 py-2 rounded-xl bg-white text-emerald-600 border border-emerald-100 text-[9px] font-black uppercase tracking-widest hover:bg-emerald-50 transition-all shadow-sm"
                 >
-                  Protocol: Activate
+                  Activate
                 </button>
                 <button
                   onClick={() => handleBulk("FEATURE")}
                   className="px-5 py-2 rounded-xl bg-white text-amber-600 border border-amber-100 text-[9px] font-black uppercase tracking-widest hover:bg-amber-50 transition-all shadow-sm"
                 >
-                  Flag: Featured
+                  Mark Featured
                 </button>
                 <button
                   onClick={() => handleBulk("DELETE")}
                   className="px-5 py-2 rounded-xl bg-white text-danger-600 border border-danger-100 text-[9px] font-black uppercase tracking-widest hover:bg-danger-50 transition-all shadow-sm"
                 >
-                  Operation: Purge
+                  Delete Selected
                 </button>
               </div>
             </div>
@@ -1159,8 +1169,8 @@ export default function InvoiceProductsPage() {
                 <h3 className="text-xl font-black text-secondary-900 uppercase tracking-tight">
                   No products found
                 </h3>
-                <p className="text-[10px] font-black text-secondary-400 uppercase tracking-[0.3em] mt-3">
-                  No asset parameters found in the current sector mapping.
+                <p className="text-sm font-medium text-secondary-500 mt-3">
+                  Try clearing filters or add a new product.
                 </p>
               </div>
             ) : (
@@ -1179,23 +1189,23 @@ export default function InvoiceProductsPage() {
                           className="w-5 h-5 rounded-lg border-secondary-300 text-primary-600 focus:ring-primary-500 cursor-pointer"
                         />
                       </th>
-                      <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-secondary-400 italic">
+                      <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-secondary-400">
                         Product
                       </th>
-                      <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-secondary-400 italic">
-                        Sub-Sector
+                      <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-secondary-400">
+                        Category
                       </th>
-                      <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-secondary-400 italic text-right">
-                        INR Valuation
+                      <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-secondary-400 text-right">
+                        INR Price
                       </th>
-                      <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-secondary-400 italic text-right">
-                        USD Valuation
+                      <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-secondary-400 text-right">
+                        USD Price
                       </th>
-                      <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-secondary-400 italic text-center">
-                        Protocol Status
+                      <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-secondary-400 text-center">
+                        Status
                       </th>
-                      <th className="px-8 py-5 text-[10px] font-black uppercase tracking-widest text-secondary-400 italic text-right">
-                        Operations
+                      <th className="px-8 py-5 text-[10px] font-black uppercase tracking-widest text-secondary-400 text-right">
+                        Actions
                       </th>
                     </tr>
                   </thead>
@@ -1280,7 +1290,7 @@ export default function InvoiceProductsPage() {
                                   : FMT_INR(p.priceINR || 0)}
                               </span>
                               <p className="text-[8px] font-black text-secondary-400 uppercase tracking-widest mt-1">
-                                DOMESTIC COORDINATES
+                                INR
                               </p>
                             </div>
                           </td>
@@ -1318,7 +1328,7 @@ export default function InvoiceProductsPage() {
                                   : FMT_USD(p.priceUSD || 0)}
                               </span>
                               <p className="text-[8px] font-black text-indigo-300 uppercase tracking-widest mt-1">
-                                GLOBAL PARITY
+                                USD
                               </p>
                             </div>
                           </td>
@@ -1328,7 +1338,7 @@ export default function InvoiceProductsPage() {
                               className="text-[9px] font-black border-none uppercase tracking-[0.2em] italic"
                               dot
                             >
-                              {p.isActive ? "ACTIVE_PROT" : "STANDBY"}
+                              {p.isActive ? "Active" : "Inactive"}
                             </CRMBadge>
                           </td>
                           <td className="px-8 py-6 text-right">
@@ -1359,10 +1369,8 @@ export default function InvoiceProductsPage() {
             {totalPages > 1 && (
               <div className="p-8 border-t border-secondary-100 flex items-center justify-between bg-secondary-50/30">
                 <p className="text-[10px] font-black text-secondary-400 uppercase tracking-[0.2em]">
-                  Mapping {(page - 1) * pageSize + 1}–
-                  {Math.min(page * pageSize, total)}{" "}
-                  <span className="mx-1 text-secondary-200">/</span> Total
-                  Total Products: {total}
+                  Showing {(page - 1) * pageSize + 1}–
+                  {Math.min(page * pageSize, total)} of {total} products
                 </p>
                 <div className="flex items-center gap-4">
                   <button
@@ -1372,9 +1380,9 @@ export default function InvoiceProductsPage() {
                   >
                     <ChevronRight size={18} className="rotate-180" />
                   </button>
-                  <span className="text-xs font-black text-secondary-900 uppercase tracking-widest italic">
-                    Sector {page}{" "}
-                    <span className="mx-2 text-secondary-200">OF</span>{" "}
+                  <span className="text-xs font-black text-secondary-900 uppercase tracking-widest">
+                    Page {page}{" "}
+                    <span className="mx-2 text-secondary-200">of</span>{" "}
                     {totalPages}
                   </span>
                   <button

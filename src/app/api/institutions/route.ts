@@ -2,6 +2,12 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getAuthenticatedUser } from '@/lib/auth-legacy';
 
+const buildAffiliationStatus = (institution: any) => {
+    if (institution.type === 'UNIVERSITY') return 'UNIVERSITY';
+    if (institution.universityId) return 'AFFILIATED';
+    return 'SELF_AFFILIATED';
+};
+
 export async function GET(req: NextRequest) {
     try {
         const user = await getAuthenticatedUser();
@@ -28,6 +34,35 @@ export async function GET(req: NextRequest) {
                             items: true
                         }
                     },
+                    university: {
+                        select: {
+                            id: true,
+                            name: true,
+                            code: true,
+                            type: true,
+                            city: true,
+                            state: true
+                        }
+                    },
+                    affiliates: {
+                        include: {
+                            _count: {
+                                select: {
+                                    customers: true,
+                                    subscriptions: true
+                                }
+                            }
+                        },
+                        orderBy: { name: 'asc' }
+                    },
+                    agency: {
+                        select: {
+                            id: true,
+                            name: true,
+                            organizationName: true,
+                            primaryEmail: true
+                        }
+                    },
                     communications: {
                         orderBy: { date: 'desc' },
                         take: 10
@@ -46,7 +81,55 @@ export async function GET(req: NextRequest) {
                 return NextResponse.json({ error: 'Institution not found' }, { status: 404 });
             }
 
-            return NextResponse.json(institution);
+            const paidCustomerIds = new Set(
+                institution.subscriptions
+                    .map((subscription) => subscription.customerProfileId)
+                    .filter(Boolean)
+            );
+
+            const linkedPaidCustomers = institution.customers
+                .filter((customer) => paidCustomerIds.has(customer.id))
+                .map((customer) => {
+                    const customerSubscriptions = institution.subscriptions.filter((subscription) => subscription.customerProfileId === customer.id);
+                    return {
+                        id: customer.id,
+                        name: customer.name,
+                        designation: customer.designation,
+                        primaryEmail: customer.primaryEmail,
+                        organizationName: customer.organizationName,
+                        subscriptionCount: customerSubscriptions.length,
+                        revenue: customerSubscriptions.reduce((sum, subscription) => sum + (subscription.total || 0), 0),
+                        latestStatus: customerSubscriptions[0]?.status || null
+                    };
+                })
+                .sort((a, b) => b.revenue - a.revenue);
+
+            const affiliateIds = institution.affiliates.map((affiliate) => affiliate.id);
+            const affiliateSubscriptions = affiliateIds.length
+                ? await prisma.subscription.findMany({
+                    where: { institutionId: { in: affiliateIds } },
+                    select: { total: true, customerProfileId: true }
+                })
+                : [];
+            const affiliateRevenue = affiliateSubscriptions.reduce((sum, subscription) => sum + (subscription.total || 0), 0);
+            const affiliatePaidCustomers = new Set(
+                affiliateSubscriptions.map((subscription) => subscription.customerProfileId).filter(Boolean)
+            );
+
+            return NextResponse.json({
+                ...institution,
+                affiliationStatus: buildAffiliationStatus(institution),
+                analytics: {
+                    linkedCustomerCount: institution.customers.length,
+                    paidCustomerCount: paidCustomerIds.size,
+                    directRevenue: institution.subscriptions.reduce((sum, subscription) => sum + (subscription.total || 0), 0),
+                    affiliatedInstitutionCount: institution.affiliates.length,
+                    affiliatedPaidCustomerCount: affiliatePaidCustomers.size,
+                    affiliateRevenue,
+                    revenueWithNetwork: institution.subscriptions.reduce((sum, subscription) => sum + (subscription.total || 0), 0) + affiliateRevenue
+                },
+                linkedPaidCustomers
+            });
         }
 
         // List all institutions with pagination and basic stats
@@ -54,6 +137,7 @@ export async function GET(req: NextRequest) {
         const limit = parseInt(searchParams.get('limit') || '10');
         const search = searchParams.get('search') || '';
         const type = searchParams.get('type');
+        const affiliation = searchParams.get('affiliation');
         const state = searchParams.get('state');
         const city = searchParams.get('city');
         const assignedTo = searchParams.get('assignedTo');
@@ -65,6 +149,9 @@ export async function GET(req: NextRequest) {
         }
 
         if (type && type !== 'ALL') where.type = type;
+        if (affiliation === 'UNIVERSITY') where.type = 'UNIVERSITY';
+        if (affiliation === 'AFFILIATED') where.universityId = { not: null };
+        if (affiliation === 'SELF_AFFILIATED') where.universityId = null;
         if (state) where.state = { contains: state, mode: 'insensitive' };
         if (city) where.city = { contains: city, mode: 'insensitive' };
         if (assignedTo) where.assignedToUserId = assignedTo;
@@ -98,11 +185,20 @@ export async function GET(req: NextRequest) {
                             organizationName: true
                         }
                     },
+                    university: {
+                        select: {
+                            id: true,
+                            name: true,
+                            code: true,
+                            type: true
+                        }
+                    },
                     _count: {
                         select: {
                             customers: true,
                             subscriptions: true,
-                            communications: true
+                            communications: true,
+                            affiliates: true
                         }
                     }
                 },
@@ -111,8 +207,47 @@ export async function GET(req: NextRequest) {
             prisma.institution.count({ where })
         ]);
 
+        const institutionIds = institutions.map((institution) => institution.id);
+        const subscriptions = institutionIds.length
+            ? await prisma.subscription.findMany({
+                where: { institutionId: { in: institutionIds } },
+                select: {
+                    institutionId: true,
+                    customerProfileId: true,
+                    total: true
+                }
+            })
+            : [];
+
+        const analyticsMap = subscriptions.reduce((acc: Record<string, { revenue: number; paidCustomers: Set<string> }>, subscription) => {
+            if (!subscription.institutionId) return acc;
+            acc[subscription.institutionId] = acc[subscription.institutionId] || {
+                revenue: 0,
+                paidCustomers: new Set<string>()
+            };
+            acc[subscription.institutionId].revenue += subscription.total || 0;
+            if (subscription.customerProfileId) {
+                acc[subscription.institutionId].paidCustomers.add(subscription.customerProfileId);
+            }
+            return acc;
+        }, {});
+
+        const peerAverageRevenue = institutions.length
+            ? institutions.reduce((sum, institution) => sum + (analyticsMap[institution.id]?.revenue || 0), 0) / institutions.length
+            : 0;
+
+        const enrichedInstitutions = institutions.map((institution) => ({
+            ...institution,
+            affiliationStatus: buildAffiliationStatus(institution),
+            analytics: {
+                paidCustomerCount: analyticsMap[institution.id]?.paidCustomers.size || 0,
+                totalRevenue: analyticsMap[institution.id]?.revenue || 0,
+                revenueVsPeerAverage: (analyticsMap[institution.id]?.revenue || 0) - peerAverageRevenue
+            }
+        }));
+
         return NextResponse.json({
-            data: institutions,
+            data: enrichedInstitutions,
             pagination: {
                 page,
                 limit,
@@ -159,7 +294,8 @@ export async function POST(req: NextRequest) {
             notes,
             logo,
             assignedToUserId,
-            agencyId
+            agencyId,
+            universityId
         } = body;
 
         const institution = await prisma.institution.create({
@@ -189,6 +325,7 @@ export async function POST(req: NextRequest) {
                 logo,
                 assignedToUserId: assignedToUserId || null, // Add ownership to executive
                 agencyId: agencyId || null,
+                universityId: universityId || null,
                 companyId: user.companyId
             }
         });
@@ -220,6 +357,8 @@ export async function PATCH(req: NextRequest) {
         if (updateData.totalFaculty) updateData.totalFaculty = parseInt(updateData.totalFaculty);
         if (updateData.totalStaff) updateData.totalStaff = parseInt(updateData.totalStaff);
         if (updateData.libraryBudget) updateData.libraryBudget = parseFloat(updateData.libraryBudget);
+        if (updateData.universityId === '') updateData.universityId = null;
+        if (updateData.agencyId === '') updateData.agencyId = null;
 
         const institution = await prisma.institution.update({
             where: { id },

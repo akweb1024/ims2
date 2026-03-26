@@ -20,6 +20,7 @@ export default function InstitutionList({ userRole }: { userRole: string }) {
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [filterType, setFilterType] = useState('ALL');
+    const [affiliationFilter, setAffiliationFilter] = useState('ALL');
     const [stateFilter, setStateFilter] = useState('');
     const [cityFilter, setCityFilter] = useState('');
     const [pagination, setPagination] = useState({
@@ -58,6 +59,7 @@ export default function InstitutionList({ userRole }: { userRole: string }) {
             let url = `/api/institutions?page=${page}&limit=${pagination.limit}`;
             if (searchTerm) url += `&search=${encodeURIComponent(searchTerm)}`;
             if (filterType !== 'ALL') url += `&type=${filterType}`;
+            if (affiliationFilter !== 'ALL') url += `&affiliation=${affiliationFilter}`;
             if (stateFilter) url += `&state=${encodeURIComponent(stateFilter)}`;
             if (cityFilter) url += `&city=${encodeURIComponent(cityFilter)}`;
 
@@ -78,7 +80,7 @@ export default function InstitutionList({ userRole }: { userRole: string }) {
         } finally {
             setLoading(false);
         }
-    }, [pagination.limit, searchTerm, filterType, stateFilter, cityFilter]);
+    }, [pagination.limit, searchTerm, filterType, affiliationFilter, stateFilter, cityFilter]);
 
     useEffect(() => {
         const delayDebounceFn = setTimeout(() => {
@@ -197,25 +199,25 @@ export default function InstitutionList({ userRole }: { userRole: string }) {
                     trend={{ value: 'Operational', label: 'status', isPositive: true }}
                 />
                 <CRMStatCard
-                    label="Learner Density"
-                    value={institutions.reduce((sum, inst) => sum + (inst._count?.customers || 0), 0)}
+                    label="Paid Customers"
+                    value={institutions.reduce((sum, inst) => sum + (inst.analytics?.paidCustomerCount || 0), 0)}
                     icon={<Users className="w-5 h-5" />}
                     accent="bg-emerald-900 shadow-emerald-100"
-                    trend={{ value: '+8.4%', label: 'vs avg', isPositive: true }}
+                    trend={{ value: 'Live', label: 'billing', isPositive: true }}
                 />
                 <CRMStatCard
-                    label="Unit Subscriptions"
-                    value={institutions.reduce((sum, inst) => sum + (inst._count?.subscriptions || 0), 0)}
+                    label="Affiliated Nodes"
+                    value={institutions.reduce((sum, inst) => sum + (inst._count?.affiliates || 0), 0)}
                     icon={<BookOpen className="w-5 h-5" />}
                     accent="bg-indigo-900 shadow-indigo-100"
-                    trend={{ value: 'Active', label: 'contract', isPositive: true }}
+                    trend={{ value: 'University', label: 'network', isPositive: true }}
                 />
                 <CRMStatCard
-                    label="Engagement Map"
-                    value="92%"
-                    icon={<Activity className="w-5 h-5" />}
+                    label="Revenue Matrix"
+                    value={`₹${Math.round(institutions.reduce((sum, inst) => sum + (inst.analytics?.totalRevenue || 0), 0)).toLocaleString()}`}
+                    icon={<TrendingUp className="w-5 h-5" />}
                     accent="bg-purple-900 shadow-purple-100"
-                    trend={{ value: 'Optimal', label: 'rating', isPositive: true }}
+                    trend={{ value: 'Live', label: 'comparison', isPositive: true }}
                 />
             </div>
 
@@ -258,6 +260,23 @@ export default function InstitutionList({ userRole }: { userRole: string }) {
                             {institutionTypes.map(type => (
                                 <option key={type} value={type}>{type.replace('_', ' ')}</option>
                             ))}
+                         </select>
+                    </div>
+
+                    <div className="flex-1 lg:flex-none relative group">
+                         <div className="absolute left-4 top-1/2 -translate-y-1/2 text-secondary-300 group-focus-within:text-primary-500 transition-colors pointer-events-none">
+                              <Landmark size={18} />
+                         </div>
+                         <select
+                            className="input h-14 pl-12 pr-4 text-[10px] font-black uppercase tracking-widest w-full lg:w-56 border-none shadow-sm rounded-2xl cursor-pointer"
+                            value={affiliationFilter}
+                            onChange={(e) => setAffiliationFilter(e.target.value)}
+                            title="Filter Affiliation"
+                         >
+                            <option value="ALL">All Affiliation Models</option>
+                            <option value="UNIVERSITY">Universities</option>
+                            <option value="AFFILIATED">Affiliated Institutions</option>
+                            <option value="SELF_AFFILIATED">Self Affiliated</option>
                          </select>
                     </div>
 
@@ -344,6 +363,15 @@ export default function InstitutionList({ userRole }: { userRole: string }) {
                                             <span className="text-[9px] font-black text-secondary-400 uppercase tracking-widest opacity-60">
                                                 {institution.type?.replace('_', ' ') || 'ENTITY MODEL'}
                                             </span>
+                                            <span className={`text-[9px] font-black px-2 py-0.5 rounded-lg uppercase tracking-widest border ${
+                                                institution.affiliationStatus === 'AFFILIATED'
+                                                    ? 'bg-amber-50 text-amber-700 border-amber-100'
+                                                    : institution.affiliationStatus === 'UNIVERSITY'
+                                                        ? 'bg-purple-50 text-purple-700 border-purple-100'
+                                                        : 'bg-emerald-50 text-emerald-700 border-emerald-100'
+                                            }`}>
+                                                {institution.affiliationStatus?.replace(/_/g, ' ') || 'SELF AFFILIATED'}
+                                            </span>
                                         </div>
                                     </div>
                                 </div>
@@ -368,12 +396,35 @@ export default function InstitutionList({ userRole }: { userRole: string }) {
 
                                     <div className="grid grid-cols-2 gap-4">
                                         <div className="p-4 bg-white border border-secondary-100 rounded-2xl text-center group-hover:border-indigo-100 transition-all shadow-sm">
-                                            <p className="text-lg font-black text-secondary-950 leading-none tabular-nums mb-1">{institution._count?.customers || 0}</p>
-                                            <p className="text-[9px] font-black text-secondary-400 uppercase tracking-[0.2em]">Learners</p>
+                                            <p className="text-lg font-black text-secondary-950 leading-none tabular-nums mb-1">{institution.analytics?.paidCustomerCount || 0}</p>
+                                            <p className="text-[9px] font-black text-secondary-400 uppercase tracking-[0.2em]">Paid Customers</p>
                                         </div>
                                         <div className="p-4 bg-white border border-secondary-100 rounded-2xl text-center group-hover:border-purple-100 transition-all shadow-sm">
-                                            <p className="text-lg font-black text-secondary-950 leading-none tabular-nums mb-1">{institution._count?.subscriptions || 0}</p>
-                                            <p className="text-[9px] font-black text-secondary-400 uppercase tracking-[0.2em]">Contracts</p>
+                                            <p className="text-lg font-black text-secondary-950 leading-none tabular-nums mb-1">₹{Math.round(institution.analytics?.totalRevenue || 0).toLocaleString()}</p>
+                                            <p className="text-[9px] font-black text-secondary-400 uppercase tracking-[0.2em]">Revenue</p>
+                                        </div>
+                                    </div>
+
+                                    <div className="rounded-2xl border border-secondary-100 bg-secondary-50/50 p-4 space-y-3">
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-[9px] font-black text-secondary-400 uppercase tracking-[0.2em]">Affiliated Institutions</span>
+                                            <span className="text-sm font-black text-secondary-900">{institution._count?.affiliates || 0}</span>
+                                        </div>
+                                        {institution.university && (
+                                            <div className="text-[10px] font-black uppercase tracking-widest text-secondary-500">
+                                                University: <span className="text-secondary-900">{institution.university.name}</span>
+                                            </div>
+                                        )}
+                                        {institution.agency && (
+                                            <div className="text-[10px] font-black uppercase tracking-widest text-secondary-500">
+                                                Agency: <span className="text-secondary-900">{institution.agency.organizationName || institution.agency.name}</span>
+                                            </div>
+                                        )}
+                                        <div className="text-[10px] font-black uppercase tracking-widest text-secondary-500">
+                                            Vs peer avg:
+                                            <span className={`${(institution.analytics?.revenueVsPeerAverage || 0) >= 0 ? 'text-emerald-600' : 'text-rose-600'} ml-2`}>
+                                                ₹{Math.round(Math.abs(institution.analytics?.revenueVsPeerAverage || 0)).toLocaleString()}
+                                            </span>
                                         </div>
                                     </div>
 

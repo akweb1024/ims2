@@ -30,8 +30,8 @@ export default function CRMClientLayout({ children }: { children: React.ReactNod
 
     const tabs = [
         { label: 'Overview', href: '/dashboard/crm', icon: <LayoutDashboard size={14} />, color: 'text-primary-500' },
-        { label: 'Prospects', href: '/dashboard/crm/leads', icon: <UserPlus size={14} />, color: 'text-indigo-500' },
-        { label: 'Opportunities', href: '/dashboard/crm/deals', icon: <Briefcase size={14} />, color: 'text-purple-500' },
+        { label: 'Lead', href: '/dashboard/crm/leads', icon: <UserPlus size={14} />, color: 'text-indigo-500' },
+        { label: 'Deal', href: '/dashboard/crm/deals', icon: <Briefcase size={14} />, color: 'text-purple-500' },
         { label: 'Customers', href: '/dashboard/customers', icon: <Users size={14} />, color: 'text-emerald-500' },
         { label: 'Products', href: '/dashboard/crm/invoice-products', icon: <Layers size={14} />, color: 'text-amber-500' },
         { label: 'Subscriptions', href: '/dashboard/crm/subscriptions', icon: <Activity size={14} />, color: 'text-rose-500' },

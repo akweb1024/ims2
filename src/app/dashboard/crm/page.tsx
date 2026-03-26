@@ -64,7 +64,7 @@ export default async function CRMDashboardPage() {
         <CRMClientLayout>
             <CRMPageShell
                 title="CRM Overview"
-                subtitle="See what needs attention today and move work from prospects to opportunities to customers."
+                subtitle="See what needs attention today and move work from lead to deal to customers."
                 icon={<LayoutDashboard className="w-5 h-5" />}
                 breadcrumb={[{ label: 'CRM', href: '/dashboard/crm' }, { label: 'Overview' }]}
                 actions={
@@ -79,7 +79,7 @@ export default async function CRMDashboardPage() {
                          </div>
                          <Link href="/dashboard/crm/leads" className="bg-primary-600 text-white px-8 py-3.5 rounded-2xl text-[11px] font-black uppercase tracking-[0.2em] shadow-2xl shadow-primary-200 hover:bg-primary-700 transition-all flex items-center gap-3 active:scale-95 group">
                             <Zap size={16} className="text-primary-200 group-hover:animate-bounce" />
-                            Open prospects
+                            Open lead
                          </Link>
                     </div>
                 }
@@ -96,12 +96,12 @@ export default async function CRMDashboardPage() {
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                         <Link href="/dashboard/crm/leads" className="bg-white p-7 rounded-[2.5rem] border border-secondary-100 shadow-xl shadow-secondary-100/40 hover:-translate-y-1 transition-all">
                             <p className="text-[10px] font-black uppercase tracking-[0.25em] text-primary-500 mb-3">Step 1</p>
-                            <h3 className="text-xl font-black text-secondary-950">Prospects</h3>
+                            <h3 className="text-xl font-black text-secondary-950">Lead</h3>
                             <p className="text-sm text-secondary-500 mt-2">Add and qualify people or companies your team may sell to.</p>
                         </Link>
                         <Link href="/dashboard/crm/deals" className="bg-white p-7 rounded-[2.5rem] border border-secondary-100 shadow-xl shadow-secondary-100/40 hover:-translate-y-1 transition-all">
                             <p className="text-[10px] font-black uppercase tracking-[0.25em] text-indigo-500 mb-3">Step 2</p>
-                            <h3 className="text-xl font-black text-secondary-950">Opportunities</h3>
+                            <h3 className="text-xl font-black text-secondary-950">Deal</h3>
                             <p className="text-sm text-secondary-500 mt-2">Track active sales chances, expected close dates, and deal value.</p>
                         </Link>
                         <Link href="/dashboard/customers" className="bg-white p-7 rounded-[2.5rem] border border-secondary-100 shadow-xl shadow-secondary-100/40 hover:-translate-y-1 transition-all">

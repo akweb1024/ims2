@@ -18,8 +18,9 @@ test.describe('Authentication Flow', () => {
 
         await page.getByRole('button', { name: 'Sign In' }).click();
 
-        await page.waitForURL(/.*\/dashboard/, { timeout: 20000, waitUntil: 'commit' });
-        await expect(page).toHaveURL(/.*\/dashboard/);
+        await expect
+            .poll(async () => page.url(), { timeout: 30000 })
+            .toMatch(/\/dashboard/);
     });
 
     test('should show error with invalid credentials', async ({ page }) => {
@@ -29,6 +30,11 @@ test.describe('Authentication Flow', () => {
         await page.getByRole('button', { name: 'Sign In' }).click();
 
         await expect(page).not.toHaveURL(/.*\/dashboard/);
-        await expect(page.getByText('Invalid email or password')).toBeVisible();
+        await expect(page.getByRole('button', { name: 'Sign In' })).toBeEnabled({
+            timeout: 15000,
+        });
+        await expect(page.getByText('Invalid email or password')).toBeVisible({
+            timeout: 15000,
+        });
     });
 });

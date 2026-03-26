@@ -118,10 +118,10 @@ export default function DealsPage() {
     return (
         <CRMClientLayout>
             <CRMPageShell
-                title="Opportunities"
+                title="Deal"
                 subtitle="Track active sales opportunities from first discussion to won or lost."
                 icon={<Briefcase className="w-5 h-5" />}
-                breadcrumb={[{ label: 'CRM', href: '/dashboard/crm' }, { label: 'Opportunities' }]}
+                breadcrumb={[{ label: 'CRM', href: '/dashboard/crm' }, { label: 'Deal' }]}
                 actions={
                     <div className="flex items-center gap-3">
                          <div className="hidden lg:flex items-center gap-3 bg-secondary-950 px-4 py-2 rounded-2xl border border-white/5 shadow-inner">

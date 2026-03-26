@@ -1,0 +1,185 @@
+Sprint Plan
+
+Assumption: 2-week sprints, small-to-mid team, capacity around 25-35 points per sprint. Adjust if your team is larger or smaller.
+
+Sprint 1
+Goal: remove the most visible demo gaps in agency/recruitment flows and establish basic testing discipline.
+
+Stories:
+
+AGY-101 Real agency client list
+AGY-102 Agency client search and filters
+REC-301 Real resume upload storage
+REC-302 Resume validation and file safeguards
+QLT-1101 Replace placeholder unit test script
+Estimated capacity:
+
+18-20 points
+Milestones:
+
+agency portal no longer shows mock client data
+recruitment no longer stores fake resume URLs
+test command becomes real and CI-ready
+Risks:
+
+storage provider setup for resumes
+agency-client ownership mapping may need schema review
+Sprint 2
+Goal: make commission handling operational instead of approximate.
+
+Stories:
+
+COM-201 Add commission payout data model
+COM-202 Agency payout request flow
+COM-204 Real payout history table
+AGY-103 Agency client detail timeline
+Estimated capacity:
+
+18 points
+Milestones:
+
+payout workflow exists end-to-end for request side
+agency users can see real payout history
+client detail becomes actionable for partner operations
+Risks:
+
+payout accounting rules may need finance signoff
+existing commission assumptions may need backfill logic
+Sprint 3
+Goal: stabilize finance operations and remove transient reconciliation behavior.
+
+Stories:
+
+FIN-401 Persist reconciliation sessions
+FIN-402 Persist match/ignore decisions
+FIN-404 Normalize reconciliation status model
+Estimated capacity:
+
+16 points
+Milestones:
+
+reconciliation becomes auditable
+users can revisit prior sessions
+UI/backend status model is consistent
+Risks:
+
+data model design for imported statements
+migration complexity if current users already rely on existing behavior
+Sprint 4
+Goal: improve finance dashboard trustworthiness.
+
+Stories:
+
+FIN-501 Real finance trend deltas
+FIN-502 Dynamic cashflow forecast widget
+FIN-503 Analytics period controls
+COM-203 Finance payout review workflow
+Estimated capacity:
+
+16 points
+Milestones:
+
+finance dashboard no longer shows demo-style trend logic
+payout lifecycle includes finance-side approval and payment completion
+Risks:
+
+forecasting logic may require product agreement on formula
+payout approvals may need role/permission refinement
+Sprint 5
+Goal: complete HR document operations and core integration maturity.
+
+Stories:
+
+HRD-601 Template preview before issue
+HRD-602 Bulk issue by scope
+INT-704 Real WhatsApp provider implementation
+INT-702 Integration connection test actions
+Estimated capacity:
+
+18 points
+Milestones:
+
+HR document flow becomes operationally usable
+WhatsApp moves from mock to real provider
+admins can validate integration health
+Risks:
+
+WhatsApp provider onboarding and credentials
+document rendering/preview performance
+Sprint 6
+Goal: improve admin/configuration reliability and company intelligence.
+
+Stories:
+
+INT-701 Provider registry refactor
+INT-703 Credential rotation audit
+CMP-801 Real company trend history
+CMP-802 Company intelligence tab completion
+Estimated capacity:
+
+16 points
+Milestones:
+
+integration layer becomes more scalable
+company dashboards stop relying on mock fallback analytics
+Risks:
+
+cross-module metric consistency work may spill over
+Sprint 7
+Goal: improve internal knowledge and operational visibility.
+
+Stories:
+
+KNO-901 Role guide governance
+KNO-902 Article detail pages and analytics
+AUT-1001 Persist automation job definitions
+AUT-1002 Automation run log persistence
+Estimated capacity:
+
+20 points
+Milestones:
+
+knowledge base becomes more maintainable
+automation center starts reflecting real jobs and runs
+Risks:
+
+knowledge governance may need non-engineering owner decisions
+automation registry design may affect cron/job architecture
+Sprint 8
+Goal: harden release quality and complete lower-priority UX/ops improvements.
+
+Stories:
+
+KNO-903 Article approval/versioning
+AUT-1003 Replace placeholder console feed
+QLT-1102 API tests for core business rules
+QLT-1103 End-to-end smoke tests
+Estimated capacity:
+
+24 points
+Milestones:
+
+regression protection added across major domains
+knowledge content lifecycle becomes governed
+automation UI becomes fully operational
+Risks:
+
+testing scope can expand quickly unless tightly prioritized
+Priority Summary
+
+Highest business value first:
+Sprint 1 to 4
+Operational maturity next:
+Sprint 5 to 6
+Governance and hardening last:
+Sprint 7 to 8
+Recommended Release Checkpoints
+
+Release A after Sprint 2
+agency + commission request baseline
+Release B after Sprint 4
+finance operations baseline
+Release C after Sprint 6
+HR docs + integrations + company analytics baseline
+Release D after Sprint 8
+knowledge, automation, testing hardening
