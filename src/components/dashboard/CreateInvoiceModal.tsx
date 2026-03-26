@@ -109,6 +109,7 @@ interface InvoiceItem {
   variantId?: string;
   productCategory?: string | null;
   productTags?: string[];
+  productAttributes?: any;
 }
 
 export default function CreateInvoiceModal({
@@ -401,6 +402,7 @@ export default function CreateInvoiceModal({
       updateItem(targetItemId, "hsnCode", p.hsnCode || p.sacCode || "");
       updateItem(targetItemId, "productCategory", p.category || null);
       updateItem(targetItemId, "productTags", p.tags || []);
+      updateItem(targetItemId, "productAttributes", p.productAttributes || null);
       updateItem(
         targetItemId,
         "taxCategory",
@@ -408,6 +410,7 @@ export default function CreateInvoiceModal({
           description: finalDesc,
           productCategory: p.category,
           productTags: p.tags || [],
+          productAttributes: p.productAttributes || null,
         }),
       );
       setProductResults((prev) => ({ ...prev, [targetItemId]: [] }));
@@ -422,10 +425,12 @@ export default function CreateInvoiceModal({
         variantId: v?.id,
         productCategory: p.category || null,
         productTags: p.tags || [],
+        productAttributes: p.productAttributes || null,
         taxCategory: resolveItemTaxCategory({
           description: finalDesc,
           productCategory: p.category,
           productTags: p.tags || [],
+          productAttributes: p.productAttributes || null,
         }),
       };
       setItems((prev) => {
@@ -1007,6 +1012,7 @@ export default function CreateInvoiceModal({
                 taxCategory,
                 productCategory,
                 productTags,
+                productAttributes,
               }: any) => ({
                 id,
                 description,
@@ -1018,6 +1024,7 @@ export default function CreateInvoiceModal({
                 taxCategory: taxCategory || null,
                 productCategory: productCategory || null,
                 productTags: productTags || [],
+                productAttributes: productAttributes || null,
               }),
             ),
             taxRate: taxBreakdown.effectiveTaxRate,

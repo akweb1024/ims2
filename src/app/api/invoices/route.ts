@@ -117,7 +117,12 @@ export const POST = authorizedRoute(
         }));
 
         const customer = await prisma.customerProfile.findUnique({
-            where: { id: customerProfileId }
+            where: { id: customerProfileId },
+            include: {
+                institution: {
+                    select: { type: true }
+                }
+            }
         });
 
         if (!customer) throw new NotFoundError('Customer');
@@ -198,12 +203,21 @@ export const POST = authorizedRoute(
                     .filter((value: any): value is string => typeof value === 'string' && value.length > 0)
             )
         );
-        const productMetadata = new Map<string, { id: string; category?: string | null; tags?: string[] | null; taxRate?: number | null }>();
+        const productMetadata = new Map<
+            string,
+            {
+                id: string;
+                category?: string | null;
+                tags?: string[] | null;
+                taxRate?: number | null;
+                productAttributes?: any;
+            }
+        >();
 
         if (productIds.length > 0) {
             const products = await prisma.invoiceProduct.findMany({
                 where: { id: { in: productIds } },
-                select: { id: true, category: true, tags: true, taxRate: true }
+                select: { id: true, category: true, tags: true, taxRate: true, productAttributes: true }
             });
             products.forEach((product) => {
                 productMetadata.set(product.id, {
@@ -211,6 +225,7 @@ export const POST = authorizedRoute(
                     category: product.category,
                     tags: Array.isArray(product.tags) ? (product.tags as string[]) : [],
                     taxRate: product.taxRate,
+                    productAttributes: product.productAttributes,
                 });
             });
         }

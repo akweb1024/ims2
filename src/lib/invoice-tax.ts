@@ -10,6 +10,7 @@ type TaxableItemInput = {
   productId?: string | null;
   productCategory?: string | null;
   productTags?: string[] | null;
+  productAttributes?: any;
   hsnCode?: string | null;
 };
 
@@ -18,10 +19,13 @@ type ProductTaxMetadata = {
   category?: string | null;
   tags?: string[] | null;
   taxRate?: number | null;
+  productAttributes?: any;
 };
 
 type CustomerTaxProfile = {
   customerType?: string | null;
+  institutionType?: string | null;
+  institution?: { type?: string | null } | null;
   billingCountry?: string | null;
   shippingCountry?: string | null;
   billingState?: string | null;
@@ -35,6 +39,8 @@ type CompanyTaxProfile = {
 };
 
 const normalize = (value?: string | null) => (value || "").trim().toLowerCase();
+const normalizeUpper = (value?: string | null) =>
+  (value || "").trim().toUpperCase();
 
 export const normalizeStateCode = (value?: string | null) => {
   const normalized = (value || "").trim().toUpperCase();
@@ -126,6 +132,70 @@ export const getTaxRateForCategory = (
   return fallbackTaxRate;
 };
 
+const resolveSubscriptionMode = (
+  item: TaxableItemInput,
+  product?: ProductTaxMetadata | null,
+) => {
+  const itemMode =
+    item?.productAttributes?.subscriptionOptions?.mode ||
+    item?.productAttributes?.mode;
+  const productMode =
+    product?.productAttributes?.subscriptionOptions?.mode ||
+    product?.productAttributes?.mode;
+  return normalizeUpper(itemMode || productMode);
+};
+
+const isJournalSubscriptionItem = (
+  item: TaxableItemInput,
+  product?: ProductTaxMetadata | null,
+) => {
+  const category = normalizeUpper(item.productCategory || product?.category);
+  if (category === "JOURNAL_SUBSCRIPTION") return true;
+  const text = normalize(
+    [item.description, item.productCategory, product?.category].filter(Boolean).join(" "),
+  );
+  return text.includes("journal");
+};
+
+const getInstitutionType = (customer: CustomerTaxProfile) =>
+  normalizeUpper(customer.institutionType || customer.institution?.type);
+
+const isCommercialInstitutionType = (institutionType: string) =>
+  new Set(["CORPORATE", "GOVERNMENT", "AGENCY", "HOSPITAL", "NGO", "OTHER"]).has(
+    institutionType,
+  );
+
+const getJournalDomesticTaxRate = ({
+  customer,
+  subscriptionMode,
+}: {
+  customer: CustomerTaxProfile;
+  subscriptionMode: string;
+}) => {
+  const customerType = normalizeUpper(customer.customerType);
+
+  // Rule 2: Educational institution subscriptions are 0% GST.
+  if (customerType === "INSTITUTION") {
+    const institutionType = getInstitutionType(customer);
+    if (institutionType && isCommercialInstitutionType(institutionType)) {
+      return 18;
+    }
+    return 0;
+  }
+
+  // Rule 3: Agency/commercial subscriptions are 18%.
+  if (customerType === "AGENCY") return 18;
+
+  // Rule 1 + Rule 3 for individuals.
+  if (customerType === "INDIVIDUAL") {
+    // Print-only individual subscription: 0%; otherwise treat as commercial 18%.
+    if (subscriptionMode === "PRINT") return 0;
+    return 18;
+  }
+
+  return 18;
+};
+
 export const buildInvoiceTaxContext = (
   customer: CustomerTaxProfile,
   company: CompanyTaxProfile,
@@ -192,6 +262,8 @@ export const calculateInvoiceTaxBreakdown = ({
   const processedItems = items.map((item) => {
     const product = item.productId ? productMetadata.get(item.productId) : null;
     const category = resolveItemTaxCategory(item, product);
+    const isJournalSubscription = isJournalSubscriptionItem(item, product);
+    const subscriptionMode = resolveSubscriptionMode(item, product);
     const baseAmount =
       item.amount ?? Number(item.quantity || 0) * Number(item.price || 0);
     const itemWeight = subtotal > 0 ? Number(baseAmount || 0) / subtotal : 0;
@@ -199,12 +271,20 @@ export const calculateInvoiceTaxBreakdown = ({
       0,
       Number(baseAmount || 0) - Number(discountAmount || 0) * itemWeight,
     );
-    const itemTaxRate = context.isDomestic
-      ? getTaxRateForCategory(
+    let itemTaxRate = 0;
+    if (context.isDomestic) {
+      if (isJournalSubscription) {
+        itemTaxRate = getJournalDomesticTaxRate({
+          customer,
+          subscriptionMode,
+        });
+      } else {
+        itemTaxRate = getTaxRateForCategory(
           category,
           product?.taxRate ?? Number(item.taxRate ?? defaultTaxRate ?? 18),
-        )
-      : 0;
+        );
+      }
+    }
     const itemTaxAmount = itemTaxableAmount * (itemTaxRate / 100);
 
     totalTax += itemTaxAmount;

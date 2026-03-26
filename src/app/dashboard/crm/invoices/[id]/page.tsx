@@ -143,6 +143,7 @@ export default function InvoiceDetailPage({
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [isPaying, setIsPaying] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
+  const [isRecalculatingTax, setIsRecalculatingTax] = useState(false);
   const [paymentForm, setPaymentForm] = useState({
     method: "bank-transfer",
     reference: "",
@@ -246,6 +247,38 @@ export default function InvoiceDetailPage({
       alert("Failed to connect to sync endpoint");
     } finally {
       setIsSyncing(false);
+    }
+  };
+
+  const handleRecalculateTax = async () => {
+    if (
+      !confirm(
+        "This will recompute GST/tax for this invoice using the latest tax rules and current product/customer classification. Continue?",
+      )
+    ) {
+      return;
+    }
+
+    setIsRecalculatingTax(true);
+    try {
+      const token = localStorage.getItem("token");
+      const res = await fetch(`/api/invoices/${id}/recalculate-tax`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        alert(data.message || "Tax recalculated successfully");
+        await fetchInvoice();
+      } else {
+        const err = await res.json();
+        alert(err.error || "Failed to recalculate tax");
+      }
+    } catch (err) {
+      alert("Failed to connect to tax recalculation endpoint");
+    } finally {
+      setIsRecalculatingTax(false);
     }
   };
 
@@ -656,6 +689,15 @@ export default function InvoiceDetailPage({
                     {isSyncing ? "🔄 Syncing..." : "🔄 Sync Catalogue Prices"}
                   </button>
                 )}
+                <button
+                  className="btn btn-secondary rounded-full px-6 flex items-center gap-2 border-emerald-100 text-emerald-700 hover:bg-emerald-50"
+                  onClick={handleRecalculateTax}
+                  disabled={isRecalculatingTax}
+                >
+                  {isRecalculatingTax
+                    ? "🧮 Recalculating..."
+                    : "🧮 Recalculate Tax"}
+                </button>
                 <button
                   className="btn btn-primary shadow-xl shadow-primary-200 rounded-full px-8"
                   onClick={() => setShowPaymentModal(true)}
