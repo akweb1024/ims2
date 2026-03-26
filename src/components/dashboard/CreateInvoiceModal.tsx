@@ -190,6 +190,8 @@ export default function CreateInvoiceModal({
   const [isFetchingPincode, setIsFetchingPincode] = useState(false);
   const [institutions, setInstitutions] = useState<any[]>([]);
   const [prefilledInstitution, setPrefilledInstitution] = useState<any>(null);
+  const [institutionCustomerResolved, setInstitutionCustomerResolved] =
+    useState(false);
 
   const handleTaxTypeChange = (type: "DOMESTIC" | "INTERNATIONAL") => {
     setTaxType(type);
@@ -647,6 +649,106 @@ export default function CreateInvoiceModal({
     fetchPrefilledInstitution();
   }, [isOpen, editId, prefilledInstitutionId, prefilledCustomerId]);
 
+  useEffect(() => {
+    const resolveInstitutionBillingCustomer = async () => {
+      if (
+        !isOpen ||
+        editId ||
+        invoiceContext !== "institution" ||
+        !prefilledInstitution ||
+        prefilledCustomerId ||
+        institutionCustomerResolved
+      ) {
+        return;
+      }
+
+      setInstitutionCustomerResolved(true);
+      try {
+        const token = localStorage.getItem("token");
+
+        // 1) Reuse any existing institution-linked customer profile first.
+        const listRes = await fetch(`/api/customers?type=INSTITUTION&limit=200`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (listRes.ok) {
+          const listData = await listRes.json();
+          const existing = (listData.data || []).find(
+            (c: any) => c.institution?.id === prefilledInstitution.id,
+          );
+          if (existing) {
+            setSelectedCustomer(existing);
+            setCustomerSearch(existing.name || "");
+            setStep(2);
+            return;
+          }
+        }
+
+        // 2) If not found, create a billable customer profile mapped to this institution.
+        const fallbackEmail = `billing+${prefilledInstitution.id.slice(0, 8)}@institution.local`;
+        const primaryEmail = prefilledInstitution.primaryEmail || fallbackEmail;
+
+        const createPayload = {
+          name: prefilledInstitution.name,
+          organizationName: prefilledInstitution.name,
+          customerType: "INSTITUTION",
+          primaryEmail,
+          primaryPhone: prefilledInstitution.primaryPhone || "",
+          institutionId: prefilledInstitution.id,
+          billingAddress: prefilledInstitution.address || "",
+          billingCity: prefilledInstitution.city || "",
+          billingState: prefilledInstitution.state || "",
+          billingPincode: prefilledInstitution.pincode || "",
+          billingCountry: prefilledInstitution.country || "India",
+          shippingAddress: prefilledInstitution.address || "",
+          shippingCity: prefilledInstitution.city || "",
+          shippingState: prefilledInstitution.state || "",
+          shippingPincode: prefilledInstitution.pincode || "",
+          shippingCountry: prefilledInstitution.country || "India",
+        };
+
+        let createRes = await fetch("/api/customers", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(createPayload),
+        });
+
+        if (!createRes.ok && prefilledInstitution.primaryEmail) {
+          // Retry once with synthetic email if primary email is already consumed.
+          createRes = await fetch("/api/customers", {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ ...createPayload, primaryEmail: fallbackEmail }),
+          });
+        }
+
+        if (createRes.ok) {
+          const created = await createRes.json();
+          setSelectedCustomer(created);
+          setCustomerSearch(created.name || prefilledInstitution.name);
+          setCustomers((prev) => [created, ...prev.filter((c) => c.id !== created.id)]);
+          setStep(2);
+        }
+      } catch (err) {
+        console.error("Failed to auto-resolve institution billing customer", err);
+      }
+    };
+
+    resolveInstitutionBillingCustomer();
+  }, [
+    isOpen,
+    editId,
+    invoiceContext,
+    prefilledInstitution,
+    prefilledCustomerId,
+    institutionCustomerResolved,
+  ]);
+
   // Populate data for editing
   useEffect(() => {
     const fetchInvoiceForEdit = async () => {
@@ -698,6 +800,7 @@ export default function CreateInvoiceModal({
       // Reset for new invoice
       setStep(1);
       setSelectedCustomer(null);
+      setInstitutionCustomerResolved(false);
       setDueDate("");
       setItems([
         {

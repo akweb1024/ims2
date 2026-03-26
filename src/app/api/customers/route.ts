@@ -7,7 +7,7 @@ import { logger } from '@/lib/logger';
 import { CustomerType } from '@/types';
 
 export const GET = authorizedRoute(
-    ['SUPER_ADMIN', 'MANAGER', 'EXECUTIVE'],
+    ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'EXECUTIVE', 'FINANCE_ADMIN'],
     async (req: NextRequest, user) => {
     // Fetch customers with filtering and assignment
     try {
@@ -124,7 +124,7 @@ export const GET = authorizedRoute(
 );
 
 export const POST = authorizedRoute(
-    ['SUPER_ADMIN', 'MANAGER', 'EXECUTIVE'],
+    ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'EXECUTIVE', 'FINANCE_ADMIN'],
     async (req: NextRequest, user) => {
     try {
         const body = await req.json();
