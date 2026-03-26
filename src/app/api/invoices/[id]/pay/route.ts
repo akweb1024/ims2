@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getAuthenticatedUser } from '@/lib/auth-legacy';
+import { consumeInvoiceStockReservations } from '@/lib/invoice-stock-reservation';
 
 export async function POST(
     req: NextRequest,
@@ -61,6 +62,10 @@ export async function POST(
                     paidDate: newStatus === 'PAID' ? new Date() : null
                 }
             });
+
+            if (newStatus === 'PAID') {
+                await consumeInvoiceStockReservations(tx, id);
+            }
 
             // Update Subscription Status if fully paid and currently pending
             if (newStatus === 'PAID' && invoice.subscription?.status === 'PENDING_PAYMENT') {

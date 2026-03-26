@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getAuthenticatedUser } from '@/lib/auth-legacy';
+import { releaseInvoiceStockReservations } from '@/lib/invoice-stock-reservation';
 
 export async function PATCH(
     req: NextRequest,
@@ -19,9 +20,19 @@ export async function PATCH(
         // Only allow status update to CANCELLED or PAID (if Manual?)
         // For now, let's just allow toggling status for admins if needed, mostly Void/Cancel.
 
-        const updatedInvoice = await prisma.invoice.update({
-            where: { id },
-            data: { status }
+        const updatedInvoice = await prisma.$transaction(async (tx: any) => {
+            if (status === 'CANCELLED' || status === 'VOID') {
+                await releaseInvoiceStockReservations(tx, {
+                    invoiceId: id,
+                    userId: decoded.id,
+                    reason: `Invoice marked ${status}`,
+                });
+            }
+
+            return tx.invoice.update({
+                where: { id },
+                data: { status }
+            });
         });
 
         // Audit

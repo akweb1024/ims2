@@ -384,6 +384,7 @@ export default function InvoiceProductsPage() {
     // Populate the new catalogue form from existing product data
     const isVariable = p.type === "VARIABLE";
     const subscriptionOptions = (p.productAttributes as any)?.subscriptionOptions || {};
+    const inventorySettings = (p.productAttributes as any)?.inventorySettings || {};
     setCatalogueForm({
       name: p.name,
       sku: p.sku || "",
@@ -415,6 +416,8 @@ export default function InvoiceProductsPage() {
       subscriptionFrequency: subscriptionOptions.frequency || "ANNUAL",
       subscriptionYear: subscriptionOptions.year || new Date().getFullYear(),
       subscriptionMode: subscriptionOptions.mode || "PRINT",
+      isPhysicalDeliverable: Boolean(inventorySettings.isPhysicalDeliverable),
+      trackInventory: Boolean(inventorySettings.trackInventory),
     });
 
     setShowModal(true);
@@ -443,6 +446,12 @@ export default function InvoiceProductsPage() {
             },
           }
         : null;
+    const inventorySettings = {
+      inventorySettings: {
+        isPhysicalDeliverable: !!currentForm.isPhysicalDeliverable,
+        trackInventory: !!currentForm.trackInventory,
+      },
+    };
     return {
       name: currentForm.name.trim() || form.name.trim(),
       type: isVariable ? "VARIABLE" : "SIMPLE",
@@ -470,7 +479,10 @@ export default function InvoiceProductsPage() {
         .filter(Boolean),
       notes: form.notes || null,
       domain: currentForm.domain?.trim() || null,
-      productAttributes: journalSubscriptionAttributes,
+      productAttributes: {
+        ...(journalSubscriptionAttributes || {}),
+        ...inventorySettings,
+      },
       priceTiers: null,
       ...(isVariable && currentForm.variants.length > 0
         ? {

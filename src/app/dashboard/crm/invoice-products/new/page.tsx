@@ -24,6 +24,12 @@ const buildPayload = (form: ProductCatalogueFormData) => {
           },
         }
       : null;
+  const inventorySettings = {
+    inventorySettings: {
+      isPhysicalDeliverable: !!form.isPhysicalDeliverable,
+      trackInventory: !!form.trackInventory,
+    },
+  };
   return {
     name: form.name.trim(),
     type: isVariable ? "VARIABLE" : "SIMPLE",
@@ -47,7 +53,10 @@ const buildPayload = (form: ProductCatalogueFormData) => {
     tags: [],
     notes: null,
     domain: form.domain || null,
-    attributes: journalSubscriptionAttributes,
+    productAttributes: {
+      ...(journalSubscriptionAttributes || {}),
+      ...inventorySettings,
+    },
     priceTiers: null,
     variants: isVariable
       ? form.variants

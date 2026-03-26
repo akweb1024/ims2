@@ -47,6 +47,8 @@ export interface ProductCatalogueFormData {
   subscriptionFrequency: string;
   subscriptionYear: number | "";
   subscriptionMode: string;
+  isPhysicalDeliverable: boolean;
+  trackInventory: boolean;
 }
 
 interface ProductCatalogueFormProps {
@@ -83,6 +85,8 @@ export const DEFAULT_FORM_DATA: ProductCatalogueFormData = {
   subscriptionFrequency: "ANNUAL",
   subscriptionYear: new Date().getFullYear(),
   subscriptionMode: "PRINT",
+  isPhysicalDeliverable: false,
+  trackInventory: false,
 };
 
 const DEFAULT_CATEGORIES = [
@@ -1112,6 +1116,71 @@ export default function ProductCatalogueForm({
               )}
           </div>
         )}
+
+        <div className="rounded-2xl border border-slate-200 bg-slate-50/60 p-4 space-y-4">
+          <div className="flex items-center gap-2.5">
+            <div className="w-7 h-7 rounded-lg bg-slate-200 text-slate-700 flex items-center justify-center">
+              <Package size={14} />
+            </div>
+            <div>
+              <h4 className="text-sm font-bold text-slate-800 tracking-tight">
+                Inventory Settings
+              </h4>
+              <p className="text-[11px] text-slate-500">
+                Enable this for print or physically deliverable products.
+              </p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <button
+              type="button"
+              onClick={() =>
+                onChange({
+                  ...value,
+                  isPhysicalDeliverable: !value.isPhysicalDeliverable,
+                  trackInventory:
+                    !value.isPhysicalDeliverable ? value.trackInventory : false,
+                })
+              }
+              className={`h-11 rounded-xl border px-3 text-xs font-bold uppercase tracking-wider transition-all flex items-center justify-between ${
+                value.isPhysicalDeliverable
+                  ? "border-emerald-300 bg-emerald-50 text-emerald-700"
+                  : "border-slate-200 bg-white text-slate-500"
+              }`}
+            >
+              <span>Physical Deliverable</span>
+              {value.isPhysicalDeliverable ? (
+                <ToggleRight size={16} />
+              ) : (
+                <ToggleLeft size={16} />
+              )}
+            </button>
+
+            <button
+              type="button"
+              disabled={!value.isPhysicalDeliverable}
+              onClick={() =>
+                onChange({
+                  ...value,
+                  trackInventory: !value.trackInventory,
+                })
+              }
+              className={`h-11 rounded-xl border px-3 text-xs font-bold uppercase tracking-wider transition-all flex items-center justify-between ${
+                value.trackInventory
+                  ? "border-indigo-300 bg-indigo-50 text-indigo-700"
+                  : "border-slate-200 bg-white text-slate-500"
+              } ${!value.isPhysicalDeliverable ? "opacity-50 cursor-not-allowed" : ""}`}
+            >
+              <span>Track Inventory</span>
+              {value.trackInventory ? (
+                <ToggleRight size={16} />
+              ) : (
+                <ToggleLeft size={16} />
+              )}
+            </button>
+          </div>
+        </div>
       </section>
 
       {/* ── Validation hint ─────────────────────────────────────────── */}

@@ -28,7 +28,7 @@ export default function InventoryLedgerPage() {
     const fetchInventory = useCallback(async () => {
         setLoading(true);
         try {
-            const res = await fetch(`/api/logistics/inventory?search=${encodeURIComponent(searchTerm)}`);
+            const res = await fetch(`/api/logistics/inventory?source=products&search=${encodeURIComponent(searchTerm)}`);
             if (res.ok) {
                 const data = await res.json();
                 setInventory(data.inventory);
@@ -73,6 +73,45 @@ export default function InventoryLedgerPage() {
         }
     };
 
+    const handleAdjustStock = async (item: any) => {
+        const raw = prompt(
+            `Adjust stock for ${item.name} (${item.sku}).\nEnter +ve for IN and -ve for OUT:`,
+            "1",
+        );
+        if (!raw) return;
+        const delta = Number(raw);
+        if (!Number.isFinite(delta) || delta === 0) {
+            toast.error('Enter a valid non-zero number.');
+            return;
+        }
+        const notes = prompt('Optional note for audit log:', 'Manual adjustment') || 'Manual adjustment';
+
+        try {
+            const res = await fetch('/api/logistics/inventory', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action: 'ADJUST_PRODUCT_STOCK',
+                    productId: item.productId,
+                    variantId: item.variantId,
+                    delta,
+                    notes,
+                }),
+            });
+
+            if (res.ok) {
+                toast.success('Stock updated successfully.');
+                fetchInventory();
+            } else {
+                const data = await res.json();
+                toast.error(data.error || 'Failed to adjust stock');
+            }
+        } catch (err) {
+            console.error(err);
+            toast.error('Network error while adjusting stock');
+        }
+    };
+
     const getStatusColor = (current: number, min: number) => {
         if (current === 0) return 'bg-danger-100 text-danger-700';
         if (current <= min) return 'bg-warning-100 text-warning-700 font-bold';
@@ -88,19 +127,19 @@ export default function InventoryLedgerPage() {
                     <div>
                         <h1 className="text-3xl font-black text-secondary-900 tracking-tight flex items-center gap-3">
                             <Package className="text-primary-600" size={32} />
-                            Inventory Ledger
+                            Product Inventory
                         </h1>
                         <p className="text-secondary-500 font-medium mt-1">
-                            Track real-time stock levels, raw materials, and warehouse allocations.
+                            Track print/physical stock directly from CRM invoice products.
                         </p>
                     </div>
                     
                     <button 
-                        onClick={() => setShowCreateModal(true)}
+                        onClick={() => window.location.assign('/dashboard/crm/invoice-products')}
                         className="btn-premium px-6 py-2.5 rounded-2xl flex items-center gap-2 group shadow-xl shadow-primary-500/20"
                     >
                         <Plus size={20} className="group-hover:rotate-90 transition-transform" />
-                        <span>Allocate New Asset</span>
+                        <span>Open Product Catalog</span>
                     </button>
                 </div>
 
@@ -137,8 +176,8 @@ export default function InventoryLedgerPage() {
                 ) : inventory.length === 0 ? (
                     <div className="text-center p-20 bg-secondary-50 rounded-3xl border border-secondary-200 border-dashed">
                         <Package size={48} className="mx-auto text-secondary-300 mb-4" />
-                        <h2 className="text-xl font-black text-secondary-800">No Inventory Found</h2>
-                        <p className="text-secondary-500 mt-2">No stock matching your criteria is active in any warehouse.</p>
+                        <h2 className="text-xl font-black text-secondary-800">No Tracked Product Inventory Found</h2>
+                        <p className="text-secondary-500 mt-2">Enable Physical Deliverable + Track Inventory in CRM product settings first.</p>
                     </div>
                 ) : (
                     <div className="grid grid-cols-1 lg:grid-cols-3 md:grid-cols-2 gap-6">
@@ -204,8 +243,11 @@ export default function InventoryLedgerPage() {
                                 </div>
                                 
                                 <div className="mt-4 pt-4 border-t border-secondary-50 ml-2">
-                                     <button className="w-full text-center text-xs font-bold text-primary-600 uppercase tracking-widest p-2 rounded-xl border border-primary-100 bg-primary-50/50 hover:bg-primary-100 hover:text-primary-700 transition-colors flex items-center justify-center gap-2">
-                                        Move / Edit Stock <ArrowRight size={14} />
+                                     <button
+                                        onClick={() => handleAdjustStock(item)}
+                                        className="w-full text-center text-xs font-bold text-primary-600 uppercase tracking-widest p-2 rounded-xl border border-primary-100 bg-primary-50/50 hover:bg-primary-100 hover:text-primary-700 transition-colors flex items-center justify-center gap-2"
+                                     >
+                                        Adjust Stock <ArrowRight size={14} />
                                      </button>
                                 </div>
                             </div>

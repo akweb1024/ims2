@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { authorizedRoute } from '@/lib/middleware-auth';
 import { handleApiError, ValidationError } from '@/lib/error-handler';
+import { releaseInvoiceStockReservations } from '@/lib/invoice-stock-reservation';
 
 export const GET = authorizedRoute(
     [],
@@ -130,7 +131,14 @@ export const DELETE = authorizedRoute(
                 throw new ValidationError('PAID Invoices cannot be deleted. VOID them instead.');
             }
 
-            await prisma.invoice.delete({ where: { id } });
+            await prisma.$transaction(async (tx: any) => {
+                await releaseInvoiceStockReservations(tx, {
+                    invoiceId: id,
+                    userId: user.id,
+                    reason: 'Invoice deleted, reservation released',
+                });
+                await tx.invoice.delete({ where: { id } });
+            });
 
             return NextResponse.json({ message: 'Invoice deleted successfully' });
         } catch (error) {

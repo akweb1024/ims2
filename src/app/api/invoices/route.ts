@@ -7,6 +7,7 @@ import { FinanceService } from '@/lib/services/finance';
 import { logger } from '@/lib/logger';
 import { generateInvoiceNumbers } from '@/lib/invoice-number';
 import { calculateInvoiceTaxBreakdown } from '@/lib/invoice-tax';
+import { applyInvoiceStockReservations } from '@/lib/invoice-stock-reservation';
 
 export const GET = authorizedRoute(
     [],
@@ -253,8 +254,9 @@ export const POST = authorizedRoute(
         const igstRate = taxBreakdown.igstRate;
         const effectiveTaxRate = taxBreakdown.effectiveTaxRate;
 
-        const newInvoice = await (prisma.invoice as any).create({
-            data: {
+        const newInvoice = await prisma.$transaction(async (tx: any) => {
+            const created = await tx.invoice.create({
+                data: {
                 invoiceNumber,
                 proformaNumber,
                 customerProfileId,
@@ -306,27 +308,34 @@ export const POST = authorizedRoute(
                 discountType: discountType || null,
                 discountValue: discountValue ? Number(discountValue) : 0,
                 discountAmount: discountAmount ? Number(discountAmount) : 0,
+                }
+            });
+
+            // Increment coupon usedCount atomically
+            if (couponId) {
+                await tx.coupon.update({
+                    where: { id: couponId },
+                    data: { usedCount: { increment: 1 } }
+                }).catch((err: any) => logger.error('Failed to increment coupon usage', err, { couponId }));
             }
+
+            // Reserve stock for physical + inventory-tracked items on invoice creation
+            const reservedLineItems = await applyInvoiceStockReservations(tx, {
+                invoiceId: created.id,
+                companyId: user.companyId,
+                lineItems: finalProcessedItems,
+                userId: user.id,
+            });
+
+            if (JSON.stringify(reservedLineItems) !== JSON.stringify(finalProcessedItems)) {
+                return tx.invoice.update({
+                    where: { id: created.id },
+                    data: { lineItems: reservedLineItems },
+                });
+            }
+
+            return created;
         });
-
-        // Increment coupon usedCount atomically
-        if (couponId) {
-            await prisma.coupon.update({
-                where: { id: couponId },
-                data: { usedCount: { increment: 1 } }
-            }).catch((err: any) => logger.error('Failed to increment coupon usage', err, { couponId }));
-        }
-
-        // Deduct Stock
-        for (const item of processedItems) {
-            const qty = Number(item.quantity) || 1;
-            if (item.variantId) {
-                await prisma.productVariant.update({
-                    where: { id: item.variantId },
-                    data: { stockQuantity: { decrement: qty } }
-                }).catch(() => {});
-            }
-        }
 
         // Finance Automation (non-blocking)
         try {
