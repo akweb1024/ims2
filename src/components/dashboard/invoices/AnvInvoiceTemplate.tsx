@@ -435,6 +435,11 @@ export default function AnvInvoiceTemplate({
               item.taxRate || (isExport ? 0 : invoice.taxRate || 18);
             const gstDisplay = isExport ? "0%" : `${gstRate}%`;
             const netAmt = taxable + taxable * (gstRate / 100);
+            const subscriptionOptions =
+              item?.productAttributes?.subscriptionOptions || null;
+            const isJournalSubscription =
+              item?.productCategory === "JOURNAL_SUBSCRIPTION" ||
+              Boolean(subscriptionOptions);
             return (
               <tr key={idx}>
                 <td className="text-center">{idx + 1}</td>
@@ -450,6 +455,19 @@ export default function AnvInvoiceTemplate({
                   <div className="text-[8px] font-normal italic text-gray-700">
                     Period: Jan 2025 - Dec 2025
                   </div>
+                  {isJournalSubscription && subscriptionOptions && (
+                    <div className="text-[8px] mt-1 font-semibold text-blue-700">
+                      Frequency:{" "}
+                      {String(subscriptionOptions.frequency || "ANNUAL").replaceAll(
+                        "_",
+                        " ",
+                      )}{" "}
+                      | Year: {subscriptionOptions.year || "—"}
+                      {subscriptionOptions.mode
+                        ? ` | Mode: ${String(subscriptionOptions.mode).replaceAll("_", " + ")}`
+                        : ""}
+                    </div>
+                  )}
                 </td>
                 <td className="text-center">{item.hsnCode || "9984"}</td>
                 <td className="text-center">{item.quantity}</td>

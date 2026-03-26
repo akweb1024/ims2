@@ -730,6 +730,11 @@ export default function GlobalProInvoiceTemplate({
             const gstDisplay = isExport ? "0%" : `${gstRate}%`;
             const netAmt = taxable + taxable * (gstRate / 100);
             const isAlt = idx % 2 === 1;
+            const subscriptionOptions =
+              item?.productAttributes?.subscriptionOptions || null;
+            const isJournalSubscription =
+              item?.productCategory === "JOURNAL_SUBSCRIPTION" ||
+              Boolean(subscriptionOptions);
             return (
               <tr
                 key={idx}
@@ -780,6 +785,26 @@ export default function GlobalProInvoiceTemplate({
                   {item.period && (
                     <div style={{ fontSize: "8px", color: "#94a3b8", marginTop: "2px", fontStyle: "italic" }}>
                       Period: {item.period}
+                    </div>
+                  )}
+                  {isJournalSubscription && subscriptionOptions && (
+                    <div
+                      style={{
+                        fontSize: "8px",
+                        color: "#1d4ed8",
+                        marginTop: "3px",
+                        fontWeight: 600,
+                      }}
+                    >
+                      Frequency:{" "}
+                      {String(subscriptionOptions.frequency || "ANNUAL").replaceAll(
+                        "_",
+                        " ",
+                      )}{" "}
+                      | Year: {subscriptionOptions.year || "—"}
+                      {subscriptionOptions.mode
+                        ? ` | Mode: ${String(subscriptionOptions.mode).replaceAll("_", " + ")}`
+                        : ""}
                     </div>
                   )}
                 </td>

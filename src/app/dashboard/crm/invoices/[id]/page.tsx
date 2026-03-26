@@ -5,7 +5,6 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import FormattedDate from "@/components/common/FormattedDate";
-import CreateInvoiceModal from "@/components/dashboard/CreateInvoiceModal";
 import AnvInvoiceTemplate from "@/components/dashboard/invoices/AnvInvoiceTemplate";
 import GlobalProInvoiceTemplate from "@/components/dashboard/invoices/GlobalProInvoiceTemplate";
 import { buildInvoiceTaxContext } from "@/lib/invoice-tax";
@@ -144,12 +143,12 @@ export default function InvoiceDetailPage({
   const [isPaying, setIsPaying] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
   const [isRecalculatingTax, setIsRecalculatingTax] = useState(false);
+  const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
   const [paymentForm, setPaymentForm] = useState({
     method: "bank-transfer",
     reference: "",
     notes: "",
   });
-  const [showEditModal, setShowEditModal] = useState(false);
   const [templateType, setTemplateType] = useState<"standard" | "anv" | "globalpro">(
     "globalpro",
   );
@@ -279,6 +278,111 @@ export default function InvoiceDetailPage({
       alert("Failed to connect to tax recalculation endpoint");
     } finally {
       setIsRecalculatingTax(false);
+    }
+  };
+
+  const handleDownloadPdf = async () => {
+    const target = document.querySelector(".print-content") as HTMLElement | null;
+    if (!target) {
+      alert("Invoice content is not ready for PDF export.");
+      return;
+    }
+
+    setIsDownloadingPdf(true);
+    let offscreenHost: HTMLDivElement | null = null;
+    try {
+      const [{ default: html2canvas }, { jsPDF }] = await Promise.all([
+        import("html2canvas"),
+        import("jspdf"),
+      ]);
+
+      const printClone = target.cloneNode(true) as HTMLElement;
+      offscreenHost = document.createElement("div");
+      offscreenHost.style.position = "fixed";
+      offscreenHost.style.left = "-100000px";
+      offscreenHost.style.top = "0";
+      offscreenHost.style.width = `${target.scrollWidth}px`;
+      offscreenHost.style.opacity = "1";
+      offscreenHost.style.pointerEvents = "none";
+      offscreenHost.appendChild(printClone);
+      document.body.appendChild(offscreenHost);
+
+      const allImages = Array.from(printClone.querySelectorAll("img"));
+      allImages.forEach((img) => {
+        const src = img.getAttribute("src");
+        if (src && /^https?:\/\//i.test(src)) {
+          const proxied = `/api/public/image-proxy?url=${encodeURIComponent(src)}`;
+          img.setAttribute("src", proxied);
+          img.removeAttribute("srcset");
+          img.setAttribute("crossorigin", "anonymous");
+        }
+      });
+
+      await Promise.all(
+        allImages.map(
+          (img) =>
+            new Promise<void>((resolve) => {
+              if (img.complete) {
+                resolve();
+                return;
+              }
+              const done = () => {
+                img.removeEventListener("load", done);
+                img.removeEventListener("error", done);
+                resolve();
+              };
+              img.addEventListener("load", done);
+              img.addEventListener("error", done);
+              setTimeout(done, 3000);
+            }),
+        ),
+      );
+
+      const canvas = await html2canvas(printClone, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: "#ffffff",
+        logging: false,
+        imageTimeout: 0,
+      });
+      if (offscreenHost?.parentNode) {
+        offscreenHost.parentNode.removeChild(offscreenHost);
+        offscreenHost = null;
+      }
+
+      const imgData = canvas.toDataURL("image/png");
+      const pdf = new jsPDF("p", "pt", "a4");
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+      const margin = 20;
+      const usableWidth = pageWidth - margin * 2;
+      const scaledHeight = (canvas.height * usableWidth) / canvas.width;
+
+      let remainingHeight = scaledHeight;
+      let yPosition = margin;
+
+      pdf.addImage(imgData, "PNG", margin, yPosition, usableWidth, scaledHeight);
+      remainingHeight -= pageHeight - margin * 2;
+
+      while (remainingHeight > 0) {
+        pdf.addPage();
+        yPosition = margin - (scaledHeight - remainingHeight);
+        pdf.addImage(imgData, "PNG", margin, yPosition, usableWidth, scaledHeight);
+        remainingHeight -= pageHeight - margin * 2;
+      }
+
+      const invoiceNo = (displayInvoiceNumber || invoice?.invoiceNumber || "invoice")
+        .toString()
+        .replace(/[^a-zA-Z0-9-_]/g, "_");
+      pdf.save(`${invoiceNo}.pdf`);
+    } catch (error) {
+      console.error("PDF download failed", error);
+      alert("Failed to generate PDF. Please try again.");
+    } finally {
+      if (offscreenHost?.parentNode) {
+        offscreenHost.parentNode.removeChild(offscreenHost);
+      }
+      setIsDownloadingPdf(false);
     }
   };
 
@@ -644,10 +748,10 @@ export default function InvoiceDetailPage({
 
       <div className="invoice-wrap max-w-5xl mx-auto pb-12 space-y-6">
         {/* Action Bar */}
-        <div className="flex justify-between items-center no-print px-4 md:px-0">
+        <div className="flex flex-col gap-3 md:flex-row md:justify-between md:items-center no-print px-4 md:px-0">
           <button
             onClick={() => router.back()}
-            className="btn btn-secondary flex items-center gap-2 rounded-full px-6"
+            className="btn btn-secondary flex items-center gap-2 rounded-xl px-4 py-2 w-fit"
           >
             <svg
               className="w-4 h-4"
@@ -664,9 +768,9 @@ export default function InvoiceDetailPage({
             </svg>
             Exit Preview
           </button>
-          <div className="flex gap-3">
+          <div className="flex flex-wrap gap-2">
             <select
-              className="btn btn-secondary rounded-full px-6 outline-none appearance-none cursor-pointer bg-white"
+              className="btn btn-secondary rounded-xl px-4 py-2 outline-none appearance-none cursor-pointer bg-white"
               value={templateType}
               onChange={(e) => setTemplateType(e.target.value as any)}
             >
@@ -675,22 +779,33 @@ export default function InvoiceDetailPage({
               <option value="globalpro">🌐 GlobalPro — Indian Business (Global)</option>
             </select>
             <button
-              className="btn btn-secondary rounded-full px-6"
+              className="btn btn-secondary rounded-xl px-4 py-2"
               onClick={() => window.print()}
             >
               🖨 Save PDF / Print
             </button>
+            <button
+              className="btn btn-secondary rounded-xl px-4 py-2"
+              onClick={handleDownloadPdf}
+              disabled={isDownloadingPdf}
+            >
+              {isDownloadingPdf ? "⬇ Generating PDF..." : "⬇ Download PDF"}
+            </button>
             {invoice.status !== "PAID" && invoice.status !== "CANCELLED" && (
               <>
                 <button
-                  className="btn btn-secondary rounded-full px-6 flex items-center gap-2 border-primary-100 text-primary-600 hover:bg-primary-50"
-                  onClick={() => setShowEditModal(true)}
+                  className="btn btn-secondary rounded-xl px-4 py-2 flex items-center gap-2 border-primary-100 text-primary-600 hover:bg-primary-50"
+                  onClick={() =>
+                    router.push(
+                      `/dashboard/crm/invoices/new?editId=${id}&returnTo=${encodeURIComponent(`/dashboard/crm/invoices/${id}`)}`,
+                    )
+                  }
                 >
                   📝 Edit / Modify
                 </button>
                 {invoice.status === "DRAFT" && (
                   <button
-                    className="btn btn-secondary rounded-full px-6 flex items-center gap-2 border-amber-100 text-amber-600 hover:bg-amber-50"
+                    className="btn btn-secondary rounded-xl px-4 py-2 flex items-center gap-2 border-amber-100 text-amber-600 hover:bg-amber-50"
                     onClick={handleSyncCatalogue}
                     disabled={isSyncing}
                   >
@@ -698,7 +813,7 @@ export default function InvoiceDetailPage({
                   </button>
                 )}
                 <button
-                  className="btn btn-secondary rounded-full px-6 flex items-center gap-2 border-emerald-100 text-emerald-700 hover:bg-emerald-50"
+                  className="btn btn-secondary rounded-xl px-4 py-2 flex items-center gap-2 border-emerald-100 text-emerald-700 hover:bg-emerald-50"
                   onClick={handleRecalculateTax}
                   disabled={isRecalculatingTax}
                 >
@@ -707,7 +822,7 @@ export default function InvoiceDetailPage({
                     : "🧮 Recalculate Tax"}
                 </button>
                 <button
-                  className="btn btn-primary shadow-xl shadow-primary-200 rounded-full px-8"
+                  className="btn btn-primary shadow-xl shadow-primary-200 rounded-xl px-5 py-2"
                   onClick={() => setShowPaymentModal(true)}
                 >
                   💳 Settle Invoice
@@ -954,6 +1069,11 @@ export default function InvoiceDetailPage({
                   const gstRate =
                     item.taxRate || (isExport ? 0 : invoice.taxRate || 18);
                   const gstAmt = taxable * (gstRate / 100);
+                  const subscriptionOptions =
+                    item?.productAttributes?.subscriptionOptions || null;
+                  const isJournalSubscription =
+                    item?.productCategory === "JOURNAL_SUBSCRIPTION" ||
+                    Boolean(subscriptionOptions);
                   return (
                     <tr key={idx}>
                       <td style={{ textAlign: "center" }}>{idx + 1}</td>
@@ -977,6 +1097,28 @@ export default function InvoiceDetailPage({
                         {!item.plan && (
                           <div className="text-[9px] text-gray-500 mt-1">
                             [Subscription Item]
+                          </div>
+                        )}
+                        {isJournalSubscription && subscriptionOptions && (
+                          <div className="text-[9px] text-primary-700 mt-1">
+                            Frequency:{" "}
+                            <strong>
+                              {String(subscriptionOptions.frequency || "ANNUAL")
+                                .replaceAll("_", " ")}
+                            </strong>
+                            {" | "}Year:{" "}
+                            <strong>{subscriptionOptions.year || "—"}</strong>
+                            {subscriptionOptions.mode && (
+                              <>
+                                {" | "}Mode:{" "}
+                                <strong>
+                                  {String(subscriptionOptions.mode).replaceAll(
+                                    "_",
+                                    " + ",
+                                  )}
+                                </strong>
+                              </>
+                            )}
                           </div>
                         )}
                       </td>
@@ -1319,15 +1461,6 @@ export default function InvoiceDetailPage({
         </div>
       )}
 
-      <CreateInvoiceModal
-        isOpen={showEditModal}
-        onClose={() => setShowEditModal(false)}
-        onSuccess={() => {
-          fetchInvoice();
-          setShowEditModal(false);
-        }}
-        editId={id}
-      />
     </DashboardLayout>
   );
 }

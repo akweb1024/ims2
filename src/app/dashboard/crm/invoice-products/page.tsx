@@ -878,10 +878,10 @@ export default function InvoiceProductsPage() {
         actions={
           <div className="flex items-center gap-3">
             <div className="hidden lg:flex items-center gap-3 bg-white/40 backdrop-blur-md px-4 py-2 rounded-2xl border border-secondary-200">
-              <span className="text-[9px] font-black uppercase tracking-widest text-secondary-400">
+              <span className="text-[11px] font-semibold text-secondary-500">
                 FX Rate
               </span>
-              <div className="flex items-center gap-1.5 font-black text-xs text-primary-600">
+              <div className="flex items-center gap-1.5 font-semibold text-sm text-primary-700">
                 <span>1 USD = ₹</span>
                 <input
                   type="number"
@@ -894,7 +894,7 @@ export default function InvoiceProductsPage() {
                 />
               </div>
             </div>
-            <div className="flex bg-white/40 backdrop-blur-md rounded-2xl border border-secondary-200 overflow-hidden text-[10px] font-black uppercase tracking-widest text-secondary-600">
+            <div className="flex bg-white/40 backdrop-blur-md rounded-2xl border border-secondary-200 overflow-hidden text-[11px] font-semibold text-secondary-700">
               <button
                 onClick={downloadTemplate}
                 className="px-4 py-2 hover:bg-white hover:text-primary-600 transition-colors border-r border-secondary-200"
@@ -924,7 +924,7 @@ export default function InvoiceProductsPage() {
             </div>
             <Link
               href="/dashboard/crm/invoice-products/new"
-              className="bg-primary-600 text-white px-8 py-3.5 rounded-2xl text-[11px] font-black uppercase tracking-[0.2em] shadow-2xl shadow-primary-200 hover:bg-primary-700 transition-all flex items-center gap-3 active:scale-95 group"
+              className="bg-primary-600 text-white px-8 py-3.5 rounded-2xl text-[12px] font-semibold shadow-2xl shadow-primary-200 hover:bg-primary-700 transition-all flex items-center gap-3 active:scale-95 group"
             >
               <Plus
                 size={18}
@@ -976,14 +976,14 @@ export default function InvoiceProductsPage() {
           <div className="absolute right-0 top-0 w-1/3 h-full bg-gradient-to-l from-primary-500/10 to-transparent pointer-events-none" />
           <div className="flex flex-col lg:flex-row items-center justify-between gap-10">
             <div className="flex items-center gap-6">
-              <div className="w-14 h-14 bg-white/5 rounded-2xl flex items-center justify-center text-primary-400 group-hover:scale-110 transition-transform">
+              <div className="w-14 h-14 bg-white/5 rounded-2xl flex items-center justify-center text-primary-300 group-hover:scale-110 transition-transform">
                 <Calculator size={32} />
               </div>
               <div>
-                <h3 className="text-xl font-black text-white tracking-tight leading-none">
+                <h3 className="text-[28px] font-semibold text-white tracking-tight leading-none">
                   Currency Converter
                 </h3>
-                <p className="text-[10px] font-bold text-primary-300 mt-2">
+                <p className="text-[13px] font-medium text-primary-200/90 mt-2">
                   Convert INR and USD values using your working rate.
                 </p>
               </div>
@@ -996,14 +996,14 @@ export default function InvoiceProductsPage() {
                 </span>
                 <input
                   type="number"
-                  className="w-full bg-white/5 border border-white/10 h-16 rounded-[1.2rem] pl-10 pr-6 text-white font-black text-lg focus:outline-none focus:bg-white/10 focus:ring-primary-500/20 transition-all placeholder-white/20"
+                  className="w-full bg-white/5 border border-white/10 h-16 rounded-[1.2rem] pl-10 pr-6 text-white font-semibold text-lg focus:outline-none focus:bg-white/10 focus:ring-primary-500/20 transition-all placeholder-white/30"
                   placeholder="Enter amount"
                   value={fxInput}
                   onChange={(e) => setFxInput(e.target.value)}
                 />
               </div>
               <select
-                className="h-16 px-6 bg-white/5 border border-white/10 rounded-[1.2rem] text-white font-black text-xs uppercase tracking-widest focus:outline-none cursor-pointer"
+                className="h-16 px-6 bg-white/5 border border-white/10 rounded-[1.2rem] text-white font-semibold text-sm focus:outline-none cursor-pointer"
                 value={fxCurrency}
                 onChange={(e) => setFxCurrency(e.target.value as "INR" | "USD")}
               >
@@ -1016,19 +1016,19 @@ export default function InvoiceProductsPage() {
               <div className="bg-primary-600 px-8 h-16 rounded-[1.2rem] flex flex-col justify-center min-w-[180px] shadow-2xl shadow-primary-900/50">
                 {fxConverted !== null ? (
                   <>
-                    <p className="text-white font-black text-xl italic tracking-tight">
+                    <p className="text-white font-semibold text-2xl tracking-tight">
                       {fxCurrency === "INR"
                         ? `$${fxConverted.toFixed(2)}`
                         : `₹${fxConverted.toLocaleString("en-IN", { maximumFractionDigits: 2 })}`}
                     </p>
-                    <p className="text-[8px] font-black text-white/40 uppercase tracking-widest mt-0.5">
+                    <p className="text-[10px] font-medium text-white/55 mt-0.5">
                       {fxCurrency === "INR"
                         ? "USD value"
                         : "INR value"}
                     </p>
                   </>
                 ) : (
-                  <p className="text-white/30 font-black text-base tracking-wide">
+                  <p className="text-white/40 font-semibold text-base tracking-normal">
                     No value yet
                   </p>
                 )}
@@ -1047,7 +1047,7 @@ export default function InvoiceProductsPage() {
                   setPage(1);
                 }}
                 className={cn(
-                  "px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all border",
+                  "px-5 py-2.5 rounded-xl text-[12px] font-semibold transition-all border",
                   categoryFilter === ""
                     ? "bg-secondary-950 text-white border-secondary-950 shadow-xl"
                     : "bg-white text-secondary-500 border-secondary-200 hover:border-primary-300"
@@ -1064,7 +1064,7 @@ export default function InvoiceProductsPage() {
                     setPage(1);
                   }}
                   className={cn(
-                    "px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all border",
+                    "px-5 py-2.5 rounded-xl text-[12px] font-semibold transition-all border",
                     categoryFilter === cat.value
                       ? "bg-primary-600 text-white border-primary-600 shadow-xl"
                       : "bg-white text-secondary-500 border-secondary-200 hover:shadow-lg"
@@ -1082,7 +1082,7 @@ export default function InvoiceProductsPage() {
                   size={18}
                 />
                 <input
-                  className="h-12 w-full sm:w-[320px] bg-secondary-50 border-secondary-100 rounded-2xl pl-12 pr-6 text-sm font-bold text-secondary-950 placeholder-secondary-300 focus:bg-white focus:ring-primary-500/20 transition-all border focus:border-primary-100"
+                  className="h-12 w-full sm:w-[320px] bg-secondary-50 border-secondary-100 rounded-2xl pl-12 pr-6 text-sm font-medium text-secondary-950 placeholder-secondary-400 focus:bg-white focus:ring-primary-500/20 transition-all border focus:border-primary-100"
                   placeholder="Search by name, SKU, or domain..."
                   value={q}
                   onChange={(e) => {
@@ -1125,26 +1125,26 @@ export default function InvoiceProductsPage() {
                 <div className="w-10 h-10 bg-primary-600 text-white rounded-xl flex items-center justify-center font-black text-sm">
                   {selected.size}
                 </div>
-                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-primary-900 italic">
+                <span className="text-[12px] font-semibold text-primary-900">
                   Products selected for bulk update
                 </span>
               </div>
               <div className="flex items-center gap-3">
                 <button
                   onClick={() => handleBulk("ACTIVATE")}
-                  className="px-5 py-2 rounded-xl bg-white text-emerald-600 border border-emerald-100 text-[9px] font-black uppercase tracking-widest hover:bg-emerald-50 transition-all shadow-sm"
+                  className="px-5 py-2 rounded-xl bg-white text-emerald-600 border border-emerald-100 text-[11px] font-semibold hover:bg-emerald-50 transition-all shadow-sm"
                 >
                   Activate
                 </button>
                 <button
                   onClick={() => handleBulk("FEATURE")}
-                  className="px-5 py-2 rounded-xl bg-white text-amber-600 border border-amber-100 text-[9px] font-black uppercase tracking-widest hover:bg-amber-50 transition-all shadow-sm"
+                  className="px-5 py-2 rounded-xl bg-white text-amber-600 border border-amber-100 text-[11px] font-semibold hover:bg-amber-50 transition-all shadow-sm"
                 >
                   Mark Featured
                 </button>
                 <button
                   onClick={() => handleBulk("DELETE")}
-                  className="px-5 py-2 rounded-xl bg-white text-danger-600 border border-danger-100 text-[9px] font-black uppercase tracking-widest hover:bg-danger-50 transition-all shadow-sm"
+                  className="px-5 py-2 rounded-xl bg-white text-danger-600 border border-danger-100 text-[11px] font-semibold hover:bg-danger-50 transition-all shadow-sm"
                 >
                   Delete Selected
                 </button>
@@ -1189,22 +1189,22 @@ export default function InvoiceProductsPage() {
                           className="w-5 h-5 rounded-lg border-secondary-300 text-primary-600 focus:ring-primary-500 cursor-pointer"
                         />
                       </th>
-                      <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-secondary-400">
+                      <th className="px-6 py-5 text-[11px] font-semibold uppercase tracking-[0.08em] text-secondary-500">
                         Product
                       </th>
-                      <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-secondary-400">
+                      <th className="px-6 py-5 text-[11px] font-semibold uppercase tracking-[0.08em] text-secondary-500">
                         Category
                       </th>
-                      <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-secondary-400 text-right">
+                      <th className="px-6 py-5 text-[11px] font-semibold uppercase tracking-[0.08em] text-secondary-500 text-right">
                         INR Price
                       </th>
-                      <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-secondary-400 text-right">
+                      <th className="px-6 py-5 text-[11px] font-semibold uppercase tracking-[0.08em] text-secondary-500 text-right">
                         USD Price
                       </th>
-                      <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-secondary-400 text-center">
+                      <th className="px-6 py-5 text-[11px] font-semibold uppercase tracking-[0.08em] text-secondary-500 text-center">
                         Status
                       </th>
-                      <th className="px-8 py-5 text-[10px] font-black uppercase tracking-widest text-secondary-400 text-right">
+                      <th className="px-8 py-5 text-[11px] font-semibold uppercase tracking-[0.08em] text-secondary-500 text-right">
                         Actions
                       </th>
                     </tr>
@@ -1228,7 +1228,7 @@ export default function InvoiceProductsPage() {
                           <td className="px-6 py-6">
                             <div className="flex flex-col min-w-[200px]">
                               <div className="flex items-center gap-2 mb-1">
-                                <span className="font-black text-secondary-950 uppercase tracking-tight italic group-hover:text-primary-600 transition-colors">
+                                <span className="font-semibold text-secondary-950 tracking-tight group-hover:text-primary-600 transition-colors">
                                   {p.name}
                                 </span>
                                 {p.isFeatured && (
@@ -1239,11 +1239,11 @@ export default function InvoiceProductsPage() {
                                 )}
                               </div>
                               <div className="flex items-center gap-3">
-                                <span className="text-[9px] font-black text-secondary-300 uppercase tracking-widest">
+                                <span className="text-[10px] font-medium text-secondary-400">
                                   SKU: {p.sku || "NULL_NODE"}
                                 </span>
                                 <span className="h-1 w-1 bg-secondary-200 rounded-full" />
-                                <span className="text-[9px] font-black text-secondary-300 uppercase tracking-widest">
+                                <span className="text-[10px] font-medium text-secondary-400">
                                   {p.unit} unit
                                 </span>
                               </div>
@@ -1251,14 +1251,14 @@ export default function InvoiceProductsPage() {
                           </td>
                           <td className="px-6 py-6 font-black uppercase">
                             <span
-                              className={`px-4 py-1.5 rounded-full text-[9px] font-black tracking-widest border ${catCfg.color.replace("opacity-10", "border-opacity-30")}`}
+                              className={`px-4 py-1.5 rounded-full text-[10px] font-semibold tracking-normal border ${catCfg.color.replace("opacity-10", "border-opacity-30")}`}
                             >
                               {catCfg.label}
                             </span>
                           </td>
                           <td className="px-6 py-6 text-right">
                             <div className="flex flex-col items-end">
-                              <span className="font-black text-secondary-950 text-base italic">
+                              <span className="font-semibold text-secondary-950 text-base">
                                 {p.type === "VARIABLE" &&
                                 p.variants &&
                                 p.variants.length > 0
@@ -1289,14 +1289,14 @@ export default function InvoiceProductsPage() {
                                     })()
                                   : FMT_INR(p.priceINR || 0)}
                               </span>
-                              <p className="text-[8px] font-black text-secondary-400 uppercase tracking-widest mt-1">
+                              <p className="text-[10px] font-medium text-secondary-400 mt-1">
                                 INR
                               </p>
                             </div>
                           </td>
                           <td className="px-6 py-6 text-right">
                             <div className="flex flex-col items-end">
-                              <span className="font-black text-indigo-700 text-base italic">
+                              <span className="font-semibold text-indigo-700 text-base">
                                 {p.type === "VARIABLE" &&
                                 p.variants &&
                                 p.variants.length > 0
@@ -1327,7 +1327,7 @@ export default function InvoiceProductsPage() {
                                     })()
                                   : FMT_USD(p.priceUSD || 0)}
                               </span>
-                              <p className="text-[8px] font-black text-indigo-300 uppercase tracking-widest mt-1">
+                              <p className="text-[10px] font-medium text-indigo-300 mt-1">
                                 USD
                               </p>
                             </div>
@@ -1335,7 +1335,7 @@ export default function InvoiceProductsPage() {
                           <td className="px-6 py-6 text-center">
                             <CRMBadge
                               variant={p.isActive ? "success" : "secondary"}
-                              className="text-[9px] font-black border-none uppercase tracking-[0.2em] italic"
+                              className="text-[10px] font-semibold border-none"
                               dot
                             >
                               {p.isActive ? "Active" : "Inactive"}
@@ -1368,7 +1368,7 @@ export default function InvoiceProductsPage() {
             {/* Pagination */}
             {totalPages > 1 && (
               <div className="p-8 border-t border-secondary-100 flex items-center justify-between bg-secondary-50/30">
-                <p className="text-[10px] font-black text-secondary-400 uppercase tracking-[0.2em]">
+                <p className="text-[12px] font-medium text-secondary-500">
                   Showing {(page - 1) * pageSize + 1}–
                   {Math.min(page * pageSize, total)} of {total} products
                 </p>
@@ -1380,7 +1380,7 @@ export default function InvoiceProductsPage() {
                   >
                     <ChevronRight size={18} className="rotate-180" />
                   </button>
-                  <span className="text-xs font-black text-secondary-900 uppercase tracking-widest">
+                  <span className="text-sm font-semibold text-secondary-900">
                     Page {page}{" "}
                     <span className="mx-2 text-secondary-200">of</span>{" "}
                     {totalPages}
