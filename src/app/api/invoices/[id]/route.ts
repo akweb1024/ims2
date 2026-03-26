@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { authorizedRoute } from '@/lib/middleware-auth';
 import { handleApiError, ValidationError } from '@/lib/error-handler';
-import { releaseInvoiceStockReservations } from '@/lib/invoice-stock-reservation';
+import { releaseInvoiceStockReservations, replaceInvoiceStockReservations } from '@/lib/invoice-stock-reservation';
 
 export const GET = authorizedRoute(
     [],
@@ -68,7 +68,7 @@ export const PATCH = authorizedRoute(
 
             const existing = await prisma.invoice.findUnique({
                 where: { id },
-                select: { status: true, companyId: true }
+                select: { status: true, companyId: true, lineItems: true, amount: true, tax: true, total: true }
             });
 
             if (!existing) {
@@ -80,29 +80,59 @@ export const PATCH = authorizedRoute(
             }
 
             // Update allowed fields: dueDate, description, amount, tax, total, lineItems
-            const updated = await prisma.invoice.update({
-                where: { id },
-                data: {
-                    dueDate: body.dueDate ? new Date(body.dueDate) : undefined,
-                    description: body.description,
-                    amount: body.amount,
-                    tax: body.tax,
-                    total: body.total,
-                    lineItems: body.lineItems,
-                    brandId: body.brandId,
-                    updatedAt: new Date()
-                }
-            });
+            const updated = await prisma.$transaction(async (tx: any) => {
+                let nextLineItems = body.lineItems;
 
-            // Log Audit
-            await prisma.auditLog.create({
-                data: {
-                    userId: user.id,
-                    action: 'UPDATE_INVOICE',
-                    entity: 'Invoice',
-                    entityId: id,
-                    changes: body
+                if (Array.isArray(body.lineItems)) {
+                    nextLineItems = await replaceInvoiceStockReservations(tx, {
+                        invoiceId: id,
+                        companyId: existing.companyId,
+                        nextLineItems: body.lineItems,
+                        userId: user.id,
+                        reason: 'Invoice edited',
+                    });
                 }
+
+                const updatedInvoice = await tx.invoice.update({
+                    where: { id },
+                    data: {
+                        dueDate: body.dueDate ? new Date(body.dueDate) : undefined,
+                        description: body.description,
+                        amount: body.amount,
+                        tax: body.tax,
+                        total: body.total,
+                        lineItems: nextLineItems,
+                        brandId: body.brandId,
+                        updatedAt: new Date()
+                    }
+                });
+
+                await tx.auditLog.create({
+                    data: {
+                        userId: user.id,
+                        action: 'UPDATE_INVOICE',
+                        entity: 'Invoice',
+                        entityId: id,
+                        changes: {
+                            ...body,
+                            reservationReconciled: Array.isArray(body.lineItems),
+                            previousSummary: {
+                                amount: existing.amount,
+                                tax: existing.tax,
+                                total: existing.total,
+                                lineItemCount: Array.isArray(existing.lineItems) ? existing.lineItems.length : 0,
+                            },
+                            nextSummary: {
+                                amount: updatedInvoice.amount,
+                                tax: updatedInvoice.tax,
+                                total: updatedInvoice.total,
+                                lineItemCount: Array.isArray(updatedInvoice.lineItems) ? updatedInvoice.lineItems.length : 0,
+                            },
+                        }
+                    }
+                });
+
+                return updatedInvoice;
             });
 
             return NextResponse.json(updated);

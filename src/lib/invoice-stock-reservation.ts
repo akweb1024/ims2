@@ -18,11 +18,13 @@ export async function applyInvoiceStockReservations(
     companyId,
     lineItems,
     userId,
+    reason = "Invoice stock reservation",
   }: {
     invoiceId: string;
     companyId: string | null | undefined;
     lineItems: any[];
     userId: string;
+    reason?: string;
   },
 ) {
   if (!Array.isArray(lineItems) || lineItems.length === 0) return lineItems;
@@ -85,6 +87,23 @@ export async function applyInvoiceStockReservations(
         where: { id: variant.id },
         data: { stockQuantity: available - qty },
       });
+      await tx.auditLog.create({
+        data: {
+          userId,
+          action: "RESERVE_VARIANT_STOCK",
+          entity: "Invoice",
+          entityId: invoiceId,
+          changes: {
+            invoiceId,
+            variantId: variant.id,
+            productId: product.id,
+            quantity: qty,
+            beforeStock: available,
+            afterStock: available - qty,
+            reason,
+          },
+        },
+      });
 
       nextLineItems[index] = {
         ...item,
@@ -140,7 +159,7 @@ export async function applyInvoiceStockReservations(
         type: "RESERVE",
         quantity: qty,
         referenceId: invoiceId,
-        notes: "Invoice stock reservation",
+        notes: reason,
         createdBy: userId,
       },
     });
@@ -220,9 +239,27 @@ export async function releaseInvoiceStockReservations(
         select: { id: true, stockQuantity: true },
       });
       if (variant) {
+        const nextStock = Number(variant.stockQuantity || 0) + qty;
         await tx.productVariant.update({
           where: { id: variant.id },
-          data: { stockQuantity: Number(variant.stockQuantity || 0) + qty },
+          data: { stockQuantity: nextStock },
+        });
+        await tx.auditLog.create({
+          data: {
+            userId,
+            action: "RELEASE_VARIANT_STOCK",
+            entity: "Invoice",
+            entityId: invoiceId,
+            changes: {
+              invoiceId,
+              variantId: variant.id,
+              productId: reservation.productId,
+              quantity: qty,
+              beforeStock: Number(variant.stockQuantity || 0),
+              afterStock: nextStock,
+              reason,
+            },
+          },
         });
       }
     } else if (
@@ -264,5 +301,36 @@ export async function releaseInvoiceStockReservations(
   await tx.invoice.update({
     where: { id: invoiceId },
     data: { lineItems: nextLineItems },
+  });
+}
+
+export async function replaceInvoiceStockReservations(
+  tx: any,
+  {
+    invoiceId,
+    companyId,
+    nextLineItems,
+    userId,
+    reason = "Invoice line items updated, reservation reconciled",
+  }: {
+    invoiceId: string;
+    companyId: string | null | undefined;
+    nextLineItems: any[];
+    userId: string;
+    reason?: string;
+  },
+) {
+  await releaseInvoiceStockReservations(tx, {
+    invoiceId,
+    userId,
+    reason: `${reason}: release previous`,
+  });
+
+  return applyInvoiceStockReservations(tx, {
+    invoiceId,
+    companyId,
+    lineItems: nextLineItems,
+    userId,
+    reason: `${reason}: reserve updated`,
   });
 }

@@ -27,6 +27,14 @@ export default function AnvInvoiceTemplate({
     Array.isArray(invoice.lineItems) && invoice.lineItems.length > 0
       ? invoice.lineItems
       : invoice.subscription?.items || [];
+  const getReservationBadge = (item: any) => {
+    const status = item?.stockReservation?.status;
+    if (!status) return null;
+    if (status === "RESERVED") return "Stock Reserved";
+    if (status === "CONSUMED") return "Stock Consumed";
+    if (status === "RELEASED") return "Stock Released";
+    return null;
+  };
 
   const invoiceCountry =
     invoice.shippingCountry ||
@@ -434,6 +442,11 @@ export default function AnvInvoiceTemplate({
                   {item.description ||
                     item.journal?.name ||
                     "A&V Publication Item"}
+                  {getReservationBadge(item) && (
+                    <div className="text-[8px] mt-1 inline-flex rounded-full border border-blue-200 bg-blue-50 px-2 py-0.5 font-semibold text-blue-700">
+                      {getReservationBadge(item)}
+                    </div>
+                  )}
                   <div className="text-[8px] font-normal italic text-gray-700">
                     Period: Jan 2025 - Dec 2025
                   </div>

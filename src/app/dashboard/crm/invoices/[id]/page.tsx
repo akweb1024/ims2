@@ -328,6 +328,14 @@ export default function InvoiceDetailPage({
     Array.isArray(invoice.lineItems) && invoice.lineItems.length > 0
       ? invoice.lineItems
       : invoice.subscription?.items || [];
+  const getReservationBadge = (item: any) => {
+    const status = item?.stockReservation?.status;
+    if (!status) return null;
+    if (status === "RESERVED") return "Stock Reserved";
+    if (status === "CONSUMED") return "Stock Consumed";
+    if (status === "RELEASED") return "Stock Released";
+    return null;
+  };
   const company = invoice.company || {};
   const brand = invoice.brand || null;
   const invoiceCountry =
@@ -955,6 +963,11 @@ export default function InvoiceDetailPage({
                             item.journal?.name ||
                             "Item Name"}
                         </strong>
+                        {getReservationBadge(item) && (
+                          <div className="text-[9px] mt-1 inline-flex rounded-full border border-primary-200 bg-primary-50 px-2 py-0.5 font-semibold text-primary-700">
+                            {getReservationBadge(item)}
+                          </div>
+                        )}
                         {item.plan && (
                           <div className="text-[9px] text-gray-500 mt-1">
                             [{item.plan.format} | {item.plan.duration} Months

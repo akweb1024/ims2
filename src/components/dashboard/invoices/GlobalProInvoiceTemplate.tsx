@@ -27,6 +27,14 @@ export default function GlobalProInvoiceTemplate({
     Array.isArray(invoice.lineItems) && invoice.lineItems.length > 0
       ? invoice.lineItems
       : invoice.subscription?.items || [];
+  const getReservationBadge = (item: any) => {
+    const status = item?.stockReservation?.status;
+    if (!status) return null;
+    if (status === "RESERVED") return "Stock Reserved";
+    if (status === "CONSUMED") return "Stock Consumed";
+    if (status === "RELEASED") return "Stock Released";
+    return null;
+  };
 
   const invoiceCountry =
     invoice.shippingCountry ||
@@ -752,6 +760,23 @@ export default function GlobalProInvoiceTemplate({
                   <div style={{ fontWeight: 700, color: "#1e293b", fontSize: "10px" }}>
                     {item.description || item.journal?.name || "Service / Product"}
                   </div>
+                  {getReservationBadge(item) && (
+                    <div
+                      style={{
+                        display: "inline-block",
+                        marginTop: "4px",
+                        background: "#eff6ff",
+                        border: "1px solid #bfdbfe",
+                        color: "#1d4ed8",
+                        borderRadius: "999px",
+                        padding: "1px 6px",
+                        fontSize: "8px",
+                        fontWeight: 700,
+                      }}
+                    >
+                      {getReservationBadge(item)}
+                    </div>
+                  )}
                   {item.period && (
                     <div style={{ fontSize: "8px", color: "#94a3b8", marginTop: "2px", fontStyle: "italic" }}>
                       Period: {item.period}
