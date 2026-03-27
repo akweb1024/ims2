@@ -35,14 +35,13 @@ export default function CashflowWidget() {
         loadAnalytics();
     }, []);
 
-    const forecastSeries = analytics?.charts?.forecast || [];
     const chartData = useMemo(
         () =>
-            forecastSeries.map((item) => ({
+            (analytics?.charts?.forecast ?? []).map((item) => ({
                 month: item.month,
                 value: Number((item.projectedRevenue - item.projectedExpense).toFixed(2)),
             })),
-        [forecastSeries]
+        [analytics?.charts?.forecast]
     );
 
     const projectedBalance = useMemo(

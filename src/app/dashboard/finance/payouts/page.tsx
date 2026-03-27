@@ -44,32 +44,32 @@ export default function FinancePayoutsPage() {
     const [paymentReference, setPaymentReference] = useState('');
     const [submitting, setSubmitting] = useState(false);
 
-    const fetchPayouts = async () => {
-        setLoading(true);
-        try {
-            const token = localStorage.getItem('token');
-            const params = new URLSearchParams();
-            if (activeStatus !== 'ALL') params.set('status', activeStatus);
-
-            const res = await fetch(`/api/commissions/payouts?${params.toString()}`, {
-                headers: token ? { Authorization: `Bearer ${token}` } : undefined,
-            });
-
-            if (!res.ok) {
-                throw new Error('Failed to load payout queue');
-            }
-
-            const data = await res.json();
-            setPayouts(data);
-        } catch (error: any) {
-            console.error(error);
-            toast.error(error.message || 'Failed to load payout queue');
-        } finally {
-            setLoading(false);
-        }
-    };
-
     useEffect(() => {
+        const fetchPayouts = async () => {
+            setLoading(true);
+            try {
+                const token = localStorage.getItem('token');
+                const params = new URLSearchParams();
+                if (activeStatus !== 'ALL') params.set('status', activeStatus);
+
+                const res = await fetch(`/api/commissions/payouts?${params.toString()}`, {
+                    headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+                });
+
+                if (!res.ok) {
+                    throw new Error('Failed to load payout queue');
+                }
+
+                const data = await res.json();
+                setPayouts(data);
+            } catch (error: any) {
+                console.error(error);
+                toast.error(error.message || 'Failed to load payout queue');
+            } finally {
+                setLoading(false);
+            }
+        };
+
         fetchPayouts();
     }, [activeStatus]);
 

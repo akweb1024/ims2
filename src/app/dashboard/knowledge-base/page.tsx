@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
@@ -46,23 +46,19 @@ export default function KnowledgeBasePage() {
 
     const isPrivileged = ['SUPER_ADMIN', 'ADMIN'].includes(userRole);
 
-    useEffect(() => {
-        const userData = localStorage.getItem('user');
-        if (userData) setUserRole(JSON.parse(userData).role);
-        fetchArticles('MY WORK');
-    }, []);
-
-    const fetchArticles = async (cat?: string, searchTerm?: string) => {
+    const fetchArticles = useCallback(async (cat?: string, searchTerm?: string, roleOverride?: string) => {
         setLoading(true);
         try {
             const token = localStorage.getItem('token');
             let url = '/api/knowledge-base/my-work';
+            const effectiveRole = roleOverride ?? userRole;
+            const privilegedUser = ['SUPER_ADMIN', 'ADMIN'].includes(effectiveRole);
 
             if (cat !== 'MY WORK') {
                 const params = new URLSearchParams();
                 if (cat && cat !== 'ALL') params.set('category', cat);
                 if (searchTerm) params.set('search', searchTerm);
-                if (isPrivileged && statusFilter !== 'ALL') params.set('status', statusFilter);
+                if (privilegedUser && statusFilter !== 'ALL') params.set('status', statusFilter);
                 url = `/api/knowledge-base${params.toString() ? `?${params.toString()}` : ''}`;
             }
 
@@ -73,12 +69,18 @@ export default function KnowledgeBasePage() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [statusFilter, userRole]);
+
+    useEffect(() => {
+        const userData = localStorage.getItem('user');
+        const parsedRole = userData ? JSON.parse(userData).role ?? '' : '';
+        if (parsedRole) setUserRole(parsedRole);
+        fetchArticles('MY WORK', undefined, parsedRole);
+    }, [fetchArticles]);
 
     useEffect(() => {
         fetchArticles(activeCategory, search);
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [statusFilter, userRole]);
+    }, [activeCategory, fetchArticles, search, statusFilter, userRole]);
 
     const handleCategoryChange = (cat: string) => {
         setActiveCategory(cat);

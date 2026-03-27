@@ -59,12 +59,12 @@ export const POST = authorizedRoute(
           const name = row.name || row.Name;
           if (!name || !String(name).trim()) continue;
 
-          let category = normalizeCategory(row.category || row.Category);
+          const category = normalizeCategory(row.category || row.Category);
 
           let type = (row.type || row.Type || "SIMPLE").toUpperCase();
           if (type !== "VARIABLE") type = "SIMPLE";
 
-          let pricingModel = normalizePricingModel(
+          const pricingModel = normalizePricingModel(
             row.pricingModel || row.PricingModel || row["Pricing Model"],
           );
 
