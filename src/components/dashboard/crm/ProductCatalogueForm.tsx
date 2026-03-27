@@ -137,6 +137,12 @@ const YEAR_OPTIONS = Array.from(
 const SUBSCRIPTION_FREQUENCY_OPTIONS = [
   { value: "ANNUAL", label: "Annual" },
   { value: "ISSUE_WISE", label: "Issue Wise" },
+  { value: "BI_ANNUAL", label: "(Jan-June, July-Dec) - Bi-Annual" },
+  {
+    value: "TRI_ANNUAL",
+    label: "(Jan-April, May-August, Sept-Dec) - Tri-Annual",
+  },
+  { value: "BI_MONTHLY", label: "(Bi-Monthly) - Bi-Monthly" },
 ];
 
 const SUBSCRIPTION_MODE_OPTIONS = [

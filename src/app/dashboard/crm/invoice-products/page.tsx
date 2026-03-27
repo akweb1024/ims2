@@ -185,6 +185,8 @@ interface BulkEditFormState {
   isActive: string;
   isFeatured: string;
   taxIncluded: string;
+  isPhysicalDeliverable: string;
+  trackInventory: string;
 }
 
 // ─── Helpers ───────────────────────────────────────────────────────────────
@@ -245,6 +247,8 @@ const BULK_EDIT_INITIAL_FORM: BulkEditFormState = {
   isActive: "",
   isFeatured: "",
   taxIncluded: "",
+  isPhysicalDeliverable: "",
+  trackInventory: "",
 };
 
 export default function InvoiceProductsPage() {
@@ -710,6 +714,13 @@ export default function InvoiceProductsPage() {
     }
     if (bulkEditForm.taxIncluded) {
       changes.taxIncluded = bulkEditForm.taxIncluded === "true";
+    }
+    if (bulkEditForm.isPhysicalDeliverable) {
+      changes.isPhysicalDeliverable =
+        bulkEditForm.isPhysicalDeliverable === "true";
+    }
+    if (bulkEditForm.trackInventory) {
+      changes.trackInventory = bulkEditForm.trackInventory === "true";
     }
 
     if (Object.keys(changes).length === 0) {
@@ -1678,6 +1689,40 @@ export default function InvoiceProductsPage() {
 
               <label className="space-y-2">
                 <span className="text-xs font-semibold uppercase tracking-[0.08em] text-secondary-500">
+                  Physical Deliverable
+                </span>
+                <select
+                  value={bulkEditForm.isPhysicalDeliverable}
+                  onChange={(e) =>
+                    handleBulkEditField("isPhysicalDeliverable", e.target.value)
+                  }
+                  className="w-full h-11 rounded-xl border border-secondary-200 bg-white px-3.5 text-sm font-medium text-secondary-800"
+                >
+                  <option value="">No change</option>
+                  <option value="true">Yes</option>
+                  <option value="false">No</option>
+                </select>
+              </label>
+
+              <label className="space-y-2">
+                <span className="text-xs font-semibold uppercase tracking-[0.08em] text-secondary-500">
+                  Track Inventory
+                </span>
+                <select
+                  value={bulkEditForm.trackInventory}
+                  onChange={(e) =>
+                    handleBulkEditField("trackInventory", e.target.value)
+                  }
+                  className="w-full h-11 rounded-xl border border-secondary-200 bg-white px-3.5 text-sm font-medium text-secondary-800"
+                >
+                  <option value="">No change</option>
+                  <option value="true">Yes</option>
+                  <option value="false">No</option>
+                </select>
+              </label>
+
+              <label className="space-y-2">
+                <span className="text-xs font-semibold uppercase tracking-[0.08em] text-secondary-500">
                   Domain
                 </span>
                 <input
@@ -1706,7 +1751,7 @@ export default function InvoiceProductsPage() {
             </label>
 
             <div className="rounded-2xl border border-secondary-100 bg-secondary-50 px-4 py-3 text-xs text-secondary-500">
-              Bulk edit updates shared catalogue metadata only. Pricing rows, variants, SKU values, and product-specific structures still use the regular product editor.
+              Bulk edit updates shared catalogue metadata and inventory flags. Pricing rows, variants, SKU values, and other product-specific structures still use the regular product editor.
             </div>
 
             <div className="flex justify-end gap-3">

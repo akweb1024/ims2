@@ -34,6 +34,8 @@ const bulkEditChangesSchema = z.object({
     isActive: z.boolean().optional(),
     isFeatured: z.boolean().optional(),
     taxIncluded: z.boolean().optional(),
+    isPhysicalDeliverable: z.boolean().optional(),
+    trackInventory: z.boolean().optional(),
 }).refine((value) => Object.keys(value).length > 0, {
     message: 'At least one field is required for bulk edit',
 });
@@ -100,6 +102,10 @@ export const POST = authorizedRoute(
             }
 
             if (action === 'EDIT') {
+                const inventoryChangeRequested =
+                    changes?.isPhysicalDeliverable !== undefined ||
+                    changes?.trackInventory !== undefined;
+
                 const updateData = {
                     ...(changes?.category !== undefined ? { category: changes.category } : {}),
                     ...(changes?.pricingModel !== undefined ? { pricingModel: changes.pricingModel } : {}),
@@ -113,10 +119,68 @@ export const POST = authorizedRoute(
                     updatedByUserId: user.id,
                 };
 
-                result = await db.invoiceProduct.updateMany({
-                    where: { id: { in: validIds } },
-                    data: updateData,
-                });
+                if (inventoryChangeRequested) {
+                    const existingProducts = await db.invoiceProduct.findMany({
+                        where: { id: { in: validIds } },
+                        select: { id: true, productAttributes: true },
+                    });
+
+                    await db.$transaction(
+                        existingProducts.map((product: any) => {
+                            const existingAttributes =
+                                product.productAttributes &&
+                                typeof product.productAttributes === 'object' &&
+                                !Array.isArray(product.productAttributes)
+                                    ? product.productAttributes
+                                    : {};
+                            const existingInventorySettings =
+                                existingAttributes.inventorySettings &&
+                                typeof existingAttributes.inventorySettings === 'object' &&
+                                !Array.isArray(existingAttributes.inventorySettings)
+                                    ? existingAttributes.inventorySettings
+                                    : {};
+
+                            const nextIsPhysicalDeliverable =
+                                changes?.isPhysicalDeliverable !== undefined
+                                    ? changes.isPhysicalDeliverable
+                                    : existingInventorySettings.isPhysicalDeliverable;
+
+                            const nextInventorySettings = {
+                                ...existingInventorySettings,
+                                ...(changes?.isPhysicalDeliverable !== undefined
+                                    ? { isPhysicalDeliverable: changes.isPhysicalDeliverable }
+                                    : {}),
+                                ...(changes?.trackInventory !== undefined
+                                    ? {
+                                          trackInventory: nextIsPhysicalDeliverable
+                                              ? changes.trackInventory
+                                              : false,
+                                      }
+                                    : nextIsPhysicalDeliverable
+                                      ? {}
+                                      : { trackInventory: false }),
+                            };
+
+                            return db.invoiceProduct.update({
+                                where: { id: product.id },
+                                data: {
+                                    ...updateData,
+                                    productAttributes: {
+                                        ...existingAttributes,
+                                        inventorySettings: nextInventorySettings,
+                                    },
+                                },
+                            });
+                        }),
+                    );
+
+                    result = { count: existingProducts.length };
+                } else {
+                    result = await db.invoiceProduct.updateMany({
+                        where: { id: { in: validIds } },
+                        data: updateData,
+                    });
+                }
 
                 logger.info('Bulk edit invoice products', {
                     count: result.count,
