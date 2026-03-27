@@ -53,7 +53,7 @@ export const GET = authorizedRoute([], async (req: NextRequest, user: any) => {
     });
 
     return NextResponse.json({
-        governance: getGovernanceState(),
+        governance: await getGovernanceState(user.companyId),
         cycle,
         ideas: ideas.map((idea) => serializeThinkTankIdea(idea, {
             reveal: view === 'results',

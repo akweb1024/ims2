@@ -37,7 +37,7 @@ export const GET = authorizedRoute([], async (_req: NextRequest, user: any, cont
 
 export const PATCH = authorizedRoute([], async (req: NextRequest, user: any, context: any) => {
     ensureThinkTankAccess(user);
-    const governance = getGovernanceState();
+    const governance = await getGovernanceState(user.companyId);
     if (!governance.submissionOpen) {
         return NextResponse.json({ error: 'Ideas are locked for editing right now.' }, { status: 423 });
     }

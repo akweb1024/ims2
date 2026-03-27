@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { getGovernanceState, logThinkTankAudit, recalculateIdeaScore } from '@/lib/think-tank';
+import { getScheduledGovernanceState, logThinkTankAudit, recalculateIdeaScore } from '@/lib/think-tank';
 
 export const dynamic = 'force-dynamic';
 
@@ -10,7 +10,7 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const governance = getGovernanceState();
+    const governance = getScheduledGovernanceState();
     if (!governance.locked && !governance.revealWindow) {
         return NextResponse.json({ skipped: true, reason: 'Not in tally window.' });
     }

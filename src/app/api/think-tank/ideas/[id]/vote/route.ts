@@ -17,7 +17,7 @@ export const dynamic = 'force-dynamic';
 
 export const POST = authorizedRoute([], async (req: NextRequest, user: any, context: any) => {
     ensureThinkTankAccess(user);
-    const governance = getGovernanceState();
+    const governance = await getGovernanceState(user.companyId);
     if (!governance.votingOpen) {
         await logThinkTankAudit({
             actorUserId: user.id,

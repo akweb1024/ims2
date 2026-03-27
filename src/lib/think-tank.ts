@@ -14,9 +14,12 @@ import { StorageService } from '@/lib/storage';
 
 const IST_TIMEZONE = 'Asia/Kolkata';
 const THINK_TANK_KEY = process.env.THINK_TANK_ENCRYPTION_KEY || process.env.CONFIG_ENCRYPTION_KEY || 'think-tank-encryption-key-32ch';
+const CONFIG_ENCRYPTION_KEY = process.env.CONFIG_ENCRYPTION_KEY || 'your-32-character-secret-key!!';
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || process.env.GOOGLE_AI_API_KEY || '';
 const EMBEDDING_MODEL = process.env.THINK_TANK_EMBEDDING_MODEL || 'text-embedding-004';
 const DUPLICATE_THRESHOLD = 0.85;
+const GOVERNANCE_CATEGORY = 'THINK_TANK';
+const GOVERNANCE_KEY = 'GOVERNANCE_OVERRIDE';
 
 const CATEGORY_EXPERTISE: Record<ThinkTankIdeaCategory, string[]> = {
     PUBLICATION: ['publication', 'editorial', 'journal', 'content'],
@@ -63,6 +66,19 @@ export type GovernanceState = {
     locked: boolean;
     revealWindow: boolean;
     label: string;
+    mode?: 'SCHEDULED' | 'SUBMISSIONS_OPEN' | 'VOTING_OPEN' | 'LOCKED' | 'REVEAL_READY';
+    overrideActive?: boolean;
+    overrideReason?: string | null;
+    overrideUpdatedAt?: string | null;
+};
+
+export type GovernanceOverrideMode = 'SCHEDULED' | 'SUBMISSIONS_OPEN' | 'VOTING_OPEN' | 'LOCKED' | 'REVEAL_READY';
+
+type GovernanceOverrideRecord = {
+    mode: GovernanceOverrideMode;
+    reason?: string | null;
+    updatedBy?: string | null;
+    updatedAt?: string | null;
 };
 
 export const thinkTankIdeaInclude = {
@@ -187,6 +203,7 @@ const makeIstDate = (year: number, month: number, day: number, time = '00:00:00'
 const hashIdentity = (value: string) => crypto.createHash('sha256').update(value).digest('hex');
 
 const getKey = () => crypto.scryptSync(THINK_TANK_KEY, 'think-tank-salt', 32);
+const getConfigKey = () => crypto.scryptSync(CONFIG_ENCRYPTION_KEY, 'salt', 32);
 
 export const encryptThinkTankIdentity = (plainText: string) => {
     const iv = crypto.randomBytes(16);
@@ -204,6 +221,24 @@ export const decryptThinkTankIdentity = (encryptedText: string) => {
     return decrypted.toString('utf8');
 };
 
+const encryptConfigValue = (plainText: string) => {
+    const iv = crypto.randomBytes(16);
+    const cipher = crypto.createCipheriv('aes-256-cbc', getConfigKey(), iv);
+    let encrypted = cipher.update(plainText, 'utf8', 'hex');
+    encrypted += cipher.final('hex');
+    return `${iv.toString('hex')}:${encrypted}`;
+};
+
+const decryptConfigValue = (cipherText: string) => {
+    const parts = cipherText.split(':');
+    const iv = Buffer.from(parts.shift() || '', 'hex');
+    const encryptedText = parts.join(':');
+    const decipher = crypto.createDecipheriv('aes-256-cbc', getConfigKey(), iv);
+    let decrypted = decipher.update(encryptedText, 'hex', 'utf8');
+    decrypted += decipher.final('utf8');
+    return decrypted;
+};
+
 export const ensureThinkTankAccess = (user: ThinkTankUser) => {
     if (!user?.id) {
         throw new Error('Unauthorized');
@@ -216,28 +251,186 @@ export const ensureThinkTankAccess = (user: ThinkTankUser) => {
     }
 };
 
-export const getGovernanceState = (date = new Date()): GovernanceState => {
+export const getScheduledGovernanceState = (date = new Date()): GovernanceState => {
     const parts = getIstParts(date);
     const minutes = parts.hour * 60 + parts.minute;
     const submissionOpen = minutes >= 570 && minutes < 780;
-    const locked = minutes >= 780 && minutes < 900;
+    const standardVotingWindow = minutes < 570 || (minutes >= 780 && minutes < 900) || minutes >= 1020;
+    const locked = minutes >= 900 && minutes < 1020;
     const isSaturday = parts.weekday === 6;
     const isRevealSaturday = isSaturday && ((parts.day >= 1 && parts.day <= 7) || (parts.day >= 15 && parts.day <= 21));
     const revealWindow = isRevealSaturday && minutes >= 900;
+    const votingOpen = !revealWindow && standardVotingWindow;
 
     let label = 'Closed';
-    if (submissionOpen) label = 'Open for submissions and voting';
-    else if (locked) label = 'Locked for tallying';
-    else if (revealWindow) label = 'Reveal window';
+    if (revealWindow) label = 'Reveal window';
+    else if (submissionOpen) label = 'Open for submissions';
+    else if (votingOpen) label = 'Open for voting';
+    else if (locked) label = 'Locked for tallying and review';
 
     return {
         now: date,
         submissionOpen,
-        votingOpen: submissionOpen,
+        votingOpen,
         locked,
         revealWindow,
         label,
+        mode: 'SCHEDULED',
+        overrideActive: false,
+        overrideReason: null,
+        overrideUpdatedAt: null,
     };
+};
+
+export const getGovernanceOverride = async (companyId: string) => {
+    const config = await prisma.appConfiguration.findFirst({
+        where: {
+            companyId,
+            category: GOVERNANCE_CATEGORY,
+            key: GOVERNANCE_KEY,
+            isActive: true,
+        },
+    });
+
+    if (!config) return null;
+
+    try {
+        const parsed = JSON.parse(decryptConfigValue(config.value)) as GovernanceOverrideRecord;
+        if (!parsed?.mode || parsed.mode === 'SCHEDULED') return null;
+        return parsed;
+    } catch {
+        return null;
+    }
+};
+
+export const setGovernanceOverride = async (params: {
+    companyId: string;
+    mode: GovernanceOverrideMode;
+    reason?: string | null;
+    userId: string;
+}) => {
+    const value = encryptConfigValue(JSON.stringify({
+        mode: params.mode,
+        reason: params.reason || null,
+        updatedBy: params.userId,
+        updatedAt: new Date().toISOString(),
+    }));
+
+    return prisma.appConfiguration.upsert({
+        where: {
+            companyId_category_key: {
+                companyId: params.companyId,
+                category: GOVERNANCE_CATEGORY,
+                key: GOVERNANCE_KEY,
+            },
+        },
+        create: {
+            companyId: params.companyId,
+            category: GOVERNANCE_CATEGORY,
+            key: GOVERNANCE_KEY,
+            value,
+            isActive: true,
+            description: 'Think Tank governance override',
+            createdBy: params.userId,
+        },
+        update: {
+            value,
+            isActive: true,
+            description: 'Think Tank governance override',
+            createdBy: params.userId,
+        },
+    });
+};
+
+export const clearGovernanceOverride = async (companyId: string, userId: string) => {
+    const value = encryptConfigValue(JSON.stringify({
+        mode: 'SCHEDULED',
+        reason: null,
+        updatedBy: userId,
+        updatedAt: new Date().toISOString(),
+    }));
+
+    return prisma.appConfiguration.upsert({
+        where: {
+            companyId_category_key: {
+                companyId,
+                category: GOVERNANCE_CATEGORY,
+                key: GOVERNANCE_KEY,
+            },
+        },
+        create: {
+            companyId,
+            category: GOVERNANCE_CATEGORY,
+            key: GOVERNANCE_KEY,
+            value,
+            isActive: true,
+            description: 'Think Tank governance override',
+            createdBy: userId,
+        },
+        update: {
+            value,
+            isActive: true,
+            description: 'Think Tank governance override',
+            createdBy: userId,
+        },
+    });
+};
+
+export const getGovernanceState = async (companyId?: string | null, date = new Date()): Promise<GovernanceState> => {
+    const scheduled = getScheduledGovernanceState(date);
+    if (!companyId) return scheduled;
+
+    const override = await getGovernanceOverride(companyId);
+    if (!override) return scheduled;
+
+    const base: GovernanceState = {
+        ...scheduled,
+        mode: override.mode,
+        overrideActive: true,
+        overrideReason: override.reason || null,
+        overrideUpdatedAt: override.updatedAt || null,
+    };
+
+    switch (override.mode) {
+        case 'SUBMISSIONS_OPEN':
+            return {
+                ...base,
+                submissionOpen: true,
+                votingOpen: true,
+                locked: false,
+                revealWindow: false,
+                label: 'Manual override: submissions and voting open',
+            };
+        case 'VOTING_OPEN':
+            return {
+                ...base,
+                submissionOpen: false,
+                votingOpen: true,
+                locked: false,
+                revealWindow: false,
+                label: 'Manual override: voting open',
+            };
+        case 'LOCKED':
+            return {
+                ...base,
+                submissionOpen: false,
+                votingOpen: false,
+                locked: true,
+                revealWindow: false,
+                label: 'Manual override: locked',
+            };
+        case 'REVEAL_READY':
+            return {
+                ...base,
+                submissionOpen: false,
+                votingOpen: false,
+                locked: false,
+                revealWindow: true,
+                label: 'Manual override: reveal ready',
+            };
+        default:
+            return scheduled;
+    }
 };
 
 export const getCurrentCycleWindow = (date = new Date()) => {
@@ -721,7 +914,7 @@ export const createIdeaWithParticipants = async (params: {
 }) => {
     ensureThinkTankAccess(params.user);
     const cycle = await getOrCreateCurrentCycle(params.user.companyId!);
-    const governance = getGovernanceState();
+    const governance = await getGovernanceState(params.user.companyId);
     if (!governance.submissionOpen) {
         throw new Error('Think Tank submissions are currently locked by governance schedule.');
     }

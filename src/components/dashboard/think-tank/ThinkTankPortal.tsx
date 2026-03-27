@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState, type Dispatch, type FormEvent, type SetStateAction } from 'react';
 import Link from 'next/link';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 
@@ -64,8 +64,10 @@ const formatDateTime = (value?: string | null) => {
 };
 
 export default function ThinkTankPortal({ mode }: { mode: PortalMode }) {
+    const [user, setUser] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [governance, setGovernance] = useState<any>(null);
+    const [governanceAccess, setGovernanceAccess] = useState<{ canManage?: boolean; override?: any } | null>(null);
     const [ideas, setIdeas] = useState<Idea[]>([]);
     const [results, setResults] = useState<Idea[]>([]);
     const [form, setForm] = useState({
@@ -75,23 +77,47 @@ export default function ThinkTankPortal({ mode }: { mode: PortalMode }) {
         partnerIds: '',
         duplicateDecision: '',
     });
+    const [overrideForm, setOverrideForm] = useState({
+        mode: 'SCHEDULED',
+        reason: '',
+    });
     const [attachments, setAttachments] = useState<Array<{ url: string; filename: string; mimeType: string; size: number; fileRecordId?: string | null; scrubStatus?: string | null }>>([]);
     const [duplicates, setDuplicates] = useState<Idea['duplicateMatches']>([]);
     const [error, setError] = useState('');
     const [submitting, setSubmitting] = useState(false);
+    const [updatingGovernance, setUpdatingGovernance] = useState(false);
 
     const view = mode === 'my-ideas' ? 'my' : mode === 'results' ? 'results' : 'vote';
+
+    useEffect(() => {
+        const rawUser = localStorage.getItem('user');
+        if (!rawUser) return;
+        try {
+            setUser(JSON.parse(rawUser));
+        } catch {
+        }
+    }, []);
 
     const refresh = useCallback(async () => {
         setLoading(true);
         try {
-            const [ideasRes, resultsRes] = await Promise.all([
+            const [ideasRes, resultsRes, governanceRes] = await Promise.all([
                 fetch(`/api/think-tank/ideas?view=${view}`, { cache: 'no-store' }),
                 fetch('/api/think-tank/results', { cache: 'no-store' }),
+                fetch('/api/think-tank/governance', { cache: 'no-store' }),
             ]);
             const ideasPayload = await ideasRes.json();
             const resultsPayload = await resultsRes.json();
+            const governancePayload = await governanceRes.json();
             setGovernance(ideasPayload.governance || null);
+            setGovernanceAccess({
+                canManage: governancePayload.canManage,
+                override: governancePayload.override,
+            });
+            setOverrideForm({
+                mode: governancePayload.override?.mode || 'SCHEDULED',
+                reason: governancePayload.override?.reason || '',
+            });
             setIdeas(ideasPayload.ideas || []);
             setResults(resultsPayload.ideas || []);
         } catch (fetchError) {
@@ -127,7 +153,7 @@ export default function ThinkTankPortal({ mode }: { mode: PortalMode }) {
         return payload;
     };
 
-    const handleSubmit = async (event: React.FormEvent) => {
+    const handleSubmit = async (event: FormEvent) => {
         event.preventDefault();
         setError('');
         setSubmitting(true);
@@ -194,6 +220,31 @@ export default function ThinkTankPortal({ mode }: { mode: PortalMode }) {
         await refresh();
     };
 
+    const handleGovernanceUpdate = async (event: FormEvent) => {
+        event.preventDefault();
+        setError('');
+        setUpdatingGovernance(true);
+        try {
+            const response = await fetch('/api/think-tank/governance', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    mode: overrideForm.mode,
+                    reason: overrideForm.reason,
+                }),
+            });
+            const payload = await response.json();
+            if (!response.ok) {
+                throw new Error(payload.error || 'Failed to update governance override.');
+            }
+            await refresh();
+        } catch (governanceError: any) {
+            setError(governanceError.message || 'Failed to update governance override.');
+        } finally {
+            setUpdatingGovernance(false);
+        }
+    };
+
     const content = () => {
         if (loading) {
             return <div className="rounded-3xl border border-slate-200 bg-white p-8 text-sm text-slate-500">Loading Think Tank workspace…</div>;
@@ -207,6 +258,15 @@ export default function ThinkTankPortal({ mode }: { mode: PortalMode }) {
                         <SummaryCard label="Revealed Results" value={dashboardStats.resultIdeas} />
                         <SummaryCard label="Top Weighted Score" value={dashboardStats.topScore} />
                     </div>
+                    {governanceAccess?.canManage && user?.role === 'SUPER_ADMIN' && (
+                        <GovernanceControlPanel
+                            overrideForm={overrideForm}
+                            setOverrideForm={setOverrideForm}
+                            governance={governance}
+                            updatingGovernance={updatingGovernance}
+                            onSubmit={handleGovernanceUpdate}
+                        />
+                    )}
                     <div className="grid gap-4 md:grid-cols-3">
                         <QuickCard href="/dashboard/think-tank/my-ideas" title="My Ideas" description="Submit proposals, review duplicate matches, and track your current cycle ideas." />
                         <QuickCard href="/dashboard/think-tank/vote" title="Ideas for Vote" description="Anonymous evaluation board with weighted peer scoring." />
@@ -408,8 +468,74 @@ function GovernanceBanner({ governance }: { governance: any }) {
         <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
             <div className="text-sm font-semibold text-slate-900">Governance Window</div>
             <div className="mt-2 text-sm text-slate-600">{governance?.label || 'Loading governance state…'}</div>
-            <div className="mt-1 text-xs text-slate-500">Submission and voting: 9:30 AM to 1:00 PM IST. Locked window: 1:00 PM to 3:00 PM IST. Reveal: 1st and 3rd Saturday at 3:00 PM IST.</div>
+            {governance?.overrideActive ? (
+                <div className="mt-2 rounded-2xl bg-amber-50 px-3 py-2 text-xs font-medium text-amber-800">
+                    Manual override active: {governance.mode}
+                    {governance.overrideReason ? ` • ${governance.overrideReason}` : ''}
+                </div>
+            ) : null}
+            <div className="mt-1 text-xs text-slate-500">Submission: 9:30 AM to 1:00 PM IST. Voting: before 9:30 AM, 1:00 PM to 3:00 PM, and after 5:00 PM IST. Locked review window: 3:00 PM to 5:00 PM IST. Reveal: 1st and 3rd Saturday at 3:00 PM IST.</div>
         </div>
+    );
+}
+
+function GovernanceControlPanel({
+    overrideForm,
+    setOverrideForm,
+    governance,
+    updatingGovernance,
+    onSubmit,
+}: {
+    overrideForm: { mode: string; reason: string };
+    setOverrideForm: Dispatch<SetStateAction<{ mode: string; reason: string }>>;
+    governance: any;
+    updatingGovernance: boolean;
+    onSubmit: (event: FormEvent) => void;
+}) {
+    return (
+        <form onSubmit={onSubmit} className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+            <div className="flex flex-wrap items-start justify-between gap-4">
+                <div>
+                    <h2 className="text-lg font-semibold text-slate-900">Super Admin Governance Override</h2>
+                    <p className="mt-1 text-sm text-slate-600">Manually override the Think Tank submission and voting window for this company.</p>
+                </div>
+                <div className="rounded-2xl bg-slate-50 px-4 py-3 text-sm text-slate-600">
+                    Current mode: <span className="font-semibold text-slate-900">{governance?.mode || 'SCHEDULED'}</span>
+                </div>
+            </div>
+            <div className="mt-4 grid gap-4 md:grid-cols-[220px_1fr_auto] md:items-end">
+                <label className="grid gap-2 text-sm text-slate-700">
+                    <span className="font-medium">Override mode</span>
+                    <select
+                        className="rounded-2xl border border-slate-200 px-4 py-3"
+                        value={overrideForm.mode}
+                        onChange={(event) => setOverrideForm((current) => ({ ...current, mode: event.target.value }))}
+                    >
+                        <option value="SCHEDULED">Scheduled</option>
+                        <option value="SUBMISSIONS_OPEN">Submissions Open</option>
+                        <option value="VOTING_OPEN">Voting Open</option>
+                        <option value="LOCKED">Locked</option>
+                        <option value="REVEAL_READY">Reveal Ready</option>
+                    </select>
+                </label>
+                <label className="grid gap-2 text-sm text-slate-700">
+                    <span className="font-medium">Reason</span>
+                    <input
+                        className="rounded-2xl border border-slate-200 px-4 py-3"
+                        placeholder="Optional note for the override"
+                        value={overrideForm.reason}
+                        onChange={(event) => setOverrideForm((current) => ({ ...current, reason: event.target.value }))}
+                    />
+                </label>
+                <button
+                    type="submit"
+                    disabled={updatingGovernance}
+                    className="rounded-2xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white disabled:opacity-60"
+                >
+                    {updatingGovernance ? 'Saving…' : 'Apply Override'}
+                </button>
+            </div>
+        </form>
     );
 }
 
