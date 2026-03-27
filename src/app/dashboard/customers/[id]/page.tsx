@@ -28,6 +28,7 @@ export default function CustomerDetailPage({ params }: { params: Promise<{ id: s
     const [institutions, setInstitutions] = useState<any[]>([]);
     const [activeFollowUpId, setActiveFollowUpId] = useState<string | null>(null);
     const [isShippingSame, setIsShippingSame] = useState(true);
+    const [dispatchDrafts, setDispatchDrafts] = useState<Record<string, any>>({});
 
     const formRef = useRef<HTMLDivElement>(null);
 
@@ -68,6 +69,8 @@ export default function CustomerDetailPage({ params }: { params: Promise<{ id: s
     // Handle incoming follow-up from query params
     useEffect(() => {
         const fId = searchParams.get('followUpId');
+        const requestedTab = searchParams.get('tab');
+        if (requestedTab) setActiveTab(requestedTab);
         if (fId) {
             setActiveFollowUpId(fId);
             setActiveTab('communication');
@@ -76,6 +79,23 @@ export default function CustomerDetailPage({ params }: { params: Promise<{ id: s
             }, 500);
         }
     }, [customer, searchParams]);
+
+    useEffect(() => {
+        if (!customer?.dispatchOrders) return;
+        const nextDrafts = Object.fromEntries(
+            customer.dispatchOrders.map((dispatch: any) => [
+                dispatch.id,
+                {
+                    status: dispatch.status,
+                    courierId: dispatch.courierId || '',
+                    partnerName: dispatch.partnerName || dispatch.courier?.name || '',
+                    trackingNumber: dispatch.tracking?.trackingNumber || dispatch.trackingNumber || '',
+                    remarks: dispatch.remarks || '',
+                },
+            ]),
+        );
+        setDispatchDrafts(nextDrafts);
+    }, [customer]);
 
     if (loading) {
         return (
@@ -127,7 +147,51 @@ export default function CustomerDetailPage({ params }: { params: Promise<{ id: s
         { id: 'subscriptions', name: 'Subscriptions', icon: '📚' },
         { id: 'communication', name: 'Follow-up', icon: '💬' },
         { id: 'billing', name: 'Billing', icon: '💰' },
+        { id: 'dispatch', name: 'Dispatch', icon: '🚚' },
     ];
+
+    const handleCreateDispatchFromInvoice = async (invoiceId: string) => {
+        setActionLoading(true);
+        try {
+            const token = localStorage.getItem('token');
+            const res = await fetch(`/api/invoices/${invoiceId}/dispatch`, {
+                method: 'POST',
+                headers: { Authorization: `Bearer ${token}` },
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Failed to create dispatch');
+            await fetchCustomer();
+            setActiveTab('dispatch');
+        } catch (error: any) {
+            alert(error.message || 'Failed to create dispatch');
+        } finally {
+            setActionLoading(false);
+        }
+    };
+
+    const handleSaveDispatch = async (dispatchId: string) => {
+        const draft = dispatchDrafts[dispatchId];
+        if (!draft) return;
+        setActionLoading(true);
+        try {
+            const token = localStorage.getItem('token');
+            const res = await fetch(`/api/logistics/orders/${dispatchId}`, {
+                method: 'PATCH',
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(draft),
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Failed to update dispatch');
+            await fetchCustomer();
+        } catch (error: any) {
+            alert(error.message || 'Failed to update dispatch');
+        } finally {
+            setActionLoading(false);
+        }
+    };
 
     const handleStartChat = async () => {
         if (!customer.userId) {
@@ -961,18 +1025,133 @@ export default function CustomerDetailPage({ params }: { params: Promise<{ id: s
                                                                     </span>
                                                                 </td>
                                                                 <td className="text-right">
-                                                                    <Link
-                                                                        href={`/dashboard/crm/invoices/${invoice.id}`}
-                                                                        className="btn btn-secondary py-1 text-xs"
-                                                                    >
-                                                                        View Invoice
-                                                                    </Link>
+                                                                    <div className="flex items-center justify-end gap-2">
+                                                                        {!invoice.dispatchOrder && (
+                                                                            <button
+                                                                                onClick={() => handleCreateDispatchFromInvoice(invoice.id)}
+                                                                                className="btn btn-primary py-1 text-xs"
+                                                                            >
+                                                                                Create Dispatch
+                                                                            </button>
+                                                                        )}
+                                                                        <Link
+                                                                            href={`/dashboard/crm/invoices/${invoice.id}`}
+                                                                            className="btn btn-secondary py-1 text-xs"
+                                                                        >
+                                                                            View Invoice
+                                                                        </Link>
+                                                                    </div>
                                                                 </td>
                                                             </tr>
                                                         ))
                                                 )}
                                             </tbody>
                                         </table>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {activeTab === 'dispatch' && (
+                            <div className="space-y-6">
+                                <div className="card-premium overflow-hidden">
+                                    <div className="flex items-center justify-between p-6 border-b border-secondary-100">
+                                        <div>
+                                            <h3 className="text-lg font-bold text-secondary-900">Dispatch History</h3>
+                                            <p className="text-sm text-secondary-500">Track invoice-linked deliveries for this customer.</p>
+                                        </div>
+                                    </div>
+                                    <div className="space-y-4 p-6">
+                                        {(!customer.dispatchOrders || customer.dispatchOrders.length === 0) ? (
+                                            <div className="rounded-xl border border-secondary-100 bg-secondary-50 p-6 text-center text-secondary-500">
+                                                No dispatch records yet. Create one from a customer invoice.
+                                            </div>
+                                        ) : (
+                                            customer.dispatchOrders.map((dispatch: any) => (
+                                                <div key={dispatch.id} className="rounded-2xl border border-secondary-100 p-4 bg-white shadow-sm">
+                                                    <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
+                                                        <div className="space-y-2">
+                                                            <div className="flex flex-wrap items-center gap-2">
+                                                                <span className="font-bold text-secondary-900">
+                                                                    {dispatch.invoice?.invoiceNumber || 'Manual Dispatch'}
+                                                                </span>
+                                                                <span className="badge badge-secondary">{dispatch.status.replace(/_/g, ' ')}</span>
+                                                            </div>
+                                                            <p className="text-sm text-secondary-600">
+                                                                {dispatch.recipientName} • {dispatch.city}, {dispatch.state}
+                                                            </p>
+                                                            <p className="text-xs text-secondary-500">
+                                                                Partner: {dispatch.tracking?.partnerName || 'Unassigned'} • Tracking: {dispatch.tracking?.trackingNumber || 'Pending'}
+                                                            </p>
+                                                        </div>
+                                                        <div className="flex flex-wrap gap-2">
+                                                            {dispatch.invoice?.id && (
+                                                                <Link href={`/dashboard/crm/invoices/${dispatch.invoice.id}`} className="btn btn-secondary py-1 text-xs">
+                                                                    Invoice
+                                                                </Link>
+                                                            )}
+                                                            {dispatch.tracking?.canTrack && (
+                                                                <button
+                                                                    onClick={() => window.open(dispatch.tracking.trackingUrl, '_blank', 'noopener,noreferrer')}
+                                                                    className="btn btn-secondary py-1 text-xs"
+                                                                >
+                                                                    Track
+                                                                </button>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-4">
+                                                        <select
+                                                            className="input"
+                                                            value={dispatchDrafts[dispatch.id]?.status || dispatch.status}
+                                                            onChange={(e) => setDispatchDrafts((prev) => ({
+                                                                ...prev,
+                                                                [dispatch.id]: { ...prev[dispatch.id], status: e.target.value },
+                                                            }))}
+                                                        >
+                                                            {["PENDING", "PROCESSING", "READY_TO_SHIP", "SHIPPED", "IN_TRANSIT", "DELIVERED", "RETURNED", "LOST"].map((status) => (
+                                                                <option key={status} value={status}>{status.replace(/_/g, ' ')}</option>
+                                                            ))}
+                                                        </select>
+                                                        <input
+                                                            className="input"
+                                                            value={dispatchDrafts[dispatch.id]?.trackingNumber || ''}
+                                                            onChange={(e) => setDispatchDrafts((prev) => ({
+                                                                ...prev,
+                                                                [dispatch.id]: { ...prev[dispatch.id], trackingNumber: e.target.value },
+                                                            }))}
+                                                            placeholder="Tracking / AWB number"
+                                                        />
+                                                        <input
+                                                            className="input"
+                                                            value={dispatchDrafts[dispatch.id]?.partnerName || ''}
+                                                            onChange={(e) => setDispatchDrafts((prev) => ({
+                                                                ...prev,
+                                                                [dispatch.id]: { ...prev[dispatch.id], partnerName: e.target.value },
+                                                            }))}
+                                                            placeholder="Partner name"
+                                                        />
+                                                        <textarea
+                                                            className="input h-20"
+                                                            value={dispatchDrafts[dispatch.id]?.remarks || ''}
+                                                            onChange={(e) => setDispatchDrafts((prev) => ({
+                                                                ...prev,
+                                                                [dispatch.id]: { ...prev[dispatch.id], remarks: e.target.value },
+                                                            }))}
+                                                            placeholder="Dispatch remarks"
+                                                        />
+                                                    </div>
+                                                    <div className="mt-4 flex justify-end">
+                                                        <button
+                                                            onClick={() => handleSaveDispatch(dispatch.id)}
+                                                            className="btn btn-primary py-2 text-xs"
+                                                        >
+                                                            Save Dispatch
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            ))
+                                        )}
                                     </div>
                                 </div>
                             </div>

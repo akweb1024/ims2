@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, use } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import FormattedDate from "@/components/common/FormattedDate";
@@ -152,6 +153,15 @@ export default function InvoiceDetailPage({
   const [templateType, setTemplateType] = useState<"standard" | "anv" | "globalpro">(
     "globalpro",
   );
+  const [couriers, setCouriers] = useState<any[]>([]);
+  const [dispatchSaving, setDispatchSaving] = useState(false);
+  const [dispatchForm, setDispatchForm] = useState({
+    courierId: "",
+    partnerName: "",
+    trackingNumber: "",
+    status: "PENDING",
+    remarks: "",
+  });
 
   const fetchInvoice = useCallback(async () => {
     setLoading(true);
@@ -182,6 +192,28 @@ export default function InvoiceDetailPage({
     }
     fetchInvoice();
   }, [id, fetchInvoice]);
+
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    fetch("/api/logistics/couriers", {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then((res) => (res.ok ? res.json() : []))
+      .then((data) => setCouriers(Array.isArray(data) ? data : []))
+      .catch(() => setCouriers([]));
+  }, []);
+
+  useEffect(() => {
+    const dispatch = invoice?.dispatchOrder;
+    setDispatchForm({
+      courierId: dispatch?.courierId || "",
+      partnerName: dispatch?.partnerName || dispatch?.courier?.name || "",
+      trackingNumber:
+        dispatch?.tracking?.trackingNumber || dispatch?.trackingNumber || "",
+      status: dispatch?.status || "PENDING",
+      remarks: dispatch?.remarks || "",
+    });
+  }, [invoice]);
 
   const handlePaymentSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -384,6 +416,61 @@ export default function InvoiceDetailPage({
       }
       setIsDownloadingPdf(false);
     }
+  };
+
+  const handleCreateDispatch = async () => {
+    setDispatchSaving(true);
+    try {
+      const token = localStorage.getItem("token");
+      const res = await fetch(`/api/invoices/${id}/dispatch`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to create dispatch");
+      }
+      alert("Dispatch created successfully");
+      await fetchInvoice();
+    } catch (error: any) {
+      alert(error.message || "Failed to create dispatch");
+    } finally {
+      setDispatchSaving(false);
+    }
+  };
+
+  const handleUpdateDispatch = async () => {
+    setDispatchSaving(true);
+    try {
+      const token = localStorage.getItem("token");
+      const res = await fetch(`/api/invoices/${id}/dispatch`, {
+        method: "PATCH",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(dispatchForm),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to update dispatch");
+      }
+      alert("Dispatch updated successfully");
+      await fetchInvoice();
+    } catch (error: any) {
+      alert(error.message || "Failed to update dispatch");
+    } finally {
+      setDispatchSaving(false);
+    }
+  };
+
+  const openDispatchTracking = () => {
+    if (!invoice?.dispatchOrder?.tracking?.trackingUrl) return;
+    window.open(
+      invoice.dispatchOrder.tracking.trackingUrl,
+      "_blank",
+      "noopener,noreferrer",
+    );
   };
 
   if (loading) {
@@ -827,6 +914,153 @@ export default function InvoiceDetailPage({
                 >
                   💳 Settle Invoice
                 </button>
+              </>
+            )}
+          </div>
+        </div>
+
+        <div className="card-premium no-print">
+          <div className="flex flex-col gap-6">
+            <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+              <div>
+                <h3 className="text-lg font-bold text-secondary-900">Dispatch Tracking</h3>
+                <p className="text-sm text-secondary-500">
+                  Create and manage shipment status, courier partner, and tracking details for this invoice.
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {invoice.dispatchOrder?.tracking?.canTrack && (
+                  <button onClick={openDispatchTracking} className="btn btn-secondary text-xs py-2">
+                    Open Tracking
+                  </button>
+                )}
+                {invoice.customerProfile?.id && (
+                  <Link
+                    href={`/dashboard/customers/${invoice.customerProfile.id}?tab=billing`}
+                    className="btn btn-secondary text-xs py-2"
+                  >
+                    Customer Billing
+                  </Link>
+                )}
+              </div>
+            </div>
+
+            {!invoice.dispatchOrder ? (
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 rounded-2xl border border-secondary-100 bg-secondary-50 p-4">
+                <div>
+                  <p className="font-semibold text-secondary-900">No dispatch record yet</p>
+                  <p className="text-sm text-secondary-500">
+                    Create a dispatch from the invoice shipping address and line items stored on this invoice.
+                  </p>
+                </div>
+                <button
+                  onClick={handleCreateDispatch}
+                  disabled={dispatchSaving}
+                  className="btn btn-primary"
+                >
+                  {dispatchSaving ? "Creating..." : "Create Dispatch"}
+                </button>
+              </div>
+            ) : (
+              <>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="rounded-2xl border border-secondary-100 bg-secondary-50 p-4">
+                    <p className="text-[10px] font-black uppercase tracking-widest text-secondary-400">Recipient</p>
+                    <p className="mt-2 font-semibold text-secondary-900">{invoice.dispatchOrder.recipientName}</p>
+                    <p className="mt-1 whitespace-pre-line text-sm text-secondary-600">
+                      {invoice.dispatchOrder.address}
+                      {`\n${invoice.dispatchOrder.city}, ${invoice.dispatchOrder.state} - ${invoice.dispatchOrder.pincode}`}
+                      {`\n${invoice.dispatchOrder.country}`}
+                    </p>
+                  </div>
+                  <div className="rounded-2xl border border-secondary-100 bg-secondary-50 p-4">
+                    <p className="text-[10px] font-black uppercase tracking-widest text-secondary-400">Shipment Snapshot</p>
+                    <p className="mt-2 font-semibold text-secondary-900">
+                      {Array.isArray(invoice.dispatchOrder.items) ? invoice.dispatchOrder.items.length : 0} item(s)
+                    </p>
+                    <p className="mt-1 text-sm text-secondary-600">
+                      Partner: {invoice.dispatchOrder.tracking?.partnerName || "Not assigned"}
+                    </p>
+                    <p className="text-sm text-secondary-600">
+                      Tracking: {invoice.dispatchOrder.tracking?.trackingNumber || "Pending"}
+                    </p>
+                  </div>
+                  <div className="rounded-2xl border border-secondary-100 bg-secondary-50 p-4">
+                    <p className="text-[10px] font-black uppercase tracking-widest text-secondary-400">Lifecycle</p>
+                    <p className="mt-2 font-semibold text-secondary-900">{invoice.dispatchOrder.status.replace(/_/g, " ")}</p>
+                    <p className="mt-1 text-sm text-secondary-600">
+                      Packed: {invoice.dispatchOrder.packedDate ? new Date(invoice.dispatchOrder.packedDate).toLocaleDateString() : "Not yet"}
+                    </p>
+                    <p className="text-sm text-secondary-600">
+                      Delivered: {invoice.dispatchOrder.deliveredDate ? new Date(invoice.dispatchOrder.deliveredDate).toLocaleDateString() : "Not yet"}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="label">Courier Partner</label>
+                    <select
+                      className="input"
+                      value={dispatchForm.courierId}
+                      onChange={(e) => setDispatchForm((prev) => ({ ...prev, courierId: e.target.value }))}
+                    >
+                      <option value="">Select courier</option>
+                      {couriers.map((courier) => (
+                        <option key={courier.id} value={courier.id}>
+                          {courier.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="label">Partner Name</label>
+                    <input
+                      className="input"
+                      value={dispatchForm.partnerName}
+                      onChange={(e) => setDispatchForm((prev) => ({ ...prev, partnerName: e.target.value }))}
+                      placeholder="Use for Other/custom partner"
+                    />
+                  </div>
+                  <div>
+                    <label className="label">Tracking / AWB Number</label>
+                    <input
+                      className="input"
+                      value={dispatchForm.trackingNumber}
+                      onChange={(e) => setDispatchForm((prev) => ({ ...prev, trackingNumber: e.target.value }))}
+                      placeholder="Serial or consignment number"
+                    />
+                  </div>
+                  <div>
+                    <label className="label">Dispatch Status</label>
+                    <select
+                      className="input"
+                      value={dispatchForm.status}
+                      onChange={(e) => setDispatchForm((prev) => ({ ...prev, status: e.target.value }))}
+                    >
+                      {["PENDING", "PROCESSING", "READY_TO_SHIP", "SHIPPED", "IN_TRANSIT", "DELIVERED", "RETURNED", "LOST"].map((status) => (
+                        <option key={status} value={status}>
+                          {status.replace(/_/g, " ")}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="md:col-span-2">
+                    <label className="label">Remarks</label>
+                    <textarea
+                      className="input h-24"
+                      value={dispatchForm.remarks}
+                      onChange={(e) => setDispatchForm((prev) => ({ ...prev, remarks: e.target.value }))}
+                      placeholder="Packing notes, handoff notes, return reason..."
+                    />
+                  </div>
+                </div>
+
+                <div className="flex justify-end">
+                  <button onClick={handleUpdateDispatch} disabled={dispatchSaving} className="btn btn-primary">
+                    {dispatchSaving ? "Saving..." : "Save Dispatch"}
+                  </button>
+                </div>
               </>
             )}
           </div>

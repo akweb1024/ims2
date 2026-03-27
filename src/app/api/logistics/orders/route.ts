@@ -1,6 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getAuthenticatedUser } from '@/lib/auth-legacy';
+import {
+    buildTrackingMetadata,
+    deriveDispatchDates,
+    ensureDefaultCouriers,
+    normalizeTrackingNumber,
+    summarizeInvoiceLineItems,
+} from '@/lib/dispatch';
 
 export async function GET(req: NextRequest) {
     try {
@@ -8,19 +15,64 @@ export async function GET(req: NextRequest) {
         if (!user || !['SUPER_ADMIN', 'ADMIN', 'MANAGER'].includes(user.role)) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
+        await ensureDefaultCouriers();
 
         const { searchParams } = new URL(req.url);
         const limit = parseInt(searchParams.get('limit') || '50');
+        const status = searchParams.get('status');
+        const courierId = searchParams.get('courierId');
+        const invoiceId = searchParams.get('invoiceId');
+        const customerId = searchParams.get('customerId');
+        const q = searchParams.get('q')?.trim();
 
         const where: any = {};
         if (user.role !== 'SUPER_ADMIN') {
             where.companyId = user.companyId;
         }
+        if (status) where.status = status;
+        if (courierId) where.courierId = courierId;
+        if (invoiceId) where.invoiceId = invoiceId;
+        if (customerId) where.customerProfileId = customerId;
+        if (q) {
+            where.OR = [
+                { trackingNumber: { contains: q, mode: 'insensitive' } },
+                { recipientName: { contains: q, mode: 'insensitive' } },
+                { partnerName: { contains: q, mode: 'insensitive' } },
+                { invoice: { invoiceNumber: { contains: q, mode: 'insensitive' } } },
+                { customerProfile: { name: { contains: q, mode: 'insensitive' } } },
+                { customerProfile: { organizationName: { contains: q, mode: 'insensitive' } } },
+            ];
+        }
 
         const [orders, stats, carrierPerformance, trends] = await Promise.all([
             prisma.dispatchOrder.findMany({
                 where,
-                include: { courier: true },
+                include: {
+                    courier: true,
+                    invoice: {
+                        select: {
+                            id: true,
+                            invoiceNumber: true,
+                            proformaNumber: true,
+                            status: true,
+                            total: true,
+                            currency: true,
+                            shippingAddress: true,
+                            shippingCity: true,
+                            shippingState: true,
+                            shippingPincode: true,
+                        }
+                    },
+                    customerProfile: {
+                        select: {
+                            id: true,
+                            name: true,
+                            organizationName: true,
+                            primaryEmail: true,
+                            primaryPhone: true,
+                        }
+                    }
+                },
                 orderBy: { createdAt: 'desc' },
                 take: limit
             }),
@@ -60,7 +112,10 @@ export async function GET(req: NextRequest) {
         }));
 
         return NextResponse.json({
-            orders,
+            orders: orders.map((order: any) => ({
+                ...order,
+                tracking: buildTrackingMetadata(order),
+            })),
             stats: stats.reduce((acc: any, curr: any) => ({ ...acc, [curr.status]: curr._count.id }), {}),
             carrierPerformance: formattedPerformance,
             trends
@@ -78,28 +133,144 @@ export async function POST(req: NextRequest) {
         if (!user || !['SUPER_ADMIN', 'ADMIN', 'MANAGER'].includes(user.role)) {
             return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
         }
+        await ensureDefaultCouriers();
 
         const body = await req.json();
-        const { recipientName, address, city, state, pincode, country, phone, items, courierId, trackingNumber } = body;
+        const {
+            invoiceId,
+            customerProfileId,
+            recipientName,
+            address,
+            city,
+            state,
+            pincode,
+            country,
+            phone,
+            items,
+            courierId,
+            partnerName,
+            trackingNumber,
+            remarks,
+            weight,
+            status,
+        } = body;
+
+        if (invoiceId) {
+            const existing = await prisma.dispatchOrder.findUnique({
+                where: { invoiceId }
+            });
+            if (existing) {
+                return NextResponse.json({ error: 'Dispatch already exists for this invoice' }, { status: 409 });
+            }
+        }
+
+        let finalPayload: any = {
+            customerProfileId: customerProfileId || null,
+            recipientName,
+            address,
+            city,
+            state,
+            pincode,
+            country,
+            phone,
+            items,
+            courierId: courierId || null,
+            partnerName: partnerName || null,
+            trackingNumber: normalizeTrackingNumber(trackingNumber),
+            remarks: remarks || null,
+            weight: weight ? Number(weight) : null,
+            status: status || 'PENDING',
+            companyId: user.companyId,
+            createdByUserId: user.id,
+            updatedByUserId: user.id,
+        };
+
+        if (invoiceId) {
+            const invoice = await prisma.invoice.findFirst({
+                where: {
+                    id: invoiceId,
+                    ...(user.role === 'SUPER_ADMIN' ? {} : { companyId: user.companyId })
+                },
+                include: {
+                    customerProfile: true,
+                    subscription: { include: { customerProfile: true } }
+                }
+            });
+
+            if (!invoice) {
+                return NextResponse.json({ error: 'Invoice not found' }, { status: 404 });
+            }
+
+            const customer = invoice.customerProfile || invoice.subscription?.customerProfile;
+            finalPayload = {
+                ...finalPayload,
+                invoiceId: invoice.id,
+                subscriptionId: invoice.subscriptionId || null,
+                customerProfileId: customer?.id || finalPayload.customerProfileId,
+                recipientName:
+                    finalPayload.recipientName ||
+                    customer?.organizationName ||
+                    customer?.name ||
+                    'Customer',
+                address:
+                    finalPayload.address ||
+                    invoice.shippingAddress ||
+                    customer?.shippingAddress ||
+                    customer?.billingAddress,
+                city:
+                    finalPayload.city ||
+                    invoice.shippingCity ||
+                    customer?.shippingCity ||
+                    customer?.billingCity,
+                state:
+                    finalPayload.state ||
+                    invoice.shippingState ||
+                    customer?.shippingState ||
+                    customer?.billingState,
+                pincode:
+                    finalPayload.pincode ||
+                    invoice.shippingPincode ||
+                    customer?.shippingPincode ||
+                    customer?.billingPincode,
+                country:
+                    finalPayload.country ||
+                    invoice.shippingCountry ||
+                    customer?.shippingCountry ||
+                    customer?.billingCountry ||
+                    'India',
+                phone: finalPayload.phone || customer?.primaryPhone || '',
+                items:
+                    finalPayload.items && Object.keys(finalPayload.items).length > 0
+                        ? finalPayload.items
+                        : summarizeInvoiceLineItems(invoice.lineItems) as any,
+                companyId: invoice.companyId || user.companyId,
+            };
+        }
+
+        if (!finalPayload.address || !finalPayload.city || !finalPayload.state || !finalPayload.pincode) {
+            return NextResponse.json({ error: 'Shipping address is incomplete for this dispatch' }, { status: 422 });
+        }
+
+        const derivedDates = deriveDispatchDates(finalPayload.status);
 
         const order = await prisma.dispatchOrder.create({
             data: {
-                recipientName,
-                address,
-                city,
-                state,
-                pincode,
-                country,
-                phone,
-                items, // JSON
-                courierId,
-                trackingNumber,
-                status: 'PENDING',
-                companyId: user.companyId
-            }
+                ...finalPayload,
+                packedDate: derivedDates.packedDate,
+                shippedDate: derivedDates.shippedDate,
+                deliveredDate: derivedDates.deliveredDate,
+            },
+            include: {
+                courier: true,
+                invoice: true,
+                customerProfile: true,
+            },
         });
 
-        return NextResponse.json(order);
+        return NextResponse.json({
+            ...order,
+            tracking: buildTrackingMetadata(order),
+        });
 
     } catch (error: any) {
         return NextResponse.json({ error: error.message }, { status: 500 });

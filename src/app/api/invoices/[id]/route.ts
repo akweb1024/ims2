@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { authorizedRoute } from '@/lib/middleware-auth';
 import { handleApiError, ValidationError } from '@/lib/error-handler';
 import { releaseInvoiceStockReservations, replaceInvoiceStockReservations } from '@/lib/invoice-stock-reservation';
+import { buildTrackingMetadata } from '@/lib/dispatch';
 
 export const GET = authorizedRoute(
     [],
@@ -25,6 +26,19 @@ export const GET = authorizedRoute(
                         }
                     },
                     customerProfile: true,
+                    dispatchOrder: {
+                        include: {
+                            courier: true,
+                            customerProfile: {
+                                select: {
+                                    id: true,
+                                    name: true,
+                                    organizationName: true,
+                                    primaryEmail: true,
+                                }
+                            }
+                        }
+                    },
                     payments: true,
                     company: {
                         select: {
@@ -52,7 +66,17 @@ export const GET = authorizedRoute(
                 }
             }
 
-            return NextResponse.json(invoice);
+            const dispatchOrder = invoice.dispatchOrder
+                ? {
+                    ...invoice.dispatchOrder,
+                    tracking: buildTrackingMetadata(invoice.dispatchOrder),
+                }
+                : null;
+
+            return NextResponse.json({
+                ...invoice,
+                dispatchOrder,
+            });
         } catch (error) {
             return handleApiError(error, 'Failed to fetch invoice');
         }

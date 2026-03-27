@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getAuthenticatedUser } from '@/lib/auth-legacy';
 import { logger } from '@/lib/logger';
+import { buildTrackingMetadata } from '@/lib/dispatch';
 
 const toNullableString = (value: unknown) => {
     if (value === undefined) return undefined;
@@ -103,6 +104,30 @@ export async function GET(
                     orderBy: { date: 'desc' }
                 },
                 invoices: {
+                    include: {
+                        dispatchOrder: {
+                            include: {
+                                courier: true
+                            }
+                        }
+                    },
+                    orderBy: { createdAt: 'desc' }
+                },
+                dispatchOrders: {
+                    include: {
+                        courier: true,
+                        invoice: {
+                            select: {
+                                id: true,
+                                invoiceNumber: true,
+                                proformaNumber: true,
+                                total: true,
+                                currency: true,
+                                status: true,
+                                createdAt: true,
+                            }
+                        }
+                    },
                     orderBy: { createdAt: 'desc' }
                 },
                 agencyInstitutions: {
@@ -159,7 +184,22 @@ export async function GET(
             });
         }
 
-        return NextResponse.json(customer);
+        return NextResponse.json({
+            ...customer,
+            invoices: customer.invoices.map((invoice: any) => ({
+                ...invoice,
+                dispatchOrder: invoice.dispatchOrder
+                    ? {
+                        ...invoice.dispatchOrder,
+                        tracking: buildTrackingMetadata(invoice.dispatchOrder),
+                    }
+                    : null,
+            })),
+            dispatchOrders: (customer as any).dispatchOrders.map((dispatch: any) => ({
+                ...dispatch,
+                tracking: buildTrackingMetadata(dispatch),
+            })),
+        });
 
     } catch (error) {
         logger.error('Customer Details Error:', error);

@@ -1,12 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getAuthenticatedUser } from '@/lib/auth-legacy';
+import { ensureDefaultCouriers } from '@/lib/dispatch';
 
 export async function GET(req: NextRequest) {
     try {
         const user = await getAuthenticatedUser();
         // Public? Probably not.
         if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        await ensureDefaultCouriers();
 
         const couriers = await prisma.courier.findMany({
             where: { isActive: true },

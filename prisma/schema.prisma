@@ -249,6 +249,8 @@ model User {
   auditLogs                      AuditLog[]
   certificates                   Certificate[]
   sentMessages                   ChatMessage[]
+  createdDispatchOrders          DispatchOrder[]             @relation("DispatchOrderCreatedBy")
+  updatedDispatchOrders          DispatchOrder[]             @relation("DispatchOrderUpdatedBy")
   chatParticipants               ChatParticipant[]
   coAuthorInvitations            CoAuthorInvitation[]
   communications                 CommunicationLog[]          @relation("UserCommunications")
@@ -503,6 +505,7 @@ model CustomerProfile {
   agencyDetails       AgencyDetails?
   communications      CommunicationLog[]
   commissionPayouts   CommissionPayout[]
+  dispatchOrders      DispatchOrder[]
   assignments         CustomerAssignment[]
   agencyPartner       CustomerProfile?     @relation("AgencyToSubCustomers", fields: [agencyId], references: [id])
   subCustomers        CustomerProfile[]    @relation("AgencyToSubCustomers")
@@ -1106,6 +1109,7 @@ model Invoice {
   customerProfile         CustomerProfile?     @relation(fields: [customerProfileId], references: [id])
   subscription            Subscription?        @relation(fields: [subscriptionId], references: [id])
   payments                Payment[]
+  dispatchOrder           DispatchOrder?
   revenueTransactions     RevenueTransaction[]
 
   @@index([subscriptionId])
@@ -2471,6 +2475,7 @@ model DispatchOrder {
   id                String         @id @default(uuid())
   subscriptionId    String?
   invoiceId         String?
+  customerProfileId String?
   recipientName     String
   address           String
   city              String
@@ -2481,20 +2486,32 @@ model DispatchOrder {
   items             Json
   weight            Float?
   courierId         String?
+  partnerName       String?
   trackingNumber    String?
   status            DispatchStatus @default(PENDING)
+  remarks           String?
+  packedDate        DateTime?
   shippedDate       DateTime?
   deliveredDate     DateTime?
   generatedLabelUrl String?
   createdAt         DateTime       @default(now())
   updatedAt         DateTime       @updatedAt
   companyId         String?
+  createdByUserId   String?
+  updatedByUserId   String?
   company           Company?       @relation(fields: [companyId], references: [id])
   courier           Courier?       @relation(fields: [courierId], references: [id])
+  createdBy         User?          @relation("DispatchOrderCreatedBy", fields: [createdByUserId], references: [id])
+  customerProfile   CustomerProfile? @relation(fields: [customerProfileId], references: [id])
+  invoice           Invoice?       @relation(fields: [invoiceId], references: [id])
+  updatedBy         User?          @relation("DispatchOrderUpdatedBy", fields: [updatedByUserId], references: [id])
 
   @@index([companyId])
+  @@index([customerProfileId])
+  @@index([invoiceId])
   @@index([status])
   @@index([trackingNumber])
+  @@unique([invoiceId])
 }
 
 model JournalVolume {

@@ -1,27 +1,88 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getAuthenticatedUser } from '@/lib/auth-legacy';
+import { buildTrackingMetadata, deriveDispatchDates, normalizeTrackingNumber } from '@/lib/dispatch';
+
+export async function GET(req: NextRequest, props: { params: Promise<{ id: string }> }) {
+    try {
+        const { id } = await props.params;
+        const user = await getAuthenticatedUser();
+        if (!user || !['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'FINANCE_ADMIN', 'EXECUTIVE'].includes(user.role)) {
+            return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+        }
+
+        const order = await (prisma as any).dispatchOrder.findFirst({
+            where: {
+                id,
+                ...(user.role === 'SUPER_ADMIN' ? {} : { companyId: user.companyId }),
+            },
+            include: {
+                courier: true,
+                invoice: true,
+                customerProfile: true,
+            },
+        });
+
+        if (!order) {
+            return NextResponse.json({ error: 'Dispatch not found' }, { status: 404 });
+        }
+
+        return NextResponse.json({
+            ...order,
+            tracking: buildTrackingMetadata(order),
+        });
+    } catch (error: any) {
+        return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+}
 
 export async function PATCH(req: NextRequest, props: { params: Promise<{ id: string }> }) {
     try {
         const { id } = await props.params;
         const user = await getAuthenticatedUser();
-        if (!user || !['SUPER_ADMIN', 'ADMIN', 'MANAGER'].includes(user.role)) {
+        if (!user || !['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'FINANCE_ADMIN', 'EXECUTIVE'].includes(user.role)) {
             return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
         }
 
         const body = await req.json();
-        const { status, trackingNumber } = body;
+        const existing = await (prisma as any).dispatchOrder.findFirst({
+            where: {
+                id,
+                ...(user.role === 'SUPER_ADMIN' ? {} : { companyId: user.companyId }),
+            },
+        });
+
+        if (!existing) {
+            return NextResponse.json({ error: 'Dispatch not found' }, { status: 404 });
+        }
+
+        const nextStatus = body.status || existing.status;
+        const dates = deriveDispatchDates(nextStatus, existing);
 
         const order = await (prisma as any).dispatchOrder.update({
             where: { id },
             data: {
-                status: status || undefined,
-                trackingNumber: trackingNumber || undefined
-            }
+                status: body.status || undefined,
+                courierId: body.courierId !== undefined ? body.courierId || null : undefined,
+                partnerName: body.partnerName !== undefined ? String(body.partnerName || '').trim() || null : undefined,
+                trackingNumber: body.trackingNumber !== undefined ? normalizeTrackingNumber(body.trackingNumber) : undefined,
+                remarks: body.remarks !== undefined ? String(body.remarks || '').trim() || null : undefined,
+                packedDate: body.packedDate ? new Date(body.packedDate) : dates.packedDate,
+                shippedDate: body.shippedDate ? new Date(body.shippedDate) : dates.shippedDate,
+                deliveredDate: body.deliveredDate ? new Date(body.deliveredDate) : dates.deliveredDate,
+                updatedByUserId: user.id,
+            },
+            include: {
+                courier: true,
+                invoice: true,
+                customerProfile: true,
+            },
         });
 
-        return NextResponse.json(order);
+        return NextResponse.json({
+            ...order,
+            tracking: buildTrackingMetadata(order),
+        });
     } catch (error: any) {
         return NextResponse.json({ error: error.message }, { status: 500 });
     }

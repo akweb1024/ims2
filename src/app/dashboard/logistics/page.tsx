@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
+import Link from 'next/link';
 import {
     BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
     AreaChart, Area, Cell, PieChart, Pie
@@ -17,18 +18,20 @@ export default function LogisticsPage() {
     const [isCreatingOrder, setIsCreatingOrder] = useState(false);
     const [view, setView] = useState<ViewType>('OVERVIEW');
     const [userRole, setUserRole] = useState<string>('');
+    const [query, setQuery] = useState('');
+    const [statusFilter, setStatusFilter] = useState('');
+    const [courierFilter, setCourierFilter] = useState('');
 
-    useEffect(() => {
-        const user = localStorage.getItem('user');
-        if (user) setUserRole(JSON.parse(user).role);
-        fetchData();
-        fetchCouriers();
-    }, []);
-
-    const fetchData = async () => {
+    const fetchData = useCallback(async () => {
         try {
             const token = localStorage.getItem('token');
-            const res = await fetch('/api/logistics/orders', {
+            const params = new URLSearchParams();
+            params.set('limit', '100');
+            if (query.trim()) params.set('q', query.trim());
+            if (statusFilter) params.set('status', statusFilter);
+            if (courierFilter) params.set('courierId', courierFilter);
+
+            const res = await fetch(`/api/logistics/orders?${params.toString()}`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             if (res.ok) {
@@ -42,9 +45,9 @@ export default function LogisticsPage() {
             }
         } catch (error) { console.error(error); }
         finally { setLoading(false); }
-    };
+    }, [courierFilter, query, statusFilter]);
 
-    const fetchCouriers = async () => {
+    const fetchCouriers = useCallback(async () => {
         try {
             const token = localStorage.getItem('token');
             const res = await fetch('/api/logistics/couriers', {
@@ -52,14 +55,27 @@ export default function LogisticsPage() {
             });
             if (res.ok) setCouriers(await res.json());
         } catch (error) { console.error(error); }
-    };
+    }, []);
+
+    useEffect(() => {
+        const user = localStorage.getItem('user');
+        if (user) setUserRole(JSON.parse(user).role);
+        fetchData();
+        fetchCouriers();
+    }, [fetchData, fetchCouriers]);
 
     const handleCreateOrder = async (e: React.FormEvent) => {
         e.preventDefault();
         const form = e.target as HTMLFormElement;
         const formData = new FormData(form);
         const data: any = Object.fromEntries(formData);
-        data.items = { "description": "Journal Subscription Package", "qty": 1 };
+        data.weight = data.weight ? parseFloat(data.weight) : undefined;
+        if (!data.invoiceId) delete data.invoiceId;
+        if (!data.courierId) delete data.courierId;
+        if (!data.partnerName) delete data.partnerName;
+        if (!data.trackingNumber) delete data.trackingNumber;
+        if (!data.remarks) delete data.remarks;
+        data.items = { description: 'Dispatch generated from logistics dashboard', qty: 1 };
 
         try {
             const token = localStorage.getItem('token');
@@ -94,6 +110,11 @@ export default function LogisticsPage() {
             });
             if (res.ok) fetchData();
         } catch (error) { console.error(error); }
+    };
+
+    const handleTrack = (order: any) => {
+        if (!order?.tracking?.trackingUrl) return;
+        window.open(order.tracking.trackingUrl, '_blank', 'noopener,noreferrer');
     };
 
     const handleAddCourier = async () => {
@@ -222,28 +243,80 @@ export default function LogisticsPage() {
                             </button>
                         </div>
 
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+                            <input
+                                value={query}
+                                onChange={(e) => setQuery(e.target.value)}
+                                className="input md:col-span-2"
+                                placeholder="Search by invoice, customer, tracking, partner..."
+                            />
+                            <select
+                                value={statusFilter}
+                                onChange={(e) => setStatusFilter(e.target.value)}
+                                className="input"
+                            >
+                                <option value="">All statuses</option>
+                                <option value="PENDING">Pending</option>
+                                <option value="PROCESSING">Processing</option>
+                                <option value="READY_TO_SHIP">Ready to Ship</option>
+                                <option value="SHIPPED">Shipped</option>
+                                <option value="IN_TRANSIT">In Transit</option>
+                                <option value="DELIVERED">Delivered</option>
+                                <option value="RETURNED">Returned</option>
+                                <option value="LOST">Lost</option>
+                            </select>
+                            <select
+                                value={courierFilter}
+                                onChange={(e) => setCourierFilter(e.target.value)}
+                                className="input"
+                            >
+                                <option value="">All partners</option>
+                                {couriers.map((courier) => (
+                                    <option key={courier.id} value={courier.id}>
+                                        {courier.name}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+
                         <div className="card-premium p-0 overflow-hidden">
                             <div className="overflow-x-auto">
                                 <table className="w-full text-left text-sm text-secondary-600">
                                     <thead className="bg-secondary-50 text-[10px] font-black text-secondary-400 uppercase tracking-widest">
                                         <tr>
+                                            <th className="px-6 py-4">Invoice</th>
                                             <th className="px-6 py-4">Recipient / Destination</th>
                                             <th className="px-6 py-4">Courier / Tracking</th>
                                             <th className="px-6 py-4">Shipment Weights</th>
                                             <th className="px-6 py-4">Status</th>
                                             <th className="px-6 py-4">Last Updated</th>
+                                            <th className="px-6 py-4 text-right">Actions</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-secondary-100">
                                         {orders.map(order => (
                                             <tr key={order.id} className="hover:bg-secondary-50/50 transition-colors">
                                                 <td className="px-6 py-4">
-                                                    <p className="font-bold text-secondary-900">{order.recipientName}</p>
-                                                    <p className="text-[10px] text-secondary-400 font-medium">{order.city}, {order.country}</p>
+                                                    {order.invoice ? (
+                                                        <div className="space-y-1">
+                                                            <p className="font-bold text-secondary-900">{order.invoice.invoiceNumber}</p>
+                                                            <p className="text-[10px] text-secondary-400 font-medium">
+                                                                {order.invoice.currency === 'INR' ? '₹' : '$'}{order.invoice.total?.toLocaleString?.() || order.invoice.total}
+                                                            </p>
+                                                        </div>
+                                                    ) : (
+                                                        <span className="text-xs text-secondary-400">Manual</span>
+                                                    )}
                                                 </td>
                                                 <td className="px-6 py-4">
-                                                    <p className="font-bold text-secondary-800 text-xs">{order.courier?.name || 'Unassigned'}</p>
-                                                    <p className="text-[10px] text-primary-600 font-black tracking-widest uppercase">{order.trackingNumber || 'PENDING ASSIGNMENT'}</p>
+                                                    <p className="font-bold text-secondary-900">{order.recipientName}</p>
+                                                    <p className="text-[10px] text-secondary-400 font-medium">
+                                                        {order.customerProfile?.organizationName || order.customerProfile?.primaryEmail || `${order.city}, ${order.country}`}
+                                                    </p>
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                    <p className="font-bold text-secondary-800 text-xs">{order.tracking?.partnerName || order.courier?.name || 'Unassigned'}</p>
+                                                    <p className="text-[10px] text-primary-600 font-black tracking-widest uppercase">{order.tracking?.trackingNumber || 'PENDING ASSIGNMENT'}</p>
                                                 </td>
                                                 <td className="px-6 py-4">
                                                     <span className="font-black text-secondary-900">{order.weight || '--'} kg</span>
@@ -257,6 +330,7 @@ export default function LogisticsPage() {
                                                         >
                                                             <option value="PENDING">Pending</option>
                                                             <option value="PROCESSING">Processing</option>
+                                                            <option value="READY_TO_SHIP">Ready to Ship</option>
                                                             <option value="SHIPPED">Shipped</option>
                                                             <option value="IN_TRANSIT">In Transit</option>
                                                             <option value="DELIVERED">Delivered</option>
@@ -271,6 +345,25 @@ export default function LogisticsPage() {
                                                 </td>
                                                 <td className="px-6 py-4 text-[10px] font-bold text-secondary-400">
                                                     {new Date(order.updatedAt).toLocaleDateString()}
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                    <div className="flex items-center justify-end gap-2">
+                                                        {order.invoice?.id && (
+                                                            <Link
+                                                                href={`/dashboard/crm/invoices/${order.invoice.id}`}
+                                                                className="btn btn-secondary py-1 text-xs"
+                                                            >
+                                                                Invoice
+                                                            </Link>
+                                                        )}
+                                                        <button
+                                                            onClick={() => handleTrack(order)}
+                                                            disabled={!order.tracking?.canTrack}
+                                                            className="btn btn-primary py-1 text-xs disabled:opacity-50"
+                                                        >
+                                                            Track
+                                                        </button>
+                                                    </div>
                                                 </td>
                                             </tr>
                                         ))}
@@ -315,6 +408,10 @@ export default function LogisticsPage() {
                             <h3 className="text-2xl font-black text-secondary-900 mb-6">Dispatch Origin</h3>
                             <form onSubmit={handleCreateOrder} className="space-y-4">
                                 <div>
+                                    <label className="label">Invoice ID (Optional)</label>
+                                    <input name="invoiceId" className="input" placeholder="Paste invoice UUID to create invoice-linked dispatch" />
+                                </div>
+                                <div>
                                     <label className="label">Recipient Identity</label>
                                     <input name="recipientName" className="input" required placeholder="Full Name / Org" />
                                 </div>
@@ -338,10 +435,28 @@ export default function LogisticsPage() {
                                 </div>
                                 <div>
                                     <label className="label">Assign Carrier</label>
-                                    <select name="courierId" className="input" required>
+                                    <select name="courierId" className="input">
                                         <option value="">Choose Partner...</option>
                                         {couriers.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                                     </select>
+                                </div>
+                                <div>
+                                    <label className="label">Partner Name (Optional)</label>
+                                    <input name="partnerName" className="input" placeholder="Use when courier is Other / custom partner" />
+                                </div>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="label">Tracking / AWB Number</label>
+                                        <input name="trackingNumber" className="input" placeholder="Serial / AWB number" />
+                                    </div>
+                                    <div>
+                                        <label className="label">Weight (kg)</label>
+                                        <input name="weight" type="number" step="0.01" className="input" placeholder="0.00" />
+                                    </div>
+                                </div>
+                                <div>
+                                    <label className="label">Remarks</label>
+                                    <textarea name="remarks" className="input" rows={2} placeholder="Packing notes, handover notes, exceptions..." />
                                 </div>
                                 <div className="flex gap-2 pt-6">
                                     <button type="submit" className="btn btn-primary flex-1 py-4 font-black uppercase text-xs tracking-widest">Generate Shipment</button>
