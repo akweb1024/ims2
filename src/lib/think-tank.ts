@@ -121,6 +121,27 @@ export const thinkTankIdeaInclude = {
         },
     },
     votes: true,
+    decisionBy: {
+        select: {
+            id: true,
+            name: true,
+            email: true,
+        },
+    },
+    comments: {
+        include: {
+            author: {
+                select: {
+                    id: true,
+                    name: true,
+                    email: true,
+                },
+            },
+        },
+        orderBy: {
+            createdAt: 'desc' as const,
+        },
+    },
     duplicateMatches: {
         include: {
             matchedIdea: {
@@ -249,6 +270,10 @@ export const ensureThinkTankAccess = (user: ThinkTankUser) => {
     if (!ALLOWED_INTERNAL_ROLES.has(user.role)) {
         throw new Error('Think Tank is available only for internal staff.');
     }
+};
+
+export const canManageThinkTankReview = (role?: string | null) => {
+    return ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'TEAM_LEADER'].includes(role || '');
 };
 
 export const getScheduledGovernanceState = (date = new Date()): GovernanceState => {
@@ -846,6 +871,9 @@ export const serializeThinkTankIdea = (idea: Prisma.ThinkTankIdeaGetPayload<{ in
         description: idea.description,
         category: idea.category,
         status: idea.status,
+        reviewStage: idea.reviewStage,
+        implementationStatus: idea.implementationStatus,
+        decisionNotes: idea.decisionNotes,
         weightedScore: idea.weightedScore,
         voteCount: idea.voteCount,
         createdAt: idea.createdAt,
@@ -853,6 +881,7 @@ export const serializeThinkTankIdea = (idea: Prisma.ThinkTankIdeaGetPayload<{ in
         revealedAt: idea.revealedAt,
         cycle: idea.cycle,
         author: reveal ? idea.visibleAuthor : null,
+        decisionBy: idea.decisionBy,
         attachments: idea.attachments.map((attachment) => ({
             id: attachment.id,
             url: attachment.url,
@@ -893,6 +922,14 @@ export const serializeThinkTankIdea = (idea: Prisma.ThinkTankIdeaGetPayload<{ in
                 matchedIdea: match.matchedIdea,
             }))
             : undefined,
+        comments: idea.comments.map((comment) => ({
+            id: comment.id,
+            content: comment.content,
+            isInternal: comment.isInternal,
+            createdAt: comment.createdAt,
+            updatedAt: comment.updatedAt,
+            author: comment.author,
+        })),
     };
 };
 
@@ -935,6 +972,7 @@ export const createIdeaWithParticipants = async (params: {
             description: params.description.trim(),
             category: params.category,
             status: 'ACTIVE',
+            reviewStage: 'SUBMITTED',
             plannerEncrypted: encryptThinkTankIdentity(params.user.id),
             plannerHash: hashIdentity(params.user.id),
             duplicateDecision: params.duplicateDecision ?? (duplicates.length > 0 ? 'PROCEED_AS_UNIQUE' : null),

@@ -4,6 +4,7 @@ import { ThinkTankDuplicateDecision, ThinkTankIdeaCategory } from '@prisma/clien
 import { authorizedRoute } from '@/lib/middleware-auth';
 import { prisma } from '@/lib/prisma';
 import {
+    canManageThinkTankReview,
     createIdeaWithParticipants,
     ensureThinkTankAccess,
     findPotentialDuplicates,
@@ -39,6 +40,11 @@ export const GET = authorizedRoute([], async (req: NextRequest, user: any) => {
         ];
     } else if (view === 'results') {
         where.status = 'REVEALED';
+    } else if (view === 'review') {
+        if (!canManageThinkTankReview(user.role)) {
+            return NextResponse.json({ error: 'Review board access denied.' }, { status: 403 });
+        }
+        where.status = { notIn: ['MERGED', 'ARCHIVED'] };
     } else {
         where.cycleId = cycle.id;
         where.status = { in: ['ACTIVE', 'LOCKED'] };
@@ -55,9 +61,10 @@ export const GET = authorizedRoute([], async (req: NextRequest, user: any) => {
     return NextResponse.json({
         governance: await getGovernanceState(user.companyId),
         cycle,
+        canReview: canManageThinkTankReview(user.role),
         ideas: ideas.map((idea) => serializeThinkTankIdea(idea, {
             reveal: view === 'results',
-            includeDuplicates: view === 'my',
+            includeDuplicates: view === 'my' || view === 'review',
         })),
     });
 });

@@ -363,10 +363,12 @@ model User {
   feedbackMessages               FeedbackMessage[]           @relation("FeedbackMessageSender")
   files                          FileRecord[]
   thinkTankVisibleIdeas          ThinkTankIdea[]             @relation("ThinkTankVisibleAuthor")
+  thinkTankDecisionIdeas         ThinkTankIdea[]             @relation("ThinkTankDecisionBy")
   thinkTankVisiblePartners       ThinkTankIdeaPartner[]      @relation("ThinkTankVisiblePartner")
   thinkTankVisibleTeamMembers    ThinkTankIdeaTeamMember[]   @relation("ThinkTankVisibleTeamMember")
   thinkTankAuditEvents           ThinkTankIdeaAuditEvent[]   @relation("ThinkTankAuditActor")
   thinkTankPointsMappings        ThinkTankPointsMapping[]    @relation("ThinkTankVisiblePointUser")
+  thinkTankComments              ThinkTankIdeaComment[]      @relation("ThinkTankCommentAuthor")
   vaultKeyring                   VaultKeyring?               @relation("UserVaultKeyring")
   vaultFolders                   VaultFolder[]               @relation("UserVaultFolders")
   ownedVaultItems                VaultItem[]                 @relation("OwnerVaultItems")
@@ -5439,6 +5441,7 @@ model ThinkTankIdea {
   description        String                    @db.Text
   category           ThinkTankIdeaCategory
   status             ThinkTankIdeaStatus       @default(DRAFT)
+  reviewStage        String                    @default("SUBMITTED")
   plannerEncrypted   String                    @db.Text
   plannerHash        String
   visibleAuthorId    String?
@@ -5446,17 +5449,25 @@ model ThinkTankIdea {
   duplicateDecision  ThinkTankDuplicateDecision?
   weightedScore      Float                     @default(0)
   voteCount          Int                       @default(0)
+  implementationStatus String                  @default("NOT_STARTED")
+  decisionNotes      String?                   @db.Text
+  shortlistedAt      DateTime?
+  approvedAt         DateTime?
+  implementedAt      DateTime?
+  decisionById       String?
   metadata           Json?
   createdAt          DateTime                  @default(now())
   updatedAt          DateTime                  @updatedAt
   company            Company                   @relation(fields: [companyId], references: [id], onDelete: Cascade)
   cycle              ThinkTankIdeaCycle        @relation(fields: [cycleId], references: [id], onDelete: Cascade)
   visibleAuthor      User?                     @relation("ThinkTankVisibleAuthor", fields: [visibleAuthorId], references: [id], onDelete: SetNull)
+  decisionBy         User?                     @relation("ThinkTankDecisionBy", fields: [decisionById], references: [id], onDelete: SetNull)
   partners           ThinkTankIdeaPartner[]
   teamMembers        ThinkTankIdeaTeamMember[]
   votes              ThinkTankIdeaVote[]
   attachments        ThinkTankIdeaAttachment[]
   auditEvents        ThinkTankIdeaAuditEvent[]
+  comments           ThinkTankIdeaComment[]
   duplicateMatches   ThinkTankIdeaDuplicateMatch[] @relation("ThinkTankDuplicateMatches")
   duplicateSources   ThinkTankIdeaDuplicateMatch[] @relation("ThinkTankDuplicateSources")
   pointsMappings     ThinkTankPointsMapping[]
@@ -5466,6 +5477,8 @@ model ThinkTankIdea {
   @@index([category])
   @@index([plannerHash])
   @@index([revealedAt])
+  @@index([reviewStage])
+  @@index([implementationStatus])
 }
 
 model ThinkTankIdeaPartner {
@@ -5565,6 +5578,21 @@ model ThinkTankIdeaDuplicateMatch {
 
   @@index([ideaId])
   @@index([matchedIdeaId])
+}
+
+model ThinkTankIdeaComment {
+  id          String         @id @default(uuid())
+  ideaId       String
+  authorUserId String
+  content      String         @db.Text
+  isInternal   Boolean        @default(true)
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  idea         ThinkTankIdea  @relation(fields: [ideaId], references: [id], onDelete: Cascade)
+  author       User           @relation("ThinkTankCommentAuthor", fields: [authorUserId], references: [id], onDelete: Cascade)
+
+  @@index([ideaId, createdAt])
+  @@index([authorUserId])
 }
 
 model ThinkTankPointsMapping {

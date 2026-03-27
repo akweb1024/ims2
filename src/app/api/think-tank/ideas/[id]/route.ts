@@ -4,6 +4,7 @@ import { ThinkTankIdeaCategory } from '@prisma/client';
 import { authorizedRoute } from '@/lib/middleware-auth';
 import { prisma } from '@/lib/prisma';
 import {
+    canManageThinkTankReview,
     ensureThinkTankAccess,
     getGovernanceState,
     logThinkTankAudit,
@@ -37,11 +38,6 @@ export const GET = authorizedRoute([], async (_req: NextRequest, user: any, cont
 
 export const PATCH = authorizedRoute([], async (req: NextRequest, user: any, context: any) => {
     ensureThinkTankAccess(user);
-    const governance = await getGovernanceState(user.companyId);
-    if (!governance.submissionOpen) {
-        return NextResponse.json({ error: 'Ideas are locked for editing right now.' }, { status: 423 });
-    }
-
     const body = await req.json();
     const idea = await prisma.thinkTankIdea.findFirst({
         where: {
@@ -55,8 +51,14 @@ export const PATCH = authorizedRoute([], async (req: NextRequest, user: any, con
     }
 
     const userHash = crypto.createHash('sha256').update(user.id).digest('hex');
+    const canReview = canManageThinkTankReview(user.role);
     const isOwner = idea.plannerHash === userHash || ['SUPER_ADMIN', 'ADMIN', 'MANAGER'].includes(user.role);
-    if (!isOwner) {
+    const governance = await getGovernanceState(user.companyId);
+
+    if (!canReview && !governance.submissionOpen) {
+        return NextResponse.json({ error: 'Ideas are locked for editing right now.' }, { status: 423 });
+    }
+    if (!isOwner && !canReview) {
         return NextResponse.json({ error: 'You can only update your own idea.' }, { status: 403 });
     }
 
@@ -73,6 +75,22 @@ export const PATCH = authorizedRoute([], async (req: NextRequest, user: any, con
     if (body.status && ['DRAFT', 'ACTIVE', 'LOCKED', 'ARCHIVED'].includes(body.status)) {
         data.status = body.status;
     }
+    if (canReview && body.reviewStage) {
+        data.reviewStage = String(body.reviewStage).toUpperCase();
+        if (data.reviewStage === 'SHORTLISTED' && !idea.shortlistedAt) data.shortlistedAt = new Date();
+        if (data.reviewStage === 'APPROVED' && !idea.approvedAt) data.approvedAt = new Date();
+        if (data.reviewStage === 'IMPLEMENTED' && !idea.implementedAt) data.implementedAt = new Date();
+        data.decisionById = user.id;
+    }
+    if (canReview && body.implementationStatus) {
+        data.implementationStatus = String(body.implementationStatus).toUpperCase();
+        if (data.implementationStatus === 'COMPLETED' && !idea.implementedAt) data.implementedAt = new Date();
+        data.decisionById = user.id;
+    }
+    if (canReview && body.decisionNotes !== undefined) {
+        data.decisionNotes = body.decisionNotes ? String(body.decisionNotes).trim() : null;
+        data.decisionById = user.id;
+    }
 
     const updated = await prisma.thinkTankIdea.update({
         where: { id: idea.id },
@@ -83,7 +101,7 @@ export const PATCH = authorizedRoute([], async (req: NextRequest, user: any, con
     await logThinkTankAudit({
         ideaId: idea.id,
         actorUserId: user.id,
-        action: 'IDEA_UPDATED',
+        action: canReview ? 'IDEA_REVIEW_UPDATED' : 'IDEA_UPDATED',
         outcome: 'SUCCESS',
     });
 

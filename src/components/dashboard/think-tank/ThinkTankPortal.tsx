@@ -12,14 +12,26 @@ type Idea = {
     description: string;
     category: string;
     status: string;
+    reviewStage?: string;
+    implementationStatus?: string;
+    decisionNotes?: string | null;
     weightedScore: number;
     voteCount: number;
     createdAt: string;
     revealedAt?: string | null;
     author?: { id: string; name?: string | null; email?: string | null } | null;
+    decisionBy?: { id: string; name?: string | null; email?: string | null } | null;
     attachments?: Array<{ id: string; url: string; filename: string; size: number; scrubStatus?: string | null }>;
     partners?: Array<{ id: string; roleType: string; user?: { id: string; name?: string | null; email?: string | null } | null }>;
     teamMembers?: Array<{ id: string; roleType: string; user?: { id: string; name?: string | null; email?: string | null } | null }>;
+    comments?: Array<{
+        id: string;
+        content: string;
+        isInternal: boolean;
+        createdAt: string;
+        updatedAt: string;
+        author?: { id: string; name?: string | null; email?: string | null } | null;
+    }>;
     analytics?: {
         voteCount: number;
         weightedScore: number;
@@ -69,6 +81,7 @@ export default function ThinkTankPortal({ mode }: { mode: PortalMode }) {
     const [governance, setGovernance] = useState<any>(null);
     const [governanceAccess, setGovernanceAccess] = useState<{ canManage?: boolean; override?: any } | null>(null);
     const [ideas, setIdeas] = useState<Idea[]>([]);
+    const [reviewIdeas, setReviewIdeas] = useState<Idea[]>([]);
     const [results, setResults] = useState<Idea[]>([]);
     const [form, setForm] = useState({
         topic: '',
@@ -109,6 +122,11 @@ export default function ThinkTankPortal({ mode }: { mode: PortalMode }) {
             const ideasPayload = await ideasRes.json();
             const resultsPayload = await resultsRes.json();
             const governancePayload = await governanceRes.json();
+            let reviewPayload: any = null;
+            const reviewRes = await fetch('/api/think-tank/ideas?view=review', { cache: 'no-store' });
+            if (reviewRes.ok) {
+                reviewPayload = await reviewRes.json();
+            }
             setGovernance(ideasPayload.governance || null);
             setGovernanceAccess({
                 canManage: governancePayload.canManage,
@@ -119,6 +137,7 @@ export default function ThinkTankPortal({ mode }: { mode: PortalMode }) {
                 reason: governancePayload.override?.reason || '',
             });
             setIdeas(ideasPayload.ideas || []);
+            setReviewIdeas(reviewPayload?.ideas || []);
             setResults(resultsPayload.ideas || []);
         } catch (fetchError) {
             setError('Failed to load Think Tank ideas.');
@@ -245,6 +264,36 @@ export default function ThinkTankPortal({ mode }: { mode: PortalMode }) {
         }
     };
 
+    const handleReviewUpdate = async (ideaId: string, payload: { reviewStage?: string; implementationStatus?: string; decisionNotes?: string }) => {
+        setError('');
+        const response = await fetch(`/api/think-tank/ideas/${ideaId}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+        });
+        const body = await response.json();
+        if (!response.ok) {
+            setError(body.error || 'Failed to update review workflow.');
+            return;
+        }
+        await refresh();
+    };
+
+    const handleAddComment = async (ideaId: string, content: string) => {
+        setError('');
+        const response = await fetch(`/api/think-tank/ideas/${ideaId}/comments`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ content }),
+        });
+        const payload = await response.json();
+        if (!response.ok) {
+            setError(payload.error || 'Failed to add comment.');
+            return;
+        }
+        await refresh();
+    };
+
     const content = () => {
         if (loading) {
             return <div className="rounded-3xl border border-slate-200 bg-white p-8 text-sm text-slate-500">Loading Think Tank workspace…</div>;
@@ -266,6 +315,9 @@ export default function ThinkTankPortal({ mode }: { mode: PortalMode }) {
                             updatingGovernance={updatingGovernance}
                             onSubmit={handleGovernanceUpdate}
                         />
+                    )}
+                    {governanceAccess?.canManage && reviewIdeas.length > 0 && (
+                        <ReviewBoard ideas={reviewIdeas} onReviewUpdate={handleReviewUpdate} onAddComment={handleAddComment} />
                     )}
                     <div className="grid gap-4 md:grid-cols-3">
                         <QuickCard href="/dashboard/think-tank/my-ideas" title="My Ideas" description="Submit proposals, review duplicate matches, and track your current cycle ideas." />
@@ -539,6 +591,121 @@ function GovernanceControlPanel({
     );
 }
 
+function ReviewBoard({
+    ideas,
+    onReviewUpdate,
+    onAddComment,
+}: {
+    ideas: Idea[];
+    onReviewUpdate: (ideaId: string, payload: { reviewStage?: string; implementationStatus?: string; decisionNotes?: string }) => Promise<void>;
+    onAddComment: (ideaId: string, content: string) => Promise<void>;
+}) {
+    const [notes, setNotes] = useState<Record<string, string>>({});
+    const [comments, setComments] = useState<Record<string, string>>({});
+
+    return (
+        <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+            <div className="mb-5">
+                <h2 className="text-lg font-semibold text-slate-900">Review Board</h2>
+                <p className="mt-1 text-sm text-slate-600">Shortlist, approve, and track implementation progress with structured reviewer notes.</p>
+            </div>
+            <div className="space-y-4">
+                {ideas.slice(0, 8).map((idea) => (
+                    <div key={idea.id} className="rounded-3xl border border-slate-200 p-5">
+                        <div className="flex flex-wrap items-start justify-between gap-4">
+                            <div>
+                                <div className="text-xs font-semibold uppercase tracking-[0.25em] text-slate-500">{idea.category.replace(/_/g, ' ')}</div>
+                                <h3 className="mt-2 text-lg font-semibold text-slate-950">{idea.topic}</h3>
+                                <p className="mt-2 text-sm text-slate-600">{idea.description}</p>
+                            </div>
+                            <div className="rounded-2xl bg-slate-50 px-4 py-3 text-sm text-slate-600">
+                                <div>Score: <span className="font-semibold text-slate-900">{idea.weightedScore}</span></div>
+                                <div>Votes: <span className="font-semibold text-slate-900">{idea.voteCount}</span></div>
+                            </div>
+                        </div>
+                        <div className="mt-4 grid gap-3 md:grid-cols-[200px_220px_1fr_auto] md:items-end">
+                            <label className="grid gap-2 text-sm text-slate-700">
+                                <span className="font-medium">Review stage</span>
+                                <select
+                                    className="rounded-2xl border border-slate-200 px-4 py-3"
+                                    defaultValue={idea.reviewStage || 'SUBMITTED'}
+                                    onChange={(event) => onReviewUpdate(idea.id, { reviewStage: event.target.value })}
+                                >
+                                    <option value="SUBMITTED">Submitted</option>
+                                    <option value="SHORTLISTED">Shortlisted</option>
+                                    <option value="UNDER_REVIEW">Under Review</option>
+                                    <option value="APPROVED">Approved</option>
+                                    <option value="REJECTED">Rejected</option>
+                                    <option value="IMPLEMENTED">Implemented</option>
+                                </select>
+                            </label>
+                            <label className="grid gap-2 text-sm text-slate-700">
+                                <span className="font-medium">Implementation</span>
+                                <select
+                                    className="rounded-2xl border border-slate-200 px-4 py-3"
+                                    defaultValue={idea.implementationStatus || 'NOT_STARTED'}
+                                    onChange={(event) => onReviewUpdate(idea.id, { implementationStatus: event.target.value })}
+                                >
+                                    <option value="NOT_STARTED">Not Started</option>
+                                    <option value="PLANNED">Planned</option>
+                                    <option value="IN_PROGRESS">In Progress</option>
+                                    <option value="BLOCKED">Blocked</option>
+                                    <option value="COMPLETED">Completed</option>
+                                </select>
+                            </label>
+                            <label className="grid gap-2 text-sm text-slate-700">
+                                <span className="font-medium">Decision notes</span>
+                                <input
+                                    className="rounded-2xl border border-slate-200 px-4 py-3"
+                                    placeholder="Why this idea was shortlisted, approved, or blocked"
+                                    value={notes[idea.id] ?? idea.decisionNotes ?? ''}
+                                    onChange={(event) => setNotes((current) => ({ ...current, [idea.id]: event.target.value }))}
+                                />
+                            </label>
+                            <button
+                                onClick={() => onReviewUpdate(idea.id, { decisionNotes: notes[idea.id] ?? idea.decisionNotes ?? '' })}
+                                className="rounded-2xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white"
+                            >
+                                Save Notes
+                            </button>
+                        </div>
+                        <div className="mt-4 rounded-2xl bg-slate-50 p-4">
+                            <div className="text-sm font-semibold text-slate-900">Reviewer comments</div>
+                            <div className="mt-3 space-y-3">
+                                {(idea.comments || []).slice(0, 4).map((comment) => (
+                                    <div key={comment.id} className="rounded-2xl bg-white p-3 text-sm text-slate-700">
+                                        <div className="font-medium text-slate-900">{comment.author?.name || comment.author?.email || 'Reviewer'}</div>
+                                        <div className="mt-1 whitespace-pre-wrap">{comment.content}</div>
+                                    </div>
+                                ))}
+                            </div>
+                            <div className="mt-3 flex gap-3">
+                                <input
+                                    className="flex-1 rounded-2xl border border-slate-200 px-4 py-3 text-sm"
+                                    placeholder="Add reviewer comment"
+                                    value={comments[idea.id] || ''}
+                                    onChange={(event) => setComments((current) => ({ ...current, [idea.id]: event.target.value }))}
+                                />
+                                <button
+                                    onClick={async () => {
+                                        const content = comments[idea.id]?.trim();
+                                        if (!content) return;
+                                        await onAddComment(idea.id, content);
+                                        setComments((current) => ({ ...current, [idea.id]: '' }));
+                                    }}
+                                    className="rounded-2xl bg-indigo-600 px-4 py-3 text-sm font-semibold text-white"
+                                >
+                                    Add Comment
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
+}
+
 function IdeaGrid({
     title,
     ideas,
@@ -589,6 +756,31 @@ function IdeaGrid({
                                 ))}
                             </div>
                         )}
+                        {idea.reviewStage || idea.implementationStatus ? (
+                            <div className="mt-4 flex flex-wrap gap-2 text-xs">
+                                {idea.reviewStage ? <span className="rounded-full bg-indigo-100 px-3 py-1 font-semibold text-indigo-700">Stage: {idea.reviewStage}</span> : null}
+                                {idea.implementationStatus ? <span className="rounded-full bg-emerald-100 px-3 py-1 font-semibold text-emerald-700">Implementation: {idea.implementationStatus}</span> : null}
+                            </div>
+                        ) : null}
+                        {idea.decisionNotes ? (
+                            <div className="mt-4 rounded-2xl bg-slate-50 p-4 text-sm text-slate-700">
+                                <div className="font-semibold text-slate-900">Decision Notes</div>
+                                <div className="mt-2 whitespace-pre-wrap">{idea.decisionNotes}</div>
+                            </div>
+                        ) : null}
+                        {idea.comments && idea.comments.length > 0 ? (
+                            <div className="mt-4 rounded-2xl bg-slate-50 p-4">
+                                <div className="text-sm font-semibold text-slate-900">Review Notes</div>
+                                <div className="mt-3 space-y-3">
+                                    {idea.comments.slice(0, 3).map((comment) => (
+                                        <div key={comment.id} className="rounded-2xl bg-white p-3 text-sm text-slate-700">
+                                            <div className="font-medium text-slate-900">{comment.author?.name || comment.author?.email || 'Reviewer'}</div>
+                                            <div className="mt-1 whitespace-pre-wrap">{comment.content}</div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        ) : null}
                         {showVoting && onVote && (
                             <div className="mt-5 flex flex-wrap gap-2">
                                 <button onClick={() => onVote(idea.id, 'LIKE')} className="rounded-full bg-emerald-600 px-4 py-2 text-sm font-semibold text-white">Like</button>
