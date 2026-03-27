@@ -11,43 +11,49 @@ import {
   summarizeInvoiceLineItems,
 } from "@/lib/dispatch";
 
-const getDispatchAddress = (invoice: any) => ({
-  recipientName:
-    invoice.customerProfile?.organizationName ||
-    invoice.customerProfile?.name ||
-    invoice.subscription?.customerProfile?.organizationName ||
-    invoice.subscription?.customerProfile?.name ||
-    "Customer",
-  address:
-    invoice.shippingAddress ||
-    invoice.customerProfile?.shippingAddress ||
-    invoice.customerProfile?.billingAddress ||
-    "",
-  city:
-    invoice.shippingCity ||
-    invoice.customerProfile?.shippingCity ||
-    invoice.customerProfile?.billingCity ||
-    "",
-  state:
-    invoice.shippingState ||
-    invoice.customerProfile?.shippingState ||
-    invoice.customerProfile?.billingState ||
-    "",
-  pincode:
-    invoice.shippingPincode ||
-    invoice.customerProfile?.shippingPincode ||
-    invoice.customerProfile?.billingPincode ||
-    "",
-  country:
-    invoice.shippingCountry ||
-    invoice.customerProfile?.shippingCountry ||
-    invoice.customerProfile?.billingCountry ||
-    "India",
-  phone:
-    invoice.customerProfile?.primaryPhone ||
-    invoice.subscription?.customerProfile?.primaryPhone ||
-    "",
-});
+const getDispatchAddress = (invoice: any) => {
+  const customer =
+    invoice.customerProfile || invoice.subscription?.customerProfile || {};
+
+  return {
+    recipientName:
+      customer.organizationName ||
+      customer.name ||
+      "Customer",
+    address:
+      invoice.shippingAddress ||
+      customer.shippingAddress ||
+      customer.billingAddress ||
+      "",
+    city:
+      invoice.shippingCity ||
+      customer.shippingCity ||
+      customer.billingCity ||
+      customer.city ||
+      "",
+    state:
+      invoice.shippingState ||
+      customer.shippingState ||
+      customer.billingState ||
+      customer.state ||
+      "",
+    pincode:
+      invoice.shippingPincode ||
+      customer.shippingPincode ||
+      customer.billingPincode ||
+      customer.pincode ||
+      "",
+    country:
+      invoice.shippingCountry ||
+      customer.shippingCountry ||
+      customer.billingCountry ||
+      customer.country ||
+      "India",
+    phone:
+      customer.primaryPhone ||
+      "",
+  };
+};
 
 const fetchInvoiceForDispatch = async (id: string, companyId?: string | null) => {
   return prisma.invoice.findFirst({
@@ -118,9 +124,17 @@ export const POST = authorizedRoute(
       }
 
       const address = getDispatchAddress(invoice);
-      if (!address.address || !address.city || !address.state || !address.pincode) {
+      const missingFields = [
+        !address.address ? "shippingAddress" : null,
+        !address.city ? "shippingCity" : null,
+        !address.state ? "shippingState" : null,
+        !address.pincode ? "shippingPincode" : null,
+      ].filter(Boolean);
+
+      if (missingFields.length > 0) {
         throw new ValidationError(
           "Shipping address is incomplete. Please complete invoice or customer shipping details first.",
+          { missingFields, resolvedAddress: address },
         );
       }
 

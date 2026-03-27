@@ -155,6 +155,17 @@ export default function InvoiceDetailPage({
   );
   const [couriers, setCouriers] = useState<any[]>([]);
   const [dispatchSaving, setDispatchSaving] = useState(false);
+  const [dispatchValidation, setDispatchValidation] = useState<{
+    message: string;
+    missingFields: string[];
+    resolvedAddress?: {
+      address?: string;
+      city?: string;
+      state?: string;
+      pincode?: string;
+      country?: string;
+    };
+  } | null>(null);
   const [dispatchForm, setDispatchForm] = useState({
     courierId: "",
     partnerName: "",
@@ -420,6 +431,7 @@ export default function InvoiceDetailPage({
 
   const handleCreateDispatch = async () => {
     setDispatchSaving(true);
+    setDispatchValidation(null);
     try {
       const token = localStorage.getItem("token");
       const res = await fetch(`/api/invoices/${id}/dispatch`, {
@@ -428,8 +440,25 @@ export default function InvoiceDetailPage({
       });
       const data = await res.json();
       if (!res.ok) {
-        throw new Error(data.error || "Failed to create dispatch");
+        if (Array.isArray(data?.details?.missingFields)) {
+          setDispatchValidation({
+            message:
+              data.message ||
+              "Shipping address is incomplete. Please complete invoice or customer shipping details first.",
+            missingFields: data.details.missingFields,
+            resolvedAddress: data.details.resolvedAddress,
+          });
+        }
+        const missingFields = Array.isArray(data?.details?.missingFields)
+          ? ` Missing: ${data.details.missingFields.join(", ")}.`
+          : "";
+        throw new Error(
+          data.message
+            ? `${data.message}${missingFields}`
+            : data.error || `Failed to create dispatch.${missingFields}`,
+        );
       }
+      setDispatchValidation(null);
       alert("Dispatch created successfully");
       await fetchInvoice();
     } catch (error: any) {
@@ -946,20 +975,51 @@ export default function InvoiceDetailPage({
             </div>
 
             {!invoice.dispatchOrder ? (
-              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 rounded-2xl border border-secondary-100 bg-secondary-50 p-4">
-                <div>
+              <div className="flex flex-col gap-4">
+                {dispatchValidation && (
+                  <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm">
+                    <p className="font-semibold text-amber-900">{dispatchValidation.message}</p>
+                    <p className="mt-2 text-amber-800">
+                      Missing fields: {dispatchValidation.missingFields.join(", ")}
+                    </p>
+                    <div className="mt-3 grid grid-cols-1 gap-2 md:grid-cols-2 text-amber-900">
+                      <p>
+                        <span className="font-semibold">Address:</span>{" "}
+                        {dispatchValidation.resolvedAddress?.address || "Missing"}
+                      </p>
+                      <p>
+                        <span className="font-semibold">City:</span>{" "}
+                        {dispatchValidation.resolvedAddress?.city || "Missing"}
+                      </p>
+                      <p>
+                        <span className="font-semibold">State:</span>{" "}
+                        {dispatchValidation.resolvedAddress?.state || "Missing"}
+                      </p>
+                      <p>
+                        <span className="font-semibold">Pincode:</span>{" "}
+                        {dispatchValidation.resolvedAddress?.pincode || "Missing"}
+                      </p>
+                    </div>
+                    <p className="mt-3 text-amber-800">
+                      Update the invoice shipping details, or complete the customer shipping or billing address, then try again.
+                    </p>
+                  </div>
+                )}
+                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 rounded-2xl border border-secondary-100 bg-secondary-50 p-4">
+                  <div>
                   <p className="font-semibold text-secondary-900">No dispatch record yet</p>
                   <p className="text-sm text-secondary-500">
                     Create a dispatch from the invoice shipping address and line items stored on this invoice.
                   </p>
+                  </div>
+                  <button
+                    onClick={handleCreateDispatch}
+                    disabled={dispatchSaving}
+                    className="btn btn-primary"
+                  >
+                    {dispatchSaving ? "Creating..." : "Create Dispatch"}
+                  </button>
                 </div>
-                <button
-                  onClick={handleCreateDispatch}
-                  disabled={dispatchSaving}
-                  className="btn btn-primary"
-                >
-                  {dispatchSaving ? "Creating..." : "Create Dispatch"}
-                </button>
               </div>
             ) : (
               <>

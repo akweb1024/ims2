@@ -63,6 +63,18 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ id: str
             where: { id },
             data: {
                 status: body.status || undefined,
+                recipientName: body.recipientName !== undefined ? String(body.recipientName || '').trim() || undefined : undefined,
+                address: body.address !== undefined ? String(body.address || '').trim() || undefined : undefined,
+                city: body.city !== undefined ? String(body.city || '').trim() || undefined : undefined,
+                state: body.state !== undefined ? String(body.state || '').trim() || undefined : undefined,
+                pincode: body.pincode !== undefined ? String(body.pincode || '').trim() || undefined : undefined,
+                country: body.country !== undefined ? String(body.country || '').trim() || undefined : undefined,
+                phone: body.phone !== undefined ? String(body.phone || '').trim() || null : undefined,
+                weight: body.weight !== undefined && body.weight !== null && body.weight !== ''
+                    ? Number(body.weight)
+                    : body.weight === null || body.weight === ''
+                        ? null
+                        : undefined,
                 courierId: body.courierId !== undefined ? body.courierId || null : undefined,
                 partnerName: body.partnerName !== undefined ? String(body.partnerName || '').trim() || null : undefined,
                 trackingNumber: body.trackingNumber !== undefined ? normalizeTrackingNumber(body.trackingNumber) : undefined,

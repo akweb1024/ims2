@@ -21,6 +21,25 @@ export default function LogisticsPage() {
     const [query, setQuery] = useState('');
     const [statusFilter, setStatusFilter] = useState('');
     const [courierFilter, setCourierFilter] = useState('');
+    const [selectedOrder, setSelectedOrder] = useState<any>(null);
+    const [isOrderDetailOpen, setIsOrderDetailOpen] = useState(false);
+    const [isDetailLoading, setIsDetailLoading] = useState(false);
+    const [isDetailSaving, setIsDetailSaving] = useState(false);
+    const [detailForm, setDetailForm] = useState({
+        recipientName: '',
+        address: '',
+        city: '',
+        state: '',
+        pincode: '',
+        country: 'India',
+        phone: '',
+        courierId: '',
+        partnerName: '',
+        trackingNumber: '',
+        weight: '',
+        status: 'PENDING',
+        remarks: '',
+    });
 
     const fetchData = useCallback(async () => {
         try {
@@ -115,6 +134,84 @@ export default function LogisticsPage() {
     const handleTrack = (order: any) => {
         if (!order?.tracking?.trackingUrl) return;
         window.open(order.tracking.trackingUrl, '_blank', 'noopener,noreferrer');
+    };
+
+    const syncDetailForm = (order: any) => {
+        setDetailForm({
+            recipientName: order?.recipientName || '',
+            address: order?.address || '',
+            city: order?.city || '',
+            state: order?.state || '',
+            pincode: order?.pincode || '',
+            country: order?.country || 'India',
+            phone: order?.phone || '',
+            courierId: order?.courierId || '',
+            partnerName: order?.partnerName || order?.courier?.name || '',
+            trackingNumber: order?.trackingNumber || '',
+            weight: order?.weight?.toString?.() || '',
+            status: order?.status || 'PENDING',
+            remarks: order?.remarks || '',
+        });
+    };
+
+    const openOrderDetail = async (id: string) => {
+        setIsOrderDetailOpen(true);
+        setIsDetailLoading(true);
+        try {
+            const token = localStorage.getItem('token');
+            const res = await fetch(`/api/logistics/orders/${id}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (!res.ok) {
+                throw new Error('Failed to load dispatch details');
+            }
+            const order = await res.json();
+            setSelectedOrder(order);
+            syncDetailForm(order);
+        } catch (error: any) {
+            alert(error.message || 'Failed to load dispatch details');
+            setIsOrderDetailOpen(false);
+            setSelectedOrder(null);
+        } finally {
+            setIsDetailLoading(false);
+        }
+    };
+
+    const closeOrderDetail = () => {
+        setIsOrderDetailOpen(false);
+        setSelectedOrder(null);
+    };
+
+    const handleDetailSave = async () => {
+        if (!selectedOrder?.id) return;
+        setIsDetailSaving(true);
+        try {
+            const token = localStorage.getItem('token');
+            const payload = {
+                ...detailForm,
+                weight: detailForm.weight.trim() ? Number(detailForm.weight) : null,
+            };
+            const res = await fetch(`/api/logistics/orders/${selectedOrder.id}`, {
+                method: 'PATCH',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(payload)
+            });
+            const data = await res.json();
+            if (!res.ok) {
+                throw new Error(data.error || 'Failed to update dispatch');
+            }
+            setSelectedOrder(data);
+            syncDetailForm(data);
+            fetchData();
+            alert('Dispatch updated successfully');
+        } catch (error: any) {
+            alert(error.message || 'Failed to update dispatch');
+        } finally {
+            setIsDetailSaving(false);
+        }
     };
 
     const handleAddCourier = async () => {
@@ -357,6 +454,12 @@ export default function LogisticsPage() {
                                                             </Link>
                                                         )}
                                                         <button
+                                                            onClick={() => openOrderDetail(order.id)}
+                                                            className="btn btn-secondary py-1 text-xs"
+                                                        >
+                                                            Manage
+                                                        </button>
+                                                        <button
                                                             onClick={() => handleTrack(order)}
                                                             disabled={!order.tracking?.canTrack}
                                                             className="btn btn-primary py-1 text-xs disabled:opacity-50"
@@ -462,6 +565,234 @@ export default function LogisticsPage() {
                                     <button type="submit" className="btn btn-primary flex-1 py-4 font-black uppercase text-xs tracking-widest">Generate Shipment</button>
                                 </div>
                             </form>
+                        </div>
+                    </div>
+                )}
+
+                {isOrderDetailOpen && (
+                    <div className="fixed inset-0 bg-secondary-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                        <div className="bg-white rounded-[2rem] p-8 max-w-4xl w-full max-h-[90vh] overflow-y-auto shadow-2xl relative">
+                            <button onClick={closeOrderDetail} className="absolute top-5 right-6 text-2xl text-secondary-300 hover:text-secondary-900 transition-colors">×</button>
+                            <div className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between mb-6">
+                                <div>
+                                    <h3 className="text-2xl font-black text-secondary-900">Dispatch Control Center</h3>
+                                    <p className="text-sm text-secondary-500">
+                                        Review shipment details, courier assignment, tracking, and destination in one place.
+                                    </p>
+                                </div>
+                                {selectedOrder?.invoice?.id && (
+                                    <Link href={`/dashboard/crm/invoices/${selectedOrder.invoice.id}`} className="btn btn-secondary text-xs py-2">
+                                        Open Invoice
+                                    </Link>
+                                )}
+                            </div>
+
+                            {isDetailLoading ? (
+                                <div className="py-16 text-center text-secondary-500">Loading dispatch details...</div>
+                            ) : selectedOrder ? (
+                                <div className="space-y-6">
+                                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                                        <div className="rounded-2xl border border-secondary-100 bg-secondary-50 p-4">
+                                            <p className="text-[10px] font-black uppercase tracking-widest text-secondary-400">Invoice</p>
+                                            <p className="mt-2 font-semibold text-secondary-900">
+                                                {selectedOrder.invoice?.invoiceNumber || 'Manual dispatch'}
+                                            </p>
+                                            <p className="mt-1 text-sm text-secondary-600">
+                                                {selectedOrder.invoice?.total ? `${selectedOrder.invoice.currency === 'INR' ? '₹' : '$'}${selectedOrder.invoice.total}` : 'No invoice total'}
+                                            </p>
+                                        </div>
+                                        <div className="rounded-2xl border border-secondary-100 bg-secondary-50 p-4">
+                                            <p className="text-[10px] font-black uppercase tracking-widest text-secondary-400">Customer</p>
+                                            <p className="mt-2 font-semibold text-secondary-900">
+                                                {selectedOrder.customerProfile?.organizationName || selectedOrder.customerProfile?.name || selectedOrder.recipientName}
+                                            </p>
+                                            <p className="mt-1 text-sm text-secondary-600">
+                                                {selectedOrder.customerProfile?.primaryEmail || selectedOrder.phone || 'No email'}
+                                            </p>
+                                        </div>
+                                        <div className="rounded-2xl border border-secondary-100 bg-secondary-50 p-4">
+                                            <p className="text-[10px] font-black uppercase tracking-widest text-secondary-400">Tracking</p>
+                                            <p className="mt-2 font-semibold text-secondary-900">
+                                                {selectedOrder.tracking?.trackingNumber || 'Pending assignment'}
+                                            </p>
+                                            <p className="mt-1 text-sm text-secondary-600">
+                                                {selectedOrder.tracking?.partnerName || 'No partner assigned'}
+                                            </p>
+                                        </div>
+                                        <div className="rounded-2xl border border-secondary-100 bg-secondary-50 p-4">
+                                            <p className="text-[10px] font-black uppercase tracking-widest text-secondary-400">Status</p>
+                                            <p className="mt-2 font-semibold text-secondary-900">
+                                                {selectedOrder.status.replace(/_/g, ' ')}
+                                            </p>
+                                            <p className="mt-1 text-sm text-secondary-600">
+                                                Updated {new Date(selectedOrder.updatedAt).toLocaleDateString()}
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="label">Recipient</label>
+                                            <input
+                                                className="input"
+                                                value={detailForm.recipientName}
+                                                onChange={(e) => setDetailForm((prev) => ({ ...prev, recipientName: e.target.value }))}
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="label">Phone</label>
+                                            <input
+                                                className="input"
+                                                value={detailForm.phone}
+                                                onChange={(e) => setDetailForm((prev) => ({ ...prev, phone: e.target.value }))}
+                                            />
+                                        </div>
+                                        <div className="md:col-span-2">
+                                            <label className="label">Address</label>
+                                            <textarea
+                                                className="input"
+                                                rows={2}
+                                                value={detailForm.address}
+                                                onChange={(e) => setDetailForm((prev) => ({ ...prev, address: e.target.value }))}
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="label">City</label>
+                                            <input
+                                                className="input"
+                                                value={detailForm.city}
+                                                onChange={(e) => setDetailForm((prev) => ({ ...prev, city: e.target.value }))}
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="label">State</label>
+                                            <input
+                                                className="input"
+                                                value={detailForm.state}
+                                                onChange={(e) => setDetailForm((prev) => ({ ...prev, state: e.target.value }))}
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="label">Pincode</label>
+                                            <input
+                                                className="input"
+                                                value={detailForm.pincode}
+                                                onChange={(e) => setDetailForm((prev) => ({ ...prev, pincode: e.target.value }))}
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="label">Country</label>
+                                            <input
+                                                className="input"
+                                                value={detailForm.country}
+                                                onChange={(e) => setDetailForm((prev) => ({ ...prev, country: e.target.value }))}
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="label">Courier Partner</label>
+                                            <select
+                                                className="input"
+                                                value={detailForm.courierId}
+                                                onChange={(e) => setDetailForm((prev) => ({ ...prev, courierId: e.target.value }))}
+                                            >
+                                                <option value="">Select courier</option>
+                                                {couriers.map((courier) => (
+                                                    <option key={courier.id} value={courier.id}>
+                                                        {courier.name}
+                                                    </option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label className="label">Partner Name</label>
+                                            <input
+                                                className="input"
+                                                value={detailForm.partnerName}
+                                                onChange={(e) => setDetailForm((prev) => ({ ...prev, partnerName: e.target.value }))}
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="label">Tracking / AWB Number</label>
+                                            <input
+                                                className="input"
+                                                value={detailForm.trackingNumber}
+                                                onChange={(e) => setDetailForm((prev) => ({ ...prev, trackingNumber: e.target.value }))}
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="label">Weight (kg)</label>
+                                            <input
+                                                className="input"
+                                                type="number"
+                                                step="0.01"
+                                                value={detailForm.weight}
+                                                onChange={(e) => setDetailForm((prev) => ({ ...prev, weight: e.target.value }))}
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="label">Status</label>
+                                            <select
+                                                className="input"
+                                                value={detailForm.status}
+                                                onChange={(e) => setDetailForm((prev) => ({ ...prev, status: e.target.value }))}
+                                            >
+                                                <option value="PENDING">Pending</option>
+                                                <option value="PROCESSING">Processing</option>
+                                                <option value="READY_TO_SHIP">Ready to Ship</option>
+                                                <option value="SHIPPED">Shipped</option>
+                                                <option value="IN_TRANSIT">In Transit</option>
+                                                <option value="DELIVERED">Delivered</option>
+                                                <option value="RETURNED">Returned</option>
+                                                <option value="LOST">Lost</option>
+                                            </select>
+                                        </div>
+                                        <div className="md:col-span-2">
+                                            <label className="label">Remarks</label>
+                                            <textarea
+                                                className="input"
+                                                rows={3}
+                                                value={detailForm.remarks}
+                                                onChange={(e) => setDetailForm((prev) => ({ ...prev, remarks: e.target.value }))}
+                                            />
+                                        </div>
+                                    </div>
+
+                                    {Array.isArray(selectedOrder.items) && selectedOrder.items.length > 0 && (
+                                        <div className="rounded-2xl border border-secondary-100 bg-secondary-50 p-4">
+                                            <p className="text-[10px] font-black uppercase tracking-widest text-secondary-400">Dispatch Items</p>
+                                            <div className="mt-3 space-y-2">
+                                                {selectedOrder.items.map((item: any, index: number) => (
+                                                    <div key={`${item.name || 'item'}-${index}`} className="flex items-start justify-between gap-4 text-sm">
+                                                        <div>
+                                                            <p className="font-semibold text-secondary-900">{item.name || item.description || `Item ${index + 1}`}</p>
+                                                            {item.price && (
+                                                                <p className="text-secondary-500">Value: {item.price}</p>
+                                                            )}
+                                                        </div>
+                                                        <span className="text-secondary-500">Qty: {item.qty || item.quantity || 1}</span>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    <div className="flex flex-wrap justify-end gap-2">
+                                        {selectedOrder.tracking?.canTrack && (
+                                            <button onClick={() => handleTrack(selectedOrder)} className="btn btn-secondary py-2 text-xs">
+                                                Open Tracking
+                                            </button>
+                                        )}
+                                        {selectedOrder.customerProfile?.id && (
+                                            <Link href={`/dashboard/customers/${selectedOrder.customerProfile.id}`} className="btn btn-secondary py-2 text-xs">
+                                                Open Customer
+                                            </Link>
+                                        )}
+                                        <button onClick={handleDetailSave} disabled={isDetailSaving} className="btn btn-primary py-2 text-xs">
+                                            {isDetailSaving ? 'Saving...' : 'Save Dispatch'}
+                                        </button>
+                                    </div>
+                                </div>
+                            ) : null}
                         </div>
                     </div>
                 )}
