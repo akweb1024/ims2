@@ -6,16 +6,50 @@ import { logger } from '@/lib/logger';
 import { z } from 'zod';
 
 const db = prisma as any;
+const CATEGORIES = [
+    'JOURNAL_SUBSCRIPTION',
+    'COURSE',
+    'WORKSHOP',
+    'DOI_SERVICE',
+    'APC',
+    'CERTIFICATE',
+    'DIGITAL_SERVICE',
+    'MISC',
+] as const;
+const PRICING_MODELS = ['FIXED', 'TIERED', 'VOLUME', 'CUSTOM'] as const;
+const BILLING_CYCLES = ['MONTHLY', 'QUARTERLY', 'ANNUAL', 'ONE_TIME'] as const;
 
 /**
  * POST /api/invoice-products/bulk
- * Supports: activate, deactivate, delete (soft: deactivate), feature, unfeature
- * Body: { action: 'ACTIVATE' | 'DEACTIVATE' | 'DELETE' | 'FEATURE' | 'UNFEATURE', ids: string[] }
+ * Supports: activate, deactivate, delete, feature, unfeature, edit
  */
 
+const bulkEditChangesSchema = z.object({
+    category: z.enum(CATEGORIES).optional(),
+    pricingModel: z.enum(PRICING_MODELS).optional(),
+    taxRate: z.number().min(0).max(100).optional(),
+    billingCycle: z.enum(BILLING_CYCLES).nullable().optional(),
+    domain: z.string().max(200).nullable().optional(),
+    notes: z.string().max(1000).nullable().optional(),
+    isActive: z.boolean().optional(),
+    isFeatured: z.boolean().optional(),
+    taxIncluded: z.boolean().optional(),
+}).refine((value) => Object.keys(value).length > 0, {
+    message: 'At least one field is required for bulk edit',
+});
+
 const bulkSchema = z.object({
-    action: z.enum(['ACTIVATE', 'DEACTIVATE', 'DELETE', 'FEATURE', 'UNFEATURE']),
+    action: z.enum(['ACTIVATE', 'DEACTIVATE', 'DELETE', 'FEATURE', 'UNFEATURE', 'EDIT']),
     ids: z.array(z.string().uuid()).min(1).max(100),
+    changes: bulkEditChangesSchema.optional(),
+}).superRefine((value, ctx) => {
+    if (value.action === 'EDIT' && !value.changes) {
+        ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: ['changes'],
+            message: 'Bulk edit changes are required',
+        });
+    }
 });
 
 export const POST = authorizedRoute(
@@ -33,7 +67,7 @@ export const POST = authorizedRoute(
                 parsed.error.issues.forEach(i => { errors[i.path.join('.')] = i.message; });
                 return NextResponse.json({ error: 'Validation failed', details: errors }, { status: 422 });
             }
-            const { action, ids } = parsed.data;
+            const { action, ids, changes } = parsed.data;
 
             // Verify all IDs belong to this company
             const products = await db.invoiceProduct.findMany({
@@ -63,6 +97,38 @@ export const POST = authorizedRoute(
                     count: result.count, userId: user.id,
                 });
                 return NextResponse.json({ success: true, affected: result.count, action });
+            }
+
+            if (action === 'EDIT') {
+                const updateData = {
+                    ...(changes?.category !== undefined ? { category: changes.category } : {}),
+                    ...(changes?.pricingModel !== undefined ? { pricingModel: changes.pricingModel } : {}),
+                    ...(changes?.taxRate !== undefined ? { taxRate: changes.taxRate } : {}),
+                    ...(changes?.billingCycle !== undefined ? { billingCycle: changes.billingCycle } : {}),
+                    ...(changes?.domain !== undefined ? { domain: changes.domain } : {}),
+                    ...(changes?.notes !== undefined ? { notes: changes.notes } : {}),
+                    ...(changes?.isActive !== undefined ? { isActive: changes.isActive } : {}),
+                    ...(changes?.isFeatured !== undefined ? { isFeatured: changes.isFeatured } : {}),
+                    ...(changes?.taxIncluded !== undefined ? { taxIncluded: changes.taxIncluded } : {}),
+                    updatedByUserId: user.id,
+                };
+
+                result = await db.invoiceProduct.updateMany({
+                    where: { id: { in: validIds } },
+                    data: updateData,
+                });
+
+                logger.info('Bulk edit invoice products', {
+                    count: result.count,
+                    userId: user.id,
+                    changedFields: Object.keys(changes || {}),
+                });
+
+                return NextResponse.json({
+                    success: true,
+                    affected: result.count,
+                    action,
+                });
             }
 
             const dataMap: Record<string, any> = {

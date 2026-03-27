@@ -175,6 +175,18 @@ interface InvoiceProduct {
   updatedAt: string;
 }
 
+interface BulkEditFormState {
+  category: string;
+  pricingModel: string;
+  taxRate: string;
+  billingCycle: string;
+  domain: string;
+  notes: string;
+  isActive: string;
+  isFeatured: string;
+  taxIncluded: string;
+}
+
 // ─── Helpers ───────────────────────────────────────────────────────────────
 const FMT_INR = (n: number) =>
   new Intl.NumberFormat("en-IN", {
@@ -223,6 +235,18 @@ const EMPTY_FORM = {
   variants: [],
 };
 
+const BULK_EDIT_INITIAL_FORM: BulkEditFormState = {
+  category: "",
+  pricingModel: "",
+  taxRate: "",
+  billingCycle: "",
+  domain: "",
+  notes: "",
+  isActive: "",
+  isFeatured: "",
+  taxIncluded: "",
+};
+
 export default function InvoiceProductsPage() {
   const [products, setProducts] = useState<InvoiceProduct[]>([]);
   const [total, setTotal] = useState(0);
@@ -245,6 +269,10 @@ export default function InvoiceProductsPage() {
 
   // Selection
   const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [showBulkEditModal, setShowBulkEditModal] = useState(false);
+  const [bulkEditForm, setBulkEditForm] = useState<BulkEditFormState>(
+    BULK_EDIT_INITIAL_FORM,
+  );
 
   // Modal state
   const [showModal, setShowModal] = useState(false);
@@ -255,6 +283,7 @@ export default function InvoiceProductsPage() {
   const [catalogueForm, setCatalogueForm] =
     useState<ProductCatalogueFormData>(DEFAULT_FORM_DATA);
   const [saving, setSaving] = useState(false);
+  const [bulkSaving, setBulkSaving] = useState(false);
   const [deleting, setDeleting] = useState<string | null>(null);
   const [globalAttributes, setGlobalAttributes] = useState<any[]>([]);
 
@@ -627,6 +656,89 @@ export default function InvoiceProductsPage() {
       fetchProducts();
     } catch (e: any) {
       console.error(e);
+    }
+  };
+
+  const openBulkEdit = () => {
+    setBulkEditForm(BULK_EDIT_INITIAL_FORM);
+    setShowBulkEditModal(true);
+  };
+
+  const closeBulkEdit = () => {
+    if (bulkSaving) return;
+    setShowBulkEditModal(false);
+    setBulkEditForm(BULK_EDIT_INITIAL_FORM);
+  };
+
+  const handleBulkEditField = (
+    key: keyof BulkEditFormState,
+    value: string,
+  ) => {
+    setBulkEditForm((prev) => ({ ...prev, [key]: value }));
+  };
+
+  const handleBulkEditSave = async () => {
+    if (selected.size === 0) return;
+
+    const changes: Record<string, unknown> = {};
+    if (bulkEditForm.category) changes.category = bulkEditForm.category;
+    if (bulkEditForm.pricingModel) {
+      changes.pricingModel = bulkEditForm.pricingModel;
+    }
+    if (bulkEditForm.taxRate !== "") {
+      changes.taxRate = Number(bulkEditForm.taxRate);
+    }
+    if (bulkEditForm.billingCycle) {
+      changes.billingCycle =
+        bulkEditForm.billingCycle === "NULL" ? null : bulkEditForm.billingCycle;
+    }
+    if (bulkEditForm.domain.trim() !== "") {
+      changes.domain =
+        bulkEditForm.domain.trim().toUpperCase() === "NULL"
+          ? null
+          : bulkEditForm.domain.trim();
+    }
+    if (bulkEditForm.notes.trim() !== "") {
+      changes.notes =
+        bulkEditForm.notes.trim().toUpperCase() === "NULL"
+          ? null
+          : bulkEditForm.notes.trim();
+    }
+    if (bulkEditForm.isActive) changes.isActive = bulkEditForm.isActive === "true";
+    if (bulkEditForm.isFeatured) {
+      changes.isFeatured = bulkEditForm.isFeatured === "true";
+    }
+    if (bulkEditForm.taxIncluded) {
+      changes.taxIncluded = bulkEditForm.taxIncluded === "true";
+    }
+
+    if (Object.keys(changes).length === 0) {
+      alert("Choose at least one field to update.");
+      return;
+    }
+
+    setBulkSaving(true);
+    try {
+      const res = await fetch("/api/invoice-products/bulk", {
+        method: "POST",
+        headers: authH,
+        body: JSON.stringify({
+          action: "EDIT",
+          ids: Array.from(selected),
+          changes,
+        }),
+      });
+      const data = await res.json().catch(() => null);
+      if (!res.ok) {
+        throw new Error(data?.error || data?.message || "Bulk edit failed");
+      }
+      closeBulkEdit();
+      setSelected(new Set());
+      fetchProducts();
+    } catch (error: any) {
+      alert(error.message || "Failed to bulk edit products");
+    } finally {
+      setBulkSaving(false);
     }
   };
 
@@ -1131,6 +1243,12 @@ export default function InvoiceProductsPage() {
               </div>
               <div className="flex items-center gap-3">
                 <button
+                  onClick={openBulkEdit}
+                  className="px-5 py-2 rounded-xl bg-white text-primary-700 border border-primary-100 text-[11px] font-semibold hover:bg-primary-50 transition-all shadow-sm"
+                >
+                  Bulk Edit
+                </button>
+                <button
                   onClick={() => handleBulk("ACTIVATE")}
                   className="px-5 py-2 rounded-xl bg-white text-emerald-600 border border-emerald-100 text-[11px] font-semibold hover:bg-emerald-50 transition-all shadow-sm"
                 >
@@ -1417,6 +1535,198 @@ export default function InvoiceProductsPage() {
               icon: c.icon,
             }))}
           />
+        </CRMModal>
+
+        <CRMModal
+          open={showBulkEditModal}
+          onClose={closeBulkEdit}
+          title="Bulk Edit Products"
+          subtitle={`Apply shared changes to ${selected.size} selected product${selected.size === 1 ? "" : "s"}. Leave fields blank to keep existing values.`}
+          maxWidth="max-w-3xl"
+        >
+          <div className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              <label className="space-y-2">
+                <span className="text-xs font-semibold uppercase tracking-[0.08em] text-secondary-500">
+                  Category
+                </span>
+                <select
+                  value={bulkEditForm.category}
+                  onChange={(e) =>
+                    handleBulkEditField("category", e.target.value)
+                  }
+                  className="w-full h-11 rounded-xl border border-secondary-200 bg-white px-3.5 text-sm font-medium text-secondary-800"
+                >
+                  <option value="">No change</option>
+                  {CATEGORIES.map((category) => (
+                    <option key={category.value} value={category.value}>
+                      {category.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <label className="space-y-2">
+                <span className="text-xs font-semibold uppercase tracking-[0.08em] text-secondary-500">
+                  Pricing Model
+                </span>
+                <select
+                  value={bulkEditForm.pricingModel}
+                  onChange={(e) =>
+                    handleBulkEditField("pricingModel", e.target.value)
+                  }
+                  className="w-full h-11 rounded-xl border border-secondary-200 bg-white px-3.5 text-sm font-medium text-secondary-800"
+                >
+                  <option value="">No change</option>
+                  {PRICING_MODELS.map((model) => (
+                    <option key={model.value} value={model.value}>
+                      {model.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <label className="space-y-2">
+                <span className="text-xs font-semibold uppercase tracking-[0.08em] text-secondary-500">
+                  Tax Rate
+                </span>
+                <input
+                  type="number"
+                  min="0"
+                  max="100"
+                  step="0.01"
+                  value={bulkEditForm.taxRate}
+                  onChange={(e) =>
+                    handleBulkEditField("taxRate", e.target.value)
+                  }
+                  placeholder="No change"
+                  className="w-full h-11 rounded-xl border border-secondary-200 bg-white px-3.5 text-sm font-medium text-secondary-800"
+                />
+              </label>
+
+              <label className="space-y-2">
+                <span className="text-xs font-semibold uppercase tracking-[0.08em] text-secondary-500">
+                  Billing Cycle
+                </span>
+                <select
+                  value={bulkEditForm.billingCycle}
+                  onChange={(e) =>
+                    handleBulkEditField("billingCycle", e.target.value)
+                  }
+                  className="w-full h-11 rounded-xl border border-secondary-200 bg-white px-3.5 text-sm font-medium text-secondary-800"
+                >
+                  <option value="">No change</option>
+                  <option value="NULL">Clear billing cycle</option>
+                  {BILLING_CYCLES.map((cycle) => (
+                    <option key={cycle.value} value={cycle.value}>
+                      {cycle.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <label className="space-y-2">
+                <span className="text-xs font-semibold uppercase tracking-[0.08em] text-secondary-500">
+                  Status
+                </span>
+                <select
+                  value={bulkEditForm.isActive}
+                  onChange={(e) =>
+                    handleBulkEditField("isActive", e.target.value)
+                  }
+                  className="w-full h-11 rounded-xl border border-secondary-200 bg-white px-3.5 text-sm font-medium text-secondary-800"
+                >
+                  <option value="">No change</option>
+                  <option value="true">Active</option>
+                  <option value="false">Inactive</option>
+                </select>
+              </label>
+
+              <label className="space-y-2">
+                <span className="text-xs font-semibold uppercase tracking-[0.08em] text-secondary-500">
+                  Featured
+                </span>
+                <select
+                  value={bulkEditForm.isFeatured}
+                  onChange={(e) =>
+                    handleBulkEditField("isFeatured", e.target.value)
+                  }
+                  className="w-full h-11 rounded-xl border border-secondary-200 bg-white px-3.5 text-sm font-medium text-secondary-800"
+                >
+                  <option value="">No change</option>
+                  <option value="true">Featured</option>
+                  <option value="false">Not featured</option>
+                </select>
+              </label>
+
+              <label className="space-y-2">
+                <span className="text-xs font-semibold uppercase tracking-[0.08em] text-secondary-500">
+                  Tax Included
+                </span>
+                <select
+                  value={bulkEditForm.taxIncluded}
+                  onChange={(e) =>
+                    handleBulkEditField("taxIncluded", e.target.value)
+                  }
+                  className="w-full h-11 rounded-xl border border-secondary-200 bg-white px-3.5 text-sm font-medium text-secondary-800"
+                >
+                  <option value="">No change</option>
+                  <option value="true">Yes</option>
+                  <option value="false">No</option>
+                </select>
+              </label>
+
+              <label className="space-y-2">
+                <span className="text-xs font-semibold uppercase tracking-[0.08em] text-secondary-500">
+                  Domain
+                </span>
+                <input
+                  type="text"
+                  value={bulkEditForm.domain}
+                  onChange={(e) =>
+                    handleBulkEditField("domain", e.target.value)
+                  }
+                  placeholder='No change. Use "NULL" to clear.'
+                  className="w-full h-11 rounded-xl border border-secondary-200 bg-white px-3.5 text-sm font-medium text-secondary-800"
+                />
+              </label>
+            </div>
+
+            <label className="block space-y-2">
+              <span className="text-xs font-semibold uppercase tracking-[0.08em] text-secondary-500">
+                Notes
+              </span>
+              <textarea
+                value={bulkEditForm.notes}
+                onChange={(e) => handleBulkEditField("notes", e.target.value)}
+                placeholder='No change. Use "NULL" to clear.'
+                rows={4}
+                className="w-full rounded-2xl border border-secondary-200 bg-white px-4 py-3 text-sm font-medium text-secondary-800"
+              />
+            </label>
+
+            <div className="rounded-2xl border border-secondary-100 bg-secondary-50 px-4 py-3 text-xs text-secondary-500">
+              Bulk edit updates shared catalogue metadata only. Pricing rows, variants, SKU values, and product-specific structures still use the regular product editor.
+            </div>
+
+            <div className="flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={closeBulkEdit}
+                className="px-5 py-2.5 rounded-xl border border-secondary-200 text-sm font-semibold text-secondary-600"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleBulkEditSave}
+                disabled={bulkSaving}
+                className="px-5 py-2.5 rounded-xl bg-primary-600 text-white text-sm font-semibold disabled:opacity-60"
+              >
+                {bulkSaving ? "Applying..." : "Apply Changes"}
+              </button>
+            </div>
+          </div>
         </CRMModal>
       </CRMPageShell>
     </DashboardLayout>
