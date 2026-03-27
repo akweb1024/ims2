@@ -1,0 +1,514 @@
+'use client';
+
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import Link from 'next/link';
+import DashboardLayout from '@/components/dashboard/DashboardLayout';
+
+type PortalMode = 'dashboard' | 'my-ideas' | 'vote' | 'results';
+
+type Idea = {
+    id: string;
+    topic: string;
+    description: string;
+    category: string;
+    status: string;
+    weightedScore: number;
+    voteCount: number;
+    createdAt: string;
+    revealedAt?: string | null;
+    author?: { id: string; name?: string | null; email?: string | null } | null;
+    attachments?: Array<{ id: string; url: string; filename: string; size: number; scrubStatus?: string | null }>;
+    partners?: Array<{ id: string; roleType: string; user?: { id: string; name?: string | null; email?: string | null } | null }>;
+    teamMembers?: Array<{ id: string; roleType: string; user?: { id: string; name?: string | null; email?: string | null } | null }>;
+    analytics?: {
+        voteCount: number;
+        weightedScore: number;
+        voteBreakdown?: { like: number; unlike: number; neutral: number };
+    };
+    duplicateMatches?: Array<{
+        id: string;
+        similarityScore: number;
+        decision: string;
+        matchedIdea: {
+            id: string;
+            topic: string;
+            category: string;
+            status: string;
+            weightedScore: number;
+            voteCount: number;
+        };
+    }>;
+};
+
+const CATEGORIES = [
+    { value: 'PUBLICATION', label: 'Publication' },
+    { value: 'MARKETING', label: 'Marketing' },
+    { value: 'SALES', label: 'Sales' },
+    { value: 'ELEARNING', label: 'Elearning' },
+    { value: 'CHEMICAL', label: 'Chemical' },
+    { value: 'SFT_APPS', label: 'Sft & Apps' },
+    { value: 'GLOBAL', label: 'Global' },
+    { value: 'OTHER', label: 'Other' },
+    { value: 'ACCOUNTS', label: 'Accounts' },
+];
+
+const formatDateTime = (value?: string | null) => {
+    if (!value) return '—';
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return '—';
+    return new Intl.DateTimeFormat('en-IN', {
+        dateStyle: 'medium',
+        timeStyle: 'short',
+        timeZone: 'Asia/Kolkata',
+    }).format(date);
+};
+
+export default function ThinkTankPortal({ mode }: { mode: PortalMode }) {
+    const [loading, setLoading] = useState(true);
+    const [governance, setGovernance] = useState<any>(null);
+    const [ideas, setIdeas] = useState<Idea[]>([]);
+    const [results, setResults] = useState<Idea[]>([]);
+    const [form, setForm] = useState({
+        topic: '',
+        description: '',
+        category: 'PUBLICATION',
+        partnerIds: '',
+        duplicateDecision: '',
+    });
+    const [attachments, setAttachments] = useState<Array<{ url: string; filename: string; mimeType: string; size: number; fileRecordId?: string | null; scrubStatus?: string | null }>>([]);
+    const [duplicates, setDuplicates] = useState<Idea['duplicateMatches']>([]);
+    const [error, setError] = useState('');
+    const [submitting, setSubmitting] = useState(false);
+
+    const view = mode === 'my-ideas' ? 'my' : mode === 'results' ? 'results' : 'vote';
+
+    const refresh = useCallback(async () => {
+        setLoading(true);
+        try {
+            const [ideasRes, resultsRes] = await Promise.all([
+                fetch(`/api/think-tank/ideas?view=${view}`, { cache: 'no-store' }),
+                fetch('/api/think-tank/results', { cache: 'no-store' }),
+            ]);
+            const ideasPayload = await ideasRes.json();
+            const resultsPayload = await resultsRes.json();
+            setGovernance(ideasPayload.governance || null);
+            setIdeas(ideasPayload.ideas || []);
+            setResults(resultsPayload.ideas || []);
+        } catch (fetchError) {
+            setError('Failed to load Think Tank ideas.');
+        } finally {
+            setLoading(false);
+        }
+    }, [view]);
+
+    useEffect(() => {
+        refresh();
+    }, [refresh]);
+
+    const dashboardStats = useMemo(() => {
+        const votePool = ideas.filter((idea) => idea.status !== 'REVEALED');
+        return {
+            activeIdeas: votePool.length,
+            resultIdeas: results.length,
+            topScore: [...results, ...ideas].reduce((max, idea) => Math.max(max, idea.weightedScore || 0), 0),
+        };
+    }, [ideas, results]);
+
+    const uploadAttachment = async (file: File) => {
+        const formData = new FormData();
+        formData.append('file', file);
+        const response = await fetch('/api/think-tank/upload', {
+            method: 'POST',
+            body: formData,
+        });
+
+        const payload = await response.json();
+        if (!response.ok) throw new Error(payload.error || 'Upload failed');
+        return payload;
+    };
+
+    const handleSubmit = async (event: React.FormEvent) => {
+        event.preventDefault();
+        setError('');
+        setSubmitting(true);
+
+        try {
+            const partnerIds = form.partnerIds
+                .split(',')
+                .map((value) => value.trim())
+                .filter(Boolean);
+
+            const response = await fetch('/api/think-tank/ideas', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    topic: form.topic,
+                    description: form.description,
+                    category: form.category,
+                    partnerIds,
+                    attachments,
+                    duplicateDecision: form.duplicateDecision || undefined,
+                }),
+            });
+            const payload = await response.json();
+
+            if (response.status === 409 && payload.requiresDecision) {
+                setDuplicates(payload.duplicates || []);
+                setError('Potential duplicate detected. Review the matched ideas below, then choose Merge or Proceed as Unique.');
+                return;
+            }
+
+            if (!response.ok) {
+                throw new Error(payload.error || 'Failed to submit idea.');
+            }
+
+            setForm({
+                topic: '',
+                description: '',
+                category: 'PUBLICATION',
+                partnerIds: '',
+                duplicateDecision: '',
+            });
+            setAttachments([]);
+            setDuplicates([]);
+            await refresh();
+        } catch (submitError: any) {
+            setError(submitError.message || 'Failed to submit idea.');
+        } finally {
+            setSubmitting(false);
+        }
+    };
+
+    const handleVote = async (ideaId: string, vote: 'LIKE' | 'UNLIKE' | 'NEUTRAL') => {
+        setError('');
+        const response = await fetch(`/api/think-tank/ideas/${ideaId}/vote`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ vote }),
+        });
+        const payload = await response.json();
+        if (!response.ok) {
+            setError(payload.error || 'Unable to save vote.');
+            return;
+        }
+        await refresh();
+    };
+
+    const content = () => {
+        if (loading) {
+            return <div className="rounded-3xl border border-slate-200 bg-white p-8 text-sm text-slate-500">Loading Think Tank workspace…</div>;
+        }
+
+        if (mode === 'dashboard') {
+            return (
+                <div className="space-y-6">
+                    <div className="grid gap-4 md:grid-cols-3">
+                        <SummaryCard label="Active Ideas" value={dashboardStats.activeIdeas} />
+                        <SummaryCard label="Revealed Results" value={dashboardStats.resultIdeas} />
+                        <SummaryCard label="Top Weighted Score" value={dashboardStats.topScore} />
+                    </div>
+                    <div className="grid gap-4 md:grid-cols-3">
+                        <QuickCard href="/dashboard/think-tank/my-ideas" title="My Ideas" description="Submit proposals, review duplicate matches, and track your current cycle ideas." />
+                        <QuickCard href="/dashboard/think-tank/vote" title="Ideas for Vote" description="Anonymous evaluation board with weighted peer scoring." />
+                        <QuickCard href="/dashboard/think-tank/results" title="Ideas Result" description="View revealed planners, full teams, and current rankings after release." />
+                    </div>
+                    <GovernanceBanner governance={governance} />
+                    <IdeaGrid title="Ideas Open for Vote" ideas={ideas} showVoting />
+                </div>
+            );
+        }
+
+        if (mode === 'my-ideas') {
+            return (
+                <div className="space-y-6">
+                    <GovernanceBanner governance={governance} />
+                    <form onSubmit={handleSubmit} className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+                        <h2 className="text-xl font-semibold text-slate-900">Submit an Idea</h2>
+                        <p className="mt-1 text-sm text-slate-500">Descriptions support Markdown. Add up to 3 self-opted partners using user IDs separated by commas.</p>
+                        <div className="mt-4 grid gap-4">
+                            <input
+                                className="rounded-2xl border border-slate-200 px-4 py-3 text-sm"
+                                placeholder="Topic"
+                                value={form.topic}
+                                onChange={(event) => setForm((current) => ({ ...current, topic: event.target.value }))}
+                            />
+                            <textarea
+                                className="min-h-40 rounded-2xl border border-slate-200 px-4 py-3 text-sm"
+                                placeholder="Describe the idea, expected impact, and implementation sketch…"
+                                value={form.description}
+                                onChange={(event) => setForm((current) => ({ ...current, description: event.target.value }))}
+                            />
+                            <div className="grid gap-4 md:grid-cols-2">
+                                <select
+                                    className="rounded-2xl border border-slate-200 px-4 py-3 text-sm"
+                                    value={form.category}
+                                    onChange={(event) => setForm((current) => ({ ...current, category: event.target.value }))}
+                                >
+                                    {CATEGORIES.map((category) => (
+                                        <option key={category.value} value={category.value}>{category.label}</option>
+                                    ))}
+                                </select>
+                                <input
+                                    className="rounded-2xl border border-slate-200 px-4 py-3 text-sm"
+                                    placeholder="Partner user IDs, comma separated"
+                                    value={form.partnerIds}
+                                    onChange={(event) => setForm((current) => ({ ...current, partnerIds: event.target.value }))}
+                                />
+                            </div>
+                            <div className="grid gap-3 md:grid-cols-[1fr_auto_auto] md:items-center">
+                                <input
+                                    type="file"
+                                    className="rounded-2xl border border-dashed border-slate-300 px-4 py-3 text-sm"
+                                    onChange={async (event) => {
+                                        const file = event.target.files?.[0];
+                                        if (!file) return;
+                                        try {
+                                            const uploaded = await uploadAttachment(file);
+                                            setAttachments((current) => [...current, uploaded]);
+                                        } catch (uploadError: any) {
+                                            setError(uploadError.message || 'Upload failed.');
+                                        }
+                                    }}
+                                />
+                                <button
+                                    type="button"
+                                    className={`rounded-2xl px-4 py-3 text-sm font-semibold ${form.duplicateDecision === 'MERGE' ? 'bg-amber-600 text-white' : 'bg-slate-100 text-slate-700'}`}
+                                    onClick={() => setForm((current) => ({ ...current, duplicateDecision: 'MERGE' }))}
+                                >
+                                    Merge
+                                </button>
+                                <button
+                                    type="button"
+                                    className={`rounded-2xl px-4 py-3 text-sm font-semibold ${form.duplicateDecision === 'PROCEED_AS_UNIQUE' ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-700'}`}
+                                    onClick={() => setForm((current) => ({ ...current, duplicateDecision: 'PROCEED_AS_UNIQUE' }))}
+                                >
+                                    Proceed as Unique
+                                </button>
+                            </div>
+                            {attachments.length > 0 && (
+                                <div className="rounded-2xl bg-slate-50 p-4 text-sm text-slate-600">
+                                    {attachments.map((attachment) => (
+                                        <div key={attachment.url} className="flex items-center justify-between py-1">
+                                            <span>{attachment.filename}</span>
+                                            <span>{attachment.scrubStatus || 'SCRUBBED'}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                            {duplicates && duplicates.length > 0 && (
+                                <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4">
+                                    <p className="text-sm font-semibold text-amber-800">Potential duplicate ideas</p>
+                                    <div className="mt-3 space-y-2">
+                                        {duplicates.map((duplicate) => (
+                                            <div key={duplicate.id} className="rounded-2xl bg-white p-3 text-sm text-slate-700">
+                                                <div className="font-semibold">{duplicate.matchedIdea.topic}</div>
+                                                <div>Similarity: {(duplicate.similarityScore * 100).toFixed(1)}%</div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                            {error && <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">{error}</div>}
+                            <button
+                                type="submit"
+                                disabled={submitting}
+                                className="rounded-2xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white disabled:opacity-60"
+                            >
+                                {submitting ? 'Submitting…' : 'Submit Idea'}
+                            </button>
+                        </div>
+                    </form>
+                    <IdeaGrid title="My Ideas" ideas={ideas} showDuplicates />
+                </div>
+            );
+        }
+
+        if (mode === 'vote') {
+            return (
+                <div className="space-y-6">
+                    <GovernanceBanner governance={governance} />
+                    {error && <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">{error}</div>}
+                    <IdeaGrid title="Ideas for Vote" ideas={ideas} showVoting onVote={handleVote} />
+                </div>
+            );
+        }
+
+        return (
+            <div className="space-y-6">
+                <GovernanceBanner governance={governance} />
+                <IdeaGrid title="Ideas Result" ideas={results} revealTeams />
+            </div>
+        );
+    };
+
+    return (
+        <DashboardLayout>
+            <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(15,23,42,0.08),_transparent_45%),linear-gradient(180deg,_#f8fafc_0%,_#eef2ff_100%)]">
+                <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+                    <div className="mb-8 flex flex-col gap-4 rounded-[2rem] border border-white/60 bg-white/80 p-6 shadow-sm backdrop-blur">
+                        <div className="flex flex-wrap items-center justify-between gap-4">
+                            <div>
+                                <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-500">Think Tank</p>
+                                <h1 className="mt-2 text-3xl font-semibold text-slate-950">
+                                    {mode === 'dashboard' && 'Innovation Ecosystem'}
+                                    {mode === 'my-ideas' && 'My Ideas'}
+                                    {mode === 'vote' && 'Ideas for Vote'}
+                                    {mode === 'results' && 'Ideas Result'}
+                                </h1>
+                            </div>
+                            <div className="flex flex-wrap gap-2">
+                                <NavChip href="/dashboard/think-tank" label="Dashboard" active={mode === 'dashboard'} />
+                                <NavChip href="/dashboard/think-tank/my-ideas" label="My Ideas" active={mode === 'my-ideas'} />
+                                <NavChip href="/dashboard/think-tank/vote" label="Ideas for Vote" active={mode === 'vote'} />
+                                <NavChip href="/dashboard/think-tank/results" label="Ideas Result" active={mode === 'results'} />
+                            </div>
+                        </div>
+                        <p className="max-w-3xl text-sm text-slate-600">
+                            Company-scoped innovation workflow with anonymous voting, duplicate detection, scheduled reveal, attachment scrubbing, and weighted governance.
+                        </p>
+                    </div>
+                    {content()}
+                </div>
+            </div>
+        </DashboardLayout>
+    );
+}
+
+function NavChip({ href, label, active }: { href: string; label: string; active?: boolean }) {
+    return (
+        <Link
+            href={href}
+            className={`rounded-full px-4 py-2 text-sm font-semibold transition ${active ? 'bg-slate-900 text-white' : 'bg-white text-slate-700 shadow-sm ring-1 ring-slate-200'}`}
+        >
+            {label}
+        </Link>
+    );
+}
+
+function SummaryCard({ label, value }: { label: string; value: number }) {
+    return (
+        <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+            <div className="text-sm text-slate-500">{label}</div>
+            <div className="mt-2 text-3xl font-semibold text-slate-950">{value}</div>
+        </div>
+    );
+}
+
+function QuickCard({ href, title, description }: { href: string; title: string; description: string }) {
+    return (
+        <Link href={href} className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
+            <h3 className="text-lg font-semibold text-slate-900">{title}</h3>
+            <p className="mt-2 text-sm text-slate-600">{description}</p>
+        </Link>
+    );
+}
+
+function GovernanceBanner({ governance }: { governance: any }) {
+    return (
+        <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+            <div className="text-sm font-semibold text-slate-900">Governance Window</div>
+            <div className="mt-2 text-sm text-slate-600">{governance?.label || 'Loading governance state…'}</div>
+            <div className="mt-1 text-xs text-slate-500">Submission and voting: 9:30 AM to 1:00 PM IST. Locked window: 1:00 PM to 3:00 PM IST. Reveal: 1st and 3rd Saturday at 3:00 PM IST.</div>
+        </div>
+    );
+}
+
+function IdeaGrid({
+    title,
+    ideas,
+    showVoting,
+    showDuplicates,
+    revealTeams,
+    onVote,
+}: {
+    title: string;
+    ideas: Idea[];
+    showVoting?: boolean;
+    showDuplicates?: boolean;
+    revealTeams?: boolean;
+    onVote?: (ideaId: string, vote: 'LIKE' | 'UNLIKE' | 'NEUTRAL') => void;
+}) {
+    if (!ideas.length) {
+        return <div className="rounded-3xl border border-dashed border-slate-300 bg-white/70 p-8 text-sm text-slate-500">No ideas found in this view yet.</div>;
+    }
+
+    return (
+        <div className="space-y-4">
+            <h2 className="text-xl font-semibold text-slate-900">{title}</h2>
+            <div className="grid gap-4">
+                {ideas.map((idea) => (
+                    <div key={idea.id} className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+                        <div className="flex flex-wrap items-start justify-between gap-4">
+                            <div>
+                                <div className="text-xs font-semibold uppercase tracking-[0.25em] text-slate-500">{idea.category.replace(/_/g, ' ')}</div>
+                                <h3 className="mt-2 text-xl font-semibold text-slate-950">{idea.topic}</h3>
+                                <p className="mt-3 whitespace-pre-wrap text-sm leading-6 text-slate-700">{idea.description}</p>
+                            </div>
+                            <div className="rounded-2xl bg-slate-50 px-4 py-3 text-right text-sm text-slate-600">
+                                <div>Status: <span className="font-semibold text-slate-900">{idea.status}</span></div>
+                                <div>Votes: <span className="font-semibold text-slate-900">{idea.voteCount}</span></div>
+                                <div>Weighted Score: <span className="font-semibold text-slate-900">{idea.weightedScore}</span></div>
+                            </div>
+                        </div>
+                        <div className="mt-4 flex flex-wrap gap-3 text-xs text-slate-500">
+                            <span>Created {formatDateTime(idea.createdAt)}</span>
+                            {idea.revealedAt ? <span>Revealed {formatDateTime(idea.revealedAt)}</span> : null}
+                        </div>
+                        {idea.attachments && idea.attachments.length > 0 && (
+                            <div className="mt-4 flex flex-wrap gap-2">
+                                {idea.attachments.map((attachment) => (
+                                    <a key={attachment.id} href={attachment.url} target="_blank" className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700" rel="noreferrer">
+                                        {attachment.filename}
+                                    </a>
+                                ))}
+                            </div>
+                        )}
+                        {showVoting && onVote && (
+                            <div className="mt-5 flex flex-wrap gap-2">
+                                <button onClick={() => onVote(idea.id, 'LIKE')} className="rounded-full bg-emerald-600 px-4 py-2 text-sm font-semibold text-white">Like</button>
+                                <button onClick={() => onVote(idea.id, 'NEUTRAL')} className="rounded-full bg-slate-200 px-4 py-2 text-sm font-semibold text-slate-700">Neutral</button>
+                                <button onClick={() => onVote(idea.id, 'UNLIKE')} className="rounded-full bg-rose-600 px-4 py-2 text-sm font-semibold text-white">Unlike</button>
+                            </div>
+                        )}
+                        {showDuplicates && idea.duplicateMatches && idea.duplicateMatches.length > 0 && (
+                            <div className="mt-5 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+                                <div className="font-semibold">Duplicate review trail</div>
+                                <div className="mt-2 space-y-2">
+                                    {idea.duplicateMatches.map((match) => (
+                                        <div key={match.id} className="rounded-2xl bg-white p-3">
+                                            <div className="font-medium">{match.matchedIdea.topic}</div>
+                                            <div>Similarity {(match.similarityScore * 100).toFixed(1)}% • Decision {match.decision}</div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                        {revealTeams && (
+                            <div className="mt-5 grid gap-4 md:grid-cols-3">
+                                <TeamBlock title="Planner" people={idea.author ? [idea.author] : []} />
+                                <TeamBlock title="Partners" people={(idea.partners || []).map((entry) => entry.user).filter(Boolean) as any[]} />
+                                <TeamBlock title="Co-Opted Team" people={(idea.teamMembers || []).map((entry) => entry.user).filter(Boolean) as any[]} />
+                            </div>
+                        )}
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
+}
+
+function TeamBlock({ title, people }: { title: string; people: Array<{ id: string; name?: string | null; email?: string | null }> }) {
+    return (
+        <div className="rounded-2xl bg-slate-50 p-4">
+            <div className="text-sm font-semibold text-slate-900">{title}</div>
+            <div className="mt-2 space-y-2 text-sm text-slate-600">
+                {people.length > 0 ? people.map((person) => (
+                    <div key={person.id} className="rounded-2xl bg-white px-3 py-2">
+                        <div className="font-medium text-slate-900">{person.name || person.email || 'Staff member'}</div>
+                        <div className="text-xs text-slate-500">{person.email || person.id}</div>
+                    </div>
+                )) : <div>No members revealed.</div>}
+            </div>
+        </div>
+    );
+}

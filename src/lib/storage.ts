@@ -9,6 +9,7 @@ export type FileCategory =
     | 'publications'
     | 'proofs'
     | 'feedback'
+    | 'think_tank'
     | 'general'
     | 'other';
 
@@ -66,6 +67,9 @@ export class StorageService {
                 break;
             case 'feedback':
                 subPath = join('feedback');
+                break;
+            case 'think_tank':
+                subPath = join('think-tank');
                 break;
             case 'general':
                 subPath = join('general');

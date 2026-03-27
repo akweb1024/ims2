@@ -123,6 +123,9 @@ model Company {
   tasks                       Task[]
   taxRates                    TaxRate[]
   teamMembers                 TeamMember[]
+  thinkTankCycles             ThinkTankIdeaCycle[]
+  thinkTankIdeas              ThinkTankIdea[]
+  thinkTankVotes              ThinkTankIdeaVote[]
   primaryUsers                User[]                       @relation("PrimaryCompany")
   vendors                     Vendor[]
   warehouses                  Warehouse[]
@@ -359,6 +362,11 @@ model User {
   feedbacks                      UserFeedback[]              @relation("UserFeedbacks")
   feedbackMessages               FeedbackMessage[]           @relation("FeedbackMessageSender")
   files                          FileRecord[]
+  thinkTankVisibleIdeas          ThinkTankIdea[]             @relation("ThinkTankVisibleAuthor")
+  thinkTankVisiblePartners       ThinkTankIdeaPartner[]      @relation("ThinkTankVisiblePartner")
+  thinkTankVisibleTeamMembers    ThinkTankIdeaTeamMember[]   @relation("ThinkTankVisibleTeamMember")
+  thinkTankAuditEvents           ThinkTankIdeaAuditEvent[]   @relation("ThinkTankAuditActor")
+  thinkTankPointsMappings        ThinkTankPointsMapping[]    @relation("ThinkTankVisiblePointUser")
   vaultKeyring                   VaultKeyring?               @relation("UserVaultKeyring")
   vaultFolders                   VaultFolder[]               @relation("UserVaultFolders")
   ownedVaultItems                VaultItem[]                 @relation("OwnerVaultItems")
@@ -5047,6 +5055,52 @@ enum FinancialType {
   EXPENSE
 }
 
+enum ThinkTankIdeaCategory {
+  PUBLICATION
+  MARKETING
+  SALES
+  ELEARNING
+  CHEMICAL
+  SFT_APPS
+  GLOBAL
+  OTHER
+  ACCOUNTS
+}
+
+enum ThinkTankIdeaStatus {
+  DRAFT
+  ACTIVE
+  LOCKED
+  REVEALED
+  MERGED
+  ARCHIVED
+}
+
+enum ThinkTankVoteState {
+  LIKE
+  UNLIKE
+  NEUTRAL
+}
+
+enum ThinkTankParticipantRole {
+  PLANNER
+  MERGED_PARTNER
+  SELF_OPTED
+  CO_OPTED
+}
+
+enum ThinkTankCycleStatus {
+  ACTIVE
+  LOCKED
+  REVEALED
+}
+
+enum ThinkTankDuplicateDecision {
+  MERGE
+  PROCEED_AS_UNIQUE
+  PENDING_REVIEW
+}
+
 enum EmployeeType {
   FULL_TIME
   PART_TIME
@@ -5351,11 +5405,181 @@ model FileRecord {
   uploadedBy   User?     @relation(fields: [uploadedById], references: [id], onDelete: SetNull)
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
+  thinkTankAttachments ThinkTankIdeaAttachment[]
 
   @@index([uploadedById])
   @@index([category])
   @@index([context])
   @@index([createdAt])
+}
+
+model ThinkTankIdeaCycle {
+  id          String               @id @default(uuid())
+  companyId   String
+  windowStart DateTime
+  windowEnd   DateTime
+  revealAt    DateTime
+  status      ThinkTankCycleStatus @default(ACTIVE)
+  revealedAt  DateTime?
+  createdAt   DateTime             @default(now())
+  updatedAt   DateTime             @updatedAt
+  company     Company              @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  ideas       ThinkTankIdea[]
+  votes       ThinkTankIdeaVote[]
+
+  @@index([companyId, revealAt])
+  @@index([status])
+}
+
+model ThinkTankIdea {
+  id                 String                    @id @default(uuid())
+  companyId          String
+  cycleId            String
+  topic              String
+  description        String                    @db.Text
+  category           ThinkTankIdeaCategory
+  status             ThinkTankIdeaStatus       @default(DRAFT)
+  plannerEncrypted   String                    @db.Text
+  plannerHash        String
+  visibleAuthorId    String?
+  revealedAt         DateTime?
+  duplicateDecision  ThinkTankDuplicateDecision?
+  weightedScore      Float                     @default(0)
+  voteCount          Int                       @default(0)
+  metadata           Json?
+  createdAt          DateTime                  @default(now())
+  updatedAt          DateTime                  @updatedAt
+  company            Company                   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  cycle              ThinkTankIdeaCycle        @relation(fields: [cycleId], references: [id], onDelete: Cascade)
+  visibleAuthor      User?                     @relation("ThinkTankVisibleAuthor", fields: [visibleAuthorId], references: [id], onDelete: SetNull)
+  partners           ThinkTankIdeaPartner[]
+  teamMembers        ThinkTankIdeaTeamMember[]
+  votes              ThinkTankIdeaVote[]
+  attachments        ThinkTankIdeaAttachment[]
+  auditEvents        ThinkTankIdeaAuditEvent[]
+  duplicateMatches   ThinkTankIdeaDuplicateMatch[] @relation("ThinkTankDuplicateMatches")
+  duplicateSources   ThinkTankIdeaDuplicateMatch[] @relation("ThinkTankDuplicateSources")
+  pointsMappings     ThinkTankPointsMapping[]
+
+  @@index([companyId, status])
+  @@index([cycleId])
+  @@index([category])
+  @@index([plannerHash])
+  @@index([revealedAt])
+}
+
+model ThinkTankIdeaPartner {
+  id              String                 @id @default(uuid())
+  ideaId          String
+  userEncrypted   String                 @db.Text
+  userHash        String
+  visibleUserId   String?
+  roleType        ThinkTankParticipantRole
+  createdAt       DateTime               @default(now())
+  idea            ThinkTankIdea          @relation(fields: [ideaId], references: [id], onDelete: Cascade)
+  visibleUser     User?                  @relation("ThinkTankVisiblePartner", fields: [visibleUserId], references: [id], onDelete: SetNull)
+
+  @@unique([ideaId, userHash])
+  @@index([ideaId, roleType])
+}
+
+model ThinkTankIdeaTeamMember {
+  id              String                 @id @default(uuid())
+  ideaId          String
+  userEncrypted   String                 @db.Text
+  userHash        String
+  visibleUserId   String?
+  roleType        ThinkTankParticipantRole @default(CO_OPTED)
+  sourceCategory  ThinkTankIdeaCategory?
+  createdAt       DateTime               @default(now())
+  idea            ThinkTankIdea          @relation(fields: [ideaId], references: [id], onDelete: Cascade)
+  visibleUser     User?                  @relation("ThinkTankVisibleTeamMember", fields: [visibleUserId], references: [id], onDelete: SetNull)
+
+  @@unique([ideaId, userHash])
+  @@index([ideaId])
+}
+
+model ThinkTankIdeaVote {
+  id             String            @id @default(uuid())
+  ideaId         String
+  cycleId        String
+  companyId      String
+  voterEncrypted String            @db.Text
+  voterHash      String
+  vote           ThinkTankVoteState
+  weight         Int
+  weightedValue  Int
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+  idea           ThinkTankIdea     @relation(fields: [ideaId], references: [id], onDelete: Cascade)
+  cycle          ThinkTankIdeaCycle @relation(fields: [cycleId], references: [id], onDelete: Cascade)
+  company        Company           @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@unique([ideaId, cycleId, voterHash])
+  @@index([ideaId])
+  @@index([cycleId])
+}
+
+model ThinkTankIdeaAttachment {
+  id           String        @id @default(uuid())
+  ideaId       String
+  fileRecordId String?
+  url          String
+  filename     String
+  mimeType     String
+  size         Int
+  scrubStatus  String?       @default("SCRUBBED")
+  createdAt    DateTime      @default(now())
+  idea         ThinkTankIdea @relation(fields: [ideaId], references: [id], onDelete: Cascade)
+  fileRecord   FileRecord?   @relation(fields: [fileRecordId], references: [id], onDelete: SetNull)
+
+  @@index([ideaId])
+  @@index([fileRecordId])
+}
+
+model ThinkTankIdeaAuditEvent {
+  id          String     @id @default(uuid())
+  ideaId       String?
+  actorUserId  String?
+  action       String
+  outcome      String
+  entityId     String?
+  metadata     Json?
+  createdAt    DateTime  @default(now())
+  idea         ThinkTankIdea? @relation(fields: [ideaId], references: [id], onDelete: Cascade)
+  actor        User?     @relation("ThinkTankAuditActor", fields: [actorUserId], references: [id], onDelete: SetNull)
+
+  @@index([ideaId, createdAt])
+  @@index([actorUserId])
+}
+
+model ThinkTankIdeaDuplicateMatch {
+  id               String                    @id @default(uuid())
+  ideaId           String
+  matchedIdeaId    String
+  similarityScore  Float
+  decision         ThinkTankDuplicateDecision?
+  createdAt        DateTime                  @default(now())
+  idea             ThinkTankIdea             @relation("ThinkTankDuplicateMatches", fields: [ideaId], references: [id], onDelete: Cascade)
+  matchedIdea      ThinkTankIdea             @relation("ThinkTankDuplicateSources", fields: [matchedIdeaId], references: [id], onDelete: Cascade)
+
+  @@index([ideaId])
+  @@index([matchedIdeaId])
+}
+
+model ThinkTankPointsMapping {
+  id             String   @id @default(uuid())
+  ideaId          String
+  userEncrypted   String   @db.Text
+  userHash        String
+  visibleUserId   String?
+  points          Float
+  awardedAt       DateTime @default(now())
+  idea            ThinkTankIdea @relation(fields: [ideaId], references: [id], onDelete: Cascade)
+  visibleUser     User?    @relation("ThinkTankVisiblePointUser", fields: [visibleUserId], references: [id], onDelete: SetNull)
+
+  @@index([ideaId])
+  @@index([visibleUserId])
 }
 
 // ─── Zero-Knowledge Web Vault ───────────────────────────────────────────────
