@@ -159,7 +159,7 @@ export default function CustomerDetailPage({ params }: { params: Promise<{ id: s
                 headers: { Authorization: `Bearer ${token}` },
             });
             const data = await res.json();
-            if (!res.ok) throw new Error(data.error || 'Failed to create dispatch');
+            if (!res.ok) throw new Error(data.message || data.error || 'Failed to create dispatch');
             await fetchCustomer();
             setActiveTab('dispatch');
         } catch (error: any) {
@@ -1026,13 +1026,18 @@ export default function CustomerDetailPage({ params }: { params: Promise<{ id: s
                                                                 </td>
                                                                 <td className="text-right">
                                                                     <div className="flex items-center justify-end gap-2">
-                                                                        {!invoice.dispatchOrder && (
+                                                                        {(!invoice.dispatchOrders || invoice.dispatchOrders.length === 0) && (
                                                                             <button
                                                                                 onClick={() => handleCreateDispatchFromInvoice(invoice.id)}
                                                                                 className="btn btn-primary py-1 text-xs"
                                                                             >
                                                                                 Create Dispatch
                                                                             </button>
+                                                                        )}
+                                                                        {Array.isArray(invoice.dispatchOrders) && invoice.dispatchOrders.length > 0 && (
+                                                                            <span className="badge badge-secondary">
+                                                                                {invoice.dispatchOrders.length} fulfilment{invoice.dispatchOrders.length > 1 ? 's' : ''}
+                                                                            </span>
                                                                         )}
                                                                         <Link
                                                                             href={`/dashboard/crm/invoices/${invoice.id}`}
@@ -1076,12 +1081,24 @@ export default function CustomerDetailPage({ params }: { params: Promise<{ id: s
                                                                     {dispatch.invoice?.invoiceNumber || 'Manual Dispatch'}
                                                                 </span>
                                                                 <span className="badge badge-secondary">{dispatch.status.replace(/_/g, ' ')}</span>
+                                                                <span className="badge badge-primary">
+                                                                    {dispatch.fulfillmentType === 'DIGITAL'
+                                                                        ? 'Digital Access'
+                                                                        : (dispatch.cycleLabel || `Cycle ${dispatch.cycleNumber}/${dispatch.totalCycles}`)}
+                                                                </span>
                                                             </div>
                                                             <p className="text-sm text-secondary-600">
-                                                                {dispatch.recipientName} • {dispatch.city}, {dispatch.state}
+                                                                {dispatch.recipientName} • {dispatch.fulfillmentType === 'DIGITAL'
+                                                                    ? 'Online access fulfilment'
+                                                                    : [dispatch.city, dispatch.state].filter(Boolean).join(', ') || 'Address pending'}
                                                             </p>
                                                             <p className="text-xs text-secondary-500">
-                                                                Partner: {dispatch.tracking?.partnerName || 'Unassigned'} • Tracking: {dispatch.tracking?.trackingNumber || 'Pending'}
+                                                                {dispatch.fulfillmentType === 'DIGITAL'
+                                                                    ? `Access Window: ${dispatch.accessStartDate ? new Date(dispatch.accessStartDate).toLocaleDateString() : '—'} to ${dispatch.accessEndDate ? new Date(dispatch.accessEndDate).toLocaleDateString() : '—'}`
+                                                                    : `Partner: ${dispatch.tracking?.partnerName || 'Unassigned'} • Tracking: ${dispatch.tracking?.trackingNumber || 'Pending'}`}
+                                                            </p>
+                                                            <p className="text-xs text-secondary-400">
+                                                                Planned: {dispatch.plannedDispatchDate ? new Date(dispatch.plannedDispatchDate).toLocaleDateString() : 'Not scheduled'}
                                                             </p>
                                                         </div>
                                                         <div className="flex flex-wrap gap-2">
@@ -1090,7 +1107,7 @@ export default function CustomerDetailPage({ params }: { params: Promise<{ id: s
                                                                     Invoice
                                                                 </Link>
                                                             )}
-                                                            {dispatch.tracking?.canTrack && (
+                                                            {dispatch.fulfillmentType !== 'DIGITAL' && dispatch.tracking?.canTrack && (
                                                                 <button
                                                                     onClick={() => window.open(dispatch.tracking.trackingUrl, '_blank', 'noopener,noreferrer')}
                                                                     className="btn btn-secondary py-1 text-xs"
@@ -1121,6 +1138,7 @@ export default function CustomerDetailPage({ params }: { params: Promise<{ id: s
                                                                 [dispatch.id]: { ...prev[dispatch.id], trackingNumber: e.target.value },
                                                             }))}
                                                             placeholder="Tracking / AWB number"
+                                                            disabled={dispatch.fulfillmentType === 'DIGITAL'}
                                                         />
                                                         <input
                                                             className="input"
@@ -1130,6 +1148,7 @@ export default function CustomerDetailPage({ params }: { params: Promise<{ id: s
                                                                 [dispatch.id]: { ...prev[dispatch.id], partnerName: e.target.value },
                                                             }))}
                                                             placeholder="Partner name"
+                                                            disabled={dispatch.fulfillmentType === 'DIGITAL'}
                                                         />
                                                         <textarea
                                                             className="input h-20"

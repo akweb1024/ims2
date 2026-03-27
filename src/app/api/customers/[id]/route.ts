@@ -105,10 +105,11 @@ export async function GET(
                 },
                 invoices: {
                     include: {
-                        dispatchOrder: {
+                        dispatchOrders: {
                             include: {
                                 courier: true
-                            }
+                            },
+                            orderBy: [{ fulfillmentType: 'asc' }, { cycleNumber: 'asc' }]
                         }
                     },
                     orderBy: { createdAt: 'desc' }
@@ -188,10 +189,16 @@ export async function GET(
             ...customer,
             invoices: customer.invoices.map((invoice: any) => ({
                 ...invoice,
-                dispatchOrder: invoice.dispatchOrder
+                dispatchOrders: Array.isArray(invoice.dispatchOrders)
+                    ? invoice.dispatchOrders.map((dispatch: any) => ({
+                        ...dispatch,
+                        tracking: buildTrackingMetadata(dispatch),
+                    }))
+                    : [],
+                dispatchOrder: Array.isArray(invoice.dispatchOrders) && invoice.dispatchOrders[0]
                     ? {
-                        ...invoice.dispatchOrder,
-                        tracking: buildTrackingMetadata(invoice.dispatchOrder),
+                        ...invoice.dispatchOrders[0],
+                        tracking: buildTrackingMetadata(invoice.dispatchOrders[0]),
                     }
                     : null,
             })),

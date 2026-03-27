@@ -26,7 +26,7 @@ export const GET = authorizedRoute(
                         }
                     },
                     customerProfile: true,
-                    dispatchOrder: {
+                    dispatchOrders: {
                         include: {
                             courier: true,
                             customerProfile: {
@@ -66,15 +66,18 @@ export const GET = authorizedRoute(
                 }
             }
 
-            const dispatchOrder = invoice.dispatchOrder
-                ? {
-                    ...invoice.dispatchOrder,
-                    tracking: buildTrackingMetadata(invoice.dispatchOrder),
-                }
-                : null;
+            const dispatchOrders = Array.isArray((invoice as any).dispatchOrders)
+                ? (invoice as any).dispatchOrders.map((dispatch: any) => ({
+                    ...dispatch,
+                    tracking: buildTrackingMetadata(dispatch),
+                }))
+                : [];
+
+            const dispatchOrder = dispatchOrders[0] || null;
 
             return NextResponse.json({
                 ...invoice,
+                dispatchOrders,
                 dispatchOrder,
             });
         } catch (error) {

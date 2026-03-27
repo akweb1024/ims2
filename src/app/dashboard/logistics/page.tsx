@@ -382,7 +382,7 @@ export default function LogisticsPage() {
                                     <thead className="bg-secondary-50 text-[10px] font-black text-secondary-400 uppercase tracking-widest">
                                         <tr>
                                             <th className="px-6 py-4">Invoice</th>
-                                            <th className="px-6 py-4">Recipient / Destination</th>
+                                            <th className="px-6 py-4">Cycle / Destination</th>
                                             <th className="px-6 py-4">Courier / Tracking</th>
                                             <th className="px-6 py-4">Shipment Weights</th>
                                             <th className="px-6 py-4">Status</th>
@@ -397,6 +397,9 @@ export default function LogisticsPage() {
                                                     {order.invoice ? (
                                                         <div className="space-y-1">
                                                             <p className="font-bold text-secondary-900">{order.invoice.invoiceNumber}</p>
+                                                            <p className="text-[10px] text-secondary-500 font-semibold uppercase tracking-widest">
+                                                                {order.fulfillmentType === 'DIGITAL' ? 'Digital Access' : (order.cycleLabel || `Cycle ${order.cycleNumber}/${order.totalCycles}`)}
+                                                            </p>
                                                             <p className="text-[10px] text-secondary-400 font-medium">
                                                                 {order.invoice.currency === 'INR' ? '₹' : '$'}{order.invoice.total?.toLocaleString?.() || order.invoice.total}
                                                             </p>
@@ -408,15 +411,18 @@ export default function LogisticsPage() {
                                                 <td className="px-6 py-4">
                                                     <p className="font-bold text-secondary-900">{order.recipientName}</p>
                                                     <p className="text-[10px] text-secondary-400 font-medium">
-                                                        {order.customerProfile?.organizationName || order.customerProfile?.primaryEmail || `${order.city}, ${order.country}`}
+                                                        {order.customerProfile?.organizationName || order.customerProfile?.primaryEmail || [order.city, order.country].filter(Boolean).join(', ') || 'Address pending'}
+                                                    </p>
+                                                    <p className="text-[10px] text-secondary-500 font-medium">
+                                                        Planned: {order.plannedDispatchDate ? new Date(order.plannedDispatchDate).toLocaleDateString() : 'Not scheduled'}
                                                     </p>
                                                 </td>
                                                 <td className="px-6 py-4">
-                                                    <p className="font-bold text-secondary-800 text-xs">{order.tracking?.partnerName || order.courier?.name || 'Unassigned'}</p>
-                                                    <p className="text-[10px] text-primary-600 font-black tracking-widest uppercase">{order.tracking?.trackingNumber || 'PENDING ASSIGNMENT'}</p>
+                                                    <p className="font-bold text-secondary-800 text-xs">{order.fulfillmentType === 'DIGITAL' ? 'Digital Access' : order.tracking?.partnerName || order.courier?.name || 'Unassigned'}</p>
+                                                    <p className="text-[10px] text-primary-600 font-black tracking-widest uppercase">{order.fulfillmentType === 'DIGITAL' ? 'ACCESS WINDOW' : order.tracking?.trackingNumber || 'PENDING ASSIGNMENT'}</p>
                                                 </td>
                                                 <td className="px-6 py-4">
-                                                    <span className="font-black text-secondary-900">{order.weight || '--'} kg</span>
+                                                    <span className="font-black text-secondary-900">{order.fulfillmentType === 'DIGITAL' ? '--' : (order.weight || '--')} {order.fulfillmentType === 'DIGITAL' ? '' : 'kg'}</span>
                                                 </td>
                                                 <td className="px-6 py-4">
                                                     {['SUPER_ADMIN', 'ADMIN', 'MANAGER'].includes(userRole) ? (
@@ -461,10 +467,10 @@ export default function LogisticsPage() {
                                                         </button>
                                                         <button
                                                             onClick={() => handleTrack(order)}
-                                                            disabled={!order.tracking?.canTrack}
+                                                            disabled={order.fulfillmentType === 'DIGITAL' || !order.tracking?.canTrack}
                                                             className="btn btn-primary py-1 text-xs disabled:opacity-50"
                                                         >
-                                                            Track
+                                                            {order.fulfillmentType === 'DIGITAL' ? 'Access' : 'Track'}
                                                         </button>
                                                     </div>
                                                 </td>
@@ -611,12 +617,16 @@ export default function LogisticsPage() {
                                             </p>
                                         </div>
                                         <div className="rounded-2xl border border-secondary-100 bg-secondary-50 p-4">
-                                            <p className="text-[10px] font-black uppercase tracking-widest text-secondary-400">Tracking</p>
+                                            <p className="text-[10px] font-black uppercase tracking-widest text-secondary-400">Cycle</p>
                                             <p className="mt-2 font-semibold text-secondary-900">
-                                                {selectedOrder.tracking?.trackingNumber || 'Pending assignment'}
+                                                {selectedOrder.fulfillmentType === 'DIGITAL'
+                                                    ? 'Digital Access'
+                                                    : (selectedOrder.cycleLabel || `Cycle ${selectedOrder.cycleNumber}/${selectedOrder.totalCycles}`)}
                                             </p>
                                             <p className="mt-1 text-sm text-secondary-600">
-                                                {selectedOrder.tracking?.partnerName || 'No partner assigned'}
+                                                {selectedOrder.plannedDispatchDate
+                                                    ? `Planned ${new Date(selectedOrder.plannedDispatchDate).toLocaleDateString()}`
+                                                    : 'No planned date'}
                                             </p>
                                         </div>
                                         <div className="rounded-2xl border border-secondary-100 bg-secondary-50 p-4">
@@ -627,6 +637,11 @@ export default function LogisticsPage() {
                                             <p className="mt-1 text-sm text-secondary-600">
                                                 Updated {new Date(selectedOrder.updatedAt).toLocaleDateString()}
                                             </p>
+                                            {selectedOrder.fulfillmentType === 'DIGITAL' && (
+                                                <p className="mt-1 text-sm text-secondary-600">
+                                                    Access: {selectedOrder.accessStartDate ? new Date(selectedOrder.accessStartDate).toLocaleDateString() : '—'} to {selectedOrder.accessEndDate ? new Date(selectedOrder.accessEndDate).toLocaleDateString() : '—'}
+                                                </p>
+                                            )}
                                         </div>
                                     </div>
 

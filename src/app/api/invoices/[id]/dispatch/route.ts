@@ -3,12 +3,13 @@ import { prisma } from "@/lib/prisma";
 import { authorizedRoute } from "@/lib/middleware-auth";
 import { handleApiError, ValidationError } from "@/lib/error-handler";
 import {
+  buildInvoiceFulfillmentPlan,
   buildTrackingMetadata,
   deriveDispatchDates,
+  ensureInvoiceFulfillmentRecords,
   ensureDefaultCouriers,
   getDispatchPartnerName,
   normalizeTrackingNumber,
-  summarizeInvoiceLineItems,
 } from "@/lib/dispatch";
 
 const getDispatchAddress = (invoice: any) => {
@@ -68,11 +69,12 @@ const fetchInvoiceForDispatch = async (id: string, companyId?: string | null) =>
           customerProfile: true,
         },
       },
-      dispatchOrder: {
+      dispatchOrders: {
         include: {
           courier: true,
           customerProfile: true,
         },
+        orderBy: [{ fulfillmentType: "asc" }, { cycleNumber: "asc" }],
       },
     },
   });
@@ -89,14 +91,14 @@ export const GET = authorizedRoute(
         return NextResponse.json({ error: "Invoice not found" }, { status: 404 });
       }
 
+      const dispatchOrders = await ensureInvoiceFulfillmentRecords(invoice, user.id);
+
       return NextResponse.json(
-        invoice.dispatchOrder
-          ? {
-              ...invoice.dispatchOrder,
-              partnerName: getDispatchPartnerName(invoice.dispatchOrder),
-              tracking: buildTrackingMetadata(invoice.dispatchOrder),
-            }
-          : null,
+        dispatchOrders.map((dispatch) => ({
+          ...dispatch,
+          partnerName: getDispatchPartnerName(dispatch),
+          tracking: buildTrackingMetadata(dispatch),
+        })),
       );
     } catch (error) {
       return handleApiError(error, request.nextUrl.pathname);
@@ -116,20 +118,17 @@ export const POST = authorizedRoute(
         return NextResponse.json({ error: "Invoice not found" }, { status: 404 });
       }
 
-      if (invoice.dispatchOrder) {
-        return NextResponse.json(
-          { error: "Dispatch already exists for this invoice" },
-          { status: 409 },
-        );
-      }
-
       const address = getDispatchAddress(invoice);
-      const missingFields = [
-        !address.address ? "shippingAddress" : null,
-        !address.city ? "shippingCity" : null,
-        !address.state ? "shippingState" : null,
-        !address.pincode ? "shippingPincode" : null,
-      ].filter(Boolean);
+      const plan = buildInvoiceFulfillmentPlan(invoice);
+      const requiresPrintShipping = plan.some((record) => record.fulfillmentType === "PRINT");
+      const missingFields = requiresPrintShipping
+        ? [
+            !address.address ? "shippingAddress" : null,
+            !address.city ? "shippingCity" : null,
+            !address.state ? "shippingState" : null,
+            !address.pincode ? "shippingPincode" : null,
+          ].filter(Boolean)
+        : [];
 
       if (missingFields.length > 0) {
         throw new ValidationError(
@@ -138,36 +137,15 @@ export const POST = authorizedRoute(
         );
       }
 
-      const dispatch = await prisma.dispatchOrder.create({
-        data: {
-          invoiceId: invoice.id,
-          subscriptionId: invoice.subscriptionId,
-          customerProfileId:
-            invoice.customerProfileId || invoice.subscription?.customerProfileId || null,
-          recipientName: address.recipientName,
-          address: address.address,
-          city: address.city,
-          state: address.state,
-          pincode: address.pincode,
-          country: address.country,
-          phone: address.phone,
-          items: summarizeInvoiceLineItems(invoice.lineItems) as any,
-          companyId: invoice.companyId,
-          createdByUserId: user.id,
-          updatedByUserId: user.id,
-          status: "PENDING",
-        },
-        include: {
-          courier: true,
-          customerProfile: true,
-        },
-      });
+      const dispatchOrders = await ensureInvoiceFulfillmentRecords(invoice, user.id);
 
-      return NextResponse.json({
-        ...dispatch,
-        partnerName: getDispatchPartnerName(dispatch),
-        tracking: buildTrackingMetadata(dispatch),
-      });
+      return NextResponse.json(
+        dispatchOrders.map((dispatch) => ({
+          ...dispatch,
+          partnerName: getDispatchPartnerName(dispatch),
+          tracking: buildTrackingMetadata(dispatch),
+        })),
+      );
     } catch (error) {
       return handleApiError(error, request.nextUrl.pathname);
     }
@@ -182,18 +160,24 @@ export const PATCH = authorizedRoute(
       const body = await request.json();
 
       const invoice = await fetchInvoiceForDispatch(id, user.role === "SUPER_ADMIN" ? undefined : user.companyId);
-      if (!invoice || !invoice.dispatchOrder) {
-        return NextResponse.json({ error: "Dispatch not found for this invoice" }, { status: 404 });
+      if (!invoice) {
+        return NextResponse.json({ error: "Invoice not found" }, { status: 404 });
       }
 
-      const nextStatus = body.status || invoice.dispatchOrder.status;
-      const dates = deriveDispatchDates(nextStatus, invoice.dispatchOrder);
+      const dispatchId = body.dispatchId || invoice.dispatchOrders?.[0]?.id;
+      const currentDispatch = invoice.dispatchOrders?.find((dispatch: any) => dispatch.id === dispatchId);
+      if (!currentDispatch) {
+        return NextResponse.json({ error: "Dispatch record not found for this invoice" }, { status: 404 });
+      }
+
+      const nextStatus = body.status || currentDispatch.status;
+      const dates = deriveDispatchDates(nextStatus, currentDispatch);
       const trackingNumber = body.trackingNumber !== undefined
         ? normalizeTrackingNumber(body.trackingNumber)
         : undefined;
 
       const updated = await prisma.dispatchOrder.update({
-        where: { id: invoice.dispatchOrder.id },
+        where: { id: currentDispatch.id },
         data: {
           courierId: body.courierId !== undefined ? body.courierId || null : undefined,
           partnerName: body.partnerName !== undefined ? String(body.partnerName || "").trim() || null : undefined,

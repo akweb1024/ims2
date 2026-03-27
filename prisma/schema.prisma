@@ -1109,7 +1109,7 @@ model Invoice {
   customerProfile         CustomerProfile?     @relation(fields: [customerProfileId], references: [id])
   subscription            Subscription?        @relation(fields: [subscriptionId], references: [id])
   payments                Payment[]
-  dispatchOrder           DispatchOrder?
+  dispatchOrders          DispatchOrder[]
   revenueTransactions     RevenueTransaction[]
 
   @@index([subscriptionId])
@@ -2476,13 +2476,20 @@ model DispatchOrder {
   subscriptionId    String?
   invoiceId         String?
   customerProfileId String?
+  fulfillmentType   FulfillmentType @default(PRINT)
+  cycleNumber       Int            @default(1)
+  totalCycles       Int            @default(1)
+  cycleLabel        String?
+  plannedDispatchDate DateTime?
+  accessStartDate   DateTime?
+  accessEndDate     DateTime?
   recipientName     String
-  address           String
-  city              String
-  state             String
-  pincode           String
-  country           String
-  phone             String
+  address           String?
+  city              String?
+  state             String?
+  pincode           String?
+  country           String?
+  phone             String?
   items             Json
   weight            Float?
   courierId         String?
@@ -2511,7 +2518,9 @@ model DispatchOrder {
   @@index([invoiceId])
   @@index([status])
   @@index([trackingNumber])
-  @@unique([invoiceId])
+  @@index([fulfillmentType])
+  @@index([plannedDispatchDate])
+  @@index([invoiceId, fulfillmentType, cycleNumber])
 }
 
 model JournalVolume {
@@ -5003,6 +5012,11 @@ enum DispatchStatus {
   DELIVERED
   RETURNED
   LOST
+}
+
+enum FulfillmentType {
+  PRINT
+  DIGITAL
 }
 
 enum IssueStatus {

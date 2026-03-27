@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, use } from "react";
+import { useState, useEffect, useCallback, useMemo, use } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -155,6 +155,7 @@ export default function InvoiceDetailPage({
   );
   const [couriers, setCouriers] = useState<any[]>([]);
   const [dispatchSaving, setDispatchSaving] = useState(false);
+  const [selectedDispatchId, setSelectedDispatchId] = useState<string | null>(null);
   const [dispatchValidation, setDispatchValidation] = useState<{
     message: string;
     missingFields: string[];
@@ -173,6 +174,19 @@ export default function InvoiceDetailPage({
     status: "PENDING",
     remarks: "",
   });
+  const dispatchRecords = useMemo(
+    () =>
+      Array.isArray(invoice?.dispatchOrders)
+        ? invoice.dispatchOrders
+        : invoice?.dispatchOrder
+          ? [invoice.dispatchOrder]
+          : [],
+    [invoice],
+  );
+  const currentDispatch =
+    dispatchRecords.find((dispatch: any) => dispatch.id === selectedDispatchId) ||
+    dispatchRecords[0] ||
+    null;
 
   const fetchInvoice = useCallback(async () => {
     setLoading(true);
@@ -215,7 +229,7 @@ export default function InvoiceDetailPage({
   }, []);
 
   useEffect(() => {
-    const dispatch = invoice?.dispatchOrder;
+    const dispatch = currentDispatch;
     setDispatchForm({
       courierId: dispatch?.courierId || "",
       partnerName: dispatch?.partnerName || dispatch?.courier?.name || "",
@@ -224,7 +238,17 @@ export default function InvoiceDetailPage({
       status: dispatch?.status || "PENDING",
       remarks: dispatch?.remarks || "",
     });
-  }, [invoice]);
+  }, [currentDispatch]);
+
+  useEffect(() => {
+    if (!dispatchRecords.length) {
+      setSelectedDispatchId(null);
+      return;
+    }
+    if (!selectedDispatchId || !dispatchRecords.some((dispatch: any) => dispatch.id === selectedDispatchId)) {
+      setSelectedDispatchId(dispatchRecords[0].id);
+    }
+  }, [dispatchRecords, selectedDispatchId]);
 
   const handlePaymentSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -478,7 +502,10 @@ export default function InvoiceDetailPage({
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(dispatchForm),
+        body: JSON.stringify({
+          ...dispatchForm,
+          dispatchId: currentDispatch?.id,
+        }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -494,9 +521,9 @@ export default function InvoiceDetailPage({
   };
 
   const openDispatchTracking = () => {
-    if (!invoice?.dispatchOrder?.tracking?.trackingUrl) return;
+    if (!currentDispatch?.tracking?.trackingUrl) return;
     window.open(
-      invoice.dispatchOrder.tracking.trackingUrl,
+      currentDispatch.tracking.trackingUrl,
       "_blank",
       "noopener,noreferrer",
     );
@@ -958,7 +985,7 @@ export default function InvoiceDetailPage({
                 </p>
               </div>
               <div className="flex flex-wrap gap-2">
-                {invoice.dispatchOrder?.tracking?.canTrack && (
+                {currentDispatch?.tracking?.canTrack && (
                   <button onClick={openDispatchTracking} className="btn btn-secondary text-xs py-2">
                     Open Tracking
                   </button>
@@ -974,7 +1001,7 @@ export default function InvoiceDetailPage({
               </div>
             </div>
 
-            {!invoice.dispatchOrder ? (
+            {!dispatchRecords.length ? (
               <div className="flex flex-col gap-4">
                 {dispatchValidation && (
                   <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm">
@@ -1023,36 +1050,57 @@ export default function InvoiceDetailPage({
               </div>
             ) : (
               <>
+                <div className="rounded-2xl border border-secondary-100 bg-white p-4">
+                  <div className="flex flex-wrap gap-2">
+                    {dispatchRecords.map((dispatch: any) => (
+                      <button
+                        key={dispatch.id}
+                        onClick={() => setSelectedDispatchId(dispatch.id)}
+                        className={`rounded-xl border px-3 py-2 text-xs font-bold uppercase tracking-widest transition-colors ${
+                          currentDispatch?.id === dispatch.id
+                            ? "border-primary-200 bg-primary-50 text-primary-700"
+                            : "border-secondary-100 bg-secondary-50 text-secondary-600 hover:bg-secondary-100"
+                        }`}
+                      >
+                        {dispatch.fulfillmentType === "DIGITAL"
+                          ? "Digital Access"
+                          : dispatch.cycleLabel || `Cycle ${dispatch.cycleNumber}/${dispatch.totalCycles}`}
+                      </button>
+                    ))}
+                  </div>
+                </div>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="rounded-2xl border border-secondary-100 bg-secondary-50 p-4">
                     <p className="text-[10px] font-black uppercase tracking-widest text-secondary-400">Recipient</p>
-                    <p className="mt-2 font-semibold text-secondary-900">{invoice.dispatchOrder.recipientName}</p>
+                    <p className="mt-2 font-semibold text-secondary-900">{currentDispatch?.recipientName}</p>
                     <p className="mt-1 whitespace-pre-line text-sm text-secondary-600">
-                      {invoice.dispatchOrder.address}
-                      {`\n${invoice.dispatchOrder.city}, ${invoice.dispatchOrder.state} - ${invoice.dispatchOrder.pincode}`}
-                      {`\n${invoice.dispatchOrder.country}`}
+                      {currentDispatch?.fulfillmentType === "DIGITAL"
+                        ? "Digital access record"
+                        : `${currentDispatch?.address || ""}${currentDispatch?.city || currentDispatch?.state || currentDispatch?.pincode ? `\n${currentDispatch?.city || ""}, ${currentDispatch?.state || ""} - ${currentDispatch?.pincode || ""}` : ""}${currentDispatch?.country ? `\n${currentDispatch.country}` : ""}`}
                     </p>
                   </div>
                   <div className="rounded-2xl border border-secondary-100 bg-secondary-50 p-4">
                     <p className="text-[10px] font-black uppercase tracking-widest text-secondary-400">Shipment Snapshot</p>
                     <p className="mt-2 font-semibold text-secondary-900">
-                      {Array.isArray(invoice.dispatchOrder.items) ? invoice.dispatchOrder.items.length : 0} item(s)
+                      {Array.isArray(currentDispatch?.items) ? currentDispatch.items.length : 0} item(s)
                     </p>
                     <p className="mt-1 text-sm text-secondary-600">
-                      Partner: {invoice.dispatchOrder.tracking?.partnerName || "Not assigned"}
+                      Type: {currentDispatch?.fulfillmentType === "DIGITAL" ? "Digital Access" : "Print Dispatch"}
                     </p>
                     <p className="text-sm text-secondary-600">
-                      Tracking: {invoice.dispatchOrder.tracking?.trackingNumber || "Pending"}
+                      {currentDispatch?.fulfillmentType === "DIGITAL"
+                        ? `Access: ${currentDispatch?.accessStartDate ? new Date(currentDispatch.accessStartDate).toLocaleDateString() : "—"} to ${currentDispatch?.accessEndDate ? new Date(currentDispatch.accessEndDate).toLocaleDateString() : "—"}`
+                        : `Tracking: ${currentDispatch?.tracking?.trackingNumber || "Pending"}`}
                     </p>
                   </div>
                   <div className="rounded-2xl border border-secondary-100 bg-secondary-50 p-4">
                     <p className="text-[10px] font-black uppercase tracking-widest text-secondary-400">Lifecycle</p>
-                    <p className="mt-2 font-semibold text-secondary-900">{invoice.dispatchOrder.status.replace(/_/g, " ")}</p>
+                    <p className="mt-2 font-semibold text-secondary-900">{currentDispatch?.status?.replace(/_/g, " ")}</p>
                     <p className="mt-1 text-sm text-secondary-600">
-                      Packed: {invoice.dispatchOrder.packedDate ? new Date(invoice.dispatchOrder.packedDate).toLocaleDateString() : "Not yet"}
+                      Planned: {currentDispatch?.plannedDispatchDate ? new Date(currentDispatch.plannedDispatchDate).toLocaleDateString() : "Not scheduled"}
                     </p>
                     <p className="text-sm text-secondary-600">
-                      Delivered: {invoice.dispatchOrder.deliveredDate ? new Date(invoice.dispatchOrder.deliveredDate).toLocaleDateString() : "Not yet"}
+                      Delivered: {currentDispatch?.deliveredDate ? new Date(currentDispatch.deliveredDate).toLocaleDateString() : "Not yet"}
                     </p>
                   </div>
                 </div>
@@ -1064,6 +1112,7 @@ export default function InvoiceDetailPage({
                       className="input"
                       value={dispatchForm.courierId}
                       onChange={(e) => setDispatchForm((prev) => ({ ...prev, courierId: e.target.value }))}
+                      disabled={currentDispatch?.fulfillmentType === "DIGITAL"}
                     >
                       <option value="">Select courier</option>
                       {couriers.map((courier) => (
@@ -1080,6 +1129,7 @@ export default function InvoiceDetailPage({
                       value={dispatchForm.partnerName}
                       onChange={(e) => setDispatchForm((prev) => ({ ...prev, partnerName: e.target.value }))}
                       placeholder="Use for Other/custom partner"
+                      disabled={currentDispatch?.fulfillmentType === "DIGITAL"}
                     />
                   </div>
                   <div>
@@ -1089,6 +1139,7 @@ export default function InvoiceDetailPage({
                       value={dispatchForm.trackingNumber}
                       onChange={(e) => setDispatchForm((prev) => ({ ...prev, trackingNumber: e.target.value }))}
                       placeholder="Serial or consignment number"
+                      disabled={currentDispatch?.fulfillmentType === "DIGITAL"}
                     />
                   </div>
                   <div>

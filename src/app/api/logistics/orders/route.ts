@@ -4,6 +4,7 @@ import { getAuthenticatedUser } from '@/lib/auth-legacy';
 import {
     buildTrackingMetadata,
     deriveDispatchDates,
+    ensureInvoiceFulfillmentRecords,
     ensureDefaultCouriers,
     normalizeTrackingNumber,
     summarizeInvoiceLineItems,
@@ -16,6 +17,28 @@ export async function GET(req: NextRequest) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
         await ensureDefaultCouriers();
+
+        const invoiceCandidates = await prisma.invoice.findMany({
+            where: {
+                ...(user.role === 'SUPER_ADMIN' ? {} : { companyId: user.companyId }),
+            },
+            include: {
+                customerProfile: true,
+                subscription: {
+                    include: {
+                        customerProfile: true,
+                    },
+                },
+            },
+            orderBy: { createdAt: 'desc' },
+            take: 200,
+        });
+
+        await Promise.all(
+            invoiceCandidates
+                .filter((invoice) => Array.isArray(invoice.lineItems) && invoice.lineItems.length > 0)
+                .map((invoice) => ensureInvoiceFulfillmentRecords(invoice, user.id)),
+        );
 
         const { searchParams } = new URL(req.url);
         const limit = parseInt(searchParams.get('limit') || '50');
@@ -38,6 +61,7 @@ export async function GET(req: NextRequest) {
                 { trackingNumber: { contains: q, mode: 'insensitive' } },
                 { recipientName: { contains: q, mode: 'insensitive' } },
                 { partnerName: { contains: q, mode: 'insensitive' } },
+                { cycleLabel: { contains: q, mode: 'insensitive' } },
                 { invoice: { invoiceNumber: { contains: q, mode: 'insensitive' } } },
                 { customerProfile: { name: { contains: q, mode: 'insensitive' } } },
                 { customerProfile: { organizationName: { contains: q, mode: 'insensitive' } } },
@@ -61,6 +85,7 @@ export async function GET(req: NextRequest) {
                             shippingCity: true,
                             shippingState: true,
                             shippingPincode: true,
+                            createdAt: true,
                         }
                     },
                     customerProfile: {
@@ -73,7 +98,7 @@ export async function GET(req: NextRequest) {
                         }
                     }
                 },
-                orderBy: { createdAt: 'desc' },
+                orderBy: [{ plannedDispatchDate: 'asc' }, { createdAt: 'desc' }],
                 take: limit
             }),
             prisma.dispatchOrder.groupBy({
@@ -153,15 +178,36 @@ export async function POST(req: NextRequest) {
             remarks,
             weight,
             status,
+            fulfillmentType,
+            cycleNumber,
+            totalCycles,
+            cycleLabel,
+            plannedDispatchDate,
+            accessStartDate,
+            accessEndDate,
         } = body;
 
-        if (invoiceId) {
-            const existing = await prisma.dispatchOrder.findUnique({
-                where: { invoiceId }
+        if (invoiceId && !body.forceManual) {
+            const invoice = await prisma.invoice.findFirst({
+                where: {
+                    id: invoiceId,
+                    ...(user.role === 'SUPER_ADMIN' ? {} : { companyId: user.companyId })
+                },
+                include: {
+                    customerProfile: true,
+                    subscription: { include: { customerProfile: true } }
+                }
             });
-            if (existing) {
-                return NextResponse.json({ error: 'Dispatch already exists for this invoice' }, { status: 409 });
+
+            if (!invoice) {
+                return NextResponse.json({ error: 'Invoice not found' }, { status: 404 });
             }
+
+            const records = await ensureInvoiceFulfillmentRecords(invoice, user.id);
+            return NextResponse.json(records.map((record: any) => ({
+                ...record,
+                tracking: buildTrackingMetadata(record),
+            })));
         }
 
         let finalPayload: any = {
@@ -180,6 +226,13 @@ export async function POST(req: NextRequest) {
             remarks: remarks || null,
             weight: weight ? Number(weight) : null,
             status: status || 'PENDING',
+            fulfillmentType: fulfillmentType || 'PRINT',
+            cycleNumber: cycleNumber ? Number(cycleNumber) : 1,
+            totalCycles: totalCycles ? Number(totalCycles) : 1,
+            cycleLabel: cycleLabel || null,
+            plannedDispatchDate: plannedDispatchDate ? new Date(plannedDispatchDate) : null,
+            accessStartDate: accessStartDate ? new Date(accessStartDate) : null,
+            accessEndDate: accessEndDate ? new Date(accessEndDate) : null,
             companyId: user.companyId,
             createdByUserId: user.id,
             updatedByUserId: user.id,
@@ -247,7 +300,10 @@ export async function POST(req: NextRequest) {
             };
         }
 
-        if (!finalPayload.address || !finalPayload.city || !finalPayload.state || !finalPayload.pincode) {
+        if (
+            finalPayload.fulfillmentType === 'PRINT' &&
+            (!finalPayload.address || !finalPayload.city || !finalPayload.state || !finalPayload.pincode)
+        ) {
             return NextResponse.json({ error: 'Shipping address is incomplete for this dispatch' }, { status: 422 });
         }
 
