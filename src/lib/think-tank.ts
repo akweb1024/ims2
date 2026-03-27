@@ -1,4 +1,5 @@
 import crypto from 'crypto';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 import {
     Prisma,
     ThinkTankDuplicateDecision,
@@ -13,7 +14,8 @@ import { StorageService } from '@/lib/storage';
 
 const IST_TIMEZONE = 'Asia/Kolkata';
 const THINK_TANK_KEY = process.env.THINK_TANK_ENCRYPTION_KEY || process.env.CONFIG_ENCRYPTION_KEY || 'think-tank-encryption-key-32ch';
-const EMBEDDING_MODEL = process.env.THINK_TANK_EMBEDDING_MODEL || 'text-embedding-3-small';
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY || process.env.GOOGLE_AI_API_KEY || '';
+const EMBEDDING_MODEL = process.env.THINK_TANK_EMBEDDING_MODEL || 'text-embedding-004';
 const DUPLICATE_THRESHOLD = 0.85;
 
 const CATEGORY_EXPERTISE: Record<ThinkTankIdeaCategory, string[]> = {
@@ -326,23 +328,16 @@ const cosineSimilarity = (a: number[], b: number[]) => {
 };
 
 const getEmbedding = async (text: string): Promise<number[] | null> => {
-    if (!process.env.OPENAI_API_KEY) return null;
+    if (!GEMINI_API_KEY) return null;
 
-    const response = await fetch('https://api.openai.com/v1/embeddings', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
-        },
-        body: JSON.stringify({
-            model: EMBEDDING_MODEL,
-            input: text,
-        }),
-    });
-
-    if (!response.ok) return null;
-    const data = await response.json();
-    return data?.data?.[0]?.embedding ?? null;
+    try {
+        const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
+        const model = genAI.getGenerativeModel({ model: EMBEDDING_MODEL });
+        const result = await model.embedContent(text);
+        return result.embedding.values ?? null;
+    } catch {
+        return null;
+    }
 };
 
 export const computeIdeaSimilarity = async (left: string, right: string) => {
