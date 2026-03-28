@@ -7,6 +7,7 @@ import {
     ProblemVisibility,
 } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
+import { createNotification } from '@/lib/system-notifications';
 import {
     AuthenticationError,
     AuthorizationError,
@@ -76,6 +77,14 @@ export const problemIssueInclude = {
     reportedBy: { select: { id: true, name: true, email: true, role: true } },
     assignedTo: { select: { id: true, name: true, email: true, role: true } },
     resolvedBy: { select: { id: true, name: true, email: true, role: true } },
+    comments: {
+        orderBy: { createdAt: 'asc' as const },
+        include: { author: { select: { id: true, name: true, email: true, role: true } } },
+    },
+    internalNotes: {
+        orderBy: { createdAt: 'asc' as const },
+        include: { author: { select: { id: true, name: true, email: true, role: true } } },
+    },
     assignmentHistory: {
         orderBy: { createdAt: 'desc' as const },
         include: { actor: { select: { id: true, name: true, email: true } } },
@@ -150,6 +159,22 @@ export const serializeProblemIssue = (
         reportedBy: revealReporter ? issue.reportedBy : null,
         assignedTo: issue.assignedTo,
         resolvedBy: issue.resolvedBy,
+        comments: issue.comments.map((comment) => ({
+            id: comment.id,
+            content: comment.content,
+            createdAt: comment.createdAt,
+            updatedAt: comment.updatedAt,
+            author: comment.author,
+        })),
+        internalNotes: options?.internalView
+            ? issue.internalNotes.map((note) => ({
+                id: note.id,
+                content: note.content,
+                createdAt: note.createdAt,
+                updatedAt: note.updatedAt,
+                author: note.author,
+            }))
+            : [],
         assignmentHistory: options?.internalView ? issue.assignmentHistory : issue.assignmentHistory.slice(0, 5),
         statusHistory: issue.statusHistory,
         counts: issue._count,
@@ -336,6 +361,110 @@ export const assignProblemIssue = async (params: {
                         previousAssigneeId: issue.assignedToId,
                         newAssigneeId: params.assigneeId || null,
                     },
+                },
+            },
+        },
+        include: problemIssueInclude,
+    });
+};
+
+const notifyProblemParticipants = async (issue: {
+    id: string;
+    title: string;
+    reportedById: string;
+    assignedToId?: string | null;
+}, actorUserId: string, title: string, message: string) => {
+    const recipients = new Set<string>();
+    if (issue.reportedById && issue.reportedById !== actorUserId) recipients.add(issue.reportedById);
+    if (issue.assignedToId && issue.assignedToId !== actorUserId) recipients.add(issue.assignedToId);
+
+    await Promise.all(
+        [...recipients].map((userId) =>
+            createNotification({
+                userId,
+                title,
+                message,
+                type: 'INFO',
+                link: `/dashboard/problems`,
+                channels: ['IN_APP'],
+            })
+        )
+    );
+};
+
+export const addProblemComment = async (params: {
+    issueId: string;
+    companyId: string;
+    actor: ProblemsUser;
+    content: string;
+}) => {
+    ensureProblemsAccess(params.actor);
+    const issue = await getProblemIssueById(params.issueId, params.companyId);
+    const trimmed = params.content.trim();
+    if (!trimmed) {
+        throw new ValidationError('Comment content is required.');
+    }
+
+    const updated = await prisma.problemIssue.update({
+        where: { id: issue.id },
+        data: {
+            comments: {
+                create: {
+                    authorUserId: params.actor.id,
+                    content: trimmed,
+                },
+            },
+            auditEvents: {
+                create: {
+                    actorUserId: params.actor.id,
+                    action: 'PROBLEM_COMMENT_ADDED',
+                    outcome: 'SUCCESS',
+                },
+            },
+        },
+        include: problemIssueInclude,
+    });
+
+    await notifyProblemParticipants(
+        issue,
+        params.actor.id,
+        'Problem update posted',
+        `A new comment was added to "${issue.title}".`
+    );
+
+    return updated;
+};
+
+export const addProblemInternalNote = async (params: {
+    issueId: string;
+    companyId: string;
+    actor: ProblemsUser;
+    content: string;
+}) => {
+    ensureProblemsAccess(params.actor);
+    if (!canManageProblems(params.actor.role)) {
+        throw new AuthorizationError('Only management can add internal notes.');
+    }
+    const issue = await getProblemIssueById(params.issueId, params.companyId);
+    const trimmed = params.content.trim();
+    if (!trimmed) {
+        throw new ValidationError('Internal note content is required.');
+    }
+
+    return prisma.problemIssue.update({
+        where: { id: issue.id },
+        data: {
+            internalNotes: {
+                create: {
+                    authorUserId: params.actor.id,
+                    content: trimmed,
+                },
+            },
+            auditEvents: {
+                create: {
+                    actorUserId: params.actor.id,
+                    action: 'PROBLEM_INTERNAL_NOTE_ADDED',
+                    outcome: 'SUCCESS',
                 },
             },
         },

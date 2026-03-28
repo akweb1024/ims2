@@ -30,6 +30,20 @@ type ProblemIssue = {
     reopenedAt?: string | null;
     reportedBy?: { id: string; name?: string | null; email?: string | null; role?: string | null } | null;
     assignedTo?: { id: string; name?: string | null; email?: string | null; role?: string | null } | null;
+    comments?: Array<{
+        id: string;
+        content: string;
+        createdAt: string;
+        updatedAt: string;
+        author?: { id: string; name?: string | null; email?: string | null; role?: string | null } | null;
+    }>;
+    internalNotes?: Array<{
+        id: string;
+        content: string;
+        createdAt: string;
+        updatedAt: string;
+        author?: { id: string; name?: string | null; email?: string | null; role?: string | null } | null;
+    }>;
     statusHistory?: Array<{
         id: string;
         fromStatus?: string | null;
@@ -98,6 +112,8 @@ export default function ProblemsPortal({ mode }: { mode: ProblemsMode }) {
     const [selectedStatuses, setSelectedStatuses] = useState<Record<string, string>>({});
     const [assignmentNotes, setAssignmentNotes] = useState<Record<string, string>>({});
     const [selectedAssignees, setSelectedAssignees] = useState<Record<string, string>>({});
+    const [commentInputs, setCommentInputs] = useState<Record<string, string>>({});
+    const [internalNoteInputs, setInternalNoteInputs] = useState<Record<string, string>>({});
     const [form, setForm] = useState({
         title: '',
         description: '',
@@ -248,6 +264,48 @@ export default function ProblemsPortal({ mode }: { mode: ProblemsMode }) {
         }
     };
 
+    const addComment = async (issueId: string) => {
+        try {
+            const content = commentInputs[issueId]?.trim();
+            if (!content) return;
+            const response = await fetch(`/api/problems/${issueId}/comments`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ content }),
+            });
+            const payload = await response.json();
+            if (!response.ok) {
+                throw new Error(payload.message || payload.error || 'Failed to add comment.');
+            }
+            toast.success('Comment added.');
+            setCommentInputs((current) => ({ ...current, [issueId]: '' }));
+            await loadData();
+        } catch (error) {
+            toast.error(error instanceof Error ? error.message : 'Failed to add comment.');
+        }
+    };
+
+    const addInternalNote = async (issueId: string) => {
+        try {
+            const content = internalNoteInputs[issueId]?.trim();
+            if (!content) return;
+            const response = await fetch(`/api/problems/${issueId}/internal-notes`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ content }),
+            });
+            const payload = await response.json();
+            if (!response.ok) {
+                throw new Error(payload.message || payload.error || 'Failed to add internal note.');
+            }
+            toast.success('Internal note added.');
+            setInternalNoteInputs((current) => ({ ...current, [issueId]: '' }));
+            await loadData();
+        } catch (error) {
+            toast.error(error instanceof Error ? error.message : 'Failed to add internal note.');
+        }
+    };
+
     return (
         <DashboardLayout userRole={user?.role || 'EMPLOYEE'}>
             <div className="mx-auto w-full max-w-7xl space-y-8 px-4 py-6 sm:px-6 lg:px-8">
@@ -362,12 +420,16 @@ export default function ProblemsPortal({ mode }: { mode: ProblemsMode }) {
                         <section className="space-y-4">
                             <h2 className="text-xl font-semibold text-slate-900">My Problems</h2>
                             {myIssues.length === 0 ? <EmptyState text="No problems reported yet. Submit your first blocker from the form." /> : myIssues.map((issue) => (
-                                <ProblemCard
-                                    key={issue.id}
-                                    issue={issue}
-                                    actions={(
-                                        <div className="flex flex-wrap gap-2">
-                                            {issue.status === 'RESOLVED' ? <ActionButton label="Confirm & Close" onClick={() => changeStatus(issue.id, 'CLOSED')} /> : null}
+                            <ProblemCard
+                                key={issue.id}
+                                issue={issue}
+                                canManage={false}
+                                commentValue={commentInputs[issue.id] || ''}
+                                onCommentChange={(value) => setCommentInputs((current) => ({ ...current, [issue.id]: value }))}
+                                onAddComment={() => addComment(issue.id)}
+                                actions={(
+                                    <div className="flex flex-wrap gap-2">
+                                        {issue.status === 'RESOLVED' ? <ActionButton label="Confirm & Close" onClick={() => changeStatus(issue.id, 'CLOSED')} /> : null}
                                             {['RESOLVED', 'CLOSED'].includes(issue.status) ? <ActionButton label="Reopen" variant="secondary" onClick={() => changeStatus(issue.id, 'REOPENED')} /> : null}
                                         </div>
                                     )}
@@ -385,6 +447,13 @@ export default function ProblemsPortal({ mode }: { mode: ProblemsMode }) {
                                 key={issue.id}
                                 issue={issue}
                                 showReporter
+                                canManage
+                                commentValue={commentInputs[issue.id] || ''}
+                                onCommentChange={(value) => setCommentInputs((current) => ({ ...current, [issue.id]: value }))}
+                                onAddComment={() => addComment(issue.id)}
+                                internalNoteValue={internalNoteInputs[issue.id] || ''}
+                                onInternalNoteChange={(value) => setInternalNoteInputs((current) => ({ ...current, [issue.id]: value }))}
+                                onAddInternalNote={() => addInternalNote(issue.id)}
                                 actions={(
                                     <div className="grid gap-3 rounded-2xl bg-slate-50 p-4">
                                         <div className="grid gap-3 lg:grid-cols-[200px_1fr_auto]">
@@ -507,10 +576,24 @@ function CompactIssueRow({ issue }: { issue: ProblemIssue }) {
 function ProblemCard({
     issue,
     showReporter,
+    canManage,
+    commentValue,
+    onCommentChange,
+    onAddComment,
+    internalNoteValue,
+    onInternalNoteChange,
+    onAddInternalNote,
     actions,
 }: {
     issue: ProblemIssue;
     showReporter?: boolean;
+    canManage?: boolean;
+    commentValue?: string;
+    onCommentChange?: (value: string) => void;
+    onAddComment?: () => void;
+    internalNoteValue?: string;
+    onInternalNoteChange?: (value: string) => void;
+    onAddInternalNote?: () => void;
     actions?: React.ReactNode;
 }) {
     return (
@@ -562,6 +645,58 @@ function ProblemCard({
                     </div>
                 </div>
             ) : null}
+
+            <div className="mt-5 grid gap-4 xl:grid-cols-2">
+                <div className="rounded-2xl bg-slate-50 p-4">
+                    <div className="text-sm font-semibold text-slate-900">Visible Comments</div>
+                    <div className="mt-3 space-y-3">
+                        {issue.comments?.length ? issue.comments.map((comment) => (
+                            <div key={comment.id} className="rounded-2xl bg-white p-3 text-sm text-slate-700">
+                                <div className="font-medium text-slate-900">{comment.author?.name || comment.author?.email || 'Staff'}</div>
+                                <div className="mt-1 whitespace-pre-wrap">{comment.content}</div>
+                                <div className="mt-2 text-xs text-slate-500">{formatDateTime(comment.createdAt)}</div>
+                            </div>
+                        )) : <div className="text-sm text-slate-500">No visible comments yet.</div>}
+                    </div>
+                    {onAddComment && onCommentChange ? (
+                        <div className="mt-3 flex gap-3">
+                            <input
+                                className="flex-1 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm"
+                                value={commentValue || ''}
+                                onChange={(event) => onCommentChange(event.target.value)}
+                                placeholder="Add an update or ask for clarification"
+                            />
+                            <ActionButton label="Post" onClick={onAddComment} />
+                        </div>
+                    ) : null}
+                </div>
+
+                {canManage ? (
+                    <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4">
+                        <div className="text-sm font-semibold text-amber-900">Internal Notes</div>
+                        <div className="mt-3 space-y-3">
+                            {issue.internalNotes?.length ? issue.internalNotes.map((note) => (
+                                <div key={note.id} className="rounded-2xl bg-white p-3 text-sm text-slate-700">
+                                    <div className="font-medium text-slate-900">{note.author?.name || note.author?.email || 'Manager'}</div>
+                                    <div className="mt-1 whitespace-pre-wrap">{note.content}</div>
+                                    <div className="mt-2 text-xs text-slate-500">{formatDateTime(note.createdAt)}</div>
+                                </div>
+                            )) : <div className="text-sm text-amber-800">No internal notes yet.</div>}
+                        </div>
+                        {onAddInternalNote && onInternalNoteChange ? (
+                            <div className="mt-3 flex gap-3">
+                                <input
+                                    className="flex-1 rounded-2xl border border-amber-200 bg-white px-4 py-3 text-sm"
+                                    value={internalNoteValue || ''}
+                                    onChange={(event) => onInternalNoteChange(event.target.value)}
+                                    placeholder="Add manager-only handling notes"
+                                />
+                                <ActionButton label="Save Note" onClick={onAddInternalNote} />
+                            </div>
+                        ) : null}
+                    </div>
+                ) : null}
+            </div>
 
             {actions ? <div className="mt-5">{actions}</div> : null}
         </div>
