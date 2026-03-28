@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { authorizedRoute } from '@/lib/middleware-auth';
 import { prisma } from '@/lib/prisma';
-import { ensureThinkTankAccess, logThinkTankAudit } from '@/lib/think-tank';
+import { ensureThinkTankAccess, logThinkTankAudit, notifyThinkTankIdeaParticipants } from '@/lib/think-tank';
 
 export const dynamic = 'force-dynamic';
 
@@ -49,6 +49,13 @@ export const POST = authorizedRoute([], async (req: NextRequest, user: any, cont
         action: 'IDEA_COMMENT_ADDED',
         outcome: 'SUCCESS',
     });
+
+    await notifyThinkTankIdeaParticipants(
+        idea.id,
+        'New Think Tank review comment',
+        'A new review comment was added for your idea.',
+        '/dashboard/think-tank'
+    );
 
     return NextResponse.json({ comment }, { status: 201 });
 });

@@ -8,6 +8,8 @@ import {
     ensureThinkTankAccess,
     getGovernanceState,
     logThinkTankAudit,
+    notifyThinkTankIdeaParticipants,
+    notifyThinkTankReviewers,
     serializeThinkTankIdea,
     thinkTankIdeaInclude,
 } from '@/lib/think-tank';
@@ -104,6 +106,24 @@ export const PATCH = authorizedRoute([], async (req: NextRequest, user: any, con
         action: canReview ? 'IDEA_REVIEW_UPDATED' : 'IDEA_UPDATED',
         outcome: 'SUCCESS',
     });
+
+    if (canReview) {
+        await notifyThinkTankIdeaParticipants(
+            idea.id,
+            'Think Tank idea updated',
+            `Your idea "${updated.topic}" moved to ${updated.reviewStage} with implementation status ${updated.implementationStatus}.`,
+            '/dashboard/think-tank/results'
+        );
+
+        if (updated.reviewStage === 'SHORTLISTED' || updated.reviewStage === 'APPROVED') {
+            await notifyThinkTankReviewers(
+                user.companyId,
+                `Think Tank idea ${updated.reviewStage.toLowerCase()}`,
+                `"${updated.topic}" is now ${updated.reviewStage.toLowerCase()}.`,
+                '/dashboard/think-tank'
+            );
+        }
+    }
 
     return NextResponse.json({
         idea: serializeThinkTankIdea(updated, { includeDuplicates: true }),

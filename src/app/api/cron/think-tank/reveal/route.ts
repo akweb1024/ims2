@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { getScheduledGovernanceState, revealCycleIdeas } from '@/lib/think-tank';
+import { getScheduledGovernanceState, notifyThinkTankIdeaParticipants, revealCycleIdeas } from '@/lib/think-tank';
 
 export const dynamic = 'force-dynamic';
 
@@ -24,7 +24,19 @@ export async function POST(req: NextRequest) {
     });
 
     for (const cycle of cycles) {
+        const ideas = await prisma.thinkTankIdea.findMany({
+            where: { cycleId: cycle.id },
+            select: { id: true, topic: true },
+        });
         await revealCycleIdeas(cycle.id);
+        for (const idea of ideas) {
+            await notifyThinkTankIdeaParticipants(
+                idea.id,
+                'Think Tank results revealed',
+                `Results have been revealed for "${idea.topic}".`,
+                '/dashboard/think-tank/results'
+            );
+        }
     }
 
     return NextResponse.json({ success: true, revealedCycles: cycles.length });

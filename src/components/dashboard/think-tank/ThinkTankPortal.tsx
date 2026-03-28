@@ -19,6 +19,7 @@ type Idea = {
     voteCount: number;
     createdAt: string;
     revealedAt?: string | null;
+    executionLink?: { type: string; id: string; title: string; convertedAt?: string; convertedById?: string } | null;
     author?: { id: string; name?: string | null; email?: string | null } | null;
     decisionBy?: { id: string; name?: string | null; email?: string | null } | null;
     attachments?: Array<{ id: string; url: string; filename: string; size: number; scrubStatus?: string | null }>;
@@ -77,12 +78,14 @@ const formatDateTime = (value?: string | null) => {
 
 export default function ThinkTankPortal({ mode }: { mode: PortalMode }) {
     const [user, setUser] = useState<any>(null);
+    const [assignees, setAssignees] = useState<Array<{ id: string; name?: string | null; email?: string | null; designation?: string | null }>>([]);
     const [loading, setLoading] = useState(true);
     const [governance, setGovernance] = useState<any>(null);
     const [governanceAccess, setGovernanceAccess] = useState<{ canManage?: boolean; override?: any } | null>(null);
     const [ideas, setIdeas] = useState<Idea[]>([]);
     const [reviewIdeas, setReviewIdeas] = useState<Idea[]>([]);
     const [results, setResults] = useState<Idea[]>([]);
+    const [analytics, setAnalytics] = useState<any>(null);
     const [form, setForm] = useState({
         topic: '',
         description: '',
@@ -114,14 +117,18 @@ export default function ThinkTankPortal({ mode }: { mode: PortalMode }) {
     const refresh = useCallback(async () => {
         setLoading(true);
         try {
-            const [ideasRes, resultsRes, governanceRes] = await Promise.all([
+            const [ideasRes, resultsRes, governanceRes, analyticsRes, usersRes] = await Promise.all([
                 fetch(`/api/think-tank/ideas?view=${view}`, { cache: 'no-store' }),
                 fetch('/api/think-tank/results', { cache: 'no-store' }),
                 fetch('/api/think-tank/governance', { cache: 'no-store' }),
+                fetch('/api/think-tank/analytics', { cache: 'no-store' }),
+                fetch('/api/users?limit=100', { cache: 'no-store' }),
             ]);
             const ideasPayload = await ideasRes.json();
             const resultsPayload = await resultsRes.json();
             const governancePayload = await governanceRes.json();
+            const analyticsPayload = await analyticsRes.json();
+            const usersPayload = usersRes.ok ? await usersRes.json() : { data: [] };
             let reviewPayload: any = null;
             const reviewRes = await fetch('/api/think-tank/ideas?view=review', { cache: 'no-store' });
             if (reviewRes.ok) {
@@ -139,6 +146,13 @@ export default function ThinkTankPortal({ mode }: { mode: PortalMode }) {
             setIdeas(ideasPayload.ideas || []);
             setReviewIdeas(reviewPayload?.ideas || []);
             setResults(resultsPayload.ideas || []);
+            setAnalytics(analyticsPayload.analytics || null);
+            setAssignees((usersPayload.data || []).map((candidate: any) => ({
+                id: candidate.id,
+                name: candidate.name,
+                email: candidate.email,
+                designation: candidate.employeeProfile?.designatRef?.name || candidate.employeeProfile?.designation || candidate.role || null,
+            })));
         } catch (fetchError) {
             setError('Failed to load Think Tank ideas.');
         } finally {
@@ -294,6 +308,31 @@ export default function ThinkTankPortal({ mode }: { mode: PortalMode }) {
         await refresh();
     };
 
+    const handleConvertIdea = async (ideaId: string, payload: {
+        mode: 'PROJECT' | 'TASK';
+        ownerUserId?: string;
+        memberIds?: string[];
+        title?: string;
+        description?: string;
+        priority?: string;
+        startDate?: string;
+        endDate?: string;
+        dueDate?: string;
+    }) => {
+        setError('');
+        const response = await fetch(`/api/think-tank/ideas/${ideaId}/convert`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+        });
+        const body = await response.json();
+        if (!response.ok) {
+            setError(body.error || 'Failed to convert idea into execution work.');
+            return;
+        }
+        await refresh();
+    };
+
     const content = () => {
         if (loading) {
             return <div className="rounded-3xl border border-slate-200 bg-white p-8 text-sm text-slate-500">Loading Think Tank workspace…</div>;
@@ -317,8 +356,15 @@ export default function ThinkTankPortal({ mode }: { mode: PortalMode }) {
                         />
                     )}
                     {governanceAccess?.canManage && reviewIdeas.length > 0 && (
-                        <ReviewBoard ideas={reviewIdeas} onReviewUpdate={handleReviewUpdate} onAddComment={handleAddComment} />
+                        <ReviewBoard
+                            ideas={reviewIdeas}
+                            assignees={assignees}
+                            onReviewUpdate={handleReviewUpdate}
+                            onAddComment={handleAddComment}
+                            onConvertIdea={handleConvertIdea}
+                        />
                     )}
+                    {analytics && <ThinkTankAnalytics analytics={analytics} />}
                     <div className="grid gap-4 md:grid-cols-3">
                         <QuickCard href="/dashboard/think-tank/my-ideas" title="My Ideas" description="Submit proposals, review duplicate matches, and track your current cycle ideas." />
                         <QuickCard href="/dashboard/think-tank/vote" title="Ideas for Vote" description="Anonymous evaluation board with weighted peer scoring." />
@@ -593,15 +639,55 @@ function GovernanceControlPanel({
 
 function ReviewBoard({
     ideas,
+    assignees,
     onReviewUpdate,
     onAddComment,
+    onConvertIdea,
 }: {
     ideas: Idea[];
+    assignees: Array<{ id: string; name?: string | null; email?: string | null; designation?: string | null }>;
     onReviewUpdate: (ideaId: string, payload: { reviewStage?: string; implementationStatus?: string; decisionNotes?: string }) => Promise<void>;
     onAddComment: (ideaId: string, content: string) => Promise<void>;
+    onConvertIdea: (ideaId: string, payload: {
+        mode: 'PROJECT' | 'TASK';
+        ownerUserId?: string;
+        memberIds?: string[];
+        title?: string;
+        description?: string;
+        priority?: string;
+        startDate?: string;
+        endDate?: string;
+        dueDate?: string;
+    }) => Promise<void>;
 }) {
     const [notes, setNotes] = useState<Record<string, string>>({});
     const [comments, setComments] = useState<Record<string, string>>({});
+    const [convertingIdeaId, setConvertingIdeaId] = useState<string | null>(null);
+    const [conversionForms, setConversionForms] = useState<Record<string, {
+        mode: 'PROJECT' | 'TASK';
+        ownerUserId: string;
+        memberIds: string;
+        title: string;
+        description: string;
+        priority: string;
+        startDate: string;
+        endDate: string;
+        dueDate: string;
+    }>>({});
+
+    const getConversionForm = (idea: Idea) => {
+        return conversionForms[idea.id] || {
+            mode: 'PROJECT',
+            ownerUserId: '',
+            memberIds: '',
+            title: '',
+            description: '',
+            priority: 'MEDIUM',
+            startDate: '',
+            endDate: '',
+            dueDate: '',
+        };
+    };
 
     return (
         <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
@@ -669,6 +755,15 @@ function ReviewBoard({
                                 Save Notes
                             </button>
                         </div>
+                        {idea.executionLink ? (
+                            <div className="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900">
+                                <div className="font-semibold">Execution linked</div>
+                                <div className="mt-1">
+                                    This idea is already linked to a {idea.executionLink.type.toLowerCase()}: <span className="font-semibold">{idea.executionLink.title}</span>
+                                </div>
+                                <div className="mt-1 text-emerald-700">Converted on {formatDateTime(idea.executionLink.convertedAt || null)}</div>
+                            </div>
+                        ) : null}
                         <div className="mt-4 rounded-2xl bg-slate-50 p-4">
                             <div className="text-sm font-semibold text-slate-900">Reviewer comments</div>
                             <div className="mt-3 space-y-3">
@@ -699,8 +794,216 @@ function ReviewBoard({
                                 </button>
                             </div>
                         </div>
+                        {['APPROVED', 'IMPLEMENTED'].includes(idea.reviewStage || '') && !idea.executionLink ? (
+                            <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                                <div className="flex flex-wrap items-start justify-between gap-3">
+                                    <div>
+                                        <div className="text-sm font-semibold text-slate-900">Convert to project or task</div>
+                                        <p className="mt-1 text-sm text-slate-600">Move this approved idea into tracked execution without leaving the Think Tank review board.</p>
+                                    </div>
+                                </div>
+                                <div className="mt-4 grid gap-3 md:grid-cols-2">
+                                    <label className="grid gap-2 text-sm text-slate-700">
+                                        <span className="font-medium">Execution type</span>
+                                        <select
+                                            className="rounded-2xl border border-slate-200 px-4 py-3"
+                                            value={getConversionForm(idea).mode}
+                                            onChange={(event) => setConversionForms((current) => ({
+                                                ...current,
+                                                [idea.id]: { ...getConversionForm(idea), mode: event.target.value as 'PROJECT' | 'TASK' },
+                                            }))}
+                                        >
+                                            <option value="PROJECT">Project</option>
+                                            <option value="TASK">Task</option>
+                                        </select>
+                                    </label>
+                                    <label className="grid gap-2 text-sm text-slate-700">
+                                        <span className="font-medium">Owner</span>
+                                        <select
+                                            className="rounded-2xl border border-slate-200 px-4 py-3"
+                                            value={getConversionForm(idea).ownerUserId}
+                                            onChange={(event) => setConversionForms((current) => ({
+                                                ...current,
+                                                [idea.id]: { ...getConversionForm(idea), ownerUserId: event.target.value },
+                                            }))}
+                                        >
+                                            <option value="">Assign to current reviewer</option>
+                                            {assignees.map((assignee) => (
+                                                <option key={assignee.id} value={assignee.id}>
+                                                    {(assignee.name || assignee.email || assignee.id)}{assignee.designation ? ` • ${assignee.designation}` : ''}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </label>
+                                    <label className="grid gap-2 text-sm text-slate-700">
+                                        <span className="font-medium">Execution title</span>
+                                        <input
+                                            className="rounded-2xl border border-slate-200 px-4 py-3"
+                                            placeholder={idea.topic}
+                                            value={getConversionForm(idea).title}
+                                            onChange={(event) => setConversionForms((current) => ({
+                                                ...current,
+                                                [idea.id]: { ...getConversionForm(idea), title: event.target.value },
+                                            }))}
+                                        />
+                                    </label>
+                                    <label className="grid gap-2 text-sm text-slate-700">
+                                        <span className="font-medium">Priority</span>
+                                        <select
+                                            className="rounded-2xl border border-slate-200 px-4 py-3"
+                                            value={getConversionForm(idea).priority}
+                                            onChange={(event) => setConversionForms((current) => ({
+                                                ...current,
+                                                [idea.id]: { ...getConversionForm(idea), priority: event.target.value },
+                                            }))}
+                                        >
+                                            <option value="LOW">Low</option>
+                                            <option value="MEDIUM">Medium</option>
+                                            <option value="HIGH">High</option>
+                                            <option value="URGENT">Urgent</option>
+                                        </select>
+                                    </label>
+                                    <label className="grid gap-2 text-sm text-slate-700 md:col-span-2">
+                                        <span className="font-medium">Execution description override</span>
+                                        <textarea
+                                            className="min-h-28 rounded-2xl border border-slate-200 px-4 py-3"
+                                            placeholder="Leave blank to use the original idea description."
+                                            value={getConversionForm(idea).description}
+                                            onChange={(event) => setConversionForms((current) => ({
+                                                ...current,
+                                                [idea.id]: { ...getConversionForm(idea), description: event.target.value },
+                                            }))}
+                                        />
+                                    </label>
+                                    {getConversionForm(idea).mode === 'PROJECT' ? (
+                                        <>
+                                            <label className="grid gap-2 text-sm text-slate-700">
+                                                <span className="font-medium">Start date</span>
+                                                <input
+                                                    type="date"
+                                                    className="rounded-2xl border border-slate-200 px-4 py-3"
+                                                    value={getConversionForm(idea).startDate}
+                                                    onChange={(event) => setConversionForms((current) => ({
+                                                        ...current,
+                                                        [idea.id]: { ...getConversionForm(idea), startDate: event.target.value },
+                                                    }))}
+                                                />
+                                            </label>
+                                            <label className="grid gap-2 text-sm text-slate-700">
+                                                <span className="font-medium">End date</span>
+                                                <input
+                                                    type="date"
+                                                    className="rounded-2xl border border-slate-200 px-4 py-3"
+                                                    value={getConversionForm(idea).endDate}
+                                                    onChange={(event) => setConversionForms((current) => ({
+                                                        ...current,
+                                                        [idea.id]: { ...getConversionForm(idea), endDate: event.target.value },
+                                                    }))}
+                                                />
+                                            </label>
+                                            <label className="grid gap-2 text-sm text-slate-700 md:col-span-2">
+                                                <span className="font-medium">Additional member user IDs</span>
+                                                <input
+                                                    className="rounded-2xl border border-slate-200 px-4 py-3"
+                                                    placeholder="Comma-separated user IDs to add as project members"
+                                                    value={getConversionForm(idea).memberIds}
+                                                    onChange={(event) => setConversionForms((current) => ({
+                                                        ...current,
+                                                        [idea.id]: { ...getConversionForm(idea), memberIds: event.target.value },
+                                                    }))}
+                                                />
+                                            </label>
+                                        </>
+                                    ) : (
+                                        <label className="grid gap-2 text-sm text-slate-700 md:col-span-2">
+                                            <span className="font-medium">Due date</span>
+                                            <input
+                                                type="date"
+                                                className="rounded-2xl border border-slate-200 px-4 py-3"
+                                                value={getConversionForm(idea).dueDate}
+                                                onChange={(event) => setConversionForms((current) => ({
+                                                    ...current,
+                                                    [idea.id]: { ...getConversionForm(idea), dueDate: event.target.value },
+                                                }))}
+                                            />
+                                        </label>
+                                    )}
+                                </div>
+                                <div className="mt-4 flex justify-end">
+                                    <button
+                                        onClick={async () => {
+                                            const form = getConversionForm(idea);
+                                            setConvertingIdeaId(idea.id);
+                                            try {
+                                                await onConvertIdea(idea.id, {
+                                                    mode: form.mode,
+                                                    ownerUserId: form.ownerUserId || undefined,
+                                                    memberIds: form.memberIds.split(',').map((value) => value.trim()).filter(Boolean),
+                                                    title: form.title || undefined,
+                                                    description: form.description || undefined,
+                                                    priority: form.priority || undefined,
+                                                    startDate: form.startDate || undefined,
+                                                    endDate: form.endDate || undefined,
+                                                    dueDate: form.dueDate || undefined,
+                                                });
+                                            } finally {
+                                                setConvertingIdeaId(null);
+                                            }
+                                        }}
+                                        disabled={convertingIdeaId === idea.id}
+                                        className="rounded-2xl bg-emerald-600 px-4 py-3 text-sm font-semibold text-white disabled:opacity-60"
+                                    >
+                                        {convertingIdeaId === idea.id ? 'Converting…' : `Convert to ${getConversionForm(idea).mode === 'PROJECT' ? 'Project' : 'Task'}`}
+                                    </button>
+                                </div>
+                            </div>
+                        ) : null}
                     </div>
                 ))}
+            </div>
+        </div>
+    );
+}
+
+function ThinkTankAnalytics({ analytics }: { analytics: any }) {
+    const entries = (record: Record<string, number>) => Object.entries(record || {});
+
+    return (
+        <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+            <div className="mb-5">
+                <h2 className="text-lg font-semibold text-slate-900">Think Tank Analytics</h2>
+                <p className="mt-1 text-sm text-slate-600">Participation, review progress, and implementation movement across recent cycles.</p>
+            </div>
+            <div className="grid gap-4 md:grid-cols-4">
+                <SummaryCard label="Total Ideas" value={analytics.totals?.ideas || 0} />
+                <SummaryCard label="Total Votes" value={analytics.totals?.votes || 0} />
+                <SummaryCard label="Shortlisted" value={analytics.totals?.shortlisted || 0} />
+                <SummaryCard label="Implemented" value={analytics.totals?.implemented || 0} />
+            </div>
+            <div className="mt-5 grid gap-4 lg:grid-cols-2">
+                <MetricList title="Ideas by Category" items={entries(analytics.ideasByCategory)} />
+                <MetricList title="Ideas by Stage" items={entries(analytics.ideasByStage)} />
+                <MetricList title="Implementation Status" items={entries(analytics.implementationByStatus)} />
+                <MetricList
+                    title="Top Ideas"
+                    items={(analytics.topIdeas || []).map((idea: any) => [idea.topic, idea.weightedScore] as [string, number])}
+                />
+            </div>
+        </div>
+    );
+}
+
+function MetricList({ title, items }: { title: string; items: Array<[string, number]> }) {
+    return (
+        <div className="rounded-2xl bg-slate-50 p-4">
+            <div className="text-sm font-semibold text-slate-900">{title}</div>
+            <div className="mt-3 space-y-2">
+                {items.length > 0 ? items.map(([label, value]) => (
+                    <div key={label} className="flex items-center justify-between rounded-2xl bg-white px-3 py-2 text-sm text-slate-700">
+                        <span>{label.replace(/_/g, ' ')}</span>
+                        <span className="font-semibold text-slate-900">{value}</span>
+                    </div>
+                )) : <div className="text-sm text-slate-500">No data yet.</div>}
             </div>
         </div>
     );

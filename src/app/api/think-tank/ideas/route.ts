@@ -10,6 +10,7 @@ import {
     findPotentialDuplicates,
     getGovernanceState,
     getOrCreateCurrentCycle,
+    notifyThinkTankReviewers,
     serializeThinkTankIdea,
     thinkTankIdeaInclude,
 } from '@/lib/think-tank';
@@ -124,6 +125,13 @@ export const POST = authorizedRoute([], async (req: NextRequest, user: any) => {
         attachments: Array.isArray(attachments) ? attachments : [],
         duplicateDecision: duplicateDecision as ThinkTankDuplicateDecision | null,
     });
+
+    await notifyThinkTankReviewers(
+        user.companyId,
+        'New Think Tank idea submitted',
+        `A new idea "${idea.topic}" is ready for review.`,
+        '/dashboard/think-tank'
+    );
 
     return NextResponse.json({
         idea: serializeThinkTankIdea(idea, { includeDuplicates: true }),

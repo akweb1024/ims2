@@ -11,6 +11,7 @@ import {
 } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { StorageService } from '@/lib/storage';
+import { createNotification } from '@/lib/system-notifications';
 
 const IST_TIMEZONE = 'Asia/Kolkata';
 const THINK_TANK_KEY = process.env.THINK_TANK_ENCRYPTION_KEY || process.env.CONFIG_ENCRYPTION_KEY || 'think-tank-encryption-key-32ch';
@@ -274,6 +275,55 @@ export const ensureThinkTankAccess = (user: ThinkTankUser) => {
 
 export const canManageThinkTankReview = (role?: string | null) => {
     return ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'TEAM_LEADER'].includes(role || '');
+};
+
+export const notifyThinkTankReviewers = async (companyId: string, title: string, message: string, link: string) => {
+    const reviewers = await prisma.user.findMany({
+        where: {
+            companyId,
+            isActive: true,
+            role: {
+                in: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'TEAM_LEADER'] as UserRole[],
+            },
+        },
+        select: { id: true },
+    });
+
+    await Promise.all(reviewers.map((reviewer) => createNotification({
+        userId: reviewer.id,
+        title,
+        message,
+        type: 'INFO',
+        link,
+        channels: ['IN_APP'],
+    })));
+};
+
+export const notifyThinkTankIdeaParticipants = async (ideaId: string, title: string, message: string, link: string) => {
+    const idea = await prisma.thinkTankIdea.findUnique({
+        where: { id: ideaId },
+        select: {
+            plannerEncrypted: true,
+            partners: { select: { userEncrypted: true } },
+            teamMembers: { select: { userEncrypted: true } },
+        },
+    });
+
+    if (!idea) return;
+
+    const ids = new Set<string>();
+    ids.add(decryptThinkTankIdentity(idea.plannerEncrypted));
+    for (const partner of idea.partners) ids.add(decryptThinkTankIdentity(partner.userEncrypted));
+    for (const member of idea.teamMembers) ids.add(decryptThinkTankIdentity(member.userEncrypted));
+
+    await Promise.all([...ids].map((userId) => createNotification({
+        userId,
+        title,
+        message,
+        type: 'INFO',
+        link,
+        channels: ['IN_APP'],
+    })));
 };
 
 export const getScheduledGovernanceState = (date = new Date()): GovernanceState => {
@@ -808,6 +858,231 @@ export const recalculateIdeaScore = async (ideaId: string) => {
     });
 };
 
+export const getThinkTankAnalytics = async (companyId: string) => {
+    const [ideas, votes, cycles] = await Promise.all([
+        prisma.thinkTankIdea.findMany({
+            where: { companyId },
+            select: {
+                id: true,
+                category: true,
+                reviewStage: true,
+                implementationStatus: true,
+                weightedScore: true,
+                voteCount: true,
+                createdAt: true,
+                cycleId: true,
+            },
+        }),
+        prisma.thinkTankIdeaVote.findMany({
+            where: { companyId },
+            select: {
+                id: true,
+                ideaId: true,
+                vote: true,
+                weight: true,
+                createdAt: true,
+            },
+        }),
+        prisma.thinkTankIdeaCycle.findMany({
+            where: { companyId },
+            select: {
+                id: true,
+                revealAt: true,
+                status: true,
+            },
+            orderBy: { revealAt: 'desc' },
+            take: 12,
+        }),
+    ]);
+
+    const ideasByCategory = ideas.reduce<Record<string, number>>((acc, idea) => {
+        acc[idea.category] = (acc[idea.category] || 0) + 1;
+        return acc;
+    }, {});
+
+    const ideasByStage = ideas.reduce<Record<string, number>>((acc, idea) => {
+        acc[idea.reviewStage] = (acc[idea.reviewStage] || 0) + 1;
+        return acc;
+    }, {});
+
+    const implementationByStatus = ideas.reduce<Record<string, number>>((acc, idea) => {
+        acc[idea.implementationStatus] = (acc[idea.implementationStatus] || 0) + 1;
+        return acc;
+    }, {});
+
+    const latestIdeas = [...ideas]
+        .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+        .slice(0, 5);
+
+    const topIdeas = [...ideas]
+        .sort((a, b) => b.weightedScore - a.weightedScore)
+        .slice(0, 5);
+
+    const participationByCycle = cycles.map((cycle) => ({
+        cycleId: cycle.id,
+        revealAt: cycle.revealAt,
+        status: cycle.status,
+        ideaCount: ideas.filter((idea) => idea.cycleId === cycle.id).length,
+        voteCount: votes.filter((vote) => ideas.some((idea) => idea.id === vote.ideaId && idea.cycleId === cycle.id)).length,
+    }));
+
+    return {
+        totals: {
+            ideas: ideas.length,
+            votes: votes.length,
+            implemented: ideas.filter((idea) => idea.implementationStatus === 'COMPLETED').length,
+            shortlisted: ideas.filter((idea) => idea.reviewStage === 'SHORTLISTED').length,
+        },
+        ideasByCategory,
+        ideasByStage,
+        implementationByStatus,
+        latestIdeas,
+        topIdeas,
+        participationByCycle,
+    };
+};
+
+export const convertThinkTankIdeaToExecution = async (params: {
+    ideaId: string;
+    companyId: string;
+    convertedById: string;
+    mode: 'PROJECT' | 'TASK';
+    title?: string;
+    description?: string;
+    ownerUserId?: string | null;
+    memberIds?: string[];
+    startDate?: string | null;
+    endDate?: string | null;
+    dueDate?: string | null;
+    priority?: string | null;
+}) => {
+    const idea = await prisma.thinkTankIdea.findFirst({
+        where: {
+            id: params.ideaId,
+            companyId: params.companyId,
+        },
+    });
+
+    if (!idea) {
+        throw new Error('Idea not found.');
+    }
+
+    if (!['APPROVED', 'IMPLEMENTED'].includes(idea.reviewStage)) {
+        throw new Error('Only approved ideas can be converted into projects or tasks.');
+    }
+
+    const executionTitle = params.title?.trim() || idea.topic;
+    const executionDescription = params.description?.trim() || idea.description;
+    const priority = params.priority || 'MEDIUM';
+    const ownerUserId = params.ownerUserId || params.convertedById;
+    const existingMetadata = (idea.metadata as Record<string, any> | null) || {};
+
+    if (params.mode === 'PROJECT') {
+        const project = await prisma.project.create({
+            data: {
+                companyId: params.companyId,
+                title: executionTitle,
+                description: executionDescription,
+                status: 'PLANNED',
+                priority,
+                startDate: params.startDate ? new Date(params.startDate) : new Date(),
+                endDate: params.endDate ? new Date(params.endDate) : undefined,
+                managerId: params.convertedById,
+                leadId: ownerUserId,
+                members: {
+                    create: Array.from(new Set([ownerUserId, ...(params.memberIds || [])])).map((id) => ({
+                        userId: id,
+                        role: id === ownerUserId ? 'OWNER' : 'MEMBER',
+                    })),
+                },
+            },
+        });
+
+        const updatedIdea = await prisma.thinkTankIdea.update({
+            where: { id: idea.id },
+            data: {
+                implementationStatus: 'PLANNED',
+                metadata: {
+                    ...existingMetadata,
+                    executionLink: {
+                        type: 'PROJECT',
+                        id: project.id,
+                        title: project.title,
+                        convertedAt: new Date().toISOString(),
+                        convertedById: params.convertedById,
+                    },
+                },
+            },
+            include: thinkTankIdeaInclude,
+        });
+
+        await logThinkTankAudit({
+            ideaId: idea.id,
+            actorUserId: params.convertedById,
+            action: 'IDEA_CONVERTED_TO_PROJECT',
+            outcome: 'SUCCESS',
+            entityId: project.id,
+        });
+
+        await notifyThinkTankIdeaParticipants(
+            idea.id,
+            'Think Tank idea moved to execution',
+            `"${idea.topic}" has been converted into project "${project.title}".`,
+            '/dashboard/projects'
+        );
+
+        return { type: 'PROJECT' as const, entity: project, idea: updatedIdea };
+    }
+
+    const task = await prisma.task.create({
+        data: {
+            userId: ownerUserId,
+            assignedById: params.convertedById,
+            companyId: params.companyId,
+            title: executionTitle,
+            description: executionDescription,
+            dueDate: params.dueDate ? new Date(params.dueDate) : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+            priority: priority as any,
+            status: 'PENDING',
+        },
+    });
+
+    const updatedIdea = await prisma.thinkTankIdea.update({
+        where: { id: idea.id },
+        data: {
+            implementationStatus: 'PLANNED',
+            metadata: {
+                ...existingMetadata,
+                executionLink: {
+                    type: 'TASK',
+                    id: task.id,
+                    title: task.title,
+                    convertedAt: new Date().toISOString(),
+                    convertedById: params.convertedById,
+                },
+            },
+        },
+        include: thinkTankIdeaInclude,
+    });
+
+    await logThinkTankAudit({
+        ideaId: idea.id,
+        actorUserId: params.convertedById,
+        action: 'IDEA_CONVERTED_TO_TASK',
+        outcome: 'SUCCESS',
+        entityId: task.id,
+    });
+
+    await notifyThinkTankIdeaParticipants(
+        idea.id,
+        'Think Tank idea moved to execution',
+        `"${idea.topic}" has been converted into task "${task.title}".`,
+        '/dashboard/tasks'
+    );
+
+    return { type: 'TASK' as const, entity: task, idea: updatedIdea };
+};
+
 export const revealCycleIdeas = async (cycleId: string) => {
     const ideas = await prisma.thinkTankIdea.findMany({
         where: { cycleId },
@@ -859,6 +1134,7 @@ export const serializeThinkTankIdea = (idea: Prisma.ThinkTankIdeaGetPayload<{ in
     includeDuplicates?: boolean;
 }) => {
     const reveal = options?.reveal || idea.status === 'REVEALED';
+    const metadata = (idea.metadata as Record<string, any> | null) || {};
     const voteBreakdown = {
         like: idea.votes.filter((vote) => vote.vote === 'LIKE').length,
         unlike: idea.votes.filter((vote) => vote.vote === 'UNLIKE').length,
@@ -879,6 +1155,7 @@ export const serializeThinkTankIdea = (idea: Prisma.ThinkTankIdeaGetPayload<{ in
         createdAt: idea.createdAt,
         updatedAt: idea.updatedAt,
         revealedAt: idea.revealedAt,
+        executionLink: metadata.executionLink || null,
         cycle: idea.cycle,
         author: reveal ? idea.visibleAuthor : null,
         decisionBy: idea.decisionBy,
