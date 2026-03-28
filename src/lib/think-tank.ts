@@ -1498,9 +1498,13 @@ export const revealCycleIdeas = async (cycleId: string) => {
 export const serializeThinkTankIdea = (idea: Prisma.ThinkTankIdeaGetPayload<{ include: typeof thinkTankIdeaInclude }>, options?: {
     reveal?: boolean;
     includeDuplicates?: boolean;
+    currentUserHash?: string | null;
 }) => {
     const reveal = options?.reveal || idea.status === 'REVEALED';
     const metadata = (idea.metadata as Record<string, any> | null) || {};
+    const currentVote = options?.currentUserHash
+        ? idea.votes.find((vote) => vote.voterHash === options.currentUserHash)
+        : null;
     const voteBreakdown = {
         like: idea.votes.filter((vote) => vote.vote === 'LIKE').length,
         unlike: idea.votes.filter((vote) => vote.vote === 'UNLIKE').length,
@@ -1522,6 +1526,16 @@ export const serializeThinkTankIdea = (idea: Prisma.ThinkTankIdeaGetPayload<{ in
         finalScore: idea.finalScore,
         ideaReadinessScore: idea.ideaReadinessScore,
         voteCount: idea.voteCount,
+        currentVote: currentVote
+            ? {
+                id: currentVote.id,
+                vote: currentVote.vote,
+                pointAllocation: currentVote.pointAllocation,
+                maxAllowedPoints: currentVote.maxAllowedPoints,
+                weightedValue: currentVote.weightedValue,
+                updatedAt: currentVote.updatedAt,
+            }
+            : null,
         questionCount: idea.questionCount,
         isVetoed: idea.isVetoed,
         vetoedAt: idea.vetoedAt,

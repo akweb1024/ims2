@@ -25,17 +25,13 @@ export const GET = authorizedRoute([], async (req: NextRequest, user: any) => {
     const { searchParams } = new URL(req.url);
     const view = searchParams.get('view') || 'vote';
     const cycle = await getOrCreateCurrentCycle(user.companyId);
+    const userHash = crypto.createHash('sha256').update(user.id).digest('hex');
 
     const where: any = {
         companyId: user.companyId,
     };
 
     if (view === 'my') {
-        where.OR = [
-            { plannerHash: { equals: '' } },
-            { partners: { some: { userHash: { equals: '' } } } },
-        ];
-        const userHash = crypto.createHash('sha256').update(user.id).digest('hex');
         where.OR = [
             { plannerHash: userHash },
             { partners: { some: { userHash } } },
@@ -51,6 +47,13 @@ export const GET = authorizedRoute([], async (req: NextRequest, user: any) => {
     } else {
         where.cycleId = cycle.id;
         where.status = { in: ['ACTIVE', 'LOCKED'] };
+        where.NOT = {
+            OR: [
+                { plannerHash: userHash },
+                { partners: { some: { userHash } } },
+                { teamMembers: { some: { userHash } } },
+            ],
+        };
     }
 
     const ideas = await prisma.thinkTankIdea.findMany({
@@ -94,6 +97,7 @@ export const GET = authorizedRoute([], async (req: NextRequest, user: any) => {
         ideas: ideas.map((idea) => serializeThinkTankIdea(idea, {
             reveal: view === 'results',
             includeDuplicates: view === 'my' || view === 'review',
+            currentUserHash: userHash,
         })),
     });
 });

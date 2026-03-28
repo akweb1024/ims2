@@ -22,6 +22,14 @@ type Idea = {
     finalScore?: number;
     ideaReadinessScore?: number;
     voteCount: number;
+    currentVote?: {
+        id: string;
+        vote: 'LIKE' | 'UNLIKE' | 'NEUTRAL';
+        pointAllocation: number;
+        maxAllowedPoints: number;
+        weightedValue: number;
+        updatedAt: string;
+    } | null;
     questionCount?: number;
     isVetoed?: boolean;
     vetoedAt?: string | null;
@@ -358,7 +366,7 @@ export default function ThinkTankPortal({ mode }: { mode: PortalMode }) {
         });
         const payload = await response.json();
         if (!response.ok) {
-            setError(payload.error || 'Unable to save vote.');
+            setError(payload.message || payload.error || 'Unable to save vote.');
             return;
         }
         await refresh();
@@ -1532,13 +1540,26 @@ function IdeaGrid({
                                 <div className="flex flex-wrap items-center justify-between gap-3">
                                     <div>
                                         <div className="text-sm font-semibold text-slate-900">Phase 3 point vote</div>
-                                        <div className="mt-1 text-sm text-slate-600">Choose your vote and allocate points from your cycle budget.</div>
-                                    </div>
-                                    {pointAccount ? (
-                                        <div className="rounded-2xl bg-white px-4 py-3 text-sm text-slate-700">
-                                            Remaining {pointAccount.remainingPoints} / {pointAccount.basePoints}
+                                        <div className="mt-1 text-sm text-slate-600">
+                                            {idea.currentVote
+                                                ? 'You have already voted on this idea. Use edit controls below to update your points or change your vote.'
+                                                : 'Choose your vote and allocate points from your cycle budget.'}
                                         </div>
-                                    ) : null}
+                                    </div>
+                                    <div className="flex flex-wrap gap-3">
+                                        {idea.currentVote ? (
+                                            <div className="rounded-2xl border border-indigo-200 bg-indigo-50 px-4 py-3 text-sm text-indigo-700">
+                                                Current vote: <span className="font-semibold">{formatThinkTankLabel(idea.currentVote.vote, 'Vote')}</span>
+                                                <span className="mx-2 text-indigo-300">•</span>
+                                                {idea.currentVote.pointAllocation} points
+                                            </div>
+                                        ) : null}
+                                        {pointAccount ? (
+                                            <div className="rounded-2xl bg-white px-4 py-3 text-sm text-slate-700">
+                                                Remaining {pointAccount.remainingPoints} / {pointAccount.basePoints}
+                                            </div>
+                                        ) : null}
+                                    </div>
                                 </div>
                                 <div className="mt-4 grid gap-3 md:grid-cols-[220px_1fr] md:items-end">
                                     <label className="grid gap-2 text-sm text-slate-700">
@@ -1548,7 +1569,7 @@ function IdeaGrid({
                                             min={0}
                                             max={pointAccount?.maxPerIdeaPoints || 0}
                                             className="rounded-2xl border border-slate-200 bg-white px-4 py-3"
-                                            value={pointInputs[idea.id] ?? pointAccount?.maxPerIdeaPoints ?? 0}
+                                            value={pointInputs[idea.id] ?? idea.currentVote?.pointAllocation ?? pointAccount?.maxPerIdeaPoints ?? 0}
                                             onChange={(event) => setPointInputs((current) => ({ ...current, [idea.id]: Number(event.target.value) }))}
                                         />
                                     </label>
@@ -1557,22 +1578,31 @@ function IdeaGrid({
                                             onClick={() => (onVoteWithPoints || ((targetId: string, targetVote: 'LIKE' | 'UNLIKE' | 'NEUTRAL', _points: number) => onVote(targetId, targetVote)))(idea.id, 'LIKE', pointInputs[idea.id] ?? pointAccount?.maxPerIdeaPoints ?? 0)}
                                             className="rounded-full bg-emerald-600 px-4 py-2 text-sm font-semibold text-white"
                                         >
-                                            Support
+                                            {idea.currentVote?.vote === 'LIKE' ? 'Update Support' : 'Support'}
                                         </button>
                                         <button
                                             onClick={() => (onVoteWithPoints || ((targetId: string, targetVote: 'LIKE' | 'UNLIKE' | 'NEUTRAL', _points: number) => onVote(targetId, targetVote)))(idea.id, 'NEUTRAL', pointInputs[idea.id] ?? pointAccount?.maxPerIdeaPoints ?? 0)}
                                             className="rounded-full bg-slate-200 px-4 py-2 text-sm font-semibold text-slate-700"
                                         >
-                                            Neutral
+                                            {idea.currentVote?.vote === 'NEUTRAL' ? 'Update Neutral' : 'Neutral'}
                                         </button>
                                         <button
                                             onClick={() => (onVoteWithPoints || ((targetId: string, targetVote: 'LIKE' | 'UNLIKE' | 'NEUTRAL', _points: number) => onVote(targetId, targetVote)))(idea.id, 'UNLIKE', pointInputs[idea.id] ?? pointAccount?.maxPerIdeaPoints ?? 0)}
                                             className="rounded-full bg-rose-600 px-4 py-2 text-sm font-semibold text-white"
                                         >
-                                            Oppose
+                                            {idea.currentVote?.vote === 'UNLIKE' ? 'Update Oppose' : 'Oppose'}
                                         </button>
                                     </div>
                                 </div>
+                                {idea.currentVote ? (
+                                    <div className="mt-3 text-xs text-slate-500">
+                                        Last updated {formatDateTime(idea.currentVote.updatedAt)}. Each user can vote only once per idea, but can edit that vote and reallocate points.
+                                    </div>
+                                ) : (
+                                    <div className="mt-3 text-xs text-slate-500">
+                                        You can vote once per idea. After that, you can edit your existing vote and update your shared points.
+                                    </div>
+                                )}
                             </div>
                         )}
                         {((idea.questions && idea.questions.length > 0) || onAskQuestion) ? (
