@@ -127,6 +127,7 @@ model Company {
   thinkTankIdeas              ThinkTankIdea[]
   thinkTankPointAccounts      ThinkTankPointAccount[]
   thinkTankVotes              ThinkTankIdeaVote[]
+  problems                    ProblemIssue[]
   primaryUsers                User[]                       @relation("PrimaryCompany")
   vendors                     Vendor[]
   warehouses                  Warehouse[]
@@ -375,6 +376,16 @@ model User {
   thinkTankAskedQuestions        ThinkTankIdeaQuestion[]     @relation("ThinkTankQuestionAskedBy")
   thinkTankAnsweredQuestions     ThinkTankIdeaQuestion[]     @relation("ThinkTankQuestionAnsweredBy")
   thinkTankReviewerScores        ThinkTankIdeaReviewerScore[] @relation("ThinkTankReviewerScoreUser")
+  reportedProblems               ProblemIssue[]              @relation("ProblemReporter")
+  assignedProblems               ProblemIssue[]              @relation("ProblemAssignee")
+  resolvedProblems               ProblemIssue[]              @relation("ProblemResolver")
+  problemComments                ProblemIssueComment[]       @relation("ProblemCommentAuthor")
+  problemInternalNotes           ProblemIssueInternalNote[]  @relation("ProblemInternalNoteAuthor")
+  watchedProblems                ProblemIssueWatcher[]       @relation("ProblemWatcherUser")
+  problemAssignments             ProblemIssueAssignmentHistory[] @relation("ProblemAssignmentActor")
+  problemStatusUpdates           ProblemIssueStatusHistory[] @relation("ProblemStatusActor")
+  problemAuditEvents             ProblemIssueAuditEvent[]    @relation("ProblemAuditActor")
+  problemResolutionFeedback      ProblemIssueResolutionFeedback[] @relation("ProblemResolutionFeedbackBy")
   vaultKeyring                   VaultKeyring?               @relation("UserVaultKeyring")
   vaultFolders                   VaultFolder[]               @relation("UserVaultFolders")
   ownedVaultItems                VaultItem[]                 @relation("OwnerVaultItems")
@@ -5109,6 +5120,48 @@ enum ThinkTankDuplicateDecision {
   PENDING_REVIEW
 }
 
+enum ProblemSeverity {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum ProblemStatus {
+  SUBMITTED
+  ACKNOWLEDGED
+  NEEDS_INFO
+  IN_REVIEW
+  IN_PROGRESS
+  ESCALATED
+  RESOLVED
+  CLOSED
+  REOPENED
+  MERGED
+}
+
+enum ProblemVisibility {
+  NAMED
+  ANONYMOUS_TO_PEERS
+  RESTRICTED_ANONYMOUS
+}
+
+enum ProblemRecurrence {
+  ONE_TIME
+  RECURRING
+  ALWAYS_HAPPENING
+}
+
+enum ProblemImpactType {
+  PERSONAL_BLOCKER
+  TEAM_BLOCKER
+  CUSTOMER_ISSUE
+  REVENUE_ISSUE
+  COMPLIANCE_RISK
+  SYSTEM_APP_ISSUE
+  OTHER
+}
+
 enum EmployeeType {
   FULL_TIME
   PART_TIME
@@ -5414,6 +5467,7 @@ model FileRecord {
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
   thinkTankAttachments ThinkTankIdeaAttachment[]
+  problemAttachments ProblemIssueAttachment[]
 
   @@index([uploadedById])
   @@index([category])
@@ -5692,6 +5746,188 @@ model ThinkTankPointsMapping {
 
   @@index([ideaId])
   @@index([visibleUserId])
+}
+
+model ProblemIssue {
+  id                  String                @id @default(uuid())
+  companyId           String
+  title               String
+  description         String                @db.Text
+  category            String
+  severity            ProblemSeverity       @default(MEDIUM)
+  status              ProblemStatus         @default(SUBMITTED)
+  visibility          ProblemVisibility     @default(NAMED)
+  recurrence          ProblemRecurrence     @default(ONE_TIME)
+  impactType          ProblemImpactType     @default(OTHER)
+  location            String?
+  affectedArea        String?
+  departmentName      String?
+  isSensitive         Boolean               @default(false)
+  aiSummary           String?               @db.Text
+  rootCauseSummary    String?               @db.Text
+  resolutionSummary   String?               @db.Text
+  dueAt               DateTime?
+  acknowledgedAt      DateTime?
+  resolvedAt          DateTime?
+  closedAt            DateTime?
+  reopenedAt          DateTime?
+  mergedIntoId        String?
+  reportedById        String
+  assignedToId        String?
+  resolvedById        String?
+  metadata            Json?
+  createdAt           DateTime              @default(now())
+  updatedAt           DateTime              @updatedAt
+  company             Company               @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  reportedBy          User                  @relation("ProblemReporter", fields: [reportedById], references: [id], onDelete: Cascade)
+  assignedTo          User?                 @relation("ProblemAssignee", fields: [assignedToId], references: [id], onDelete: SetNull)
+  resolvedBy          User?                 @relation("ProblemResolver", fields: [resolvedById], references: [id], onDelete: SetNull)
+  mergedInto          ProblemIssue?         @relation("ProblemMergeChain", fields: [mergedIntoId], references: [id], onDelete: SetNull)
+  mergedChildren      ProblemIssue[]        @relation("ProblemMergeChain")
+  comments            ProblemIssueComment[]
+  internalNotes       ProblemIssueInternalNote[]
+  attachments         ProblemIssueAttachment[]
+  watchers            ProblemIssueWatcher[]
+  assignmentHistory   ProblemIssueAssignmentHistory[]
+  statusHistory       ProblemIssueStatusHistory[]
+  duplicateLinks      ProblemIssueDuplicateLink[] @relation("ProblemDuplicateSource")
+  duplicateSources    ProblemIssueDuplicateLink[] @relation("ProblemDuplicateTarget")
+  auditEvents         ProblemIssueAuditEvent[]
+  resolutionFeedback  ProblemIssueResolutionFeedback[]
+
+  @@index([companyId, status, severity])
+  @@index([reportedById, createdAt])
+  @@index([assignedToId, status])
+  @@index([mergedIntoId])
+}
+
+model ProblemIssueComment {
+  id           String       @id @default(uuid())
+  issueId       String
+  authorUserId  String
+  content       String       @db.Text
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+  issue         ProblemIssue @relation(fields: [issueId], references: [id], onDelete: Cascade)
+  author        User         @relation("ProblemCommentAuthor", fields: [authorUserId], references: [id], onDelete: Cascade)
+
+  @@index([issueId, createdAt])
+  @@index([authorUserId])
+}
+
+model ProblemIssueInternalNote {
+  id           String       @id @default(uuid())
+  issueId       String
+  authorUserId  String
+  content       String       @db.Text
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+  issue         ProblemIssue @relation(fields: [issueId], references: [id], onDelete: Cascade)
+  author        User         @relation("ProblemInternalNoteAuthor", fields: [authorUserId], references: [id], onDelete: Cascade)
+
+  @@index([issueId, createdAt])
+  @@index([authorUserId])
+}
+
+model ProblemIssueAttachment {
+  id           String       @id @default(uuid())
+  issueId       String
+  fileRecordId  String?
+  url           String
+  filename      String
+  mimeType      String
+  size          Int
+  createdAt     DateTime     @default(now())
+  issue         ProblemIssue @relation(fields: [issueId], references: [id], onDelete: Cascade)
+  fileRecord    FileRecord?  @relation(fields: [fileRecordId], references: [id], onDelete: SetNull)
+
+  @@index([issueId])
+  @@index([fileRecordId])
+}
+
+model ProblemIssueWatcher {
+  id          String       @id @default(uuid())
+  issueId      String
+  userId       String
+  createdAt    DateTime     @default(now())
+  issue        ProblemIssue @relation(fields: [issueId], references: [id], onDelete: Cascade)
+  user         User         @relation("ProblemWatcherUser", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([issueId, userId])
+  @@index([userId])
+}
+
+model ProblemIssueAssignmentHistory {
+  id             String       @id @default(uuid())
+  issueId         String
+  actorUserId     String?
+  previousAssigneeId String?
+  newAssigneeId   String?
+  note            String?
+  createdAt       DateTime     @default(now())
+  issue           ProblemIssue @relation(fields: [issueId], references: [id], onDelete: Cascade)
+  actor           User?        @relation("ProblemAssignmentActor", fields: [actorUserId], references: [id], onDelete: SetNull)
+
+  @@index([issueId, createdAt])
+  @@index([actorUserId])
+}
+
+model ProblemIssueStatusHistory {
+  id            String        @id @default(uuid())
+  issueId        String
+  actorUserId    String?
+  fromStatus     ProblemStatus?
+  toStatus       ProblemStatus
+  note           String?
+  createdAt      DateTime      @default(now())
+  issue          ProblemIssue  @relation(fields: [issueId], references: [id], onDelete: Cascade)
+  actor          User?         @relation("ProblemStatusActor", fields: [actorUserId], references: [id], onDelete: SetNull)
+
+  @@index([issueId, createdAt])
+  @@index([actorUserId])
+}
+
+model ProblemIssueDuplicateLink {
+  id                String        @id @default(uuid())
+  issueId            String
+  matchedIssueId     String
+  similarityScore    Float
+  decision           String?
+  createdAt          DateTime      @default(now())
+  issue              ProblemIssue  @relation("ProblemDuplicateSource", fields: [issueId], references: [id], onDelete: Cascade)
+  matchedIssue       ProblemIssue  @relation("ProblemDuplicateTarget", fields: [matchedIssueId], references: [id], onDelete: Cascade)
+
+  @@index([issueId])
+  @@index([matchedIssueId])
+}
+
+model ProblemIssueAuditEvent {
+  id           String        @id @default(uuid())
+  issueId       String?
+  actorUserId   String?
+  action        String
+  outcome       String
+  metadata      Json?
+  createdAt     DateTime      @default(now())
+  issue         ProblemIssue? @relation(fields: [issueId], references: [id], onDelete: Cascade)
+  actor         User?         @relation("ProblemAuditActor", fields: [actorUserId], references: [id], onDelete: SetNull)
+
+  @@index([issueId, createdAt])
+  @@index([actorUserId])
+}
+
+model ProblemIssueResolutionFeedback {
+  id            String        @id @default(uuid())
+  issueId        String
+  userId         String
+  outcome        String
+  note           String?       @db.Text
+  createdAt      DateTime      @default(now())
+  issue          ProblemIssue  @relation(fields: [issueId], references: [id], onDelete: Cascade)
+  user           User          @relation("ProblemResolutionFeedbackBy", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([issueId, createdAt])
+  @@index([userId])
 }
 
 // ─── Zero-Knowledge Web Vault ───────────────────────────────────────────────

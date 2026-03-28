@@ -466,6 +466,9 @@ export default function StaffPortalPage() {
                                         <a href="/dashboard/think-tank" className="btn bg-indigo-600 hover:bg-indigo-700 text-white w-full py-2 text-xs font-black shadow-lg">
                                             Open Think Tank 💡
                                         </a>
+                                        <a href="/dashboard/problems/my" className="btn bg-rose-600 hover:bg-rose-700 text-white w-full py-2 text-xs font-black shadow-lg">
+                                            Report a Problem 🚨
+                                        </a>
                                         <button onClick={() => setActiveTab('work-reports')} className="text-[10px] w-full text-center font-bold text-primary-600 uppercase hover:underline">
                                             View Past Reports
                                         </button>
