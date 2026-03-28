@@ -578,7 +578,7 @@ export default function SubmitReportPage() {
                         window.location.reload();
                     }
                 } else {
-                    toast.error(error.error || `Failed to ${isEditMode ? 'update' : 'submit'} report`);
+                    toast.error(error.message || error.error || `Failed to ${isEditMode ? 'update' : 'submit'} report`);
                 }
             }
         } catch (error) {
