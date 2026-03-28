@@ -110,6 +110,13 @@ const formatDateTime = (value?: string | null) => {
     }).format(date);
 };
 
+const formatThinkTankLabel = (value?: string | null, fallback = 'Uncategorized') => {
+    if (typeof value !== 'string') return fallback;
+    const normalized = value.trim();
+    if (!normalized) return fallback;
+    return normalized.replace(/_/g, ' ');
+};
+
 const REVIEW_SCORE_FIELDS = [
     { key: 'impactScore', label: 'Impact' },
     { key: 'feasibilityScore', label: 'Feasibility' },
@@ -1037,7 +1044,7 @@ function ReviewBoard({
                     <div key={idea.id} className="rounded-3xl border border-slate-200 p-5">
                         <div className="flex flex-wrap items-start justify-between gap-4">
                             <div>
-                                <div className="text-xs font-semibold uppercase tracking-[0.25em] text-slate-500">{idea.category.replace(/_/g, ' ')}</div>
+                                <div className="text-xs font-semibold uppercase tracking-[0.25em] text-slate-500">{formatThinkTankLabel(idea.category)}</div>
                                 <h3 className="mt-2 text-lg font-semibold text-slate-950">{idea.topic}</h3>
                                 <p className="mt-2 text-sm text-slate-600">{idea.description}</p>
                             </div>
@@ -1413,7 +1420,7 @@ function MetricList({ title, items }: { title: string; items: Array<[string, num
             <div className="mt-3 space-y-2">
                 {items.length > 0 ? items.map(([label, value]) => (
                     <div key={label} className="flex items-center justify-between rounded-2xl bg-white px-3 py-2 text-sm text-slate-700">
-                        <span>{label.replace(/_/g, ' ')}</span>
+                        <span>{formatThinkTankLabel(label, 'Unspecified')}</span>
                         <span className="font-semibold text-slate-900">{value}</span>
                     </div>
                 )) : <div className="text-sm text-slate-500">No data yet.</div>}
@@ -1463,7 +1470,7 @@ function IdeaGrid({
                     <div key={idea.id} className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
                         <div className="flex flex-wrap items-start justify-between gap-4">
                             <div>
-                                <div className="text-xs font-semibold uppercase tracking-[0.25em] text-slate-500">{idea.category.replace(/_/g, ' ')}</div>
+                                <div className="text-xs font-semibold uppercase tracking-[0.25em] text-slate-500">{formatThinkTankLabel(idea.category)}</div>
                                 <h3 className="mt-2 text-xl font-semibold text-slate-950">{idea.topic}</h3>
                                 <p className="mt-3 whitespace-pre-wrap text-sm leading-6 text-slate-700">{idea.description}</p>
                             </div>
