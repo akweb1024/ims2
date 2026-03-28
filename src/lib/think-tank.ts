@@ -12,6 +12,12 @@ import {
 import { prisma } from '@/lib/prisma';
 import { StorageService } from '@/lib/storage';
 import { createNotification } from '@/lib/system-notifications';
+import {
+    AuthenticationError,
+    AuthorizationError,
+    NotFoundError,
+    ValidationError,
+} from '@/lib/error-handler';
 
 const IST_TIMEZONE = 'Asia/Kolkata';
 const THINK_TANK_KEY = process.env.THINK_TANK_ENCRYPTION_KEY || process.env.CONFIG_ENCRYPTION_KEY || 'think-tank-encryption-key-32ch';
@@ -314,13 +320,13 @@ const decryptConfigValue = (cipherText: string) => {
 
 export const ensureThinkTankAccess = (user: ThinkTankUser) => {
     if (!user?.id) {
-        throw new Error('Unauthorized');
+        throw new AuthenticationError('Unauthorized');
     }
     if (!user.companyId) {
-        throw new Error('Think Tank is available only for company-linked staff.');
+        throw new AuthorizationError('Think Tank is available only for company-linked staff.');
     }
     if (!ALLOWED_INTERNAL_ROLES.has(user.role)) {
-        throw new Error('Think Tank is available only for internal staff.');
+        throw new AuthorizationError('Think Tank is available only for internal staff.');
     }
 };
 
@@ -1012,10 +1018,10 @@ export const castThinkTankVote = async (params: {
     const participantHashes = await getPlannerAndParticipantHashes(params.ideaId);
 
     if (!participantHashes) {
-        throw new Error('Idea not found.');
+        throw new NotFoundError('Idea');
     }
     if (participantHashes.has(userHash)) {
-        throw new Error('Planners and registered team members cannot vote on their own idea.');
+        throw new ValidationError('Planners and registered team members cannot vote on their own idea.');
     }
 
     const account = await getOrCreateThinkTankPointAccount({
@@ -1037,13 +1043,13 @@ export const castThinkTankVote = async (params: {
 
     const requestedPoints = Math.max(0, Math.floor(params.pointAllocation ?? existingVote?.pointAllocation ?? account.maxPerIdeaPoints));
     if (requestedPoints > account.maxPerIdeaPoints) {
-        throw new Error(`You can allocate at most ${account.maxPerIdeaPoints} points to a single idea in this cycle.`);
+        throw new ValidationError(`You can allocate at most ${account.maxPerIdeaPoints} points to a single idea in this cycle.`);
     }
 
     const restoredPoints = existingVote?.pointAllocation ?? 0;
     const effectiveRemaining = account.remainingPoints + restoredPoints;
     if (requestedPoints > effectiveRemaining) {
-        throw new Error(`You only have ${effectiveRemaining} points left for this cycle.`);
+        throw new ValidationError(`You only have ${effectiveRemaining} points left for this cycle.`);
     }
 
     const baseValue = VOTE_VALUES[params.vote];
@@ -1324,11 +1330,11 @@ export const convertThinkTankIdeaToExecution = async (params: {
     });
 
     if (!idea) {
-        throw new Error('Idea not found.');
+        throw new NotFoundError('Idea');
     }
 
     if (!['APPROVED', 'IMPLEMENTED'].includes(idea.reviewStage)) {
-        throw new Error('Only approved ideas can be converted into projects or tasks.');
+        throw new ValidationError('Only approved ideas can be converted into projects or tasks.');
     }
 
     const executionTitle = params.title?.trim() || idea.topic;
@@ -1623,7 +1629,7 @@ export const createIdeaWithParticipants = async (params: {
     const cycle = await getOrCreateCurrentCycle(params.user.companyId!);
     const governance = await getGovernanceState(params.user.companyId);
     if (!governance.submissionOpen) {
-        throw new Error('Think Tank submissions are currently locked by governance schedule.');
+        throw new ValidationError('Think Tank submissions are currently locked by governance schedule.');
     }
 
     const partnerIds = Array.from(new Set(params.partnerIds.filter((id) => id && id !== params.user.id))).slice(0, 3);
