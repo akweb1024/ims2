@@ -159,12 +159,16 @@ export const POST = authorizedRoute([], async (req: NextRequest, user: any) => {
         duplicateDecision: duplicateDecision as ThinkTankDuplicateDecision | null,
     });
 
-    await notifyThinkTankReviewers(
-        user.companyId,
-        'New Think Tank idea submitted',
-        `A new idea "${idea.topic}" is ready for review.`,
-        '/dashboard/think-tank'
-    );
+    try {
+        await notifyThinkTankReviewers(
+            user.companyId,
+            'New Think Tank idea submitted',
+            `A new idea "${idea.topic}" is ready for review.`,
+            '/dashboard/think-tank'
+        );
+    } catch (notificationError) {
+        console.error('Think Tank reviewer notification failed after idea creation:', notificationError);
+    }
 
     return NextResponse.json({
         idea: serializeThinkTankIdea(idea, { includeDuplicates: true }),

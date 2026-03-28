@@ -1655,24 +1655,46 @@ export const createIdeaWithParticipants = async (params: {
     }
 
     const partnerIds = Array.from(new Set(params.partnerIds.filter((id) => id && id !== params.user.id))).slice(0, 3);
+    const normalizedTopic = params.topic.trim();
+    const normalizedDescription = params.description.trim();
+    const plannerHash = hashIdentity(params.user.id);
+
+    const existingIdea = await prisma.thinkTankIdea.findFirst({
+        where: {
+            companyId: params.user.companyId!,
+            cycleId: cycle.id,
+            plannerHash,
+            topic: normalizedTopic,
+            description: normalizedDescription,
+            status: {
+                notIn: ['MERGED', 'ARCHIVED'],
+            },
+        },
+        include: thinkTankIdeaInclude,
+    });
+
+    if (existingIdea) {
+        return existingIdea;
+    }
+
     const duplicates = await findPotentialDuplicates({
         companyId: params.user.companyId!,
         cycleId: cycle.id,
         category: params.category,
-        description: params.description,
+        description: normalizedDescription,
     });
 
     const idea = await prisma.thinkTankIdea.create({
         data: {
             companyId: params.user.companyId!,
             cycleId: cycle.id,
-            topic: params.topic.trim(),
-            description: params.description.trim(),
+            topic: normalizedTopic,
+            description: normalizedDescription,
             category: params.category,
             status: 'ACTIVE',
             reviewStage: 'SUBMITTED',
             plannerEncrypted: encryptThinkTankIdentity(params.user.id),
-            plannerHash: hashIdentity(params.user.id),
+            plannerHash,
             duplicateDecision: params.duplicateDecision ?? (duplicates.length > 0 ? 'PROCEED_AS_UNIQUE' : null),
             attachments: {
                 create: params.attachments.map((attachment) => ({

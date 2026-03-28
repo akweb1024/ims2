@@ -1466,8 +1466,8 @@ function MetricList({ title, items }: { title: string; items: Array<[string, num
         <div className="rounded-2xl bg-slate-50 p-4">
             <div className="text-sm font-semibold text-slate-900">{title}</div>
             <div className="mt-3 space-y-2">
-                {items.length > 0 ? items.map(([label, value]) => (
-                    <div key={label} className="flex items-center justify-between rounded-2xl bg-white px-3 py-2 text-sm text-slate-700">
+                {items.length > 0 ? items.map(([label, value], index) => (
+                    <div key={`${label}-${value}-${index}`} className="flex items-center justify-between rounded-2xl bg-white px-3 py-2 text-sm text-slate-700">
                         <span>{formatThinkTankLabel(label, 'Unspecified')}</span>
                         <span className="font-semibold text-slate-900">{value}</span>
                     </div>
