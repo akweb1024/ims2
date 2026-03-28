@@ -5,6 +5,7 @@ import Link from 'next/link';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 
 type PortalMode = 'dashboard' | 'my-ideas' | 'vote' | 'results';
+type ThinkTankAcknowledgementKey = 'my-ideas' | 'vote' | 'results';
 
 type Idea = {
     id: string;
@@ -118,6 +119,39 @@ const REVIEW_SCORE_FIELDS = [
     { key: 'scalabilityScore', label: 'Scalability' },
 ] as const;
 
+const THINK_TANK_GUIDELINES: Record<ThinkTankAcknowledgementKey, { title: string; items: string[]; acknowledgement: string }> = {
+    'my-ideas': {
+        title: 'Idea Submission Guidelines',
+        items: [
+            'Share one clear idea per submission with the expected impact, problem statement, and implementation direction.',
+            'Do not submit confidential customer data, passwords, pricing secrets, or personal employee information inside the idea text or attachments.',
+            'Check for duplicate ideas and use the merge option when your idea is substantially similar to an existing proposal.',
+            'List only genuine collaborators. Self-opted partners should be people who are actually aligned to help execute the idea.',
+        ],
+        acknowledgement: 'I understand the submission guidelines and confirm this idea is original, professional, and safe to share internally.',
+    },
+    vote: {
+        title: 'Voting Guidelines',
+        items: [
+            'Vote based on idea quality, business value, feasibility, and strategic fit, not on personal relationships.',
+            'Use your cycle points carefully. Points spent on one idea reduce the points available for other ideas in the same cycle.',
+            'Do not try to identify anonymous planners before reveal, and do not coordinate voting groups to manipulate outcomes.',
+            'Use the Q&A section if you need clarity before spending points on an idea.',
+        ],
+        acknowledgement: 'I understand the voting guidelines and will use my points fairly and independently.',
+    },
+    results: {
+        title: 'Results Review Guidelines',
+        items: [
+            'Results should be used for learning, recognition, and execution planning, not for public criticism of individuals or teams.',
+            'Respect revealed planners, partners, and reviewers. Continue discussion through comments and Q&A in a professional tone.',
+            'A veto, shortlist, or rejection is part of governance and should be interpreted in context with reviewer notes and business constraints.',
+            'Use results to identify strong ideas, implementation opportunities, and lessons for better future submissions.',
+        ],
+        acknowledgement: 'I understand the results-review guidelines and will use the revealed information professionally.',
+    },
+};
+
 export default function ThinkTankPortal({ mode }: { mode: PortalMode }) {
     const [user, setUser] = useState<any>(null);
     const [assignees, setAssignees] = useState<Array<{ id: string; name?: string | null; email?: string | null; designation?: string | null }>>([]);
@@ -126,6 +160,11 @@ export default function ThinkTankPortal({ mode }: { mode: PortalMode }) {
     const [governanceAccess, setGovernanceAccess] = useState<{ canManage?: boolean; override?: any } | null>(null);
     const [pointAccount, setPointAccount] = useState<{ basePoints: number; maxPerIdeaPoints: number; allocatedPoints: number; remainingPoints: number } | null>(null);
     const [canVeto, setCanVeto] = useState(false);
+    const [acknowledgements, setAcknowledgements] = useState<Record<ThinkTankAcknowledgementKey, boolean>>({
+        'my-ideas': false,
+        vote: false,
+        results: false,
+    });
     const [ideas, setIdeas] = useState<Idea[]>([]);
     const [reviewIdeas, setReviewIdeas] = useState<Idea[]>([]);
     const [results, setResults] = useState<Idea[]>([]);
@@ -153,10 +192,25 @@ export default function ThinkTankPortal({ mode }: { mode: PortalMode }) {
         const rawUser = localStorage.getItem('user');
         if (!rawUser) return;
         try {
-            setUser(JSON.parse(rawUser));
+            const parsed = JSON.parse(rawUser);
+            setUser(parsed);
+            const acknowledgementKeyBase = `think-tank-guidelines:${parsed?.id || 'anonymous'}`;
+            setAcknowledgements({
+                'my-ideas': localStorage.getItem(`${acknowledgementKeyBase}:my-ideas`) === 'true',
+                vote: localStorage.getItem(`${acknowledgementKeyBase}:vote`) === 'true',
+                results: localStorage.getItem(`${acknowledgementKeyBase}:results`) === 'true',
+            });
         } catch {
         }
     }, []);
+
+    const acknowledgeGuidelines = useCallback((key: ThinkTankAcknowledgementKey) => {
+        setAcknowledgements((current) => ({ ...current, [key]: true }));
+        if (typeof window !== 'undefined') {
+            const acknowledgementKeyBase = `think-tank-guidelines:${user?.id || 'anonymous'}`;
+            localStorage.setItem(`${acknowledgementKeyBase}:${key}`, 'true');
+        }
+    }, [user?.id]);
 
     const refresh = useCallback(async () => {
         setLoading(true);
@@ -454,6 +508,18 @@ export default function ThinkTankPortal({ mode }: { mode: PortalMode }) {
     const content = () => {
         if (loading) {
             return <div className="rounded-3xl border border-slate-200 bg-white p-8 text-sm text-slate-500">Loading Think Tank workspace…</div>;
+        }
+
+        if (mode === 'my-ideas' && !acknowledgements['my-ideas']) {
+            return <GuidelinesGate config={THINK_TANK_GUIDELINES['my-ideas']} onAcknowledge={() => acknowledgeGuidelines('my-ideas')} />;
+        }
+
+        if (mode === 'vote' && !acknowledgements.vote) {
+            return <GuidelinesGate config={THINK_TANK_GUIDELINES.vote} onAcknowledge={() => acknowledgeGuidelines('vote')} />;
+        }
+
+        if (mode === 'results' && !acknowledgements.results) {
+            return <GuidelinesGate config={THINK_TANK_GUIDELINES.results} onAcknowledge={() => acknowledgeGuidelines('results')} />;
         }
 
         if (mode === 'dashboard') {
@@ -769,6 +835,52 @@ function GovernanceBanner({ governance }: { governance: any }) {
                 </div>
             ) : null}
             <div className="mt-1 text-xs text-slate-500">Submission: 9:30 AM to 1:00 PM IST. Voting: before 9:30 AM, 1:00 PM to 3:00 PM, and after 5:00 PM IST. Locked review window: 3:00 PM to 5:00 PM IST. Reveal: 1st and 3rd Saturday at 3:00 PM IST.</div>
+        </div>
+    );
+}
+
+function GuidelinesGate({
+    config,
+    onAcknowledge,
+}: {
+    config: { title: string; items: string[]; acknowledgement: string };
+    onAcknowledge: () => void;
+}) {
+    const [checked, setChecked] = useState(false);
+
+    return (
+        <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+            <div className="max-w-3xl">
+                <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-500">Guidelines</p>
+                <h2 className="mt-2 text-2xl font-semibold text-slate-950">{config.title}</h2>
+                <p className="mt-2 text-sm text-slate-600">Please review and acknowledge these rules before you continue.</p>
+            </div>
+            <div className="mt-5 grid gap-3">
+                {config.items.map((item) => (
+                    <div key={item} className="rounded-2xl bg-slate-50 px-4 py-3 text-sm text-slate-700">
+                        {item}
+                    </div>
+                ))}
+            </div>
+            <label className="mt-5 flex items-start gap-3 rounded-2xl border border-slate-200 px-4 py-4 text-sm text-slate-700">
+                <input
+                    type="checkbox"
+                    className="mt-1 h-4 w-4 rounded border-slate-300"
+                    checked={checked}
+                    onChange={(event) => setChecked(event.target.checked)}
+                />
+                <span>{config.acknowledgement}</span>
+            </label>
+            <div className="mt-5 flex justify-end">
+                <button
+                    type="button"
+                    disabled={!checked}
+                    onClick={onAcknowledge}
+                    className="rounded-2xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white disabled:opacity-50"
+                >
+                    Acknowledge and Continue
+                </button>
+            </div>
         </div>
     );
 }
