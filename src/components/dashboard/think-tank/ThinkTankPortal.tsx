@@ -3,7 +3,18 @@
 import { useCallback, useEffect, useMemo, useState, type Dispatch, type FormEvent, type SetStateAction } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
+import DashboardLayout from '../DashboardLayout';
+import ThinkTankLeaderboard from './ThinkTankLeaderboard';
+import AIInsightsPanel from './AIInsightsPanel';
+import IdeaSubmissionForm from './IdeaSubmissionForm';
+
+// Animation and Design Tokens - Swiss-Bauhaus Remix
+const TT_ANIMATIONS = `
+@keyframes tt-fade-up {
+  from { opacity: 0; transform: translateY(20px); filter: blur(5px); }
+  to { opacity: 1; transform: translateY(0); filter: blur(0); }
+}
+`;
 
 type PortalMode = 'dashboard' | 'my-ideas' | 'vote' | 'results';
 type ThinkTankAcknowledgementKey = 'my-ideas' | 'vote' | 'results';
@@ -189,22 +200,13 @@ export default function ThinkTankPortal({ mode, ideaId }: { mode: PortalMode; id
     const [results, setResults] = useState<Idea[]>([]);
     const [selectedIdea, setSelectedIdea] = useState<Idea | null>(null);
     const [analytics, setAnalytics] = useState<any>(null);
-    const [form, setForm] = useState({
-        topic: '',
-        description: '',
-        category: 'PUBLICATION',
-        partnerIds: '',
-        duplicateDecision: '',
-    });
+    const [error, setError] = useState('');
+    const [submitting, setSubmitting] = useState(false);
+    const [updatingGovernance, setUpdatingGovernance] = useState(false);
     const [overrideForm, setOverrideForm] = useState({
         mode: 'SCHEDULED',
         reason: '',
     });
-    const [attachments, setAttachments] = useState<Array<{ url: string; filename: string; mimeType: string; size: number; fileRecordId?: string | null; scrubStatus?: string | null }>>([]);
-    const [duplicates, setDuplicates] = useState<Idea['duplicateMatches']>([]);
-    const [error, setError] = useState('');
-    const [submitting, setSubmitting] = useState(false);
-    const [updatingGovernance, setUpdatingGovernance] = useState(false);
 
     const view = mode === 'my-ideas' ? 'my' : mode === 'results' ? 'results' : 'vote';
 
@@ -304,70 +306,7 @@ export default function ThinkTankPortal({ mode, ideaId }: { mode: PortalMode; id
         };
     }, [ideas, results]);
 
-    const uploadAttachment = async (file: File) => {
-        const formData = new FormData();
-        formData.append('file', file);
-        const response = await fetch('/api/think-tank/upload', {
-            method: 'POST',
-            body: formData,
-        });
 
-        const payload = await response.json();
-        if (!response.ok) throw new Error(payload.error || 'Upload failed');
-        return payload;
-    };
-
-    const handleSubmit = async (event: FormEvent) => {
-        event.preventDefault();
-        setError('');
-        setSubmitting(true);
-
-        try {
-            const partnerIds = form.partnerIds
-                .split(',')
-                .map((value) => value.trim())
-                .filter(Boolean);
-
-            const response = await fetch('/api/think-tank/ideas', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    topic: form.topic,
-                    description: form.description,
-                    category: form.category,
-                    partnerIds,
-                    attachments,
-                    duplicateDecision: form.duplicateDecision || undefined,
-                }),
-            });
-            const payload = await response.json();
-
-            if (response.status === 409 && payload.requiresDecision) {
-                setDuplicates(payload.duplicates || []);
-                setError('Potential duplicate detected. Review the matched ideas below, then choose Merge or Proceed as Unique.');
-                return;
-            }
-
-            if (!response.ok) {
-                throw new Error(payload.error || 'Failed to submit idea.');
-            }
-
-            setForm({
-                topic: '',
-                description: '',
-                category: 'PUBLICATION',
-                partnerIds: '',
-                duplicateDecision: '',
-            });
-            setAttachments([]);
-            setDuplicates([]);
-            await refresh();
-        } catch (submitError: any) {
-            setError(submitError.message || 'Failed to submit idea.');
-        } finally {
-            setSubmitting(false);
-        }
-    };
 
     const handleVote = async (ideaId: string, vote: 'LIKE' | 'UNLIKE' | 'NEUTRAL') => {
         await handleVoteWithPoints(ideaId, vote, pointAccount?.maxPerIdeaPoints || 0);
@@ -573,41 +512,53 @@ export default function ThinkTankPortal({ mode, ideaId }: { mode: PortalMode; id
 
         if (mode === 'dashboard') {
             return (
-                <div className="space-y-6">
-                    <div className="grid gap-4 md:grid-cols-3">
-                        <SummaryCard label="Active Ideas" value={dashboardStats.activeIdeas} />
-                        <SummaryCard label="Revealed Results" value={dashboardStats.resultIdeas} />
-                        <SummaryCard label="Top Weighted Score" value={dashboardStats.topScore} />
+                <div className="space-y-12" style={{ animation: 'tt-fade-up 0.5s ease both' }}>
+                    {/* Hero Section */}
+                    <div className="grid gap-8 lg:grid-cols-[1fr_380px]">
+                        <div className="space-y-8">
+                            <div className="border-4 border-slate-950 p-8 bg-white relative overflow-hidden">
+                                <div className="absolute top-0 right-0 w-32 h-32 bg-[#FF4500] translate-x-16 -translate-y-16 rotate-45" />
+                                <p className="text-[10px] font-black uppercase tracking-[0.5em] text-[#FF4500]">Current Cycle</p>
+                                <h2 className="mt-2 text-4xl font-black text-slate-950 uppercase tracking-tighter leading-none">
+                                    Innovation <br/> Momentum
+                                </h2>
+                                <div className="mt-8 grid grid-cols-3 gap-1 bg-slate-950">
+                                    <div className="bg-white p-4">
+                                        <div className="text-[10px] font-black uppercase tracking-widest text-slate-400">Ideas</div>
+                                        <div className="text-2xl font-black text-slate-950">{dashboardStats.activeIdeas}</div>
+                                    </div>
+                                    <div className="bg-white p-4">
+                                        <div className="text-[10px] font-black uppercase tracking-widest text-slate-400">Results</div>
+                                        <div className="text-2xl font-black text-slate-950">{dashboardStats.resultIdeas}</div>
+                                    </div>
+                                    <div className="bg-white p-4">
+                                        <div className="text-[10px] font-black uppercase tracking-widest text-slate-400">Top Score</div>
+                                        <div className="text-2xl font-black text-slate-950">{dashboardStats.topScore}</div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <GovernanceBanner governance={governance} />
+                            
+                            {pointAccount && (
+                                <div className="border-2 border-slate-950 bg-[#FF4500] p-6 text-white flex items-center justify-between">
+                                    <div>
+                                        <p className="text-[10px] font-black uppercase tracking-widest opacity-80">Your Voting Power</p>
+                                        <div className="text-3xl font-black tracking-tighter">{pointAccount.remainingPoints} PT.</div>
+                                    </div>
+                                    <div className="text-right">
+                                        <p className="text-[10px] font-black uppercase tracking-widest opacity-80">Remaining</p>
+                                        <p className="text-sm font-bold">Of {pointAccount.basePoints} Total</p>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="space-y-8">
+                            <ThinkTankLeaderboard />
+                        </div>
                     </div>
-                    {pointAccount ? <PointAccountCard pointAccount={pointAccount} /> : null}
-                    {governanceAccess?.canManage && user?.role === 'SUPER_ADMIN' && (
-                        <GovernanceControlPanel
-                            overrideForm={overrideForm}
-                            setOverrideForm={setOverrideForm}
-                            governance={governance}
-                            updatingGovernance={updatingGovernance}
-                            onSubmit={handleGovernanceUpdate}
-                        />
-                    )}
-                    {governanceAccess?.canManage && reviewIdeas.length > 0 && (
-                        <ReviewBoard
-                            ideas={reviewIdeas}
-                            assignees={assignees}
-                            canVeto={canVeto}
-                            onReviewUpdate={handleReviewUpdate}
-                            onAddComment={handleAddComment}
-                            onSaveReviewerScore={handleSaveReviewerScore}
-                            onVetoIdea={handleVetoIdea}
-                            onConvertIdea={handleConvertIdea}
-                        />
-                    )}
-                    {analytics && <ThinkTankAnalytics analytics={analytics} />}
-                    <div className="grid gap-4 md:grid-cols-3">
-                        <QuickCard href="/dashboard/think-tank/my-ideas" title="My Ideas" description="Submit proposals, review duplicate matches, and track your current cycle ideas." />
-                        <QuickCard href="/dashboard/think-tank/vote" title="Ideas for Vote" description="Anonymous evaluation board with weighted peer scoring." />
-                        <QuickCard href="/dashboard/think-tank/results" title="Ideas Result" description="View revealed planners, full teams, and current rankings after release." />
-                    </div>
-                    <GovernanceBanner governance={governance} />
+
                     <IdeaGrid
                         title="Ideas Open for Vote"
                         ideas={ideas}
@@ -625,109 +576,34 @@ export default function ThinkTankPortal({ mode, ideaId }: { mode: PortalMode; id
 
         if (mode === 'my-ideas') {
             return (
-                <div className="space-y-6">
-                    <GovernanceBanner governance={governance} />
-                    <form onSubmit={handleSubmit} className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-                        <h2 className="text-xl font-semibold text-slate-900">Submit an Idea</h2>
-                        <p className="mt-1 text-sm text-slate-500">Descriptions support Markdown. Add up to 3 self-opted partners using user IDs separated by commas.</p>
-                        <div className="mt-4 grid gap-4">
-                            <input
-                                className="rounded-2xl border border-slate-200 px-4 py-3 text-sm"
-                                placeholder="Topic"
-                                value={form.topic}
-                                onChange={(event) => setForm((current) => ({ ...current, topic: event.target.value }))}
-                            />
-                            <textarea
-                                className="min-h-40 rounded-2xl border border-slate-200 px-4 py-3 text-sm"
-                                placeholder="Describe the idea, expected impact, and implementation sketch…"
-                                value={form.description}
-                                onChange={(event) => setForm((current) => ({ ...current, description: event.target.value }))}
-                            />
-                            <div className="grid gap-4 md:grid-cols-2">
-                                <select
-                                    className="rounded-2xl border border-slate-200 px-4 py-3 text-sm"
-                                    value={form.category}
-                                    onChange={(event) => setForm((current) => ({ ...current, category: event.target.value }))}
-                                >
-                                    {CATEGORIES.map((category) => (
-                                        <option key={category.value} value={category.value}>{category.label}</option>
-                                    ))}
-                                </select>
-                                <input
-                                    className="rounded-2xl border border-slate-200 px-4 py-3 text-sm"
-                                    placeholder="Partner user IDs, comma separated"
-                                    value={form.partnerIds}
-                                    onChange={(event) => setForm((current) => ({ ...current, partnerIds: event.target.value }))}
+                <div className="space-y-12 animate-tt-fade-up">
+                    <div className="grid gap-8 lg:grid-cols-[1fr_400px]">
+                        <div className="space-y-8">
+                            <GovernanceBanner governance={governance} />
+                            
+                            <div className="border-4 border-slate-950 bg-white p-8 relative overflow-hidden">
+                                <IdeaSubmissionForm
+                                    user={user}
+                                    categories={CATEGORIES}
+                                    governance={governance}
+                                    refresh={refresh}
                                 />
                             </div>
-                            <div className="grid gap-3 md:grid-cols-[1fr_auto_auto] md:items-center">
-                                <input
-                                    type="file"
-                                    className="rounded-2xl border border-dashed border-slate-300 px-4 py-3 text-sm"
-                                    onChange={async (event) => {
-                                        const file = event.target.files?.[0];
-                                        if (!file) return;
-                                        try {
-                                            const uploaded = await uploadAttachment(file);
-                                            setAttachments((current) => [...current, uploaded]);
-                                        } catch (uploadError: any) {
-                                            setError(uploadError.message || 'Upload failed.');
-                                        }
-                                    }}
-                                />
-                                <button
-                                    type="button"
-                                    className={`rounded-2xl px-4 py-3 text-sm font-semibold ${form.duplicateDecision === 'MERGE' ? 'bg-amber-600 text-white' : 'bg-slate-100 text-slate-700'}`}
-                                    onClick={() => setForm((current) => ({ ...current, duplicateDecision: 'MERGE' }))}
-                                >
-                                    Merge
-                                </button>
-                                <button
-                                    type="button"
-                                    className={`rounded-2xl px-4 py-3 text-sm font-semibold ${form.duplicateDecision === 'PROCEED_AS_UNIQUE' ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-700'}`}
-                                    onClick={() => setForm((current) => ({ ...current, duplicateDecision: 'PROCEED_AS_UNIQUE' }))}
-                                >
-                                    Proceed as Unique
-                                </button>
-                            </div>
-                            {attachments.length > 0 && (
-                                <div className="rounded-2xl bg-slate-50 p-4 text-sm text-slate-600">
-                                    {attachments.map((attachment) => (
-                                        <div key={attachment.url} className="flex items-center justify-between py-1">
-                                            <span>{attachment.filename}</span>
-                                            <span>{attachment.scrubStatus || 'SCRUBBED'}</span>
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
-                            {duplicates && duplicates.length > 0 && (
-                                <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4">
-                                    <p className="text-sm font-semibold text-amber-800">Potential duplicate ideas</p>
-                                    <div className="mt-3 space-y-2">
-                                        {duplicates.map((duplicate) => (
-                                            <div key={duplicate.id} className="rounded-2xl bg-white p-3 text-sm text-slate-700">
-                                                <div className="font-semibold">{duplicate.matchedIdea.topic}</div>
-                                                <div>Similarity: {(duplicate.similarityScore * 100).toFixed(1)}%</div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
-                            {error && <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">{error}</div>}
-                            <button
-                                type="submit"
-                                disabled={submitting}
-                                className="rounded-2xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white disabled:opacity-60"
-                            >
-                                {submitting ? 'Submitting…' : 'Submit Idea'}
-                            </button>
                         </div>
-                    </form>
+
+                        <div className="space-y-8">
+                            <ThinkTankLeaderboard />
+                            {ideas.length > 0 && (
+                                <AIInsightsPanel ideaId={selectedIdea?.id || ideas[0].id} />
+                            )}
+                        </div>
+                    </div>
+
                     <IdeaGrid
-                        title="My Ideas"
+                        title="Submission History"
                         ideas={ideas}
                         showDuplicates
-                        canAnswerQuestions
+                        canAnswerQuestions={canManageThinkTankRole(user?.role)}
                         onAskQuestion={handleAskQuestion}
                         onAnswerQuestion={handleAnswerQuestion}
                     />
@@ -806,35 +682,49 @@ export default function ThinkTankPortal({ mode, ideaId }: { mode: PortalMode; id
     };
 
     return (
-        <DashboardLayout>
-            <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(15,23,42,0.08),_transparent_45%),linear-gradient(180deg,_#f8fafc_0%,_#eef2ff_100%)]">
-                <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-                    <div className="mb-8 flex flex-col gap-4 rounded-[2rem] border border-white/60 bg-white/80 p-6 shadow-sm backdrop-blur">
-                        <div className="flex flex-wrap items-center justify-between gap-4">
-                            <div>
-                                <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-500">Think Tank</p>
-                                <h1 className="mt-2 text-3xl font-semibold text-slate-950">
-                                    {mode === 'dashboard' && 'Innovation Ecosystem'}
-                                    {mode === 'my-ideas' && 'My Ideas'}
-                                    {mode === 'vote' && 'Ideas for Vote'}
-                                    {mode === 'results' && 'Ideas Result'}
-                                </h1>
-                            </div>
-                            <div className="flex flex-wrap gap-2">
-                                <NavChip href="/dashboard/think-tank" label="Dashboard" active={mode === 'dashboard'} />
-                                <NavChip href="/dashboard/think-tank/my-ideas" label="My Ideas" active={mode === 'my-ideas'} />
-                                <NavChip href="/dashboard/think-tank/vote" label="Ideas for Vote" active={mode === 'vote'} />
-                                <NavChip href="/dashboard/think-tank/results" label="Ideas Result" active={mode === 'results'} />
-                            </div>
-                        </div>
-                        <p className="max-w-3xl text-sm text-slate-600">
-                            Company-scoped innovation workflow with anonymous voting, duplicate detection, scheduled reveal, attachment scrubbing, and weighted governance.
-                        </p>
+        <div className="min-h-screen bg-[#FDFDFD] text-slate-950 font-sans selection:bg-[#FF4500] selection:text-white pb-20">
+            <style dangerouslySetInnerHTML={{ __html: TT_ANIMATIONS }} />
+            
+            <div className="max-w-7xl mx-auto px-4 md:px-8">
+                {/* Bauhaus Navigation Header */}
+                <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b-2 border-slate-950 py-6 mb-12 flex flex-wrap items-end justify-between gap-6">
+                    <div className="group cursor-default">
+                        <div className="text-[10px] font-black uppercase tracking-[0.5em] text-[#FF4500] mb-2 group-hover:tracking-[0.7em] transition-all">Innovation Unit</div>
+                        <h1 className="text-4xl md:text-5xl font-black tracking-tight leading-none uppercase">Think Tank</h1>
                     </div>
+                    
+                    <nav className="flex flex-wrap gap-1 bg-slate-950 p-1">
+                        {[
+                            { id: 'dashboard', path: '/dashboard/think-tank', label: 'Overview' },
+                            { id: 'my-ideas', path: '/dashboard/think-tank/my-ideas', label: 'My Submissions' },
+                            { id: 'vote', path: '/dashboard/think-tank/vote', label: 'Live Cycle' },
+                            { id: 'results', path: '/dashboard/think-tank/results', label: 'Standings' }
+                        ].map((tab) => (
+                            <button
+                                key={tab.id}
+                                onClick={() => router.push(tab.path)}
+                                className={`px-4 py-2 text-[10px] font-black uppercase tracking-widest transition-all ${
+                                    mode === tab.id ? 'bg-[#FF4500] text-white' : 'text-slate-400 hover:text-white'
+                                }`}
+                            >
+                                {tab.label}
+                            </button>
+                        ))}
+                    </nav>
+                </header>
+
+                <main className="mt-8">
+                    {error && (
+                        <div className="mb-8 border-l-4 border-[#FF4500] bg-white p-4 shadow-sm animate-tt-fade-up">
+                            <p className="text-[10px] font-black uppercase tracking-widest text-[#FF4500]">System Warning</p>
+                            <p className="mt-1 text-sm font-bold text-slate-900">{error}</p>
+                        </div>
+                    )}
+                    
                     {content()}
-                </div>
+                </main>
             </div>
-        </DashboardLayout>
+        </div>
     );
 }
 

@@ -389,15 +389,18 @@ export const notifyThinkTankIdeaParticipants = async (ideaId: string, title: str
 export const getScheduledGovernanceState = (date = new Date()): GovernanceState => {
     const parts = getIstParts(date);
     const minutes = parts.hour * 60 + parts.minute;
-    const submissionOpen = minutes >= 570 && minutes < 780;
-    const standardVotingWindow = minutes < 570 || (minutes >= 780 && minutes < 900) || minutes >= 1020;
-    const locked = minutes >= 900 && minutes < 1020;
+    
+    // Time lock removed: submissions and voting are now always open by default
+    const submissionOpen = true; 
+    const standardVotingWindow = true;
+    const locked = false;
+
     const isSaturday = parts.weekday === 6;
     const isRevealSaturday = isSaturday && ((parts.day >= 1 && parts.day <= 7) || (parts.day >= 15 && parts.day <= 21));
     const revealWindow = isRevealSaturday && minutes >= 900;
     const votingOpen = !revealWindow && standardVotingWindow;
 
-    let label = 'Closed';
+    let label = 'Open for submissions';
     if (revealWindow) label = 'Reveal window';
     else if (submissionOpen) label = 'Open for submissions';
     else if (votingOpen) label = 'Open for voting';
@@ -1312,6 +1315,150 @@ export const getThinkTankAnalytics = async (companyId: string) => {
     };
 };
 
+export const generateAIInsights = async (params: {
+    ideaId: string;
+    companyId: string;
+}): Promise<{
+    summary: string;
+    impactRating: 'HIGH' | 'MEDIUM' | 'LOW';
+    impactReason: string;
+    feasibilityNote: string;
+    tags: string[];
+} | null> => {
+    if (!GEMINI_API_KEY) return null;
+
+    const idea = await prisma.thinkTankIdea.findFirst({
+        where: { id: params.ideaId, companyId: params.companyId },
+        select: {
+            topic: true,
+            description: true,
+            category: true,
+            weightedScore: true,
+            voteCount: true,
+            reviewStage: true,
+        },
+    });
+
+    if (!idea) return null;
+
+    try {
+        const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
+        const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+
+        const prompt = `You are an innovation analyst evaluating an internal business idea. Respond with ONLY valid JSON.
+
+Idea Topic: "${idea.topic}"
+Category: ${idea.category}
+Description: "${idea.description.slice(0, 800)}"
+Community Votes: ${idea.voteCount}
+Weighted Score: ${idea.weightedScore}
+
+Return this exact JSON structure:
+{
+  "summary": "2-sentence plain English summary of what this idea proposes and its expected benefit",
+  "impactRating": "HIGH" | "MEDIUM" | "LOW",
+  "impactReason": "1-sentence reason for the impact rating",
+  "feasibilityNote": "1-sentence note on implementation feasibility",
+  "tags": ["tag1", "tag2", "tag3"]
+}`;
+
+        const result = await model.generateContent(prompt);
+        const text = result.response.text().replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+        return JSON.parse(text);
+    } catch {
+        return null;
+    }
+};
+
+export const getThinkTankLeaderboard = async (companyId: string, cycleId?: string) => {
+    const ideaWhere: Record<string, any> = {
+        companyId,
+        status: { in: ['ACTIVE', 'LOCKED', 'REVEALED'] },
+    };
+    if (cycleId) ideaWhere.cycleId = cycleId;
+
+    const ideas = await prisma.thinkTankIdea.findMany({
+        where: ideaWhere,
+        select: {
+            id: true,
+            topic: true,
+            category: true,
+            weightedScore: true,
+            voteCount: true,
+            reviewStage: true,
+            implementationStatus: true,
+            plannerEncrypted: true,
+            partners: { select: { userEncrypted: true, roleType: true } },
+        },
+        orderBy: { weightedScore: 'desc' },
+        take: 10,
+    });
+
+    // Build contributor map (decrypt planner IDs, count per user)
+    const contributorMap = new Map<string, {
+        userId: string;
+        ideaCount: number;
+        totalScore: number;
+        topIdeaTopic: string;
+        topIdeaScore: number;
+    }>();
+
+    for (const idea of ideas) {
+        try {
+            const plannerId = decryptThinkTankIdentity(idea.plannerEncrypted);
+            const existing = contributorMap.get(plannerId);
+            if (!existing) {
+                contributorMap.set(plannerId, {
+                    userId: plannerId,
+                    ideaCount: 1,
+                    totalScore: idea.weightedScore,
+                    topIdeaTopic: idea.topic,
+                    topIdeaScore: idea.weightedScore,
+                });
+            } else {
+                contributorMap.set(plannerId, {
+                    ...existing,
+                    ideaCount: existing.ideaCount + 1,
+                    totalScore: existing.totalScore + idea.weightedScore,
+                    topIdeaTopic: idea.weightedScore > existing.topIdeaScore ? idea.topic : existing.topIdeaTopic,
+                    topIdeaScore: Math.max(existing.topIdeaScore, idea.weightedScore),
+                });
+            }
+        } catch {
+            // encrypted identity skip
+        }
+    }
+
+    const contributorIds = [...contributorMap.keys()];
+    if (!contributorIds.length) return { ideas, contributors: [] };
+
+    const users = await prisma.user.findMany({
+        where: { id: { in: contributorIds }, companyId },
+        select: {
+            id: true,
+            name: true,
+            email: true,
+            employeeProfile: { select: { designation: true } },
+        },
+    });
+
+    const userMap = new Map(users.map((u) => [u.id, u]));
+
+    const contributors = [...contributorMap.values()]
+        .map((entry) => {
+            const user = userMap.get(entry.userId);
+            return {
+                ...entry,
+                name: user?.name || user?.email || 'Anonymous',
+                designation: user?.employeeProfile?.designation || null,
+            };
+        })
+        .sort((a, b) => b.totalScore - a.totalScore)
+        .slice(0, 5);
+
+    return { ideas, contributors };
+};
+
 export const convertThinkTankIdeaToExecution = async (params: {
     ideaId: string;
     companyId: string;
@@ -1654,8 +1801,10 @@ export const createIdeaWithParticipants = async (params: {
     ensureThinkTankAccess(params.user);
     const cycle = await getOrCreateCurrentCycle(params.user.companyId!);
     const governance = await getGovernanceState(params.user.companyId);
+    
+    // Time lock check removed for better accessibility
     if (!governance.submissionOpen) {
-        throw new ValidationError('Think Tank submissions are currently locked by governance schedule.');
+        throw new ValidationError('Think Tank submissions are currently locked.');
     }
 
     const partnerIds = Array.from(new Set(params.partnerIds.filter((id) => id && id !== params.user.id))).slice(0, 3);
