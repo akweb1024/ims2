@@ -136,3 +136,31 @@ export const PATCH = authorizedRoute([], async (req: NextRequest, user: any, con
         }),
     });
 });
+
+export const DELETE = authorizedRoute(['SUPER_ADMIN'], async (req: NextRequest, user: any, context: any) => {
+    ensureThinkTankAccess(user);
+
+    const idea = await prisma.thinkTankIdea.findFirst({
+        where: {
+            id: context?.params?.id,
+            companyId: user.companyId,
+        },
+    });
+
+    if (!idea) {
+        return NextResponse.json({ error: 'Idea not found.' }, { status: 404 });
+    }
+
+    await prisma.thinkTankIdea.delete({
+        where: { id: idea.id },
+    });
+
+    await logThinkTankAudit({
+        ideaId: idea.id,
+        actorUserId: user.id,
+        action: 'IDEA_DELETED' as any,
+        outcome: 'SUCCESS',
+    });
+
+    return NextResponse.json({ success: true });
+});

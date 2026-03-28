@@ -88,6 +88,7 @@ export type GovernanceState = {
     overrideActive?: boolean;
     overrideReason?: string | null;
     overrideUpdatedAt?: string | null;
+    nextRevealAt?: string;
 };
 
 export type GovernanceOverrideMode = 'SCHEDULED' | 'SUBMISSIONS_OPEN' | 'VOTING_OPEN' | 'LOCKED' | 'REVEAL_READY';
@@ -402,6 +403,8 @@ export const getScheduledGovernanceState = (date = new Date()): GovernanceState 
     else if (votingOpen) label = 'Open for voting';
     else if (locked) label = 'Locked for tallying and review';
 
+    const { revealAt } = getCurrentCycleWindow(date);
+
     return {
         now: date,
         submissionOpen,
@@ -413,6 +416,7 @@ export const getScheduledGovernanceState = (date = new Date()): GovernanceState 
         overrideActive: false,
         overrideReason: null,
         overrideUpdatedAt: null,
+        nextRevealAt: revealAt.toISOString(),
     };
 };
 
@@ -567,7 +571,7 @@ export const getGovernanceState = async (companyId?: string | null, date = new D
     }
 };
 
-export const getCurrentCycleWindow = (date = new Date()) => {
+export function getCurrentCycleWindow(date = new Date()) {
     const { year, month, day } = getIstParts(date);
     const isSecondHalf = day >= 15;
     const windowStart = makeIstDate(year, month, isSecondHalf ? 15 : 1, '09:30:00');
@@ -580,7 +584,7 @@ export const getCurrentCycleWindow = (date = new Date()) => {
     const revealAt = makeIstDate(year, month, revealDay, '15:00:00');
 
     return { windowStart, windowEnd, revealAt };
-};
+}
 
 export const getOrCreateCurrentCycle = async (companyId: string, date = new Date()) => {
     const { windowStart, windowEnd, revealAt } = getCurrentCycleWindow(date);

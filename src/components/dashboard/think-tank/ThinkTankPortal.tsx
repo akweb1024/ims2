@@ -498,6 +498,24 @@ export default function ThinkTankPortal({ mode, ideaId }: { mode: PortalMode; id
         await refresh();
     };
 
+    const handleDeleteIdea = async (ideaId: string) => {
+        if (!confirm('Are you sure you want to permanently delete this idea? This action cannot be undone.')) return;
+        setError('');
+        try {
+            const response = await fetch(`/api/think-tank/ideas/${ideaId}`, {
+                method: 'DELETE',
+            });
+            const payload = await response.json();
+            if (!response.ok) {
+                throw new Error(payload.error || 'Failed to delete idea.');
+            }
+            if (selectedIdea?.id === ideaId) setSelectedIdea(null);
+            await refresh();
+        } catch (deleteError: any) {
+            setError(deleteError.message || 'Failed to delete idea.');
+        }
+    };
+
     const handleSaveReviewerScore = async (ideaId: string, payload: {
         impactScore: number;
         feasibilityScore: number;
@@ -747,6 +765,7 @@ export default function ThinkTankPortal({ mode, ideaId }: { mode: PortalMode; id
                                 onVoteWithPoints={handleVoteWithPoints}
                                 onAskQuestion={handleAskQuestion}
                                 onAnswerQuestion={handleAnswerQuestion}
+                                onDeleteIdea={user?.role === 'SUPER_ADMIN' ? handleDeleteIdea : undefined}
                                 singleIdeaView
                             />
                         </div>
@@ -755,6 +774,7 @@ export default function ThinkTankPortal({ mode, ideaId }: { mode: PortalMode; id
                             title="Ideas for Vote"
                             ideas={ideas}
                             pointAccount={pointAccount}
+                            onDeleteIdea={user?.role === 'SUPER_ADMIN' ? handleDeleteIdea : undefined}
                             singleIdeaLinks
                         />
                     )}
@@ -765,8 +785,17 @@ export default function ThinkTankPortal({ mode, ideaId }: { mode: PortalMode; id
         return (
             <div className="space-y-6">
                 <GovernanceBanner governance={governance} />
+                
+                {governance?.nextRevealAt && (
+                    <CountdownTimer targetDate={governance.nextRevealAt} />
+                )}
+
                 <IdeaGrid
-                    title="Ideas Result"
+                    title={
+                        user?.role === 'SUPER_ADMIN' && governance?.mode !== 'REVEAL_READY' 
+                            ? "Ideas Result (Live Preview)" 
+                            : "Ideas Result"
+                    }
                     ideas={results}
                     revealTeams
                     canAnswerQuestions={canManageThinkTankRole(user?.role)}
@@ -1491,6 +1520,7 @@ function IdeaGrid({
     onVoteWithPoints,
     onAskQuestion,
     onAnswerQuestion,
+    onDeleteIdea,
 }: {
     title: string;
     ideas: Idea[];
@@ -1505,6 +1535,7 @@ function IdeaGrid({
     onVoteWithPoints?: (ideaId: string, vote: 'LIKE' | 'UNLIKE' | 'NEUTRAL', pointAllocation: number) => void;
     onAskQuestion?: (ideaId: string, question: string) => Promise<void>;
     onAnswerQuestion?: (questionId: string, answer: string) => Promise<void>;
+    onDeleteIdea?: (ideaId: string) => Promise<void>;
 }) {
     const [pointInputs, setPointInputs] = useState<Record<string, number>>({});
     const [questionInputs, setQuestionInputs] = useState<Record<string, string>>({});
@@ -1553,6 +1584,16 @@ function IdeaGrid({
                                 >
                                     Open idea details
                                 </Link>
+                            </div>
+                        ) : null}
+                        {onDeleteIdea ? (
+                            <div className="mt-4">
+                                <button
+                                    onClick={() => onDeleteIdea(idea.id)}
+                                    className="inline-flex rounded-full bg-rose-100 px-4 py-2 text-sm font-semibold text-rose-700 transition hover:bg-rose-200"
+                                >
+                                    Delete Idea (Super Admin)
+                                </button>
                             </div>
                         ) : null}
                         {idea.attachments && idea.attachments.length > 0 && (
@@ -1773,6 +1814,65 @@ function TeamBlock({ title, people }: { title: string; people: Array<{ id: strin
                         <div className="text-xs text-slate-500">{person.email || person.id}</div>
                     </div>
                 )) : <div>No members revealed.</div>}
+            </div>
+        </div>
+    );
+}
+
+function CountdownTimer({ targetDate }: { targetDate: string }) {
+    const [timeLeft, setTimeLeft] = useState<{ days: number; hours: number; minutes: number; seconds: number } | null>(null);
+
+    useEffect(() => {
+        if (!targetDate) return;
+        const target = new Date(targetDate).getTime();
+        
+        const update = () => {
+            const now = new Date().getTime();
+            const difference = target - now;
+            
+            if (difference <= 0) {
+                setTimeLeft({ days: 0, hours: 0, minutes: 0, seconds: 0 });
+                return;
+            }
+            
+            setTimeLeft({
+                days: Math.floor(difference / (1000 * 60 * 60 * 24)),
+                hours: Math.floor((difference % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)),
+                minutes: Math.floor((difference % (1000 * 60 * 60)) / (1000 * 60)),
+                seconds: Math.floor((difference % (1000 * 60)) / 1000),
+            });
+        };
+
+        update();
+        const interval = setInterval(update, 1000);
+        return () => clearInterval(interval);
+    }, [targetDate]);
+
+    if (!timeLeft) return null;
+
+    return (
+        <div className="rounded-3xl border border-indigo-200 bg-indigo-50 p-6 shadow-sm flex flex-col items-center justify-center text-center">
+            <h3 className="text-sm font-semibold uppercase tracking-[0.2em] text-indigo-600">Next Reveal In</h3>
+            <div className="mt-4 flex items-center justify-center gap-4 text-indigo-900">
+                <div className="flex flex-col items-center">
+                    <div className="text-4xl font-bold font-mono">{String(timeLeft.days).padStart(2, '0')}</div>
+                    <div className="text-xs uppercase tracking-wider text-indigo-500 mt-1">Days</div>
+                </div>
+                <div className="text-3xl font-light pb-4">:</div>
+                <div className="flex flex-col items-center">
+                    <div className="text-4xl font-bold font-mono">{String(timeLeft.hours).padStart(2, '0')}</div>
+                    <div className="text-xs uppercase tracking-wider text-indigo-500 mt-1">Hours</div>
+                </div>
+                <div className="text-3xl font-light pb-4">:</div>
+                <div className="flex flex-col items-center">
+                    <div className="text-4xl font-bold font-mono">{String(timeLeft.minutes).padStart(2, '0')}</div>
+                    <div className="text-xs uppercase tracking-wider text-indigo-500 mt-1">Mins</div>
+                </div>
+                <div className="text-3xl font-light pb-4">:</div>
+                <div className="flex flex-col items-center">
+                    <div className="text-4xl font-bold font-mono">{String(timeLeft.seconds).padStart(2, '0')}</div>
+                    <div className="text-xs uppercase tracking-wider text-indigo-500 mt-1">Secs</div>
+                </div>
             </div>
         </div>
     );
