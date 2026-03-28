@@ -6001,3 +6001,39 @@ model VaultAccess {
   @@unique([itemId, grantedToId])
   @@index([grantedToId])
 }
+
+model LMSParticipant {
+  id                 String   @id @default(uuid())
+  pid                String   @unique
+  workshopTitle      String?
+  name               String
+  email              String
+  mobileNumber       String?
+  currentAffiliation String?
+  profession         String?
+  designation        String?
+  address            String?  @db.Text
+  state              String?
+  country            String?
+  pinCode            String?
+  gstVatNo           String?
+  courseFee          Float?   @default(0)
+  hasCoupon          Boolean  @default(false)
+  couponCode         String?
+  payableAmount      Float?   @default(0)
+  otherCurrency      String?
+  referralSource     String?
+  paymentStatus      String?
+  razorpayOrderId    String?  @unique
+  razorpayPaymentId  String?  @unique
+  razorpaySignature  String?
+  learningMode       String?
+  category           String?
+  
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  @@index([email])
+  @@index([workshopTitle])
+  @@index([paymentStatus])
+}

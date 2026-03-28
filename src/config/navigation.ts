@@ -269,6 +269,7 @@ export const ALL_MODULES: NavModule[] = [
                 items: [
                     { name: 'LMS Dashboard', href: '/dashboard/lms', icon: '📊', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'HR_MANAGER'] },
                     { name: 'Course Library', href: '/dashboard/courses', icon: '🎓', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'HR_MANAGER'] },
+                    { name: 'Participants', href: '/dashboard/lms/participants', icon: '👥', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'HR_MANAGER'] },
                     { name: 'Mentors', href: '/dashboard/lms/mentors', icon: '👨‍🏫', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'HR_MANAGER'] },
                     { name: 'Financial Report', href: '/dashboard/lms/financials', icon: '💰', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'HR_MANAGER'] },
                     { name: 'Workshops', href: '/dashboard/lms/workshops', icon: '📹', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'HR_MANAGER'] },
