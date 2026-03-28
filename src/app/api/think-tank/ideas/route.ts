@@ -4,11 +4,13 @@ import { ThinkTankDuplicateDecision, ThinkTankIdeaCategory } from '@prisma/clien
 import { authorizedRoute } from '@/lib/middleware-auth';
 import { prisma } from '@/lib/prisma';
 import {
+    canUseThinkTankVeto,
     canManageThinkTankReview,
     createIdeaWithParticipants,
     ensureThinkTankAccess,
     findPotentialDuplicates,
     getGovernanceState,
+    getOrCreateThinkTankPointAccount,
     getOrCreateCurrentCycle,
     notifyThinkTankReviewers,
     serializeThinkTankIdea,
@@ -55,14 +57,40 @@ export const GET = authorizedRoute([], async (req: NextRequest, user: any) => {
         where,
         include: thinkTankIdeaInclude,
         orderBy: view === 'results'
-            ? [{ revealedAt: 'desc' }, { weightedScore: 'desc' }]
-            : [{ createdAt: 'desc' }],
+            ? [{ revealedAt: 'desc' }, { finalScore: 'desc' }, { weightedScore: 'desc' }]
+            : view === 'review'
+                ? [{ finalScore: 'desc' }, { weightedScore: 'desc' }, { createdAt: 'desc' }]
+                : [{ createdAt: 'desc' }],
+    });
+
+    const voterProfile = await prisma.user.findUnique({
+        where: { id: user.id },
+        select: {
+            role: true,
+            employeeProfile: {
+                select: { designation: true },
+            },
+        },
+    });
+    const pointAccount = await getOrCreateThinkTankPointAccount({
+        companyId: user.companyId,
+        cycleId: cycle.id,
+        userId: user.id,
+        role: voterProfile?.role || user.role,
+        designation: voterProfile?.employeeProfile?.designation,
     });
 
     return NextResponse.json({
         governance: await getGovernanceState(user.companyId),
         cycle,
         canReview: canManageThinkTankReview(user.role),
+        canVeto: canUseThinkTankVeto(user.role),
+        pointAccount: {
+            basePoints: pointAccount.basePoints,
+            maxPerIdeaPoints: pointAccount.maxPerIdeaPoints,
+            allocatedPoints: pointAccount.allocatedPoints,
+            remainingPoints: pointAccount.remainingPoints,
+        },
         ideas: ideas.map((idea) => serializeThinkTankIdea(idea, {
             reveal: view === 'results',
             includeDuplicates: view === 'my' || view === 'review',

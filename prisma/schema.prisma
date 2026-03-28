@@ -125,6 +125,7 @@ model Company {
   teamMembers                 TeamMember[]
   thinkTankCycles             ThinkTankIdeaCycle[]
   thinkTankIdeas              ThinkTankIdea[]
+  thinkTankPointAccounts      ThinkTankPointAccount[]
   thinkTankVotes              ThinkTankIdeaVote[]
   primaryUsers                User[]                       @relation("PrimaryCompany")
   vendors                     Vendor[]
@@ -364,11 +365,16 @@ model User {
   files                          FileRecord[]
   thinkTankVisibleIdeas          ThinkTankIdea[]             @relation("ThinkTankVisibleAuthor")
   thinkTankDecisionIdeas         ThinkTankIdea[]             @relation("ThinkTankDecisionBy")
+  thinkTankVetoIdeas             ThinkTankIdea[]             @relation("ThinkTankVetoBy")
   thinkTankVisiblePartners       ThinkTankIdeaPartner[]      @relation("ThinkTankVisiblePartner")
   thinkTankVisibleTeamMembers    ThinkTankIdeaTeamMember[]   @relation("ThinkTankVisibleTeamMember")
   thinkTankAuditEvents           ThinkTankIdeaAuditEvent[]   @relation("ThinkTankAuditActor")
+  thinkTankPointAccounts         ThinkTankPointAccount[]
   thinkTankPointsMappings        ThinkTankPointsMapping[]    @relation("ThinkTankVisiblePointUser")
   thinkTankComments              ThinkTankIdeaComment[]      @relation("ThinkTankCommentAuthor")
+  thinkTankAskedQuestions        ThinkTankIdeaQuestion[]     @relation("ThinkTankQuestionAskedBy")
+  thinkTankAnsweredQuestions     ThinkTankIdeaQuestion[]     @relation("ThinkTankQuestionAnsweredBy")
+  thinkTankReviewerScores        ThinkTankIdeaReviewerScore[] @relation("ThinkTankReviewerScoreUser")
   vaultKeyring                   VaultKeyring?               @relation("UserVaultKeyring")
   vaultFolders                   VaultFolder[]               @relation("UserVaultFolders")
   ownedVaultItems                VaultItem[]                 @relation("OwnerVaultItems")
@@ -5421,6 +5427,8 @@ model ThinkTankIdeaCycle {
   windowStart DateTime
   windowEnd   DateTime
   revealAt    DateTime
+  cycleLabel  String?
+  renewalAt   DateTime?
   status      ThinkTankCycleStatus @default(ACTIVE)
   revealedAt  DateTime?
   createdAt   DateTime             @default(now())
@@ -5428,6 +5436,7 @@ model ThinkTankIdeaCycle {
   company     Company              @relation(fields: [companyId], references: [id], onDelete: Cascade)
   ideas       ThinkTankIdea[]
   votes       ThinkTankIdeaVote[]
+  pointAccounts ThinkTankPointAccount[]
 
   @@index([companyId, revealAt])
   @@index([status])
@@ -5455,6 +5464,15 @@ model ThinkTankIdea {
   approvedAt         DateTime?
   implementedAt      DateTime?
   decisionById       String?
+  finalScore         Float                     @default(0)
+  communityScore     Float                     @default(0)
+  reviewerScore      Float                     @default(0)
+  ideaReadinessScore Float                     @default(0)
+  questionCount      Int                       @default(0)
+  isVetoed           Boolean                   @default(false)
+  vetoedAt           DateTime?
+  vetoedById         String?
+  vetoReason         String?                   @db.Text
   metadata           Json?
   createdAt          DateTime                  @default(now())
   updatedAt          DateTime                  @updatedAt
@@ -5462,12 +5480,15 @@ model ThinkTankIdea {
   cycle              ThinkTankIdeaCycle        @relation(fields: [cycleId], references: [id], onDelete: Cascade)
   visibleAuthor      User?                     @relation("ThinkTankVisibleAuthor", fields: [visibleAuthorId], references: [id], onDelete: SetNull)
   decisionBy         User?                     @relation("ThinkTankDecisionBy", fields: [decisionById], references: [id], onDelete: SetNull)
+  vetoedBy          User?                      @relation("ThinkTankVetoBy", fields: [vetoedById], references: [id], onDelete: SetNull)
   partners           ThinkTankIdeaPartner[]
   teamMembers        ThinkTankIdeaTeamMember[]
   votes              ThinkTankIdeaVote[]
   attachments        ThinkTankIdeaAttachment[]
   auditEvents        ThinkTankIdeaAuditEvent[]
   comments           ThinkTankIdeaComment[]
+  questions          ThinkTankIdeaQuestion[]
+  reviewerScores     ThinkTankIdeaReviewerScore[]
   duplicateMatches   ThinkTankIdeaDuplicateMatch[] @relation("ThinkTankDuplicateMatches")
   duplicateSources   ThinkTankIdeaDuplicateMatch[] @relation("ThinkTankDuplicateSources")
   pointsMappings     ThinkTankPointsMapping[]
@@ -5479,6 +5500,7 @@ model ThinkTankIdea {
   @@index([revealedAt])
   @@index([reviewStage])
   @@index([implementationStatus])
+  @@index([isVetoed])
 }
 
 model ThinkTankIdeaPartner {
@@ -5522,6 +5544,8 @@ model ThinkTankIdeaVote {
   vote           ThinkTankVoteState
   weight         Int
   weightedValue  Int
+  pointAllocation Int              @default(0)
+  maxAllowedPoints Int             @default(0)
   createdAt      DateTime          @default(now())
   updatedAt      DateTime          @updatedAt
   idea           ThinkTankIdea     @relation(fields: [ideaId], references: [id], onDelete: Cascade)
@@ -5531,6 +5555,25 @@ model ThinkTankIdeaVote {
   @@unique([ideaId, cycleId, voterHash])
   @@index([ideaId])
   @@index([cycleId])
+}
+
+model ThinkTankPointAccount {
+  id              String    @id @default(uuid())
+  companyId       String
+  cycleId         String
+  userId          String
+  basePoints      Int
+  maxPerIdeaPoints Int
+  allocatedPoints Int       @default(0)
+  remainingPoints Int
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  company         Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  cycle           ThinkTankIdeaCycle @relation(fields: [cycleId], references: [id], onDelete: Cascade)
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([cycleId, userId])
+  @@index([companyId, cycleId])
 }
 
 model ThinkTankIdeaAttachment {
@@ -5593,6 +5636,47 @@ model ThinkTankIdeaComment {
 
   @@index([ideaId, createdAt])
   @@index([authorUserId])
+}
+
+model ThinkTankIdeaQuestion {
+  id             String   @id @default(uuid())
+  ideaId         String
+  askedByUserId  String
+  answeredByUserId String?
+  question       String   @db.Text
+  answer         String?  @db.Text
+  status         String   @default("OPEN")
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  answeredAt     DateTime?
+  idea           ThinkTankIdea @relation(fields: [ideaId], references: [id], onDelete: Cascade)
+  askedBy        User     @relation("ThinkTankQuestionAskedBy", fields: [askedByUserId], references: [id], onDelete: Cascade)
+  answeredBy     User?    @relation("ThinkTankQuestionAnsweredBy", fields: [answeredByUserId], references: [id], onDelete: SetNull)
+
+  @@index([ideaId, createdAt])
+  @@index([askedByUserId])
+  @@index([status])
+}
+
+model ThinkTankIdeaReviewerScore {
+  id                String   @id @default(uuid())
+  ideaId            String
+  reviewerUserId    String
+  impactScore       Int      @default(0)
+  feasibilityScore  Int      @default(0)
+  costScore         Int      @default(0)
+  speedScore        Int      @default(0)
+  strategicFitScore Int      @default(0)
+  scalabilityScore  Int      @default(0)
+  totalScore        Float    @default(0)
+  note              String?  @db.Text
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  idea              ThinkTankIdea @relation(fields: [ideaId], references: [id], onDelete: Cascade)
+  reviewer          User     @relation("ThinkTankReviewerScoreUser", fields: [reviewerUserId], references: [id], onDelete: Cascade)
+
+  @@unique([ideaId, reviewerUserId])
+  @@index([reviewerUserId])
 }
 
 model ThinkTankPointsMapping {

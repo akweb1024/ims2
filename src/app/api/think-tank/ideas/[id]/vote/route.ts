@@ -1,16 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
-import crypto from 'crypto';
 import { ThinkTankVoteState } from '@prisma/client';
 import { authorizedRoute } from '@/lib/middleware-auth';
 import { prisma } from '@/lib/prisma';
 import {
-    encryptThinkTankIdentity,
+    castThinkTankVote,
     ensureThinkTankAccess,
     getGovernanceState,
-    getOrCreateCurrentCycle,
-    getVoteWeight,
     logThinkTankAudit,
-    recalculateIdeaScore,
 } from '@/lib/think-tank';
 
 export const dynamic = 'force-dynamic';
@@ -49,52 +45,41 @@ export const POST = authorizedRoute([], async (req: NextRequest, user: any, cont
         return NextResponse.json({ error: 'Idea not found.' }, { status: 404 });
     }
 
-    const cycle = await getOrCreateCurrentCycle(user.companyId);
-    const userHash = crypto.createHash('sha256').update(user.id).digest('hex');
     const voter = await prisma.user.findUnique({
         where: { id: user.id },
         select: { role: true, employeeProfile: { select: { designation: true } } },
     });
-    const weight = getVoteWeight(voter?.employeeProfile?.designation, voter?.role || user.role);
-    const baseValue = vote === 'LIKE' ? 1 : vote === 'UNLIKE' ? -1 : 0;
-
-    await prisma.thinkTankIdeaVote.upsert({
-        where: {
-            ideaId_cycleId_voterHash: {
-                ideaId: idea.id,
-                cycleId: cycle.id,
-                voterHash: userHash,
-            },
-        },
-        create: {
-            ideaId: idea.id,
-            cycleId: cycle.id,
-            companyId: user.companyId,
-            voterEncrypted: encryptThinkTankIdentity(user.id),
-            voterHash: userHash,
-            vote,
-            weight,
-            weightedValue: weight * baseValue,
-        },
-        update: {
-            vote,
-            weight,
-            weightedValue: weight * baseValue,
-        },
+    const pointAllocation = body.pointAllocation !== undefined ? Number(body.pointAllocation) : undefined;
+    const result = await castThinkTankVote({
+        ideaId: idea.id,
+        companyId: user.companyId,
+        userId: user.id,
+        role: voter?.role || user.role,
+        designation: voter?.employeeProfile?.designation,
+        vote,
+        pointAllocation,
     });
 
-    const updated = await recalculateIdeaScore(idea.id);
     await logThinkTankAudit({
         ideaId: idea.id,
         actorUserId: user.id,
         action: 'VOTE_CAST',
         outcome: 'SUCCESS',
-        metadata: { vote },
+        metadata: { vote, pointAllocation: pointAllocation ?? null },
     });
 
     return NextResponse.json({
         success: true,
-        weightedScore: updated.weightedScore,
-        voteCount: updated.voteCount,
+        weightedScore: result.idea.weightedScore,
+        finalScore: result.idea.finalScore,
+        voteCount: result.idea.voteCount,
+        pointAccount: result.account
+            ? {
+                basePoints: result.account.basePoints,
+                maxPerIdeaPoints: result.account.maxPerIdeaPoints,
+                allocatedPoints: result.account.allocatedPoints,
+                remainingPoints: result.account.remainingPoints,
+            }
+            : null,
     });
 });

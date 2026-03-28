@@ -40,6 +40,17 @@ const VOTE_VALUES: Record<ThinkTankVoteState, number> = {
     NEUTRAL: 0,
 };
 
+const REVIEW_SCORE_FIELDS = [
+    'impactScore',
+    'feasibilityScore',
+    'costScore',
+    'speedScore',
+    'strategicFitScore',
+    'scalabilityScore',
+] as const;
+
+const THINK_TANK_POINT_LIMIT_RATIO = 0.7;
+
 export const THINK_TANK_CATEGORY_OPTIONS: { value: ThinkTankIdeaCategory; label: string }[] = [
     { value: 'PUBLICATION', label: 'Publication' },
     { value: 'MARKETING', label: 'Marketing' },
@@ -74,6 +85,11 @@ export type GovernanceState = {
 };
 
 export type GovernanceOverrideMode = 'SCHEDULED' | 'SUBMISSIONS_OPEN' | 'VOTING_OPEN' | 'LOCKED' | 'REVEAL_READY';
+
+export type ThinkTankPointBudget = {
+    basePoints: number;
+    maxPerIdeaPoints: number;
+};
 
 type GovernanceOverrideRecord = {
     mode: GovernanceOverrideMode;
@@ -141,6 +157,41 @@ export const thinkTankIdeaInclude = {
         },
         orderBy: {
             createdAt: 'desc' as const,
+        },
+    },
+    questions: {
+        include: {
+            askedBy: {
+                select: {
+                    id: true,
+                    name: true,
+                    email: true,
+                },
+            },
+            answeredBy: {
+                select: {
+                    id: true,
+                    name: true,
+                    email: true,
+                },
+            },
+        },
+        orderBy: {
+            createdAt: 'desc' as const,
+        },
+    },
+    reviewerScores: {
+        include: {
+            reviewer: {
+                select: {
+                    id: true,
+                    name: true,
+                    email: true,
+                },
+            },
+        },
+        orderBy: {
+            updatedAt: 'desc' as const,
         },
     },
     duplicateMatches: {
@@ -276,6 +327,8 @@ export const ensureThinkTankAccess = (user: ThinkTankUser) => {
 export const canManageThinkTankReview = (role?: string | null) => {
     return ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'TEAM_LEADER'].includes(role || '');
 };
+
+export const canUseThinkTankVeto = (role?: string | null) => (role || '') === 'SUPER_ADMIN';
 
 export const notifyThinkTankReviewers = async (companyId: string, title: string, message: string, link: string) => {
     const reviewers = await prisma.user.findMany({
@@ -541,6 +594,8 @@ export const getOrCreateCurrentCycle = async (companyId: string, date = new Date
             windowStart,
             windowEnd,
             revealAt,
+            cycleLabel: `${windowStart.toISOString().slice(0, 10)} to ${windowEnd.toISOString().slice(0, 10)}`,
+            renewalAt: windowStart,
         },
     });
 };
@@ -555,6 +610,21 @@ export const getVoteWeight = (designation?: string | null, role?: string | null)
     if (normalizedDesignation.includes('executive') || normalizedRole === 'EXECUTIVE') return 5;
     if (normalizedRole === 'MANAGER') return 20;
     return 5;
+};
+
+export const getThinkTankPointBudget = (designation?: string | null, role?: string | null): ThinkTankPointBudget => {
+    const normalizedRole = (role || '').trim().toUpperCase();
+    const normalizedDesignation = (designation || '').trim().toLowerCase();
+
+    let basePoints = 15;
+    if (normalizedRole === 'SUPER_ADMIN') basePoints = 100;
+    else if (normalizedRole === 'ADMIN' || normalizedRole === 'MANAGER' || normalizedDesignation.includes('manager')) basePoints = 40;
+    else if (normalizedRole === 'TEAM_LEADER' || normalizedDesignation.includes('team lead')) basePoints = 25;
+
+    return {
+        basePoints,
+        maxPerIdeaPoints: Math.floor(basePoints * THINK_TANK_POINT_LIMIT_RATIO),
+    };
 };
 
 export const normalizeThinkTankText = (text: string) => text.replace(/\s+/g, ' ').trim().toLowerCase();
@@ -846,16 +916,306 @@ export const recalculateIdeaScore = async (ideaId: string) => {
         where: { ideaId },
         select: { weightedValue: true },
     });
+    const reviewerScores = await prisma.thinkTankIdeaReviewerScore.findMany({
+        where: { ideaId },
+        select: { totalScore: true },
+    });
+    const idea = await prisma.thinkTankIdea.findUnique({
+        where: { id: ideaId },
+        select: {
+            ideaReadinessScore: true,
+            isVetoed: true,
+        },
+    });
 
     const weightedScore = votes.reduce((sum, vote) => sum + vote.weightedValue, 0);
+    const reviewerScore = reviewerScores.length
+        ? reviewerScores.reduce((sum, score) => sum + score.totalScore, 0) / reviewerScores.length
+        : 0;
+    const readinessScore = idea?.ideaReadinessScore || 0;
+    const finalScore = idea?.isVetoed ? 0 : weightedScore + reviewerScore + readinessScore;
 
     return prisma.thinkTankIdea.update({
         where: { id: ideaId },
         data: {
             weightedScore,
+            communityScore: weightedScore,
+            reviewerScore,
+            finalScore,
             voteCount: votes.length,
         },
     });
+};
+
+export const getOrCreateThinkTankPointAccount = async (params: {
+    companyId: string;
+    cycleId: string;
+    userId: string;
+    role?: string | null;
+    designation?: string | null;
+}) => {
+    const budget = getThinkTankPointBudget(params.designation, params.role);
+    const existing = await prisma.thinkTankPointAccount.findUnique({
+        where: {
+            cycleId_userId: {
+                cycleId: params.cycleId,
+                userId: params.userId,
+            },
+        },
+    });
+
+    if (existing) return existing;
+
+    return prisma.thinkTankPointAccount.create({
+        data: {
+            companyId: params.companyId,
+            cycleId: params.cycleId,
+            userId: params.userId,
+            basePoints: budget.basePoints,
+            maxPerIdeaPoints: budget.maxPerIdeaPoints,
+            allocatedPoints: 0,
+            remainingPoints: budget.basePoints,
+        },
+    });
+};
+
+export const getPlannerAndParticipantHashes = async (ideaId: string) => {
+    const idea = await prisma.thinkTankIdea.findUnique({
+        where: { id: ideaId },
+        select: {
+            plannerHash: true,
+            partners: { select: { userHash: true } },
+            teamMembers: { select: { userHash: true } },
+        },
+    });
+
+    if (!idea) return null;
+
+    return new Set([
+        idea.plannerHash,
+        ...idea.partners.map((partner) => partner.userHash),
+        ...idea.teamMembers.map((member) => member.userHash),
+    ]);
+};
+
+export const castThinkTankVote = async (params: {
+    ideaId: string;
+    companyId: string;
+    userId: string;
+    role?: string | null;
+    designation?: string | null;
+    vote: ThinkTankVoteState;
+    pointAllocation?: number | null;
+}) => {
+    const cycle = await getOrCreateCurrentCycle(params.companyId);
+    const userHash = crypto.createHash('sha256').update(params.userId).digest('hex');
+    const participantHashes = await getPlannerAndParticipantHashes(params.ideaId);
+
+    if (!participantHashes) {
+        throw new Error('Idea not found.');
+    }
+    if (participantHashes.has(userHash)) {
+        throw new Error('Planners and registered team members cannot vote on their own idea.');
+    }
+
+    const account = await getOrCreateThinkTankPointAccount({
+        companyId: params.companyId,
+        cycleId: cycle.id,
+        userId: params.userId,
+        role: params.role,
+        designation: params.designation,
+    });
+    const existingVote = await prisma.thinkTankIdeaVote.findUnique({
+        where: {
+            ideaId_cycleId_voterHash: {
+                ideaId: params.ideaId,
+                cycleId: cycle.id,
+                voterHash: userHash,
+            },
+        },
+    });
+
+    const requestedPoints = Math.max(0, Math.floor(params.pointAllocation ?? existingVote?.pointAllocation ?? account.maxPerIdeaPoints));
+    if (requestedPoints > account.maxPerIdeaPoints) {
+        throw new Error(`You can allocate at most ${account.maxPerIdeaPoints} points to a single idea in this cycle.`);
+    }
+
+    const restoredPoints = existingVote?.pointAllocation ?? 0;
+    const effectiveRemaining = account.remainingPoints + restoredPoints;
+    if (requestedPoints > effectiveRemaining) {
+        throw new Error(`You only have ${effectiveRemaining} points left for this cycle.`);
+    }
+
+    const baseValue = VOTE_VALUES[params.vote];
+    const weightedValue = requestedPoints * baseValue;
+
+    await prisma.$transaction(async (tx) => {
+        await tx.thinkTankIdeaVote.upsert({
+            where: {
+                ideaId_cycleId_voterHash: {
+                    ideaId: params.ideaId,
+                    cycleId: cycle.id,
+                    voterHash: userHash,
+                },
+            },
+            create: {
+                ideaId: params.ideaId,
+                cycleId: cycle.id,
+                companyId: params.companyId,
+                voterEncrypted: encryptThinkTankIdentity(params.userId),
+                voterHash: userHash,
+                vote: params.vote,
+                weight: account.basePoints,
+                weightedValue,
+                pointAllocation: requestedPoints,
+                maxAllowedPoints: account.maxPerIdeaPoints,
+            },
+            update: {
+                vote: params.vote,
+                weight: account.basePoints,
+                weightedValue,
+                pointAllocation: requestedPoints,
+                maxAllowedPoints: account.maxPerIdeaPoints,
+            },
+        });
+
+        await tx.thinkTankPointAccount.update({
+            where: { id: account.id },
+            data: {
+                allocatedPoints: account.allocatedPoints - restoredPoints + requestedPoints,
+                remainingPoints: effectiveRemaining - requestedPoints,
+            },
+        });
+    });
+
+    const updatedIdea = await recalculateIdeaScore(params.ideaId);
+    const updatedAccount = await prisma.thinkTankPointAccount.findUnique({
+        where: { id: account.id },
+    });
+
+    return {
+        idea: updatedIdea,
+        account: updatedAccount,
+    };
+};
+
+export const createThinkTankQuestion = async (params: {
+    ideaId: string;
+    userId: string;
+    content: string;
+}) => {
+    const question = await prisma.thinkTankIdeaQuestion.create({
+        data: {
+            ideaId: params.ideaId,
+            askedByUserId: params.userId,
+            question: params.content.trim(),
+            status: 'OPEN',
+        },
+        include: {
+            askedBy: { select: { id: true, name: true, email: true } },
+            answeredBy: { select: { id: true, name: true, email: true } },
+        },
+    });
+
+    await prisma.thinkTankIdea.update({
+        where: { id: params.ideaId },
+        data: {
+            questionCount: { increment: 1 },
+        },
+    });
+
+    return question;
+};
+
+export const answerThinkTankQuestion = async (params: {
+    questionId: string;
+    answer: string;
+    answeredByUserId: string;
+}) => {
+    return prisma.thinkTankIdeaQuestion.update({
+        where: { id: params.questionId },
+        data: {
+            answer: params.answer.trim(),
+            status: 'ANSWERED',
+            answeredByUserId: params.answeredByUserId,
+            answeredAt: new Date(),
+        },
+        include: {
+            askedBy: { select: { id: true, name: true, email: true } },
+            answeredBy: { select: { id: true, name: true, email: true } },
+        },
+    });
+};
+
+export const saveThinkTankReviewerScore = async (params: {
+    ideaId: string;
+    reviewerUserId: string;
+    scores: Record<(typeof REVIEW_SCORE_FIELDS)[number], number>;
+    note?: string | null;
+}) => {
+    const normalizedScores = REVIEW_SCORE_FIELDS.reduce<Record<string, number>>((acc, key) => {
+        const value = Number(params.scores[key] ?? 0);
+        acc[key] = Math.max(0, Math.min(10, value));
+        return acc;
+    }, {});
+    const totalScore = REVIEW_SCORE_FIELDS.reduce((sum, key) => sum + normalizedScores[key], 0);
+
+    const score = await prisma.thinkTankIdeaReviewerScore.upsert({
+        where: {
+            ideaId_reviewerUserId: {
+                ideaId: params.ideaId,
+                reviewerUserId: params.reviewerUserId,
+            },
+        },
+        create: {
+            ideaId: params.ideaId,
+            reviewerUserId: params.reviewerUserId,
+            impactScore: normalizedScores.impactScore,
+            feasibilityScore: normalizedScores.feasibilityScore,
+            costScore: normalizedScores.costScore,
+            speedScore: normalizedScores.speedScore,
+            strategicFitScore: normalizedScores.strategicFitScore,
+            scalabilityScore: normalizedScores.scalabilityScore,
+            totalScore,
+            note: params.note?.trim() || null,
+        },
+        update: {
+            impactScore: normalizedScores.impactScore,
+            feasibilityScore: normalizedScores.feasibilityScore,
+            costScore: normalizedScores.costScore,
+            speedScore: normalizedScores.speedScore,
+            strategicFitScore: normalizedScores.strategicFitScore,
+            scalabilityScore: normalizedScores.scalabilityScore,
+            totalScore,
+            note: params.note?.trim() || null,
+        },
+        include: {
+            reviewer: { select: { id: true, name: true, email: true } },
+        },
+    });
+
+    await recalculateIdeaScore(params.ideaId);
+    return score;
+};
+
+export const applyThinkTankVeto = async (params: {
+    ideaId: string;
+    vetoedByUserId: string;
+    reason: string;
+}) => {
+    const idea = await prisma.thinkTankIdea.update({
+        where: { id: params.ideaId },
+        data: {
+            isVetoed: true,
+            vetoedAt: new Date(),
+            vetoedById: params.vetoedByUserId,
+            vetoReason: params.reason.trim(),
+            finalScore: 0,
+        },
+        include: thinkTankIdeaInclude,
+    });
+
+    return idea;
 };
 
 export const getThinkTankAnalytics = async (companyId: string) => {
@@ -1151,7 +1511,15 @@ export const serializeThinkTankIdea = (idea: Prisma.ThinkTankIdeaGetPayload<{ in
         implementationStatus: idea.implementationStatus,
         decisionNotes: idea.decisionNotes,
         weightedScore: idea.weightedScore,
+        communityScore: idea.communityScore,
+        reviewerScore: idea.reviewerScore,
+        finalScore: idea.finalScore,
+        ideaReadinessScore: idea.ideaReadinessScore,
         voteCount: idea.voteCount,
+        questionCount: idea.questionCount,
+        isVetoed: idea.isVetoed,
+        vetoedAt: idea.vetoedAt,
+        vetoReason: idea.vetoReason,
         createdAt: idea.createdAt,
         updatedAt: idea.updatedAt,
         revealedAt: idea.revealedAt,
@@ -1206,6 +1574,31 @@ export const serializeThinkTankIdea = (idea: Prisma.ThinkTankIdeaGetPayload<{ in
             createdAt: comment.createdAt,
             updatedAt: comment.updatedAt,
             author: comment.author,
+        })),
+        questions: idea.questions.map((question) => ({
+            id: question.id,
+            question: question.question,
+            answer: question.answer,
+            status: question.status,
+            createdAt: question.createdAt,
+            updatedAt: question.updatedAt,
+            answeredAt: question.answeredAt,
+            askedBy: question.askedBy,
+            answeredBy: question.answeredBy,
+        })),
+        reviewerScores: idea.reviewerScores.map((score) => ({
+            id: score.id,
+            impactScore: score.impactScore,
+            feasibilityScore: score.feasibilityScore,
+            costScore: score.costScore,
+            speedScore: score.speedScore,
+            strategicFitScore: score.strategicFitScore,
+            scalabilityScore: score.scalabilityScore,
+            totalScore: score.totalScore,
+            note: score.note,
+            createdAt: score.createdAt,
+            updatedAt: score.updatedAt,
+            reviewer: score.reviewer,
         })),
     };
 };

@@ -16,7 +16,15 @@ type Idea = {
     implementationStatus?: string;
     decisionNotes?: string | null;
     weightedScore: number;
+    communityScore?: number;
+    reviewerScore?: number;
+    finalScore?: number;
+    ideaReadinessScore?: number;
     voteCount: number;
+    questionCount?: number;
+    isVetoed?: boolean;
+    vetoedAt?: string | null;
+    vetoReason?: string | null;
     createdAt: string;
     revealedAt?: string | null;
     executionLink?: { type: string; id: string; title: string; convertedAt?: string; convertedById?: string } | null;
@@ -32,6 +40,31 @@ type Idea = {
         createdAt: string;
         updatedAt: string;
         author?: { id: string; name?: string | null; email?: string | null } | null;
+    }>;
+    questions?: Array<{
+        id: string;
+        question: string;
+        answer?: string | null;
+        status: string;
+        createdAt: string;
+        updatedAt: string;
+        answeredAt?: string | null;
+        askedBy?: { id: string; name?: string | null; email?: string | null } | null;
+        answeredBy?: { id: string; name?: string | null; email?: string | null } | null;
+    }>;
+    reviewerScores?: Array<{
+        id: string;
+        impactScore: number;
+        feasibilityScore: number;
+        costScore: number;
+        speedScore: number;
+        strategicFitScore: number;
+        scalabilityScore: number;
+        totalScore: number;
+        note?: string | null;
+        createdAt: string;
+        updatedAt: string;
+        reviewer?: { id: string; name?: string | null; email?: string | null } | null;
     }>;
     analytics?: {
         voteCount: number;
@@ -76,12 +109,23 @@ const formatDateTime = (value?: string | null) => {
     }).format(date);
 };
 
+const REVIEW_SCORE_FIELDS = [
+    { key: 'impactScore', label: 'Impact' },
+    { key: 'feasibilityScore', label: 'Feasibility' },
+    { key: 'costScore', label: 'Cost' },
+    { key: 'speedScore', label: 'Speed' },
+    { key: 'strategicFitScore', label: 'Strategic Fit' },
+    { key: 'scalabilityScore', label: 'Scalability' },
+] as const;
+
 export default function ThinkTankPortal({ mode }: { mode: PortalMode }) {
     const [user, setUser] = useState<any>(null);
     const [assignees, setAssignees] = useState<Array<{ id: string; name?: string | null; email?: string | null; designation?: string | null }>>([]);
     const [loading, setLoading] = useState(true);
     const [governance, setGovernance] = useState<any>(null);
     const [governanceAccess, setGovernanceAccess] = useState<{ canManage?: boolean; override?: any } | null>(null);
+    const [pointAccount, setPointAccount] = useState<{ basePoints: number; maxPerIdeaPoints: number; allocatedPoints: number; remainingPoints: number } | null>(null);
+    const [canVeto, setCanVeto] = useState(false);
     const [ideas, setIdeas] = useState<Idea[]>([]);
     const [reviewIdeas, setReviewIdeas] = useState<Idea[]>([]);
     const [results, setResults] = useState<Idea[]>([]);
@@ -147,6 +191,8 @@ export default function ThinkTankPortal({ mode }: { mode: PortalMode }) {
             setReviewIdeas(reviewPayload?.ideas || []);
             setResults(resultsPayload.ideas || []);
             setAnalytics(analyticsPayload.analytics || null);
+            setPointAccount(ideasPayload.pointAccount || null);
+            setCanVeto(Boolean(ideasPayload.canVeto));
             setAssignees((usersPayload.data || []).map((candidate: any) => ({
                 id: candidate.id,
                 name: candidate.name,
@@ -239,11 +285,15 @@ export default function ThinkTankPortal({ mode }: { mode: PortalMode }) {
     };
 
     const handleVote = async (ideaId: string, vote: 'LIKE' | 'UNLIKE' | 'NEUTRAL') => {
+        await handleVoteWithPoints(ideaId, vote, pointAccount?.maxPerIdeaPoints || 0);
+    };
+
+    const handleVoteWithPoints = async (ideaId: string, vote: 'LIKE' | 'UNLIKE' | 'NEUTRAL', pointAllocation: number) => {
         setError('');
         const response = await fetch(`/api/think-tank/ideas/${ideaId}/vote`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ vote }),
+            body: JSON.stringify({ vote, pointAllocation }),
         });
         const payload = await response.json();
         if (!response.ok) {
@@ -333,6 +383,74 @@ export default function ThinkTankPortal({ mode }: { mode: PortalMode }) {
         await refresh();
     };
 
+    const handleAskQuestion = async (ideaId: string, question: string) => {
+        setError('');
+        const response = await fetch(`/api/think-tank/ideas/${ideaId}/questions`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ question }),
+        });
+        const payload = await response.json();
+        if (!response.ok) {
+            setError(payload.error || 'Failed to ask question.');
+            return;
+        }
+        await refresh();
+    };
+
+    const handleAnswerQuestion = async (questionId: string, answer: string) => {
+        setError('');
+        const response = await fetch(`/api/think-tank/questions/${questionId}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ answer }),
+        });
+        const payload = await response.json();
+        if (!response.ok) {
+            setError(payload.error || 'Failed to answer question.');
+            return;
+        }
+        await refresh();
+    };
+
+    const handleSaveReviewerScore = async (ideaId: string, payload: {
+        impactScore: number;
+        feasibilityScore: number;
+        costScore: number;
+        speedScore: number;
+        strategicFitScore: number;
+        scalabilityScore: number;
+        note?: string;
+    }) => {
+        setError('');
+        const response = await fetch(`/api/think-tank/ideas/${ideaId}/review-score`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+        });
+        const body = await response.json();
+        if (!response.ok) {
+            setError(body.error || 'Failed to save reviewer score.');
+            return;
+        }
+        await refresh();
+    };
+
+    const handleVetoIdea = async (ideaId: string, reason: string) => {
+        setError('');
+        const response = await fetch(`/api/think-tank/ideas/${ideaId}/veto`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ reason }),
+        });
+        const body = await response.json();
+        if (!response.ok) {
+            setError(body.error || 'Failed to veto idea.');
+            return;
+        }
+        await refresh();
+    };
+
     const content = () => {
         if (loading) {
             return <div className="rounded-3xl border border-slate-200 bg-white p-8 text-sm text-slate-500">Loading Think Tank workspace…</div>;
@@ -346,6 +464,7 @@ export default function ThinkTankPortal({ mode }: { mode: PortalMode }) {
                         <SummaryCard label="Revealed Results" value={dashboardStats.resultIdeas} />
                         <SummaryCard label="Top Weighted Score" value={dashboardStats.topScore} />
                     </div>
+                    {pointAccount ? <PointAccountCard pointAccount={pointAccount} /> : null}
                     {governanceAccess?.canManage && user?.role === 'SUPER_ADMIN' && (
                         <GovernanceControlPanel
                             overrideForm={overrideForm}
@@ -359,8 +478,11 @@ export default function ThinkTankPortal({ mode }: { mode: PortalMode }) {
                         <ReviewBoard
                             ideas={reviewIdeas}
                             assignees={assignees}
+                            canVeto={canVeto}
                             onReviewUpdate={handleReviewUpdate}
                             onAddComment={handleAddComment}
+                            onSaveReviewerScore={handleSaveReviewerScore}
+                            onVetoIdea={handleVetoIdea}
                             onConvertIdea={handleConvertIdea}
                         />
                     )}
@@ -371,7 +493,17 @@ export default function ThinkTankPortal({ mode }: { mode: PortalMode }) {
                         <QuickCard href="/dashboard/think-tank/results" title="Ideas Result" description="View revealed planners, full teams, and current rankings after release." />
                     </div>
                     <GovernanceBanner governance={governance} />
-                    <IdeaGrid title="Ideas Open for Vote" ideas={ideas} showVoting />
+                    <IdeaGrid
+                        title="Ideas Open for Vote"
+                        ideas={ideas}
+                        showVoting
+                        pointAccount={pointAccount}
+                        canAnswerQuestions={canManageThinkTankRole(user?.role)}
+                        onVote={handleVote}
+                        onVoteWithPoints={handleVoteWithPoints}
+                        onAskQuestion={handleAskQuestion}
+                        onAnswerQuestion={handleAnswerQuestion}
+                    />
                 </div>
             );
         }
@@ -476,7 +608,14 @@ export default function ThinkTankPortal({ mode }: { mode: PortalMode }) {
                             </button>
                         </div>
                     </form>
-                    <IdeaGrid title="My Ideas" ideas={ideas} showDuplicates />
+                    <IdeaGrid
+                        title="My Ideas"
+                        ideas={ideas}
+                        showDuplicates
+                        canAnswerQuestions
+                        onAskQuestion={handleAskQuestion}
+                        onAnswerQuestion={handleAnswerQuestion}
+                    />
                 </div>
             );
         }
@@ -486,7 +625,18 @@ export default function ThinkTankPortal({ mode }: { mode: PortalMode }) {
                 <div className="space-y-6">
                     <GovernanceBanner governance={governance} />
                     {error && <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">{error}</div>}
-                    <IdeaGrid title="Ideas for Vote" ideas={ideas} showVoting onVote={handleVote} />
+                    {pointAccount ? <PointAccountCard pointAccount={pointAccount} compact /> : null}
+                    <IdeaGrid
+                        title="Ideas for Vote"
+                        ideas={ideas}
+                        showVoting
+                        pointAccount={pointAccount}
+                        canAnswerQuestions={canManageThinkTankRole(user?.role)}
+                        onVote={handleVote}
+                        onVoteWithPoints={handleVoteWithPoints}
+                        onAskQuestion={handleAskQuestion}
+                        onAnswerQuestion={handleAnswerQuestion}
+                    />
                 </div>
             );
         }
@@ -494,7 +644,13 @@ export default function ThinkTankPortal({ mode }: { mode: PortalMode }) {
         return (
             <div className="space-y-6">
                 <GovernanceBanner governance={governance} />
-                <IdeaGrid title="Ideas Result" ideas={results} revealTeams />
+                <IdeaGrid
+                    title="Ideas Result"
+                    ideas={results}
+                    revealTeams
+                    canAnswerQuestions={canManageThinkTankRole(user?.role)}
+                    onAnswerQuestion={handleAnswerQuestion}
+                />
             </div>
         );
     };
@@ -543,11 +699,51 @@ function NavChip({ href, label, active }: { href: string; label: string; active?
     );
 }
 
+function canManageThinkTankRole(role?: string | null) {
+    return ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'TEAM_LEADER'].includes(role || '');
+}
+
 function SummaryCard({ label, value }: { label: string; value: number }) {
     return (
         <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
             <div className="text-sm text-slate-500">{label}</div>
             <div className="mt-2 text-3xl font-semibold text-slate-950">{value}</div>
+        </div>
+    );
+}
+
+function PointAccountCard({
+    pointAccount,
+    compact,
+}: {
+    pointAccount: { basePoints: number; maxPerIdeaPoints: number; allocatedPoints: number; remainingPoints: number };
+    compact?: boolean;
+}) {
+    return (
+        <div className={`rounded-3xl border border-slate-200 bg-white shadow-sm ${compact ? 'p-5' : 'p-6'}`}>
+            <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                    <div className="text-sm font-semibold text-slate-900">My Phase 3 Voting Points</div>
+                    <div className="mt-1 text-sm text-slate-600">You can spend up to {pointAccount.maxPerIdeaPoints} points on a single idea in this cycle.</div>
+                </div>
+                <div className="rounded-2xl bg-slate-50 px-4 py-3 text-sm text-slate-700">
+                    Remaining <span className="font-semibold text-slate-950">{pointAccount.remainingPoints}</span> / {pointAccount.basePoints}
+                </div>
+            </div>
+            <div className="mt-4 grid gap-3 md:grid-cols-3">
+                <MiniMetric label="Base Points" value={pointAccount.basePoints} />
+                <MiniMetric label="Allocated" value={pointAccount.allocatedPoints} />
+                <MiniMetric label="Max Per Idea" value={pointAccount.maxPerIdeaPoints} />
+            </div>
+        </div>
+    );
+}
+
+function MiniMetric({ label, value }: { label: string; value: number }) {
+    return (
+        <div className="rounded-2xl bg-slate-50 px-4 py-3 text-sm text-slate-700">
+            <div className="text-xs uppercase tracking-[0.2em] text-slate-500">{label}</div>
+            <div className="mt-2 text-2xl font-semibold text-slate-950">{value}</div>
         </div>
     );
 }
@@ -640,14 +836,28 @@ function GovernanceControlPanel({
 function ReviewBoard({
     ideas,
     assignees,
+    canVeto,
     onReviewUpdate,
     onAddComment,
+    onSaveReviewerScore,
+    onVetoIdea,
     onConvertIdea,
 }: {
     ideas: Idea[];
     assignees: Array<{ id: string; name?: string | null; email?: string | null; designation?: string | null }>;
+    canVeto?: boolean;
     onReviewUpdate: (ideaId: string, payload: { reviewStage?: string; implementationStatus?: string; decisionNotes?: string }) => Promise<void>;
     onAddComment: (ideaId: string, content: string) => Promise<void>;
+    onSaveReviewerScore: (ideaId: string, payload: {
+        impactScore: number;
+        feasibilityScore: number;
+        costScore: number;
+        speedScore: number;
+        strategicFitScore: number;
+        scalabilityScore: number;
+        note?: string;
+    }) => Promise<void>;
+    onVetoIdea: (ideaId: string, reason: string) => Promise<void>;
     onConvertIdea: (ideaId: string, payload: {
         mode: 'PROJECT' | 'TASK';
         ownerUserId?: string;
@@ -662,6 +872,9 @@ function ReviewBoard({
 }) {
     const [notes, setNotes] = useState<Record<string, string>>({});
     const [comments, setComments] = useState<Record<string, string>>({});
+    const [scoreNotes, setScoreNotes] = useState<Record<string, string>>({});
+    const [scoreForms, setScoreForms] = useState<Record<string, Record<string, number>>>({});
+    const [vetoReasons, setVetoReasons] = useState<Record<string, string>>({});
     const [convertingIdeaId, setConvertingIdeaId] = useState<string | null>(null);
     const [conversionForms, setConversionForms] = useState<Record<string, {
         mode: 'PROJECT' | 'TASK';
@@ -689,6 +902,18 @@ function ReviewBoard({
         };
     };
 
+    const getScoreForm = (idea: Idea) => {
+        const existing = idea.reviewerScores?.[0];
+        return scoreForms[idea.id] || {
+            impactScore: existing?.impactScore || 0,
+            feasibilityScore: existing?.feasibilityScore || 0,
+            costScore: existing?.costScore || 0,
+            speedScore: existing?.speedScore || 0,
+            strategicFitScore: existing?.strategicFitScore || 0,
+            scalabilityScore: existing?.scalabilityScore || 0,
+        };
+    };
+
     return (
         <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
             <div className="mb-5">
@@ -705,10 +930,19 @@ function ReviewBoard({
                                 <p className="mt-2 text-sm text-slate-600">{idea.description}</p>
                             </div>
                             <div className="rounded-2xl bg-slate-50 px-4 py-3 text-sm text-slate-600">
-                                <div>Score: <span className="font-semibold text-slate-900">{idea.weightedScore}</span></div>
+                                <div>Community: <span className="font-semibold text-slate-900">{idea.communityScore ?? idea.weightedScore}</span></div>
+                                <div>Reviewer: <span className="font-semibold text-slate-900">{idea.reviewerScore ?? 0}</span></div>
+                                <div>Final: <span className="font-semibold text-slate-900">{idea.finalScore ?? idea.weightedScore}</span></div>
                                 <div>Votes: <span className="font-semibold text-slate-900">{idea.voteCount}</span></div>
                             </div>
                         </div>
+                        {idea.isVetoed ? (
+                            <div className="mt-4 rounded-2xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-900">
+                                <div className="font-semibold">Super Admin veto applied</div>
+                                <div className="mt-1">{idea.vetoReason || 'No reason recorded.'}</div>
+                                <div className="mt-1 text-rose-700">Vetoed on {formatDateTime(idea.vetoedAt || null)}</div>
+                            </div>
+                        ) : null}
                         <div className="mt-4 grid gap-3 md:grid-cols-[200px_220px_1fr_auto] md:items-end">
                             <label className="grid gap-2 text-sm text-slate-700">
                                 <span className="font-medium">Review stage</span>
@@ -794,6 +1028,73 @@ function ReviewBoard({
                                 </button>
                             </div>
                         </div>
+                        <div className="mt-4 rounded-2xl bg-slate-50 p-4">
+                            <div className="text-sm font-semibold text-slate-900">Reviewer rubric</div>
+                            <div className="mt-3 grid gap-3 md:grid-cols-3">
+                                {REVIEW_SCORE_FIELDS.map((field) => (
+                                    <label key={field.key} className="grid gap-2 text-sm text-slate-700">
+                                        <span className="font-medium">{field.label}</span>
+                                        <input
+                                            type="number"
+                                            min={0}
+                                            max={10}
+                                            className="rounded-2xl border border-slate-200 px-4 py-3"
+                                            value={getScoreForm(idea)[field.key]}
+                                            onChange={(event) => setScoreForms((current) => ({
+                                                ...current,
+                                                [idea.id]: {
+                                                    ...getScoreForm(idea),
+                                                    [field.key]: Number(event.target.value),
+                                                },
+                                            }))}
+                                        />
+                                    </label>
+                                ))}
+                                <label className="grid gap-2 text-sm text-slate-700 md:col-span-3">
+                                    <span className="font-medium">Reviewer note</span>
+                                    <textarea
+                                        className="min-h-24 rounded-2xl border border-slate-200 px-4 py-3"
+                                        placeholder="Why this idea scores well or needs more work"
+                                        value={scoreNotes[idea.id] ?? idea.reviewerScores?.[0]?.note ?? ''}
+                                        onChange={(event) => setScoreNotes((current) => ({ ...current, [idea.id]: event.target.value }))}
+                                    />
+                                </label>
+                            </div>
+                            <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+                                <div className="text-sm text-slate-600">
+                                    Latest rubric total: <span className="font-semibold text-slate-900">{idea.reviewerScores?.[0]?.totalScore ?? 0}</span>
+                                </div>
+                                <button
+                                    onClick={() => onSaveReviewerScore(idea.id, {
+                                        ...(getScoreForm(idea) as any),
+                                        note: scoreNotes[idea.id] ?? idea.reviewerScores?.[0]?.note ?? '',
+                                    })}
+                                    className="rounded-2xl bg-indigo-700 px-4 py-3 text-sm font-semibold text-white"
+                                >
+                                    Save Reviewer Score
+                                </button>
+                            </div>
+                        </div>
+                        {canVeto && !idea.isVetoed ? (
+                            <div className="mt-4 rounded-2xl border border-rose-200 bg-rose-50 p-4">
+                                <div className="text-sm font-semibold text-rose-900">Super Admin veto</div>
+                                <div className="mt-1 text-sm text-rose-800">Use veto only when an idea must be blocked for this cycle regardless of voting or reviewer score.</div>
+                                <div className="mt-3 flex gap-3">
+                                    <input
+                                        className="flex-1 rounded-2xl border border-rose-200 bg-white px-4 py-3 text-sm"
+                                        placeholder="Required veto reason"
+                                        value={vetoReasons[idea.id] || ''}
+                                        onChange={(event) => setVetoReasons((current) => ({ ...current, [idea.id]: event.target.value }))}
+                                    />
+                                    <button
+                                        onClick={() => onVetoIdea(idea.id, vetoReasons[idea.id] || '')}
+                                        className="rounded-2xl bg-rose-700 px-4 py-3 text-sm font-semibold text-white"
+                                    >
+                                        Apply Veto
+                                    </button>
+                                </div>
+                            </div>
+                        ) : null}
                         {['APPROVED', 'IMPLEMENTED'].includes(idea.reviewStage || '') && !idea.executionLink ? (
                             <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-4">
                                 <div className="flex flex-wrap items-start justify-between gap-3">
@@ -1015,15 +1316,29 @@ function IdeaGrid({
     showVoting,
     showDuplicates,
     revealTeams,
+    pointAccount,
+    canAnswerQuestions,
     onVote,
+    onVoteWithPoints,
+    onAskQuestion,
+    onAnswerQuestion,
 }: {
     title: string;
     ideas: Idea[];
     showVoting?: boolean;
     showDuplicates?: boolean;
     revealTeams?: boolean;
+    pointAccount?: { basePoints: number; maxPerIdeaPoints: number; allocatedPoints: number; remainingPoints: number } | null;
+    canAnswerQuestions?: boolean;
     onVote?: (ideaId: string, vote: 'LIKE' | 'UNLIKE' | 'NEUTRAL') => void;
+    onVoteWithPoints?: (ideaId: string, vote: 'LIKE' | 'UNLIKE' | 'NEUTRAL', pointAllocation: number) => void;
+    onAskQuestion?: (ideaId: string, question: string) => Promise<void>;
+    onAnswerQuestion?: (questionId: string, answer: string) => Promise<void>;
 }) {
+    const [pointInputs, setPointInputs] = useState<Record<string, number>>({});
+    const [questionInputs, setQuestionInputs] = useState<Record<string, string>>({});
+    const [answerInputs, setAnswerInputs] = useState<Record<string, string>>({});
+
     if (!ideas.length) {
         return <div className="rounded-3xl border border-dashed border-slate-300 bg-white/70 p-8 text-sm text-slate-500">No ideas found in this view yet.</div>;
     }
@@ -1043,12 +1358,21 @@ function IdeaGrid({
                             <div className="rounded-2xl bg-slate-50 px-4 py-3 text-right text-sm text-slate-600">
                                 <div>Status: <span className="font-semibold text-slate-900">{idea.status}</span></div>
                                 <div>Votes: <span className="font-semibold text-slate-900">{idea.voteCount}</span></div>
-                                <div>Weighted Score: <span className="font-semibold text-slate-900">{idea.weightedScore}</span></div>
+                                <div>Community Score: <span className="font-semibold text-slate-900">{idea.communityScore ?? idea.weightedScore}</span></div>
+                                <div>Reviewer Score: <span className="font-semibold text-slate-900">{idea.reviewerScore ?? 0}</span></div>
+                                <div>Final Score: <span className="font-semibold text-slate-900">{idea.finalScore ?? idea.weightedScore}</span></div>
                             </div>
                         </div>
+                        {idea.isVetoed ? (
+                            <div className="mt-4 rounded-2xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-900">
+                                <div className="font-semibold">This idea has been vetoed for the current cycle.</div>
+                                <div className="mt-1">{idea.vetoReason || 'No veto reason recorded.'}</div>
+                            </div>
+                        ) : null}
                         <div className="mt-4 flex flex-wrap gap-3 text-xs text-slate-500">
                             <span>Created {formatDateTime(idea.createdAt)}</span>
                             {idea.revealedAt ? <span>Revealed {formatDateTime(idea.revealedAt)}</span> : null}
+                            {typeof idea.questionCount === 'number' ? <span>{idea.questionCount} questions</span> : null}
                         </div>
                         {idea.attachments && idea.attachments.length > 0 && (
                             <div className="mt-4 flex flex-wrap gap-2">
@@ -1085,12 +1409,129 @@ function IdeaGrid({
                             </div>
                         ) : null}
                         {showVoting && onVote && (
-                            <div className="mt-5 flex flex-wrap gap-2">
-                                <button onClick={() => onVote(idea.id, 'LIKE')} className="rounded-full bg-emerald-600 px-4 py-2 text-sm font-semibold text-white">Like</button>
-                                <button onClick={() => onVote(idea.id, 'NEUTRAL')} className="rounded-full bg-slate-200 px-4 py-2 text-sm font-semibold text-slate-700">Neutral</button>
-                                <button onClick={() => onVote(idea.id, 'UNLIKE')} className="rounded-full bg-rose-600 px-4 py-2 text-sm font-semibold text-white">Unlike</button>
+                            <div className="mt-5 rounded-2xl bg-slate-50 p-4">
+                                <div className="flex flex-wrap items-center justify-between gap-3">
+                                    <div>
+                                        <div className="text-sm font-semibold text-slate-900">Phase 3 point vote</div>
+                                        <div className="mt-1 text-sm text-slate-600">Choose your vote and allocate points from your cycle budget.</div>
+                                    </div>
+                                    {pointAccount ? (
+                                        <div className="rounded-2xl bg-white px-4 py-3 text-sm text-slate-700">
+                                            Remaining {pointAccount.remainingPoints} / {pointAccount.basePoints}
+                                        </div>
+                                    ) : null}
+                                </div>
+                                <div className="mt-4 grid gap-3 md:grid-cols-[220px_1fr] md:items-end">
+                                    <label className="grid gap-2 text-sm text-slate-700">
+                                        <span className="font-medium">Points for this idea</span>
+                                        <input
+                                            type="number"
+                                            min={0}
+                                            max={pointAccount?.maxPerIdeaPoints || 0}
+                                            className="rounded-2xl border border-slate-200 bg-white px-4 py-3"
+                                            value={pointInputs[idea.id] ?? pointAccount?.maxPerIdeaPoints ?? 0}
+                                            onChange={(event) => setPointInputs((current) => ({ ...current, [idea.id]: Number(event.target.value) }))}
+                                        />
+                                    </label>
+                                    <div className="flex flex-wrap gap-2">
+                                        <button
+                                            onClick={() => (onVoteWithPoints || ((targetId: string, targetVote: 'LIKE' | 'UNLIKE' | 'NEUTRAL', _points: number) => onVote(targetId, targetVote)))(idea.id, 'LIKE', pointInputs[idea.id] ?? pointAccount?.maxPerIdeaPoints ?? 0)}
+                                            className="rounded-full bg-emerald-600 px-4 py-2 text-sm font-semibold text-white"
+                                        >
+                                            Support
+                                        </button>
+                                        <button
+                                            onClick={() => (onVoteWithPoints || ((targetId: string, targetVote: 'LIKE' | 'UNLIKE' | 'NEUTRAL', _points: number) => onVote(targetId, targetVote)))(idea.id, 'NEUTRAL', pointInputs[idea.id] ?? pointAccount?.maxPerIdeaPoints ?? 0)}
+                                            className="rounded-full bg-slate-200 px-4 py-2 text-sm font-semibold text-slate-700"
+                                        >
+                                            Neutral
+                                        </button>
+                                        <button
+                                            onClick={() => (onVoteWithPoints || ((targetId: string, targetVote: 'LIKE' | 'UNLIKE' | 'NEUTRAL', _points: number) => onVote(targetId, targetVote)))(idea.id, 'UNLIKE', pointInputs[idea.id] ?? pointAccount?.maxPerIdeaPoints ?? 0)}
+                                            className="rounded-full bg-rose-600 px-4 py-2 text-sm font-semibold text-white"
+                                        >
+                                            Oppose
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
                         )}
+                        {((idea.questions && idea.questions.length > 0) || onAskQuestion) ? (
+                            <div className="mt-5 rounded-2xl bg-slate-50 p-4">
+                                <div className="text-sm font-semibold text-slate-900">Idea Q&amp;A</div>
+                                <div className="mt-3 space-y-3">
+                                    {(idea.questions || []).map((question) => (
+                                        <div key={question.id} className="rounded-2xl bg-white p-4 text-sm text-slate-700">
+                                            <div className="font-medium text-slate-900">{question.askedBy?.name || question.askedBy?.email || 'Voter'} asked</div>
+                                            <div className="mt-1 whitespace-pre-wrap">{question.question}</div>
+                                            {question.answer ? (
+                                                <div className="mt-3 rounded-2xl bg-slate-50 p-3">
+                                                    <div className="font-medium text-slate-900">{question.answeredBy?.name || question.answeredBy?.email || 'Planner'} answered</div>
+                                                    <div className="mt-1 whitespace-pre-wrap">{question.answer}</div>
+                                                </div>
+                                            ) : canAnswerQuestions && onAnswerQuestion ? (
+                                                <div className="mt-3 flex gap-3">
+                                                    <input
+                                                        className="flex-1 rounded-2xl border border-slate-200 px-4 py-3 text-sm"
+                                                        placeholder="Answer this question"
+                                                        value={answerInputs[question.id] || ''}
+                                                        onChange={(event) => setAnswerInputs((current) => ({ ...current, [question.id]: event.target.value }))}
+                                                    />
+                                                    <button
+                                                        onClick={async () => {
+                                                            const answer = answerInputs[question.id]?.trim();
+                                                            if (!answer) return;
+                                                            await onAnswerQuestion(question.id, answer);
+                                                            setAnswerInputs((current) => ({ ...current, [question.id]: '' }));
+                                                        }}
+                                                        className="rounded-2xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white"
+                                                    >
+                                                        Answer
+                                                    </button>
+                                                </div>
+                                            ) : (
+                                                <div className="mt-3 text-xs font-medium text-amber-700">Waiting for planner answer.</div>
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
+                                {onAskQuestion ? (
+                                    <div className="mt-4 flex gap-3">
+                                        <input
+                                            className="flex-1 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm"
+                                            placeholder="Ask the planner a question about feasibility, rollout, or impact"
+                                            value={questionInputs[idea.id] || ''}
+                                            onChange={(event) => setQuestionInputs((current) => ({ ...current, [idea.id]: event.target.value }))}
+                                        />
+                                        <button
+                                            onClick={async () => {
+                                                const question = questionInputs[idea.id]?.trim();
+                                                if (!question) return;
+                                                await onAskQuestion(idea.id, question);
+                                                setQuestionInputs((current) => ({ ...current, [idea.id]: '' }));
+                                            }}
+                                            className="rounded-2xl bg-indigo-600 px-4 py-3 text-sm font-semibold text-white"
+                                        >
+                                            Ask
+                                        </button>
+                                    </div>
+                                ) : null}
+                            </div>
+                        ) : null}
+                        {idea.reviewerScores && idea.reviewerScores.length > 0 ? (
+                            <div className="mt-5 rounded-2xl bg-slate-50 p-4">
+                                <div className="text-sm font-semibold text-slate-900">Reviewer Rubrics</div>
+                                <div className="mt-3 space-y-3">
+                                    {idea.reviewerScores.slice(0, 3).map((score) => (
+                                        <div key={score.id} className="rounded-2xl bg-white p-3 text-sm text-slate-700">
+                                            <div className="font-medium text-slate-900">{score.reviewer?.name || score.reviewer?.email || 'Reviewer'}</div>
+                                            <div className="mt-1">Total rubric score: <span className="font-semibold">{score.totalScore}</span></div>
+                                            {score.note ? <div className="mt-1 whitespace-pre-wrap">{score.note}</div> : null}
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        ) : null}
                         {showDuplicates && idea.duplicateMatches && idea.duplicateMatches.length > 0 && (
                             <div className="mt-5 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
                                 <div className="font-semibold">Duplicate review trail</div>

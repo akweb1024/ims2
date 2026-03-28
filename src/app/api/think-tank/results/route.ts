@@ -15,6 +15,7 @@ export const GET = authorizedRoute([], async (_req: NextRequest, user: any) => {
         include: thinkTankIdeaInclude,
         orderBy: [
             { revealedAt: 'desc' },
+            { finalScore: 'desc' },
             { weightedScore: 'desc' },
         ],
     });
