@@ -44,6 +44,13 @@ type ProblemIssue = {
         updatedAt: string;
         author?: { id: string; name?: string | null; email?: string | null; role?: string | null } | null;
     }>;
+    resolutionFeedback?: Array<{
+        id: string;
+        outcome: string;
+        note?: string | null;
+        createdAt: string;
+        user?: { id: string; name?: string | null; email?: string | null; role?: string | null } | null;
+    }>;
     statusHistory?: Array<{
         id: string;
         fromStatus?: string | null;
@@ -162,6 +169,7 @@ export default function ProblemsPortal({ mode }: { mode: ProblemsMode }) {
     const [selectedAssignees, setSelectedAssignees] = useState<Record<string, string>>({});
     const [commentInputs, setCommentInputs] = useState<Record<string, string>>({});
     const [internalNoteInputs, setInternalNoteInputs] = useState<Record<string, string>>({});
+    const [resolutionFeedbackInputs, setResolutionFeedbackInputs] = useState<Record<string, string>>({});
     const [duplicateSuggestions, setDuplicateSuggestions] = useState<ProblemIssue['duplicateMatches']>([]);
     const [checkingDuplicates, setCheckingDuplicates] = useState(false);
     const [analytics, setAnalytics] = useState<ProblemsAnalytics | null>(null);
@@ -424,6 +432,29 @@ export default function ProblemsPortal({ mode }: { mode: ProblemsMode }) {
         }
     };
 
+    const submitResolutionFeedback = async (issueId: string, outcome: 'RESOLVED_CONFIRMED' | 'REOPEN_REQUESTED') => {
+        try {
+            const note = resolutionFeedbackInputs[issueId]?.trim() || '';
+            const response = await fetch(`/api/problems/${issueId}/feedback`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    outcome,
+                    note: note || null,
+                }),
+            });
+            const payload = await response.json();
+            if (!response.ok) {
+                throw new Error(payload.message || payload.error || 'Failed to submit resolution feedback.');
+            }
+            toast.success(outcome === 'RESOLVED_CONFIRMED' ? 'Problem closed successfully.' : 'Problem reopened for more work.');
+            setResolutionFeedbackInputs((current) => ({ ...current, [issueId]: '' }));
+            await loadData();
+        } catch (error) {
+            toast.error(error instanceof Error ? error.message : 'Failed to submit resolution feedback.');
+        }
+    };
+
     return (
         <DashboardLayout userRole={user?.role || 'EMPLOYEE'}>
             <div className="mx-auto w-full max-w-7xl space-y-8 px-4 py-6 sm:px-6 lg:px-8">
@@ -584,12 +615,15 @@ export default function ProblemsPortal({ mode }: { mode: ProblemsMode }) {
                                 commentValue={commentInputs[issue.id] || ''}
                                 onCommentChange={(value) => setCommentInputs((current) => ({ ...current, [issue.id]: value }))}
                                 onAddComment={() => addComment(issue.id)}
+                                resolutionFeedbackValue={resolutionFeedbackInputs[issue.id] || ''}
+                                onResolutionFeedbackChange={(value) => setResolutionFeedbackInputs((current) => ({ ...current, [issue.id]: value }))}
+                                onConfirmResolution={() => submitResolutionFeedback(issue.id, 'RESOLVED_CONFIRMED')}
+                                onRequestReopen={() => submitResolutionFeedback(issue.id, 'REOPEN_REQUESTED')}
                                 actions={(
                                     <div className="flex flex-wrap gap-2">
-                                        {issue.status === 'RESOLVED' ? <ActionButton label="Confirm & Close" onClick={() => changeStatus(issue.id, 'CLOSED')} /> : null}
-                                            {['RESOLVED', 'CLOSED'].includes(issue.status) ? <ActionButton label="Reopen" variant="secondary" onClick={() => changeStatus(issue.id, 'REOPENED')} /> : null}
-                                        </div>
-                                    )}
+                                        {issue.status === 'RESOLVED' ? <ActionButton label="Close Without Note" onClick={() => changeStatus(issue.id, 'CLOSED')} /> : null}
+                                    </div>
+                                )}
                                 />
                             ))}
                         </section>
@@ -871,6 +905,10 @@ function ProblemCard({
     internalNoteValue,
     onInternalNoteChange,
     onAddInternalNote,
+    resolutionFeedbackValue,
+    onResolutionFeedbackChange,
+    onConfirmResolution,
+    onRequestReopen,
     actions,
 }: {
     issue: ProblemIssue;
@@ -882,6 +920,10 @@ function ProblemCard({
     internalNoteValue?: string;
     onInternalNoteChange?: (value: string) => void;
     onAddInternalNote?: () => void;
+    resolutionFeedbackValue?: string;
+    onResolutionFeedbackChange?: (value: string) => void;
+    onConfirmResolution?: () => void;
+    onRequestReopen?: () => void;
     actions?: React.ReactNode;
 }) {
     return (
@@ -929,6 +971,26 @@ function ProblemCard({
                                     <span className="rounded-full bg-slate-100 px-2 py-1">{formatLabel(match.matchedIssue.status)}</span>
                                     <span className="rounded-full bg-slate-100 px-2 py-1">{formatLabel(match.matchedIssue.severity)}</span>
                                 </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            ) : null}
+
+            {issue.resolutionFeedback?.length ? (
+                <div className="mt-5 rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
+                    <div className="text-sm font-semibold text-emerald-900">Resolution Feedback</div>
+                    <div className="mt-3 space-y-3">
+                        {issue.resolutionFeedback.map((entry) => (
+                            <div key={entry.id} className="rounded-2xl bg-white p-3 text-sm text-slate-700">
+                                <div className="flex flex-wrap items-center justify-between gap-2">
+                                    <div className="font-medium text-slate-900">{entry.user?.name || entry.user?.email || 'Staff'}</div>
+                                    <div className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
+                                        {formatLabel(entry.outcome)}
+                                    </div>
+                                </div>
+                                {entry.note ? <div className="mt-2 whitespace-pre-wrap">{entry.note}</div> : null}
+                                <div className="mt-2 text-xs text-slate-500">{formatDateTime(entry.createdAt)}</div>
                             </div>
                         ))}
                     </div>
@@ -1008,6 +1070,29 @@ function ProblemCard({
                     </div>
                 ) : null}
             </div>
+
+            {!canManage && (issue.status === 'RESOLVED' || issue.status === 'CLOSED') && onResolutionFeedbackChange ? (
+                <div className="mt-5 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                    <div className="text-sm font-semibold text-slate-900">Did the resolution actually work?</div>
+                    <div className="mt-1 text-sm text-slate-600">
+                        Confirm the fix if everything is working, or explain what is still broken so management can reopen the problem with context.
+                    </div>
+                    <textarea
+                        className="mt-3 min-h-[96px] w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm"
+                        value={resolutionFeedbackValue || ''}
+                        onChange={(event) => onResolutionFeedbackChange(event.target.value)}
+                        placeholder="Add a confirmation note or explain what still needs attention"
+                    />
+                    <div className="mt-3 flex flex-wrap gap-2">
+                        {issue.status === 'RESOLVED' && onConfirmResolution ? (
+                            <ActionButton label="Yes, Close Problem" onClick={onConfirmResolution} />
+                        ) : null}
+                        {onRequestReopen ? (
+                            <ActionButton label="Reopen With Reason" variant="secondary" onClick={onRequestReopen} />
+                        ) : null}
+                    </div>
+                </div>
+            ) : null}
 
             {actions ? <div className="mt-5">{actions}</div> : null}
         </div>

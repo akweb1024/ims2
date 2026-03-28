@@ -116,6 +116,13 @@ export const problemIssueInclude = {
         },
         take: 5,
     },
+    resolutionFeedback: {
+        orderBy: { createdAt: 'desc' as const },
+        include: {
+            user: { select: { id: true, name: true, email: true, role: true } },
+        },
+        take: 10,
+    },
     _count: {
         select: {
             comments: true,
@@ -302,6 +309,13 @@ export const serializeProblemIssue = (
             similarityScore: link.similarityScore,
             decision: link.decision,
             matchedIssue: link.matchedIssue,
+        })),
+        resolutionFeedback: issue.resolutionFeedback.map((entry) => ({
+            id: entry.id,
+            outcome: entry.outcome,
+            note: entry.note,
+            createdAt: entry.createdAt,
+            user: entry.user,
         })),
         comments: issue.comments.map((comment) => ({
             id: comment.id,
@@ -638,6 +652,86 @@ export const addProblemInternalNote = async (params: {
         },
         include: problemIssueInclude,
     });
+};
+
+export const addProblemResolutionFeedback = async (params: {
+    issueId: string;
+    companyId: string;
+    actor: ProblemsUser;
+    outcome: 'RESOLVED_CONFIRMED' | 'REOPEN_REQUESTED';
+    note?: string | null;
+}) => {
+    ensureProblemsAccess(params.actor);
+
+    const issue = await getProblemIssueById(params.issueId, params.companyId);
+    const isReporter = issue.reportedById === params.actor.id;
+    if (!isReporter && !canManageProblems(params.actor.role)) {
+        throw new AuthorizationError('Only the reporter or management can submit resolution feedback.');
+    }
+
+    const note = params.note?.trim() || null;
+
+    if (params.outcome === 'RESOLVED_CONFIRMED' && issue.status !== ProblemStatus.RESOLVED) {
+        throw new ValidationError('Only resolved problems can be confirmed as fixed.');
+    }
+
+    if (params.outcome === 'REOPEN_REQUESTED' && !note) {
+        throw new ValidationError('Please explain why this problem needs to be reopened.');
+    }
+
+    const nextStatus =
+        params.outcome === 'RESOLVED_CONFIRMED' ? ProblemStatus.CLOSED : ProblemStatus.REOPENED;
+
+    const updated = await prisma.problemIssue.update({
+        where: { id: issue.id },
+        data: {
+            status: nextStatus,
+            closedAt: params.outcome === 'RESOLVED_CONFIRMED' ? new Date() : null,
+            reopenedAt: params.outcome === 'REOPEN_REQUESTED' ? new Date() : null,
+            resolvedAt: params.outcome === 'REOPEN_REQUESTED' ? null : issue.resolvedAt,
+            resolutionFeedback: {
+                create: {
+                    userId: params.actor.id,
+                    outcome: params.outcome,
+                    note,
+                },
+            },
+            statusHistory: {
+                create: {
+                    actorUserId: params.actor.id,
+                    fromStatus: issue.status,
+                    toStatus: nextStatus,
+                    note:
+                        params.outcome === 'RESOLVED_CONFIRMED'
+                            ? note || 'Reporter confirmed the resolution worked.'
+                            : note,
+                },
+            },
+            auditEvents: {
+                create: {
+                    actorUserId: params.actor.id,
+                    action: 'PROBLEM_RESOLUTION_FEEDBACK_ADDED',
+                    outcome: 'SUCCESS',
+                    metadata: {
+                        feedbackOutcome: params.outcome,
+                        resultingStatus: nextStatus,
+                    },
+                },
+            },
+        },
+        include: problemIssueInclude,
+    });
+
+    await notifyProblemParticipants(
+        issue,
+        params.actor.id,
+        params.outcome === 'RESOLVED_CONFIRMED' ? 'Problem closed by reporter' : 'Problem reopened by reporter',
+        params.outcome === 'RESOLVED_CONFIRMED'
+            ? `The reporter confirmed that "${issue.title}" has been resolved.`
+            : `The reporter reopened "${issue.title}" and requested more work.`
+    );
+
+    return updated;
 };
 
 export const getProblemsAnalytics = async (params: {
