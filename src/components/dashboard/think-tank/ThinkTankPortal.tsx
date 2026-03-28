@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState, type Dispatch, type FormEvent, type SetStateAction } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 
 type PortalMode = 'dashboard' | 'my-ideas' | 'vote' | 'results';
@@ -60,6 +61,8 @@ type Idea = {
         answeredAt?: string | null;
         askedBy?: { id: string; name?: string | null; email?: string | null } | null;
         answeredBy?: { id: string; name?: string | null; email?: string | null } | null;
+        askedByLabel?: string;
+        answeredByLabel?: string;
     }>;
     reviewerScores?: Array<{
         id: string;
@@ -167,7 +170,8 @@ const THINK_TANK_GUIDELINES: Record<ThinkTankAcknowledgementKey, { title: string
     },
 };
 
-export default function ThinkTankPortal({ mode }: { mode: PortalMode }) {
+export default function ThinkTankPortal({ mode, ideaId }: { mode: PortalMode; ideaId?: string }) {
+    const router = useRouter();
     const [user, setUser] = useState<any>(null);
     const [assignees, setAssignees] = useState<Array<{ id: string; name?: string | null; email?: string | null; designation?: string | null }>>([]);
     const [loading, setLoading] = useState(true);
@@ -183,6 +187,7 @@ export default function ThinkTankPortal({ mode }: { mode: PortalMode }) {
     const [ideas, setIdeas] = useState<Idea[]>([]);
     const [reviewIdeas, setReviewIdeas] = useState<Idea[]>([]);
     const [results, setResults] = useState<Idea[]>([]);
+    const [selectedIdea, setSelectedIdea] = useState<Idea | null>(null);
     const [analytics, setAnalytics] = useState<any>(null);
     const [form, setForm] = useState({
         topic: '',
@@ -268,12 +273,23 @@ export default function ThinkTankPortal({ mode }: { mode: PortalMode }) {
                 email: candidate.email,
                 designation: candidate.employeeProfile?.designatRef?.name || candidate.employeeProfile?.designation || candidate.role || null,
             })));
+
+            if (mode === 'vote' && ideaId) {
+                const ideaRes = await fetch(`/api/think-tank/ideas/${ideaId}`, { cache: 'no-store' });
+                const ideaPayload = await ideaRes.json();
+                if (!ideaRes.ok) {
+                    throw new Error(ideaPayload.error || 'Failed to load selected idea.');
+                }
+                setSelectedIdea(ideaPayload.idea || null);
+            } else {
+                setSelectedIdea(null);
+            }
         } catch (fetchError) {
-            setError('Failed to load Think Tank ideas.');
+            setError(fetchError instanceof Error ? fetchError.message : 'Failed to load Think Tank ideas.');
         } finally {
             setLoading(false);
         }
-    }, [view]);
+    }, [ideaId, mode, view]);
 
     useEffect(() => {
         refresh();
@@ -707,17 +723,41 @@ export default function ThinkTankPortal({ mode }: { mode: PortalMode }) {
                     <GovernanceBanner governance={governance} />
                     {error && <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">{error}</div>}
                     {pointAccount ? <PointAccountCard pointAccount={pointAccount} compact /> : null}
-                    <IdeaGrid
-                        title="Ideas for Vote"
-                        ideas={ideas}
-                        showVoting
-                        pointAccount={pointAccount}
-                        canAnswerQuestions={canManageThinkTankRole(user?.role)}
-                        onVote={handleVote}
-                        onVoteWithPoints={handleVoteWithPoints}
-                        onAskQuestion={handleAskQuestion}
-                        onAnswerQuestion={handleAnswerQuestion}
-                    />
+                    {selectedIdea ? (
+                        <div className="space-y-4">
+                            <div className="flex flex-wrap items-center justify-between gap-3">
+                                <button
+                                    type="button"
+                                    onClick={() => router.push('/dashboard/think-tank/vote')}
+                                    className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm ring-1 ring-slate-200"
+                                >
+                                    Back to ideas list
+                                </button>
+                                <div className="text-sm text-slate-500">
+                                    Dedicated voting page for one idea with anonymous Q&amp;A and point allocation.
+                                </div>
+                            </div>
+                            <IdeaGrid
+                                title="Vote on This Idea"
+                                ideas={[selectedIdea]}
+                                showVoting
+                                pointAccount={pointAccount}
+                                canAnswerQuestions={canManageThinkTankRole(user?.role)}
+                                onVote={handleVote}
+                                onVoteWithPoints={handleVoteWithPoints}
+                                onAskQuestion={handleAskQuestion}
+                                onAnswerQuestion={handleAnswerQuestion}
+                                singleIdeaView
+                            />
+                        </div>
+                    ) : (
+                        <IdeaGrid
+                            title="Ideas for Vote"
+                            ideas={ideas}
+                            pointAccount={pointAccount}
+                            singleIdeaLinks
+                        />
+                    )}
                 </div>
             );
         }
@@ -1445,6 +1485,8 @@ function IdeaGrid({
     revealTeams,
     pointAccount,
     canAnswerQuestions,
+    singleIdeaLinks,
+    singleIdeaView,
     onVote,
     onVoteWithPoints,
     onAskQuestion,
@@ -1457,6 +1499,8 @@ function IdeaGrid({
     revealTeams?: boolean;
     pointAccount?: { basePoints: number; maxPerIdeaPoints: number; allocatedPoints: number; remainingPoints: number } | null;
     canAnswerQuestions?: boolean;
+    singleIdeaLinks?: boolean;
+    singleIdeaView?: boolean;
     onVote?: (ideaId: string, vote: 'LIKE' | 'UNLIKE' | 'NEUTRAL') => void;
     onVoteWithPoints?: (ideaId: string, vote: 'LIKE' | 'UNLIKE' | 'NEUTRAL', pointAllocation: number) => void;
     onAskQuestion?: (ideaId: string, question: string) => Promise<void>;
@@ -1501,6 +1545,16 @@ function IdeaGrid({
                             {idea.revealedAt ? <span>Revealed {formatDateTime(idea.revealedAt)}</span> : null}
                             {typeof idea.questionCount === 'number' ? <span>{idea.questionCount} questions</span> : null}
                         </div>
+                        {singleIdeaLinks ? (
+                            <div className="mt-4">
+                                <Link
+                                    href={`/dashboard/think-tank/vote/${idea.id}`}
+                                    className="inline-flex rounded-full bg-slate-900 px-4 py-2 text-sm font-semibold text-white"
+                                >
+                                    Open idea details
+                                </Link>
+                            </div>
+                        ) : null}
                         {idea.attachments && idea.attachments.length > 0 && (
                             <div className="mt-4 flex flex-wrap gap-2">
                                 {idea.attachments.map((attachment) => (
@@ -1605,17 +1659,17 @@ function IdeaGrid({
                                 )}
                             </div>
                         )}
-                        {((idea.questions && idea.questions.length > 0) || onAskQuestion) ? (
+                        {((idea.questions && idea.questions.length > 0) || onAskQuestion) && (!singleIdeaLinks || singleIdeaView) ? (
                             <div className="mt-5 rounded-2xl bg-slate-50 p-4">
                                 <div className="text-sm font-semibold text-slate-900">Idea Q&amp;A</div>
                                 <div className="mt-3 space-y-3">
                                     {(idea.questions || []).map((question) => (
                                         <div key={question.id} className="rounded-2xl bg-white p-4 text-sm text-slate-700">
-                                            <div className="font-medium text-slate-900">{question.askedBy?.name || question.askedBy?.email || 'Voter'} asked</div>
+                                            <div className="font-medium text-slate-900">{question.askedByLabel || 'Anonymous Voter'} asked</div>
                                             <div className="mt-1 whitespace-pre-wrap">{question.question}</div>
                                             {question.answer ? (
                                                 <div className="mt-3 rounded-2xl bg-slate-50 p-3">
-                                                    <div className="font-medium text-slate-900">{question.answeredBy?.name || question.answeredBy?.email || 'Planner'} answered</div>
+                                                    <div className="font-medium text-slate-900">{question.answeredByLabel || 'Anonymous Planner'} answered</div>
                                                     <div className="mt-1 whitespace-pre-wrap">{question.answer}</div>
                                                 </div>
                                             ) : canAnswerQuestions && onAnswerQuestion ? (

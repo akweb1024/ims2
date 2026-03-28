@@ -18,6 +18,7 @@ export const dynamic = 'force-dynamic';
 
 export const GET = authorizedRoute([], async (_req: NextRequest, user: any, context: any) => {
     ensureThinkTankAccess(user);
+    const userHash = crypto.createHash('sha256').update(user.id).digest('hex');
     const idea = await prisma.thinkTankIdea.findFirst({
         where: {
             id: context?.params?.id,
@@ -34,6 +35,8 @@ export const GET = authorizedRoute([], async (_req: NextRequest, user: any, cont
         idea: serializeThinkTankIdea(idea, {
             reveal: idea.status === 'REVEALED',
             includeDuplicates: true,
+            currentUserHash: userHash,
+            revealQuestionIdentity: user.role === 'SUPER_ADMIN',
         }),
     });
 });
@@ -126,6 +129,10 @@ export const PATCH = authorizedRoute([], async (req: NextRequest, user: any, con
     }
 
     return NextResponse.json({
-        idea: serializeThinkTankIdea(updated, { includeDuplicates: true }),
+        idea: serializeThinkTankIdea(updated, {
+            includeDuplicates: true,
+            currentUserHash: userHash,
+            revealQuestionIdentity: user.role === 'SUPER_ADMIN',
+        }),
     });
 });

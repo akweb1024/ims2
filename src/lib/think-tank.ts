@@ -1499,8 +1499,10 @@ export const serializeThinkTankIdea = (idea: Prisma.ThinkTankIdeaGetPayload<{ in
     reveal?: boolean;
     includeDuplicates?: boolean;
     currentUserHash?: string | null;
+    revealQuestionIdentity?: boolean;
 }) => {
     const reveal = options?.reveal || idea.status === 'REVEALED';
+    const revealQuestionIdentity = Boolean(options?.revealQuestionIdentity);
     const metadata = (idea.metadata as Record<string, any> | null) || {};
     const currentVote = options?.currentUserHash
         ? idea.votes.find((vote) => vote.voterHash === options.currentUserHash)
@@ -1603,8 +1605,14 @@ export const serializeThinkTankIdea = (idea: Prisma.ThinkTankIdeaGetPayload<{ in
             createdAt: question.createdAt,
             updatedAt: question.updatedAt,
             answeredAt: question.answeredAt,
-            askedBy: question.askedBy,
-            answeredBy: question.answeredBy,
+            askedBy: revealQuestionIdentity ? question.askedBy : null,
+            answeredBy: revealQuestionIdentity ? question.answeredBy : null,
+            askedByLabel: revealQuestionIdentity
+                ? (question.askedBy?.name || question.askedBy?.email || 'Anonymous Voter')
+                : 'Anonymous Voter',
+            answeredByLabel: revealQuestionIdentity
+                ? (question.answeredBy?.name || question.answeredBy?.email || 'Anonymous Planner')
+                : 'Anonymous Planner',
         })),
         reviewerScores: idea.reviewerScores.map((score) => ({
             id: score.id,

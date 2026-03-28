@@ -98,6 +98,7 @@ export const GET = authorizedRoute([], async (req: NextRequest, user: any) => {
             reveal: view === 'results',
             includeDuplicates: view === 'my' || view === 'review',
             currentUserHash: userHash,
+            revealQuestionIdentity: user.role === 'SUPER_ADMIN',
         })),
     });
 });
