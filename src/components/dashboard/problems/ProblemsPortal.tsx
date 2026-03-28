@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { toast } from 'react-hot-toast';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 
-type ProblemsMode = 'dashboard' | 'my' | 'queue';
+type ProblemsMode = 'dashboard' | 'my' | 'queue' | 'insights';
 
 type ProblemIssue = {
     id: string;
@@ -60,9 +60,57 @@ type ProblemIssue = {
         createdAt: string;
         actor?: { id: string; name?: string | null; email?: string | null } | null;
     }>;
+    duplicateMatches?: Array<{
+        id: string;
+        similarityScore: number;
+        decision?: string | null;
+        matchedIssue: {
+            id: string;
+            title: string;
+            category: string;
+            severity: string;
+            status: string;
+            createdAt: string;
+            updatedAt: string;
+        };
+    }>;
 };
 
 type ProblemAssignee = { id: string; name?: string | null; email?: string | null; role?: string | null };
+type ProblemsAnalytics = {
+    totals: {
+        total: number;
+        open: number;
+        resolved: number;
+        closed: number;
+        unresolvedCritical: number;
+        recurring: number;
+    };
+    avgAcknowledgementDays: number | null;
+    avgResolutionDays: number | null;
+    reopenRate: number;
+    statusBreakdown: Array<{ status: string; count: number }>;
+    severityBreakdown: Array<{ severity: string; count: number }>;
+    categoryBreakdown: Array<{ category: string; count: number }>;
+    recurringIssues: Array<{
+        id: string;
+        title: string;
+        category: string;
+        status: string;
+        severity: string;
+        recurrence: string;
+        duplicateCount: number;
+        highestSimilarity: number;
+        updatedAt: string;
+    }>;
+    unresolvedCritical: Array<{
+        id: string;
+        title: string;
+        category: string;
+        status: string;
+        updatedAt: string;
+    }>;
+};
 
 const CATEGORY_OPTIONS = [
     'OPERATIONS',
@@ -114,6 +162,9 @@ export default function ProblemsPortal({ mode }: { mode: ProblemsMode }) {
     const [selectedAssignees, setSelectedAssignees] = useState<Record<string, string>>({});
     const [commentInputs, setCommentInputs] = useState<Record<string, string>>({});
     const [internalNoteInputs, setInternalNoteInputs] = useState<Record<string, string>>({});
+    const [duplicateSuggestions, setDuplicateSuggestions] = useState<ProblemIssue['duplicateMatches']>([]);
+    const [checkingDuplicates, setCheckingDuplicates] = useState(false);
+    const [analytics, setAnalytics] = useState<ProblemsAnalytics | null>(null);
     const [form, setForm] = useState({
         title: '',
         description: '',
@@ -160,9 +211,18 @@ export default function ProblemsPortal({ mode }: { mode: ProblemsMode }) {
                 }
                 setQueueIssues(queuePayload.issues || []);
                 setAssignees(queuePayload.assignees || []);
+
+                const analyticsResponse = await fetch('/api/problems/insights', { cache: 'no-store' });
+                const analyticsPayload = await analyticsResponse.json();
+                if (analyticsResponse.ok) {
+                    setAnalytics(analyticsPayload);
+                } else {
+                    setAnalytics(null);
+                }
             } else {
                 setQueueIssues([]);
                 setAssignees([]);
+                setAnalytics(null);
             }
         } catch (error) {
             toast.error(error instanceof Error ? error.message : 'Failed to load problems.');
@@ -174,6 +234,48 @@ export default function ProblemsPortal({ mode }: { mode: ProblemsMode }) {
     useEffect(() => {
         loadData();
     }, [loadData]);
+
+    useEffect(() => {
+        const description = form.description.trim();
+        const title = form.title.trim();
+        if (description.length < 20 || !form.category) {
+            setDuplicateSuggestions([]);
+            setCheckingDuplicates(false);
+            return;
+        }
+
+        const controller = new AbortController();
+        const timer = window.setTimeout(async () => {
+            try {
+                setCheckingDuplicates(true);
+                const params = new URLSearchParams({
+                    preview: 'duplicates',
+                    category: form.category,
+                    title,
+                    description,
+                });
+                const response = await fetch(`/api/problems?${params.toString()}`, {
+                    cache: 'no-store',
+                    signal: controller.signal,
+                });
+                const payload = await response.json();
+                if (!response.ok) {
+                    throw new Error(payload.message || payload.error || 'Failed to scan for similar problems.');
+                }
+                setDuplicateSuggestions(payload.matches || []);
+            } catch (error) {
+                if ((error as Error).name === 'AbortError') return;
+                setDuplicateSuggestions([]);
+            } finally {
+                setCheckingDuplicates(false);
+            }
+        }, 450);
+
+        return () => {
+            controller.abort();
+            window.clearTimeout(timer);
+        };
+    }, [form.category, form.description, form.title]);
 
     const dashboardStats = useMemo(() => {
         const combined = managementMode ? queueIssues : myIssues;
@@ -199,6 +301,22 @@ export default function ProblemsPortal({ mode }: { mode: ProblemsMode }) {
                 throw new Error(payload.message || payload.error || 'Failed to submit problem.');
             }
             toast.success('Problem submitted successfully.');
+            if (payload.issue?.duplicateMatches?.length) {
+                setDuplicateSuggestions(payload.issue.duplicateMatches);
+                toast((t) => (
+                    <span>
+                        Similar open problems were linked for review.
+                        <button
+                            className="ml-3 rounded-full bg-slate-900 px-3 py-1 text-xs font-semibold text-white"
+                            onClick={() => toast.dismiss(t.id)}
+                        >
+                            OK
+                        </button>
+                    </span>
+                ));
+            } else {
+                setDuplicateSuggestions([]);
+            }
             setForm({
                 title: '',
                 description: '',
@@ -331,6 +449,7 @@ export default function ProblemsPortal({ mode }: { mode: ProblemsMode }) {
                         <NavChip href="/dashboard/problems" label="Overview" active={mode === 'dashboard'} />
                         <NavChip href="/dashboard/problems/my" label="My Problems" active={mode === 'my'} />
                         {managementMode ? <NavChip href="/dashboard/problems/queue" label="Problems Queue" active={mode === 'queue'} /> : null}
+                        {managementMode ? <NavChip href="/dashboard/problems/insights" label="Insights" active={mode === 'insights'} /> : null}
                     </div>
                 </section>
 
@@ -343,6 +462,7 @@ export default function ProblemsPortal({ mode }: { mode: ProblemsMode }) {
                             <div className="mt-5 grid gap-4 md:grid-cols-2">
                                 <QuickCard href="/dashboard/problems/my" title="Report a Problem" description="Submit blockers, recurring issues, and risks with severity and visibility controls." />
                                 {managementMode ? <QuickCard href="/dashboard/problems/queue" title="Open Management Queue" description="Acknowledge, assign, and move problem issues through the resolution workflow." /> : <QuickCard href="/dashboard/problems/my" title="Track My Statuses" description="Review management updates and confirm whether the resolution actually worked." />}
+                                {managementMode ? <QuickCard href="/dashboard/problems/insights" title="Review Insights" description="Track recurring issues, unresolved critical items, and time-to-resolution trends." /> : null}
                             </div>
                         </section>
                         <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
@@ -368,6 +488,43 @@ export default function ProblemsPortal({ mode }: { mode: ProblemsMode }) {
                                 <Field label="Description">
                                     <textarea className="min-h-[130px] w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm" value={form.description} onChange={(event) => setForm((current) => ({ ...current, description: event.target.value }))} placeholder="What is happening, who is affected, and what is blocked?" />
                                 </Field>
+                                <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                                    <div className="flex items-center justify-between gap-3">
+                                        <div>
+                                            <div className="text-sm font-semibold text-slate-900">Similar Open Problems</div>
+                                            <div className="mt-1 text-xs text-slate-500">
+                                                We automatically check for recurring or duplicate issues in the same category before submission.
+                                            </div>
+                                        </div>
+                                        <div className="text-xs font-medium text-slate-500">
+                                            {checkingDuplicates ? 'Scanning...' : duplicateSuggestions?.length ? `${duplicateSuggestions.length} similar issue${duplicateSuggestions.length > 1 ? 's' : ''}` : 'No close match yet'}
+                                        </div>
+                                    </div>
+                                    <div className="mt-3 space-y-3">
+                                        {duplicateSuggestions?.length ? duplicateSuggestions.map((match) => (
+                                            <div key={match.id} className="rounded-2xl border border-amber-200 bg-white p-3">
+                                                <div className="flex flex-wrap items-center justify-between gap-2">
+                                                    <div className="text-sm font-semibold text-slate-900">{match.matchedIssue.title}</div>
+                                                    <div className="rounded-full bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-700">
+                                                        {Math.round(match.similarityScore * 100)}% similar
+                                                    </div>
+                                                </div>
+                                                <div className="mt-2 flex flex-wrap gap-2 text-xs text-slate-600">
+                                                    <span className="rounded-full bg-slate-100 px-2 py-1">{formatLabel(match.matchedIssue.category)}</span>
+                                                    <span className="rounded-full bg-slate-100 px-2 py-1">{formatLabel(match.matchedIssue.severity)}</span>
+                                                    <span className="rounded-full bg-slate-100 px-2 py-1">{formatLabel(match.matchedIssue.status)}</span>
+                                                </div>
+                                                <div className="mt-2 text-xs text-slate-500">
+                                                    Updated {formatDateTime(match.matchedIssue.updatedAt)}
+                                                </div>
+                                            </div>
+                                        )) : (
+                                            <div className="text-sm text-slate-500">
+                                                Add enough detail in the description and we&apos;ll suggest recurring issues automatically.
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
                                 <TwoCol>
                                     <Field label="Category">
                                         <select className="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm" value={form.category} onChange={(event) => setForm((current) => ({ ...current, category: event.target.value }))}>
@@ -508,6 +665,98 @@ export default function ProblemsPortal({ mode }: { mode: ProblemsMode }) {
                 {!loading && mode === 'queue' && !managementMode ? (
                     <EmptyState text="This queue is available only to management roles." />
                 ) : null}
+
+                {!loading && mode === 'insights' && managementMode ? (
+                    analytics ? (
+                        <section className="space-y-6">
+                            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                                <AnalyticsCard label="Total Problems" value={analytics.totals.total} />
+                                <AnalyticsCard label="Open Problems" value={analytics.totals.open} />
+                                <AnalyticsCard label="Avg Ack Days" value={analytics.avgAcknowledgementDays ?? '—'} />
+                                <AnalyticsCard label="Avg Resolution Days" value={analytics.avgResolutionDays ?? '—'} />
+                                <AnalyticsCard label="Reopen Rate" value={`${analytics.reopenRate}%`} />
+                                <AnalyticsCard label="Recurring Issues" value={analytics.totals.recurring} />
+                                <AnalyticsCard label="Resolved" value={analytics.totals.resolved} />
+                                <AnalyticsCard label="Critical Unresolved" value={analytics.totals.unresolvedCritical} tone="danger" />
+                            </div>
+
+                            <div className="grid gap-6 xl:grid-cols-3">
+                                <BreakdownCard
+                                    title="Status Breakdown"
+                                    items={analytics.statusBreakdown.map((item) => ({
+                                        label: formatLabel(item.status),
+                                        value: item.count,
+                                    }))}
+                                />
+                                <BreakdownCard
+                                    title="Severity Breakdown"
+                                    items={analytics.severityBreakdown.map((item) => ({
+                                        label: formatLabel(item.severity),
+                                        value: item.count,
+                                    }))}
+                                />
+                                <BreakdownCard
+                                    title="Category Breakdown"
+                                    items={analytics.categoryBreakdown.map((item) => ({
+                                        label: formatLabel(item.category),
+                                        value: item.count,
+                                    }))}
+                                />
+                            </div>
+
+                            <div className="grid gap-6 xl:grid-cols-2">
+                                <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+                                    <h2 className="text-xl font-semibold text-slate-900">Recurring & Similar Problems</h2>
+                                    <div className="mt-4 space-y-3">
+                                        {analytics.recurringIssues.length ? analytics.recurringIssues.map((issue) => (
+                                            <div key={issue.id} className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                                                <div className="flex flex-wrap items-center justify-between gap-2">
+                                                    <div className="font-semibold text-slate-900">{issue.title}</div>
+                                                    <div className="rounded-full bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-700">
+                                                        {issue.duplicateCount} linked
+                                                    </div>
+                                                </div>
+                                                <div className="mt-2 flex flex-wrap gap-2 text-xs text-slate-600">
+                                                    <span className="rounded-full bg-white px-2 py-1">{formatLabel(issue.category)}</span>
+                                                    <span className="rounded-full bg-white px-2 py-1">{formatLabel(issue.severity)}</span>
+                                                    <span className="rounded-full bg-white px-2 py-1">{formatLabel(issue.status)}</span>
+                                                    <span className="rounded-full bg-white px-2 py-1">{formatLabel(issue.recurrence)}</span>
+                                                </div>
+                                                <div className="mt-2 text-xs text-slate-500">
+                                                    Highest similarity {Math.round(issue.highestSimilarity * 100)}% • Updated {formatDateTime(issue.updatedAt)}
+                                                </div>
+                                            </div>
+                                        )) : <div className="rounded-2xl bg-slate-50 p-4 text-sm text-slate-500">No recurring clusters detected yet.</div>}
+                                    </div>
+                                </section>
+
+                                <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+                                    <h2 className="text-xl font-semibold text-slate-900">Unresolved Critical Issues</h2>
+                                    <div className="mt-4 space-y-3">
+                                        {analytics.unresolvedCritical.length ? analytics.unresolvedCritical.map((issue) => (
+                                            <div key={issue.id} className="rounded-2xl border border-rose-200 bg-rose-50 p-4">
+                                                <div className="font-semibold text-slate-900">{issue.title}</div>
+                                                <div className="mt-2 flex flex-wrap gap-2 text-xs text-slate-600">
+                                                    <span className="rounded-full bg-white px-2 py-1">{formatLabel(issue.category)}</span>
+                                                    <span className="rounded-full bg-white px-2 py-1">{formatLabel(issue.status)}</span>
+                                                </div>
+                                                <div className="mt-2 text-xs text-slate-500">
+                                                    Updated {formatDateTime(issue.updatedAt)}
+                                                </div>
+                                            </div>
+                                        )) : <div className="rounded-2xl bg-slate-50 p-4 text-sm text-slate-500">No unresolved critical issues right now.</div>}
+                                    </div>
+                                </section>
+                            </div>
+                        </section>
+                    ) : (
+                        <EmptyState text="Insights are available only after management data loads." />
+                    )
+                ) : null}
+
+                {!loading && mode === 'insights' && !managementMode ? (
+                    <EmptyState text="Problems insights are available only to management roles." />
+                ) : null}
             </div>
         </DashboardLayout>
     );
@@ -519,6 +768,45 @@ function StatCard({ label, value }: { label: string; value: number }) {
             <div className="text-xs uppercase tracking-[0.25em] text-slate-300">{label}</div>
             <div className="mt-3 text-3xl font-semibold text-white">{value}</div>
         </div>
+    );
+}
+
+function AnalyticsCard({
+    label,
+    value,
+    tone = 'default',
+}: {
+    label: string;
+    value: string | number;
+    tone?: 'default' | 'danger';
+}) {
+    return (
+        <div className={`rounded-2xl border px-4 py-4 shadow-sm ${tone === 'danger' ? 'border-rose-200 bg-rose-50' : 'border-slate-200 bg-white'}`}>
+            <div className="text-xs uppercase tracking-[0.25em] text-slate-500">{label}</div>
+            <div className={`mt-3 text-3xl font-semibold ${tone === 'danger' ? 'text-rose-700' : 'text-slate-900'}`}>{value}</div>
+        </div>
+    );
+}
+
+function BreakdownCard({
+    title,
+    items,
+}: {
+    title: string;
+    items: Array<{ label: string; value: number }>;
+}) {
+    return (
+        <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+            <h2 className="text-xl font-semibold text-slate-900">{title}</h2>
+            <div className="mt-4 space-y-3">
+                {items.length ? items.map((item) => (
+                    <div key={item.label} className="flex items-center justify-between rounded-2xl bg-slate-50 px-4 py-3 text-sm">
+                        <span className="text-slate-700">{item.label}</span>
+                        <span className="font-semibold text-slate-900">{item.value}</span>
+                    </div>
+                )) : <div className="rounded-2xl bg-slate-50 p-4 text-sm text-slate-500">No data yet.</div>}
+            </div>
+        </section>
     );
 }
 
@@ -623,6 +911,29 @@ function ProblemCard({
                 <MetaItem label="Impact" value={formatLabel(issue.impactType)} />
                 <MetaItem label="Area" value={issue.affectedArea || issue.location || '—'} />
             </div>
+
+            {issue.duplicateMatches?.length ? (
+                <div className="mt-5 rounded-2xl border border-amber-200 bg-amber-50 p-4">
+                    <div className="text-sm font-semibold text-amber-900">Potential Related Problems</div>
+                    <div className="mt-3 space-y-3">
+                        {issue.duplicateMatches.map((match) => (
+                            <div key={match.id} className="rounded-2xl bg-white p-3 text-sm text-slate-700">
+                                <div className="flex flex-wrap items-center justify-between gap-2">
+                                    <div className="font-medium text-slate-900">{match.matchedIssue.title}</div>
+                                    <div className="rounded-full bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-700">
+                                        {Math.round(match.similarityScore * 100)}% similar
+                                    </div>
+                                </div>
+                                <div className="mt-2 flex flex-wrap gap-2 text-xs text-slate-600">
+                                    <span className="rounded-full bg-slate-100 px-2 py-1">{formatLabel(match.matchedIssue.category)}</span>
+                                    <span className="rounded-full bg-slate-100 px-2 py-1">{formatLabel(match.matchedIssue.status)}</span>
+                                    <span className="rounded-full bg-slate-100 px-2 py-1">{formatLabel(match.matchedIssue.severity)}</span>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            ) : null}
 
             {issue.statusHistory?.length ? (
                 <div className="mt-5 rounded-2xl bg-slate-50 p-4">

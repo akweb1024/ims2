@@ -1,3 +1,4 @@
+import { GoogleGenerativeAI } from '@google/generative-ai';
 import {
     Prisma,
     ProblemImpactType,
@@ -71,6 +72,9 @@ export const PROBLEM_SEVERITY_OPTIONS = Object.values(ProblemSeverity);
 export const PROBLEM_VISIBILITY_OPTIONS = Object.values(ProblemVisibility);
 export const PROBLEM_RECURRENCE_OPTIONS = Object.values(ProblemRecurrence);
 export const PROBLEM_IMPACT_OPTIONS = Object.values(ProblemImpactType);
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY || process.env.GOOGLE_AI_API_KEY || '';
+const EMBEDDING_MODEL = process.env.PROBLEMS_EMBEDDING_MODEL || process.env.THINK_TANK_EMBEDDING_MODEL || 'text-embedding-004';
+const PROBLEM_DUPLICATE_THRESHOLD = 0.72;
 
 export const problemIssueInclude = {
     company: { select: { id: true, name: true } },
@@ -94,6 +98,23 @@ export const problemIssueInclude = {
         orderBy: { createdAt: 'desc' as const },
         include: { actor: { select: { id: true, name: true, email: true } } },
         take: 12,
+    },
+    duplicateLinks: {
+        orderBy: { similarityScore: 'desc' as const },
+        include: {
+            matchedIssue: {
+                select: {
+                    id: true,
+                    title: true,
+                    category: true,
+                    severity: true,
+                    status: true,
+                    createdAt: true,
+                    updatedAt: true,
+                },
+            },
+        },
+        take: 5,
     },
     _count: {
         select: {
@@ -122,6 +143,123 @@ export const canManageProblems = (role?: string | null) => PROBLEM_MANAGER_ROLES
 export const formatProblemLabel = (value?: string | null) => {
     if (!value) return '—';
     return value.replace(/_/g, ' ');
+};
+
+const normalizeProblemText = (text: string) => text.replace(/\s+/g, ' ').trim().toLowerCase();
+
+const tokenizeProblemText = (text: string) =>
+    new Set(
+        normalizeProblemText(text)
+            .split(/[^a-z0-9]+/)
+            .filter((token) => token.length > 2)
+    );
+
+const jaccardSimilarity = (a: string, b: string) => {
+    const setA = tokenizeProblemText(a);
+    const setB = tokenizeProblemText(b);
+    if (!setA.size || !setB.size) return 0;
+
+    let intersection = 0;
+    for (const token of setA) {
+        if (setB.has(token)) intersection += 1;
+    }
+
+    const union = new Set([...setA, ...setB]).size;
+    return union ? intersection / union : 0;
+};
+
+const cosineSimilarity = (a: number[], b: number[]) => {
+    const length = Math.min(a.length, b.length);
+    let dot = 0;
+    let normA = 0;
+    let normB = 0;
+
+    for (let index = 0; index < length; index += 1) {
+        dot += a[index] * b[index];
+        normA += a[index] * a[index];
+        normB += b[index] * b[index];
+    }
+
+    if (!normA || !normB) return 0;
+    return dot / (Math.sqrt(normA) * Math.sqrt(normB));
+};
+
+const getProblemEmbedding = async (text: string): Promise<number[] | null> => {
+    if (!GEMINI_API_KEY) return null;
+
+    try {
+        const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
+        const model = genAI.getGenerativeModel({ model: EMBEDDING_MODEL });
+        const result = await model.embedContent(text);
+        return result.embedding.values ?? null;
+    } catch {
+        return null;
+    }
+};
+
+export const computeProblemSimilarity = async (left: string, right: string) => {
+    const [leftEmbedding, rightEmbedding] = await Promise.all([
+        getProblemEmbedding(left),
+        getProblemEmbedding(right),
+    ]);
+
+    if (leftEmbedding && rightEmbedding) {
+        return cosineSimilarity(leftEmbedding, rightEmbedding);
+    }
+
+    return jaccardSimilarity(left, right);
+};
+
+export const findPotentialProblemDuplicates = async (params: {
+    companyId: string;
+    category: string;
+    title: string;
+    description: string;
+    excludeIssueId?: string;
+}) => {
+    const candidates = await prisma.problemIssue.findMany({
+        where: {
+            companyId: params.companyId,
+            category: params.category,
+            status: {
+                in: [
+                    ProblemStatus.SUBMITTED,
+                    ProblemStatus.ACKNOWLEDGED,
+                    ProblemStatus.NEEDS_INFO,
+                    ProblemStatus.IN_REVIEW,
+                    ProblemStatus.IN_PROGRESS,
+                    ProblemStatus.ESCALATED,
+                    ProblemStatus.REOPENED,
+                    ProblemStatus.RESOLVED,
+                ],
+            },
+            id: params.excludeIssueId ? { not: params.excludeIssueId } : undefined,
+        },
+        select: {
+            id: true,
+            title: true,
+            description: true,
+            category: true,
+            severity: true,
+            status: true,
+            createdAt: true,
+            updatedAt: true,
+        },
+        take: 25,
+    });
+
+    const sourceText = `${params.title}\n${params.description}`;
+    const matches = await Promise.all(
+        candidates.map(async (issue) => ({
+            ...issue,
+            similarityScore: await computeProblemSimilarity(sourceText, `${issue.title}\n${issue.description}`),
+        }))
+    );
+
+    return matches
+        .filter((issue) => issue.similarityScore >= PROBLEM_DUPLICATE_THRESHOLD)
+        .sort((left, right) => right.similarityScore - left.similarityScore)
+        .slice(0, 5);
 };
 
 export const serializeProblemIssue = (
@@ -159,6 +297,12 @@ export const serializeProblemIssue = (
         reportedBy: revealReporter ? issue.reportedBy : null,
         assignedTo: issue.assignedTo,
         resolvedBy: issue.resolvedBy,
+        duplicateMatches: issue.duplicateLinks.map((link) => ({
+            id: link.id,
+            similarityScore: link.similarityScore,
+            decision: link.decision,
+            matchedIssue: link.matchedIssue,
+        })),
         comments: issue.comments.map((comment) => ({
             id: comment.id,
             content: comment.content,
@@ -224,6 +368,13 @@ export const createProblemIssue = async (params: {
         throw new ValidationError('Category is required.');
     }
 
+    const duplicates = await findPotentialProblemDuplicates({
+        companyId: params.user.companyId!,
+        category,
+        title,
+        description,
+    });
+
     const issue = await prisma.problemIssue.create({
         data: {
             companyId: params.user.companyId!,
@@ -251,8 +402,25 @@ export const createProblemIssue = async (params: {
                     actorUserId: params.user.id,
                     action: 'PROBLEM_CREATED',
                     outcome: 'SUCCESS',
+                    metadata: duplicates.length
+                        ? {
+                            duplicateMatches: duplicates.map((match) => ({
+                                issueId: match.id,
+                                similarityScore: match.similarityScore,
+                            })),
+                        }
+                        : Prisma.JsonNull,
                 },
             },
+            duplicateLinks: duplicates.length
+                ? {
+                    create: duplicates.map((duplicate) => ({
+                        matchedIssueId: duplicate.id,
+                        similarityScore: duplicate.similarityScore,
+                        decision: 'SUGGESTED',
+                    })),
+                }
+                : undefined,
         },
         include: problemIssueInclude,
     });
@@ -470,4 +638,127 @@ export const addProblemInternalNote = async (params: {
         },
         include: problemIssueInclude,
     });
+};
+
+export const getProblemsAnalytics = async (params: {
+    companyId: string;
+}) => {
+    const issues = await prisma.problemIssue.findMany({
+        where: { companyId: params.companyId },
+        select: {
+            id: true,
+            title: true,
+            category: true,
+            severity: true,
+            status: true,
+            recurrence: true,
+            createdAt: true,
+            updatedAt: true,
+            acknowledgedAt: true,
+            resolvedAt: true,
+            duplicateSources: {
+                select: {
+                    id: true,
+                    similarityScore: true,
+                },
+            },
+        },
+    });
+
+    const openStatuses = new Set<ProblemStatus>([
+        ProblemStatus.SUBMITTED,
+        ProblemStatus.ACKNOWLEDGED,
+        ProblemStatus.NEEDS_INFO,
+        ProblemStatus.IN_REVIEW,
+        ProblemStatus.IN_PROGRESS,
+        ProblemStatus.ESCALATED,
+        ProblemStatus.REOPENED,
+    ]);
+
+    const statusBreakdown = PROBLEM_STATUS_OPTIONS.map((status) => ({
+        status,
+        count: issues.filter((issue) => issue.status === status).length,
+    }));
+
+    const severityBreakdown = PROBLEM_SEVERITY_OPTIONS.map((severity) => ({
+        severity,
+        count: issues.filter((issue) => issue.severity === severity).length,
+    }));
+
+    const categoryBreakdown = PROBLEM_CATEGORY_OPTIONS.map((category) => ({
+        category,
+        count: issues.filter((issue) => issue.category === category).length,
+    })).filter((entry) => entry.count > 0);
+
+    const recurringIssues = issues
+        .filter((issue) => issue.recurrence !== ProblemRecurrence.ONE_TIME || issue.duplicateSources.length > 0)
+        .map((issue) => ({
+            id: issue.id,
+            title: issue.title,
+            category: issue.category,
+            status: issue.status,
+            severity: issue.severity,
+            recurrence: issue.recurrence,
+            duplicateCount: issue.duplicateSources.length,
+            highestSimilarity: issue.duplicateSources.reduce((max, item) => Math.max(max, item.similarityScore), 0),
+            updatedAt: issue.updatedAt,
+        }))
+        .sort((left, right) => {
+            if (right.duplicateCount !== left.duplicateCount) {
+                return right.duplicateCount - left.duplicateCount;
+            }
+            return right.highestSimilarity - left.highestSimilarity;
+        })
+        .slice(0, 8);
+
+    const unresolvedCritical = issues.filter(
+        (issue) => issue.severity === ProblemSeverity.CRITICAL && openStatuses.has(issue.status)
+    );
+
+    const acknowledgedDurations = issues
+        .filter((issue) => issue.acknowledgedAt)
+        .map((issue) => new Date(issue.acknowledgedAt!).getTime() - new Date(issue.createdAt).getTime());
+
+    const resolvedDurations = issues
+        .filter((issue) => issue.resolvedAt)
+        .map((issue) => new Date(issue.resolvedAt!).getTime() - new Date(issue.createdAt).getTime());
+
+    const averageDays = (durations: number[]) => {
+        if (!durations.length) return null;
+        const averageMs = durations.reduce((sum, value) => sum + value, 0) / durations.length;
+        return Number((averageMs / (1000 * 60 * 60 * 24)).toFixed(1));
+    };
+
+    const reopenedCount = issues.filter((issue) => issue.status === ProblemStatus.REOPENED).length;
+    const resolvedOrClosedCount = issues.filter(
+        (issue) => issue.status === ProblemStatus.RESOLVED || issue.status === ProblemStatus.CLOSED
+    ).length;
+
+    return {
+        totals: {
+            total: issues.length,
+            open: issues.filter((issue) => openStatuses.has(issue.status)).length,
+            resolved: issues.filter((issue) => issue.status === ProblemStatus.RESOLVED).length,
+            closed: issues.filter((issue) => issue.status === ProblemStatus.CLOSED).length,
+            unresolvedCritical: unresolvedCritical.length,
+            recurring: issues.filter((issue) => issue.recurrence !== ProblemRecurrence.ONE_TIME).length,
+        },
+        avgAcknowledgementDays: averageDays(acknowledgedDurations),
+        avgResolutionDays: averageDays(resolvedDurations),
+        reopenRate: resolvedOrClosedCount ? Number(((reopenedCount / resolvedOrClosedCount) * 100).toFixed(1)) : 0,
+        statusBreakdown,
+        severityBreakdown,
+        categoryBreakdown,
+        recurringIssues,
+        unresolvedCritical: unresolvedCritical
+            .sort((left, right) => new Date(right.updatedAt).getTime() - new Date(left.updatedAt).getTime())
+            .slice(0, 8)
+            .map((issue) => ({
+                id: issue.id,
+                title: issue.title,
+                category: issue.category,
+                status: issue.status,
+                updatedAt: issue.updatedAt,
+            })),
+    };
 };

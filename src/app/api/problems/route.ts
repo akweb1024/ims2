@@ -13,6 +13,7 @@ import {
     canManageProblems,
     createProblemIssue,
     ensureProblemsAccess,
+    findPotentialProblemDuplicates,
     PROBLEM_IMPACT_OPTIONS,
     PROBLEM_CATEGORY_OPTIONS,
     PROBLEM_RECURRENCE_OPTIONS,
@@ -35,8 +36,28 @@ export const GET = authorizedRoute([], async (req: NextRequest, user: any) => {
         const severity = searchParams.get('severity');
         const category = searchParams.get('category');
         const assigneeId = searchParams.get('assigneeId');
+        const preview = searchParams.get('preview');
 
         const managementView = view === 'queue' && canManageProblems(user.role);
+
+        if (preview === 'duplicates') {
+            const title = String(searchParams.get('title') || '');
+            const description = String(searchParams.get('description') || '');
+            const previewCategory = String(searchParams.get('category') || '').trim().toUpperCase();
+
+            if (!description.trim() || !previewCategory) {
+                return NextResponse.json({ matches: [] });
+            }
+
+            const matches = await findPotentialProblemDuplicates({
+                companyId: user.companyId,
+                category: previewCategory,
+                title,
+                description,
+            });
+
+            return NextResponse.json({ matches });
+        }
 
         const where: any = {
             companyId: user.companyId,
