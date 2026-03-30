@@ -1,28 +1,52 @@
 'use client';
 
-import { useState, type FormEvent } from 'react';
+import { useDeferredValue, useMemo, useState, type FormEvent } from 'react';
 import { showSuccess, showError } from '@/lib/toast';
 
 type Props = {
     user: any;
     categories: Array<{ value: string; label: string }>;
     governance: any;
+    partnerOptions: Array<{ id: string; name?: string | null; email?: string | null; designation?: string | null }>;
     refresh: () => Promise<void>;
 };
 
-export default function IdeaSubmissionForm({ user, categories, governance, refresh }: Props) {
+export default function IdeaSubmissionForm({ user, categories, governance, partnerOptions, refresh }: Props) {
     const [form, setForm] = useState({
         topic: '',
         description: '',
         category: 'PUBLICATION',
-        partnerIds: '',
+        partnerIds: [] as string[],
         duplicateDecision: '',
+        mergeTargetIdeaId: '',
     });
     const [attachments, setAttachments] = useState<Array<{ url: string; filename: string; mimeType: string; size: number; fileRecordId?: string | null; scrubStatus?: string | null }>>([]);
     const [duplicates, setDuplicates] = useState<any[]>([]);
     const [error, setError] = useState('');
     const [submitting, setSubmitting] = useState(false);
     const [showSuccessOverlay, setShowSuccessOverlay] = useState(false);
+    const [partnerSearch, setPartnerSearch] = useState('');
+    const deferredPartnerSearch = useDeferredValue(partnerSearch);
+
+    const availablePartners = useMemo(() => {
+        const query = deferredPartnerSearch.trim().toLowerCase();
+        return partnerOptions
+            .filter((option) => option.id !== user?.id && !form.partnerIds.includes(option.id))
+            .filter((option) => {
+                if (!query) return true;
+                const haystack = [
+                    option.name,
+                    option.email,
+                    option.designation,
+                    option.id,
+                ]
+                    .filter(Boolean)
+                    .join(' ')
+                    .toLowerCase();
+                return haystack.includes(query);
+            })
+            .slice(0, 8);
+    }, [deferredPartnerSearch, form.partnerIds, partnerOptions, user?.id]);
 
     const uploadAttachment = async (file: File) => {
         const formData = new FormData();
@@ -43,11 +67,6 @@ export default function IdeaSubmissionForm({ user, categories, governance, refre
         setSubmitting(true);
 
         try {
-            const partnerIds = form.partnerIds
-                .split(',')
-                .map((value) => value.trim())
-                .filter(Boolean);
-
             const response = await fetch('/api/think-tank/ideas', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -55,9 +74,10 @@ export default function IdeaSubmissionForm({ user, categories, governance, refre
                     topic: form.topic,
                     description: form.description,
                     category: form.category,
-                    partnerIds,
+                    partnerIds: form.partnerIds,
                     attachments,
                     duplicateDecision: form.duplicateDecision || undefined,
+                    mergeTargetIdeaId: form.mergeTargetIdeaId || undefined,
                 }),
             });
             const payload = await response.json();
@@ -76,21 +96,20 @@ export default function IdeaSubmissionForm({ user, categories, governance, refre
                 topic: '',
                 description: '',
                 category: 'PUBLICATION',
-                partnerIds: '',
+                partnerIds: [],
                 duplicateDecision: '',
+                mergeTargetIdeaId: '',
             });
             setAttachments([]);
             setDuplicates([]);
             
-            showSuccess('Initiative Registered Successfully');
-            setShowSuccessOverlay(true);
-
-            // Auto-refresh after a short delay to allow the animation to play
-            setTimeout(() => {
-                window.location.reload();
-            }, 2500);
-
+            showSuccess(payload.merged ? 'Idea merged successfully' : 'Initiative Registered Successfully');
             await refresh();
+            setShowSuccessOverlay(true);
+            window.setTimeout(() => {
+                setShowSuccessOverlay(false);
+                setSubmitting(false);
+            }, 1800);
         } catch (submitError: any) {
             showError(submitError.message || 'Failed to submit idea.');
             setError(submitError.message || 'Failed to submit idea.');
@@ -182,13 +201,79 @@ export default function IdeaSubmissionForm({ user, categories, governance, refre
                         </select>
                     </div>
                     <div className="space-y-2">
-                        <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Partners (UIDs)</label>
-                        <input
-                            className="w-full border-2 border-slate-950 bg-white px-4 py-4 font-black text-xs placeholder:text-slate-200 focus:border-[#FF4500] focus:outline-none"
-                            placeholder="ID1, ID2..."
-                            value={form.partnerIds}
-                            onChange={(event) => setForm((current) => ({ ...current, partnerIds: event.target.value }))}
-                        />
+                        <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Partners</label>
+                        <div className="border-2 border-slate-950 bg-white">
+                            <input
+                                className="w-full border-b-2 border-slate-200 px-4 py-4 font-black text-xs uppercase tracking-widest placeholder:text-slate-300 focus:border-[#FF4500] focus:outline-none"
+                                placeholder={form.partnerIds.length >= 3 ? 'Partner limit reached' : 'Search by name, email, or designation'}
+                                value={partnerSearch}
+                                onChange={(event) => setPartnerSearch(event.target.value)}
+                                disabled={form.partnerIds.length >= 3}
+                            />
+                            <div className="max-h-56 overflow-y-auto">
+                                {form.partnerIds.length >= 3 ? (
+                                    <div className="px-4 py-3 text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                                        You can select up to 3 partners
+                                    </div>
+                                ) : availablePartners.length > 0 ? (
+                                    availablePartners.map((option) => (
+                                        <button
+                                            key={option.id}
+                                            type="button"
+                                            onClick={() => {
+                                                setForm((current) => ({
+                                                    ...current,
+                                                    partnerIds: [...current.partnerIds, option.id].slice(0, 3),
+                                                }));
+                                                setPartnerSearch('');
+                                            }}
+                                            className="flex w-full items-start justify-between gap-3 border-b border-slate-100 px-4 py-3 text-left hover:bg-[#FF4500]/5"
+                                        >
+                                            <div>
+                                                <div className="text-[10px] font-black uppercase tracking-widest text-slate-950">
+                                                    {option.name || option.email || option.id}
+                                                </div>
+                                                <div className="mt-1 text-[10px] font-bold uppercase tracking-wide text-slate-500">
+                                                    {option.email || option.id}
+                                                    {option.designation ? ` • ${option.designation}` : ''}
+                                                </div>
+                                            </div>
+                                            <div className="text-[10px] font-black uppercase tracking-widest text-[#FF4500]">
+                                                Add
+                                            </div>
+                                        </button>
+                                    ))
+                                ) : (
+                                    <div className="px-4 py-3 text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                                        No matching partner found
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                            {form.partnerIds.length > 0 ? form.partnerIds.map((partnerId) => {
+                                const partner = partnerOptions.find((option) => option.id === partnerId);
+                                return (
+                                    <button
+                                        key={partnerId}
+                                        type="button"
+                                        onClick={() => setForm((current) => ({
+                                            ...current,
+                                            partnerIds: current.partnerIds.filter((id) => id !== partnerId),
+                                        }))}
+                                        className="border-2 border-slate-950 bg-white px-3 py-2 text-[10px] font-black uppercase tracking-wide hover:bg-slate-950 hover:text-white"
+                                    >
+                                        {partner?.name || partner?.email || partnerId}
+                                        {partner?.designation ? ` • ${partner.designation}` : ''}
+                                        {' x'}
+                                    </button>
+                                );
+                            }) : (
+                                <div className="text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                                    No partners selected
+                                </div>
+                            )}
+                        </div>
                     </div>
                 </div>
 
@@ -266,9 +351,33 @@ export default function IdeaSubmissionForm({ user, categories, governance, refre
                     </div>
                 )}
 
+                {form.duplicateDecision === 'MERGE' && duplicates.length > 0 && (
+                    <div className="space-y-3">
+                        <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Merge Into Existing Idea</label>
+                        <div className="grid gap-3">
+                            {duplicates.map((duplicate) => {
+                                const active = form.mergeTargetIdeaId === duplicate.id;
+                                return (
+                                    <button
+                                        key={duplicate.id}
+                                        type="button"
+                                        onClick={() => setForm((current) => ({ ...current, mergeTargetIdeaId: duplicate.id }))}
+                                        className={`border-2 p-4 text-left transition-all ${active ? 'border-slate-950 bg-slate-950 text-white' : 'border-slate-200 bg-white hover:border-slate-950'}`}
+                                    >
+                                        <div className="text-xs font-black uppercase tracking-widest">{duplicate.topic}</div>
+                                        <div className={`mt-2 text-[10px] font-bold uppercase tracking-wide ${active ? 'text-white/80' : 'text-slate-500'}`}>
+                                            Similarity {(Number(duplicate.similarityScore || 0) * 100).toFixed(0)}%
+                                        </div>
+                                    </button>
+                                );
+                            })}
+                        </div>
+                    </div>
+                )}
+
                 <button
                     type="submit"
-                    disabled={submitting}
+                    disabled={submitting || (form.duplicateDecision === 'MERGE' && !form.mergeTargetIdeaId)}
                     className="w-full bg-slate-950 py-8 text-white text-[10px] font-black uppercase tracking-[0.8em] hover:bg-[#FF4500] hover:tracking-[1.2em] transition-all disabled:opacity-50"
                 >
                     {submitting ? 'Registering...' : 'Deploy Initiative'}

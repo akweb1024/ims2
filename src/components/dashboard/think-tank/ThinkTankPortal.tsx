@@ -16,8 +16,43 @@ const TT_ANIMATIONS = `
 }
 `;
 
-type PortalMode = 'dashboard' | 'my-ideas' | 'vote' | 'results';
+type PortalMode = 'dashboard' | 'my-ideas' | 'vote' | 'results' | 'customization';
 type ThinkTankAcknowledgementKey = 'my-ideas' | 'vote' | 'results';
+type ThinkTankWindowSettings = {
+    resultSaturdays: number[];
+    resultTime: string;
+    ideaSubmissionDays: number;
+    votingEndDay: number;
+    votingEndTime: string;
+};
+type VoteMonitorAccount = {
+    id: string;
+    userId: string;
+    basePoints: number;
+    maxPerIdeaPoints: number;
+    allocatedPoints: number;
+    remainingPoints: number;
+    updatedAt: string;
+    user: {
+        id: string;
+        name?: string | null;
+        email?: string | null;
+        role?: string | null;
+        designation?: string | null;
+    };
+    votes: Array<{
+        id: string;
+        vote: 'LIKE' | 'UNLIKE' | 'NEUTRAL';
+        pointAllocation: number;
+        weightedValue: number;
+        updatedAt: string;
+        idea: {
+            id: string;
+            topic: string;
+            status: string;
+        };
+    }>;
+};
 
 type Idea = {
     id: string;
@@ -121,6 +156,24 @@ const CATEGORIES = [
     { value: 'ACCOUNTS', label: 'Accounts' },
 ];
 
+const DEFAULT_WINDOW_SETTINGS: ThinkTankWindowSettings = {
+    resultSaturdays: [2, 4],
+    resultTime: '15:00',
+    ideaSubmissionDays: 7,
+    votingEndDay: 5,
+    votingEndTime: '23:30',
+};
+
+const WEEKDAY_OPTIONS = [
+    { value: 0, label: 'Sunday' },
+    { value: 1, label: 'Monday' },
+    { value: 2, label: 'Tuesday' },
+    { value: 3, label: 'Wednesday' },
+    { value: 4, label: 'Thursday' },
+    { value: 5, label: 'Friday' },
+    { value: 6, label: 'Saturday' },
+];
+
 const formatDateTime = (value?: string | null) => {
     if (!value) return '—';
     const date = new Date(value);
@@ -188,6 +241,8 @@ export default function ThinkTankPortal({ mode, ideaId }: { mode: PortalMode; id
     const [loading, setLoading] = useState(true);
     const [governance, setGovernance] = useState<any>(null);
     const [governanceAccess, setGovernanceAccess] = useState<{ canManage?: boolean; override?: any } | null>(null);
+    const [windowSettings, setWindowSettings] = useState<ThinkTankWindowSettings>(DEFAULT_WINDOW_SETTINGS);
+    const [voteMonitor, setVoteMonitor] = useState<{ cycle: any; accounts: VoteMonitorAccount[] }>({ cycle: null, accounts: [] });
     const [pointAccount, setPointAccount] = useState<{ basePoints: number; maxPerIdeaPoints: number; allocatedPoints: number; remainingPoints: number } | null>(null);
     const [canVeto, setCanVeto] = useState(false);
     const [acknowledgements, setAcknowledgements] = useState<Record<ThinkTankAcknowledgementKey, boolean>>({
@@ -207,6 +262,9 @@ export default function ThinkTankPortal({ mode, ideaId }: { mode: PortalMode; id
         mode: 'SCHEDULED',
         reason: '',
     });
+    const [settingsForm, setSettingsForm] = useState<ThinkTankWindowSettings>(DEFAULT_WINDOW_SETTINGS);
+    const [savingSettings, setSavingSettings] = useState(false);
+    const [updatingVoteMonitor, setUpdatingVoteMonitor] = useState(false);
 
     const view = mode === 'my-ideas' ? 'my' : mode === 'results' ? 'results' : 'vote';
 
@@ -237,18 +295,22 @@ export default function ThinkTankPortal({ mode, ideaId }: { mode: PortalMode; id
     const refresh = useCallback(async () => {
         setLoading(true);
         try {
-            const [ideasRes, resultsRes, governanceRes, analyticsRes, usersRes] = await Promise.all([
+            const [ideasRes, resultsRes, governanceRes, analyticsRes, usersRes, settingsRes, voteMonitorRes] = await Promise.all([
                 fetch(`/api/think-tank/ideas?view=${view}`, { cache: 'no-store' }),
                 fetch('/api/think-tank/results', { cache: 'no-store' }),
                 fetch('/api/think-tank/governance', { cache: 'no-store' }),
                 fetch('/api/think-tank/analytics', { cache: 'no-store' }),
                 fetch('/api/users?limit=100', { cache: 'no-store' }),
+                fetch('/api/think-tank/governance/settings', { cache: 'no-store' }),
+                fetch('/api/think-tank/vote-monitor', { cache: 'no-store' }),
             ]);
             const ideasPayload = await ideasRes.json();
             const resultsPayload = await resultsRes.json();
             const governancePayload = await governanceRes.json();
             const analyticsPayload = await analyticsRes.json();
             const usersPayload = usersRes.ok ? await usersRes.json() : { data: [] };
+            const settingsPayload = settingsRes.ok ? await settingsRes.json() : { settings: DEFAULT_WINDOW_SETTINGS };
+            const voteMonitorPayload = voteMonitorRes.ok ? await voteMonitorRes.json() : { cycle: null, accounts: [] };
             let reviewPayload: any = null;
             const reviewRes = await fetch('/api/think-tank/ideas?view=review', { cache: 'no-store' });
             if (reviewRes.ok) {
@@ -263,6 +325,9 @@ export default function ThinkTankPortal({ mode, ideaId }: { mode: PortalMode; id
                 mode: governancePayload.override?.mode || 'SCHEDULED',
                 reason: governancePayload.override?.reason || '',
             });
+            setWindowSettings(settingsPayload.settings || DEFAULT_WINDOW_SETTINGS);
+            setSettingsForm(settingsPayload.settings || DEFAULT_WINDOW_SETTINGS);
+            setVoteMonitor(voteMonitorPayload);
             setIdeas(ideasPayload.ideas || []);
             setReviewIdeas(reviewPayload?.ideas || []);
             setResults(resultsPayload.ideas || []);
@@ -352,7 +417,51 @@ export default function ThinkTankPortal({ mode, ideaId }: { mode: PortalMode; id
         }
     };
 
-    const handleReviewUpdate = async (ideaId: string, payload: { reviewStage?: string; implementationStatus?: string; decisionNotes?: string }) => {
+    const handleWindowSettingsUpdate = async (event: FormEvent) => {
+        event.preventDefault();
+        setError('');
+        setSavingSettings(true);
+        try {
+            const response = await fetch('/api/think-tank/governance/settings', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(settingsForm),
+            });
+            const payload = await response.json();
+            if (!response.ok) {
+                throw new Error(payload.error || 'Failed to save window settings.');
+            }
+            await refresh();
+        } catch (settingsError: any) {
+            setError(settingsError.message || 'Failed to save window settings.');
+        } finally {
+            setSavingSettings(false);
+        }
+    };
+
+    const handleVoteMonitorAction = async (payload: { action: 'REMOVE_VOTE'; voteId: string } | { action: 'RESET_POINTS'; cycleId: string; userId: string }) => {
+        setError('');
+        setUpdatingVoteMonitor(true);
+        try {
+            const response = await fetch('/api/think-tank/vote-monitor', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload),
+            });
+            const body = await response.json();
+            if (!response.ok) {
+                throw new Error(body.error || 'Failed to update vote monitor.');
+            }
+            setVoteMonitor(body);
+            await refresh();
+        } catch (voteMonitorError: any) {
+            setError(voteMonitorError.message || 'Failed to update vote monitor.');
+        } finally {
+            setUpdatingVoteMonitor(false);
+        }
+    };
+
+    const handleReviewUpdate = async (ideaId: string, payload: { reviewStage?: string; implementationStatus?: string; decisionNotes?: string; status?: string }) => {
         setError('');
         const response = await fetch(`/api/think-tank/ideas/${ideaId}`, {
             method: 'PATCH',
@@ -538,7 +647,7 @@ export default function ThinkTankPortal({ mode, ideaId }: { mode: PortalMode; id
                                 </div>
                             </div>
                             
-                            <GovernanceBanner governance={governance} />
+                            <GovernanceBanner governance={governance} settings={windowSettings} />
                             
                             {pointAccount && (
                                 <div className="border-2 border-slate-950 bg-[#FF4500] p-6 text-white flex items-center justify-between">
@@ -570,6 +679,19 @@ export default function ThinkTankPortal({ mode, ideaId }: { mode: PortalMode; id
                         onAskQuestion={handleAskQuestion}
                         onAnswerQuestion={handleAnswerQuestion}
                     />
+
+                    {governanceAccess?.canManage ? (
+                        <ReviewBoard
+                            ideas={reviewIdeas}
+                            assignees={assignees}
+                            canVeto={canVeto}
+                            onReviewUpdate={handleReviewUpdate}
+                            onAddComment={handleAddComment}
+                            onSaveReviewerScore={handleSaveReviewerScore}
+                            onVetoIdea={handleVetoIdea}
+                            onConvertIdea={handleConvertIdea}
+                        />
+                    ) : null}
                 </div>
             );
         }
@@ -579,13 +701,14 @@ export default function ThinkTankPortal({ mode, ideaId }: { mode: PortalMode; id
                 <div className="space-y-12 animate-tt-fade-up">
                     <div className="grid gap-8 lg:grid-cols-[1fr_400px]">
                         <div className="space-y-8">
-                            <GovernanceBanner governance={governance} />
+                            <GovernanceBanner governance={governance} settings={windowSettings} />
                             
                             <div className="border-4 border-slate-950 bg-white p-8 relative overflow-hidden">
                                 <IdeaSubmissionForm
                                     user={user}
                                     categories={CATEGORIES}
                                     governance={governance}
+                                    partnerOptions={assignees}
                                     refresh={refresh}
                                 />
                             </div>
@@ -614,10 +737,21 @@ export default function ThinkTankPortal({ mode, ideaId }: { mode: PortalMode; id
         if (mode === 'vote') {
             return (
                 <div className="space-y-6">
-                    <GovernanceBanner governance={governance} />
+                    <GovernanceBanner governance={governance} settings={windowSettings} />
                     {error && <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">{error}</div>}
+                    {!governance?.votingOpen && governance?.nextVotingAt ? (
+                        <div className="space-y-4">
+                            <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+                                <div className="text-sm font-semibold text-slate-900">Voting Opens After Submission Review</div>
+                                <div className="mt-2 text-sm text-slate-600">
+                                    Ideas stay hidden from employees until the submission window closes and the voting window opens. Super admins can review and hold ideas before they become visible.
+                                </div>
+                            </div>
+                            <CountdownTimer targetDate={governance.nextVotingAt} />
+                        </div>
+                    ) : null}
                     {pointAccount ? <PointAccountCard pointAccount={pointAccount} compact /> : null}
-                    {selectedIdea ? (
+                    {governance?.votingOpen && selectedIdea ? (
                         <div className="space-y-4">
                             <div className="flex flex-wrap items-center justify-between gap-3">
                                 <button
@@ -645,22 +779,68 @@ export default function ThinkTankPortal({ mode, ideaId }: { mode: PortalMode; id
                                 singleIdeaView
                             />
                         </div>
-                    ) : (
-                        <IdeaGrid
+                    ) : governance?.votingOpen ? (
+                        <VoteIdeaTable
                             title="Ideas for Vote"
                             ideas={ideas}
                             pointAccount={pointAccount}
                             onDeleteIdea={user?.role === 'SUPER_ADMIN' ? handleDeleteIdea : undefined}
-                            singleIdeaLinks
                         />
-                    )}
+                    ) : null}
+                    {governanceAccess?.canManage ? (
+                        <ReviewBoard
+                            ideas={reviewIdeas}
+                            assignees={assignees}
+                            canVeto={canVeto}
+                            onReviewUpdate={handleReviewUpdate}
+                            onAddComment={handleAddComment}
+                            onSaveReviewerScore={handleSaveReviewerScore}
+                            onVetoIdea={handleVetoIdea}
+                            onConvertIdea={handleConvertIdea}
+                        />
+                    ) : null}
+                </div>
+            );
+        }
+
+        if (mode === 'customization') {
+            if (user?.role !== 'SUPER_ADMIN') {
+                return (
+                    <div className="rounded-3xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-900">
+                        Only super admins can access Think Tank customization.
+                    </div>
+                );
+            }
+
+            return (
+                <div className="space-y-6">
+                    <GovernanceBanner governance={governance} settings={windowSettings} />
+                    <WindowCustomizationPanel
+                        settingsForm={settingsForm}
+                        setSettingsForm={setSettingsForm}
+                        currentSettings={windowSettings}
+                        savingSettings={savingSettings}
+                        onSubmit={handleWindowSettingsUpdate}
+                    />
+                    <GovernanceControlPanel
+                        overrideForm={overrideForm}
+                        setOverrideForm={setOverrideForm}
+                        governance={governance}
+                        updatingGovernance={updatingGovernance}
+                        onSubmit={handleGovernanceUpdate}
+                    />
+                    <VoteMonitorPanel
+                        monitor={voteMonitor}
+                        updating={updatingVoteMonitor}
+                        onAction={handleVoteMonitorAction}
+                    />
                 </div>
             );
         }
 
         return (
             <div className="space-y-6">
-                <GovernanceBanner governance={governance} />
+                <GovernanceBanner governance={governance} settings={windowSettings} />
                 
                 {governance?.nextRevealAt && (
                     <CountdownTimer targetDate={governance.nextRevealAt} />
@@ -698,7 +878,8 @@ export default function ThinkTankPortal({ mode, ideaId }: { mode: PortalMode; id
                             { id: 'dashboard', path: '/dashboard/think-tank', label: 'Overview' },
                             { id: 'my-ideas', path: '/dashboard/think-tank/my-ideas', label: 'My Submissions' },
                             { id: 'vote', path: '/dashboard/think-tank/vote', label: 'Live Cycle' },
-                            { id: 'results', path: '/dashboard/think-tank/results', label: 'Standings' }
+                            { id: 'results', path: '/dashboard/think-tank/results', label: 'Standings' },
+                            ...(user?.role === 'SUPER_ADMIN' ? [{ id: 'customization', path: '/dashboard/think-tank/customization', label: 'Customization' }] : [])
                         ].map((tab) => (
                             <button
                                 key={tab.id}
@@ -797,7 +978,20 @@ function QuickCard({ href, title, description }: { href: string; title: string; 
     );
 }
 
-function GovernanceBanner({ governance }: { governance: any }) {
+function formatOrdinal(value: number) {
+    if (value === 1) return '1st';
+    if (value === 2) return '2nd';
+    if (value === 3) return '3rd';
+    return `${value}th`;
+}
+
+function formatScheduleSummary(settings: ThinkTankWindowSettings) {
+    const resultDays = settings.resultSaturdays.map(formatOrdinal).join(' and ');
+    const votingDay = WEEKDAY_OPTIONS.find((option) => option.value === settings.votingEndDay)?.label || 'Friday';
+    return `Results announce on the ${resultDays} Saturday of each month at ${settings.resultTime} IST. Ideas open from day 1 of the month or immediately after the last result announcement for ${settings.ideaSubmissionDays} day(s). Voting stays open until ${votingDay} ${settings.votingEndTime} IST before the result Saturday.`;
+}
+
+function GovernanceBanner({ governance, settings }: { governance: any; settings: ThinkTankWindowSettings }) {
     return (
         <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
             <div className="text-sm font-semibold text-slate-900">Governance Window</div>
@@ -808,7 +1002,7 @@ function GovernanceBanner({ governance }: { governance: any }) {
                     {governance.overrideReason ? ` • ${governance.overrideReason}` : ''}
                 </div>
             ) : null}
-            <div className="mt-1 text-xs text-slate-500">Submission: 9:30 AM to 1:00 PM IST. Voting: before 9:30 AM, 1:00 PM to 3:00 PM, and after 5:00 PM IST. Locked review window: 3:00 PM to 5:00 PM IST. Reveal: 1st and 3rd Saturday at 3:00 PM IST.</div>
+            <div className="mt-1 text-xs text-slate-500">{formatScheduleSummary(settings)}</div>
         </div>
     );
 }
@@ -919,6 +1113,405 @@ function GovernanceControlPanel({
     );
 }
 
+function WindowCustomizationPanel({
+    settingsForm,
+    setSettingsForm,
+    currentSettings,
+    savingSettings,
+    onSubmit,
+}: {
+    settingsForm: ThinkTankWindowSettings;
+    setSettingsForm: Dispatch<SetStateAction<ThinkTankWindowSettings>>;
+    currentSettings: ThinkTankWindowSettings;
+    savingSettings: boolean;
+    onSubmit: (event: FormEvent) => void;
+}) {
+    return (
+        <form onSubmit={onSubmit} className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+            <div className="flex flex-wrap items-start justify-between gap-4">
+                <div>
+                    <h2 className="text-lg font-semibold text-slate-900">Window Customization</h2>
+                    <p className="mt-1 text-sm text-slate-600">Control result announcements, idea window length, and voting lock timing for the Think Tank cycle.</p>
+                </div>
+                <div className="rounded-2xl bg-slate-50 px-4 py-3 text-sm text-slate-600">
+                    Active rule: <span className="font-semibold text-slate-900">{formatScheduleSummary(currentSettings)}</span>
+                </div>
+            </div>
+            <div className="mt-5 grid gap-4 md:grid-cols-2">
+                <label className="grid gap-2 text-sm text-slate-700">
+                    <span className="font-medium">Result Saturdays</span>
+                    <div className="flex flex-wrap gap-2">
+                        {[1, 2, 3, 4, 5].map((value) => {
+                            const active = settingsForm.resultSaturdays.includes(value);
+                            return (
+                                <button
+                                    key={value}
+                                    type="button"
+                                    onClick={() => setSettingsForm((current) => ({
+                                        ...current,
+                                        resultSaturdays: active
+                                            ? current.resultSaturdays.filter((day) => day !== value)
+                                            : [...current.resultSaturdays, value].sort((a, b) => a - b),
+                                    }))}
+                                    className={`rounded-2xl px-4 py-3 text-sm font-semibold ${active ? 'bg-slate-900 text-white' : 'border border-slate-200 bg-white text-slate-700'}`}
+                                >
+                                    {formatOrdinal(value)}
+                                </button>
+                            );
+                        })}
+                    </div>
+                </label>
+                <label className="grid gap-2 text-sm text-slate-700">
+                    <span className="font-medium">Result Time (IST)</span>
+                    <input
+                        type="time"
+                        className="rounded-2xl border border-slate-200 px-4 py-3"
+                        value={settingsForm.resultTime}
+                        onChange={(event) => setSettingsForm((current) => ({ ...current, resultTime: event.target.value }))}
+                    />
+                </label>
+                <label className="grid gap-2 text-sm text-slate-700">
+                    <span className="font-medium">Idea Submission Days</span>
+                    <input
+                        type="number"
+                        min={1}
+                        max={31}
+                        className="rounded-2xl border border-slate-200 px-4 py-3"
+                        value={settingsForm.ideaSubmissionDays}
+                        onChange={(event) => setSettingsForm((current) => ({ ...current, ideaSubmissionDays: Number(event.target.value) || 1 }))}
+                    />
+                </label>
+                <label className="grid gap-2 text-sm text-slate-700">
+                    <span className="font-medium">Voting End Day</span>
+                    <select
+                        className="rounded-2xl border border-slate-200 px-4 py-3"
+                        value={String(settingsForm.votingEndDay)}
+                        onChange={(event) => setSettingsForm((current) => ({ ...current, votingEndDay: Number(event.target.value) }))}
+                    >
+                        {WEEKDAY_OPTIONS.map((option) => (
+                            <option key={option.value} value={option.value}>{option.label}</option>
+                        ))}
+                    </select>
+                </label>
+                <label className="grid gap-2 text-sm text-slate-700 md:col-span-2">
+                    <span className="font-medium">Voting End Time (IST)</span>
+                    <input
+                        type="time"
+                        className="rounded-2xl border border-slate-200 px-4 py-3"
+                        value={settingsForm.votingEndTime}
+                        onChange={(event) => setSettingsForm((current) => ({ ...current, votingEndTime: event.target.value }))}
+                    />
+                </label>
+            </div>
+            <div className="mt-5 flex justify-end">
+                <button
+                    type="submit"
+                    disabled={savingSettings}
+                    className="rounded-2xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white disabled:opacity-60"
+                >
+                    {savingSettings ? 'Saving…' : 'Save Window Settings'}
+                </button>
+            </div>
+        </form>
+    );
+}
+
+function VoteMonitorPanel({
+    monitor,
+    updating,
+    onAction,
+}: {
+    monitor: { cycle: any; accounts: VoteMonitorAccount[] };
+    updating: boolean;
+    onAction: (payload: { action: 'REMOVE_VOTE'; voteId: string } | { action: 'RESET_POINTS'; cycleId: string; userId: string }) => Promise<void>;
+}) {
+    const [search, setSearch] = useState('');
+    const [filter, setFilter] = useState<'ALL' | 'HAS_VOTES' | 'HAS_ISSUES'>('ALL');
+    const [sortBy, setSortBy] = useState<'allocated' | 'remaining' | 'updated' | 'name'>('allocated');
+    const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
+
+    const filteredAccounts = [...monitor.accounts]
+        .filter((account) => {
+            const query = search.trim().toLowerCase();
+            const matchesSearch = !query || [
+                account.user.name,
+                account.user.email,
+                account.user.role,
+                account.user.designation,
+                account.userId,
+            ]
+                .filter(Boolean)
+                .join(' ')
+                .toLowerCase()
+                .includes(query);
+
+            const hasIssues = account.allocatedPoints + account.remainingPoints !== account.basePoints
+                || account.votes.some((vote) => vote.pointAllocation > account.maxPerIdeaPoints);
+            const matchesFilter = filter === 'ALL'
+                || (filter === 'HAS_VOTES' && account.votes.length > 0)
+                || (filter === 'HAS_ISSUES' && hasIssues);
+
+            return matchesSearch && matchesFilter;
+        })
+        .sort((a, b) => {
+            const direction = sortDirection === 'asc' ? 1 : -1;
+            if (sortBy === 'allocated') return (a.allocatedPoints - b.allocatedPoints) * direction;
+            if (sortBy === 'remaining') return (a.remainingPoints - b.remainingPoints) * direction;
+            if (sortBy === 'updated') return (new Date(a.updatedAt).getTime() - new Date(b.updatedAt).getTime()) * direction;
+            const aLabel = (a.user.name || a.user.email || a.userId).toLowerCase();
+            const bLabel = (b.user.name || b.user.email || b.userId).toLowerCase();
+            return aLabel.localeCompare(bLabel) * direction;
+        });
+
+    return (
+        <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+            <div className="flex flex-wrap items-start justify-between gap-4">
+                <div>
+                    <h2 className="text-lg font-semibold text-slate-900">Vote Point Monitor</h2>
+                    <p className="mt-1 text-sm text-slate-600">Super admins can inspect point usage, remove bad votes, and rebuild a voter&apos;s cycle points from recorded votes.</p>
+                </div>
+                <div className="rounded-2xl bg-slate-50 px-4 py-3 text-sm text-slate-600">
+                    Active cycle: <span className="font-semibold text-slate-900">{monitor.cycle?.cycleLabel || 'No active cycle'}</span>
+                </div>
+            </div>
+            <div className="mt-5 grid gap-3 md:grid-cols-[1fr_220px_220px_160px]">
+                <input
+                    className="rounded-2xl border border-slate-200 px-4 py-3 text-sm"
+                    placeholder="Search voter by name, email, role, designation, or ID"
+                    value={search}
+                    onChange={(event) => setSearch(event.target.value)}
+                />
+                <select
+                    className="rounded-2xl border border-slate-200 px-4 py-3 text-sm"
+                    value={filter}
+                    onChange={(event) => setFilter(event.target.value as 'ALL' | 'HAS_VOTES' | 'HAS_ISSUES')}
+                >
+                    <option value="ALL">All Accounts</option>
+                    <option value="HAS_VOTES">Has Votes</option>
+                    <option value="HAS_ISSUES">Potential Issues</option>
+                </select>
+                <select
+                    className="rounded-2xl border border-slate-200 px-4 py-3 text-sm"
+                    value={sortBy}
+                    onChange={(event) => setSortBy(event.target.value as 'allocated' | 'remaining' | 'updated' | 'name')}
+                >
+                    <option value="allocated">Sort by Allocated</option>
+                    <option value="remaining">Sort by Remaining</option>
+                    <option value="updated">Sort by Last Updated</option>
+                    <option value="name">Sort by Name</option>
+                </select>
+                <select
+                    className="rounded-2xl border border-slate-200 px-4 py-3 text-sm"
+                    value={sortDirection}
+                    onChange={(event) => setSortDirection(event.target.value as 'asc' | 'desc')}
+                >
+                    <option value="desc">Desc</option>
+                    <option value="asc">Asc</option>
+                </select>
+            </div>
+            <div className="mt-5 space-y-4">
+                {filteredAccounts.length > 0 ? filteredAccounts.map((account) => (
+                    <div key={account.id} className="rounded-3xl border border-slate-200 p-5">
+                        <div className="flex flex-wrap items-start justify-between gap-4">
+                            <div>
+                                <div className="text-sm font-semibold text-slate-900">{account.user.name || account.user.email || account.userId}</div>
+                                <div className="mt-1 text-sm text-slate-500">
+                                    {account.user.email || account.userId}
+                                    {account.user.designation ? ` • ${account.user.designation}` : ''}
+                                    {account.user.role ? ` • ${formatThinkTankLabel(account.user.role, account.user.role)}` : ''}
+                                </div>
+                            </div>
+                            <div className="grid gap-2 md:grid-cols-4">
+                                <MiniMetric label="Base" value={account.basePoints} />
+                                <MiniMetric label="Allocated" value={account.allocatedPoints} />
+                                <MiniMetric label="Remaining" value={account.remainingPoints} />
+                                <MiniMetric label="Max / Idea" value={account.maxPerIdeaPoints} />
+                            </div>
+                        </div>
+                        <div className="mt-4 flex flex-wrap gap-3">
+                            <button
+                                type="button"
+                                disabled={updating || !monitor.cycle?.id}
+                                onClick={() => monitor.cycle?.id && onAction({ action: 'RESET_POINTS', cycleId: monitor.cycle.id, userId: account.userId })}
+                                className="rounded-2xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white disabled:opacity-60"
+                            >
+                                {updating ? 'Updating…' : 'Reset Points From Votes'}
+                            </button>
+                        </div>
+                        <div className="mt-4 space-y-3">
+                            {account.votes.length > 0 ? account.votes.map((vote) => (
+                                <div key={vote.id} className="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-slate-50 p-4">
+                                    <div>
+                                        <div className="text-sm font-semibold text-slate-900">{vote.idea.topic}</div>
+                                        <div className="mt-1 text-xs text-slate-500">
+                                            {vote.vote} • {vote.pointAllocation} pt • weighted {vote.weightedValue} • {formatDateTime(vote.updatedAt)}
+                                        </div>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        disabled={updating}
+                                        onClick={() => onAction({ action: 'REMOVE_VOTE', voteId: vote.id })}
+                                        className="rounded-2xl bg-rose-600 px-4 py-3 text-sm font-semibold text-white disabled:opacity-60"
+                                    >
+                                        {updating ? 'Updating…' : 'Remove Vote'}
+                                    </button>
+                                </div>
+                            )) : (
+                                <div className="rounded-2xl bg-slate-50 p-4 text-sm text-slate-500">
+                                    No votes recorded for this voter in the active cycle.
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                )) : (
+                    <div className="rounded-2xl bg-slate-50 p-4 text-sm text-slate-500">
+                        No vote monitor entries match the current search or filter.
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+}
+
+function VoteIdeaTable({
+    title,
+    ideas,
+    pointAccount,
+    onDeleteIdea,
+}: {
+    title: string;
+    ideas: Idea[];
+    pointAccount?: { basePoints: number; maxPerIdeaPoints: number; allocatedPoints: number; remainingPoints: number } | null;
+    onDeleteIdea?: (ideaId: string) => Promise<void>;
+}) {
+    const [search, setSearch] = useState('');
+    const [categoryFilter, setCategoryFilter] = useState('ALL');
+    const [sortBy, setSortBy] = useState<'createdAt' | 'votes' | 'score' | 'category' | 'title'>('score');
+    const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
+
+    const filteredIdeas = [...ideas]
+        .filter((idea) => {
+            const query = search.trim().toLowerCase();
+            const matchesSearch = !query || `${idea.topic} ${idea.description} ${idea.category}`.toLowerCase().includes(query);
+            const matchesCategory = categoryFilter === 'ALL' || idea.category === categoryFilter;
+            return matchesSearch && matchesCategory;
+        })
+        .sort((a, b) => {
+            const direction = sortDirection === 'asc' ? 1 : -1;
+            if (sortBy === 'votes') return (a.voteCount - b.voteCount) * direction;
+            if (sortBy === 'score') return ((a.communityScore ?? a.weightedScore) - (b.communityScore ?? b.weightedScore)) * direction;
+            if (sortBy === 'category') return a.category.localeCompare(b.category) * direction;
+            if (sortBy === 'title') return a.topic.localeCompare(b.topic) * direction;
+            return (new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()) * direction;
+        });
+
+    return (
+        <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+            <div className="flex flex-wrap items-start justify-between gap-4">
+                <div>
+                    <h2 className="text-xl font-semibold text-slate-900">{title}</h2>
+                    <p className="mt-1 text-sm text-slate-600">Use the table to scan ideas quickly, then open a dedicated idea page for full voting, Q&amp;A, and activity history.</p>
+                </div>
+                {pointAccount ? (
+                    <div className="rounded-2xl bg-slate-50 px-4 py-3 text-sm text-slate-700">
+                        Remaining <span className="font-semibold text-slate-950">{pointAccount.remainingPoints}</span> / {pointAccount.basePoints}
+                    </div>
+                ) : null}
+            </div>
+            <div className="mt-5 grid gap-3 md:grid-cols-[1fr_220px_220px_160px]">
+                <input
+                    className="rounded-2xl border border-slate-200 px-4 py-3 text-sm"
+                    placeholder="Search by topic, description, or category"
+                    value={search}
+                    onChange={(event) => setSearch(event.target.value)}
+                />
+                <select
+                    className="rounded-2xl border border-slate-200 px-4 py-3 text-sm"
+                    value={categoryFilter}
+                    onChange={(event) => setCategoryFilter(event.target.value)}
+                >
+                    <option value="ALL">All Categories</option>
+                    {Array.from(new Set(ideas.map((idea) => idea.category))).sort().map((category) => (
+                        <option key={category} value={category}>{formatThinkTankLabel(category)}</option>
+                    ))}
+                </select>
+                <select
+                    className="rounded-2xl border border-slate-200 px-4 py-3 text-sm"
+                    value={sortBy}
+                    onChange={(event) => setSortBy(event.target.value as 'createdAt' | 'votes' | 'score' | 'category' | 'title')}
+                >
+                    <option value="score">Sort by Score</option>
+                    <option value="votes">Sort by Votes</option>
+                    <option value="createdAt">Sort by Created</option>
+                    <option value="category">Sort by Category</option>
+                    <option value="title">Sort by Title</option>
+                </select>
+                <select
+                    className="rounded-2xl border border-slate-200 px-4 py-3 text-sm"
+                    value={sortDirection}
+                    onChange={(event) => setSortDirection(event.target.value as 'asc' | 'desc')}
+                >
+                    <option value="desc">Desc</option>
+                    <option value="asc">Asc</option>
+                </select>
+            </div>
+            <div className="mt-5 overflow-x-auto">
+                <table className="min-w-full border-collapse text-sm">
+                    <thead>
+                        <tr className="border-b border-slate-200 text-left text-xs uppercase tracking-[0.2em] text-slate-500">
+                            <th className="px-4 py-3">Idea</th>
+                            <th className="px-4 py-3">Category</th>
+                            <th className="px-4 py-3">Votes</th>
+                            <th className="px-4 py-3">Score</th>
+                            <th className="px-4 py-3">Updated</th>
+                            <th className="px-4 py-3">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {filteredIdeas.length > 0 ? filteredIdeas.map((idea) => (
+                            <tr key={idea.id} className="border-b border-slate-100 align-top">
+                                <td className="px-4 py-4">
+                                    <div className="font-semibold text-slate-900">{idea.topic}</div>
+                                    <div className="mt-1 line-clamp-2 max-w-xl text-slate-600">{idea.description}</div>
+                                </td>
+                                <td className="px-4 py-4 text-slate-700">{formatThinkTankLabel(idea.category)}</td>
+                                <td className="px-4 py-4 text-slate-700">{idea.voteCount}</td>
+                                <td className="px-4 py-4 text-slate-700">{idea.communityScore ?? idea.weightedScore}</td>
+                                <td className="px-4 py-4 text-slate-500">{formatDateTime(idea.createdAt)}</td>
+                                <td className="px-4 py-4">
+                                    <div className="flex flex-wrap gap-2">
+                                        <Link
+                                            href={`/dashboard/think-tank/vote/${idea.id}`}
+                                            className="rounded-full bg-slate-900 px-4 py-2 text-xs font-semibold text-white"
+                                        >
+                                            Open Full Idea
+                                        </Link>
+                                        {onDeleteIdea ? (
+                                            <button
+                                                type="button"
+                                                onClick={() => onDeleteIdea(idea.id)}
+                                                className="rounded-full bg-rose-100 px-4 py-2 text-xs font-semibold text-rose-700"
+                                            >
+                                                Delete
+                                            </button>
+                                        ) : null}
+                                    </div>
+                                </td>
+                            </tr>
+                        )) : (
+                            <tr>
+                                <td colSpan={6} className="px-4 py-8 text-center text-sm text-slate-500">
+                                    No ideas match the current search or filter.
+                                </td>
+                            </tr>
+                        )}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    );
+}
+
 function ReviewBoard({
     ideas,
     assignees,
@@ -932,7 +1525,7 @@ function ReviewBoard({
     ideas: Idea[];
     assignees: Array<{ id: string; name?: string | null; email?: string | null; designation?: string | null }>;
     canVeto?: boolean;
-    onReviewUpdate: (ideaId: string, payload: { reviewStage?: string; implementationStatus?: string; decisionNotes?: string }) => Promise<void>;
+    onReviewUpdate: (ideaId: string, payload: { reviewStage?: string; implementationStatus?: string; decisionNotes?: string; status?: string }) => Promise<void>;
     onAddComment: (ideaId: string, content: string) => Promise<void>;
     onSaveReviewerScore: (ideaId: string, payload: {
         impactScore: number;
@@ -1029,7 +1622,19 @@ function ReviewBoard({
                                 <div className="mt-1 text-rose-700">Vetoed on {formatDateTime(idea.vetoedAt || null)}</div>
                             </div>
                         ) : null}
-                        <div className="mt-4 grid gap-3 md:grid-cols-[200px_220px_1fr_auto] md:items-end">
+                        <div className="mt-4 grid gap-3 md:grid-cols-[180px_200px_220px_1fr_auto] md:items-end">
+                            <label className="grid gap-2 text-sm text-slate-700">
+                                <span className="font-medium">Public visibility</span>
+                                <select
+                                    className="rounded-2xl border border-slate-200 px-4 py-3"
+                                    defaultValue={idea.status || 'ACTIVE'}
+                                    onChange={(event) => onReviewUpdate(idea.id, { status: event.target.value })}
+                                >
+                                    <option value="ACTIVE">Visible in voting</option>
+                                    <option value="LOCKED">Hold from employees</option>
+                                    <option value="ARCHIVED">Archive</option>
+                                </select>
+                            </label>
                             <label className="grid gap-2 text-sm text-slate-700">
                                 <span className="font-medium">Review stage</span>
                                 <select

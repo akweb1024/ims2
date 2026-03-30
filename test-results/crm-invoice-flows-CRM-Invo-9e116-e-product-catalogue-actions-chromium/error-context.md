@@ -1,0 +1,196 @@
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+  - link "Skip to main content" [ref=e2] [cursor=pointer]:
+    - /url: "#main-content"
+  - generic [ref=e3]:
+    - navigation [ref=e4]:
+      - generic [ref=e6]:
+        - generic [ref=e7]:
+          - button "Toggle sidebar" [ref=e8] [cursor=pointer]:
+            - img [ref=e9]
+          - link "S" [ref=e11] [cursor=pointer]:
+            - /url: /dashboard
+            - generic [ref=e13]: S
+          - button "👥 CRM / Customers" [ref=e15] [cursor=pointer]:
+            - generic [ref=e16]: 👥
+            - generic [ref=e17]: CRM / Customers
+            - img [ref=e18]
+        - generic [ref=e20]:
+          - button "Quick search... ⌘ K" [ref=e22] [cursor=pointer]:
+            - img [ref=e23]
+            - generic [ref=e25]: Quick search...
+            - generic [ref=e26]: ⌘ K
+          - button "⏱️ Not Checked In" [ref=e27] [cursor=pointer]:
+            - generic [ref=e28]: ⏱️
+            - generic [ref=e29]: Not Checked In
+          - button [ref=e31] [cursor=pointer]:
+            - img [ref=e32]
+          - button "S SUPER ADMIN admin" [ref=e35] [cursor=pointer]:
+            - generic [ref=e36]: S
+            - generic [ref=e37]:
+              - paragraph [ref=e38]: SUPER ADMIN
+              - paragraph [ref=e39]: admin
+            - img [ref=e40]
+    - complementary [ref=e42]:
+      - navigation [ref=e43]:
+        - generic [ref=e44]:
+          - generic [ref=e45]:
+            - generic [ref=e46]: Customer Management
+            - generic [ref=e47]:
+              - link "📊 CRM Dashboard" [ref=e48] [cursor=pointer]:
+                - /url: /dashboard/crm
+                - generic [ref=e50]: 📊
+                - generic [ref=e51]: CRM Dashboard
+              - link "👥 All Customers" [ref=e52] [cursor=pointer]:
+                - /url: /dashboard/customers
+                - generic [ref=e53]: 👥
+                - generic [ref=e54]: All Customers
+              - link "🏛️ Partners & Institutions" [ref=e56] [cursor=pointer]:
+                - /url: /dashboard/crm/partners
+                - generic [ref=e57]: 🏛️
+                - generic [ref=e58]: Partners & Institutions
+              - link "🎓 Institutions" [ref=e60] [cursor=pointer]:
+                - /url: /dashboard/institutions
+                - generic [ref=e61]: 🎓
+                - generic [ref=e62]: Institutions
+              - link "➕ Add Customer" [ref=e64] [cursor=pointer]:
+                - /url: /dashboard/customers/new
+                - generic [ref=e65]: ➕
+                - generic [ref=e66]: Add Customer
+              - link "🧾 Invoices" [ref=e68] [cursor=pointer]:
+                - /url: /dashboard/crm/invoices
+                - generic [ref=e69]: 🧾
+                - generic [ref=e70]: Invoices
+              - link "📋 Subscriptions" [ref=e72] [cursor=pointer]:
+                - /url: /dashboard/crm/subscriptions
+                - generic [ref=e73]: 📋
+                - generic [ref=e74]: Subscriptions
+              - link "🗂️ Invoice Products" [ref=e76] [cursor=pointer]:
+                - /url: /dashboard/crm/invoice-products
+                - generic [ref=e78]: 🗂️
+                - generic [ref=e79]: Invoice Products
+              - link "🎟️ Coupons" [ref=e80] [cursor=pointer]:
+                - /url: /dashboard/coupons
+                - generic [ref=e81]: 🎟️
+                - generic [ref=e82]: Coupons
+          - generic [ref=e84]:
+            - generic [ref=e85]: Engagement & Marketing
+            - generic [ref=e86]:
+              - link "📞 Communications" [ref=e87] [cursor=pointer]:
+                - /url: /dashboard/communications
+                - generic [ref=e88]: 📞
+                - generic [ref=e89]: Communications
+              - link "🚀 Active Campaigns" [ref=e91] [cursor=pointer]:
+                - /url: /dashboard/crm/campaigns
+                - generic [ref=e92]: 🚀
+                - generic [ref=e93]: Active Campaigns
+              - link "📅 Follow-ups" [ref=e95] [cursor=pointer]:
+                - /url: /dashboard/follow-ups
+                - generic [ref=e96]: 📅
+                - generic [ref=e97]: Follow-ups
+        - button "Logout" [ref=e100] [cursor=pointer]:
+          - img [ref=e101]
+          - generic [ref=e103]: Logout
+    - main [ref=e104]:
+      - generic [ref=e108]:
+        - navigation [ref=e109]:
+          - link "CRM" [ref=e110] [cursor=pointer]:
+            - /url: /dashboard/crm
+          - generic [ref=e111]: /
+          - generic [ref=e112]: Products
+        - generic [ref=e113]:
+          - generic [ref=e114]:
+            - img [ref=e116]
+            - generic [ref=e119]:
+              - heading "Invoice Products" [level=1] [ref=e120]
+              - paragraph [ref=e121]: Manage billable products, categories, pricing, and import/export from one place.
+          - generic [ref=e123]:
+            - generic [ref=e124]:
+              - generic [ref=e125]: FX Rate
+              - generic [ref=e126]:
+                - generic [ref=e127]: 1 USD = ₹
+                - spinbutton [ref=e128]: "83.5"
+            - generic [ref=e129]:
+              - button "Template" [ref=e130] [cursor=pointer]
+              - generic "Import CSV" [ref=e131] [cursor=pointer]:
+                - img [ref=e132]
+                - text: Import
+              - button "Export" [ref=e135] [cursor=pointer]:
+                - img [ref=e136]
+                - text: Export
+            - link "Add Product" [ref=e140] [cursor=pointer]:
+              - /url: /dashboard/crm/invoice-products/new
+              - img [ref=e141]
+              - text: Add Product
+        - generic [ref=e142]:
+          - generic [ref=e144]:
+            - generic [ref=e145]:
+              - paragraph [ref=e146]: Total Products
+              - paragraph [ref=e147]: "0"
+              - paragraph [ref=e148]: Real-time sync active
+            - img [ref=e150]
+          - generic [ref=e155]:
+            - generic [ref=e156]:
+              - paragraph [ref=e157]: Active Products
+              - paragraph [ref=e158]: "0"
+              - paragraph [ref=e159]: Identity verified
+            - img [ref=e161]
+          - generic [ref=e165]:
+            - generic [ref=e166]:
+              - paragraph [ref=e167]: Featured Products
+              - paragraph [ref=e168]: "0"
+              - paragraph [ref=e169]: Promotion ready
+            - img [ref=e171]
+          - generic [ref=e175]:
+            - generic [ref=e176]:
+              - paragraph [ref=e177]: Currency Mode
+              - paragraph [ref=e178]: Dual-FX
+              - paragraph [ref=e179]: Multi-domain parity
+            - img [ref=e181]
+        - generic [ref=e184]:
+          - generic [ref=e185]:
+            - img [ref=e187]
+            - generic [ref=e189]:
+              - heading "Currency Converter" [level=3] [ref=e190]
+              - paragraph [ref=e191]: Convert INR and USD values using your working rate.
+          - generic [ref=e192]:
+            - generic [ref=e193]:
+              - generic [ref=e194]: ₹
+              - spinbutton [ref=e195]
+            - combobox [ref=e196] [cursor=pointer]:
+              - option "INR" [selected]
+              - option "USD"
+            - img [ref=e198]
+            - paragraph [ref=e201]: No value yet
+        - generic [ref=e202]:
+          - generic [ref=e203]:
+            - generic [ref=e204]:
+              - button "All Products [0]" [ref=e205] [cursor=pointer]:
+                - text: All Products
+                - generic [ref=e206]: "[0]"
+              - button "📰 Journal Subscription" [ref=e207] [cursor=pointer]
+              - button "🎓 Course" [ref=e208] [cursor=pointer]
+              - button "🛠️ Workshop" [ref=e209] [cursor=pointer]
+              - button "🔗 DOI Service" [ref=e210] [cursor=pointer]
+              - button "📝 APC" [ref=e211] [cursor=pointer]
+              - button "🏅 Certificate" [ref=e212] [cursor=pointer]
+              - button "💻 Digital Service" [ref=e213] [cursor=pointer]
+              - button "📦 Miscellaneous" [ref=e214] [cursor=pointer]
+            - generic [ref=e215]:
+              - generic [ref=e216]:
+                - img [ref=e217]
+                - textbox "Search by name, SKU, or domain..." [ref=e220]
+              - generic [ref=e221]:
+                - button [ref=e222] [cursor=pointer]:
+                  - img [ref=e223]
+                - button [ref=e225] [cursor=pointer]:
+                  - img [ref=e226]
+          - generic [ref=e231]: Decrypting registry...
+    - button "Feedback & Support" [ref=e232] [cursor=pointer]:
+      - img [ref=e234]
+  - button "Open Next.js Dev Tools" [ref=e241] [cursor=pointer]:
+    - img [ref=e242]
+  - alert [ref=e245]
+```

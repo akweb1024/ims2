@@ -89,6 +89,8 @@ export type GovernanceState = {
     overrideReason?: string | null;
     overrideUpdatedAt?: string | null;
     nextRevealAt?: string;
+    nextVotingAt?: string;
+    submissionEndsAt?: string;
 };
 
 export type GovernanceOverrideMode = 'SCHEDULED' | 'SUBMISSIONS_OPEN' | 'VOTING_OPEN' | 'LOCKED' | 'REVEAL_READY';
@@ -386,27 +388,98 @@ export const notifyThinkTankIdeaParticipants = async (ideaId: string, title: str
     })));
 };
 
-export const getScheduledGovernanceState = (date = new Date()): GovernanceState => {
-    const parts = getIstParts(date);
-    const minutes = parts.hour * 60 + parts.minute;
+const WINDOW_SETTINGS_KEY = 'WINDOW_SETTINGS';
+
+export interface ThinkTankWindowSettings {
+    resultSaturdays: number[];
+    resultTime: string;
+    ideaSubmissionDays: number;
+    votingEndDay: number; // 0=Sun, 1=Mon, ..., 5=Fri, 6=Sat
+    votingEndTime: string;
+}
+
+export const DEFAULT_WINDOW_SETTINGS: ThinkTankWindowSettings = {
+    resultSaturdays: [2, 4],
+    resultTime: '15:00',
+    ideaSubmissionDays: 7,
+    votingEndDay: 5, // Friday
+    votingEndTime: '23:30',
+};
+
+export const getThinkTankWindowSettings = async (companyId: string): Promise<ThinkTankWindowSettings> => {
+    const config = await prisma.appConfiguration.findFirst({
+        where: {
+            companyId,
+            category: GOVERNANCE_CATEGORY,
+            key: WINDOW_SETTINGS_KEY,
+            isActive: true,
+        },
+    });
+
+    if (!config) return DEFAULT_WINDOW_SETTINGS;
+
+    try {
+        const parsed = JSON.parse(decryptConfigValue(config.value)) as Partial<ThinkTankWindowSettings>;
+        return {
+            resultSaturdays: Array.isArray(parsed.resultSaturdays) && parsed.resultSaturdays.length > 0
+                ? parsed.resultSaturdays
+                : DEFAULT_WINDOW_SETTINGS.resultSaturdays,
+            resultTime: parsed.resultTime || DEFAULT_WINDOW_SETTINGS.resultTime,
+            ideaSubmissionDays: typeof parsed.ideaSubmissionDays === 'number'
+                ? parsed.ideaSubmissionDays
+                : DEFAULT_WINDOW_SETTINGS.ideaSubmissionDays,
+            votingEndDay: typeof parsed.votingEndDay === 'number'
+                ? parsed.votingEndDay
+                : DEFAULT_WINDOW_SETTINGS.votingEndDay,
+            votingEndTime: parsed.votingEndTime || DEFAULT_WINDOW_SETTINGS.votingEndTime,
+        };
+    } catch {
+        return DEFAULT_WINDOW_SETTINGS;
+    }
+};
+
+export const setThinkTankWindowSettings = async (companyId: string, settings: ThinkTankWindowSettings, userId: string) => {
+    const value = encryptConfigValue(JSON.stringify(settings));
+    return prisma.appConfiguration.upsert({
+        where: {
+            companyId_category_key: {
+                companyId,
+                category: GOVERNANCE_CATEGORY,
+                key: WINDOW_SETTINGS_KEY,
+            },
+        },
+        create: {
+            companyId,
+            category: GOVERNANCE_CATEGORY,
+            key: WINDOW_SETTINGS_KEY,
+            value,
+            isActive: true,
+            description: 'Think Tank window customization',
+            createdBy: userId,
+        },
+        update: {
+            value,
+            isActive: true,
+            createdBy: userId,
+        },
+    });
+};
+
+export const getScheduledGovernanceState = (date = new Date(), settings: ThinkTankWindowSettings = DEFAULT_WINDOW_SETTINGS): GovernanceState => {
+    const { windowStart, ideaEnd, votingStart, windowEnd, revealAt } = getCurrentCycleWindow(date, settings);
+    const now = date.getTime();
     
-    // Time lock removed: submissions and voting are now always open by default
-    const submissionOpen = true; 
-    const standardVotingWindow = true;
-    const locked = false;
+    const submissionOpen = now >= windowStart.getTime() && now < ideaEnd.getTime();
+    const votingOpen = now >= votingStart.getTime() && now < windowEnd.getTime();
+    const revealWindow = now >= revealAt.getTime() && now < (revealAt.getTime() + 6 * 60 * 60 * 1000); // 6 hour reveal window
+    const locked = !submissionOpen && !votingOpen && !revealWindow;
 
-    const isSaturday = parts.weekday === 6;
-    const isRevealSaturday = isSaturday && ((parts.day >= 1 && parts.day <= 7) || (parts.day >= 15 && parts.day <= 21));
-    const revealWindow = isRevealSaturday && minutes >= 900;
-    const votingOpen = !revealWindow && standardVotingWindow;
-
-    let label = 'Open for submissions';
-    if (revealWindow) label = 'Reveal window';
-    else if (submissionOpen) label = 'Open for submissions';
+    let label = 'Locked';
+    if (submissionOpen) label = 'Open for submissions';
     else if (votingOpen) label = 'Open for voting';
-    else if (locked) label = 'Locked for tallying and review';
-
-    const { revealAt } = getCurrentCycleWindow(date);
+    else if (revealWindow) label = 'Result announcement';
+    else if (now < windowStart.getTime()) label = 'Cycle not started';
+    else label = 'Awaiting next cycle';
 
     return {
         now: date,
@@ -420,6 +493,8 @@ export const getScheduledGovernanceState = (date = new Date()): GovernanceState 
         overrideReason: null,
         overrideUpdatedAt: null,
         nextRevealAt: revealAt.toISOString(),
+        nextVotingAt: votingStart.toISOString(),
+        submissionEndsAt: ideaEnd.toISOString(),
     };
 };
 
@@ -518,7 +593,8 @@ export const clearGovernanceOverride = async (companyId: string, userId: string)
 };
 
 export const getGovernanceState = async (companyId?: string | null, date = new Date()): Promise<GovernanceState> => {
-    const scheduled = getScheduledGovernanceState(date);
+    const settings = companyId ? await getThinkTankWindowSettings(companyId) : DEFAULT_WINDOW_SETTINGS;
+    const scheduled = getScheduledGovernanceState(date, settings);
     if (!companyId) return scheduled;
 
     const override = await getGovernanceOverride(companyId);
@@ -574,23 +650,69 @@ export const getGovernanceState = async (companyId?: string | null, date = new D
     }
 };
 
-export function getCurrentCycleWindow(date = new Date()) {
-    const { year, month, day } = getIstParts(date);
-    const isSecondHalf = day >= 15;
-    const windowStart = makeIstDate(year, month, isSecondHalf ? 15 : 1, '09:30:00');
-    const windowEnd = makeIstDate(year, month, isSecondHalf ? 21 : 7, '15:00:00');
+export function getCurrentCycleWindow(date = new Date(), settings: ThinkTankWindowSettings = DEFAULT_WINDOW_SETTINGS) {
+    const { year, month } = getIstParts(date);
 
-    let revealDay = isSecondHalf ? 15 : 1;
-    while (makeIstDate(year, month, revealDay, '15:00:00').getUTCDay() !== 6) {
-        revealDay += 1;
+    const getNthSaturdayOfMonth = (y: number, m: number, n: number) => {
+        let count = 0;
+        for (let d = 1; d <= 31; d++) {
+            const temp = makeIstDate(y, m, d, settings.resultTime + ':00');
+            if (temp.getMonth() + 1 !== m) break;
+            if (temp.getDay() === 6) {
+                count++;
+                if (count === n) return temp;
+            }
+        }
+        return null;
+    };
+
+    const results = settings.resultSaturdays
+        .map((n) => getNthSaturdayOfMonth(year, month, n))
+        .filter(Boolean) as Date[];
+
+    let nextResult: Date | null = null;
+    let prevResult: Date | null = null;
+
+    for (let i = 0; i < results.length; i++) {
+        if (date < results[i]) {
+            nextResult = results[i];
+            prevResult = i > 0 ? results[i - 1] : makeIstDate(year, month, 1, '00:00:00');
+            break;
+        }
     }
-    const revealAt = makeIstDate(year, month, revealDay, '15:00:00');
 
-    return { windowStart, windowEnd, revealAt };
+    if (!nextResult) {
+        const nextMonth = month === 12 ? 1 : month + 1;
+        const nextYear = month === 12 ? year + 1 : year;
+        nextResult = getNthSaturdayOfMonth(nextYear, nextMonth, settings.resultSaturdays[0])!;
+        prevResult = results[results.length - 1];
+    }
+
+    const ideaStart = prevResult;
+    const ideaEnd = new Date((ideaStart?.getTime() || 0) + settings.ideaSubmissionDays * 24 * 60 * 60 * 1000);
+
+    const votingEnd = new Date(nextResult.getTime());
+    const [vH, vM] = settings.votingEndTime.split(':').map(Number);
+    votingEnd.setHours(vH, vM, 0, 0);
+    while (votingEnd.getDay() !== settings.votingEndDay) {
+        votingEnd.setDate(votingEnd.getDate() - 1);
+    }
+
+    const votingStart = ideaEnd;
+
+    return {
+        windowStart: ideaStart || makeIstDate(year, month, 1),
+        ideaEnd,
+        votingStart,
+        windowEnd: votingEnd,
+        revealAt: nextResult,
+    };
 }
 
+
 export const getOrCreateCurrentCycle = async (companyId: string, date = new Date()) => {
-    const { windowStart, windowEnd, revealAt } = getCurrentCycleWindow(date);
+    const settings = await getThinkTankWindowSettings(companyId);
+    const { windowStart, windowEnd, revealAt } = getCurrentCycleWindow(date, settings);
     const existing = await prisma.thinkTankIdeaCycle.findFirst({
         where: {
             companyId,
@@ -1109,6 +1231,270 @@ export const castThinkTankVote = async (params: {
     return {
         idea: updatedIdea,
         account: updatedAccount,
+    };
+};
+
+const rebuildPointAccountFields = async (params: {
+    tx: Prisma.TransactionClient;
+    companyId: string;
+    cycleId: string;
+    userId: string;
+    role?: string | null;
+    designation?: string | null;
+}) => {
+    const budget = getThinkTankPointBudget(params.designation, params.role);
+    const voterHash = hashIdentity(params.userId);
+    const votes = await params.tx.thinkTankIdeaVote.findMany({
+        where: {
+            companyId: params.companyId,
+            cycleId: params.cycleId,
+            voterHash,
+        },
+        select: {
+            pointAllocation: true,
+        },
+    });
+
+    const allocatedPoints = votes.reduce((sum, vote) => sum + vote.pointAllocation, 0);
+    return {
+        basePoints: budget.basePoints,
+        maxPerIdeaPoints: budget.maxPerIdeaPoints,
+        allocatedPoints,
+        remainingPoints: Math.max(0, budget.basePoints - allocatedPoints),
+    };
+};
+
+export const rebuildThinkTankPointAccount = async (params: {
+    companyId: string;
+    cycleId: string;
+    userId: string;
+}) => {
+    const voter = await prisma.user.findUnique({
+        where: { id: params.userId },
+        select: {
+            role: true,
+            employeeProfile: { select: { designation: true } },
+        },
+    });
+
+    if (!voter) {
+        throw new NotFoundError('User');
+    }
+
+    return prisma.$transaction(async (tx) => {
+        const rebuilt = await rebuildPointAccountFields({
+            tx,
+            companyId: params.companyId,
+            cycleId: params.cycleId,
+            userId: params.userId,
+            role: voter.role,
+            designation: voter.employeeProfile?.designation,
+        });
+
+        return tx.thinkTankPointAccount.upsert({
+            where: {
+                cycleId_userId: {
+                    cycleId: params.cycleId,
+                    userId: params.userId,
+                },
+            },
+            create: {
+                companyId: params.companyId,
+                cycleId: params.cycleId,
+                userId: params.userId,
+                ...rebuilt,
+            },
+            update: rebuilt,
+        });
+    });
+};
+
+export const removeThinkTankVoteByAdmin = async (params: {
+    companyId: string;
+    voteId: string;
+    adminUserId: string;
+}) => {
+    const vote = await prisma.thinkTankIdeaVote.findFirst({
+        where: {
+            id: params.voteId,
+            companyId: params.companyId,
+        },
+    });
+
+    if (!vote) {
+        throw new NotFoundError('Vote');
+    }
+
+    const ideaId = vote.ideaId;
+    const cycleId = vote.cycleId;
+    const voterId = decryptThinkTankIdentity(vote.voterEncrypted);
+
+    await prisma.$transaction(async (tx) => {
+        await tx.thinkTankIdeaVote.delete({
+            where: { id: vote.id },
+        });
+
+        const voter = await tx.user.findUnique({
+            where: { id: voterId },
+            select: {
+                role: true,
+                employeeProfile: { select: { designation: true } },
+            },
+        });
+
+        if (voter) {
+            const rebuilt = await rebuildPointAccountFields({
+                tx,
+                companyId: params.companyId,
+                cycleId,
+                userId: voterId,
+                role: voter.role,
+                designation: voter.employeeProfile?.designation,
+            });
+
+            await tx.thinkTankPointAccount.upsert({
+                where: {
+                    cycleId_userId: {
+                        cycleId,
+                        userId: voterId,
+                    },
+                },
+                create: {
+                    companyId: params.companyId,
+                    cycleId,
+                    userId: voterId,
+                    ...rebuilt,
+                },
+                update: rebuilt,
+            });
+        }
+    });
+
+    await recalculateIdeaScore(ideaId);
+    await logThinkTankAudit({
+        ideaId,
+        actorUserId: params.adminUserId,
+        action: 'VOTE_REMOVED_BY_ADMIN',
+        outcome: 'SUCCESS',
+        metadata: {
+            voteId: vote.id,
+            cycleId,
+            voterId,
+        },
+    });
+
+    return { ideaId, cycleId, voterId };
+};
+
+export const getThinkTankVoteMonitor = async (companyId: string) => {
+    const cycle = await prisma.thinkTankIdeaCycle.findFirst({
+        where: {
+            companyId,
+            status: 'ACTIVE',
+        },
+        orderBy: { revealAt: 'asc' },
+        select: {
+            id: true,
+            cycleLabel: true,
+            revealAt: true,
+            windowStart: true,
+            windowEnd: true,
+        },
+    });
+
+    if (!cycle) {
+        return {
+            cycle: null,
+            accounts: [],
+        };
+    }
+
+    const accounts = await prisma.thinkTankPointAccount.findMany({
+        where: {
+            companyId,
+            cycleId: cycle.id,
+        },
+        include: {
+            user: {
+                select: {
+                    id: true,
+                    name: true,
+                    email: true,
+                    role: true,
+                    employeeProfile: {
+                        select: {
+                            designation: true,
+                        },
+                    },
+                },
+            },
+        },
+        orderBy: [
+            { allocatedPoints: 'desc' },
+            { updatedAt: 'desc' },
+        ],
+    });
+
+    const voterHashes = accounts.map((account) => hashIdentity(account.userId));
+    const votes = voterHashes.length > 0
+        ? await prisma.thinkTankIdeaVote.findMany({
+            where: {
+                companyId,
+                cycleId: cycle.id,
+                voterHash: { in: voterHashes },
+            },
+            select: {
+                id: true,
+                voterHash: true,
+                vote: true,
+                pointAllocation: true,
+                weightedValue: true,
+                updatedAt: true,
+                idea: {
+                    select: {
+                        id: true,
+                        topic: true,
+                        status: true,
+                    },
+                },
+            },
+            orderBy: { updatedAt: 'desc' },
+        })
+        : [];
+
+    const votesByHash = new Map<string, typeof votes>();
+    for (const vote of votes) {
+        const current = votesByHash.get(vote.voterHash) || [];
+        current.push(vote);
+        votesByHash.set(vote.voterHash, current);
+    }
+
+    return {
+        cycle,
+        accounts: accounts.map((account) => ({
+            id: account.id,
+            userId: account.userId,
+            basePoints: account.basePoints,
+            maxPerIdeaPoints: account.maxPerIdeaPoints,
+            allocatedPoints: account.allocatedPoints,
+            remainingPoints: account.remainingPoints,
+            updatedAt: account.updatedAt,
+            user: {
+                id: account.user.id,
+                name: account.user.name,
+                email: account.user.email,
+                role: account.user.role,
+                designation: account.user.employeeProfile?.designation || null,
+            },
+            votes: (votesByHash.get(hashIdentity(account.userId)) || []).map((vote) => ({
+                id: vote.id,
+                vote: vote.vote,
+                pointAllocation: vote.pointAllocation,
+                weightedValue: vote.weightedValue,
+                updatedAt: vote.updatedAt,
+                idea: vote.idea,
+            })),
+        })),
     };
 };
 
@@ -1888,26 +2274,203 @@ export const createIdeaWithParticipants = async (params: {
         });
     }
 
-    await pickCoOptedMembers({
-        companyId: params.user.companyId!,
-        ideaId: idea.id,
-        category: params.category,
-        excludeUserIds: [params.user.id, ...partnerIds],
-    });
-
-    await logThinkTankAudit({
-        ideaId: idea.id,
-        actorUserId: params.user.id,
-        action: 'IDEA_CREATED',
-        outcome: 'SUCCESS',
-        metadata: {
+    try {
+        await pickCoOptedMembers({
+            companyId: params.user.companyId!,
+            ideaId: idea.id,
             category: params.category,
-            duplicateCandidates: duplicates.length,
-        },
-    });
+            excludeUserIds: [params.user.id, ...partnerIds],
+        });
+    } catch (error) {
+        console.error('Think Tank co-opted member selection failed after idea creation:', error);
+    }
+
+    try {
+        await logThinkTankAudit({
+            ideaId: idea.id,
+            actorUserId: params.user.id,
+            action: 'IDEA_CREATED',
+            outcome: 'SUCCESS',
+            metadata: {
+                category: params.category,
+                duplicateCandidates: duplicates.length,
+            },
+        });
+    } catch (error) {
+        console.error('Think Tank audit logging failed after idea creation:', error);
+    }
 
     return prisma.thinkTankIdea.findUniqueOrThrow({
         where: { id: idea.id },
+        include: thinkTankIdeaInclude,
+    });
+};
+
+export const createMergedIdeaFromDuplicate = async (params: {
+    user: ThinkTankUser;
+    topic: string;
+    description: string;
+    category: ThinkTankIdeaCategory;
+    partnerIds: string[];
+    attachments: Array<{
+        fileRecordId?: string | null;
+        url: string;
+        filename: string;
+        mimeType: string;
+        size: number;
+        scrubStatus?: string | null;
+    }>;
+    targetIdeaId: string;
+}) => {
+    ensureThinkTankAccess(params.user);
+    const governance = await getGovernanceState(params.user.companyId);
+    if (!governance.submissionOpen) {
+        throw new ValidationError('Think Tank submissions are currently locked.');
+    }
+
+    const cycle = await getOrCreateCurrentCycle(params.user.companyId!);
+    const partnerIds = Array.from(new Set(params.partnerIds.filter((id) => id && id !== params.user.id))).slice(0, 3);
+    const normalizedTopic = params.topic.trim();
+    const normalizedDescription = params.description.trim();
+    const plannerHash = hashIdentity(params.user.id);
+
+    const targetIdea = await prisma.thinkTankIdea.findFirst({
+        where: {
+            id: params.targetIdeaId,
+            companyId: params.user.companyId!,
+            cycleId: cycle.id,
+            status: { notIn: ['MERGED', 'ARCHIVED'] },
+        },
+        include: thinkTankIdeaInclude,
+    });
+
+    if (!targetIdea) {
+        throw new NotFoundError('Idea');
+    }
+
+    const existingIdea = await prisma.thinkTankIdea.findFirst({
+        where: {
+            companyId: params.user.companyId!,
+            cycleId: cycle.id,
+            plannerHash,
+            topic: normalizedTopic,
+            description: normalizedDescription,
+            status: {
+                notIn: ['MERGED', 'ARCHIVED'],
+            },
+        },
+        include: thinkTankIdeaInclude,
+    });
+
+    if (existingIdea) {
+        return existingIdea;
+    }
+
+    const createdIdea = await prisma.$transaction(async (tx) => {
+        const idea = await tx.thinkTankIdea.create({
+            data: {
+                companyId: params.user.companyId!,
+                cycleId: cycle.id,
+                topic: normalizedTopic,
+                description: normalizedDescription,
+                category: params.category,
+                status: 'MERGED',
+                reviewStage: 'SUBMITTED',
+                plannerEncrypted: encryptThinkTankIdentity(params.user.id),
+                plannerHash,
+                duplicateDecision: 'MERGE',
+                metadata: {
+                    mergedIntoIdeaId: targetIdea.id,
+                },
+                attachments: {
+                    create: params.attachments.map((attachment) => ({
+                        fileRecordId: attachment.fileRecordId ?? null,
+                        url: attachment.url,
+                        filename: attachment.filename,
+                        mimeType: attachment.mimeType,
+                        size: attachment.size,
+                        scrubStatus: attachment.scrubStatus ?? 'SCRUBBED',
+                    })),
+                },
+                partners: {
+                    create: [
+                        {
+                            userEncrypted: encryptThinkTankIdentity(params.user.id),
+                            userHash: hashIdentity(params.user.id),
+                            roleType: 'PLANNER',
+                        },
+                        ...partnerIds.map((partnerId) => ({
+                            userEncrypted: encryptThinkTankIdentity(partnerId),
+                            userHash: hashIdentity(partnerId),
+                            roleType: 'SELF_OPTED' as ThinkTankParticipantRole,
+                        })),
+                    ],
+                },
+            },
+            include: thinkTankIdeaInclude,
+        });
+
+        await tx.thinkTankIdeaDuplicateMatch.create({
+            data: {
+                ideaId: idea.id,
+                matchedIdeaId: targetIdea.id,
+                similarityScore: 1,
+                decision: 'MERGE',
+            },
+        });
+
+        const mergeHashes = new Set([
+            hashIdentity(params.user.id),
+            ...partnerIds.map((partnerId) => hashIdentity(partnerId)),
+        ]);
+
+        const existingTargetPartners = await tx.thinkTankIdeaPartner.findMany({
+            where: {
+                ideaId: targetIdea.id,
+                userHash: { in: Array.from(mergeHashes) },
+            },
+            select: { userHash: true },
+        });
+
+        const existingHashes = new Set(existingTargetPartners.map((partner) => partner.userHash));
+        const partnerRows = [
+            { userId: params.user.id, userHash: hashIdentity(params.user.id) },
+            ...partnerIds.map((partnerId) => ({ userId: partnerId, userHash: hashIdentity(partnerId) })),
+        ]
+            .filter((entry) => !existingHashes.has(entry.userHash))
+            .map((entry) => ({
+                ideaId: targetIdea.id,
+                userEncrypted: encryptThinkTankIdentity(entry.userId),
+                userHash: entry.userHash,
+                roleType: 'MERGED_PARTNER' as ThinkTankParticipantRole,
+            }));
+
+        if (partnerRows.length > 0) {
+            await tx.thinkTankIdeaPartner.createMany({
+                data: partnerRows,
+            });
+        }
+
+        return idea;
+    });
+
+    try {
+        await logThinkTankAudit({
+            ideaId: createdIdea.id,
+            actorUserId: params.user.id,
+            action: 'IDEA_CREATED_AS_MERGE',
+            outcome: 'SUCCESS',
+            metadata: {
+                category: params.category,
+                targetIdeaId: targetIdea.id,
+            },
+        });
+    } catch (error) {
+        console.error('Think Tank audit logging failed after merged idea creation:', error);
+    }
+
+    return prisma.thinkTankIdea.findUniqueOrThrow({
+        where: { id: createdIdea.id },
         include: thinkTankIdeaInclude,
     });
 };
