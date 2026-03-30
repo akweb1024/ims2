@@ -7,6 +7,7 @@ import DashboardLayout from '../DashboardLayout';
 import ThinkTankLeaderboard from './ThinkTankLeaderboard';
 import AIInsightsPanel from './AIInsightsPanel';
 import IdeaSubmissionForm from './IdeaSubmissionForm';
+import { showError, showInfo, showWarning } from '@/lib/toast';
 
 // Animation and Design Tokens - Swiss-Bauhaus Remix
 const TT_ANIMATIONS = `
@@ -234,8 +235,100 @@ const THINK_TANK_GUIDELINES: Record<ThinkTankAcknowledgementKey, { title: string
     },
 };
 
+const THINK_TANK_MODE_CONTENT: Record<PortalMode, {
+    eyebrow: string;
+    title: string;
+    description: string;
+    navLabel: string;
+    helpTitle: string;
+    helpSteps: string[];
+    helpTips: string[];
+}> = {
+    dashboard: {
+        eyebrow: 'Innovation Control Room',
+        title: 'Think Tank Overview',
+        description: 'Track the current cycle, see governance status, and monitor what needs attention across submission, review, voting, and results.',
+        navLabel: 'Overview',
+        helpTitle: 'How This Workspace Works',
+        helpSteps: [
+            'Check the governance banner first to know whether submissions, review, voting, or result announcement is active.',
+            'Use the overview to monitor cycle momentum, top ideas, and review-board activity without switching between pages.',
+            'If you manage Think Tank governance, review hidden ideas here before the voting window opens to employees.',
+        ],
+        helpTips: [
+            'Use this page as the daily operating view for the current cycle.',
+            'Super admins can hold ideas before they appear in the public voting list.',
+        ],
+    },
+    'my-ideas': {
+        eyebrow: 'Proposal Studio',
+        title: 'Submit And Track Ideas',
+        description: 'Draft proposals, attach supporting files, add collaborators, and follow the status of your own idea submissions.',
+        navLabel: 'My Submissions',
+        helpTitle: 'Submission Guide',
+        helpSteps: [
+            'Write one idea per submission with a clear topic, business problem, and solution direction.',
+            'Choose the right category, then add up to three partners who will actually help drive the idea forward.',
+            'If the system detects a duplicate, review the overlap and choose whether to merge or proceed as unique.',
+        ],
+        helpTips: [
+            'Use attachments only after they are uploaded successfully.',
+            'Submission history below the form shows what you have already shared in the current cycle.',
+        ],
+    },
+    vote: {
+        eyebrow: 'Voting Floor',
+        title: 'Vote And Explore Ideas',
+        description: 'Browse the voting list in a table, open a full idea page for detailed review, and allocate points carefully during the live cycle.',
+        navLabel: 'Live Cycle',
+        helpTitle: 'Voting Guide',
+        helpSteps: [
+            'Use the table to scan ideas quickly, then open the full idea page to vote, ask questions, and review activity history.',
+            'Spend points carefully because all idea votes come from the same cycle budget.',
+            'If voting is not open yet, wait for the countdown. Employees only see ideas after the submission window closes.',
+        ],
+        helpTips: [
+            'Open `/dashboard/think-tank/vote/[id]` from the table for the full idea workflow.',
+            'Super admins can still review or hold ideas before they are released to employees.',
+        ],
+    },
+    results: {
+        eyebrow: 'Reveal Board',
+        title: 'Results And Learnings',
+        description: 'Review revealed ideas, see final standings, and understand which proposals were shortlisted, approved, or blocked.',
+        navLabel: 'Standings',
+        helpTitle: 'Results Guide',
+        helpSteps: [
+            'Use the results page to compare revealed ideas and understand why certain ideas advanced further than others.',
+            'Review decision notes, implementation state, and revealed collaborators for context.',
+            'Treat results as a learning and execution tool, not only a ranking board.',
+        ],
+        helpTips: [
+            'Super admins may see preview information before the reveal window is fully opened.',
+            'Use the countdown when the next announcement is approaching.',
+        ],
+    },
+    customization: {
+        eyebrow: 'Governance Console',
+        title: 'Customization And Controls',
+        description: 'Manage Think Tank schedule rules, manual overrides, visibility controls, and vote-account repair tools as super admin.',
+        navLabel: 'Customization',
+        helpTitle: 'Admin Control Guide',
+        helpSteps: [
+            'Set the recurring submission, voting, and result schedule in the window customization area.',
+            'Use manual override only for exceptional cases where the scheduled state must be changed immediately.',
+            'Monitor point accounts and repair incorrect votes or voter balances from the vote point monitor.',
+        ],
+        helpTips: [
+            'Window settings affect how the active cycle opens and closes automatically.',
+            'Vote monitor actions are operational controls, so use them carefully and only when needed.',
+        ],
+    },
+};
+
 export default function ThinkTankPortal({ mode, ideaId }: { mode: PortalMode; ideaId?: string }) {
     const router = useRouter();
+    const modeContent = THINK_TANK_MODE_CONTENT[mode];
     const [user, setUser] = useState<any>(null);
     const [assignees, setAssignees] = useState<Array<{ id: string; name?: string | null; email?: string | null; designation?: string | null }>>([]);
     const [loading, setLoading] = useState(true);
@@ -265,6 +358,7 @@ export default function ThinkTankPortal({ mode, ideaId }: { mode: PortalMode; id
     const [settingsForm, setSettingsForm] = useState<ThinkTankWindowSettings>(DEFAULT_WINDOW_SETTINGS);
     const [savingSettings, setSavingSettings] = useState(false);
     const [updatingVoteMonitor, setUpdatingVoteMonitor] = useState(false);
+    const [showSubmissionModal, setShowSubmissionModal] = useState(false);
 
     const view = mode === 'my-ideas' ? 'my' : mode === 'results' ? 'results' : 'vote';
 
@@ -386,7 +480,18 @@ export default function ThinkTankPortal({ mode, ideaId }: { mode: PortalMode; id
         });
         const payload = await response.json();
         if (!response.ok) {
-            setError(payload.message || payload.error || 'Unable to save vote.');
+            const message = payload.message || payload.error || 'Unable to save vote.';
+            setError(message);
+            if (response.status === 423) {
+                showWarning(
+                    governance?.nextVotingAt
+                        ? `Voting is locked right now. It will open on ${formatDateTime(governance.nextVotingAt)}.`
+                        : message,
+                    { duration: 5000 }
+                );
+            } else {
+                showError(message);
+            }
             return;
         }
         await refresh();
@@ -622,9 +727,13 @@ export default function ThinkTankPortal({ mode, ideaId }: { mode: PortalMode; id
         if (mode === 'dashboard') {
             return (
                 <div className="space-y-12" style={{ animation: 'tt-fade-up 0.5s ease both' }}>
-                    {/* Hero Section */}
                     <div className="grid gap-8 lg:grid-cols-[1fr_380px]">
                         <div className="space-y-8">
+                            <FeatureGuidePanel
+                                title={modeContent.helpTitle}
+                                steps={modeContent.helpSteps}
+                                tips={modeContent.helpTips}
+                            />
                             <div className="border-4 border-slate-950 p-8 bg-white relative overflow-hidden">
                                 <div className="absolute top-0 right-0 w-32 h-32 bg-[#FF4500] translate-x-16 -translate-y-16 rotate-45" />
                                 <p className="text-[10px] font-black uppercase tracking-[0.5em] text-[#FF4500]">Current Cycle</p>
@@ -701,16 +810,34 @@ export default function ThinkTankPortal({ mode, ideaId }: { mode: PortalMode; id
                 <div className="space-y-12 animate-tt-fade-up">
                     <div className="grid gap-8 lg:grid-cols-[1fr_400px]">
                         <div className="space-y-8">
+                            <FeatureGuidePanel
+                                title={modeContent.helpTitle}
+                                steps={modeContent.helpSteps}
+                                tips={modeContent.helpTips}
+                            />
                             <GovernanceBanner governance={governance} settings={windowSettings} />
-                            
-                            <div className="border-4 border-slate-950 bg-white p-8 relative overflow-hidden">
-                                <IdeaSubmissionForm
-                                    user={user}
-                                    categories={CATEGORIES}
-                                    governance={governance}
-                                    partnerOptions={assignees}
-                                    refresh={refresh}
-                                />
+
+                            <div className="relative overflow-hidden rounded-[2rem] border-2 border-slate-950 bg-white p-8 shadow-sm">
+                                <div className="absolute right-0 top-0 h-28 w-28 translate-x-10 -translate-y-10 rotate-45 bg-[#FF4500]" />
+                                <div className="relative">
+                                    <p className="text-[10px] font-black uppercase tracking-[0.35em] text-[#FF4500]">Submission Studio</p>
+                                    <h2 className="mt-3 text-3xl font-black uppercase tracking-tight text-slate-950">Draft Proposal</h2>
+                                    <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-600">
+                                        Open the proposal popup when you are ready to write, attach files, select partners, and submit your idea into the active Think Tank cycle.
+                                    </p>
+                                    <div className="mt-6 flex flex-wrap gap-3">
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowSubmissionModal(true)}
+                                            className="rounded-full bg-slate-950 px-6 py-3 text-sm font-semibold text-white transition hover:bg-[#FF4500]"
+                                        >
+                                            Open Draft Proposal
+                                        </button>
+                                        <span className="rounded-full border border-slate-200 bg-slate-50 px-4 py-3 text-xs font-bold uppercase tracking-[0.18em] text-slate-600">
+                                            Popup workspace
+                                        </span>
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
@@ -730,6 +857,36 @@ export default function ThinkTankPortal({ mode, ideaId }: { mode: PortalMode; id
                         onAskQuestion={handleAskQuestion}
                         onAnswerQuestion={handleAnswerQuestion}
                     />
+
+                    {showSubmissionModal ? (
+                        <div className="fixed inset-0 z-[90] flex items-center justify-center bg-slate-950/70 p-4 backdrop-blur-sm">
+                            <div className="relative max-h-[92vh] w-full max-w-5xl overflow-hidden rounded-[2rem] border-2 border-slate-950 bg-[#fffdf8] shadow-[0_30px_120px_rgba(15,23,42,0.3)]">
+                                <div className="flex items-center justify-between border-b border-slate-200 px-6 py-4">
+                                    <div>
+                                        <p className="text-[10px] font-black uppercase tracking-[0.35em] text-[#FF4500]">Think Tank Popup</p>
+                                        <h3 className="mt-1 text-xl font-black uppercase tracking-tight text-slate-950">Draft Proposal</h3>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowSubmissionModal(false)}
+                                        className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm"
+                                    >
+                                        Close
+                                    </button>
+                                </div>
+                                <div className="max-h-[calc(92vh-88px)] overflow-y-auto p-4 sm:p-6">
+                                    <IdeaSubmissionForm
+                                        user={user}
+                                        categories={CATEGORIES}
+                                        governance={governance}
+                                        partnerOptions={assignees}
+                                        refresh={refresh}
+                                        onSubmitted={() => setShowSubmissionModal(false)}
+                                    />
+                                </div>
+                            </div>
+                        </div>
+                    ) : null}
                 </div>
             );
         }
@@ -737,6 +894,11 @@ export default function ThinkTankPortal({ mode, ideaId }: { mode: PortalMode; id
         if (mode === 'vote') {
             return (
                 <div className="space-y-6">
+                    <FeatureGuidePanel
+                        title={modeContent.helpTitle}
+                        steps={modeContent.helpSteps}
+                        tips={modeContent.helpTips}
+                    />
                     <GovernanceBanner governance={governance} settings={windowSettings} />
                     {error && <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">{error}</div>}
                     {!governance?.votingOpen && governance?.nextVotingAt ? (
@@ -751,34 +913,20 @@ export default function ThinkTankPortal({ mode, ideaId }: { mode: PortalMode; id
                         </div>
                     ) : null}
                     {pointAccount ? <PointAccountCard pointAccount={pointAccount} compact /> : null}
-                    {governance?.votingOpen && selectedIdea ? (
-                        <div className="space-y-4">
-                            <div className="flex flex-wrap items-center justify-between gap-3">
-                                <button
-                                    type="button"
-                                    onClick={() => router.push('/dashboard/think-tank/vote')}
-                                    className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm ring-1 ring-slate-200"
-                                >
-                                    Back to ideas list
-                                </button>
-                                <div className="text-sm text-slate-500">
-                                    Dedicated voting page for one idea with anonymous Q&amp;A and point allocation.
-                                </div>
-                            </div>
-                            <IdeaGrid
-                                title="Vote on This Idea"
-                                ideas={[selectedIdea]}
-                                showVoting
-                                pointAccount={pointAccount}
-                                canAnswerQuestions={canManageThinkTankRole(user?.role)}
-                                onVote={handleVote}
-                                onVoteWithPoints={handleVoteWithPoints}
-                                onAskQuestion={handleAskQuestion}
-                                onAnswerQuestion={handleAnswerQuestion}
-                                onDeleteIdea={user?.role === 'SUPER_ADMIN' ? handleDeleteIdea : undefined}
-                                singleIdeaView
-                            />
-                        </div>
+                    {(governance?.votingOpen || governanceAccess?.canManage) && selectedIdea ? (
+                        <FullIdeaWorkspace
+                            idea={selectedIdea}
+                            userRole={user?.role}
+                            pointAccount={pointAccount}
+                            votingOpen={Boolean(governance?.votingOpen)}
+                            nextVotingAt={governance?.nextVotingAt}
+                            onBack={() => router.push('/dashboard/think-tank/vote')}
+                            onVote={handleVote}
+                            onVoteWithPoints={handleVoteWithPoints}
+                            onAskQuestion={handleAskQuestion}
+                            onAnswerQuestion={handleAnswerQuestion}
+                            onDeleteIdea={user?.role === 'SUPER_ADMIN' ? handleDeleteIdea : undefined}
+                        />
                     ) : governance?.votingOpen ? (
                         <VoteIdeaTable
                             title="Ideas for Vote"
@@ -814,6 +962,11 @@ export default function ThinkTankPortal({ mode, ideaId }: { mode: PortalMode; id
 
             return (
                 <div className="space-y-6">
+                    <FeatureGuidePanel
+                        title={modeContent.helpTitle}
+                        steps={modeContent.helpSteps}
+                        tips={modeContent.helpTips}
+                    />
                     <GovernanceBanner governance={governance} settings={windowSettings} />
                     <WindowCustomizationPanel
                         settingsForm={settingsForm}
@@ -840,6 +993,11 @@ export default function ThinkTankPortal({ mode, ideaId }: { mode: PortalMode; id
 
         return (
             <div className="space-y-6">
+                <FeatureGuidePanel
+                    title={modeContent.helpTitle}
+                    steps={modeContent.helpSteps}
+                    tips={modeContent.helpTips}
+                />
                 <GovernanceBanner governance={governance} settings={windowSettings} />
                 
                 {governance?.nextRevealAt && (
@@ -862,37 +1020,18 @@ export default function ThinkTankPortal({ mode, ideaId }: { mode: PortalMode; id
     };
 
     return (
-        <div className="min-h-screen bg-[#FDFDFD] text-slate-950 font-sans selection:bg-[#FF4500] selection:text-white pb-20">
+        <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(255,69,0,0.16),_transparent_30%),linear-gradient(180deg,_#fffdf8_0%,_#f5f7fb_100%)] text-slate-950 font-sans selection:bg-[#FF4500] selection:text-white pb-20">
             <style dangerouslySetInnerHTML={{ __html: TT_ANIMATIONS }} />
             
             <div className="max-w-7xl mx-auto px-4 md:px-8">
-                {/* Bauhaus Navigation Header */}
-                <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b-2 border-slate-950 py-6 mb-12 flex flex-wrap items-end justify-between gap-6">
-                    <div className="group cursor-default">
-                        <div className="text-[10px] font-black uppercase tracking-[0.5em] text-[#FF4500] mb-2 group-hover:tracking-[0.7em] transition-all">Innovation Unit</div>
-                        <h1 className="text-4xl md:text-5xl font-black tracking-tight leading-none uppercase">Think Tank</h1>
-                    </div>
-                    
-                    <nav className="flex flex-wrap gap-1 bg-slate-950 p-1">
-                        {[
-                            { id: 'dashboard', path: '/dashboard/think-tank', label: 'Overview' },
-                            { id: 'my-ideas', path: '/dashboard/think-tank/my-ideas', label: 'My Submissions' },
-                            { id: 'vote', path: '/dashboard/think-tank/vote', label: 'Live Cycle' },
-                            { id: 'results', path: '/dashboard/think-tank/results', label: 'Standings' },
-                            ...(user?.role === 'SUPER_ADMIN' ? [{ id: 'customization', path: '/dashboard/think-tank/customization', label: 'Customization' }] : [])
-                        ].map((tab) => (
-                            <button
-                                key={tab.id}
-                                onClick={() => router.push(tab.path)}
-                                className={`px-4 py-2 text-[10px] font-black uppercase tracking-widest transition-all ${
-                                    mode === tab.id ? 'bg-[#FF4500] text-white' : 'text-slate-400 hover:text-white'
-                                }`}
-                            >
-                                {tab.label}
-                            </button>
-                        ))}
-                    </nav>
-                </header>
+                <ThinkTankWorkspaceHeader
+                    mode={mode}
+                    userRole={user?.role}
+                    modeContent={modeContent}
+                    governance={governance}
+                    pointAccount={pointAccount}
+                    onNavigate={(path) => router.push(path)}
+                />
 
                 <main className="mt-8">
                     {error && (
@@ -917,6 +1056,152 @@ function NavChip({ href, label, active }: { href: string; label: string; active?
         >
             {label}
         </Link>
+    );
+}
+
+function ThinkTankWorkspaceHeader({
+    mode,
+    userRole,
+    modeContent,
+    governance,
+    pointAccount,
+    onNavigate,
+}: {
+    mode: PortalMode;
+    userRole?: string | null;
+    modeContent: typeof THINK_TANK_MODE_CONTENT[PortalMode];
+    governance: any;
+    pointAccount?: { basePoints: number; maxPerIdeaPoints: number; allocatedPoints: number; remainingPoints: number } | null;
+    onNavigate: (path: string) => void;
+}) {
+    const navItems = [
+        { id: 'dashboard', path: '/dashboard/think-tank', label: THINK_TANK_MODE_CONTENT.dashboard.navLabel, description: 'Cycle health, reviews, and performance snapshot.' },
+        { id: 'my-ideas', path: '/dashboard/think-tank/my-ideas', label: THINK_TANK_MODE_CONTENT['my-ideas'].navLabel, description: 'Draft, submit, and track your own proposals.' },
+        { id: 'vote', path: '/dashboard/think-tank/vote', label: THINK_TANK_MODE_CONTENT.vote.navLabel, description: 'Browse the voting queue and open full idea records.' },
+        { id: 'results', path: '/dashboard/think-tank/results', label: THINK_TANK_MODE_CONTENT.results.navLabel, description: 'Revealed standings, lessons, and execution outcomes.' },
+        ...(userRole === 'SUPER_ADMIN'
+            ? [{ id: 'customization', path: '/dashboard/think-tank/customization', label: THINK_TANK_MODE_CONTENT.customization.navLabel, description: 'Schedule, override, and vote-control tools.' }]
+            : []),
+    ] as Array<{ id: string; path: string; label: string; description: string }>;
+
+    return (
+        <header className="mb-10 space-y-5 px-1 pt-4">
+            <div className="grid gap-5 lg:grid-cols-[1.4fr_0.8fr]">
+                <div className="relative overflow-hidden rounded-[2rem] border-2 border-slate-950 bg-white p-8 shadow-[0_24px_80px_rgba(15,23,42,0.08)]">
+                    <div className="absolute right-0 top-0 h-40 w-40 translate-x-1/3 -translate-y-1/3 rounded-full bg-[#FF4500]/15" />
+                    <div className="absolute bottom-0 left-0 h-24 w-24 -translate-x-1/4 translate-y-1/4 border-8 border-slate-950/10 rounded-full" />
+                    <div className="relative">
+                        <p className="text-[10px] font-black uppercase tracking-[0.45em] text-[#FF4500]">{modeContent.eyebrow}</p>
+                        <h1 className="mt-3 text-4xl font-black uppercase tracking-tight text-slate-950 md:text-5xl">{modeContent.title}</h1>
+                        <p className="mt-4 max-w-3xl text-sm leading-6 text-slate-600">{modeContent.description}</p>
+                        <div className="mt-6 flex flex-wrap gap-2">
+                            <span className="rounded-full border border-slate-200 bg-slate-50 px-4 py-2 text-xs font-bold uppercase tracking-[0.18em] text-slate-600">
+                                {governance?.label || 'Loading governance'}
+                            </span>
+                            {governance?.nextVotingAt && !governance?.votingOpen ? (
+                                <span className="rounded-full border border-amber-200 bg-amber-50 px-4 py-2 text-xs font-bold uppercase tracking-[0.18em] text-amber-700">
+                                    Voting opens {formatDateTime(governance.nextVotingAt)}
+                                </span>
+                            ) : null}
+                            {pointAccount ? (
+                                <span className="rounded-full border border-emerald-200 bg-emerald-50 px-4 py-2 text-xs font-bold uppercase tracking-[0.18em] text-emerald-700">
+                                    {pointAccount.remainingPoints} / {pointAccount.basePoints} points available
+                                </span>
+                            ) : null}
+                        </div>
+                    </div>
+                </div>
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-1">
+                    <div className="rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-sm">
+                        <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">Current Mode</p>
+                        <div className="mt-3 text-xl font-semibold text-slate-950">{modeContent.navLabel}</div>
+                        <p className="mt-2 text-sm text-slate-600">{modeContent.description}</p>
+                    </div>
+                    <div className="rounded-[1.75rem] border border-slate-200 bg-slate-950 p-5 text-white shadow-sm">
+                        <p className="text-[10px] font-black uppercase tracking-[0.3em] text-white/60">User Guidance</p>
+                        <div className="mt-3 text-lg font-semibold">Built for guided use</div>
+                        <p className="mt-2 text-sm text-white/75">Each screen now includes feature-specific instructions so people can submit, vote, review, and manage the cycle with less guesswork.</p>
+                    </div>
+                </div>
+            </div>
+            <div className="sticky top-2 z-40 rounded-[1.35rem] border border-slate-200 bg-white/92 p-2 shadow-[0_14px_40px_rgba(15,23,42,0.08)] backdrop-blur-xl sm:top-3 sm:rounded-[1.75rem] sm:p-3">
+                <div className="mb-2 flex flex-wrap items-center gap-1.5 px-0.5 sm:mb-3 sm:gap-2 sm:px-1">
+                    <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-[11px] font-black uppercase tracking-[0.22em] text-slate-600">
+                        {modeContent.navLabel}
+                    </span>
+                    <span className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.18em] text-slate-500">
+                        {governance?.label || 'Loading governance'}
+                    </span>
+                    {pointAccount ? (
+                        <span className="hidden rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.18em] text-emerald-700 sm:inline-flex">
+                            {pointAccount.remainingPoints} points left
+                        </span>
+                    ) : null}
+                </div>
+                <nav className="flex gap-2 overflow-x-auto pb-1 sm:grid sm:grid-cols-2 sm:gap-2 sm:overflow-visible sm:pb-0 xl:grid-cols-5">
+                {navItems.map((item) => {
+                    const active = mode === item.id;
+                    return (
+                        <button
+                            key={item.id}
+                            type="button"
+                            onClick={() => onNavigate(item.path)}
+                            className={`min-w-[150px] shrink-0 rounded-full border px-3 py-2 text-left transition-all sm:min-w-0 sm:rounded-[1.35rem] sm:px-4 sm:py-3 ${
+                                active
+                                    ? 'border-slate-950 bg-slate-950 text-white shadow-lg'
+                                    : 'border-slate-200 bg-white text-slate-700 hover:-translate-y-0.5 hover:border-[#FF4500] hover:shadow-md'
+                            }`}
+                        >
+                            <div className={`hidden text-[10px] font-black uppercase tracking-[0.28em] sm:block ${active ? 'text-white/65' : 'text-slate-400'}`}>Workspace</div>
+                            <div className="text-sm font-semibold sm:mt-1.5">{item.label}</div>
+                            <div className={`mt-1.5 hidden text-xs leading-5 sm:block ${active ? 'text-white/75' : 'text-slate-500'}`}>{item.description}</div>
+                        </button>
+                    );
+                })}
+                </nav>
+            </div>
+        </header>
+    );
+}
+
+function FeatureGuidePanel({
+    title,
+    steps,
+    tips,
+}: {
+    title: string;
+    steps: string[];
+    tips: string[];
+}) {
+    return (
+        <section className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
+            <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
+                <div>
+                    <p className="text-[10px] font-black uppercase tracking-[0.35em] text-[#FF4500]">Guided Use</p>
+                    <h2 className="mt-3 text-2xl font-semibold text-slate-950">{title}</h2>
+                    <div className="mt-5 grid gap-3">
+                        {steps.map((step, index) => (
+                            <div key={`${title}-step-${index}`} className="flex gap-3 rounded-2xl bg-slate-50 px-4 py-4">
+                                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-950 text-xs font-black text-white">
+                                    {index + 1}
+                                </div>
+                                <div className="text-sm leading-6 text-slate-700">{step}</div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+                <div className="rounded-[1.5rem] border border-slate-200 bg-[linear-gradient(180deg,_rgba(255,69,0,0.08),_rgba(255,255,255,1))] p-5">
+                    <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">Helpful Notes</p>
+                    <div className="mt-4 space-y-3">
+                        {tips.map((tip, index) => (
+                            <div key={`${title}-tip-${index}`} className="rounded-2xl bg-white px-4 py-4 text-sm leading-6 text-slate-700 shadow-sm">
+                                {tip}
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </div>
+        </section>
     );
 }
 
@@ -1512,6 +1797,157 @@ function VoteIdeaTable({
     );
 }
 
+function FullIdeaWorkspace({
+    idea,
+    userRole,
+    pointAccount,
+    votingOpen,
+    nextVotingAt,
+    onBack,
+    onVote,
+    onVoteWithPoints,
+    onAskQuestion,
+    onAnswerQuestion,
+    onDeleteIdea,
+}: {
+    idea: Idea;
+    userRole?: string | null;
+    pointAccount?: { basePoints: number; maxPerIdeaPoints: number; allocatedPoints: number; remainingPoints: number } | null;
+    votingOpen: boolean;
+    nextVotingAt?: string | null;
+    onBack: () => void;
+    onVote: (ideaId: string, vote: 'LIKE' | 'UNLIKE' | 'NEUTRAL') => void;
+    onVoteWithPoints: (ideaId: string, vote: 'LIKE' | 'UNLIKE' | 'NEUTRAL', pointAllocation: number) => void;
+    onAskQuestion: (ideaId: string, question: string) => Promise<void>;
+    onAnswerQuestion: (questionId: string, answer: string) => Promise<void>;
+    onDeleteIdea?: (ideaId: string) => Promise<void>;
+}) {
+    const activityCount = (idea.comments?.length || 0) + (idea.questions?.length || 0) + (idea.attachments?.length || 0);
+    const [hasShownLockedToast, setHasShownLockedToast] = useState(false);
+
+    useEffect(() => {
+        if (votingOpen || hasShownLockedToast) return;
+        showInfo(
+            nextVotingAt
+                ? `Voting is still locked for this idea. It will open on ${formatDateTime(nextVotingAt)}.`
+                : 'Voting is still locked for this idea. You can review the details now and vote when the window opens.',
+            { duration: 5000 }
+        );
+        setHasShownLockedToast(true);
+    }, [hasShownLockedToast, nextVotingAt, votingOpen]);
+
+    return (
+        <div className="space-y-6">
+            <div className="rounded-[2rem] border-2 border-slate-950 bg-white p-6 shadow-sm">
+                <div className="flex flex-wrap items-start justify-between gap-4">
+                    <div className="max-w-4xl">
+                        <button
+                            type="button"
+                            onClick={onBack}
+                            className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm"
+                        >
+                            Back to vote table
+                        </button>
+                        <p className="mt-5 text-[10px] font-black uppercase tracking-[0.35em] text-[#FF4500]">{formatThinkTankLabel(idea.category)}</p>
+                        <h2 className="mt-3 text-3xl font-black tracking-tight text-slate-950 md:text-4xl">{idea.topic}</h2>
+                        <p className="mt-4 max-w-3xl text-sm leading-6 text-slate-600">
+                            This full idea page is the working record for discussion, questions, files, voting changes, and review signals connected to this proposal.
+                        </p>
+                    </div>
+                    <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                        <MiniMetric label="Votes" value={idea.voteCount} />
+                        <MiniMetric label="Community" value={Math.round(idea.communityScore ?? idea.weightedScore)} />
+                        <MiniMetric label="Final" value={Math.round(idea.finalScore ?? idea.weightedScore)} />
+                        <MiniMetric label="Activity" value={activityCount} />
+                    </div>
+                </div>
+                <div className="mt-5 flex flex-wrap gap-2">
+                    <span className="rounded-full border border-slate-200 bg-slate-50 px-4 py-2 text-xs font-bold uppercase tracking-[0.18em] text-slate-600">
+                        Status {idea.status}
+                    </span>
+                    {idea.reviewStage ? (
+                        <span className="rounded-full border border-indigo-200 bg-indigo-50 px-4 py-2 text-xs font-bold uppercase tracking-[0.18em] text-indigo-700">
+                            Review {idea.reviewStage}
+                        </span>
+                    ) : null}
+                    {idea.implementationStatus ? (
+                        <span className="rounded-full border border-emerald-200 bg-emerald-50 px-4 py-2 text-xs font-bold uppercase tracking-[0.18em] text-emerald-700">
+                            Implementation {idea.implementationStatus}
+                        </span>
+                    ) : null}
+                    {idea.currentVote ? (
+                        <span className="rounded-full border border-amber-200 bg-amber-50 px-4 py-2 text-xs font-bold uppercase tracking-[0.18em] text-amber-700">
+                            Your vote {formatThinkTankLabel(idea.currentVote.vote, 'Vote')} with {idea.currentVote.pointAllocation} points
+                        </span>
+                    ) : null}
+                </div>
+            </div>
+
+            <div className="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
+                <div className="space-y-6">
+                    <FeatureGuidePanel
+                        title="How To Work With One Idea"
+                        steps={[
+                            'Read the idea carefully, then use the point vote section to support, oppose, or stay neutral with a deliberate point allocation.',
+                            'Use the Q&A area to clarify gaps before spending points, especially when the idea is complex or cross-functional.',
+                            'Treat this page as the full working record for this proposal while the cycle is active.',
+                        ]}
+                        tips={[
+                            'Voting changes, questions, comments, and file references all stay connected to this idea page.',
+                            'If you already voted, the same controls let you update your decision and reallocate your points.',
+                        ]}
+                    />
+                    {!votingOpen ? (
+                        <div className="rounded-[2rem] border border-amber-200 bg-amber-50 p-5 text-sm text-amber-900">
+                            <div className="font-semibold">Voting is not open yet</div>
+                            <div className="mt-2">
+                                This idea detail page is available for review, comments, and Q&amp;A, but point voting stays locked until the voting window opens.
+                                {nextVotingAt ? ` Voting opens on ${formatDateTime(nextVotingAt)}.` : ''}
+                            </div>
+                        </div>
+                    ) : null}
+                    <IdeaGrid
+                        title="Full Idea Activity"
+                        ideas={[idea]}
+                        showVoting={votingOpen}
+                        pointAccount={pointAccount}
+                        canAnswerQuestions={canManageThinkTankRole(userRole)}
+                        onVote={onVote}
+                        onVoteWithPoints={onVoteWithPoints}
+                        onAskQuestion={onAskQuestion}
+                        onAnswerQuestion={onAnswerQuestion}
+                        onDeleteIdea={onDeleteIdea}
+                        singleIdeaView
+                    />
+                </div>
+                <div className="space-y-6">
+                    <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
+                        <p className="text-[10px] font-black uppercase tracking-[0.35em] text-slate-400">Idea Snapshot</p>
+                        <div className="mt-4 space-y-4">
+                            <div className="rounded-2xl bg-slate-50 p-4">
+                                <div className="text-sm font-semibold text-slate-900">Timing</div>
+                                <div className="mt-2 text-sm text-slate-600">Created {formatDateTime(idea.createdAt)}</div>
+                                {idea.revealedAt ? <div className="mt-1 text-sm text-slate-600">Revealed {formatDateTime(idea.revealedAt)}</div> : null}
+                            </div>
+                            <div className="rounded-2xl bg-slate-50 p-4">
+                                <div className="text-sm font-semibold text-slate-900">Participation</div>
+                                <div className="mt-2 text-sm text-slate-600">{idea.voteCount} votes recorded</div>
+                                <div className="mt-1 text-sm text-slate-600">{idea.questions?.length || 0} questions and {(idea.comments?.length || 0)} comments</div>
+                            </div>
+                            <div className="rounded-2xl bg-slate-50 p-4">
+                                <div className="text-sm font-semibold text-slate-900">Files And Team</div>
+                                <div className="mt-2 text-sm text-slate-600">{idea.attachments?.length || 0} attachments linked</div>
+                                <div className="mt-1 text-sm text-slate-600">{(idea.partners?.length || 0) + (idea.teamMembers?.length || 0)} collaborators and members attached</div>
+                            </div>
+                        </div>
+                    </div>
+                    {pointAccount ? <PointAccountCard pointAccount={pointAccount} /> : null}
+                </div>
+            </div>
+        </div>
+    );
+}
+
 function ReviewBoard({
     ideas,
     assignees,
@@ -1554,6 +1990,9 @@ function ReviewBoard({
     const [scoreNotes, setScoreNotes] = useState<Record<string, string>>({});
     const [scoreForms, setScoreForms] = useState<Record<string, Record<string, number>>>({});
     const [vetoReasons, setVetoReasons] = useState<Record<string, string>>({});
+    const [reviewSearch, setReviewSearch] = useState('');
+    const [reviewStageFilter, setReviewStageFilter] = useState('ALL');
+    const [expandedIdeaId, setExpandedIdeaId] = useState<string | null>(null);
     const [convertingIdeaId, setConvertingIdeaId] = useState<string | null>(null);
     const [conversionForms, setConversionForms] = useState<Record<string, {
         mode: 'PROJECT' | 'TASK';
@@ -1593,28 +2032,110 @@ function ReviewBoard({
         };
     };
 
+    const filteredIdeas = useMemo(() => {
+        const term = reviewSearch.trim().toLowerCase();
+        return ideas.filter((idea) => {
+            const matchesStage = reviewStageFilter === 'ALL' || (idea.reviewStage || 'SUBMITTED') === reviewStageFilter;
+            if (!matchesStage) return false;
+            if (!term) return true;
+            return [
+                idea.topic,
+                idea.description,
+                idea.category,
+                idea.status,
+                idea.reviewStage,
+                idea.implementationStatus,
+                idea.author?.name,
+                idea.author?.email,
+            ].some((value) => value?.toLowerCase().includes(term));
+        });
+    }, [ideas, reviewSearch, reviewStageFilter]);
+
     return (
         <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-            <div className="mb-5">
-                <h2 className="text-lg font-semibold text-slate-900">Review Board</h2>
-                <p className="mt-1 text-sm text-slate-600">Shortlist, approve, and track implementation progress with structured reviewer notes.</p>
+            <div className="mb-5 flex flex-wrap items-start justify-between gap-4">
+                <div>
+                    <h2 className="text-lg font-semibold text-slate-900">Review Board</h2>
+                    <p className="mt-1 text-sm text-slate-600">Review ideas in a compact queue, then open the full detail page for deeper discussion and activity history.</p>
+                </div>
+                <div className="rounded-2xl bg-slate-50 px-4 py-3 text-sm text-slate-600">
+                    {filteredIdeas.length} of {ideas.length} ideas
+                </div>
+            </div>
+            <div className="mb-5 grid gap-3 lg:grid-cols-[1fr_220px]">
+                <input
+                    className="rounded-2xl border border-slate-200 px-4 py-3 text-sm"
+                    placeholder="Search by topic, author, stage, status, or category"
+                    value={reviewSearch}
+                    onChange={(event) => setReviewSearch(event.target.value)}
+                />
+                <select
+                    className="rounded-2xl border border-slate-200 px-4 py-3 text-sm"
+                    value={reviewStageFilter}
+                    onChange={(event) => setReviewStageFilter(event.target.value)}
+                >
+                    <option value="ALL">All review stages</option>
+                    <option value="SUBMITTED">Submitted</option>
+                    <option value="SHORTLISTED">Shortlisted</option>
+                    <option value="UNDER_REVIEW">Under Review</option>
+                    <option value="APPROVED">Approved</option>
+                    <option value="REJECTED">Rejected</option>
+                    <option value="IMPLEMENTED">Implemented</option>
+                </select>
             </div>
             <div className="space-y-4">
-                {ideas.slice(0, 8).map((idea) => (
+                {filteredIdeas.map((idea) => (
                     <div key={idea.id} className="rounded-3xl border border-slate-200 p-5">
                         <div className="flex flex-wrap items-start justify-between gap-4">
-                            <div>
-                                <div className="text-xs font-semibold uppercase tracking-[0.25em] text-slate-500">{formatThinkTankLabel(idea.category)}</div>
-                                <h3 className="mt-2 text-lg font-semibold text-slate-950">{idea.topic}</h3>
-                                <p className="mt-2 text-sm text-slate-600">{idea.description}</p>
+                            <div className="min-w-0 flex-1">
+                                <div className="flex flex-wrap items-center gap-2">
+                                    <span className="text-xs font-semibold uppercase tracking-[0.25em] text-slate-500">{formatThinkTankLabel(idea.category)}</span>
+                                    <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.18em] text-slate-600">
+                                        {idea.status}
+                                    </span>
+                                    <span className="rounded-full border border-indigo-200 bg-indigo-50 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.18em] text-indigo-700">
+                                        {idea.reviewStage || 'SUBMITTED'}
+                                    </span>
+                                    <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.18em] text-emerald-700">
+                                        {idea.implementationStatus || 'NOT_STARTED'}
+                                    </span>
+                                </div>
+                                <h3 className="mt-3 text-lg font-semibold text-slate-950">{idea.topic}</h3>
+                                <p className="mt-2 line-clamp-2 text-sm text-slate-600">{idea.description}</p>
+                                <div className="mt-3 flex flex-wrap gap-4 text-sm text-slate-500">
+                                    <span>Author: {idea.author?.name || idea.author?.email || 'Hidden'}</span>
+                                    <span>Created: {formatDateTime(idea.createdAt)}</span>
+                                </div>
                             </div>
-                            <div className="rounded-2xl bg-slate-50 px-4 py-3 text-sm text-slate-600">
-                                <div>Community: <span className="font-semibold text-slate-900">{idea.communityScore ?? idea.weightedScore}</span></div>
-                                <div>Reviewer: <span className="font-semibold text-slate-900">{idea.reviewerScore ?? 0}</span></div>
-                                <div>Final: <span className="font-semibold text-slate-900">{idea.finalScore ?? idea.weightedScore}</span></div>
-                                <div>Votes: <span className="font-semibold text-slate-900">{idea.voteCount}</span></div>
+                            <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+                                <div className="rounded-2xl bg-slate-50 px-4 py-3 text-sm text-slate-600">Community <div className="mt-1 font-semibold text-slate-900">{idea.communityScore ?? idea.weightedScore}</div></div>
+                                <div className="rounded-2xl bg-slate-50 px-4 py-3 text-sm text-slate-600">Reviewer <div className="mt-1 font-semibold text-slate-900">{idea.reviewerScore ?? 0}</div></div>
+                                <div className="rounded-2xl bg-slate-50 px-4 py-3 text-sm text-slate-600">Final <div className="mt-1 font-semibold text-slate-900">{idea.finalScore ?? idea.weightedScore}</div></div>
+                                <div className="rounded-2xl bg-slate-50 px-4 py-3 text-sm text-slate-600">Votes <div className="mt-1 font-semibold text-slate-900">{idea.voteCount}</div></div>
                             </div>
                         </div>
+                        <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-slate-200 pt-4">
+                            <div className="flex flex-wrap gap-2">
+                                <Link
+                                    href={`/dashboard/think-tank/vote/${idea.id}`}
+                                    className="rounded-2xl border border-slate-900 bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white"
+                                >
+                                    Open Detail Page
+                                </Link>
+                                <button
+                                    type="button"
+                                    onClick={() => setExpandedIdeaId((current) => current === idea.id ? null : idea.id)}
+                                    className="rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700"
+                                >
+                                    {expandedIdeaId === idea.id ? 'Hide Quick Review' : 'Manage Inline'}
+                                </button>
+                            </div>
+                            <div className="text-xs font-medium uppercase tracking-[0.2em] text-slate-400">
+                                {idea.comments?.length || 0} comments • {idea.questions?.length || 0} questions • {idea.attachments?.length || 0} files
+                            </div>
+                        </div>
+                        {expandedIdeaId !== idea.id ? null : (
+                            <div className="mt-4 border-t border-slate-200 pt-4">
                         {idea.isVetoed ? (
                             <div className="mt-4 rounded-2xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-900">
                                 <div className="font-semibold">Super Admin veto applied</div>
@@ -1950,8 +2471,15 @@ function ReviewBoard({
                                 </div>
                             </div>
                         ) : null}
+                            </div>
+                        )}
                     </div>
                 ))}
+                {!filteredIdeas.length ? (
+                    <div className="rounded-3xl border border-dashed border-slate-300 bg-slate-50 px-6 py-10 text-center text-sm text-slate-500">
+                        No review ideas match the current search or stage filter.
+                    </div>
+                ) : null}
             </div>
         </div>
     );

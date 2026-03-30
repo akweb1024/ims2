@@ -9,9 +9,10 @@ type Props = {
     governance: any;
     partnerOptions: Array<{ id: string; name?: string | null; email?: string | null; designation?: string | null }>;
     refresh: () => Promise<void>;
+    onSubmitted?: () => void;
 };
 
-export default function IdeaSubmissionForm({ user, categories, governance, partnerOptions, refresh }: Props) {
+export default function IdeaSubmissionForm({ user, categories, governance, partnerOptions, refresh, onSubmitted }: Props) {
     const [form, setForm] = useState({
         topic: '',
         description: '',
@@ -109,6 +110,7 @@ export default function IdeaSubmissionForm({ user, categories, governance, partn
             window.setTimeout(() => {
                 setShowSuccessOverlay(false);
                 setSubmitting(false);
+                onSubmitted?.();
             }, 1800);
         } catch (submitError: any) {
             showError(submitError.message || 'Failed to submit idea.');
