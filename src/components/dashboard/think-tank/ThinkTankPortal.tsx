@@ -2561,6 +2561,7 @@ function IdeaGrid({
     onDeleteIdea?: (ideaId: string) => Promise<void>;
 }) {
     const [pointInputs, setPointInputs] = useState<Record<string, number>>({});
+    const [voteInputs, setVoteInputs] = useState<Record<string, 'LIKE' | 'UNLIKE' | 'NEUTRAL'>>({});
     const [questionInputs, setQuestionInputs] = useState<Record<string, string>>({});
     const [answerInputs, setAnswerInputs] = useState<Record<string, string>>({});
 
@@ -2657,17 +2658,17 @@ function IdeaGrid({
                             <div className="mt-5 rounded-2xl bg-slate-50 p-4">
                                 <div className="flex flex-wrap items-center justify-between gap-3">
                                     <div>
-                                        <div className="text-sm font-semibold text-slate-900">Phase 3 point vote</div>
+                                        <div className="text-sm font-semibold text-slate-900">Point rating and sentiment</div>
                                         <div className="mt-1 text-sm text-slate-600">
                                             {idea.currentVote
-                                                ? 'You have already voted on this idea. Use edit controls below to update your points or change your vote.'
-                                                : 'Choose your vote and allocate points from your cycle budget.'}
+                                                ? 'You have already rated this idea. Update your points or sentiment below and submit again to save changes.'
+                                                : 'Set your points with the slider or number field, choose your sentiment, and submit once.'}
                                         </div>
                                     </div>
                                     <div className="flex flex-wrap gap-3">
                                         {idea.currentVote ? (
                                             <div className="rounded-2xl border border-indigo-200 bg-indigo-50 px-4 py-3 text-sm text-indigo-700">
-                                                Current vote: <span className="font-semibold">{formatThinkTankLabel(idea.currentVote.vote, 'Vote')}</span>
+                                                Current sentiment: <span className="font-semibold">{formatThinkTankLabel(idea.currentVote.vote, 'Vote')}</span>
                                                 <span className="mx-2 text-indigo-300">•</span>
                                                 {idea.currentVote.pointAllocation} points
                                             </div>
@@ -2679,9 +2680,27 @@ function IdeaGrid({
                                         ) : null}
                                     </div>
                                 </div>
-                                <div className="mt-4 grid gap-3 md:grid-cols-[220px_1fr] md:items-end">
+                                <div className="mt-4 grid gap-4 xl:grid-cols-[1.1fr_220px_auto] xl:items-end">
+                                    <div className="grid gap-3">
+                                        <label className="grid gap-2 text-sm text-slate-700">
+                                            <span className="font-medium">Points for this idea</span>
+                                            <input
+                                                type="range"
+                                                min={0}
+                                                max={pointAccount?.maxPerIdeaPoints || 0}
+                                                step={1}
+                                                className="w-full accent-slate-900"
+                                                value={pointInputs[idea.id] ?? idea.currentVote?.pointAllocation ?? pointAccount?.maxPerIdeaPoints ?? 0}
+                                                onChange={(event) => setPointInputs((current) => ({ ...current, [idea.id]: Number(event.target.value) }))}
+                                            />
+                                        </label>
+                                        <div className="flex items-center justify-between text-xs font-medium uppercase tracking-[0.18em] text-slate-400">
+                                            <span>0</span>
+                                            <span>{pointAccount?.maxPerIdeaPoints || 0} max</span>
+                                        </div>
+                                    </div>
                                     <label className="grid gap-2 text-sm text-slate-700">
-                                        <span className="font-medium">Points for this idea</span>
+                                        <span className="font-medium">Direct points entry</span>
                                         <input
                                             type="number"
                                             min={0}
@@ -2691,34 +2710,41 @@ function IdeaGrid({
                                             onChange={(event) => setPointInputs((current) => ({ ...current, [idea.id]: Number(event.target.value) }))}
                                         />
                                     </label>
-                                    <div className="flex flex-wrap gap-2">
-                                        <button
-                                            onClick={() => (onVoteWithPoints || ((targetId: string, targetVote: 'LIKE' | 'UNLIKE' | 'NEUTRAL', _points: number) => onVote(targetId, targetVote)))(idea.id, 'LIKE', pointInputs[idea.id] ?? pointAccount?.maxPerIdeaPoints ?? 0)}
-                                            className="rounded-full bg-emerald-600 px-4 py-2 text-sm font-semibold text-white"
+                                    <label className="grid gap-2 text-sm text-slate-700">
+                                        <span className="font-medium">Sentiment for analytics</span>
+                                        <select
+                                            className="rounded-2xl border border-slate-200 bg-white px-4 py-3"
+                                            value={voteInputs[idea.id] ?? idea.currentVote?.vote ?? 'LIKE'}
+                                            onChange={(event) => setVoteInputs((current) => ({ ...current, [idea.id]: event.target.value as 'LIKE' | 'UNLIKE' | 'NEUTRAL' }))}
                                         >
-                                            {idea.currentVote?.vote === 'LIKE' ? 'Update Support' : 'Support'}
-                                        </button>
-                                        <button
-                                            onClick={() => (onVoteWithPoints || ((targetId: string, targetVote: 'LIKE' | 'UNLIKE' | 'NEUTRAL', _points: number) => onVote(targetId, targetVote)))(idea.id, 'NEUTRAL', pointInputs[idea.id] ?? pointAccount?.maxPerIdeaPoints ?? 0)}
-                                            className="rounded-full bg-slate-200 px-4 py-2 text-sm font-semibold text-slate-700"
-                                        >
-                                            {idea.currentVote?.vote === 'NEUTRAL' ? 'Update Neutral' : 'Neutral'}
-                                        </button>
-                                        <button
-                                            onClick={() => (onVoteWithPoints || ((targetId: string, targetVote: 'LIKE' | 'UNLIKE' | 'NEUTRAL', _points: number) => onVote(targetId, targetVote)))(idea.id, 'UNLIKE', pointInputs[idea.id] ?? pointAccount?.maxPerIdeaPoints ?? 0)}
-                                            className="rounded-full bg-rose-600 px-4 py-2 text-sm font-semibold text-white"
-                                        >
-                                            {idea.currentVote?.vote === 'UNLIKE' ? 'Update Oppose' : 'Oppose'}
-                                        </button>
+                                            <option value="LIKE">Support</option>
+                                            <option value="NEUTRAL">Neutral</option>
+                                            <option value="UNLIKE">Oppose</option>
+                                        </select>
+                                    </label>
+                                </div>
+                                <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+                                    <div className="text-xs text-slate-500">
+                                        The selected sentiment is stored for analytics counts. Your entered points are the actual score contribution for this idea.
                                     </div>
+                                    <button
+                                        onClick={() => (onVoteWithPoints || ((targetId: string, targetVote: 'LIKE' | 'UNLIKE' | 'NEUTRAL', _points: number) => onVote(targetId, targetVote)))(
+                                            idea.id,
+                                            voteInputs[idea.id] ?? idea.currentVote?.vote ?? 'LIKE',
+                                            pointInputs[idea.id] ?? idea.currentVote?.pointAllocation ?? pointAccount?.maxPerIdeaPoints ?? 0,
+                                        )}
+                                        className="rounded-full bg-slate-950 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#FF4500]"
+                                    >
+                                        {idea.currentVote ? 'Update Rating' : 'Submit Rating'}
+                                    </button>
                                 </div>
                                 {idea.currentVote ? (
                                     <div className="mt-3 text-xs text-slate-500">
-                                        Last updated {formatDateTime(idea.currentVote.updatedAt)}. Each user can vote only once per idea, but can edit that vote and reallocate points.
+                                        Last updated {formatDateTime(idea.currentVote.updatedAt)}. Each user can rate once per idea, but can edit the points and sentiment later.
                                     </div>
                                 ) : (
                                     <div className="mt-3 text-xs text-slate-500">
-                                        You can vote once per idea. After that, you can edit your existing vote and update your shared points.
+                                        You can rate once per idea. After that, you can edit your saved points and sentiment.
                                     </div>
                                 )}
                             </div>

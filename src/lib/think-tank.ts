@@ -40,12 +40,6 @@ const CATEGORY_EXPERTISE: Record<ThinkTankIdeaCategory, string[]> = {
     ACCOUNTS: ['accounts', 'finance', 'billing'],
 };
 
-const VOTE_VALUES: Record<ThinkTankVoteState, number> = {
-    LIKE: 1,
-    UNLIKE: -1,
-    NEUTRAL: 0,
-};
-
 const REVIEW_SCORE_FIELDS = [
     'impactScore',
     'feasibilityScore',
@@ -1049,7 +1043,7 @@ export const pickCoOptedMembers = async (params: {
 export const recalculateIdeaScore = async (ideaId: string) => {
     const votes = await prisma.thinkTankIdeaVote.findMany({
         where: { ideaId },
-        select: { weightedValue: true },
+        select: { pointAllocation: true },
     });
     const reviewerScores = await prisma.thinkTankIdeaReviewerScore.findMany({
         where: { ideaId },
@@ -1063,7 +1057,7 @@ export const recalculateIdeaScore = async (ideaId: string) => {
         },
     });
 
-    const weightedScore = votes.reduce((sum, vote) => sum + vote.weightedValue, 0);
+    const weightedScore = votes.reduce((sum, vote) => sum + Math.max(0, vote.pointAllocation || 0), 0);
     const reviewerScore = reviewerScores.length
         ? reviewerScores.reduce((sum, score) => sum + score.totalScore, 0) / reviewerScores.length
         : 0;
@@ -1181,8 +1175,7 @@ export const castThinkTankVote = async (params: {
         throw new ValidationError(`You only have ${effectiveRemaining} points left for this cycle.`);
     }
 
-    const baseValue = VOTE_VALUES[params.vote];
-    const weightedValue = requestedPoints * baseValue;
+    const weightedValue = requestedPoints;
 
     await prisma.$transaction(async (tx) => {
         await tx.thinkTankIdeaVote.upsert({
