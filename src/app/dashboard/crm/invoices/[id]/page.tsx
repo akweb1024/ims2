@@ -529,6 +529,28 @@ export default function InvoiceDetailPage({
     );
   };
 
+  const handleDeleteInvoice = async () => {
+    if (!window.confirm("WARNING: Are you sure you want to permanently delete this invoice? This action will cascade and delete associated Payments, Journals, and Dispatch records. This cannot be undone.")) {
+      return;
+    }
+    
+    try {
+      const token = localStorage.getItem("token");
+      const res = await fetch(`/api/invoices/${id}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.error || "Failed to delete invoice");
+      }
+      alert("Invoice deleted successfully");
+      router.push("/dashboard/crm/invoices");
+    } catch (error: any) {
+      alert(error.message || "Failed to delete invoice");
+    }
+  };
+
   if (loading) {
     return (
       <DashboardLayout userRole={userRole}>
@@ -934,7 +956,7 @@ export default function InvoiceDetailPage({
             >
               {isDownloadingPdf ? "⬇ Generating PDF..." : "⬇ Download PDF"}
             </button>
-            {invoice.status !== "PAID" && invoice.status !== "CANCELLED" && (
+            {userRole === "SUPER_ADMIN" && (
               <>
                 <button
                   className="btn btn-secondary rounded-xl px-4 py-2 flex items-center gap-2 border-primary-100 text-primary-600 hover:bg-primary-50"
@@ -944,8 +966,31 @@ export default function InvoiceDetailPage({
                     )
                   }
                 >
-                  📝 Edit / Modify
+                  📝 Admin Edit
                 </button>
+                <button
+                  className="btn btn-secondary rounded-xl px-4 py-2 flex items-center gap-2 border-red-100 text-red-600 hover:bg-red-50 font-bold"
+                  onClick={handleDeleteInvoice}
+                >
+                  🗑️ Admin Delete
+                </button>
+              </>
+            )}
+
+            {invoice.status !== "PAID" && invoice.status !== "CANCELLED" && (
+              <>
+                {userRole !== "SUPER_ADMIN" && (
+                  <button
+                    className="btn btn-secondary rounded-xl px-4 py-2 flex items-center gap-2 border-primary-100 text-primary-600 hover:bg-primary-50"
+                    onClick={() =>
+                      router.push(
+                        `/dashboard/crm/invoices/new?editId=${id}&returnTo=${encodeURIComponent(`/dashboard/crm/invoices/${id}`)}`,
+                      )
+                    }
+                  >
+                    📝 Edit / Modify
+                  </button>
+                )}
                 {invoice.status === "DRAFT" && (
                   <button
                     className="btn btn-secondary rounded-xl px-4 py-2 flex items-center gap-2 border-amber-100 text-amber-600 hover:bg-amber-50"

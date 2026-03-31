@@ -102,7 +102,7 @@ export const PATCH = authorizedRoute(
                 return NextResponse.json({ error: 'Invoice not found' }, { status: 404 });
             }
 
-            if (existing.status === 'PAID') {
+            if (existing.status === 'PAID' && user.role !== 'SUPER_ADMIN') {
                 throw new ValidationError('Invoices marked as PAID cannot be modified. Void and recreate if needed.');
             }
 
@@ -184,7 +184,7 @@ export const DELETE = authorizedRoute(
                 return NextResponse.json({ error: 'Invoice not found' }, { status: 404 });
             }
 
-            if (invoice.status === 'PAID') {
+            if (invoice.status === 'PAID' && user.role !== 'SUPER_ADMIN') {
                 throw new ValidationError('PAID Invoices cannot be deleted. VOID them instead.');
             }
 
@@ -194,6 +194,12 @@ export const DELETE = authorizedRoute(
                     userId: user.id,
                     reason: 'Invoice deleted, reservation released',
                 });
+                
+                // Cascade delete associated records
+                await tx.revenueTransaction.deleteMany({ where: { invoiceId: id } });
+                await tx.payment.deleteMany({ where: { invoiceId: id } });
+                await tx.dispatchOrder.deleteMany({ where: { invoiceId: id } });
+
                 await tx.invoice.delete({ where: { id } });
             });
 
