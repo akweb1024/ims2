@@ -44,3 +44,48 @@ export const GET = authorizedRoute(
     }
   }
 );
+
+export const POST = authorizedRoute(
+  ['SUPER_ADMIN', 'ADMIN', 'MANAGER'],
+  async (req: NextRequest, user) => {
+    try {
+      const data = await req.json();
+      
+      // Basic validation
+      if (!data.name || !data.email || !data.workshopTitle) {
+        return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+      }
+
+      // Generate a manual PID if not provided
+      const pid = data.pid || `MAN-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+
+      const participant = await prisma.lMSParticipant.create({
+        data: {
+          pid,
+          name: data.name,
+          email: data.email,
+          mobileNumber: data.mobileNumber || '',
+          workshopTitle: data.workshopTitle,
+          currentAffiliation: data.currentAffiliation || '',
+          profession: data.profession || '',
+          designation: data.designation || '',
+          address: data.address || '',
+          state: data.state || '',
+          country: data.country || 'India',
+          pinCode: data.pinCode || '',
+          gstVatNo: data.gstVatNo || '',
+          courseFee: Number(data.courseFee) || 0,
+          payableAmount: Number(data.payableAmount) || 0,
+          paymentStatus: data.paymentStatus || 'PENDING',
+          learningMode: data.learningMode || 'ONLINE',
+          category: data.category || 'General',
+        }
+      });
+
+      return NextResponse.json(participant);
+    } catch (error) {
+      console.error('Error creating manual LMS participant:', error);
+      return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+    }
+  }
+);

@@ -6,6 +6,10 @@ import { UserRole, CustomerType } from '@/types';
 import { hashPassword } from '@/lib/auth-legacy';
 
 export class LMSInvoiceService {
+  // Default IDs for Nanoschool module as requested by the user
+  static readonly DEFAULT_COMPANY_ID = '3a148605-aa1c-42b4-8ab8-f78c039ee9c0';
+  static readonly DEFAULT_BRAND_ID = 'fbb632ae';
+
   /**
    * Generates an invoice for an LMS participant.
    * If the participant doesn't have a CustomerProfile, it creates one.
@@ -80,8 +84,11 @@ export class LMSInvoiceService {
       const customerProfile = user.customerProfile!;
 
       // 3. Determine Company & Brand
-      // If not provided, try to find a sensible default
-      let targetCompanyId = companyId;
+      // If not provided, use the hardcoded Nanoschool defaults
+      let targetCompanyId = companyId || LMSInvoiceService.DEFAULT_COMPANY_ID;
+      let targetBrandId = brandId || LMSInvoiceService.DEFAULT_BRAND_ID;
+
+      // Fallback to first company only if the default also fails (unlikely given specified IDs)
       if (!targetCompanyId) {
         const firstCompany = await tx.company.findFirst();
         if (!firstCompany) throw new Error('No company found in system to associate invoice with.');
@@ -89,12 +96,12 @@ export class LMSInvoiceService {
       }
 
       const company = await tx.company.findUnique({ where: { id: targetCompanyId } });
-      if (!company) throw new Error('Company not found');
+      if (!company) throw new Error(`Company with ID ${targetCompanyId} not found`);
 
       // 4. Generate Invoice Numbers
       const { invoiceNumber, proformaNumber } = await generateInvoiceNumbers(
         targetCompanyId,
-        brandId || null
+        targetBrandId || null
       );
 
       // 5. Prepare Line Items

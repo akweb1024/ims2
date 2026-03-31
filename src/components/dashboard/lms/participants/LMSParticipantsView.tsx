@@ -4,6 +4,9 @@ import { useState, useEffect } from 'react';
 import { Search, Loader2, ArrowUpDown, Filter, X, User, MapPin, Briefcase, Mail, Phone, ExternalLink, FileText, CheckCircle2 } from 'lucide-react';
 import { Badge } from '@/components/ui/Badge';
 import { format } from 'date-fns';
+import LMSAddParticipantDialog from './LMSAddParticipantDialog';
+import { Button } from '@/components/ui/Button';
+import { Plus } from 'lucide-react';
 
 const Input = ({ className = '', ...props }: React.InputHTMLAttributes<HTMLInputElement>) => (
   <input
@@ -59,6 +62,7 @@ export default function LMSParticipantsView() {
   const [selectedParticipant, setSelectedParticipant] = useState<Participant | null>(null);
   const [generatingInvoice, setGeneratingInvoice] = useState(false);
   const [lastGeneratedInvoice, setLastGeneratedInvoice] = useState<{id: string, num: string} | null>(null);
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
 
   useEffect(() => {
     fetchParticipants();
@@ -137,6 +141,13 @@ export default function LMSParticipantsView() {
            <Badge variant="default" className="bg-blue-600">External</Badge>
            <span className="text-sm text-blue-800 dark:text-blue-300">Nano School Registrations</span>
         </div>
+        <Button 
+          onClick={() => setIsAddDialogOpen(true)}
+          className="flex items-center gap-2"
+        >
+          <Plus className="h-4 w-4" />
+          Add Participant
+        </Button>
       </div>
 
       {/* Filters */}
@@ -466,6 +477,12 @@ export default function LMSParticipantsView() {
           </div>
         </div>
       )}
+
+      <LMSAddParticipantDialog 
+        isOpen={isAddDialogOpen}
+        onClose={() => setIsAddDialogOpen(false)}
+        onSuccess={fetchParticipants}
+      />
     </div>
   );
 }
