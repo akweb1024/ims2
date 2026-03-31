@@ -8,16 +8,18 @@ type Props = {
     categories: Array<{ value: string; label: string }>;
     governance: any;
     partnerOptions: Array<{ id: string; name?: string | null; email?: string | null; designation?: string | null }>;
+    upcomingCycles: Array<{ id: string; windowStart: string; windowEnd: string; revealAt: string; cycleLabel: string; occupied: boolean }>;
     refresh: () => Promise<void>;
     onSubmitted?: () => void;
 };
 
-export default function IdeaSubmissionForm({ user, categories, governance, partnerOptions, refresh, onSubmitted }: Props) {
+export default function IdeaSubmissionForm({ user, categories, governance, partnerOptions, upcomingCycles, refresh, onSubmitted }: Props) {
     const [form, setForm] = useState({
         topic: '',
         description: '',
         category: 'PUBLICATION',
         partnerIds: [] as string[],
+        cycleId: '',
         duplicateDecision: '',
         mergeTargetIdeaId: '',
     });
@@ -75,6 +77,7 @@ export default function IdeaSubmissionForm({ user, categories, governance, partn
                     topic: form.topic,
                     description: form.description,
                     category: form.category,
+                    cycleId: form.cycleId || upcomingCycles.find(c => !c.occupied)?.id,
                     partnerIds: form.partnerIds,
                     attachments,
                     duplicateDecision: form.duplicateDecision || undefined,
@@ -98,6 +101,7 @@ export default function IdeaSubmissionForm({ user, categories, governance, partn
                 description: '',
                 category: 'PUBLICATION',
                 partnerIds: [],
+                cycleId: '',
                 duplicateDecision: '',
                 mergeTargetIdeaId: '',
             });
@@ -176,6 +180,46 @@ export default function IdeaSubmissionForm({ user, categories, governance, partn
                         onChange={(event) => setForm((current) => ({ ...current, topic: event.target.value }))}
                         required
                     />
+                </div>
+
+                <div className="space-y-4">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Review Cycle Selection</label>
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                        {upcomingCycles.map((cycle) => {
+                            const isSelected = form.cycleId === cycle.id || (!form.cycleId && !cycle.occupied && upcomingCycles.find(c => !c.occupied)?.id === cycle.id);
+                            
+                            // automatically set form.cycleId if it's the default and empty
+                            if (!form.cycleId && !cycle.occupied && upcomingCycles.find(c => !c.occupied)?.id === cycle.id) {
+                                setTimeout(() => setForm(curr => ({ ...curr, cycleId: cycle.id })), 0);
+                            }
+
+                            return (
+                                <button
+                                    key={cycle.id}
+                                    type="button"
+                                    onClick={() => !cycle.occupied && setForm(curr => ({ ...curr, cycleId: cycle.id }))}
+                                    disabled={cycle.occupied}
+                                    className={`
+                                        p-4 border-2 text-left transition-colors relative overflow-hidden flex flex-col items-center justify-center text-center
+                                        ${cycle.occupied 
+                                            ? 'border-slate-200 bg-slate-50 cursor-not-allowed hidden-opacity' 
+                                            : isSelected 
+                                                ? 'border-[#FF4500] bg-[#FF4500]/5 hover:bg-[#FF4500]/10' 
+                                                : 'border-slate-950 bg-white hover:border-[#FF4500]'
+                                        }
+                                    `}
+                                >
+                                    {isSelected && <div className="absolute top-0 right-0 w-8 h-8 bg-[#FF4500] translate-x-4 -translate-y-4 rotate-45" />}
+                                    <div className={`text-[10px] font-black uppercase tracking-widest ${isSelected ? 'text-[#FF4500]' : 'text-slate-400'}`}>
+                                        {new Date(cycle.revealAt).toLocaleDateString('en-IN', { month: 'short', day: 'numeric', year: 'numeric' })}
+                                    </div>
+                                    <div className={`mt-1 font-black uppercase tracking-widest ${cycle.occupied ? 'text-slate-400' : 'text-slate-950'}`}>
+                                        {cycle.occupied ? 'Occupied' : 'Select target'}
+                                    </div>
+                                </button>
+                            );
+                        })}
+                    </div>
                 </div>
 
                 <div className="space-y-2">

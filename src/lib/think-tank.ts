@@ -276,7 +276,7 @@ const makeIstDate = (year: number, month: number, day: number, time = '00:00:00'
     return new Date(`${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}T${time}+05:30`);
 };
 
-const hashIdentity = (value: string) => crypto.createHash('sha256').update(value).digest('hex');
+export const hashIdentity = (value: string) => crypto.createHash('sha256').update(value).digest('hex');
 
 const getKey = () => crypto.scryptSync(THINK_TANK_KEY, 'think-tank-salt', 32);
 const getConfigKey = () => crypto.scryptSync(CONFIG_ENCRYPTION_KEY, 'salt', 32);
@@ -727,6 +727,44 @@ export const getOrCreateCurrentCycle = async (companyId: string, date = new Date
             renewalAt: windowStart,
         },
     });
+};
+
+export const getUpcomingCycles = async (companyId: string, count: number = 6) => {
+    const settings = await getThinkTankWindowSettings(companyId);
+    let currentDate = new Date();
+    const upcoming = [];
+
+    for (let i = 0; i < count; i++) {
+        const window = getCurrentCycleWindow(currentDate, settings);
+        
+        let existing = await prisma.thinkTankIdeaCycle.findFirst({
+            where: {
+                companyId,
+                windowStart: window.windowStart,
+                windowEnd: window.windowEnd,
+            },
+        });
+
+        if (!existing) {
+            existing = await prisma.thinkTankIdeaCycle.create({
+                data: {
+                    companyId,
+                    windowStart: window.windowStart,
+                    windowEnd: window.windowEnd,
+                    revealAt: window.revealAt,
+                    cycleLabel: `${window.windowStart.toISOString().slice(0, 10)} to ${window.windowEnd.toISOString().slice(0, 10)}`,
+                    renewalAt: window.windowStart,
+                },
+            });
+        }
+        
+        upcoming.push(existing);
+        
+        // advance date to just after current revealAt
+        currentDate = new Date(window.revealAt.getTime() + 24 * 60 * 60 * 1000);
+    }
+
+    return upcoming;
 };
 
 export const getVoteWeight = (designation?: string | null, role?: string | null) => {
@@ -2167,6 +2205,7 @@ export const createIdeaWithParticipants = async (params: {
     description: string;
     category: ThinkTankIdeaCategory;
     partnerIds: string[];
+    cycleId?: string;
     attachments: Array<{
         fileRecordId?: string | null;
         url: string;
@@ -2178,7 +2217,19 @@ export const createIdeaWithParticipants = async (params: {
     duplicateDecision?: ThinkTankDuplicateDecision | null;
 }) => {
     ensureThinkTankAccess(params.user);
-    const cycle = await getOrCreateCurrentCycle(params.user.companyId!);
+    
+    let cycle;
+    if (params.cycleId) {
+        const existingCycle = await prisma.thinkTankIdeaCycle.findUnique({
+            where: { id: params.cycleId, companyId: params.user.companyId! }
+        });
+        if (!existingCycle) {
+            throw new ValidationError('Selected cycle is invalid or does not exist.');
+        }
+        cycle = existingCycle;
+    } else {
+        cycle = await getOrCreateCurrentCycle(params.user.companyId!);
+    }
     const governance = await getGovernanceState(params.user.companyId);
     
     // Time lock check removed for better accessibility
@@ -2305,6 +2356,7 @@ export const createMergedIdeaFromDuplicate = async (params: {
     description: string;
     category: ThinkTankIdeaCategory;
     partnerIds: string[];
+    cycleId?: string;
     attachments: Array<{
         fileRecordId?: string | null;
         url: string;
@@ -2321,7 +2373,18 @@ export const createMergedIdeaFromDuplicate = async (params: {
         throw new ValidationError('Think Tank submissions are currently locked.');
     }
 
-    const cycle = await getOrCreateCurrentCycle(params.user.companyId!);
+    let cycle;
+    if (params.cycleId) {
+        const existingCycle = await prisma.thinkTankIdeaCycle.findUnique({
+            where: { id: params.cycleId, companyId: params.user.companyId! }
+        });
+        if (!existingCycle) {
+            throw new ValidationError('Selected cycle is invalid or does not exist.');
+        }
+        cycle = existingCycle;
+    } else {
+        cycle = await getOrCreateCurrentCycle(params.user.companyId!);
+    }
     const partnerIds = Array.from(new Set(params.partnerIds.filter((id) => id && id !== params.user.id))).slice(0, 3);
     const normalizedTopic = params.topic.trim();
     const normalizedDescription = params.description.trim();

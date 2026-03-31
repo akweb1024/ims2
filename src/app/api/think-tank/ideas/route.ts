@@ -127,6 +127,7 @@ export const POST = authorizedRoute([], async (req: NextRequest, user: any) => {
         attachments = [],
         duplicateDecision,
         mergeTargetIdeaId,
+        cycleId,
         previewOnly = false,
     } = body;
 
@@ -217,7 +218,17 @@ export const POST = authorizedRoute([], async (req: NextRequest, user: any) => {
         }
     }
 
-    const cycle = await getOrCreateCurrentCycle(user.companyId);
+    let cycle;
+    if (cycleId) {
+        cycle = await prisma.thinkTankIdeaCycle.findUnique({
+            where: { id: cycleId, companyId: user.companyId }
+        });
+        if (!cycle) {
+            return NextResponse.json({ error: 'Selected cycle is invalid or does not exist.' }, { status: 400 });
+        }
+    } else {
+        cycle = await getOrCreateCurrentCycle(user.companyId);
+    }
     const duplicates = await findPotentialDuplicates({
         companyId: user.companyId,
         cycleId: cycle.id,
@@ -254,6 +265,7 @@ export const POST = authorizedRoute([], async (req: NextRequest, user: any) => {
             description,
             category: normalizedCategory,
             partnerIds: validatedPartnerIds,
+            cycleId: cycle.id,
             attachments: validatedAttachments,
             targetIdeaId,
         });
@@ -271,6 +283,7 @@ export const POST = authorizedRoute([], async (req: NextRequest, user: any) => {
         description,
         category: normalizedCategory,
         partnerIds: validatedPartnerIds,
+        cycleId: cycle.id,
         attachments: validatedAttachments,
         duplicateDecision: normalizedDuplicateDecision as ThinkTankDuplicateDecision | null,
     });

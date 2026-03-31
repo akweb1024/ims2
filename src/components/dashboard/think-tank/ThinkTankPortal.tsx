@@ -343,6 +343,7 @@ export default function ThinkTankPortal({ mode, ideaId }: { mode: PortalMode; id
         vote: false,
         results: false,
     });
+    const [upcomingCycles, setUpcomingCycles] = useState<any[]>([]);
     const [ideas, setIdeas] = useState<Idea[]>([]);
     const [reviewIdeas, setReviewIdeas] = useState<Idea[]>([]);
     const [results, setResults] = useState<Idea[]>([]);
@@ -389,7 +390,7 @@ export default function ThinkTankPortal({ mode, ideaId }: { mode: PortalMode; id
     const refresh = useCallback(async () => {
         setLoading(true);
         try {
-            const [ideasRes, resultsRes, governanceRes, analyticsRes, usersRes, settingsRes, voteMonitorRes] = await Promise.all([
+            const [ideasRes, resultsRes, governanceRes, analyticsRes, usersRes, settingsRes, voteMonitorRes, cyclesRes] = await Promise.all([
                 fetch(`/api/think-tank/ideas?view=${view}`, { cache: 'no-store' }),
                 fetch('/api/think-tank/results', { cache: 'no-store' }),
                 fetch('/api/think-tank/governance', { cache: 'no-store' }),
@@ -397,6 +398,7 @@ export default function ThinkTankPortal({ mode, ideaId }: { mode: PortalMode; id
                 fetch('/api/users?limit=100', { cache: 'no-store' }),
                 fetch('/api/think-tank/governance/settings', { cache: 'no-store' }),
                 fetch('/api/think-tank/vote-monitor', { cache: 'no-store' }),
+                view === 'my' ? fetch('/api/think-tank/cycles', { cache: 'no-store' }) : Promise.resolve(null),
             ]);
             const ideasPayload = await ideasRes.json();
             const resultsPayload = await resultsRes.json();
@@ -405,6 +407,7 @@ export default function ThinkTankPortal({ mode, ideaId }: { mode: PortalMode; id
             const usersPayload = usersRes.ok ? await usersRes.json() : { data: [] };
             const settingsPayload = settingsRes.ok ? await settingsRes.json() : { settings: DEFAULT_WINDOW_SETTINGS };
             const voteMonitorPayload = voteMonitorRes.ok ? await voteMonitorRes.json() : { cycle: null, accounts: [] };
+            const cyclesPayload = cyclesRes && cyclesRes.ok ? await cyclesRes.json() : { cycles: [] };
             let reviewPayload: any = null;
             const reviewRes = await fetch('/api/think-tank/ideas?view=review', { cache: 'no-store' });
             if (reviewRes.ok) {
@@ -422,6 +425,7 @@ export default function ThinkTankPortal({ mode, ideaId }: { mode: PortalMode; id
             setWindowSettings(settingsPayload.settings || DEFAULT_WINDOW_SETTINGS);
             setSettingsForm(settingsPayload.settings || DEFAULT_WINDOW_SETTINGS);
             setVoteMonitor(voteMonitorPayload);
+            setUpcomingCycles(cyclesPayload.cycles || []);
             setIdeas(ideasPayload.ideas || []);
             setReviewIdeas(reviewPayload?.ideas || []);
             setResults(resultsPayload.ideas || []);
@@ -880,6 +884,7 @@ export default function ThinkTankPortal({ mode, ideaId }: { mode: PortalMode; id
                                         categories={CATEGORIES}
                                         governance={governance}
                                         partnerOptions={assignees}
+                                        upcomingCycles={upcomingCycles}
                                         refresh={refresh}
                                         onSubmitted={() => setShowSubmissionModal(false)}
                                     />
