@@ -32,18 +32,45 @@ const FIELD_MAP = {
 
 export async function POST(req: Request) {
   try {
-    const payload = await req.json();
+    const contentType = req.headers.get('content-type') || '';
+    let payload: any = {};
+
+    if (contentType.includes('application/json')) {
+      payload = await req.json();
+    } else if (contentType.includes('application/x-www-form-urlencoded') || contentType.includes('multipart/form-data')) {
+      const formData = await req.formData();
+      formData.forEach((value, key) => {
+        payload[key] = value;
+      });
+    } else {
+      // Fallback for some systems that don't send proper content-type but send text/plain as json
+      const text = await req.text();
+      try {
+        payload = JSON.parse(text);
+      } catch {
+        // Not JSON, maybe it was meant as form data? 
+        // But usually req.text() is just raw.
+        return NextResponse.json({ error: 'Unsupported Content-Type' }, { status: 400 });
+      }
+    }
 
     // 1. Extract values based on field mapping
     const getValue = (fieldKey: keyof typeof FIELD_MAP) => {
       const id = FIELD_MAP[fieldKey];
-      return payload[id] !== undefined ? String(payload[id]) : null;
+      const val = payload[id];
+      // If the value is undefined, null, or an empty string, we return null
+      // This is CRITICAL for unique fields like razorpayOrderId where multiple "" strings would break DB constraints
+      if (val === undefined || val === null || String(val).trim() === '') {
+        return null;
+      }
+      return String(val);
     };
 
     const pid = getValue('pid');
     
     // We strictly require at least an ID, Name, and Email to process the hook
     if (!pid) {
+      console.error('Nanoschool Webhook Missing pid. Payload keys:', Object.keys(payload));
       return NextResponse.json({ error: 'Missing participant ID (pid)' }, { status: 400 });
     }
 
@@ -61,60 +88,40 @@ export async function POST(req: Request) {
     const hasCoupon = hasCouponStr?.toLowerCase() === 'yes' || hasCouponStr === 'true' || hasCouponStr === '1';
 
     // 2. Insert or update the participant mapped by `pid`
+    // We use data object to avoid repetition in update/create
+    const data = {
+      workshopTitle: getValue('workshopTitle'),
+      name: name,
+      email: email,
+      mobileNumber: getValue('mobileNumber'),
+      currentAffiliation: getValue('currentAffiliation'),
+      profession: getValue('profession'),
+      designation: getValue('designation'),
+      address: getValue('address'),
+      state: getValue('state'),
+      country: getValue('country'),
+      pinCode: getValue('pinCode'),
+      gstVatNo: getValue('gstVatNo'),
+      courseFee: courseFee,
+      hasCoupon: hasCoupon,
+      couponCode: getValue('couponCode'),
+      payableAmount: payableAmount,
+      otherCurrency: getValue('otherCurrency'),
+      referralSource: getValue('referralSource'),
+      paymentStatus: getValue('paymentStatus'),
+      razorpayOrderId: getValue('razorpayOrderId'),
+      razorpayPaymentId: getValue('razorpayPaymentId'),
+      razorpaySignature: getValue('razorpaySignature'),
+      learningMode: getValue('learningMode'),
+      category: getValue('category'),
+    };
+
     const participant = await prisma.lMSParticipant.upsert({
       where: { pid: pid },
-      update: {
-        workshopTitle: getValue('workshopTitle'),
-        name: name,
-        email: email,
-        mobileNumber: getValue('mobileNumber'),
-        currentAffiliation: getValue('currentAffiliation'),
-        profession: getValue('profession'),
-        designation: getValue('designation'),
-        address: getValue('address'),
-        state: getValue('state'),
-        country: getValue('country'),
-        pinCode: getValue('pinCode'),
-        gstVatNo: getValue('gstVatNo'),
-        courseFee: courseFee,
-        hasCoupon: hasCoupon,
-        couponCode: getValue('couponCode'),
-        payableAmount: payableAmount,
-        otherCurrency: getValue('otherCurrency'),
-        referralSource: getValue('referralSource'),
-        paymentStatus: getValue('paymentStatus'),
-        razorpayOrderId: getValue('razorpayOrderId'),
-        razorpayPaymentId: getValue('razorpayPaymentId'),
-        razorpaySignature: getValue('razorpaySignature'),
-        learningMode: getValue('learningMode'),
-        category: getValue('category'),
-      },
+      update: data,
       create: {
         pid: pid,
-        workshopTitle: getValue('workshopTitle'),
-        name: name,
-        email: email,
-        mobileNumber: getValue('mobileNumber'),
-        currentAffiliation: getValue('currentAffiliation'),
-        profession: getValue('profession'),
-        designation: getValue('designation'),
-        address: getValue('address'),
-        state: getValue('state'),
-        country: getValue('country'),
-        pinCode: getValue('pinCode'),
-        gstVatNo: getValue('gstVatNo'),
-        courseFee: courseFee,
-        hasCoupon: hasCoupon,
-        couponCode: getValue('couponCode'),
-        payableAmount: payableAmount,
-        otherCurrency: getValue('otherCurrency'),
-        referralSource: getValue('referralSource'),
-        paymentStatus: getValue('paymentStatus'),
-        razorpayOrderId: getValue('razorpayOrderId'),
-        razorpayPaymentId: getValue('razorpayPaymentId'),
-        razorpaySignature: getValue('razorpaySignature'),
-        learningMode: getValue('learningMode'),
-        category: getValue('category'),
+        ...data
       }
     });
 
