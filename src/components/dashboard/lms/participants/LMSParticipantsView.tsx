@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Search, Loader2, ArrowUpDown, Filter, X, User, MapPin, Briefcase, Mail, Phone, ExternalLink } from 'lucide-react';
+import { Search, Loader2, ArrowUpDown, Filter, X, User, MapPin, Briefcase, Mail, Phone, ExternalLink, FileText, CheckCircle2 } from 'lucide-react';
 import { Badge } from '@/components/ui/Badge';
 import { format } from 'date-fns';
 
@@ -46,6 +46,7 @@ interface Participant {
   learningMode: string | null;
   category: string | null;
   createdAt: string;
+  invoices?: { id: string; invoiceNumber: string }[];
 }
 
 export default function LMSParticipantsView() {
@@ -56,6 +57,8 @@ export default function LMSParticipantsView() {
   const [statusFilter, setStatusFilter] = useState('all');
   const [uniqueWorkshops, setUniqueWorkshops] = useState<string[]>([]);
   const [selectedParticipant, setSelectedParticipant] = useState<Participant | null>(null);
+  const [generatingInvoice, setGeneratingInvoice] = useState(false);
+  const [lastGeneratedInvoice, setLastGeneratedInvoice] = useState<{id: string, num: string} | null>(null);
 
   useEffect(() => {
     fetchParticipants();
@@ -84,6 +87,29 @@ export default function LMSParticipantsView() {
       console.error(error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const generateInvoice = async (participantId: string) => {
+    setGeneratingInvoice(true);
+    setLastGeneratedInvoice(null);
+    try {
+      const res = await fetch(`/api/lms/participants/${participantId}/invoice`, {
+        method: 'POST',
+      });
+      const data = await res.json();
+      if (data.success) {
+        setLastGeneratedInvoice({ id: data.invoiceId, num: data.invoiceNumber });
+        // Refresh participants to show updated invoice status if needed
+        fetchParticipants();
+      } else {
+        alert(data.error || 'Failed to generate invoice');
+      }
+    } catch (error) {
+      console.error(error);
+      alert('Error generating invoice');
+    } finally {
+      setGeneratingInvoice(false);
     }
   };
 
@@ -360,6 +386,81 @@ export default function LMSParticipantsView() {
                     )}
                   </div>
                 </div>
+              </div>
+
+              {/* Invoice Section */}
+              <div className="pt-4 border-t border-gray-100 dark:border-gray-800">
+                {selectedParticipant.invoices && selectedParticipant.invoices.length > 0 ? (
+                  <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-xl border border-blue-100 dark:border-blue-800/50 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-blue-100 dark:bg-blue-800 rounded-lg text-blue-600 dark:text-blue-300">
+                        <FileText className="h-5 w-5" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold text-blue-900 dark:text-blue-200">Invoice Generated</p>
+                        <p className="text-xs text-blue-700 dark:text-blue-400 font-mono">{selectedParticipant.invoices[0].invoiceNumber}</p>
+                      </div>
+                    </div>
+                    <a 
+                      href={`/dashboard/crm/invoices/${selectedParticipant.invoices[0].id}`}
+                      target="_blank"
+                      className="text-xs bg-white dark:bg-blue-800 text-blue-600 dark:text-blue-200 px-3 py-1.5 rounded-md border border-blue-200 dark:border-blue-700 font-medium hover:bg-blue-50 transition-colors"
+                    >
+                      View Invoice
+                    </a>
+                  </div>
+                ) : lastGeneratedInvoice ? (
+                  <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-xl border border-green-100 dark:border-green-800/50 flex items-center justify-between animate-in fade-in zoom-in duration-300">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-green-100 dark:bg-green-800 rounded-lg text-green-600 dark:text-green-300">
+                        <CheckCircle2 className="h-5 w-5" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold text-green-900 dark:text-green-200">Success!</p>
+                        <p className="text-xs text-green-700 dark:text-green-400 font-mono">{lastGeneratedInvoice.num}</p>
+                      </div>
+                    </div>
+                    <a 
+                      href={`/dashboard/crm/invoices/${lastGeneratedInvoice.id}`}
+                      target="_blank"
+                      className="text-xs bg-white dark:bg-green-800 text-green-600 dark:text-green-200 px-3 py-1.5 rounded-md border border-green-200 dark:border-green-700 font-medium hover:bg-green-50 transition-colors"
+                    >
+                      Open
+                    </a>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => generateInvoice(selectedParticipant.id)}
+                    disabled={generatingInvoice || (selectedParticipant.paymentStatus?.toLowerCase() !== 'success' && selectedParticipant.paymentStatus?.toLowerCase() !== 'completed')}
+                    className={`
+                      w-full py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-all
+                      ${generatingInvoice 
+                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
+                        : (selectedParticipant.paymentStatus?.toLowerCase() === 'success' || selectedParticipant.paymentStatus?.toLowerCase() === 'completed')
+                          ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-lg shadow-blue-200 dark:shadow-none'
+                          : 'bg-gray-100 text-gray-400 cursor-not-allowed border border-dashed border-gray-300'
+                      }
+                    `}
+                  >
+                    {generatingInvoice ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Generating...
+                      </>
+                    ) : (
+                      <>
+                        <FileText className="h-5 w-5" />
+                        Generate Invoice
+                      </>
+                    )}
+                  </button>
+                )}
+                
+                {(selectedParticipant.paymentStatus?.toLowerCase() !== 'success' && selectedParticipant.paymentStatus?.toLowerCase() !== 'completed') && !selectedParticipant.invoices?.length && (
+                  <p className="text-[10px] text-center text-gray-400 mt-2 uppercase tracking-wider font-medium">
+                    Invoice generation requires successful payment status
+                  </p>
+                )}
               </div>
             </div>
           </div>

@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma'; // Assumes typical prisma import path for this project
+import { LMSInvoiceService } from '@/lib/services/lms-invoice';
+import { logger } from '@/lib/logger';
 
 // Verify mapped payload IDs based on Nanoschool format
 const FIELD_MAP = {
@@ -124,6 +126,16 @@ export async function POST(req: Request) {
         ...data
       }
     });
+
+    // 3. Automatic Invoicing for SUCCESS payments
+    if (participant.paymentStatus?.toLowerCase() === 'success' || participant.paymentStatus?.toLowerCase() === 'completed') {
+       try {
+          await LMSInvoiceService.generateForParticipant(participant.id);
+          logger.info('Auto-invoice generated via webhook', { participantId: participant.id });
+       } catch (invError) {
+          logger.error('Failed to auto-generate invoice in webhook', invError, { participantId: participant.id });
+       }
+    }
 
     return NextResponse.json({ success: true, id: participant.id });
   } catch (error) {

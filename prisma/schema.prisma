@@ -1135,6 +1135,8 @@ model Invoice {
   coupon                  Coupon?              @relation(fields: [couponId], references: [id])
   customerProfile         CustomerProfile?     @relation(fields: [customerProfileId], references: [id])
   subscription            Subscription?        @relation(fields: [subscriptionId], references: [id])
+  lmsParticipantId        String?
+  lmsParticipant          LMSParticipant?      @relation(fields: [lmsParticipantId], references: [id])
   payments                Payment[]
   dispatchOrders          DispatchOrder[]
   revenueTransactions     RevenueTransaction[]
@@ -1146,6 +1148,7 @@ model Invoice {
   @@index([companyId])
   @@index([brandId])
   @@index([couponId])
+  @@index([lmsParticipantId])
 }
 
 model Coupon {
@@ -6032,6 +6035,7 @@ model LMSParticipant {
   
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
+  invoices           Invoice[]
 
   @@index([email])
   @@index([workshopTitle])
