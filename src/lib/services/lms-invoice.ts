@@ -2,42 +2,104 @@ import { prisma } from '@/lib/prisma';
 import { generateInvoiceNumbers } from '@/lib/invoice-number';
 import { FinanceService } from '@/lib/services/finance';
 import { logger } from '@/lib/logger';
-import { UserRole, CustomerType } from '@/types';
 import { hashPassword } from '@/lib/auth-legacy';
+import crypto from 'crypto';
+
+const ENCRYPTION_KEY = process.env.CONFIG_ENCRYPTION_KEY || 'your-32-character-secret-key!!';
+const ALGORITHM = 'aes-256-cbc';
+
+function decrypt(text: string): string {
+  try {
+    const parts = text.split(':');
+    if (parts.length < 2) return text;
+    const iv = Buffer.from(parts.shift()!, 'hex');
+    const encryptedText = parts.join(':');
+    const key = crypto.scryptSync(ENCRYPTION_KEY, 'salt', 32);
+    const decipher = crypto.createDecipheriv(ALGORITHM, key, iv);
+    let decrypted = decipher.update(encryptedText, 'hex', 'utf8');
+    decrypted += decipher.final('utf8');
+    return decrypted;
+  } catch (e) {
+    console.error('Decryption failed:', e);
+    return text;
+  }
+}
 
 export class LMSInvoiceService {
-  // Default IDs for Nanoschool module as requested by the user
+  // Production Nanoschool defaults — overridden by ModuleSettings UI or webhook payload
   static readonly DEFAULT_COMPANY_ID = '3a148605-aa1c-42b4-8ab8-f78c039ee9c0';
   static readonly DEFAULT_BRAND_ID = 'fbb632ae';
 
   /**
-   * Generates an invoice for an LMS participant.
-   * If the participant doesn't have a CustomerProfile, it creates one.
+   * Fetches dynamic LMS configuration from AppConfiguration table.
+   * Falls back to hardcoded defaults if none are configured.
    */
-  static async generateForParticipant(participantId: string, companyId?: string, brandId?: string) {
-    return await prisma.$transaction(async (tx) => {
+  static async getModuleDefaults() {
+    try {
+      const configs = await prisma.appConfiguration.findMany({
+        where: {
+          category: 'LMS_MODULE',
+          key: { in: ['LMS_INVOICE_COMPANY_ID', 'LMS_INVOICE_BRAND_ID'] },
+          isActive: true,
+        },
+      });
+
+      const defaults = {
+        companyId: LMSInvoiceService.DEFAULT_COMPANY_ID,
+        brandId: LMSInvoiceService.DEFAULT_BRAND_ID,
+      };
+
+      for (const config of configs) {
+        if (config.key === 'LMS_INVOICE_COMPANY_ID' && config.value) {
+          defaults.companyId = decrypt(config.value);
+        } else if (config.key === 'LMS_INVOICE_BRAND_ID' && config.value) {
+          defaults.brandId = decrypt(config.value);
+        }
+      }
+
+      return defaults;
+    } catch (error) {
+      logger.error('Failed to fetch LMS module defaults', error);
+      return {
+        companyId: LMSInvoiceService.DEFAULT_COMPANY_ID,
+        brandId: LMSInvoiceService.DEFAULT_BRAND_ID,
+      };
+    }
+  }
+
+  /**
+   * Generates an invoice for an LMS participant.
+   * Participant/invoice creation runs inside a transaction.
+   * Finance posting runs OUTSIDE the transaction so a missing chart-of-accounts
+   * doesn't roll back the invoice itself.
+   */
+  static async generateForParticipant(
+    participantId: string,
+    companyId?: string | null,
+    brandId?: string | null
+  ) {
+    // --- PHASE 1: Create invoice in a transaction ---
+    const invoice = await prisma.$transaction(async (tx) => {
       // 1. Fetch participant
       const participant = await tx.lMSParticipant.findUnique({
         where: { id: participantId },
-        include: { invoices: { take: 1 } }
+        include: { invoices: true },
       });
 
       if (!participant) throw new Error('Participant not found');
-      
-      // Check if already has an invoice
+
+      // Idempotency — skip if already invoiced
       if (participant.invoices.length > 0) {
         return participant.invoices[0];
       }
 
-      // 2. Find or Create User & CustomerProfile
+      // 2. Find or create User + CustomerProfile
       let user = await tx.user.findUnique({
         where: { email: participant.email },
-        include: { customerProfile: true }
+        include: { customerProfile: true },
       });
 
       if (!user) {
-        // Create a skeleton user for the participant
-        // Use a random password that they can reset later
         const tempPassword = await hashPassword(Math.random().toString(36).slice(-10));
         user = await tx.user.create({
           data: {
@@ -52,18 +114,17 @@ export class LMSInvoiceService {
                 primaryPhone: participant.mobileNumber || '',
                 customerType: 'INDIVIDUAL',
                 billingAddress: participant.address,
-                city: participant.state, // Closest match in participant model
+                city: participant.state,
                 state: participant.state,
                 country: participant.country || 'India',
                 pincode: participant.pinCode,
                 gstVatTaxId: participant.gstVatNo,
-              }
-            }
+              },
+            },
           },
-          include: { customerProfile: true }
+          include: { customerProfile: true },
         });
       } else if (!user.customerProfile) {
-        // User exists but no profile (rare but possible)
         const profile = await tx.customerProfile.create({
           data: {
             userId: user.id,
@@ -76,72 +137,64 @@ export class LMSInvoiceService {
             country: participant.country || 'India',
             pincode: participant.pinCode,
             gstVatTaxId: participant.gstVatNo,
-          }
+          },
         });
         (user as any).customerProfile = profile;
       }
 
       const customerProfile = user.customerProfile!;
 
-      // 3. Determine Company & Brand
-      // If not provided, use the hardcoded Nanoschool defaults
-      let targetCompanyId = companyId || LMSInvoiceService.DEFAULT_COMPANY_ID;
-      let targetBrandId = brandId || LMSInvoiceService.DEFAULT_BRAND_ID;
+      // 3. Determine Company & Brand — payload > module settings > hardcoded defaults
+      const defaults = await LMSInvoiceService.getModuleDefaults();
+      const targetCompanyId = companyId || defaults.companyId;
+      const targetBrandId = brandId || defaults.brandId;
 
-      // Fallback to first company only if the default also fails (unlikely given specified IDs)
-      if (!targetCompanyId) {
-        const firstCompany = await tx.company.findFirst();
-        if (!firstCompany) throw new Error('No company found in system to associate invoice with.');
-        targetCompanyId = firstCompany.id;
-      }
+      if (!targetCompanyId) throw new Error('No company ID available for invoice generation.');
 
       const company = await tx.company.findUnique({ where: { id: targetCompanyId } });
-      if (!company) throw new Error(`Company with ID ${targetCompanyId} not found`);
+      if (!company) throw new Error(`Company ${targetCompanyId} not found`);
 
-      // 4. Generate Invoice Numbers
+      // 4. Generate invoice numbers
       const { invoiceNumber, proformaNumber } = await generateInvoiceNumbers(
         targetCompanyId,
         targetBrandId || null
       );
 
-      // 5. Prepare Line Items
+      const isPaid =
+        participant.paymentStatus?.toLowerCase() === 'success' ||
+        participant.paymentStatus?.toLowerCase() === 'completed';
+
+      const total = participant.payableAmount || 0;
+      const subtotal = total / 1.18;
+      const taxAmount = total - subtotal;
+
       const lineItems = [
         {
           description: `Workshop Registration: ${participant.workshopTitle || 'General'}`,
           quantity: 1,
           price: participant.courseFee || 0,
           amount: participant.courseFee || 0,
-          taxRate: 18, // Default 18% as per IMS standards
-        }
+          taxRate: 18,
+        },
       ];
 
-      // If there is a discount/payable diff
-      const discountAmount = (participant.courseFee || 0) - (participant.payableAmount || 0);
-
-      // calculate tax components (Simplified version of calculateInvoiceTaxBreakdown for now)
-      // Since we know the total payable amount, we back-calculate or just use the provided values.
-      // IMS usually expects subtotal + tax = total.
-      const total = participant.payableAmount || 0;
-      const subtotal = total / 1.18;
-      const taxAmount = total - subtotal;
-
-      // 6. Create Invoice
-      const invoice = await tx.invoice.create({
+      // 5. Create Invoice
+      const newInvoice = await tx.invoice.create({
         data: {
           invoiceNumber,
           proformaNumber,
           companyId: targetCompanyId,
-          brandId: brandId || null,
+          brandId: targetBrandId || null,
           customerProfileId: customerProfile.id,
           lmsParticipantId: participant.id,
           currency: participant.otherCurrency || 'INR',
           amount: subtotal,
           tax: taxAmount,
-          total: total,
-          status: (participant.paymentStatus?.toLowerCase() === 'success' || participant.paymentStatus?.toLowerCase() === 'completed') ? 'PAID' : 'UNPAID',
+          total,
+          status: isPaid ? 'PAID' : 'UNPAID',
           dueDate: new Date(),
-          paidDate: (participant.paymentStatus?.toLowerCase() === 'success' || participant.paymentStatus?.toLowerCase() === 'completed') ? new Date() : null,
-          description: `Invoice for ${participant.workshopTitle}`,
+          paidDate: isPaid ? new Date() : null,
+          description: `Invoice for ${participant.workshopTitle || 'LMS Workshop'}`,
           lineItems: lineItems as any,
           billingAddress: participant.address,
           billingCity: participant.state,
@@ -149,8 +202,6 @@ export class LMSInvoiceService {
           billingCountry: participant.country || 'India',
           billingPincode: participant.pinCode,
           gstNumber: participant.gstVatNo,
-          
-          // Branding Snapshots (from Company/Brand)
           brandLegalName: company.legalEntityName || company.name,
           brandAddress: company.address,
           brandEmail: company.email,
@@ -163,37 +214,42 @@ export class LMSInvoiceService {
           brandBankNumber: company.bankAccountNumber,
           brandBankIfsc: company.bankIfscCode,
           brandPaymentMode: company.paymentMode || 'Online',
-        }
+        },
       });
 
-      // 7. Finance Posting
-      try {
-        await FinanceService.postInvoiceJournal(targetCompanyId, invoice.id);
-        
-        // If already paid, post the payment too
-        if (invoice.status === 'PAID') {
-           // We need to create a Payment record first
-           const payment = await tx.payment.create({
-             data: {
-               invoiceId: invoice.id,
-               amount: total,
-               paymentDate: new Date(),
-               paymentMethod: 'ONLINE',
-               status: 'COMPLETED',
-               transactionId: participant.razorpayPaymentId || `LMS-${participant.pid}`,
-               companyId: targetCompanyId,
-             }
-           });
-           await FinanceService.postPaymentJournal(targetCompanyId, payment.id);
-        }
-      } catch (financeError) {
-        logger.error('Failed to post LMS invoice to finance', financeError, { invoiceId: invoice.id });
-        // We don't rollback the whole transaction if finance posting fails, 
-        // to ensure the invoice at least exists.
+      // 6. Payment record (inside transaction — no external dependencies)
+      if (isPaid) {
+        await tx.payment.create({
+          data: {
+            invoiceId: newInvoice.id,
+            amount: total,
+            paymentDate: new Date(),
+            paymentMethod: 'ONLINE',
+            status: 'COMPLETED',
+            transactionId: participant.razorpayPaymentId || `LMS-${participant.pid}`,
+            companyId: targetCompanyId,
+          },
+        });
       }
 
-      logger.info('LMS Invoice generated', { invoiceId: invoice.id, participantId: participant.id });
-      return invoice;
+      logger.info('LMS Invoice created', { invoiceId: newInvoice.id, participantId: participant.id });
+      return newInvoice;
     });
+
+    // --- PHASE 2: Finance posting OUTSIDE transaction ---
+    // A missing chart-of-accounts will NOT roll back the invoice.
+    try {
+      await FinanceService.postInvoiceJournal(invoice.companyId!, invoice.id);
+      if (invoice.status === 'PAID') {
+        const payment = await prisma.payment.findFirst({ where: { invoiceId: invoice.id } });
+        if (payment) await FinanceService.postPaymentJournal(invoice.companyId!, payment.id);
+      }
+    } catch (financeError) {
+      logger.error('Finance posting failed for LMS invoice (non-critical)', financeError, {
+        invoiceId: invoice.id,
+      });
+    }
+
+    return invoice;
   }
 }

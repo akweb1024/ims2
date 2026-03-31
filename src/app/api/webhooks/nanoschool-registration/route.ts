@@ -2,6 +2,15 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma'; // Assumes typical prisma import path for this project
 import { LMSInvoiceService } from '@/lib/services/lms-invoice';
 import { logger } from '@/lib/logger';
+import { handleApiError, AuthorizationError } from '@/lib/error-handler';
+
+function getWebhookSecret(req: Request) {
+  const authHeader = req.headers.get("authorization");
+  if (authHeader?.startsWith("Bearer ")) {
+    return authHeader.slice(7);
+  }
+  return req.headers.get("x-webhook-secret");
+}
 
 // Verify mapped payload IDs based on Nanoschool format
 const FIELD_MAP = {
@@ -34,6 +43,21 @@ const FIELD_MAP = {
 
 export async function POST(req: Request) {
   try {
+    // 0. Secret Authentication (Aligned with CRM leads pattern)
+    const expectedSecret = process.env.NANOSCHOOL_WEBHOOK_SECRET || process.env.LEAD_WEBHOOK_SECRET;
+    const receivedSecret = getWebhookSecret(req);
+
+    if (!expectedSecret) {
+      throw new Error("LMS webhook is not configured with a secret");
+    }
+
+    if (receivedSecret !== expectedSecret) {
+      logger.security("Invalid LMS/Nanoschool webhook secret", {
+        path: "/api/webhooks/nanoschool-registration",
+      });
+      return NextResponse.json({ error: 'Invalid webhook secret' }, { status: 401 });
+    }
+
     const contentType = req.headers.get('content-type') || '';
     let payload: any = {};
 
@@ -89,6 +113,10 @@ export async function POST(req: Request) {
     const hasCouponStr = getValue('hasCoupon');
     const hasCoupon = hasCouponStr?.toLowerCase() === 'yes' || hasCouponStr === 'true' || hasCouponStr === '1';
 
+    // Optional dynamic scoping from root payload (like CRM Leads)
+    const targetCompanyId = payload.companyId || null;
+    const targetBrandId = payload.brandId || null;
+
     // 2. Insert or update the participant mapped by `pid`
     // We use data object to avoid repetition in update/create
     const data = {
@@ -130,8 +158,16 @@ export async function POST(req: Request) {
     // 3. Automatic Invoicing for SUCCESS payments
     if (participant.paymentStatus?.toLowerCase() === 'success' || participant.paymentStatus?.toLowerCase() === 'completed') {
        try {
-          await LMSInvoiceService.generateForParticipant(participant.id);
-          logger.info('Auto-invoice generated via webhook', { participantId: participant.id });
+          await LMSInvoiceService.generateForParticipant(
+            participant.id, 
+            targetCompanyId, 
+            targetBrandId
+          );
+          logger.info('Auto-invoice generated via webhook', { 
+            participantId: participant.id,
+            companyId: targetCompanyId,
+            brandId: targetBrandId
+          });
        } catch (invError) {
           logger.error('Failed to auto-generate invoice in webhook', invError, { participantId: participant.id });
        }

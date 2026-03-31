@@ -16,8 +16,10 @@ import {
     CRMRowAction,
 } from '@/components/crm/CRMPageShell';
 import { 
-    FileText, Eye, Clock, Download
+    FileText, Eye, Clock, Download, Settings
 } from 'lucide-react';
+import LMSSettingsModal from '@/components/dashboard/lms/LMSSettingsModal';
+import { Button } from '@/components/ui/Button';
 
 type BadgeVariant = 'success' | 'warning' | 'danger' | 'secondary' | 'info';
 
@@ -29,6 +31,7 @@ export default function LMSInvoicesPage() {
     const [pagination, setPagination] = useState({ page: 1, totalPages: 1, total: 0 });
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState('');
+    const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
     const fetchInvoices = useCallback(async () => {
         setLoading(true);
@@ -91,6 +94,17 @@ export default function LMSInvoicesPage() {
                 subtitle="Dedicated view for invoices generated through workshop registrations."
                 breadcrumb={[{ label: 'LMS', href: '/dashboard/lms' }, { label: 'Invoices' }]}
                 icon={<FileText className="w-5 h-5" />}
+                actions={
+                    <Button 
+                        variant="secondary" 
+                        size="sm" 
+                        onClick={() => setIsSettingsOpen(true)}
+                        className="flex items-center gap-2"
+                    >
+                        <Settings size={16} />
+                        <span>Module Settings</span>
+                    </Button>
+                }
             >
                 <CRMFilterBar>
                     <CRMSearchInput
@@ -167,6 +181,10 @@ export default function LMSInvoicesPage() {
                     />
                 </div>
             </CRMPageShell>
+            <LMSSettingsModal 
+                isOpen={isSettingsOpen}
+                onClose={() => setIsSettingsOpen(false)}
+            />
         </DashboardLayout>
     );
 }
