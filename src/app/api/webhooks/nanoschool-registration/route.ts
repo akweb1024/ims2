@@ -80,10 +80,17 @@ export async function POST(req: Request) {
       }
     }
 
+    // Log raw payload so Vercel logs can expose mismatched fields
+    logger.info('Nanoschool Webhook Raw Payload', { payload });
+
     // 1. Extract values based on field mapping
     const getValue = (fieldKey: keyof typeof FIELD_MAP) => {
       const id = FIELD_MAP[fieldKey];
-      const val = payload[id];
+      let val = payload[id];
+      // Sometimes GravityForms sends values as arrays or nested
+      if (Array.isArray(val)) {
+        val = val[0];
+      }
       // If the value is undefined, null, or an empty string, we return null
       // This is CRITICAL for unique fields like razorpayOrderId where multiple "" strings would break DB constraints
       if (val === undefined || val === null || String(val).trim() === '') {
@@ -103,12 +110,16 @@ export async function POST(req: Request) {
     const name = getValue('name') || 'Unknown';
     const email = getValue('email') || '';
 
-    // Convert numeric strings
-    const courseFeeStr = getValue('courseFee');
-    const courseFee = courseFeeStr ? parseFloat(courseFeeStr) : 0;
-    
-    const payableAmountStr = getValue('payableAmount');
-    const payableAmount = payableAmountStr ? parseFloat(payableAmountStr) : 0;
+    // Convert numeric strings safely (strip commas and currency symbols)
+    const parseSafeNumber = (val: string | null) => {
+      if (!val) return 0;
+      const cleaned = val.replace(/[^0-9.-]/g, '');
+      const num = parseFloat(cleaned);
+      return isNaN(num) ? 0 : num;
+    };
+
+    const courseFee = parseSafeNumber(getValue('courseFee'));
+    const payableAmount = parseSafeNumber(getValue('payableAmount'));
     
     const hasCouponStr = getValue('hasCoupon');
     const hasCoupon = hasCouponStr?.toLowerCase() === 'yes' || hasCouponStr === 'true' || hasCouponStr === '1';
