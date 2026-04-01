@@ -140,6 +140,46 @@ export default function LMSAddParticipantDialog({
                     />
                 </div>
 
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 border-t border-gray-100 pt-4">
+                    <FormField
+                        label="Address"
+                        name="address"
+                        register={register}
+                        className="md:col-span-2"
+                        placeholder="123 Science Park..."
+                    />
+                    <FormField
+                        label="State"
+                        name="state"
+                        register={register}
+                        placeholder="Maharashtra"
+                    />
+                    <FormField
+                        label="Country"
+                        name="country"
+                        register={register}
+                        defaultValue="India"
+                    />
+                    <FormField
+                        label="PIN Code"
+                        name="pinCode"
+                        register={register}
+                        placeholder="400001"
+                    />
+                    <FormField
+                        label="GST/VAT No"
+                        name="gstVatNo"
+                        register={register}
+                        placeholder="27AADCB2230M1Z2"
+                    />
+                    <FormField
+                        label="Currency (if not INR)"
+                        name="otherCurrency"
+                        register={register}
+                        placeholder="USD, EUR, GBP..."
+                    />
+                </div>
+
                 <div className="flex justify-end gap-3 pt-6 border-t border-gray-200">
                     <Button
                         type="button"

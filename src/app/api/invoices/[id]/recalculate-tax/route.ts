@@ -99,6 +99,7 @@ export const POST = authorizedRoute(
         billingStateCode: invoice.billingStateCode || customer.billingStateCode,
         shippingStateCode: invoice.shippingStateCode || customer.shippingStateCode,
         institutionType: customer.institution?.type || null,
+        currency: invoice.currency,
       };
 
       const taxBreakdown = calculateInvoiceTaxBreakdown({

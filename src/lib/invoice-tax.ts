@@ -32,6 +32,7 @@ type CustomerTaxProfile = {
   shippingState?: string | null;
   billingStateCode?: string | null;
   shippingStateCode?: string | null;
+  currency?: string | null;
 };
 
 type CompanyTaxProfile = {
@@ -202,7 +203,8 @@ export const buildInvoiceTaxContext = (
 ) => {
   const country =
     customer.shippingCountry || customer.billingCountry || "India";
-  const isDomestic = isIndianSupply(country);
+  const isCurrencyExport = customer.currency && customer.currency.toUpperCase() !== "INR";
+  const isDomestic = isIndianSupply(country) && !isCurrencyExport;
   const placeOfSupplyCode = normalizeStateCode(
     customer.shippingStateCode || customer.billingStateCode,
   );

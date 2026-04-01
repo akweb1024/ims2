@@ -76,6 +76,7 @@ export const POST = authorizedRoute(
           gstVatNo: data.gstVatNo || '',
           courseFee: Number(data.courseFee) || 0,
           payableAmount: Number(data.payableAmount) || 0,
+          otherCurrency: data.otherCurrency || null,
           paymentStatus: data.paymentStatus || 'PENDING',
           learningMode: data.learningMode || 'ONLINE',
           category: data.category || 'General',

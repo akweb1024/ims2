@@ -52,6 +52,20 @@ interface Participant {
   invoices?: { id: string; invoiceNumber: string }[];
 }
 
+const formatCurrency = (amount: number | null | undefined, currency?: string | null) => {
+  if (amount == null) return '0';
+  
+  if (currency && currency.toUpperCase() !== 'INR' && currency.trim() !== '') {
+    const sym = currency.toUpperCase();
+    if (sym === 'USD') return `$${amount.toLocaleString('en-US')}`;
+    if (sym === 'EUR') return `€${amount.toLocaleString('de-DE')}`;
+    if (sym === 'GBP') return `£${amount.toLocaleString('en-GB')}`;
+    return `${sym} ${amount.toLocaleString('en-US')}`; // Fallback for unmatched currencies
+  }
+  
+  return `₹${amount.toLocaleString('en-IN')}`;
+};
+
 export default function LMSParticipantsView() {
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [loading, setLoading] = useState(true);
@@ -233,7 +247,7 @@ export default function LMSParticipantsView() {
                     <td className="px-6 py-4">
                       <div className="flex flex-col">
                         <span className="font-medium text-gray-900 dark:text-white">
-                          ₹{p.payableAmount?.toLocaleString() || '0'}
+                          {formatCurrency(p.payableAmount, p.otherCurrency)}
                         </span>
                         {p.hasCoupon && p.couponCode && (
                           <span className="text-xs text-green-600 bg-green-50 px-1.5 py-0.5 rounded border border-green-200 inline-block mt-1">
@@ -361,7 +375,7 @@ export default function LMSParticipantsView() {
                 <div className="space-y-4">
                   <div className="flex justify-between text-sm items-center border-b border-gray-100 dark:border-gray-800 pb-2">
                     <span className="text-gray-500">Base Fee</span>
-                    <span className="text-gray-900 dark:text-white font-medium">₹{selectedParticipant.courseFee?.toLocaleString()}</span>
+                    <span className="text-gray-900 dark:text-white font-medium">{formatCurrency(selectedParticipant.courseFee, selectedParticipant.otherCurrency)}</span>
                   </div>
                   
                   {selectedParticipant.hasCoupon && (
@@ -375,7 +389,7 @@ export default function LMSParticipantsView() {
 
                   <div className="flex justify-between text-sm items-center border-b border-gray-100 dark:border-gray-800 pb-2">
                     <span className="text-gray-500 font-semibold">Total Paid</span>
-                    <span className="text-gray-900 border border-green-200 dark:border-green-800/50 bg-green-50 dark:bg-green-900/20 px-3 py-1 rounded-md dark:text-green-400 font-bold text-base">₹{selectedParticipant.payableAmount?.toLocaleString()}</span>
+                    <span className="text-gray-900 border border-green-200 dark:border-green-800/50 bg-green-50 dark:bg-green-900/20 px-3 py-1 rounded-md dark:text-green-400 font-bold text-base">{formatCurrency(selectedParticipant.payableAmount, selectedParticipant.otherCurrency)}</span>
                   </div>
 
                   <div className="text-xs space-y-2 mt-4 text-gray-500 bg-gray-50 dark:bg-gray-800/50 p-3 rounded border border-gray-100 dark:border-gray-700">

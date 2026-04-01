@@ -422,7 +422,7 @@ export default function AnvInvoiceTemplate({
             <th className="w-10">Qty</th>
             <th className="w-16 text-right">Rate ({currencySymbol})</th>
             <th className="w-20 text-right">Taxable Val ({currencySymbol})</th>
-            <th className="w-16 text-right">GST %</th>
+            {!isExport && <th className="w-16 text-right">GST %</th>}
             <th className="w-24 text-right">Net Amt ({currencySymbol})</th>
           </tr>
         </thead>
@@ -481,7 +481,7 @@ export default function AnvInvoiceTemplate({
                     minimumFractionDigits: 2,
                   })}
                 </td>
-                <td className="text-right">{gstDisplay}</td>
+                {!isExport && <td className="text-right">{gstDisplay}</td>}
                 <td className="text-right font-black">
                   {netAmt.toLocaleString(undefined, {
                     minimumFractionDigits: 2,
@@ -601,6 +601,11 @@ export default function AnvInvoiceTemplate({
       <div className="terms-sign-section">
         <div className="terms-area">
           <h4 className="font-black underline mb-1">TERMS & CONDITIONS:</h4>
+          {isExport && (
+            <div className="font-bold text-black mb-2 p-1 border border-black inline-block uppercase text-[9px]">
+              SUPPLY MEANT FOR EXPORT UNDER BOND OR LETTER OF UNDERTAKING WITHOUT PAYMENT OF INTEGRATED TAX.
+            </div>
+          )}
           <ol className="list-decimal list-inside space-y-0.5 opacity-80 leading-snug">
             <li>All subscription amount mentioned is as per year fee.</li>
             <li>Missing numbers will not be supplied after six months.</li>

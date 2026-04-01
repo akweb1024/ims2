@@ -77,7 +77,8 @@ export default function PublicInvoicePage({ params }: { params: Promise<{ id: st
 
   if (isUnlocked && invoice) {
     const currencySymbol = invoice.currency === "USD" ? "$" : "₹";
-    const invoiceTitle = invoice.status === "PAID" ? "TAX INVOICE" : "PROFORMA INVOICE";
+    const isExport = invoice.currency && invoice.currency.toUpperCase() !== "INR";
+    const invoiceTitle = invoice.status === "PAID" ? (isExport ? "EXPORT INVOICE" : "TAX INVOICE") : "PROFORMA INVOICE";
 
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">

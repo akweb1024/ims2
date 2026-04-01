@@ -358,7 +358,7 @@ export default function InvoiceDetailPage({
     setIsDownloadingPdf(true);
     let offscreenHost: HTMLDivElement | null = null;
     try {
-      const [{ default: html2canvas }, { jsPDF }] = await Promise.all([
+      const [{ default: html2canvas }, { default: jsPDF }] = await Promise.all([
         import("html2canvas"),
         import("jspdf"),
       ]);
@@ -614,7 +614,9 @@ export default function InvoiceDetailPage({
     customer.billingCountry ||
     customer.country ||
     "India";
-  const isExport = invoiceCountry.toLowerCase() !== "india";
+  const isExport = 
+    invoiceCountry.toLowerCase() !== "india" || 
+    (invoice.currency && invoice.currency.toUpperCase() !== "INR");
   const taxContext = buildInvoiceTaxContext(customer, {
     stateCode: invoice.companyStateCode || company.stateCode,
   });
@@ -701,7 +703,11 @@ export default function InvoiceDetailPage({
   };
 
   const invoiceTitle =
-    invoice.status === "PAID" ? "TAX INVOICE" : "PROFORMA INVOICE";
+    invoice.status === "PAID"
+      ? isExport
+        ? "EXPORT INVOICE"
+        : "TAX INVOICE"
+      : "PROFORMA INVOICE";
   const displayInvoiceNumber =
     invoice.status === "PAID"
       ? invoice.invoiceNumber
@@ -1443,9 +1449,11 @@ export default function InvoiceDetailPage({
                   <th style={{ width: "80px", textAlign: "right" }}>
                     Taxable Value ({currencySymbol})
                   </th>
-                  <th style={{ width: "60px", textAlign: "right" }}>
-                    GST Rate (%)
-                  </th>
+                  {!isExport && (
+                    <th style={{ width: "60px", textAlign: "right" }}>
+                      GST Rate (%)
+                    </th>
+                  )}
                   <th style={{ width: "90px", textAlign: "right" }}>
                     Net Amount ({currencySymbol})
                   </th>
@@ -1537,7 +1545,9 @@ export default function InvoiceDetailPage({
                           minimumFractionDigits: 2,
                         })}
                       </td>
-                      <td style={{ textAlign: "right" }}>{gstRate}%</td>
+                      {!isExport && (
+                        <td style={{ textAlign: "right" }}>{gstRate}%</td>
+                      )}
                       <td style={{ textAlign: "right", fontWeight: 700 }}>
                         {(taxable + gstAmt).toLocaleString(undefined, {
                           minimumFractionDigits: 2,
@@ -1654,6 +1664,11 @@ export default function InvoiceDetailPage({
                   TERMS & CONDITIONS:
                 </strong>
                 <div className="whitespace-pre-wrap leading-tight text-gray-600">
+                  {isExport && (
+                    <div className="font-bold text-black mb-2 p-1 border border-black inline-block uppercase text-[9px]">
+                      SUPPLY MEANT FOR EXPORT UNDER BOND OR LETTER OF UNDERTAKING WITHOUT PAYMENT OF INTEGRATED TAX.
+                    </div>
+                  )}
                   {identity.terms || (
                     <>
                       1. All subscription amount mentioned is as per year fee

@@ -232,7 +232,7 @@ export const POST = authorizedRoute(
         }
 
         const taxBreakdown = calculateInvoiceTaxBreakdown({
-            customer,
+            customer: { ...customer, currency },
             company,
             items: processedItems,
             discountAmount: Number(discountAmount || 0),

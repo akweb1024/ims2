@@ -690,21 +690,23 @@ export default function GlobalProInvoiceTemplate({
             >
               Taxable ({currencySymbol})
             </th>
-            <th
-              style={{
-                padding: "8px 6px",
-                fontSize: "8px",
-                fontWeight: 800,
-                textTransform: "uppercase",
-                letterSpacing: "0.5px",
-                color: accentDark,
-                textAlign: "right",
-                borderRight: "1px solid #e2e8f0",
-                width: "48px",
-              }}
-            >
-              GST %
-            </th>
+            {!isExport && (
+              <th
+                style={{
+                  padding: "8px 6px",
+                  fontSize: "8px",
+                  fontWeight: 800,
+                  textTransform: "uppercase",
+                  letterSpacing: "0.5px",
+                  color: accentDark,
+                  textAlign: "right",
+                  borderRight: "1px solid #e2e8f0",
+                  width: "48px",
+                }}
+              >
+                GST %
+              </th>
+            )}
             <th
               style={{
                 padding: "8px 6px",
@@ -853,27 +855,29 @@ export default function GlobalProInvoiceTemplate({
                 >
                   {taxable.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                 </td>
-                <td
-                  style={{
-                    padding: "8px 6px",
-                    textAlign: "right",
-                    borderRight: "1px solid #e2e8f0",
-                    fontSize: "10px",
-                  }}
-                >
-                  <span
+                {!isExport && (
+                  <td
                     style={{
-                      background: isExport ? "#f0fdf4" : `${accentColor}15`,
-                      color: isExport ? "#15803d" : accentColor,
-                      borderRadius: "3px",
-                      padding: "1px 5px",
-                      fontWeight: 700,
-                      fontSize: "9px",
+                      padding: "8px 6px",
+                      textAlign: "right",
+                      borderRight: "1px solid #e2e8f0",
+                      fontSize: "10px",
                     }}
                   >
-                    {gstDisplay}
-                  </span>
-                </td>
+                    <span
+                      style={{
+                        background: isExport ? "#f0fdf4" : `${accentColor}15`,
+                        color: isExport ? "#15803d" : accentColor,
+                        borderRadius: "3px",
+                        padding: "1px 5px",
+                        fontWeight: 700,
+                        fontSize: "9px",
+                      }}
+                    >
+                      {gstDisplay}
+                    </span>
+                  </td>
+                )}
                 <td
                   style={{
                     padding: "8px 6px",
@@ -1173,6 +1177,24 @@ export default function GlobalProInvoiceTemplate({
           >
             Terms &amp; Conditions
           </div>
+          {isExport && (
+            <div
+              style={{
+                fontWeight: 700,
+                color: "#1e3a8a",
+                background: "#dbeafe",
+                border: "1px solid #93c5fd",
+                padding: "4px 8px",
+                borderRadius: "4px",
+                fontSize: "9px",
+                marginBottom: "8px",
+                textTransform: "uppercase",
+                letterSpacing: "0.5px",
+              }}
+            >
+              SUPPLY MEANT FOR EXPORT UNDER BOND OR LETTER OF UNDERTAKING WITHOUT PAYMENT OF INTEGRATED TAX.
+            </div>
+          )}
           <ol
             style={{
               margin: 0,

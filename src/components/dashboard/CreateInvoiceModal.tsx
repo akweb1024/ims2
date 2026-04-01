@@ -866,17 +866,17 @@ export default function CreateInvoiceModal({
 
   const taxBreakdown = useMemo(() => {
     return calculateInvoiceTaxBreakdown({
-      customer: selectedCustomer || {},
+      customer: { ...(selectedCustomer || {}), currency },
       company: { stateCode: companyStateCode },
       items,
       discountAmount: calculateDiscount(),
       defaultTaxRate: Number(taxRate) || 18,
     });
-  }, [items, selectedCustomer, taxRate, calculateDiscount, companyStateCode]);
+  }, [items, selectedCustomer, taxRate, calculateDiscount, companyStateCode, currency]);
 
   const taxContext = useMemo(
-    () => buildInvoiceTaxContext(selectedCustomer || {}, { stateCode: companyStateCode }),
-    [selectedCustomer, companyStateCode],
+    () => buildInvoiceTaxContext({ ...(selectedCustomer || {}), currency }, { stateCode: companyStateCode }),
+    [selectedCustomer, companyStateCode, currency],
   );
 
   const applyScoupon = async () => {

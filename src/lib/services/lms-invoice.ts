@@ -26,13 +26,9 @@ function decrypt(text: string): string {
 }
 
 export class LMSInvoiceService {
-  // Production Nanoschool defaults — overridden by ModuleSettings UI or webhook payload
-  static readonly DEFAULT_COMPANY_ID = '3a148605-aa1c-42b4-8ab8-f78c039ee9c0';
-  static readonly DEFAULT_BRAND_ID = 'fbb632ae';
-
   /**
    * Fetches dynamic LMS configuration from AppConfiguration table.
-   * Falls back to hardcoded defaults if none are configured.
+   * Falls back to environment variables if none are configured.
    */
   static async getModuleDefaults() {
     try {
@@ -44,25 +40,23 @@ export class LMSInvoiceService {
         },
       });
 
-      const defaults = {
-        companyId: LMSInvoiceService.DEFAULT_COMPANY_ID,
-        brandId: LMSInvoiceService.DEFAULT_BRAND_ID,
-      };
+      let companyId: string | undefined = process.env.LMS_INVOICE_COMPANY_ID;
+      let brandId: string | undefined = process.env.LMS_INVOICE_BRAND_ID;
 
       for (const config of configs) {
         if (config.key === 'LMS_INVOICE_COMPANY_ID' && config.value) {
-          defaults.companyId = decrypt(config.value);
+          companyId = decrypt(config.value);
         } else if (config.key === 'LMS_INVOICE_BRAND_ID' && config.value) {
-          defaults.brandId = decrypt(config.value);
+          brandId = decrypt(config.value);
         }
       }
 
-      return defaults;
+      return { companyId, brandId };
     } catch (error) {
       logger.error('Failed to fetch LMS module defaults', error);
       return {
-        companyId: LMSInvoiceService.DEFAULT_COMPANY_ID,
-        brandId: LMSInvoiceService.DEFAULT_BRAND_ID,
+        companyId: process.env.LMS_INVOICE_COMPANY_ID,
+        brandId: process.env.LMS_INVOICE_BRAND_ID,
       };
     }
   }
@@ -144,12 +138,12 @@ export class LMSInvoiceService {
 
       const customerProfile = user.customerProfile!;
 
-      // 3. Determine Company & Brand — payload > module settings > hardcoded defaults
+      // 3. Determine Company & Brand — payload > module settings > env variables
       const defaults = await LMSInvoiceService.getModuleDefaults();
       const targetCompanyId = companyId || defaults.companyId;
       const targetBrandId = brandId || defaults.brandId;
 
-      if (!targetCompanyId) throw new Error('No company ID available for invoice generation.');
+      if (!targetCompanyId) throw new Error('No company ID available for invoice generation. Please configure LMS_INVOICE_COMPANY_ID in Settings or Environment.');
 
       const company = await tx.company.findUnique({ where: { id: targetCompanyId } });
       if (!company) throw new Error(`Company ${targetCompanyId} not found`);
@@ -164,17 +158,34 @@ export class LMSInvoiceService {
         participant.paymentStatus?.toLowerCase() === 'success' ||
         participant.paymentStatus?.toLowerCase() === 'completed';
 
+      const currency = (participant.otherCurrency || 'INR').toUpperCase();
+      const isDomestic = currency === 'INR';
+
       const total = participant.payableAmount || 0;
-      const subtotal = total / 1.18;
-      const taxAmount = total - subtotal;
+      
+      let subtotal: number;
+      let taxAmount: number;
+      let taxRate: number;
+
+      if (isDomestic) {
+        // Reverse calculate 18% GST for domestic payments
+        taxRate = 18;
+        subtotal = Number((total / 1.18).toFixed(2));
+        taxAmount = Number((total - subtotal).toFixed(2));
+      } else {
+        // 0% GST for International / Export of Services
+        taxRate = 0;
+        subtotal = total;
+        taxAmount = 0;
+      }
 
       const lineItems = [
         {
           description: `Workshop Registration: ${participant.workshopTitle || 'General'}`,
           quantity: 1,
-          price: participant.courseFee || 0,
-          amount: participant.courseFee || 0,
-          taxRate: 18,
+          price: subtotal,
+          amount: subtotal,
+          taxRate: taxRate,
         },
       ];
 
