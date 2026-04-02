@@ -28,6 +28,8 @@ import {
   ShieldCheck,
   Zap,
   Filter,
+  LayoutGrid,
+  List,
 } from "lucide-react";
 
 const getCurrencySymbol = (curr: string) => {
@@ -151,6 +153,7 @@ export default function CreateInvoiceModal({
   const [journalResults, setJournalResults] = useState<{
     [key: number]: any[];
   }>({});
+  const [productViewFormat, setProductViewFormat] = useState<"grid" | "tabular">("tabular");
   const [taxType, setTaxType] = useState<"DOMESTIC" | "INTERNATIONAL">(
     "DOMESTIC",
   );
@@ -1321,8 +1324,9 @@ export default function CreateInvoiceModal({
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-6 scrollbar-hide">
-          {step === 1 ? (
+        <div className="flex-1 flex overflow-hidden relative">
+          <div className="flex-1 overflow-y-auto p-6 scrollbar-hide">
+            {step === 1 ? (
             <div className="p-8 space-y-6 overflow-y-auto">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-bold text-gray-800">
@@ -1923,20 +1927,36 @@ export default function CreateInvoiceModal({
                       Filter the catalogue and select multiple products with one pass. Selected items will be added to the invoice summary.
                     </p>
                   </div>
-                  <div className="rounded-xl bg-white px-4 py-3 border border-primary-100">
-                    <div className="text-[10px] font-black uppercase tracking-widest text-primary-600">Selected Products</div>
-                    <div className="text-2xl font-black text-primary-700">{selectedProductCount}</div>
+                  <div className="flex items-center gap-3">
+                    <div className="rounded-xl bg-white p-1 border border-primary-100 flex items-center shadow-sm">
+                      <button
+                        title="Tabular View"
+                        type="button"
+                        onClick={(e) => { e.preventDefault(); setProductViewFormat("tabular"); }}
+                        className={`p-2 rounded-lg transition-all ${productViewFormat === "tabular" ? "bg-primary-50 text-primary-700 font-bold shadow-sm" : "text-gray-400 hover:text-gray-700 hover:bg-gray-50"}`}
+                      >
+                        <List size={18} />
+                      </button>
+                      <button
+                        title="Grid View"
+                        type="button"
+                        onClick={(e) => { e.preventDefault(); setProductViewFormat("grid"); }}
+                        className={`p-2 rounded-lg transition-all ${productViewFormat === "grid" ? "bg-primary-50 text-primary-700 font-bold shadow-sm" : "text-gray-400 hover:text-gray-700 hover:bg-gray-50"}`}
+                      >
+                        <LayoutGrid size={18} />
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
 
               <div className="space-y-4">
                   <div
-                    className={`grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3 ${
+                    className={productViewFormat === 'grid' ? `grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3 ${
                       catCategoryFilter === "JOURNAL_SUBSCRIPTION"
                         ? "2xl:grid-cols-[minmax(0,1.3fr)_minmax(180px,220px)_minmax(180px,220px)_minmax(150px,180px)_minmax(180px,220px)_minmax(180px,220px)]"
                         : ""
-                    }`}
+                    }` : `flex flex-col gap-4`}
                   >
                     <div className="relative">
                       <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
@@ -2025,7 +2045,7 @@ export default function CreateInvoiceModal({
                     )}
                   </div>
 
-                  <div className="grid grid-cols-1 gap-3 xl:grid-cols-2">
+                  <div className={productViewFormat === 'grid' ? "grid grid-cols-1 gap-3 xl:grid-cols-2" : "flex flex-col gap-2"}>
                     {catLoading ? (
                       <div className="col-span-full rounded-2xl border border-dashed border-gray-200 bg-gray-50 p-8 text-center text-sm text-gray-500">
                         Loading product catalogue...
@@ -2045,67 +2065,119 @@ export default function CreateInvoiceModal({
                             key={product.id}
                             type="button"
                             onClick={() => toggleCatalogueProduct(product)}
-                            className={`rounded-2xl border p-4 text-left transition-all ${
+                            className={`border text-left transition-all ${
+                              productViewFormat === "grid" ? "rounded-2xl p-4 flex flex-col justify-between" : "rounded-xl p-3 flex flex-col justify-center"
+                            } ${
                               selected
                                 ? "border-primary-300 bg-primary-50 shadow-sm"
                                 : "border-gray-200 bg-white hover:border-primary-200 hover:shadow-sm"
                             }`}
                           >
-                            <div className="flex items-start justify-between gap-3">
-                              <div className="min-w-0">
-                                <div className="flex items-center gap-3">
+                            {productViewFormat === "grid" ? (
+                              <>
+                                <div className="flex items-start justify-between gap-3 w-full">
+                                  <div className="min-w-0 flex-1">
+                                    <div className="flex items-start gap-3">
+                                      <input
+                                        type="checkbox"
+                                        checked={selected}
+                                        readOnly
+                                        className="mt-1 h-4 w-4 shrink-0 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                                      />
+                                      <div className="min-w-0">
+                                        <div className="font-bold text-gray-900 leading-tight pr-2">{product.name}</div>
+                                        <div className="text-[10px] font-black uppercase tracking-widest text-gray-400 mt-1">
+                                          {product.category?.replace(/_/g, " ")}
+                                        </div>
+                                      </div>
+                                    </div>
+                                    {product.sku && (
+                                      <div className="mt-2 text-[11px] font-mono text-gray-500 pl-7">{product.sku}</div>
+                                    )}
+                                    {product.domain && (
+                                      <div className="mt-2 ml-7 inline-flex rounded-full bg-slate-100 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-600">
+                                        {product.domain}
+                                      </div>
+                                    )}
+                                  </div>
+                                  <div className="text-right shrink-0">
+                                    <div className="text-sm font-black text-primary-700 whitespace-nowrap">
+                                      {getCurrencySymbol(currency)}{Number(displayPrice || 0).toLocaleString()}
+                                    </div>
+                                    <div className="text-[10px] text-gray-400">
+                                      {hasVariants ? `${product.variants.length} variants` : "Single pricing"}
+                                    </div>
+                                  </div>
+                                </div>
+                                {(hasVariants || (product.category === "JOURNAL_SUBSCRIPTION" && subscriptionOptions)) && (
+                                  <div className="mt-3 pt-3 border-t border-gray-100 w-full pl-7">
+                                    {hasVariants && (
+                                      <div className="rounded-xl bg-amber-50 px-3 py-2 text-[11px] text-amber-700 mb-2">
+                                        Variable product detected. Refining available in Summary.
+                                      </div>
+                                    )}
+                                    {product.category === "JOURNAL_SUBSCRIPTION" && subscriptionOptions && (
+                                      <div className="flex flex-wrap gap-2">
+                                        <span className="rounded-full bg-indigo-50 px-3 py-1 text-[10px] font-black uppercase tracking-widest text-indigo-700">
+                                          {subscriptionOptions.frequency === "ISSUE_WISE" ? "Issue Wise" : "Annual"}
+                                        </span>
+                                        {subscriptionOptions.year && (
+                                          <span className="rounded-full border border-gray-200 bg-white px-3 py-1 text-[10px] font-black uppercase tracking-widest text-gray-600">
+                                            Year {subscriptionOptions.year}
+                                          </span>
+                                        )}
+                                        {subscriptionOptions.mode && (
+                                          <span className="rounded-full border border-gray-200 bg-white px-3 py-1 text-[10px] font-black uppercase tracking-widest text-gray-600">
+                                            {subscriptionOptions.mode === "PRINT_DIGITAL" ? "Print + Digital" : subscriptionOptions.mode}
+                                          </span>
+                                        )}
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
+                              </>
+                            ) : (
+                               <div className="flex items-center gap-4 w-full">
                                   <input
                                     type="checkbox"
                                     checked={selected}
                                     readOnly
-                                    className="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                                    className="h-4 w-4 shrink-0 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
                                   />
-                                  <div>
-                                    <div className="font-bold text-gray-900 truncate">{product.name}</div>
-                                    <div className="text-[10px] font-black uppercase tracking-widest text-gray-400">
-                                      {product.category?.replace(/_/g, " ")}
-                                    </div>
+                                  <div className="flex-1 min-w-0 flex flex-col md:flex-row md:items-center justify-between gap-2 md:gap-4">
+                                     <div className="min-w-0 flex-1">
+                                        <div className="font-bold text-gray-900 truncate pr-4">{product.name}</div>
+                                        <div className="flex items-center flex-wrap gap-2 mt-0.5">
+                                           <span className="text-[9px] font-black uppercase tracking-widest text-gray-400">
+                                             {product.category?.replace(/_/g, " ")}
+                                           </span>
+                                           {product.sku && <span className="text-[10px] font-mono text-gray-400 border-l border-gray-200 pl-2">{product.sku}</span>}
+                                        </div>
+                                     </div>
+                                     <div className="flex shrink-0 justify-end gap-3 items-center">
+                                        {product.category === "JOURNAL_SUBSCRIPTION" && subscriptionOptions && (
+                                          <div className="hidden lg:flex items-center gap-1.5 shrink-0">
+                                            <span className="rounded text-[9px] font-black uppercase tracking-widest text-indigo-700 bg-indigo-50 px-2 py-0.5">
+                                              {subscriptionOptions.frequency === "ISSUE_WISE" ? "Issue" : "Annual"}
+                                            </span>
+                                            {subscriptionOptions.mode && (
+                                              <span className="rounded border border-gray-200 bg-white text-[9px] font-black uppercase tracking-widest text-gray-600 px-2 py-0.5">
+                                                {subscriptionOptions.mode === "PRINT_DIGITAL" ? "P+D" : subscriptionOptions.mode}
+                                              </span>
+                                            )}
+                                          </div>
+                                        )}
+                                        <div className="text-right shrink-0 w-24">
+                                          <div className="text-sm font-black text-primary-700 whitespace-nowrap">
+                                            {getCurrencySymbol(currency)}{Number(displayPrice || 0).toLocaleString()}
+                                          </div>
+                                          <div className="text-[9px] text-gray-400">
+                                            {hasVariants ? "Variants" : "Single pricing"}
+                                          </div>
+                                        </div>
+                                     </div>
                                   </div>
-                                </div>
-                                {product.sku && (
-                                  <div className="mt-2 text-[11px] font-mono text-gray-500">{product.sku}</div>
-                                )}
-                                {product.domain && (
-                                  <div className="mt-2 inline-flex rounded-full bg-slate-100 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-600">
-                                    {product.domain}
-                                  </div>
-                                )}
-                              </div>
-                              <div className="text-right shrink-0">
-                                <div className="text-sm font-black text-primary-700">
-                                  {getCurrencySymbol(currency)}{Number(displayPrice || 0).toLocaleString()}
-                                </div>
-                                <div className="text-[10px] text-gray-400">
-                                  {hasVariants ? `${product.variants.length} variants` : "Single pricing"}
-                                </div>
-                              </div>
-                            </div>
-                            {hasVariants && (
-                              <div className="mt-3 rounded-xl bg-amber-50 px-3 py-2 text-[11px] text-amber-700">
-                                Variable product detected. Selecting it will add the first available variant, and you can refine it in Summary.
-                              </div>
-                            )}
-                            {product.category === "JOURNAL_SUBSCRIPTION" && subscriptionOptions && (
-                              <div className="mt-3 flex flex-wrap gap-2">
-                                <span className="rounded-full bg-indigo-50 px-3 py-1 text-[10px] font-black uppercase tracking-widest text-indigo-700">
-                                  {subscriptionOptions.frequency === "ISSUE_WISE" ? "Issue Wise" : "Annual"}
-                                </span>
-                                {subscriptionOptions.year && (
-                                  <span className="rounded-full border border-gray-200 bg-white px-3 py-1 text-[10px] font-black uppercase tracking-widest text-gray-600">
-                                    Year {subscriptionOptions.year}
-                                  </span>
-                                )}
-                                {subscriptionOptions.mode && (
-                                  <span className="rounded-full border border-gray-200 bg-white px-3 py-1 text-[10px] font-black uppercase tracking-widest text-gray-600">
-                                    {subscriptionOptions.mode === "PRINT_DIGITAL" ? "Print + Digital" : subscriptionOptions.mode}
-                                  </span>
-                                )}
-                              </div>
+                               </div>
                             )}
                           </button>
                         );
@@ -2113,43 +2185,7 @@ export default function CreateInvoiceModal({
                     )}
                   </div>
 
-                <div className="rounded-2xl border border-gray-200 bg-white p-5">
-                  <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-                    <div className="flex items-center gap-2">
-                      <Package size={16} className="text-primary-600" />
-                      <div>
-                        <h4 className="font-bold text-gray-900">Selected Items</h4>
-                        <div className="text-xs text-gray-500">
-                          Review the products you picked before moving to summary.
-                        </div>
-                      </div>
-                    </div>
-                    <div className="rounded-xl border border-gray-100 bg-gray-50 px-4 py-3">
-                      <div className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2">Customer in Focus</div>
-                      <div className="font-bold text-gray-900">{selectedCustomer?.name}</div>
-                      <div className="text-sm text-primary-600">{selectedCustomer?.organizationName || selectedCustomer?.primaryEmail}</div>
-                    </div>
-                  </div>
 
-                  <div className="mt-4">
-                    {hasSelectedProducts ? (
-                      <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
-                        {items.filter((item) => item.productId).map((item) => (
-                          <div key={item.id} className="rounded-xl border border-gray-100 bg-gray-50 p-3">
-                            <div className="font-semibold text-gray-900">{item.description}</div>
-                            <div className="mt-1 text-xs text-gray-500">
-                              Qty {item.quantity} · {getCurrencySymbol(currency)} {Number(item.price || 0).toLocaleString()}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="rounded-xl border border-dashed border-gray-200 bg-gray-50 p-6 text-sm text-gray-500">
-                        No products selected yet. Use the checkboxes above to build the invoice.
-                      </div>
-                    )}
-                  </div>
-                </div>
               </div>
             </div>
           ) : (
@@ -2605,9 +2641,47 @@ export default function CreateInvoiceModal({
               </div>
             </div>
           )}
+          </div>
+
+          {/* Side popup for selected items */}
+          {step === 2 && hasSelectedProducts && (
+            <div className="absolute right-0 top-0 bottom-0 w-[300px] md:w-[360px] shrink-0 border-l border-gray-200 bg-white flex flex-col z-40 lg:relative shadow-[-10px_0_30px_rgba(0,0,0,0.05)] lg:shadow-none animate-slideInRight">
+              <div className="p-5 border-b border-gray-200 bg-gray-50 shrink-0">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <Package size={16} className="text-primary-600" />
+                    <h4 className="font-bold text-gray-900 text-sm">Selected Items</h4>
+                  </div>
+                  <span className="text-[10px] font-black bg-primary-100 text-primary-700 px-2 py-0.5 rounded-full uppercase tracking-widest">{selectedProductCount} Products</span>
+                </div>
+                <div className="rounded-lg border border-gray-200 bg-white px-3 py-2 shadow-sm">
+                  <div className="text-[9px] font-black uppercase tracking-widest text-gray-400 mb-1">Customer</div>
+                  <div className="font-bold text-gray-900 text-xs truncate">{selectedCustomer?.name}</div>
+                </div>
+              </div>
+              <div className="p-4 space-y-3 flex-1 overflow-y-auto custom-scrollbar">
+                {items.filter((item) => item.productId).map((item) => (
+                  <div key={item.id} className="rounded-xl border border-gray-200 bg-white p-3 hover:border-red-200 group transition-all shadow-sm hover:shadow-md relative overflow-hidden flex flex-col justify-between">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0 pr-6">
+                        <div className="font-bold text-gray-900 text-xs line-clamp-2 leading-snug">{item.description}</div>
+                        <div className="mt-1.5 flex items-center gap-2">
+                           <span className="text-[10px] font-black text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded uppercase">Qty {item.quantity}</span>
+                           <span className="text-[10px] font-black text-primary-600 uppercase">{getCurrencySymbol(currency)} {Number(item.price || 0).toLocaleString()}</span>
+                        </div>
+                      </div>
+                      <button type="button" onClick={(e) => { e.preventDefault(); handleRemoveItem(item.id); }} className="absolute top-2 right-2 p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg opacity-0 group-hover:opacity-100 transition-all">
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
-        <div className="p-6 border-t border-gray-100 bg-gray-50 flex justify-end gap-3">
+        <div className="p-6 border-t border-gray-100 bg-gray-50 flex justify-end gap-3 relative z-50">
           <button
             onClick={onClose}
             className="btn bg-white border border-gray-200 text-gray-600 hover:bg-gray-50"

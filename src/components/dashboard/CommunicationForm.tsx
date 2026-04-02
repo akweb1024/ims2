@@ -28,6 +28,7 @@ export default function CommunicationForm({
     helperText,
 }: CommunicationFormProps) {
     const [type, setType] = useState(defaults?.type || 'COMMENT');
+    const [channel, setChannel] = useState(defaults?.channel || 'In-Person');
     const [loading, setLoading] = useState(false);
     const [checkedItems, setCheckedItems] = useState<string[]>([]);
 
@@ -134,7 +135,8 @@ export default function CommunicationForm({
                         name="channel"
                         className="input"
                         required
-                        defaultValue={defaults?.channel || 'Email'}
+                        value={channel}
+                        onChange={(e) => setChannel(e.target.value)}
                     >
                         {['Email', 'Phone', 'WhatsApp', 'App Notification', 'In-Person'].map((channelOption) => (
                             <option key={channelOption} value={channelOption}>
@@ -180,17 +182,19 @@ export default function CommunicationForm({
                     </div>
                 )}
 
-                <div className="md:col-span-2">
-                    <label className="label">Subject</label>
-                    <input
-                        type="text"
-                        name="subject"
-                        className="input"
-                        required
-                        placeholder="e.g. Renewal Discussion"
-                        defaultValue={defaults?.subject || ''}
-                    />
-                </div>
+                {channel !== 'In-Person' && (
+                    <div className="md:col-span-2">
+                        <label className="label">Subject</label>
+                        <input
+                            type="text"
+                            name="subject"
+                            className="input"
+                            required
+                            placeholder="e.g. Renewal Discussion"
+                            defaultValue={defaults?.subject || ''}
+                        />
+                    </div>
+                )}
 
                 <div className="md:col-span-2">
                     <label className="label">Message / Notes</label>

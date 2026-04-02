@@ -42,21 +42,9 @@ export const CHECKLIST_CATEGORIES: ChecklistCategory[] = [
                 category: 'sentiment'
             },
             {
-                id: 'sentiment_renewal_positive',
-                label: 'Positive about renewal',
-                weight: 10,
-                category: 'sentiment'
-            },
-            {
-                id: 'sentiment_considering_alternatives',
-                label: 'Considering alternatives/competitors',
-                weight: -10,
-                category: 'sentiment'
-            },
-            {
-                id: 'sentiment_feature_requests',
-                label: 'Requested additional features',
-                weight: 3,
+                id: 'sentiment_alternative',
+                label: 'Considering alternatives / requested features',
+                weight: -2,
                 category: 'sentiment'
             }
         ]
@@ -74,12 +62,6 @@ export const CHECKLIST_CATEGORIES: ChecklistCategory[] = [
                 category: 'engagement'
             },
             {
-                id: 'engagement_training',
-                label: 'Attended recent training/webinar',
-                weight: 5,
-                category: 'engagement'
-            },
-            {
                 id: 'engagement_responsive',
                 label: 'Responded promptly to communication',
                 weight: 6,
@@ -87,20 +69,8 @@ export const CHECKLIST_CATEGORIES: ChecklistCategory[] = [
             },
             {
                 id: 'engagement_technical_questions',
-                label: 'Asked technical questions',
+                label: 'Asked technical questions / gave feedback',
                 weight: 7,
-                category: 'engagement'
-            },
-            {
-                id: 'engagement_feedback',
-                label: 'Shared feedback/suggestions',
-                weight: 6,
-                category: 'engagement'
-            },
-            {
-                id: 'engagement_expansion',
-                label: 'Mentioned expansion plans',
-                weight: 9,
                 category: 'engagement'
             },
             {
@@ -119,32 +89,14 @@ export const CHECKLIST_CATEGORIES: ChecklistCategory[] = [
         items: [
             {
                 id: 'business_growing',
-                label: 'Organization is growing',
+                label: 'Organization is growing / New projects',
                 weight: 8,
-                category: 'business'
-            },
-            {
-                id: 'business_new_projects',
-                label: 'New projects/initiatives mentioned',
-                weight: 7,
-                category: 'business'
-            },
-            {
-                id: 'business_budget_approval',
-                label: 'Budget approval process discussed',
-                weight: 6,
                 category: 'business'
             },
             {
                 id: 'business_decision_maker',
                 label: 'Decision maker involved in call',
                 weight: 9,
-                category: 'business'
-            },
-            {
-                id: 'business_team_expansion',
-                label: 'Mentioned team expansion',
-                weight: 8,
                 category: 'business'
             },
             {
@@ -175,7 +127,7 @@ export const CHECKLIST_CATEGORIES: ChecklistCategory[] = [
             },
             {
                 id: 'action_pricing',
-                label: 'Requested pricing/quote',
+                label: 'Requested pricing/quote/approval',
                 weight: 7,
                 category: 'action'
             },
@@ -186,27 +138,9 @@ export const CHECKLIST_CATEGORIES: ChecklistCategory[] = [
                 category: 'action'
             },
             {
-                id: 'action_approval',
-                label: 'Needs approval from management',
-                weight: 4,
-                category: 'action'
-            },
-            {
-                id: 'action_case_studies',
-                label: 'Asked for case studies/references',
-                weight: 5,
-                category: 'action'
-            },
-            {
                 id: 'action_meeting_scheduled',
-                label: 'Scheduled follow-up meeting',
+                label: 'Scheduled follow-up meeting/review',
                 weight: 8,
-                category: 'action'
-            },
-            {
-                id: 'action_contract_review',
-                label: 'Reviewing contract/terms',
-                weight: 7,
                 category: 'action'
             }
         ]

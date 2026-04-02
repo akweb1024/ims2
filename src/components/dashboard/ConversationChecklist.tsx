@@ -172,7 +172,7 @@ export default function ConversationChecklist({
 
                             {/* Category Items */}
                             {isExpanded && (
-                                <div className="p-4 space-y-2 bg-white">
+                                <div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-2 bg-white">
                                     {category.items.map((item) => {
                                         const isChecked = checkedItems.includes(item.id);
 
