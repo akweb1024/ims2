@@ -96,6 +96,25 @@ export const GET = authorizedRoute([], async (req: NextRequest, user: any) => {
         designation: voterProfile?.employeeProfile?.designation,
     });
 
+    let submittedUserIds: string[] = [];
+    if (view === 'my' || view === 'vote') {
+        const submittedIdeasActive = await prisma.thinkTankIdea.findMany({
+            where: { companyId: user.companyId, cycleId: cycle.id },
+            select: { plannerHash: true }
+        });
+        const allUsers = await prisma.user.findMany({
+            where: { companyId: user.companyId },
+            select: { id: true }
+        });
+        const userHashMap = new Map<string, string>();
+        allUsers.forEach(u => {
+            userHashMap.set(crypto.createHash('sha256').update(u.id).digest('hex'), u.id);
+        });
+        submittedUserIds = Array.from(
+            new Set(submittedIdeasActive.map(i => userHashMap.get(i.plannerHash)).filter(Boolean))
+        ) as string[];
+    }
+
     return NextResponse.json({
         governance,
         cycle,
@@ -113,6 +132,7 @@ export const GET = authorizedRoute([], async (req: NextRequest, user: any) => {
             currentUserHash: userHash,
             revealQuestionIdentity: user.role === 'SUPER_ADMIN',
         })),
+        submittedUserIds,
     });
 });
 
@@ -140,8 +160,8 @@ export const POST = authorizedRoute([], async (req: NextRequest, user: any) => {
         return NextResponse.json({ error: 'Invalid category.' }, { status: 400 });
     }
 
-    if (Array.isArray(partnerIds) && partnerIds.length > 3) {
-        return NextResponse.json({ error: 'You can add up to 3 self-opted partners.' }, { status: 400 });
+    if (Array.isArray(partnerIds) && partnerIds.length > 2) {
+        return NextResponse.json({ error: 'You can add up to 2 self-opted partners.' }, { status: 400 });
     }
 
     const normalizedDuplicateDecision = duplicateDecision

@@ -7,7 +7,7 @@ type Props = {
     user: any;
     categories: Array<{ value: string; label: string }>;
     governance: any;
-    partnerOptions: Array<{ id: string; name?: string | null; email?: string | null; designation?: string | null }>;
+    partnerOptions: Array<{ id: string; name?: string | null; email?: string | null; designation?: string | null; hasSubmittedIdea?: boolean }>;
     upcomingCycles: Array<{ id: string; windowStart: string; windowEnd: string; revealAt: string; cycleLabel: string; occupied: boolean }>;
     refresh: () => Promise<void>;
     onSubmitted?: () => void;
@@ -47,8 +47,7 @@ export default function IdeaSubmissionForm({ user, categories, governance, partn
                     .join(' ')
                     .toLowerCase();
                 return haystack.includes(query);
-            })
-            .slice(0, 8);
+            });
     }, [deferredPartnerSearch, form.partnerIds, partnerOptions, user?.id]);
 
     const uploadAttachment = async (file: File) => {
@@ -251,41 +250,46 @@ export default function IdeaSubmissionForm({ user, categories, governance, partn
                         <div className="border-2 border-slate-950 bg-white">
                             <input
                                 className="w-full border-b-2 border-slate-200 px-4 py-4 font-black text-xs uppercase tracking-widest placeholder:text-slate-300 focus:border-[#FF4500] focus:outline-none"
-                                placeholder={form.partnerIds.length >= 3 ? 'Partner limit reached' : 'Search by name, email, or designation'}
+                                placeholder={form.partnerIds.length >= 2 ? 'Partner limit reached' : 'Search by name, email, or designation'}
                                 value={partnerSearch}
                                 onChange={(event) => setPartnerSearch(event.target.value)}
-                                disabled={form.partnerIds.length >= 3}
+                                disabled={form.partnerIds.length >= 2}
                             />
                             <div className="max-h-56 overflow-y-auto">
-                                {form.partnerIds.length >= 3 ? (
+                                {form.partnerIds.length >= 2 ? (
                                     <div className="px-4 py-3 text-[10px] font-bold uppercase tracking-widest text-slate-400">
-                                        You can select up to 3 partners
+                                        You can select up to 2 partners
                                     </div>
                                 ) : availablePartners.length > 0 ? (
                                     availablePartners.map((option) => (
                                         <button
                                             key={option.id}
                                             type="button"
+                                            disabled={option.hasSubmittedIdea}
                                             onClick={() => {
+                                                if (option.hasSubmittedIdea) return;
                                                 setForm((current) => ({
                                                     ...current,
-                                                    partnerIds: [...current.partnerIds, option.id].slice(0, 3),
+                                                    partnerIds: [...current.partnerIds, option.id].slice(0, 2),
                                                 }));
                                                 setPartnerSearch('');
                                             }}
-                                            className="flex w-full items-start justify-between gap-3 border-b border-slate-100 px-4 py-3 text-left hover:bg-[#FF4500]/5"
+                                            className={`flex w-full items-start justify-between gap-3 border-b border-slate-100 px-4 py-3 text-left ${
+                                                option.hasSubmittedIdea ? 'cursor-not-allowed opacity-60' : 'hover:bg-[#FF4500]/5'
+                                            }`}
                                         >
                                             <div>
                                                 <div className="text-[10px] font-black uppercase tracking-widest text-slate-950">
                                                     {option.name || option.email || option.id}
+                                                    {option.hasSubmittedIdea && ' (Idea Submitted)'}
                                                 </div>
                                                 <div className="mt-1 text-[10px] font-bold uppercase tracking-wide text-slate-500">
                                                     {option.email || option.id}
                                                     {option.designation ? ` • ${option.designation}` : ''}
                                                 </div>
                                             </div>
-                                            <div className="text-[10px] font-black uppercase tracking-widest text-[#FF4500]">
-                                                Add
+                                            <div className={`text-[10px] font-black uppercase tracking-widest ${option.hasSubmittedIdea ? 'text-slate-400' : 'text-[#FF4500]'}`}>
+                                                {option.hasSubmittedIdea ? 'Unavailable' : 'Add'}
                                             </div>
                                         </button>
                                     ))

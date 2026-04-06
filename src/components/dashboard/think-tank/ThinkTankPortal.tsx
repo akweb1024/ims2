@@ -330,7 +330,7 @@ export default function ThinkTankPortal({ mode, ideaId }: { mode: PortalMode; id
     const router = useRouter();
     const modeContent = THINK_TANK_MODE_CONTENT[mode];
     const [user, setUser] = useState<any>(null);
-    const [assignees, setAssignees] = useState<Array<{ id: string; name?: string | null; email?: string | null; designation?: string | null }>>([]);
+    const [assignees, setAssignees] = useState<Array<{ id: string; name?: string | null; email?: string | null; designation?: string | null; hasSubmittedIdea?: boolean }>>([]);
     const [loading, setLoading] = useState(true);
     const [governance, setGovernance] = useState<any>(null);
     const [governanceAccess, setGovernanceAccess] = useState<{ canManage?: boolean; override?: any } | null>(null);
@@ -395,7 +395,7 @@ export default function ThinkTankPortal({ mode, ideaId }: { mode: PortalMode; id
                 fetch('/api/think-tank/results', { cache: 'no-store' }),
                 fetch('/api/think-tank/governance', { cache: 'no-store' }),
                 fetch('/api/think-tank/analytics', { cache: 'no-store' }),
-                fetch('/api/users?limit=100', { cache: 'no-store' }),
+                fetch('/api/users?limit=1000', { cache: 'no-store' }),
                 fetch('/api/think-tank/governance/settings', { cache: 'no-store' }),
                 fetch('/api/think-tank/vote-monitor', { cache: 'no-store' }),
                 view === 'my' ? fetch('/api/think-tank/cycles', { cache: 'no-store' }) : Promise.resolve(null),
@@ -437,6 +437,7 @@ export default function ThinkTankPortal({ mode, ideaId }: { mode: PortalMode; id
                 name: candidate.name,
                 email: candidate.email,
                 designation: candidate.employeeProfile?.designatRef?.name || candidate.employeeProfile?.designation || candidate.role || null,
+                hasSubmittedIdea: (ideasPayload.submittedUserIds || []).includes(candidate.id),
             })));
 
             if (mode === 'vote' && ideaId) {
