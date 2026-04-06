@@ -228,6 +228,87 @@ export default function ProfilePage() {
                         </div>
                     </div>
                 )}
+
+                {/* Digital Signature */}
+                <div className="card-premium">
+                    <h3 className="text-lg font-bold text-secondary-900 mb-6 border-b border-secondary-100 pb-4 flex items-center">
+                        <span className="mr-2">✍️</span> Digital Signature
+                    </h3>
+                    <div className="space-y-4">
+                        <p className="text-sm text-secondary-600">Upload your digital signature to autofill reimbursement and declaration forms.</p>
+                        <div className="flex items-center space-x-6">
+                            {user.signatureUrl ? (
+                                <div className="border border-secondary-200 rounded-xl p-4 bg-white shadow-sm inline-block max-w-xs">
+                                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                                    <img src={user.signatureUrl} alt="Signature" className="max-h-20 object-contain" />
+                                </div>
+                            ) : (
+                                <div className="border border-dashed border-secondary-300 rounded-xl p-4 bg-secondary-50 text-secondary-500 text-sm font-medium">
+                                    No signature uploaded yet.
+                                </div>
+                            )}
+                            <div className="flex flex-col space-y-2">
+                                <label className="btn btn-primary cursor-pointer text-center relative overflow-hidden group">
+                                    <span className="group-hover:opacity-0 transition-opacity">Upload New Signature</span>
+                                    <span className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">Select Image (PNG, JPG)</span>
+                                    <input 
+                                        type="file" 
+                                        accept="image/png, image/jpeg" 
+                                        className="hidden" 
+                                        onChange={async (e) => {
+                                            const file = e.target.files?.[0];
+                                            if (!file) return;
+                                            
+                                            // 1. Upload to storage
+                                            const formData = new FormData();
+                                            formData.append('file', file);
+                                            formData.append('category', 'general'); // Generic storage for signatures for now
+                                            
+                                            setActionLoading(true);
+                                            try {
+                                                const uploadRes = await fetch('/api/upload', {
+                                                    method: 'POST',
+                                                    headers: {
+                                                        'Authorization': `Bearer ${localStorage.getItem('token')}`
+                                                    },
+                                                    body: formData
+                                                });
+                                                
+                                                if (uploadRes.ok) {
+                                                    const { url } = await uploadRes.json();
+                                                    
+                                                    // 2. Save signatureUrl to User Profile
+                                                    const sigRes = await fetch('/api/profile/signature', {
+                                                        method: 'POST',
+                                                        headers: {
+                                                            'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                                                            'Content-Type': 'application/json'
+                                                        },
+                                                        body: JSON.stringify({ signatureUrl: url })
+                                                    });
+                                                    
+                                                    if (sigRes.ok) {
+                                                        setInfoMessage({ type: 'success', text: 'Signature saved successfully!' });
+                                                        fetchProfile(); // Refresh entire profile to map the signature
+                                                    } else {
+                                                        const err = await sigRes.json();
+                                                        setInfoMessage({ type: 'error', text: err.error || 'Failed to link signature to your profile.' });
+                                                    }
+                                                } else {
+                                                    setInfoMessage({ type: 'error', text: 'Image upload to storage failed.' });
+                                                }
+                                            } catch (err) {
+                                                setInfoMessage({ type: 'error', text: 'Network error during upload.' });
+                                            } finally {
+                                                setActionLoading(false);
+                                            }
+                                        }}
+                                    />
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </DashboardLayout>
     );

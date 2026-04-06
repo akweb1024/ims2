@@ -21,6 +21,8 @@ import StaffProfileView from '@/components/dashboard/staff-portal/StaffProfileVi
 import StaffLeaveManagement from '@/components/dashboard/staff-portal/StaffLeaveManagement';
 import StaffWorkReports from '@/components/dashboard/staff-portal/StaffWorkReports';
 import StaffSalaryView from '@/components/dashboard/staff-portal/StaffSalaryView';
+import StaffReimbursementView from '@/components/dashboard/staff-portal/StaffReimbursementView';
+import StaffReimbursementReminder from '@/components/dashboard/staff-portal/StaffReimbursementReminder';
 
 // Manager Center Views
 import TeamMembersView from '@/components/dashboard/manager/TeamMembersView';
@@ -252,6 +254,7 @@ export default function StaffPortalPage() {
         { id: 'leaves', name: 'Leave Requests', icon: '🏃' },
         { id: 'performance', name: 'Performance', icon: '📈' },
         { id: 'salary', name: 'Salary', icon: '💵' },
+        { id: 'reimbursements', name: 'Reimbursements', icon: '🧾' },
         { id: 'documents', name: 'Documents', icon: '📁' },
         { id: 'onboarding', name: 'Onboarding', icon: '🎓' },
         { id: 'transactions', name: 'Transactions', icon: '💰' },
@@ -277,6 +280,11 @@ export default function StaffPortalPage() {
 
     return (
         <DashboardLayout userRole={user?.role}>
+            {user && (
+                <StaffReimbursementReminder 
+                    onNavigateToReimbursements={() => handleTabChange('reimbursements')} 
+                />
+            )}
             <div className="space-y-8 max-w-6xl mx-auto">
                 {/* Header Section */}
                 <div className="flex flex-col md:flex-row md:items-center md:justify-between bg-white p-4 sm:p-8 rounded-[1.5rem] sm:rounded-[2.5rem] shadow-xl border border-secondary-100 relative overflow-hidden">
@@ -612,6 +620,10 @@ export default function StaffPortalPage() {
 
                     {activeTab === 'salary' && (
                         <StaffSalaryView fullProfile={fullProfile} salarySlips={salarySlips} />
+                    )}
+
+                    {activeTab === 'reimbursements' && (
+                        <StaffReimbursementView fullProfile={fullProfile} user={user} />
                     )}
 
                     {activeTab === 'id-card' && fullProfile && <EmployeeIDCard employee={fullProfile} />}

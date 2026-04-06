@@ -22,6 +22,7 @@ export const GET = authorizedRoute(
                     documents: true,
                     digitalDocuments: true,
                     designatRef: true,
+                    salaryStructure: true,
                     incrementHistory: {
                         where: { status: 'APPROVED' },
                         orderBy: { effectiveDate: 'desc' }
