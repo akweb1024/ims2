@@ -28,6 +28,6 @@
     }
   },
   "start": {
-    "cmd": "NODE_ENV=production npm run start"
+    "cmd": "npx prisma migrate deploy && NODE_ENV=production npm run start"
   }
 }
