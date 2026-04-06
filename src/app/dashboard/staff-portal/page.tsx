@@ -623,7 +623,11 @@ export default function StaffPortalPage() {
                     )}
 
                     {activeTab === 'reimbursements' && (
-                        <StaffReimbursementView fullProfile={fullProfile} user={user} />
+                        <StaffReimbursementView 
+                            fullProfile={fullProfile} 
+                            user={user} 
+                            onUpdateUser={fetchAllData} 
+                        />
                     )}
 
                     {activeTab === 'id-card' && fullProfile && <EmployeeIDCard employee={fullProfile} />}
