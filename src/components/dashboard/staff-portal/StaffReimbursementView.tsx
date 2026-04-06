@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
+import Image from 'next/image';
 import FormattedDate from '@/components/common/FormattedDate';
 
 export default function StaffReimbursementView({ fullProfile, user, onUpdateUser }: { fullProfile: any, user: any, onUpdateUser?: () => void }) {
@@ -17,13 +18,13 @@ export default function StaffReimbursementView({ fullProfile, user, onUpdateUser
 
     // Get salary structure limits
     const ss = fullProfile?.salaryStructure || {};
-    const perkLimits = {
+    const perkLimits = useMemo(() => ({
         healthCare: ss.healthCare || 0,
         travelling: ss.travelling || 0,
         mobile: ss.mobile || 0,
         internet: ss.internet || 0,
         booksAndPeriodicals: ss.booksAndPeriodicals || 0,
-    };
+    }), [ss.healthCare, ss.travelling, ss.mobile, ss.internet, ss.booksAndPeriodicals]);
 
     const [perkAmounts, setPerkAmounts] = useState({
         healthCare: perkLimits.healthCare,
@@ -42,7 +43,7 @@ export default function StaffReimbursementView({ fullProfile, user, onUpdateUser
             internet: perkLimits.internet,
             booksAndPeriodicals: perkLimits.booksAndPeriodicals,
         });
-    }, [fullProfile]);
+    }, [fullProfile, perkLimits]);
 
     const handleAmountChange = (category: string, value: string) => {
         const val = parseFloat(value) || 0;
@@ -218,7 +219,7 @@ export default function StaffReimbursementView({ fullProfile, user, onUpdateUser
                             <div className="bg-amber-50 p-8 rounded-3xl border border-amber-200 text-amber-900 text-center flex flex-col items-center">
                                 <div className="text-5xl mb-4">⚠️</div>
                                 <h3 className="font-black text-xl mb-2 tracking-tight">No Allowances Found</h3>
-                                <p className="text-sm opacity-80 max-w-sm">Your salary structure doesn't seem to include any reimbursable components. Please contact HR to update your perk settings.</p>
+                                <p className="text-sm opacity-80 max-w-sm">Your salary structure doesn&apos;t seem to include any reimbursable components. Please contact HR to update your perk settings.</p>
                             </div>
                         ) : isSubmittedThisMonth ? (
                             <div className="bg-success-50 p-10 rounded-3xl border border-success-200 text-success-800 text-center flex flex-col items-center">
@@ -285,8 +286,14 @@ export default function StaffReimbursementView({ fullProfile, user, onUpdateUser
                                         <p className="text-[10px] font-black text-secondary-400 uppercase tracking-[0.2em] mb-2">Authenticated Signature</p>
                                         {user.signatureUrl ? (
                                             <div className="bg-white border-2 border-dashed border-secondary-200 p-4 rounded-3xl inline-block shadow-sm group hover:border-primary-300 transition-all">
-                                                {/* eslint-disable-next-line @next/next/no-img-element */}
-                                                <img src={user.signatureUrl} alt="Signature" className="h-16 w-32 object-contain group-hover:scale-105 transition-transform" />
+                                                <Image 
+                                                    src={user.signatureUrl} 
+                                                    alt="Signature" 
+                                                    width={128} 
+                                                    height={64} 
+                                                    unoptimized 
+                                                    className="h-16 w-32 object-contain group-hover:scale-105 transition-transform" 
+                                                />
                                                 <p className="text-[9px] text-secondary-300 font-bold uppercase text-center mt-2 tracking-tighter">Profile Signature Found</p>
                                             </div>
                                         ) : (
@@ -382,9 +389,15 @@ export default function StaffReimbursementView({ fullProfile, user, onUpdateUser
                                                 </td>
                                                 <td className="px-8 py-6">
                                                     {r.employeeSignatureUrl ? (
-                                                        // eslint-disable-next-line @next/next/no-img-element
                                                         <div className="bg-white p-2 rounded-xl border border-secondary-100 shadow-sm inline-block group-hover:scale-110 group-hover:shadow-md transition-all">
-                                                            <img src={r.employeeSignatureUrl} alt="Auth Signature" className="h-8 w-16 object-contain grayscale opacity-50 group-hover:grayscale-0 group-hover:opacity-100 transition-all" />
+                                                            <Image 
+                                                                src={r.employeeSignatureUrl} 
+                                                                alt="Auth Signature" 
+                                                                width={64} 
+                                                                height={32} 
+                                                                unoptimized
+                                                                className="h-8 w-16 object-contain grayscale opacity-50 group-hover:grayscale-0 group-hover:opacity-100 transition-all" 
+                                                            />
                                                         </div>
                                                     ) : (
                                                         <span className="text-secondary-300 text-[10px] font-black uppercase tracking-widest">Digital Auth Only</span>

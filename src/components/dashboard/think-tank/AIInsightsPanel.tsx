@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 
 type AIInsights = {
     summary: string;
@@ -15,7 +15,7 @@ export default function AIInsightsPanel({ ideaId }: { ideaId: string }) {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    const fetchInsights = async () => {
+    const fetchInsights = useCallback(async () => {
         setLoading(true);
         setError(null);
         try {
@@ -42,11 +42,11 @@ export default function AIInsightsPanel({ ideaId }: { ideaId: string }) {
         } finally {
             setLoading(false);
         }
-    };
+    }, [ideaId]);
 
     useEffect(() => {
         if (ideaId) fetchInsights();
-    }, [ideaId]);
+    }, [ideaId, fetchInsights]);
 
     if (loading) return (
         <div className="p-6 border-2 border-slate-900 bg-[#FF450010] animate-pulse">

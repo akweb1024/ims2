@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Search, Loader2, ArrowUpDown, Filter, X, User, MapPin, Briefcase, Mail, Phone, ExternalLink, FileText, CheckCircle2 } from 'lucide-react';
 import { Badge } from '@/components/ui/Badge';
 import { format } from 'date-fns';
@@ -78,11 +78,7 @@ export default function LMSParticipantsView() {
   const [lastGeneratedInvoice, setLastGeneratedInvoice] = useState<{id: string, num: string} | null>(null);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
 
-  useEffect(() => {
-    fetchParticipants();
-  }, [search, workshopFilter, statusFilter]);
-
-  const fetchParticipants = async () => {
+  const fetchParticipants = useCallback(async () => {
     setLoading(true);
     try {
       const params = new URLSearchParams();
@@ -106,7 +102,11 @@ export default function LMSParticipantsView() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [search, workshopFilter, statusFilter]);
+
+  useEffect(() => {
+    fetchParticipants();
+  }, [fetchParticipants]);
 
   const generateInvoice = async (participantId: string) => {
     setGeneratingInvoice(true);
