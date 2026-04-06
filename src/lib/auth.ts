@@ -11,11 +11,9 @@ export * from "./auth-core";
  * 2. Checks Authorization Header (Legacy/API)
  */
 export const getAuthenticatedUser = async (): Promise<TokenPayload | null> => {
+    // 1. Try NextAuth session
     try {
-        // 1. Try NextAuth session
         const session = await auth();
-        // Note: 'auth()' might throw or return null. 
-
         if (session?.user) {
             return {
                 id: session.user.id,
@@ -25,21 +23,23 @@ export const getAuthenticatedUser = async (): Promise<TokenPayload | null> => {
                 allowedModules: (session.user as any).allowedModules,
             };
         }
-    } catch (e) {
-        // NextAuth check failed, continue to headers
+    } catch (e: any) {
+        console.error("[Auth] NextAuth session check failed:", e?.message || e);
     }
 
+    // 2. Fallback to manual JWT in headers (API usage)
     try {
-        // 2. Fallback to manual JWT in headers (API usage)
         const headersList = await headers();
         const authHeader = headersList.get("authorization");
         const token = authHeader?.split(" ")[1];
 
         if (token) {
-            return verifyToken(token);
+            const payload = verifyToken(token);
+            if (payload) return payload;
+            console.warn("[Auth] JWT token present but verification failed");
         }
-    } catch (error) {
-        console.error("Auth check failed:", error);
+    } catch (error: any) {
+        console.error("[Auth] Header/JWT check failed:", error?.message || error);
     }
 
     return null;

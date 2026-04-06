@@ -17,22 +17,26 @@ export async function POST(req: NextRequest) {
         }
 
         try {
-            const user = await prisma.user.update({
-                where: { id: decoded.id },
-                data: { signatureUrl }
-            });
+            // Use raw query to bypass potential Prisma client adapter field recognition issues
+            await prisma.$executeRawUnsafe(
+                `UPDATE "User" SET "signatureUrl" = $1, "updatedAt" = NOW() WHERE "id" = $2`,
+                signatureUrl,
+                decoded.id
+            );
 
             return NextResponse.json({ 
                 success: true,
                 message: 'Signature updated successfully', 
-                signatureUrl: user.signatureUrl 
+                signatureUrl 
             });
         } catch (dbError: any) {
-            console.error('Signature DB update failed:', dbError.message);
-            if (dbError.code === 'P2025') {
-                return NextResponse.json({ error: 'User record not found.' }, { status: 404 });
-            }
-            return NextResponse.json({ error: 'Database update failed.' }, { status: 500 });
+            console.error('Signature DB update failed:', JSON.stringify({
+                message: dbError.message,
+                code: dbError.code,
+                meta: dbError.meta,
+                stack: dbError.stack?.split('\n').slice(0, 5)
+            }));
+            return NextResponse.json({ error: 'Database update failed.', details: dbError.message }, { status: 500 });
         }
 
     } catch (error: any) {

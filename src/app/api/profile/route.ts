@@ -22,7 +22,8 @@ export async function GET(req: NextRequest) {
         return NextResponse.json(safeUser);
 
     } catch (error: any) {
-        return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+        console.error('[Profile GET] Error:', error?.message || error);
+        return NextResponse.json({ error: 'Internal Server Error', details: error?.message }, { status: 500 });
     }
 }
 
