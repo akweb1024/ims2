@@ -395,7 +395,7 @@ export default function ThinkTankPortal({ mode, ideaId }: { mode: PortalMode; id
                 fetch('/api/think-tank/results', { cache: 'no-store' }),
                 fetch('/api/think-tank/governance', { cache: 'no-store' }),
                 fetch('/api/think-tank/analytics', { cache: 'no-store' }),
-                fetch('/api/users?limit=1000', { cache: 'no-store' }),
+                fetch('/api/think-tank/users?limit=1000', { cache: 'no-store' }),
                 fetch('/api/think-tank/governance/settings', { cache: 'no-store' }),
                 fetch('/api/think-tank/vote-monitor', { cache: 'no-store' }),
                 view === 'my' ? fetch('/api/think-tank/cycles', { cache: 'no-store' }) : Promise.resolve(null),
