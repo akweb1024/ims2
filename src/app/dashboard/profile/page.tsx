@@ -114,7 +114,7 @@ export default function ProfilePage() {
         }
     };
 
-    if (loading) {
+    if (loading || !user) {
         return (
             <DashboardLayout>
                 <div className="flex items-center justify-center min-h-[400px]">

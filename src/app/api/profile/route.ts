@@ -57,12 +57,28 @@ export async function PATCH(req: NextRequest) {
             if (name) updateData.name = name;
             if (primaryPhone) updateData.primaryPhone = primaryPhone;
 
-            const updated = await prisma.customerProfile.update({
-                where: { userId: decoded.id },
-                data: updateData
+            // Check if customer profile exists
+            const customerProfile = await prisma.customerProfile.findUnique({
+                where: { userId: decoded.id }
             });
 
-            return NextResponse.json(updated);
+            if (customerProfile) {
+                const updated = await prisma.customerProfile.update({
+                    where: { userId: decoded.id },
+                    data: updateData
+                });
+                return NextResponse.json(updated);
+            } else {
+                // For non-customers, we might want to update the User name
+                if (name) {
+                    const updatedUser = await prisma.user.update({
+                        where: { id: decoded.id },
+                        data: { name: name as string }
+                    });
+                    return NextResponse.json(updatedUser);
+                }
+                return NextResponse.json({ message: 'No customer profile to update' });
+            }
         }
 
         return NextResponse.json({ error: 'Invalid request' }, { status: 400 });
