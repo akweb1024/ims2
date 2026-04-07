@@ -168,11 +168,16 @@ function handlePrismaError(
     switch (error.code) {
         case 'P2002':
             // Unique constraint violation
-            const target = (error.meta?.target as string[]) || [];
+            let targetFields = 'record';
+            if (Array.isArray(error.meta?.target)) {
+                targetFields = error.meta.target.join(', ');
+            } else if (typeof error.meta?.target === 'string') {
+                targetFields = error.meta.target;
+            }
             return NextResponse.json(
                 {
                     error: 'ConflictError',
-                    message: `A record with this ${target.join(', ')} already exists`,
+                    message: `A record with this ${targetFields} already exists`,
                     statusCode: 409,
                     timestamp: new Date().toISOString(),
                     path,

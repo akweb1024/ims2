@@ -45,8 +45,10 @@ export interface GeneratedNumbers {
 export async function generateInvoiceNumbers(
   companyId: string,
   brandId?: string | null,
-  prefix?: string
+  prefix?: string,
+  tx?: any
 ): Promise<GeneratedNumbers> {
+  const db = tx || prisma;
   const year = new Date().getFullYear();
   const MAX_ATTEMPTS = 5;
 
@@ -58,7 +60,7 @@ export async function generateInvoiceNumbers(
     try {
       if (brandId) {
         // ─── Brand-scoped number ───────────────────────────────────────
-        const updatedBrand = await prisma.brand.update({
+        const updatedBrand = await db.brand.update({
           where: { id: brandId },
           data: {
             invoiceNextNumber: { increment: 1 },
@@ -76,7 +78,7 @@ export async function generateInvoiceNumbers(
         proformaNumber = `${proPrefix}${entityCode}-${year}-${proSeq}`;
       } else {
         // ─── Company-scoped number ─────────────────────────────────────
-        const updatedCompany = await prisma.company.update({
+        const updatedCompany = await db.company.update({
           where: { id: companyId },
           data: {
             invoiceNextNumber: { increment: 1 },
@@ -95,7 +97,7 @@ export async function generateInvoiceNumbers(
       }
 
       // Safety: verify no existing invoice already has these numbers
-      const conflict = await prisma.invoice.findFirst({
+      const conflict = await db.invoice.findFirst({
         where: {
           OR: [{ invoiceNumber }, { proformaNumber }],
         },
@@ -109,7 +111,7 @@ export async function generateInvoiceNumbers(
         invoiceNumber = `${invoiceNumber}-R${suffix}`;
         proformaNumber = `${proformaNumber}-R${suffix}`;
         // Check again
-        const conflict2 = await prisma.invoice.findFirst({
+        const conflict2 = await db.invoice.findFirst({
           where: { OR: [{ invoiceNumber }, { proformaNumber }] },
           select: { id: true },
         });

@@ -77,6 +77,8 @@ export default function AgencyDetailPage({ params }: { params: Promise<{ id: str
             primaryPhone: formData.get('primaryPhone'),
             secondaryEmail: formData.get('secondaryEmail'),
             website: formData.get('website'),
+            billingAddress: formData.get('billingAddress'),
+            shippingAddress: formData.get('shippingAddress'),
             // Agency specific fields nested in agencyDetails? 
             // The existing PATCH API handles basic profile. 
             // If we want to update discountRate etc, we need to pass them.
@@ -252,6 +254,16 @@ export default function AgencyDetailPage({ params }: { params: Promise<{ id: str
                                 <div>
                                     <label className="label">Website</label>
                                     <input name="website" className="input" defaultValue={customer.website} placeholder="https://" />
+                                </div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="label">Billing Address</label>
+                                        <textarea name="billingAddress" className="input h-20" defaultValue={customer.billingAddress} placeholder="Company Billing Address" />
+                                    </div>
+                                    <div>
+                                        <label className="label">Shipping / Dispatch Address</label>
+                                        <textarea name="shippingAddress" className="input h-20" defaultValue={customer.shippingAddress} placeholder="Shipping or Dispatch Address" />
+                                    </div>
                                 </div>
 
                                 <div className="p-4 bg-yellow-50 text-yellow-800 text-sm rounded-lg">

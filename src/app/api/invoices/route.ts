@@ -135,12 +135,6 @@ export const POST = authorizedRoute(
         
         if (!company) throw new NotFoundError('Company');
 
-        // Generate globally-unique invoice & proforma numbers (entity-code-embedded)
-        const { invoiceNumber, proformaNumber } = await generateInvoiceNumbers(
-            company.id,
-            brandId || null
-        );
-
         let brandSnapshot: any = {
             brandRelationType: company?.brandRelationType || 'A Brand of' as string,
             companyLogoUrl: company?.invoiceCompanyLogoUrl || company?.logoUrl || null,
@@ -255,6 +249,14 @@ export const POST = authorizedRoute(
         const effectiveTaxRate = taxBreakdown.effectiveTaxRate;
 
         const newInvoice = await prisma.$transaction(async (tx: any) => {
+            // Generate globally-unique invoice & proforma numbers (entity-code-embedded)
+            const { invoiceNumber, proformaNumber } = await generateInvoiceNumbers(
+                company.id,
+                brandId || null,
+                undefined,
+                tx
+            );
+
             const created = await tx.invoice.create({
                 data: {
                 invoiceNumber,
