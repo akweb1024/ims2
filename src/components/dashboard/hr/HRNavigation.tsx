@@ -52,6 +52,7 @@ const CATEGORIES = [
             { id: 'statutory', label: 'Statutory Compliance' },
             { id: 'budgets', label: 'Allocated Budgets' },
             { id: 'increments', label: 'Salary Increments' },
+            { id: 'reimbursements', label: 'Reimbursements' },
             { id: 'rewards', label: 'Incentives & Bonuses' },
             { id: 'final-settlement', label: 'F&F Settlement' },
         ]

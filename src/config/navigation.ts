@@ -87,6 +87,7 @@ export const ALL_MODULES: NavModule[] = [
                     { name: 'Screening Templates', href: '/dashboard/hr/screening-templates', icon: '📋', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'HR_MANAGER'] },
                     { name: 'User Directory', href: '/dashboard/users', icon: '👥', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'TEAM_LEADER'] },
                     { name: 'Payroll', href: '/dashboard/hr-management/payroll', icon: '💵', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'FINANCE_ADMIN'] },
+                    { name: 'Reimbursements', href: '/dashboard/hr-management?tab=reimbursements', icon: '🧾', roles: ['SUPER_ADMIN', 'HR', 'HR_MANAGER'] },
                 ]
             },
             {

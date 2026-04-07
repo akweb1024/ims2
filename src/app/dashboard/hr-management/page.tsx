@@ -6,6 +6,7 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import HRClientLayout from './HRClientLayout';
 import FormattedDate from '@/components/common/FormattedDate';
 
+import StaffReimbursementView from '@/components/dashboard/staff-portal/StaffReimbursementView';
 import DocumentManager from '@/components/dashboard/DocumentManager';
 import EmployeeList from '@/components/dashboard/hr/EmployeeList';
 import StaffFilters from '@/components/dashboard/staff-management/StaffFilters';
@@ -137,7 +138,10 @@ const HRManagementContent = () => {
 
     // State for filtering
     const [userRole, setUserRole] = useState('CUSTOMER');
+    const [user, setUser] = useState<any>(null);
+    const [fullProfile, setFullProfile] = useState<any>(null);
     const [activeTab, setActiveTab] = useState('employees');
+
 
     const [viewModes, setViewModes] = useState<Record<string, 'grid' | 'table'>>({
         attendance: 'grid',
@@ -312,14 +316,21 @@ const HRManagementContent = () => {
                 window.location.href = '/dashboard';
                 return;
             }
+            setUser(parsedUser);
             setUserRole(parsedUser.role);
-            // fetchEmployees replaced by hook
+
+            // Fetch full profile for reimbursement/SS structure if needed
+            fetch('/api/profile', {
+                headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+            })
+            .then(res => res.json())
+            .then(data => setFullProfile(data))
+            .catch(err => console.error('Error fetching admin profile:', err));
         } else {
-            // We don't redirect to /login here, DashboardLayout will handle it.
-            // Also, setting role to a baseline if we are in this point.
             setUserRole('CUSTOMER');
         }
     }, []);
+
 
     // fetchLeaves removed, now handled by useLeaveRequests hook
 
@@ -679,6 +690,17 @@ const HRManagementContent = () => {
                 {activeTab === 'shifts' && (
                     <ShiftManager />
                 )}
+
+                {activeTab === 'reimbursements' && (
+                    <div className="card-premium p-8">
+                        <StaffReimbursementView 
+                            user={user} 
+                            fullProfile={fullProfile}
+                            isAdmin={true} 
+                        />
+                    </div>
+                )}
+
 
                 {activeTab === 'roster' && (
                     <ShiftRoster />
