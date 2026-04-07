@@ -530,6 +530,7 @@ model CustomerProfile {
   shippingPincode     String?
   shippingState       String?
   shippingStateCode   String?
+  zoneCode            String?
   agencyId            String?
   agencyDetails       AgencyDetails?
   commissionPayouts   CommissionPayout[]
@@ -663,6 +664,7 @@ model Institution {
   city                String?
   state               String?
   country             String               @default("India")
+  zoneCode            String?
   pincode             String?
   totalStudents       Int?
   totalFaculty        Int?

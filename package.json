@@ -15,7 +15,7 @@
     "prisma:generate": "prisma generate",
     "prisma:push": "prisma db push",
     "prisma:studio": "prisma studio",
-    "prisma:migrate": "prisma migrate deploy",
+    "prisma:migrate": "bash scripts/database-migrate.sh",
     "prisma:migrate:dev": "prisma migrate dev",
     "seed": "tsx prisma/seed.ts",
     "test": "playwright test e2e/auth.spec.ts e2e/crm-invoice-flows.spec.ts e2e/conference-followups.spec.ts",
@@ -28,7 +28,7 @@
     "production:start": "./scripts/start-production.sh",
     "check:health": "curl -f http://localhost:3000/api/health || exit 1",
     "audit:security": "npm audit --audit-level=moderate",
-    "prepare:production": "npm ci && npm run build && npm run prisma:migrate"
+    "prepare:production": "npm ci && npm run build && bash scripts/database-migrate.sh"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
