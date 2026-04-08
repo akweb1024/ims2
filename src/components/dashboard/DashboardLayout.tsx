@@ -9,6 +9,7 @@ import { getNavigationModules } from '@/config/navigation';
 import Header from './Header';
 import Sidebar from './Sidebar';
 import FeedbackWidget from './FeedbackWidget';
+import AIChatWidget from './AIChatWidget';
 import ThanosSnapWrapper from '@/components/animations/ThanosSnapWrapper';
 
 
@@ -372,6 +373,9 @@ export default function DashboardLayout({ children, userRole: propUserRole = 'CU
                     </ThanosSnapWrapper>
                 </div>
             </main>
+
+            {/* AI Assistant Chat Widget — always visible */}
+            <AIChatWidget />
 
             {/* Global Feedback Widget */}
             <FeedbackWidget />
