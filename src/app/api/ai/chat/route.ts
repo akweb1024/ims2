@@ -339,17 +339,20 @@ export async function POST(req: NextRequest) {
         // Start chat with valid alternating history
         const chat = model.startChat({ history });
 
-        // Send the user message (multimodal if screenshot present)
-        let result = await chat.sendMessage(userParts);
-        let response = result.response;
-
-        // Handle Gemini function calls (tool use for live data fetching)
+        // Helper to handle tool calls synchronously before streaming final text
         let toolCallCount = 0;
         const maxToolCalls = 3;
 
-        while (response.functionCalls() && response.functionCalls()!.length > 0 && toolCallCount < maxToolCalls) {
+        // Send the initial message (multimodal if screenshot present)
+        let result = await chat.sendMessageStream(userParts);
+
+        // We need to check if the first chunk contains function calls
+        // If it does, we consume the full response for that tool call, execute it, and resend.
+        let firstChunk = await result.response;
+        
+        while (firstChunk.functionCalls() && firstChunk.functionCalls()!.length > 0 && toolCallCount < maxToolCalls) {
             toolCallCount++;
-            const functionCalls = response.functionCalls()!;
+            const functionCalls = firstChunk.functionCalls()!;
             const toolResults = [];
 
             for (const fc of functionCalls) {
@@ -362,21 +365,41 @@ export async function POST(req: NextRequest) {
                 });
             }
 
-            // Send tool results back to model
-            result = await chat.sendMessage(toolResults);
-            response = result.response;
+            // Send tool results back to model and check for next stream/tool call
+            result = await chat.sendMessageStream(toolResults);
+            firstChunk = await result.response;
         }
 
-        const replyText = response.text();
+        // Now we have the final stream of text/content
+        const finalStream = result.stream;
 
-        // Parse navigation commands embedded in response: [[navigate:/dashboard/hr]]
-        const navMatch = replyText.match(/\[\[navigate:([^\]]+)\]\]/);
-        const action = navMatch ? { type: 'navigate', href: navMatch[1].trim() } : undefined;
+        // Create a ReadableStream to pipe chunks to the client
+        const encoder = new TextEncoder();
+        const stream = new ReadableStream({
+            async start(controller) {
+                try {
+                    for await (const chunk of finalStream) {
+                        const chunkText = chunk.text();
+                        if (chunkText) {
+                            // Send text chunk (SSO format simple text or JSON)
+                            // We'll send it as JSON stringified chunks for easier parsing
+                            controller.enqueue(encoder.encode(JSON.stringify({ text: chunkText }) + '\n'));
+                        }
+                    }
+                    controller.close();
+                } catch (err) {
+                    controller.error(err);
+                }
+            },
+        });
 
-        // Remove navigation markers from the visible reply text
-        const cleanReply = replyText.replace(/\[\[navigate:[^\]]+\]\]/g, '').trim();
-
-        return NextResponse.json({ reply: cleanReply, action });
+        return new Response(stream, {
+            headers: {
+                'Content-Type': 'text/event-stream',
+                'Cache-Control': 'no-cache',
+                'Connection': 'keep-alive',
+            },
+        });
     } catch (error: any) {
         console.error('[AI Chat API] Error:', error);
         return NextResponse.json(

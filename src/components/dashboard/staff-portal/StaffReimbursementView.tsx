@@ -140,13 +140,13 @@ function UserHistoryTable({ records, user }: { records: any[], user: any }) {
     const [searchQuery, setSearchQuery] = useState('');
 
     const filtered = useMemo(() => {
-        let result = records.filter(r => {
+        const result = records.filter(r => {
             const monthMatch = !searchMonth || r.month === parseInt(searchMonth);
             const yearMatch = !searchYear || r.year === parseInt(searchYear);
-            
+
             const q = searchQuery.toLowerCase();
-            const queryMatch = !q || 
-                r.status.toLowerCase().includes(q) || 
+            const queryMatch = !q ||
+                r.status.toLowerCase().includes(q) ||
                 r.totalAmount.toString().includes(q) ||
                 MONTH_NAMES[(r.month ?? 1) - 1].toLowerCase().includes(q);
 

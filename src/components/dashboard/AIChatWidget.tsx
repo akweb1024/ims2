@@ -82,6 +82,23 @@ export default function AIChatWidget({ className = '' }: AIChatWidgetProps) {
     const [isCapturing, setIsCapturing] = useState(false);
     const [screenVisionEnabled, setScreenVisionEnabled] = useState(true);
 
+    // Persistence: load state from localStorage on mount
+    useEffect(() => {
+        const savedOpen = localStorage.getItem('aria_chat_open') === 'true';
+        const savedVision = localStorage.getItem('aria_vision_enabled') !== 'false'; // default true
+        if (savedOpen) setIsOpen(true);
+        setScreenVisionEnabled(savedVision);
+    }, []);
+
+    // Persistence: save state on change
+    useEffect(() => {
+        localStorage.setItem('aria_chat_open', isOpen.toString());
+    }, [isOpen]);
+
+    useEffect(() => {
+        localStorage.setItem('aria_vision_enabled', screenVisionEnabled.toString());
+    }, [screenVisionEnabled]);
+
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const inputRef = useRef<HTMLTextAreaElement>(null);
     const router = useRouter();
@@ -166,7 +183,6 @@ export default function AIChatWidget({ className = '' }: AIChatWidgetProps) {
                         userId: user?.id,
                         companyId: user?.companyId,
                     },
-                    // Send screenshot as base64 JPEG for multimodal vision
                     screenshotBase64: screenshotBase64 || undefined,
                     screenshotMimeType: 'image/jpeg',
                 }),
@@ -174,20 +190,67 @@ export default function AIChatWidget({ className = '' }: AIChatWidgetProps) {
 
             if (!res.ok) throw new Error(`API error: ${res.status}`);
 
-            const data = await res.json();
-            const { reply, action } = data;
+            // Consumption of the ReadableStream
+            const reader = res.body?.getReader();
+            const decoder = new TextDecoder();
+            let fullReply = '';
 
-            setMessages(prev => [
-                ...prev.filter(m => !m.isLoading),
-                {
-                    role: 'assistant',
-                    content: reply || "I'm sorry, I couldn't process that. Please try again.",
-                    timestamp: new Date(),
-                },
-            ]);
+            if (!reader) throw new Error('Failed to initialize stream reader');
 
-            if (action?.type === 'navigate' && action.href) {
-                setTimeout(() => router.push(action.href), 800);
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+
+                const chunk = decoder.decode(value, { stream: true });
+                // API sends JSON objects separated by newlines
+                const lines = chunk.split('\n').filter(l => l.trim());
+
+                for (const line of lines) {
+                    try {
+                        const parsed = JSON.parse(line);
+                        if (parsed.text) {
+                            fullReply += parsed.text;
+
+                            // Update the last message (the assistant one) with new content
+                            setMessages(prev => {
+                                const newMessages = [...prev];
+                                const lastIdx = newMessages.length - 1;
+                                if (lastIdx >= 0 && newMessages[lastIdx].isLoading) {
+                                    newMessages[lastIdx] = {
+                                        ...newMessages[lastIdx],
+                                        content: fullReply,
+                                        isLoading: false,
+                                    };
+                                } else if (lastIdx >= 0 && newMessages[lastIdx].role === 'assistant') {
+                                    newMessages[lastIdx] = {
+                                        ...newMessages[lastIdx],
+                                        content: fullReply
+                                    };
+                                }
+                                return newMessages;
+                            });
+                        }
+                    } catch (e) {
+                        console.warn('Failed to parse chunk', e);
+                    }
+                }
+            }
+
+            // After stream completes, check for navigation actions
+            const navMatch = fullReply.match(/\[\[navigate:([^\]]+)\]\]/);
+            if (navMatch?.[1]) {
+                const href = navMatch[1].trim();
+                // Clean the reply in the UI state
+                const cleanReply = fullReply.replace(/\[\[navigate:[^\]]+\]\]/g, '').trim();
+                setMessages(prev => {
+                    const newMessages = [...prev];
+                    const lastIdx = newMessages.length - 1;
+                    if (lastIdx >= 0) {
+                        newMessages[lastIdx].content = cleanReply;
+                    }
+                    return newMessages;
+                });
+                setTimeout(() => router.push(href), 800);
             }
 
             if (!isOpen) setHasNewMessage(true);
@@ -477,8 +540,26 @@ export default function AIChatWidget({ className = '' }: AIChatWidgetProps) {
 
                     {/* Capturing overlay */}
                     {isCapturing && (
-                        <div className="absolute inset-0 bg-white/80 backdrop-blur-sm flex items-center justify-center rounded-3xl z-10">
-                            <div className="text-center">
+                        <div className="absolute inset-0 bg-white/80 backdrop-blur-[2px] flex items-center justify-center rounded-3xl z-10 overflow-hidden">
+                            {/* Scanning line animation */}
+                            <div 
+                                className="absolute left-0 right-0 h-1 bg-gradient-to-r from-transparent via-blue-500 to-transparent opacity-50 z-20"
+                                style={{ 
+                                    top: '0%', 
+                                    animation: 'scan-line 1.5s ease-in-out infinite',
+                                    filter: 'blur(1px)'
+                                }}
+                            />
+                            <style jsx>{`
+                                @keyframes scan-line {
+                                    0% { top: 0%; opacity: 0; }
+                                    20% { opacity: 0.8; }
+                                    80% { opacity: 0.8; }
+                                    100% { top: 100%; opacity: 0; }
+                                }
+                            `}</style>
+                            
+                            <div className="text-center relative z-30">
                                 <div className="w-10 h-10 rounded-2xl flex items-center justify-center mx-auto mb-2"
                                     style={{ background: 'linear-gradient(135deg, #2563eb, #7c3aed)' }}>
                                     <svg className="w-5 h-5 text-white animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -486,8 +567,8 @@ export default function AIChatWidget({ className = '' }: AIChatWidgetProps) {
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
                                     </svg>
                                 </div>
-                                <p className="text-xs font-bold text-slate-700">Capturing screen...</p>
-                                <p className="text-[10px] text-slate-400">Aria is looking at your screen</p>
+                                <p className="text-xs font-black text-slate-800 uppercase tracking-tight">Capturing screen...</p>
+                                <p className="text-[10px] text-slate-500 font-medium mt-1">Aria is analyzing your UI context</p>
                             </div>
                         </div>
                     )}
