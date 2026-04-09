@@ -97,6 +97,16 @@ export async function POST(req: NextRequest) {
       discountRate,
       commissionTerms,
       territory,
+      billingAddress,
+      billingCity,
+      billingState,
+      billingCountry,
+      billingPincode,
+      shippingAddress,
+      shippingCity,
+      shippingState,
+      shippingCountry,
+      shippingPincode,
     } = body;
 
     // Validation
@@ -139,6 +149,16 @@ export async function POST(req: NextRequest) {
           organizationName,
           primaryEmail,
           primaryPhone,
+          billingAddress,
+          billingCity,
+          billingState,
+          billingCountry,
+          billingPincode,
+          shippingAddress,
+          shippingCity,
+          shippingState,
+          shippingCountry,
+          shippingPincode,
           agencyDetails: {
             create: {
               discountRate: parseFloat(discountRate || "0"),

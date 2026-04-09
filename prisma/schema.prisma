@@ -666,6 +666,16 @@ model Institution {
   country             String               @default("India")
   zoneCode            String?
   pincode             String?
+  billingAddress      String?
+  billingCity         String?
+  billingState        String?
+  billingCountry      String?              @default("India")
+  billingPincode      String?
+  shippingAddress     String?
+  shippingCity        String?
+  shippingState       String?
+  shippingCountry     String?              @default("India")
+  shippingPincode     String?
   totalStudents       Int?
   totalFaculty        Int?
   totalStaff          Int?
