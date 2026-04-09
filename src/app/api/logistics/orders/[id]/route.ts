@@ -64,11 +64,16 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ id: str
             data: {
                 status: body.status || undefined,
                 recipientName: body.recipientName !== undefined ? String(body.recipientName || '').trim() || undefined : undefined,
-                address: body.address !== undefined ? String(body.address || '').trim() || undefined : undefined,
-                city: body.city !== undefined ? String(body.city || '').trim() || undefined : undefined,
-                state: body.state !== undefined ? String(body.state || '').trim() || undefined : undefined,
-                pincode: body.pincode !== undefined ? String(body.pincode || '').trim() || undefined : undefined,
-                country: body.country !== undefined ? String(body.country || '').trim() || undefined : undefined,
+                shippingAddress: body.shippingAddress !== undefined ? String(body.shippingAddress || '').trim() || undefined : undefined,
+                shippingCity: body.shippingCity !== undefined ? String(body.shippingCity || '').trim() || undefined : undefined,
+                shippingState: body.shippingState !== undefined ? String(body.shippingState || '').trim() || undefined : undefined,
+                shippingPincode: body.shippingPincode !== undefined ? String(body.shippingPincode || '').trim() || undefined : undefined,
+                shippingCountry: body.shippingCountry !== undefined ? String(body.shippingCountry || '').trim() || undefined : undefined,
+                billingAddress: body.billingAddress !== undefined ? String(body.billingAddress || '').trim() || null : undefined,
+                billingCity: body.billingCity !== undefined ? String(body.billingCity || '').trim() || null : undefined,
+                billingState: body.billingState !== undefined ? String(body.billingState || '').trim() || null : undefined,
+                billingPincode: body.billingPincode !== undefined ? String(body.billingPincode || '').trim() || null : undefined,
+                billingCountry: body.billingCountry !== undefined ? String(body.billingCountry || '').trim() || null : undefined,
                 phone: body.phone !== undefined ? String(body.phone || '').trim() || null : undefined,
                 weight: body.weight !== undefined && body.weight !== null && body.weight !== ''
                     ? Number(body.weight)

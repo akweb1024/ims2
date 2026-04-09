@@ -2518,11 +2518,16 @@ model DispatchOrder {
   subscriptionId      String?
   invoiceId           String?
   recipientName       String
-  address             String?
-  city                String?
-  state               String?
-  pincode             String?
-  country             String?
+  shippingAddress     String?
+  shippingCity        String?
+  shippingState       String?
+  shippingPincode     String?
+  shippingCountry     String?
+  billingAddress      String?
+  billingCity         String?
+  billingState        String?
+  billingPincode      String?
+  billingCountry      String?
   phone               String?
   items               Json
   weight              Float?

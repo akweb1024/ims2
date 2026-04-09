@@ -85,35 +85,16 @@ const resolveAddressForFulfillment = (invoice: any) => {
 
   return {
     recipientName: customer.organizationName || customer.name || "Customer",
-    address:
-      invoice.shippingAddress ||
-      customer.shippingAddress ||
-      customer.billingAddress ||
-      null,
-    city:
-      invoice.shippingCity ||
-      customer.shippingCity ||
-      customer.billingCity ||
-      customer.city ||
-      null,
-    state:
-      invoice.shippingState ||
-      customer.shippingState ||
-      customer.billingState ||
-      customer.state ||
-      null,
-    pincode:
-      invoice.shippingPincode ||
-      customer.shippingPincode ||
-      customer.billingPincode ||
-      customer.pincode ||
-      null,
-    country:
-      invoice.shippingCountry ||
-      customer.shippingCountry ||
-      customer.billingCountry ||
-      customer.country ||
-      "India",
+    shippingAddress: invoice.shippingAddress || customer.shippingAddress || null,
+    shippingCity: invoice.shippingCity || customer.shippingCity || null,
+    shippingState: invoice.shippingState || customer.shippingState || null,
+    shippingPincode: invoice.shippingPincode || customer.shippingPincode || null,
+    shippingCountry: invoice.shippingCountry || customer.shippingCountry || "India",
+    billingAddress: customer.billingAddress || null,
+    billingCity: customer.billingCity || customer.city || null,
+    billingState: customer.billingState || customer.state || null,
+    billingPincode: customer.billingPincode || customer.pincode || null,
+    billingCountry: customer.billingCountry || customer.country || "India",
     phone: customer.primaryPhone || null,
   };
 };
@@ -304,10 +285,10 @@ export async function ensureInvoiceFulfillmentRecords(invoice: any, userId?: str
 
     const isPrint = record.fulfillmentType === "PRINT";
     const hasCompleteShipping =
-      Boolean(address.address) &&
-      Boolean(address.city) &&
-      Boolean(address.state) &&
-      Boolean(address.pincode);
+      Boolean(address.shippingAddress) &&
+      Boolean(address.shippingCity) &&
+      Boolean(address.shippingState) &&
+      Boolean(address.shippingPincode);
 
     await prisma.dispatchOrder.create({
       data: {
@@ -323,11 +304,16 @@ export async function ensureInvoiceFulfillmentRecords(invoice: any, userId?: str
         accessStartDate: record.accessStartDate,
         accessEndDate: record.accessEndDate,
         recipientName: address.recipientName,
-        address: isPrint ? address.address : null,
-        city: isPrint ? address.city : null,
-        state: isPrint ? address.state : null,
-        pincode: isPrint ? address.pincode : null,
-        country: isPrint ? address.country : null,
+        shippingAddress: isPrint ? address.shippingAddress : null,
+        shippingCity: isPrint ? address.shippingCity : null,
+        shippingState: isPrint ? address.shippingState : null,
+        shippingPincode: isPrint ? address.shippingPincode : null,
+        shippingCountry: isPrint ? address.shippingCountry : null,
+        billingAddress: isPrint ? address.billingAddress : null,
+        billingCity: isPrint ? address.billingCity : null,
+        billingState: isPrint ? address.billingState : null,
+        billingPincode: isPrint ? address.billingPincode : null,
+        billingCountry: isPrint ? address.billingCountry : null,
         phone: address.phone,
         items: record.items as any,
         companyId: invoice.companyId,

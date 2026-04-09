@@ -42,6 +42,7 @@ export async function GET(req: NextRequest) {
 
         const { searchParams } = new URL(req.url);
         const limit = parseInt(searchParams.get('limit') || '50');
+        const page = parseInt(searchParams.get('page') || '1');
         const status = searchParams.get('status');
         const courierId = searchParams.get('courierId');
         const invoiceId = searchParams.get('invoiceId');
@@ -68,7 +69,7 @@ export async function GET(req: NextRequest) {
             ];
         }
 
-        const [orders, stats, carrierPerformance, trends] = await Promise.all([
+        const [orders, stats, carrierPerformance, trends, totalOrders] = await Promise.all([
             prisma.dispatchOrder.findMany({
                 where,
                 include: {
@@ -99,6 +100,7 @@ export async function GET(req: NextRequest) {
                     }
                 },
                 orderBy: [{ plannedDispatchDate: 'asc' }, { createdAt: 'desc' }],
+                skip: (page - 1) * limit,
                 take: limit
             }),
             prisma.dispatchOrder.groupBy({
@@ -121,7 +123,8 @@ export async function GET(req: NextRequest) {
                 ${user.role !== 'SUPER_ADMIN' ? prisma.$queryRaw`AND "companyId" = ${user.companyId}` : prisma.$queryRaw``}
                 GROUP BY DATE("createdAt")
                 ORDER BY DATE("createdAt") ASC
-            `
+            `,
+            prisma.dispatchOrder.count({ where })
         ]);
 
         // Fetch courier names for performance mapping
@@ -141,6 +144,9 @@ export async function GET(req: NextRequest) {
                 ...order,
                 tracking: buildTrackingMetadata(order),
             })),
+            total: totalOrders,
+            page,
+            limit,
             stats: stats.reduce((acc: any, curr: any) => ({ ...acc, [curr.status]: curr._count.id }), {}),
             carrierPerformance: formattedPerformance,
             trends
@@ -165,11 +171,16 @@ export async function POST(req: NextRequest) {
             invoiceId,
             customerProfileId,
             recipientName,
-            address,
-            city,
-            state,
-            pincode,
-            country,
+            shippingAddress,
+            shippingCity,
+            shippingState,
+            shippingPincode,
+            shippingCountry,
+            billingAddress,
+            billingCity,
+            billingState,
+            billingPincode,
+            billingCountry,
             phone,
             items,
             courierId,
@@ -213,11 +224,16 @@ export async function POST(req: NextRequest) {
         let finalPayload: any = {
             customerProfileId: customerProfileId || null,
             recipientName,
-            address,
-            city,
-            state,
-            pincode,
-            country,
+            shippingAddress,
+            shippingCity,
+            shippingState,
+            shippingPincode,
+            shippingCountry,
+            billingAddress,
+            billingCity,
+            billingState,
+            billingPincode,
+            billingCountry,
             phone,
             items,
             courierId: courierId || null,
@@ -265,32 +281,37 @@ export async function POST(req: NextRequest) {
                     customer?.organizationName ||
                     customer?.name ||
                     'Customer',
-                address:
-                    finalPayload.address ||
+                shippingAddress:
+                    finalPayload.shippingAddress ||
                     invoice.shippingAddress ||
                     customer?.shippingAddress ||
                     customer?.billingAddress,
-                city:
-                    finalPayload.city ||
+                shippingCity:
+                    finalPayload.shippingCity ||
                     invoice.shippingCity ||
                     customer?.shippingCity ||
                     customer?.billingCity,
-                state:
-                    finalPayload.state ||
+                shippingState:
+                    finalPayload.shippingState ||
                     invoice.shippingState ||
                     customer?.shippingState ||
                     customer?.billingState,
-                pincode:
-                    finalPayload.pincode ||
+                shippingPincode:
+                    finalPayload.shippingPincode ||
                     invoice.shippingPincode ||
                     customer?.shippingPincode ||
                     customer?.billingPincode,
-                country:
-                    finalPayload.country ||
+                shippingCountry:
+                    finalPayload.shippingCountry ||
                     invoice.shippingCountry ||
                     customer?.shippingCountry ||
                     customer?.billingCountry ||
                     'India',
+                billingAddress: finalPayload.billingAddress || customer?.billingAddress || null,
+                billingCity: finalPayload.billingCity || customer?.billingCity || customer?.city || null,
+                billingState: finalPayload.billingState || customer?.billingState || customer?.state || null,
+                billingPincode: finalPayload.billingPincode || customer?.billingPincode || customer?.pincode || null,
+                billingCountry: finalPayload.billingCountry || customer?.billingCountry || customer?.country || 'India',
                 phone: finalPayload.phone || customer?.primaryPhone || '',
                 items:
                     finalPayload.items && Object.keys(finalPayload.items).length > 0
@@ -302,7 +323,7 @@ export async function POST(req: NextRequest) {
 
         if (
             finalPayload.fulfillmentType === 'PRINT' &&
-            (!finalPayload.address || !finalPayload.city || !finalPayload.state || !finalPayload.pincode)
+            (!finalPayload.shippingAddress || !finalPayload.shippingCity || !finalPayload.shippingState || !finalPayload.shippingPincode)
         ) {
             return NextResponse.json({ error: 'Shipping address is incomplete for this dispatch' }, { status: 422 });
         }
