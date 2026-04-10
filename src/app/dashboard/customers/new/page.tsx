@@ -260,10 +260,10 @@ export default function NewCustomerPage() {
                          <div className="p-10">
                               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                                   <FormField
-                                      label="Full Identity Name"
+                                      label="Full Name"
                                       name="name"
                                       type="text"
-                                      placeholder="EX: JOHNATHAN PROTOCOL"
+                                      placeholder="e.g. John Smith"
                                       required
                                       register={register}
                                       error={errors.name}
@@ -271,10 +271,10 @@ export default function NewCustomerPage() {
                                   />
 
                                   <FormField
-                                      label="Primary Signal (Email)"
+                                      label="Primary Email"
                                       name="email"
                                       type="email"
-                                      placeholder="INTEL@CRYPTO.COM"
+                                      placeholder="e.g. john@company.com"
                                       required
                                       register={register}
                                       error={errors.email}
@@ -293,17 +293,17 @@ export default function NewCustomerPage() {
                                   />
 
                                   <FormField
-                                      label="Secondary Signal mode"
+                                      label="Alternate Phone / Contact"
                                       name="secondaryPhone"
                                       type="tel"
-                                      placeholder="OPTIONAL VECTOR"
+                                      placeholder="e.g. +91 98765 43210 (optional)"
                                       register={register}
                                       error={errors.secondaryPhone}
                                       className="input-premium"
                                   />
 
                                   <FormField
-                                      label="Classification Type"
+                                      label="Customer Type"
                                       name="type"
                                       type="select"
                                       required
@@ -311,17 +311,17 @@ export default function NewCustomerPage() {
                                       error={errors.type}
                                       className="input-premium"
                                       options={[
-                                          { value: 'INDIVIDUAL', label: 'SINGLE UNIT (INDIVIDUAL)' },
-                                          { value: 'INSTITUTION', label: 'ORGANIZATIONAL NODE (INST)' },
-                                          { value: 'AGENCY', label: 'EXTERNAL AGENT (AGENCY)' },
+                                          { value: 'INDIVIDUAL', label: 'Individual' },
+                                          { value: 'INSTITUTION', label: 'Institution / Organization' },
+                                          { value: 'AGENCY', label: 'Agency / Partner' },
                                       ]}
                                   />
 
                                   <FormField
-                                      label="Functional Designation"
+                                      label="Job Title / Designation"
                                       name="designation"
                                       type="text"
-                                      placeholder="EX: LIBRARIAN / DIRECTOR"
+                                      placeholder="e.g. Librarian, Director, Manager"
                                       register={register}
                                       error={errors.designation}
                                       className="input-premium"
@@ -330,10 +330,10 @@ export default function NewCustomerPage() {
 
                               <div className="mt-10 pt-10 border-t border-secondary-50 grid grid-cols-1 lg:grid-cols-2 gap-8">
                                   <FormField
-                                      label="Organization Designation"
+                                      label="Organization / Company Name"
                                       name="organizationName"
                                       type="text"
-                                      placeholder="GLOBAL ACADEMY / ENTERPRISE X"
+                                      placeholder="e.g. Global Academy, Enterprise Corp"
                                       register={register}
                                       error={errors.organizationName}
                                       className="input-premium"
@@ -347,7 +347,7 @@ export default function NewCustomerPage() {
                                       error={errors.institutionId}
                                       className="input-premium"
                                       options={[
-                                          { value: '', label: '-- NO MATRIX BIND / INDIVIDUAL --' },
+                                          { value: '', label: '-- None / Not Linked --' },
                                           ...institutions.map(inst => ({
                                               value: inst.id,
                                               label: `${inst.name.toUpperCase()} [${inst.code}]`
@@ -373,19 +373,19 @@ export default function NewCustomerPage() {
                               </div>
                               <div className="p-10 space-y-8">
                                    <FormField
-                                       label="GSTIN / VAT ID Protocol"
+                                       label="GSTIN / VAT / Tax ID"
                                        name="gstVatTaxId"
                                        type="text"
-                                       placeholder="TAX-XXXXXX-XXXX"
+                                       placeholder="e.g. 27AAAAA0000A1Z5"
                                        register={register}
                                        error={errors.gstVatTaxId}
                                        className="input-premium"
                                    />
                                    <FormField
-                                       label="Base Street Coordinates"
+                                       label="Street Address"
                                        name="billingAddress"
                                        type="textarea"
-                                       placeholder="BUILDING, STREET, BLOCK..."
+                                       placeholder="Building, Street, Area..."
                                        rows={3}
                                        register={register}
                                        error={errors.billingAddress}
@@ -407,9 +407,9 @@ export default function NewCustomerPage() {
                                                 }
                                             }}
                                         />
-                                        <FormField label="Sector / City" name="billingCity" type="text" register={register} error={errors.billingCity} className="input-premium" />
-                                        <FormField label="Region / State" name="billingState" type="text" register={register} error={errors.billingState} className="input-premium" />
-                                        <FormField label="Nation" name="billingCountry" type="text" defaultValue="India" register={register} error={errors.billingCountry} className="input-premium" />
+                                        <FormField label="City" name="billingCity" type="text" register={register} error={errors.billingCity} className="input-premium" />
+                                        <FormField label="State" name="billingState" type="text" register={register} error={errors.billingState} className="input-premium" />
+                                        <FormField label="Country" name="billingCountry" type="text" defaultValue="India" register={register} error={errors.billingCountry} className="input-premium" />
                                    </div>
                               </div>
                          </div>
@@ -441,10 +441,10 @@ export default function NewCustomerPage() {
                                    {!isShippingSame ? (
                                        <div className="space-y-8 animate-in fade-in zoom-in-95 duration-500">
                                             <FormField
-                                                label="Target Street Coordinates"
+                                                label="Delivery Street Address"
                                                 name="shippingAddress"
                                                 type="textarea"
-                                                placeholder="ENTER DEPLOYMENT ADDRESS"
+                                                placeholder="Building, Street, Area..."
                                                 rows={3}
                                                 register={register}
                                                 error={errors.shippingAddress}
@@ -466,9 +466,9 @@ export default function NewCustomerPage() {
                                                         }
                                                     }}
                                                 />
-                                                <FormField label="Sector / City" name="shippingCity" type="text" register={register} error={errors.shippingCity} className="input-premium" />
-                                                <FormField label="Region / State" name="shippingState" type="text" register={register} error={errors.shippingState} className="input-premium" />
-                                                <FormField label="Nation" name="shippingCountry" type="text" defaultValue="India" register={register} error={errors.shippingCountry} className="input-premium" />
+                                                <FormField label="City" name="shippingCity" type="text" register={register} error={errors.shippingCity} className="input-premium" />
+                                                <FormField label="State" name="shippingState" type="text" register={register} error={errors.shippingState} className="input-premium" />
+                                                <FormField label="Country" name="shippingCountry" type="text" defaultValue="India" register={register} error={errors.shippingCountry} className="input-premium" />
                                             </div>
                                        </div>
                                    ) : (
@@ -497,15 +497,15 @@ export default function NewCustomerPage() {
                          </div>
                          <div className="p-10">
                               <FormField
-                                  label="Observation Log"
+                                  label="Internal Notes"
                                   name="notes"
                                   type="textarea"
-                                  placeholder="DOCUMENT INTERNAL INTEL, SPECIFIC BIASES, OR OPERATIONAL PREFERENCES..."
+                                  placeholder="Any internal notes, preferences, or special instructions about this customer..."
                                   rows={6}
                                   register={register}
                                   error={errors.notes}
                                   className="input-premium bg-secondary-50/30 border-dashed border-2 hover:bg-white hover:border-solid transition-all"
-                                  helpText="INTERNAL ARCHIVE ACCESS ONLY"
+                                  helpText="Visible to staff only — not shared with the customer."
                               />
                          </div>
                     </div>
