@@ -49,15 +49,23 @@ export default function GlobalProInvoiceTemplate({
   });
 
   // ─── Compute derived tax from line items when stored DB values are 0/null ───
-  const derivedTaxRate = invoice.igstRate || invoice.taxRate || 0;
+  // Use ?? here so that a stored taxRate of 0 (e.g. Print Journal) is respected
+  const derivedTaxRate = invoice.igstRate ?? invoice.taxRate ?? 0;
   const derivedSubtotal = invoice.amount || invoiceItems.reduce((s: number, item: any) => {
     return s + ((item.amount || (item.quantity * item.price)) - (item.discount || 0));
   }, 0);
   const derivedTaxAmt = derivedSubtotal * (derivedTaxRate / 100);
 
   const subtotal = derivedSubtotal;
-  const taxAmt = invoice.tax && invoice.tax > 0 ? invoice.tax : derivedTaxAmt;
-  const grandTotal = invoice.total && invoice.total > 0 ? invoice.total : (derivedSubtotal + taxAmt);
+  const taxAmt = invoice.tax != null && invoice.tax > 0 ? invoice.tax : derivedTaxAmt;
+
+  // Bug 1 fix: when invoice.total === invoice.amount (erroneous storage — total was
+  // saved as subtotal instead of subtotal+tax), recompute from amount + stored tax.
+  const storedTotal = invoice.total ?? 0;
+  const storedAmount = invoice.amount ?? derivedSubtotal;
+  const grandTotal = storedTotal > 0 && storedTotal !== storedAmount
+    ? storedTotal                  // DB total is correct (genuinely different from amount)
+    : (storedAmount + taxAmt);     // recompute: total was stored as amount (bug in old records)
   const discount = invoice.discount || 0;
   const cgstRate =
     invoice.cgstRate != null ? invoice.cgstRate : (taxContext.isDomestic && taxContext.isSameStateSupply ? 9 : 0);
@@ -65,9 +73,10 @@ export default function GlobalProInvoiceTemplate({
     invoice.sgstRate != null ? invoice.sgstRate : (taxContext.isDomestic && taxContext.isSameStateSupply ? 9 : 0);
   const igstRate =
     invoice.igstRate != null ? invoice.igstRate : (taxContext.isDomestic && !taxContext.isSameStateSupply ? derivedTaxRate : 0);
-  const cgstAmount = invoice.cgst && invoice.cgst > 0 ? invoice.cgst : (igstRate > 0 ? 0 : taxAmt / 2);
-  const sgstAmount = invoice.sgst && invoice.sgst > 0 ? invoice.sgst : (igstRate > 0 ? 0 : taxAmt / 2);
-  const igstAmount = invoice.igst && invoice.igst > 0 ? invoice.igst : (igstRate > 0 ? taxAmt : 0);
+  // Use != null so a stored value of 0 (zero-rated) is respected instead of falling through to derived
+  const cgstAmount = invoice.cgst != null && invoice.cgst > 0 ? invoice.cgst : (igstRate > 0 ? 0 : taxAmt / 2);
+  const sgstAmount = invoice.sgst != null && invoice.sgst > 0 ? invoice.sgst : (igstRate > 0 ? 0 : taxAmt / 2);
+  const igstAmount = invoice.igst != null && invoice.igst > 0 ? invoice.igst : (igstRate > 0 ? taxAmt : 0);
 
   const displayInvoiceNumber =
     invoice.status === "PAID"
@@ -731,8 +740,11 @@ export default function GlobalProInvoiceTemplate({
           {invoiceItems.map((item, idx) => {
             const taxable =
               (item.amount || item.quantity * item.price) - (item.discount || 0);
+            // Bug 2 fix: use != null so taxRate=0 (Print Journal) is NOT skipped by falsy || check
             const gstRate =
-              item.taxRate || (isExport ? 0 : invoice.taxRate || 18);
+              item.taxRate != null
+                ? item.taxRate
+                : (isExport ? 0 : (invoice.taxRate ?? 18));
             const gstDisplay = isExport ? "0%" : `${gstRate}%`;
             const netAmt = taxable + taxable * (gstRate / 100);
             const isAlt = idx % 2 === 1;
