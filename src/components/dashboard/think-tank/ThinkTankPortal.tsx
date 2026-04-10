@@ -8,6 +8,7 @@ import ThinkTankLeaderboard from './ThinkTankLeaderboard';
 import AIInsightsPanel from './AIInsightsPanel';
 import IdeaSubmissionForm from './IdeaSubmissionForm';
 import { showError, showInfo, showWarning } from '@/lib/toast';
+import ReactMarkdown from 'react-markdown';
 
 // Animation and Design Tokens - Swiss-Bauhaus Remix
 const TT_ANIMATIONS = `
@@ -1763,7 +1764,7 @@ function VoteIdeaTable({
                             <tr key={idea.id} className="border-b border-slate-100 align-top">
                                 <td className="px-4 py-4">
                                     <div className="font-semibold text-slate-900">{idea.topic}</div>
-                                    <div className="mt-1 line-clamp-2 max-w-xl text-slate-600">{idea.description}</div>
+                                    <div className="mt-1 line-clamp-2 max-w-xl prose prose-sm prose-slate text-slate-600"><ReactMarkdown>{idea.description}</ReactMarkdown></div>
                                 </td>
                                 <td className="px-4 py-4 text-slate-700">{formatThinkTankLabel(idea.category)}</td>
                                 <td className="px-4 py-4 text-slate-700">{idea.voteCount}</td>
@@ -2107,7 +2108,7 @@ function ReviewBoard({
                                     </span>
                                 </div>
                                 <h3 className="mt-3 text-lg font-semibold text-slate-950">{idea.topic}</h3>
-                                <p className="mt-2 line-clamp-2 text-sm text-slate-600">{idea.description}</p>
+                                <div className="mt-2 line-clamp-2 text-sm prose prose-sm prose-slate text-slate-600"><ReactMarkdown>{idea.description}</ReactMarkdown></div>
                                 <div className="mt-3 flex flex-wrap gap-4 text-sm text-slate-500">
                                     <span>Author: {idea.author?.name || idea.author?.email || 'Hidden'}</span>
                                     <span>Created: {formatDateTime(idea.createdAt)}</span>
@@ -2585,7 +2586,9 @@ function IdeaGrid({
                             <div>
                                 <div className="text-xs font-semibold uppercase tracking-[0.25em] text-slate-500">{formatThinkTankLabel(idea.category)}</div>
                                 <h3 className="mt-2 text-xl font-semibold text-slate-950">{idea.topic}</h3>
-                                <p className="mt-3 whitespace-pre-wrap text-sm leading-6 text-slate-700">{idea.description}</p>
+                                <div className="mt-3 prose prose-sm prose-slate max-w-none text-slate-700">
+                                    <ReactMarkdown>{idea.description}</ReactMarkdown>
+                                </div>
                             </div>
                             <div className="rounded-2xl bg-slate-50 px-4 py-3 text-right text-sm text-slate-600">
                                 <div>Status: <span className="font-semibold text-slate-900">{idea.status}</span></div>
