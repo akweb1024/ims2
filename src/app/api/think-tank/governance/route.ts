@@ -11,22 +11,14 @@ import {
 export const dynamic = 'force-dynamic';
 
 export const GET = authorizedRoute([], async (_req: NextRequest, user: any) => {
-    if (!user?.companyId) {
-        return NextResponse.json({ error: 'Company context is required.' }, { status: 400 });
-    }
-
     return NextResponse.json({
-        governance: await getGovernanceState(user.companyId),
-        override: await getGovernanceOverride(user.companyId),
+        governance: await getGovernanceState(),
+        override: await getGovernanceOverride(),
         canManage: user.role === 'SUPER_ADMIN',
     });
 });
 
 export const POST = authorizedRoute(['SUPER_ADMIN'], async (req: NextRequest, user: any) => {
-    if (!user?.companyId) {
-        return NextResponse.json({ error: 'Company context is required.' }, { status: 400 });
-    }
-
     const body = await req.json();
     const mode = String(body.mode || 'SCHEDULED').toUpperCase() as GovernanceOverrideMode;
     const reason = body.reason ? String(body.reason) : null;
@@ -36,10 +28,9 @@ export const POST = authorizedRoute(['SUPER_ADMIN'], async (req: NextRequest, us
     }
 
     if (mode === 'SCHEDULED') {
-        await clearGovernanceOverride(user.companyId, user.id);
+        await clearGovernanceOverride(null, user.id);
     } else {
         await setGovernanceOverride({
-            companyId: user.companyId,
             mode,
             reason,
             userId: user.id,
@@ -48,8 +39,8 @@ export const POST = authorizedRoute(['SUPER_ADMIN'], async (req: NextRequest, us
 
     return NextResponse.json({
         success: true,
-        governance: await getGovernanceState(user.companyId),
-        override: await getGovernanceOverride(user.companyId),
+        governance: await getGovernanceState(),
+        override: await getGovernanceOverride(),
         canManage: true,
     });
 });

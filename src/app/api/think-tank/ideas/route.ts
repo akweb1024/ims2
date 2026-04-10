@@ -26,7 +26,7 @@ export const GET = authorizedRoute([], async (req: NextRequest, user: any) => {
     const { searchParams } = new URL(req.url);
     const view = searchParams.get('view') || 'vote';
     const cycle = await getOrCreateCurrentCycle(user.companyId);
-    const governance = await getGovernanceState(user.companyId);
+    const governance = await getGovernanceState();
     const canReview = canManageThinkTankReview(user.role);
     const userHash = crypto.createHash('sha256').update(user.id).digest('hex');
 
@@ -241,7 +241,7 @@ export const POST = authorizedRoute([], async (req: NextRequest, user: any) => {
     let cycle;
     if (cycleId) {
         cycle = await prisma.thinkTankIdeaCycle.findUnique({
-            where: { id: cycleId, companyId: user.companyId }
+            where: { id: cycleId }
         });
         if (!cycle) {
             return NextResponse.json({ error: 'Selected cycle is invalid or does not exist.' }, { status: 400 });

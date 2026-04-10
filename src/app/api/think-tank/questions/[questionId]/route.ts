@@ -34,7 +34,7 @@ export const PATCH = authorizedRoute([], async (req: NextRequest, user: any, con
         },
     });
 
-    if (!question || question.idea.companyId !== user.companyId) {
+    if (!question) {
         return NextResponse.json({ error: 'Question not found.' }, { status: 404 });
     }
 

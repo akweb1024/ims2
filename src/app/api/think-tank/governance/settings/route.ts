@@ -11,7 +11,7 @@ export const dynamic = 'force-dynamic';
 
 export const GET = authorizedRoute([], async (req: NextRequest, user: any) => {
     ensureThinkTankAccess(user);
-    const settings = await getThinkTankWindowSettings(user.companyId);
+    const settings = await getThinkTankWindowSettings();
     return NextResponse.json({
         settings,
         canManage: user.role === 'SUPER_ADMIN',
@@ -53,7 +53,7 @@ export const POST = authorizedRoute(['SUPER_ADMIN'], async (req: NextRequest, us
         return NextResponse.json({ error: 'Invalid settings values' }, { status: 400 });
     }
 
-    await setThinkTankWindowSettings(user.companyId, sanitized, user.id);
+    await setThinkTankWindowSettings(null, sanitized, user.id);
 
     return NextResponse.json({ success: true, settings: sanitized });
 });

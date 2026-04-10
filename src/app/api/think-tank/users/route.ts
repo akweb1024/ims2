@@ -9,7 +9,6 @@ export const GET = authorizedRoute([], async (req: NextRequest, user: any) => {
         
         const users = await prisma.user.findMany({
             where: {
-                companyId: user.companyId,
                 isActive: true, // Only return active employees to be selected as partners
             },
             take: limit,

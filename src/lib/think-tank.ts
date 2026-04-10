@@ -400,10 +400,10 @@ export const DEFAULT_WINDOW_SETTINGS: ThinkTankWindowSettings = {
     votingEndTime: '23:30',
 };
 
-export const getThinkTankWindowSettings = async (companyId: string): Promise<ThinkTankWindowSettings> => {
+export const getThinkTankWindowSettings = async (_companyId?: string | null): Promise<ThinkTankWindowSettings> => {
     const config = await prisma.appConfiguration.findFirst({
         where: {
-            companyId,
+            companyId: null,
             category: GOVERNANCE_CATEGORY,
             key: WINDOW_SETTINGS_KEY,
             isActive: true,
@@ -432,30 +432,30 @@ export const getThinkTankWindowSettings = async (companyId: string): Promise<Thi
     }
 };
 
-export const setThinkTankWindowSettings = async (companyId: string, settings: ThinkTankWindowSettings, userId: string) => {
+export const setThinkTankWindowSettings = async (_companyId: string | null, settings: ThinkTankWindowSettings, userId: string) => {
     const value = encryptConfigValue(JSON.stringify(settings));
-    return prisma.appConfiguration.upsert({
-        where: {
-            companyId_category_key: {
-                companyId,
-                category: GOVERNANCE_CATEGORY,
-                key: WINDOW_SETTINGS_KEY,
-            },
-        },
-        create: {
-            companyId,
+    
+    const existing = await prisma.appConfiguration.findFirst({
+        where: { companyId: null, category: GOVERNANCE_CATEGORY, key: WINDOW_SETTINGS_KEY }
+    });
+
+    if (existing) {
+        return prisma.appConfiguration.update({
+            where: { id: existing.id },
+            data: { value, isActive: true, createdBy: userId }
+        });
+    }
+
+    return prisma.appConfiguration.create({
+        data: {
+            companyId: null,
             category: GOVERNANCE_CATEGORY,
             key: WINDOW_SETTINGS_KEY,
             value,
             isActive: true,
             description: 'Think Tank window customization',
             createdBy: userId,
-        },
-        update: {
-            value,
-            isActive: true,
-            createdBy: userId,
-        },
+        }
     });
 };
 
@@ -492,10 +492,10 @@ export const getScheduledGovernanceState = (date = new Date(), settings: ThinkTa
     };
 };
 
-export const getGovernanceOverride = async (companyId: string) => {
+export const getGovernanceOverride = async (_companyId?: string | null) => {
     const config = await prisma.appConfiguration.findFirst({
         where: {
-            companyId,
+            companyId: null,
             category: GOVERNANCE_CATEGORY,
             key: GOVERNANCE_KEY,
             isActive: true,
@@ -514,7 +514,7 @@ export const getGovernanceOverride = async (companyId: string) => {
 };
 
 export const setGovernanceOverride = async (params: {
-    companyId: string;
+    companyId?: string | null;
     mode: GovernanceOverrideMode;
     reason?: string | null;
     userId: string;
@@ -526,33 +526,31 @@ export const setGovernanceOverride = async (params: {
         updatedAt: new Date().toISOString(),
     }));
 
-    return prisma.appConfiguration.upsert({
-        where: {
-            companyId_category_key: {
-                companyId: params.companyId,
-                category: GOVERNANCE_CATEGORY,
-                key: GOVERNANCE_KEY,
-            },
-        },
-        create: {
-            companyId: params.companyId,
+    const existing = await prisma.appConfiguration.findFirst({
+        where: { companyId: null, category: GOVERNANCE_CATEGORY, key: GOVERNANCE_KEY }
+    });
+
+    if (existing) {
+        return prisma.appConfiguration.update({
+            where: { id: existing.id },
+            data: { value, isActive: true, description: 'Think Tank governance override', createdBy: params.userId }
+        });
+    }
+
+    return prisma.appConfiguration.create({
+        data: {
+            companyId: null,
             category: GOVERNANCE_CATEGORY,
             key: GOVERNANCE_KEY,
             value,
             isActive: true,
             description: 'Think Tank governance override',
             createdBy: params.userId,
-        },
-        update: {
-            value,
-            isActive: true,
-            description: 'Think Tank governance override',
-            createdBy: params.userId,
-        },
+        }
     });
 };
 
-export const clearGovernanceOverride = async (companyId: string, userId: string) => {
+export const clearGovernanceOverride = async (_companyId: string | null, userId: string) => {
     const value = encryptConfigValue(JSON.stringify({
         mode: 'SCHEDULED',
         reason: null,
@@ -560,38 +558,36 @@ export const clearGovernanceOverride = async (companyId: string, userId: string)
         updatedAt: new Date().toISOString(),
     }));
 
-    return prisma.appConfiguration.upsert({
-        where: {
-            companyId_category_key: {
-                companyId,
-                category: GOVERNANCE_CATEGORY,
-                key: GOVERNANCE_KEY,
-            },
-        },
-        create: {
-            companyId,
+    const existing = await prisma.appConfiguration.findFirst({
+        where: { companyId: null, category: GOVERNANCE_CATEGORY, key: GOVERNANCE_KEY }
+    });
+
+    if (existing) {
+        return prisma.appConfiguration.update({
+            where: { id: existing.id },
+            data: { value, isActive: true, description: 'Think Tank governance override', createdBy: userId }
+        });
+    }
+
+    return prisma.appConfiguration.create({
+        data: {
+            companyId: null,
             category: GOVERNANCE_CATEGORY,
             key: GOVERNANCE_KEY,
             value,
             isActive: true,
             description: 'Think Tank governance override',
             createdBy: userId,
-        },
-        update: {
-            value,
-            isActive: true,
-            description: 'Think Tank governance override',
-            createdBy: userId,
-        },
+        }
     });
 };
 
-export const getGovernanceState = async (companyId?: string | null, date = new Date()): Promise<GovernanceState> => {
-    const settings = companyId ? await getThinkTankWindowSettings(companyId) : DEFAULT_WINDOW_SETTINGS;
+export const getGovernanceState = async (_companyId?: string | null, date = new Date()): Promise<GovernanceState> => {
+    const settings = await getThinkTankWindowSettings();
     const scheduled = getScheduledGovernanceState(date, settings);
-    if (!companyId) return scheduled;
-
-    const override = await getGovernanceOverride(companyId);
+    
+    // We fetch global override now
+    const override = await getGovernanceOverride();
     if (!override) return scheduled;
 
     const base: GovernanceState = {
@@ -1747,7 +1743,7 @@ export const generateAIInsights = async (params: {
     if (!GEMINI_API_KEY) return null;
 
     const idea = await prisma.thinkTankIdea.findFirst({
-        where: { id: params.ideaId, companyId: params.companyId },
+        where: { id: params.ideaId },
         select: {
             topic: true,
             description: true,

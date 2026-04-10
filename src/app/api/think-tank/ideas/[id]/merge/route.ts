@@ -21,10 +21,10 @@ export const POST = authorizedRoute([], async (req: NextRequest, user: any, cont
     }
 
     const sourceIdea = await prisma.thinkTankIdea.findFirst({
-        where: { id: context?.params?.id, companyId: user.companyId },
+        where: { id: context?.params?.id },
     });
     const targetIdea = await prisma.thinkTankIdea.findFirst({
-        where: { id: targetIdeaId, companyId: user.companyId },
+        where: { id: targetIdeaId },
     });
 
     if (!sourceIdea || !targetIdea) {
