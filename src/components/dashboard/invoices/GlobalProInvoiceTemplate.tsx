@@ -48,22 +48,26 @@ export default function GlobalProInvoiceTemplate({
     stateCode: invoice.companyStateCode || identity?.stateCode,
   });
 
-  const subtotal = invoice.amount || 0;
-  const taxAmt = invoice.tax || 0;
-  const grandTotal = invoice.total || 0;
+  // ─── Compute derived tax from line items when stored DB values are 0/null ───
+  const derivedTaxRate = invoice.igstRate || invoice.taxRate || 0;
+  const derivedSubtotal = invoice.amount || invoiceItems.reduce((s: number, item: any) => {
+    return s + ((item.amount || (item.quantity * item.price)) - (item.discount || 0));
+  }, 0);
+  const derivedTaxAmt = derivedSubtotal * (derivedTaxRate / 100);
+
+  const subtotal = derivedSubtotal;
+  const taxAmt = invoice.tax && invoice.tax > 0 ? invoice.tax : derivedTaxAmt;
+  const grandTotal = invoice.total && invoice.total > 0 ? invoice.total : (derivedSubtotal + taxAmt);
   const discount = invoice.discount || 0;
   const cgstRate =
-    invoice.cgstRate ?? (taxContext.isDomestic && taxContext.isSameStateSupply ? 9 : 0);
+    invoice.cgstRate != null ? invoice.cgstRate : (taxContext.isDomestic && taxContext.isSameStateSupply ? 9 : 0);
   const sgstRate =
-    invoice.sgstRate ?? (taxContext.isDomestic && taxContext.isSameStateSupply ? 9 : 0);
+    invoice.sgstRate != null ? invoice.sgstRate : (taxContext.isDomestic && taxContext.isSameStateSupply ? 9 : 0);
   const igstRate =
-    invoice.igstRate ?? (taxContext.isDomestic && !taxContext.isSameStateSupply ? 18 : 0);
-  const cgstAmount =
-    invoice.cgst ?? (igstRate > 0 ? 0 : taxAmt > 0 ? taxAmt / 2 : 0);
-  const sgstAmount =
-    invoice.sgst ?? (igstRate > 0 ? 0 : taxAmt > 0 ? taxAmt / 2 : 0);
-  const igstAmount =
-    invoice.igst ?? (igstRate > 0 && taxAmt > 0 ? taxAmt : 0);
+    invoice.igstRate != null ? invoice.igstRate : (taxContext.isDomestic && !taxContext.isSameStateSupply ? derivedTaxRate : 0);
+  const cgstAmount = invoice.cgst && invoice.cgst > 0 ? invoice.cgst : (igstRate > 0 ? 0 : taxAmt / 2);
+  const sgstAmount = invoice.sgst && invoice.sgst > 0 ? invoice.sgst : (igstRate > 0 ? 0 : taxAmt / 2);
+  const igstAmount = invoice.igst && invoice.igst > 0 ? invoice.igst : (igstRate > 0 ? taxAmt : 0);
 
   const displayInvoiceNumber =
     invoice.status === "PAID"
