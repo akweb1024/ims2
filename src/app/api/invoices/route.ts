@@ -83,7 +83,8 @@ export const GET = authorizedRoute(
                                 }
                             }
                         }
-                    }
+                    },
+                    dispatchOrders: true
                 }
             }),
             prisma.invoice.count({ where })

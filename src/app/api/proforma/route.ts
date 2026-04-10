@@ -86,7 +86,8 @@ export const GET = authorizedRoute(
                 throw new ValidationError(`status must be one of: ${validStatuses.join(', ')}`);
             }
 
-            const where: any = { deletedAt: null, companyId: user.companyId };
+            const where: any = { deletedAt: null };
+            if (user.companyId) where.companyId = user.companyId;
             if (customerId) where.customerProfileId = customerId;
             if (status) where.status = status;
 
