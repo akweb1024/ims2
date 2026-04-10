@@ -78,7 +78,17 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
             discountRate,
             commissionTerms,
             territory,
-            isInstitution
+            isInstitution,
+            billingAddress,
+            billingCity,
+            billingState,
+            billingCountry,
+            billingPincode,
+            shippingAddress,
+            shippingCity,
+            shippingState,
+            shippingCountry,
+            shippingPincode
         } = body;
 
         if (isInstitution) {
@@ -99,6 +109,16 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
                 name,
                 organizationName,
                 primaryPhone,
+                billingAddress,
+                billingCity,
+                billingState,
+                billingCountry,
+                billingPincode,
+                shippingAddress,
+                shippingCity,
+                shippingState,
+                shippingCountry,
+                shippingPincode,
                 agencyDetails: {
                     update: {
                         discountRate: parseFloat(discountRate || '0'),

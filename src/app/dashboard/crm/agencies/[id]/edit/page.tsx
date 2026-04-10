@@ -1,13 +1,16 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect } from 'react';
+import { useRouter, useParams } from 'next/navigation';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { MapPin, Globe } from 'lucide-react';
 
-export default function NewAgencyPage() {
+export default function EditAgencyPage() {
     const router = useRouter();
+    const params = useParams();
+    const id = params.id as string;
     const [loading, setLoading] = useState(false);
+    const [isFetchingData, setIsFetchingData] = useState(true);
     const [isFetchingBillingPincode, setIsFetchingBillingPincode] = useState(false);
     const [isFetchingShippingPincode, setIsFetchingShippingPincode] = useState(false);
     const [isShippingSame, setIsShippingSame] = useState(true);
@@ -30,6 +33,49 @@ export default function NewAgencyPage() {
         shippingCountry: 'India',
         shippingPincode: ''
     });
+
+    useEffect(() => {
+        if (!id) return;
+        
+        const fetchAgency = async () => {
+            try {
+                const res = await fetch(`/api/agencies/${id}`);
+                if (res.ok) {
+                    const data = await res.json();
+                    
+                    setFormData({
+                        name: data.name || '',
+                        organizationName: data.organizationName || '',
+                        primaryEmail: data.primaryEmail || '',
+                        primaryPhone: data.primaryPhone || '',
+                        discountRate: data.agencyDetails?.discountRate || 0,
+                        commissionTerms: data.agencyDetails?.commissionTerms || '',
+                        territory: data.agencyDetails?.territory || '',
+                        billingAddress: data.billingAddress || '',
+                        billingCity: data.billingCity || '',
+                        billingState: data.billingState || '',
+                        billingCountry: data.billingCountry || 'India',
+                        billingPincode: data.billingPincode || '',
+                        shippingAddress: data.shippingAddress || '',
+                        shippingCity: data.shippingCity || '',
+                        shippingState: data.shippingState || '',
+                        shippingCountry: data.shippingCountry || 'India',
+                        shippingPincode: data.shippingPincode || ''
+                    });
+
+                    if (data.shippingAddress !== data.billingAddress || data.shippingCity !== data.billingCity) {
+                        setIsShippingSame(false);
+                    }
+                }
+            } catch (error) {
+                console.error("Failed to fetch agency", error);
+            } finally {
+                setIsFetchingData(false);
+            }
+        };
+
+        fetchAgency();
+    }, [id]);
 
     const handlePincodeLookup = async (pincode: string, type: 'billing' | 'shipping') => {
         if (pincode.length !== 6) return;
@@ -76,14 +122,15 @@ export default function NewAgencyPage() {
 
         try {
             const token = localStorage.getItem('token');
-            const res = await fetch('/api/agencies', {
-                method: 'POST',
+            const res = await fetch(`/api/agencies/${id}`, {
+                method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${token}`
                 },
                 body: JSON.stringify({
                     ...formData,
+                    isInstitution: false, // Ensure we pass this or omit it based on how we loaded
                     shippingAddress: isShippingSame ? formData.billingAddress : formData.shippingAddress,
                     shippingCity: isShippingSame ? formData.billingCity : formData.shippingCity,
                     shippingState: isShippingSame ? formData.billingState : formData.shippingState,
@@ -93,7 +140,7 @@ export default function NewAgencyPage() {
             });
 
             if (res.ok) {
-                router.push('/dashboard/crm/agencies');
+                router.push(`/dashboard/crm/agencies/${id}`);
             } else {
                 const err = await res.json();
                 alert(err.error || 'Failed to create agency');
@@ -106,18 +153,28 @@ export default function NewAgencyPage() {
         }
     };
 
+    if (isFetchingData) {
+        return (
+            <DashboardLayout userRole="ADMIN">
+                <div className="flex items-center justify-center h-96">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto"></div>
+                </div>
+            </DashboardLayout>
+        );
+    }
+
     return (
         <DashboardLayout userRole="ADMIN">
             <div className="max-w-2xl mx-auto space-y-6">
                 <div className="flex items-center space-x-4 mb-6">
-                    <button onClick={() => router.back()} className="p-2 hover:bg-white rounded-full transition-colors text-secondary-500">
+                    <button onClick={() => router.push(`/dashboard/crm/agencies/${id}`)} className="p-2 hover:bg-white rounded-full transition-colors text-secondary-500">
                         <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
                         </svg>
                     </button>
                     <div>
-                        <h1 className="text-3xl font-bold text-secondary-900">New Agency</h1>
-                        <p className="text-secondary-500">Register a new agency partner.</p>
+                        <h1 className="text-3xl font-bold text-secondary-900">Edit Agency</h1>
+                        <p className="text-secondary-500">Update agency partner details.</p>
                     </div>
                 </div>
 
@@ -382,7 +439,7 @@ export default function NewAgencyPage() {
                             disabled={loading}
                             className="btn btn-primary"
                         >
-                            {loading ? 'Creating...' : 'Register Agency'}
+                            {loading ? 'Updating...' : 'Update Agency'}
                         </button>
                     </div>
                 </form>

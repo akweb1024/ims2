@@ -1,14 +1,17 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useParams } from 'next/navigation';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { Building2, ArrowLeft, Save, Globe, MapPin, Phone, Mail, User } from 'lucide-react';
 import Link from 'next/link';
 
-export default function NewInstitutionPage() {
+export default function EditInstitutionPage() {
     const router = useRouter();
+    const params = useParams();
+    const id = params.id as string;
     const [loading, setLoading] = useState(false);
+    const [isFetchingData, setIsFetchingData] = useState(true);
     const [userRole, setUserRole] = useState('');
     const [executives, setExecutives] = useState<any[]>([]);
     const [errorMessage, setErrorMessage] = useState('');
@@ -80,6 +83,68 @@ export default function NewInstitutionPage() {
         }
     }, []);
 
+    useEffect(() => {
+        if (!id) return;
+        const fetchInstitution = async () => {
+            try {
+                const token = localStorage.getItem('token');
+                const res = await fetch(`/api/institutions?id=${id}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    setFormData({
+                        name: data.name || '',
+                        code: data.code || '',
+                        type: data.type || 'UNIVERSITY',
+                        category: data.category || '',
+                        establishedYear: data.establishedYear?.toString() || '',
+                        accreditation: data.accreditation || '',
+                        primaryEmail: data.primaryEmail || '',
+                        secondaryEmail: data.secondaryEmail || '',
+                        primaryPhone: data.primaryPhone || '',
+                        secondaryPhone: data.secondaryPhone || '',
+                        website: data.website || '',
+                        address: data.address || '',
+                        city: data.city || '',
+                        state: data.state || '',
+                        country: data.country || 'India',
+                        pincode: data.pincode || '',
+                        billingAddress: data.billingAddress || '',
+                        billingCity: data.billingCity || '',
+                        billingState: data.billingState || '',
+                        billingCountry: data.billingCountry || 'India',
+                        billingPincode: data.billingPincode || '',
+                        shippingAddress: data.shippingAddress || '',
+                        shippingCity: data.shippingCity || '',
+                        shippingState: data.shippingState || '',
+                        shippingCountry: data.shippingCountry || 'India',
+                        shippingPincode: data.shippingPincode || '',
+                        totalStudents: data.totalStudents?.toString() || '',
+                        totalFaculty: data.totalFaculty?.toString() || '',
+                        totalStaff: data.totalStaff?.toString() || '',
+                        libraryBudget: data.libraryBudget?.toString() || '',
+                        ipRange: data.ipRange || '',
+                        notes: data.notes || '',
+                        domain: data.domain || '',
+                        logo: data.logo || '',
+                        assignedToUserId: data.assignedToUserId || ''
+                    });
+                    
+                    if (data.shippingAddress !== data.billingAddress || data.shippingCity !== data.billingCity) {
+                        setIsShippingSame(false);
+                    }
+                }
+            } catch (error) {
+                console.error("Failed to fetch institution", error);
+                setErrorMessage('Failed to load institution data. Please try again.');
+            } finally {
+                setIsFetchingData(false);
+            }
+        };
+        fetchInstitution();
+    }, [id]);
+
     const handlePincodeLookup = async (pincode: string, type: 'billing' | 'shipping') => {
         if (pincode.length !== 6) return;
         
@@ -128,13 +193,14 @@ export default function NewInstitutionPage() {
         try {
             const token = localStorage.getItem('token');
             const res = await fetch('/api/institutions', {
-                method: 'POST',
+                method: 'PATCH',
                 headers: {
                     'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
                     ...formData,
+                    id: id,
                     address: formData.billingAddress,
                     city: formData.billingCity,
                     state: formData.billingState,
@@ -151,12 +217,12 @@ export default function NewInstitutionPage() {
             const data = await res.json();
 
             if (res.ok) {
-                setSuccessMessage('Institution created successfully! Redirecting...');
+                setSuccessMessage('Institution updated successfully! Redirecting...');
                 setTimeout(() => {
-                    router.push('/dashboard/institutions');
+                    router.push(`/dashboard/institutions/${id}`);
                 }, 2000);
             } else {
-                setErrorMessage(data.error || 'Failed to create institution. Please check all required fields.');
+                setErrorMessage(data.error || 'Failed to update institution. Please check all required fields.');
             }
         } catch (error: any) {
             console.error('Error saving institution:', error);
@@ -166,20 +232,30 @@ export default function NewInstitutionPage() {
         }
     };
 
+    if (isFetchingData) {
+        return (
+            <DashboardLayout userRole={userRole}>
+                <div className="flex items-center justify-center min-h-[400px]">
+                    <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary-500"></div>
+                </div>
+            </DashboardLayout>
+        );
+    }
+
     return (
         <DashboardLayout userRole={userRole}>
             <div className="max-w-4xl mx-auto space-y-6">
                 {/* Header */}
                 <div className="flex items-center gap-4">
                     <Link
-                        href="/dashboard/institutions"
+                        href={`/dashboard/institutions/${id}`}
                         className="p-2 hover:bg-secondary-100 rounded-full transition-colors"
                     >
                         <ArrowLeft size={24} className="text-secondary-600" />
                     </Link>
                     <div>
-                        <h1 className="text-3xl font-black text-secondary-900">Add New Institution</h1>
-                        <p className="text-secondary-600">Enter organization details to create a new profile</p>
+                        <h1 className="text-3xl font-black text-secondary-900">Edit Institution</h1>
+                        <p className="text-secondary-600">Update organization details</p>
                     </div>
                 </div>
 
@@ -616,7 +692,7 @@ export default function NewInstitutionPage() {
                             ) : (
                                 <>
                                     <Save size={20} />
-                                    Save Institution
+                                    Update Institution
                                 </>
                             )}
                         </button>

@@ -99,6 +99,9 @@ export default function InstitutionDetailPage() {
                 <ArrowLeft className="w-4 h-4" />
                 Back to Matrix
             </Link>
+            <Link href={`/dashboard/institutions/${institution.id}/edit`} className="btn btn-secondary bg-white">
+                Edit Institution
+            </Link>
             <Link href={createInvoiceHref} className="btn btn-primary">
                 Create Invoice
             </Link>

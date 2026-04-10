@@ -392,8 +392,6 @@ export default function NewCustomerPage() {
                                        className="input-premium"
                                    />
                                    <div className="grid grid-cols-2 gap-6">
-                                        <FormField label="Sector / City" name="billingCity" type="text" register={register} error={errors.billingCity} className="input-premium" />
-                                        <FormField label="Region / State" name="billingState" type="text" register={register} error={errors.billingState} className="input-premium" />
                                         <FormField 
                                             label="Zone Code" 
                                             name="billingPincode" 
@@ -409,6 +407,8 @@ export default function NewCustomerPage() {
                                                 }
                                             }}
                                         />
+                                        <FormField label="Sector / City" name="billingCity" type="text" register={register} error={errors.billingCity} className="input-premium" />
+                                        <FormField label="Region / State" name="billingState" type="text" register={register} error={errors.billingState} className="input-premium" />
                                         <FormField label="Nation" name="billingCountry" type="text" defaultValue="India" register={register} error={errors.billingCountry} className="input-premium" />
                                    </div>
                               </div>
@@ -451,8 +451,6 @@ export default function NewCustomerPage() {
                                                 className="input-premium"
                                             />
                                             <div className="grid grid-cols-2 gap-6">
-                                                <FormField label="Sector / City" name="shippingCity" type="text" register={register} error={errors.shippingCity} className="input-premium" />
-                                                <FormField label="Region / State" name="shippingState" type="text" register={register} error={errors.shippingState} className="input-premium" />
                                                 <FormField 
                                                     label="Zone Code" 
                                                     name="shippingPincode" 
@@ -468,6 +466,8 @@ export default function NewCustomerPage() {
                                                         }
                                                     }}
                                                 />
+                                                <FormField label="Sector / City" name="shippingCity" type="text" register={register} error={errors.shippingCity} className="input-premium" />
+                                                <FormField label="Region / State" name="shippingState" type="text" register={register} error={errors.shippingState} className="input-premium" />
                                                 <FormField label="Nation" name="shippingCountry" type="text" defaultValue="India" register={register} error={errors.shippingCountry} className="input-premium" />
                                             </div>
                                        </div>

@@ -214,12 +214,12 @@ export default function AgencyDetailPage({ params }: { params: Promise<{ id: str
                         </div>
                     </div>
                     <div className="flex space-x-3">
-                        <button
-                            onClick={() => setShowEditModal(true)}
+                        <Link
+                            href={`/dashboard/crm/agencies/${customer.id}/edit`}
                             className="btn btn-secondary bg-white"
                         >
                             Edit Profile
-                        </button>
+                        </Link>
                         <Link
                             href={`/dashboard/crm/invoices/new?customerId=${customer.id}&context=agency`}
                             className="btn btn-primary"
@@ -229,67 +229,7 @@ export default function AgencyDetailPage({ params }: { params: Promise<{ id: str
                     </div>
                 </div>
 
-                {/* Edit Profile Modal */}
-                {showEditModal && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-secondary-900/50 backdrop-blur-sm p-4">
-                        <div className="bg-white rounded-3xl p-8 max-w-lg w-full shadow-2xl">
-                            <h2 className="text-2xl font-bold text-secondary-900 mb-6">Edit Agency Profile</h2>
-                            <form onSubmit={handleUpdate} className="space-y-6">
-                                <div>
-                                    <label className="label">Primary Contact Name</label>
-                                    <input name="name" className="input" defaultValue={customer.name} required />
-                                </div>
-                                <div>
-                                    <label className="label">Organization Name</label>
-                                    <input name="organizationName" className="input" defaultValue={customer.organizationName} />
-                                </div>
-                                <div>
-                                    <label className="label">Primary Phone</label>
-                                    <input name="primaryPhone" className="input" defaultValue={customer.primaryPhone} />
-                                </div>
-                                <div>
-                                    <label className="label">Secondary Email</label>
-                                    <input name="secondaryEmail" className="input" defaultValue={customer.secondaryEmail} />
-                                </div>
-                                <div>
-                                    <label className="label">Website</label>
-                                    <input name="website" className="input" defaultValue={customer.website} placeholder="https://" />
-                                </div>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div>
-                                        <label className="label">Billing Address</label>
-                                        <textarea name="billingAddress" className="input h-20" defaultValue={customer.billingAddress} placeholder="Company Billing Address" />
-                                    </div>
-                                    <div>
-                                        <label className="label">Shipping / Dispatch Address</label>
-                                        <textarea name="shippingAddress" className="input h-20" defaultValue={customer.shippingAddress} placeholder="Shipping or Dispatch Address" />
-                                    </div>
-                                </div>
-
-                                <div className="p-4 bg-yellow-50 text-yellow-800 text-sm rounded-lg">
-                                    To update Commercial Terms (Discount, Commission, etc.), please contact Super Admin directly or use the database tools.
-                                </div>
-
-                                <div className="flex justify-end space-x-3 mt-8">
-                                    <button
-                                        type="button"
-                                        onClick={() => setShowEditModal(false)}
-                                        className="btn btn-secondary"
-                                    >
-                                        Cancel
-                                    </button>
-                                    <button
-                                        type="submit"
-                                        disabled={actionLoading}
-                                        className="btn btn-primary"
-                                    >
-                                        {actionLoading ? 'Saving...' : 'Save Changes'}
-                                    </button>
-                                </div>
-                            </form>
-                        </div>
-                    </div>
-                )}
+                {/* Edit Profile Modal Removed - Now using full edit page */}
 
                 {/* Edit Log Modal */}
                 {editingLog && (
