@@ -31,7 +31,7 @@ export const GET = authorizedRoute([], async (req: NextRequest, user: any) => {
     const userHash = crypto.createHash('sha256').update(user.id).digest('hex');
 
     const where: any = {
-        companyId: user.companyId,
+        // GLOBAL: no companyId filter
     };
 
     if (view === 'my') {
@@ -98,12 +98,12 @@ export const GET = authorizedRoute([], async (req: NextRequest, user: any) => {
 
     let submittedUserIds: string[] = [];
     if (view === 'my' || view === 'vote') {
+        // GLOBAL: check across ALL companies
         const submittedIdeasActive = await prisma.thinkTankIdea.findMany({
-            where: { companyId: user.companyId, cycleId: cycle.id },
+            where: { cycleId: cycle.id },
             select: { plannerHash: true }
         });
         const allUsers = await prisma.user.findMany({
-            where: { companyId: user.companyId },
             select: { id: true }
         });
         const userHashMap = new Map<string, string>();
@@ -180,17 +180,17 @@ export const POST = authorizedRoute([], async (req: NextRequest, user: any) => {
         : [];
 
     if (validatedPartnerIds.length > 0) {
+        // GLOBAL: partners can be from ANY active company
         const validPartners = await prisma.user.findMany({
             where: {
                 id: { in: validatedPartnerIds },
-                companyId: user.companyId,
                 isActive: true,
             },
             select: { id: true },
         });
 
         if (validPartners.length !== validatedPartnerIds.length) {
-            return NextResponse.json({ error: 'One or more selected partners are invalid for this company.' }, { status: 400 });
+            return NextResponse.json({ error: 'One or more selected partners are invalid.' }, { status: 400 });
         }
     }
 

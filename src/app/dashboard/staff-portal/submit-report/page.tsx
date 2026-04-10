@@ -128,6 +128,14 @@ export default function SubmitReportPage() {
         tasksCount: 0
     });
 
+    // Achievement Section State
+    const [hasAchievement, setHasAchievement] = useState<'yes' | 'no' | ''>('no');
+    const [achievementType, setAchievementType] = useState<'Revenue' | 'Production' | 'Others' | ''>('');
+    const [achievementData, setAchievementData] = useState({
+        description: '',
+        amountInr: ''
+    });
+
     useEffect(() => {
         const userData = localStorage.getItem('user');
         const token = localStorage.getItem('token');
@@ -543,6 +551,13 @@ export default function SubmitReportPage() {
                     amount: c.amount,
                     reason: c.reason
                 })),
+                achievement: hasAchievement === 'yes' && achievementType ? {
+                    type: achievementType,
+                    description: achievementData.description,
+                    ...(achievementType === 'Revenue' && achievementData.amountInr
+                        ? { amountInr: parseFloat(achievementData.amountInr) }
+                        : {})
+                } : null,
                 metrics: {
                     derived: derivedMetrics,
                     meetingsText: commonData.meetingsText
@@ -1026,6 +1041,101 @@ export default function SubmitReportPage() {
                                     <textarea required rows={5} className="input" placeholder="Describe your activities..."
                                         value={commonData.content} onChange={e => setCommonData({ ...commonData, content: e.target.value })} />
                                 </div>
+
+                                {/* ── Achievement Section ── */}
+                                <div className="mt-2 p-5 rounded-2xl border-2 border-dashed border-amber-200 bg-amber-50/40">
+                                    <div className="flex items-center gap-3 mb-3">
+                                        <Award size={18} className="text-amber-600" />
+                                        <span className="text-sm font-black text-secondary-900 uppercase tracking-wide">Achievement</span>
+                                    </div>
+                                    <div className="flex items-center gap-6">
+                                        <label className="flex items-center gap-2 cursor-pointer select-none">
+                                            <input
+                                                type="radio"
+                                                name="hasAchievement"
+                                                value="yes"
+                                                checked={hasAchievement === 'yes'}
+                                                onChange={() => { setHasAchievement('yes'); setAchievementType(''); setAchievementData({ description: '', amountInr: '' }); }}
+                                                className="w-4 h-4 accent-amber-500"
+                                            />
+                                            <span className="text-sm font-bold text-secondary-700">Yes</span>
+                                        </label>
+                                        <label className="flex items-center gap-2 cursor-pointer select-none">
+                                            <input
+                                                type="radio"
+                                                name="hasAchievement"
+                                                value="no"
+                                                checked={hasAchievement === 'no'}
+                                                onChange={() => { setHasAchievement('no'); setAchievementType(''); setAchievementData({ description: '', amountInr: '' }); }}
+                                                className="w-4 h-4 accent-amber-500"
+                                            />
+                                            <span className="text-sm font-bold text-secondary-700">No</span>
+                                        </label>
+                                    </div>
+
+                                    {hasAchievement === 'yes' && (
+                                        <div className="mt-4 space-y-4 animate-in fade-in slide-in-from-top duration-300">
+                                            {/* Sub-type selection */}
+                                            <div className="flex flex-wrap gap-4">
+                                                {(['Revenue', 'Production', 'Others'] as const).map(type => (
+                                                    <label key={type} className="flex items-center gap-2 cursor-pointer select-none">
+                                                        <input
+                                                            type="radio"
+                                                            name="achievementType"
+                                                            value={type}
+                                                            checked={achievementType === type}
+                                                            onChange={() => { setAchievementType(type); setAchievementData({ description: '', amountInr: '' }); }}
+                                                            className="w-4 h-4 accent-amber-600"
+                                                        />
+                                                        <span className={`text-sm font-bold ${
+                                                            achievementType === type ? 'text-amber-700' : 'text-secondary-600'
+                                                        }`}>{type}</span>
+                                                    </label>
+                                                ))}
+                                            </div>
+
+                                            {/* Description panel (all types) */}
+                                            {achievementType && (
+                                                <div className="space-y-3 p-4 bg-white rounded-xl border border-amber-200 shadow-sm animate-in fade-in duration-200">
+                                                    <div>
+                                                        <label className="text-[10px] font-black text-secondary-400 uppercase tracking-widest block mb-1">
+                                                            {achievementType} — Description
+                                                        </label>
+                                                        <textarea
+                                                            rows={3}
+                                                            className="input w-full"
+                                                            placeholder={`Describe your ${achievementType.toLowerCase()} achievement...`}
+                                                            value={achievementData.description}
+                                                            onChange={e => setAchievementData(prev => ({ ...prev, description: e.target.value }))}
+                                                        />
+                                                    </div>
+
+                                                    {/* Amount in INR — Revenue only */}
+                                                    {achievementType === 'Revenue' && (
+                                                        <div>
+                                                            <label className="text-[10px] font-black text-secondary-400 uppercase tracking-widest block mb-1">
+                                                                Amount in INR
+                                                            </label>
+                                                            <div className="relative">
+                                                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-success-600 font-black text-base">₹</span>
+                                                                <input
+                                                                    type="number"
+                                                                    min="0"
+                                                                    step="0.01"
+                                                                    className="input pl-7"
+                                                                    placeholder="e.g. 50000"
+                                                                    value={achievementData.amountInr}
+                                                                    onChange={e => setAchievementData(prev => ({ ...prev, amountInr: e.target.value }))}
+                                                                />
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
+                                {/* ── End Achievement Section ── */}
                             </div>
                         </div>
 

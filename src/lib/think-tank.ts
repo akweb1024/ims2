@@ -333,10 +333,10 @@ export const canManageThinkTankReview = (role?: string | null) => {
 
 export const canUseThinkTankVeto = (role?: string | null) => (role || '') === 'SUPER_ADMIN';
 
-export const notifyThinkTankReviewers = async (companyId: string, title: string, message: string, link: string) => {
+export const notifyThinkTankReviewers = async (_companyId: string, title: string, message: string, link: string) => {
+    // GLOBAL: notify reviewers across ALL companies
     const reviewers = await prisma.user.findMany({
         where: {
-            companyId,
             isActive: true,
             role: {
                 in: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'TEAM_LEADER'] as UserRole[],
@@ -707,9 +707,9 @@ export function getCurrentCycleWindow(date = new Date(), settings: ThinkTankWind
 export const getOrCreateCurrentCycle = async (companyId: string, date = new Date()) => {
     const settings = await getThinkTankWindowSettings(companyId);
     const { windowStart, windowEnd, revealAt } = getCurrentCycleWindow(date, settings);
+    // GLOBAL: search across ALL companies for this window
     const existing = await prisma.thinkTankIdeaCycle.findFirst({
         where: {
-            companyId,
             windowStart,
             windowEnd,
         },
@@ -737,9 +737,9 @@ export const getUpcomingCycles = async (companyId: string, count: number = 6) =>
     for (let i = 0; i < count; i++) {
         const window = getCurrentCycleWindow(currentDate, settings);
         
+        // GLOBAL: find cycle across ALL companies for this window
         let existing = await prisma.thinkTankIdeaCycle.findFirst({
             where: {
-                companyId,
                 windowStart: window.windowStart,
                 windowEnd: window.windowEnd,
             },
@@ -859,9 +859,9 @@ export const findPotentialDuplicates = async (params: {
     category: ThinkTankIdeaCategory;
     description: string;
 }) => {
+    // GLOBAL: search duplicates across ALL companies in the same cycle
     const existingIdeas = await prisma.thinkTankIdea.findMany({
         where: {
-            companyId: params.companyId,
             cycleId: params.cycleId,
             category: params.category,
             status: {
@@ -1027,9 +1027,9 @@ export const pickCoOptedMembers = async (params: {
     excludeUserIds: string[];
 }) => {
     const keywords = CATEGORY_EXPERTISE[params.category] || CATEGORY_EXPERTISE.OTHER;
+    // GLOBAL: pick co-opted members from ALL companies
     const candidates = await prisma.user.findMany({
         where: {
-            companyId: params.companyId,
             isActive: true,
             id: { notIn: params.excludeUserIds },
             role: { in: [...ALLOWED_INTERNAL_ROLES] as UserRole[] },
@@ -1174,6 +1174,7 @@ export const castThinkTankVote = async (params: {
     vote: ThinkTankVoteState;
     pointAllocation?: number | null;
 }) => {
+    // GLOBAL: get the shared cycle (not scoped to user's company)
     const cycle = await getOrCreateCurrentCycle(params.companyId);
     const userHash = crypto.createHash('sha256').update(params.userId).digest('hex');
     const participantHashes = await getPlannerAndParticipantHashes(params.ideaId);
@@ -1275,9 +1276,9 @@ const rebuildPointAccountFields = async (params: {
 }) => {
     const budget = getThinkTankPointBudget(params.designation, params.role);
     const voterHash = hashIdentity(params.userId);
+    // GLOBAL: find all votes by this voter in this cycle across all companies
     const votes = await params.tx.thinkTankIdeaVote.findMany({
         where: {
-            companyId: params.companyId,
             cycleId: params.cycleId,
             voterHash,
         },
@@ -1348,7 +1349,7 @@ export const removeThinkTankVoteByAdmin = async (params: {
     const vote = await prisma.thinkTankIdeaVote.findFirst({
         where: {
             id: params.voteId,
-            companyId: params.companyId,
+            // GLOBAL: no companyId filter – admin can remove any vote
         },
     });
 
@@ -1418,9 +1419,9 @@ export const removeThinkTankVoteByAdmin = async (params: {
 };
 
 export const getThinkTankVoteMonitor = async (companyId: string) => {
+    // GLOBAL: find the active cycle across all companies
     const cycle = await prisma.thinkTankIdeaCycle.findFirst({
         where: {
-            companyId,
             status: 'ACTIVE',
         },
         orderBy: { revealAt: 'asc' },
@@ -1440,9 +1441,9 @@ export const getThinkTankVoteMonitor = async (companyId: string) => {
         };
     }
 
+    // GLOBAL: show point accounts from ALL companies for this cycle
     const accounts = await prisma.thinkTankPointAccount.findMany({
         where: {
-            companyId,
             cycleId: cycle.id,
         },
         include: {
@@ -1470,7 +1471,7 @@ export const getThinkTankVoteMonitor = async (companyId: string) => {
     const votes = voterHashes.length > 0
         ? await prisma.thinkTankIdeaVote.findMany({
             where: {
-                companyId,
+                // GLOBAL: no companyId filter
                 cycleId: cycle.id,
                 voterHash: { in: voterHashes },
             },
@@ -1648,10 +1649,11 @@ export const applyThinkTankVeto = async (params: {
     return idea;
 };
 
-export const getThinkTankAnalytics = async (companyId: string) => {
+export const getThinkTankAnalytics = async (_companyId: string) => {
+    // GLOBAL: load analytics from ALL companies
     const [ideas, votes, cycles] = await Promise.all([
         prisma.thinkTankIdea.findMany({
-            where: { companyId },
+            where: {},
             select: {
                 id: true,
                 category: true,
@@ -1664,7 +1666,7 @@ export const getThinkTankAnalytics = async (companyId: string) => {
             },
         }),
         prisma.thinkTankIdeaVote.findMany({
-            where: { companyId },
+            where: {},
             select: {
                 id: true,
                 ideaId: true,
@@ -1674,7 +1676,7 @@ export const getThinkTankAnalytics = async (companyId: string) => {
             },
         }),
         prisma.thinkTankIdeaCycle.findMany({
-            where: { companyId },
+            where: {},
             select: {
                 id: true,
                 revealAt: true,
@@ -1787,9 +1789,9 @@ Return this exact JSON structure:
     }
 };
 
-export const getThinkTankLeaderboard = async (companyId: string, cycleId?: string) => {
+export const getThinkTankLeaderboard = async (_companyId: string, cycleId?: string) => {
+    // GLOBAL: leaderboard spans all companies
     const ideaWhere: Record<string, any> = {
-        companyId,
         status: { in: ['ACTIVE', 'LOCKED', 'REVEALED'] },
     };
     if (cycleId) ideaWhere.cycleId = cycleId;
@@ -1849,8 +1851,9 @@ export const getThinkTankLeaderboard = async (companyId: string, cycleId?: strin
     const contributorIds = [...contributorMap.keys()];
     if (!contributorIds.length) return { ideas, contributors: [] };
 
+    // GLOBAL: look up users without companyId filter
     const users = await prisma.user.findMany({
-        where: { id: { in: contributorIds }, companyId },
+        where: { id: { in: contributorIds } },
         select: {
             id: true,
             name: true,
@@ -1893,7 +1896,7 @@ export const convertThinkTankIdeaToExecution = async (params: {
     const idea = await prisma.thinkTankIdea.findFirst({
         where: {
             id: params.ideaId,
-            companyId: params.companyId,
+            // GLOBAL: no companyId filter for convert-to-execution
         },
     });
 
@@ -2244,7 +2247,7 @@ export const createIdeaWithParticipants = async (params: {
 
     const existingIdea = await prisma.thinkTankIdea.findFirst({
         where: {
-            companyId: params.user.companyId!,
+            // GLOBAL: only deduplicate within the same cycle (no companyId filter)
             cycleId: cycle.id,
             plannerHash,
             topic: normalizedTopic,

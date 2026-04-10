@@ -33,7 +33,7 @@ export const POST = authorizedRoute([], async (req: NextRequest, user: any, cont
     const idea = await prisma.thinkTankIdea.findFirst({
         where: {
             id: context?.params?.id,
-            companyId: user.companyId,
+            // GLOBAL: no companyId filter
             status: { in: ['ACTIVE', 'LOCKED'] },
         },
         include: {

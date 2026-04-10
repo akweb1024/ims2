@@ -9,7 +9,7 @@ export const GET = authorizedRoute([], async (_req: NextRequest, user: any) => {
     ensureThinkTankAccess(user);
     const ideas = await prisma.thinkTankIdea.findMany({
         where: {
-            companyId: user.companyId,
+            // GLOBAL: no companyId filter
             ...(user.role === 'SUPER_ADMIN'
                 ? { status: { in: ['ACTIVE', 'LOCKED', 'REVEALED'] } }
                 : { status: 'REVEALED' }),

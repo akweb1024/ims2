@@ -22,7 +22,7 @@ export const GET = authorizedRoute([], async (_req: NextRequest, user: any, cont
     const idea = await prisma.thinkTankIdea.findFirst({
         where: {
             id: context?.params?.id,
-            companyId: user.companyId,
+            // GLOBAL: no companyId filter
         },
         include: thinkTankIdeaInclude,
     });
@@ -47,7 +47,7 @@ export const PATCH = authorizedRoute([], async (req: NextRequest, user: any, con
     const idea = await prisma.thinkTankIdea.findFirst({
         where: {
             id: context?.params?.id,
-            companyId: user.companyId,
+            // GLOBAL: no companyId filter
         },
     });
 
@@ -143,7 +143,7 @@ export const DELETE = authorizedRoute(['SUPER_ADMIN'], async (req: NextRequest, 
     const idea = await prisma.thinkTankIdea.findFirst({
         where: {
             id: context?.params?.id,
-            companyId: user.companyId,
+            // GLOBAL: no companyId filter
         },
     });
 

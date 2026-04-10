@@ -21,7 +21,7 @@ export const GET = authorizedRoute([], async (req: NextRequest, user: any) => {
     const mappedCycles = await Promise.all(cycles.map(async (cycle) => {
         const existingIdea = await prisma.thinkTankIdea.findFirst({
             where: {
-                companyId: user.companyId,
+                // GLOBAL: check if this user submitted in any company's cycle
                 cycleId: cycle.id,
                 plannerHash: userHash,
                 status: {
