@@ -18,7 +18,7 @@ const TT_ANIMATIONS = `
 }
 `;
 
-type PortalMode = 'dashboard' | 'my-ideas' | 'vote' | 'results' | 'customization';
+type PortalMode = 'dashboard' | 'my-ideas' | 'vote' | 'results' | 'customization' | 'explorer';
 type ThinkTankAcknowledgementKey = 'my-ideas' | 'vote' | 'results';
 type ThinkTankWindowSettings = {
     resultSaturdays: number[];
@@ -325,6 +325,22 @@ const THINK_TANK_MODE_CONTENT: Record<PortalMode, {
             'Vote monitor actions are operational controls, so use them carefully and only when needed.',
         ],
     },
+    explorer: {
+        eyebrow: 'Universal Archive',
+        title: 'Global Innovation Pool',
+        description: 'Explore the full history of shared ideas across all company boundaries and cycles. This view allows you to see everything that has been shared with the community.',
+        navLabel: 'Global Pool',
+        helpTitle: 'Exploring the Global Pool',
+        helpSteps: [
+            'Use this view to search for historical ideas, check for redundancies, or find inspiration from other cycles.',
+            'Click on any idea in the table to open its full activity panel for discussions and detailed scores.',
+            'Note: You can still only spend points in your active cycle, even when viewing global ideas.',
+        ],
+        helpTips: [
+            'The global pool includes ideas that are currently active, locked for review, or revealed as results.',
+            'Identities remain protected here unless you are a super admin.',
+        ],
+    },
 };
 
 export default function ThinkTankPortal({ mode, ideaId }: { mode: PortalMode; ideaId?: string }) {
@@ -362,7 +378,7 @@ export default function ThinkTankPortal({ mode, ideaId }: { mode: PortalMode; id
     const [updatingVoteMonitor, setUpdatingVoteMonitor] = useState(false);
     const [showSubmissionModal, setShowSubmissionModal] = useState(false);
 
-    const view = mode === 'my-ideas' ? 'my' : mode === 'results' ? 'results' : 'vote';
+    const view = mode === 'my-ideas' ? 'my' : mode === 'results' ? 'results' : mode === 'explorer' ? 'global' : 'vote';
 
     useEffect(() => {
         const rawUser = localStorage.getItem('user');
@@ -971,6 +987,37 @@ export default function ThinkTankPortal({ mode, ideaId }: { mode: PortalMode; id
             );
         }
 
+        if (mode === 'explorer') {
+            return (
+                <div className="space-y-6">
+                    <FeatureGuidePanel
+                        title={modeContent.helpTitle}
+                        steps={modeContent.helpSteps}
+                        tips={modeContent.helpTips}
+                    />
+                    {error && <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">{error}</div>}
+                    
+                    {selectedIdea ? (
+                        <FullIdeaWorkspace
+                            idea={selectedIdea}
+                            userRole={user?.role}
+                            pointAccount={pointAccount}
+                            votingOpen={false} // Global view is for historical/explorer context
+                            nextVotingAt={null}
+                            onBack={() => router.push('/dashboard/think-tank/explorer')}
+                            onVote={handleVote}
+                            onVoteWithPoints={handleVoteWithPoints}
+                            onAskQuestion={handleAskQuestion}
+                            onAnswerQuestion={handleAskQuestion} // Use same for view
+                            onDeleteIdea={user?.role === 'SUPER_ADMIN' ? handleDeleteIdea : undefined}
+                        />
+                    ) : (
+                        <GlobalPoolTable ideas={ideas} />
+                    )}
+                </div>
+            );
+        }
+
         if (mode === 'customization') {
             if (user?.role !== 'SUPER_ADMIN') {
                 return (
@@ -1119,6 +1166,7 @@ function ThinkTankWorkspaceHeader({
         { id: 'my-ideas', path: '/dashboard/think-tank/my-ideas', label: THINK_TANK_MODE_CONTENT['my-ideas'].navLabel, description: 'Draft, submit, and track your own proposals.' },
         { id: 'vote', path: '/dashboard/think-tank/vote', label: THINK_TANK_MODE_CONTENT.vote.navLabel, description: 'Browse the voting queue and open full idea records.' },
         { id: 'results', path: '/dashboard/think-tank/results', label: THINK_TANK_MODE_CONTENT.results.navLabel, description: 'Revealed standings, lessons, and execution outcomes.' },
+        { id: 'explorer', path: '/dashboard/think-tank/explorer', label: THINK_TANK_MODE_CONTENT.explorer.navLabel, description: 'Universal archive of all ideas regardless of cycles.' },
         ...(userRole === 'SUPER_ADMIN'
             ? [{ id: 'customization', path: '/dashboard/think-tank/customization', label: THINK_TANK_MODE_CONTENT.customization.navLabel, description: 'Schedule, override, and vote-control tools.' }]
             : []),
@@ -1827,6 +1875,148 @@ function VoteIdeaTable({
                             <tr>
                                 <td colSpan={6} className="px-4 py-8 text-center text-sm text-slate-500">
                                     No ideas match the current search or filter.
+                                </td>
+                            </tr>
+                        )}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    );
+}
+
+function GlobalPoolTable({
+    ideas,
+}: {
+    ideas: Idea[];
+}) {
+    const [search, setSearch] = useState('');
+    const [categoryFilter, setCategoryFilter] = useState('ALL');
+    const [sortBy, setSortBy] = useState<'createdAt' | 'votes' | 'score' | 'title'>('createdAt');
+    const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
+
+    const filteredIdeas = useMemo(() => {
+        return [...ideas]
+            .filter((idea) => {
+                const query = search.trim().toLowerCase();
+                const matchesSearch = !query || `${idea.topic} ${idea.description} ${idea.category}`.toLowerCase().includes(query);
+                const matchesCategory = categoryFilter === 'ALL' || idea.category === categoryFilter;
+                return matchesSearch && matchesCategory;
+            })
+            .sort((a, b) => {
+                const direction = sortDirection === 'asc' ? 1 : -1;
+                if (sortBy === 'votes') return (a.voteCount - b.voteCount) * direction;
+                if (sortBy === 'score') return ((a.communityScore ?? a.weightedScore) - (b.communityScore ?? b.weightedScore)) * direction;
+                if (sortBy === 'title') return a.topic.localeCompare(b.topic) * direction;
+                return (new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()) * direction;
+            });
+    }, [ideas, search, categoryFilter, sortBy, sortDirection]);
+
+    return (
+        <div className="rounded-[2.5rem] border border-slate-200 bg-white p-8 shadow-sm">
+            <div className="flex flex-wrap items-start justify-between gap-6">
+                <div>
+                    <h2 className="text-2xl font-black uppercase tracking-tight text-slate-900">Universal Innovation Archive</h2>
+                    <p className="mt-2 text-sm text-slate-600 max-w-2xl">
+                        This table provides a comprehensive view of ideas from all company cycles. 
+                        Search and filter to explore global contributions, then open any item for full details and discussion history.
+                    </p>
+                </div>
+            </div>
+
+            <div className="mt-8 grid gap-4 md:grid-cols-[1fr_220px_220px_160px]">
+                <div className="relative">
+                    <input
+                        className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-5 py-4 text-sm transition-all focus:border-slate-900 focus:bg-white focus:outline-none focus:ring-4 focus:ring-slate-900/5"
+                        placeholder="Search across all global ideas..."
+                        value={search}
+                        onChange={(e) => setSearch(e.target.value)}
+                    />
+                </div>
+                <select
+                    className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 text-sm focus:outline-none"
+                    value={categoryFilter}
+                    onChange={(e) => setCategoryFilter(e.target.value)}
+                >
+                    <option value="ALL">All Categories</option>
+                    {CATEGORIES.map((cat) => (
+                        <option key={cat.value} value={cat.value}>{cat.label}</option>
+                    ))}
+                </select>
+                <select
+                    className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 text-sm focus:outline-none"
+                    value={sortBy}
+                    onChange={(e) => setSortBy(e.target.value as any)}
+                >
+                    <option value="createdAt">Sort by Date</option>
+                    <option value="score">Sort by Impact Score</option>
+                    <option value="votes">Sort by Engagement</option>
+                    <option value="title">Sort by Title</option>
+                </select>
+                <select
+                    className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 text-sm focus:outline-none text-center"
+                    value={sortDirection}
+                    onChange={(e) => setSortDirection(e.target.value as any)}
+                >
+                    <option value="desc">DESC</option>
+                    <option value="asc">ASC</option>
+                </select>
+            </div>
+
+            <div className="mt-8 overflow-x-auto">
+                <table className="min-w-full border-separate border-spacing-y-3">
+                    <thead>
+                        <tr className="text-left text-[10px] font-black uppercase tracking-[0.25em] text-slate-400">
+                            <th className="px-6 py-4">Idea Detail</th>
+                            <th className="px-6 py-4 text-center">Engagement</th>
+                            <th className="px-6 py-4 text-center">Status</th>
+                            <th className="px-6 py-4 text-right">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {filteredIdeas.length > 0 ? filteredIdeas.map((idea) => (
+                            <tr key={idea.id} className="group overflow-hidden rounded-2xl bg-white shadow-[0_1px_3px_rgba(15,23,42,0.03)] transition-all hover:shadow-[0_8px_25px_rgba(15,23,42,0.08)]">
+                                <td className="rounded-l-2xl border-y border-l border-slate-100 px-6 py-6">
+                                    <div className="flex items-start gap-3">
+                                        <div className="mt-1 h-2 w-2 shrink-0 rounded-full bg-[#FF4500]" />
+                                        <div>
+                                            <div className="text-base font-bold text-slate-950 group-hover:text-[#FF4500] transition-colors">{idea.topic}</div>
+                                            <div className="mt-1.5 flex flex-wrap gap-2">
+                                                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">{formatThinkTankLabel(idea.category)}</span>
+                                                <span className="text-[10px] text-slate-300">•</span>
+                                                <span className="text-[10px] font-medium text-slate-400">Shared {formatDateTime(idea.createdAt)}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td className="border-y border-slate-100 px-6 py-6 text-center">
+                                    <div className="inline-flex flex-col items-center rounded-2xl bg-slate-50 px-4 py-2">
+                                        <span className="text-lg font-black text-slate-900">{idea.voteCount}</span>
+                                        <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">Total Votes</span>
+                                    </div>
+                                </td>
+                                <td className="border-y border-slate-100 px-6 py-6 text-center">
+                                    <span className={`inline-flex rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-widest ${
+                                        idea.status === 'REVEALED' ? 'bg-emerald-50 text-emerald-700' :
+                                        idea.status === 'LOCKED' ? 'bg-amber-50 text-amber-700' :
+                                        'bg-blue-50 text-blue-700'
+                                    }`}>
+                                        {idea.status}
+                                    </span>
+                                </td>
+                                <td className="rounded-r-2xl border-y border-r border-slate-100 px-6 py-6 text-right">
+                                    <Link
+                                        href={`/dashboard/think-tank/vote/${idea.id}`}
+                                        className="inline-flex items-center gap-2 rounded-xl bg-slate-950 px-5 py-3 text-xs font-black uppercase tracking-widest text-white transition-all hover:bg-[#FF4500] hover:shadow-lg hover:shadow-[#FF4500]/20"
+                                    >
+                                        View Details
+                                    </Link>
+                                </td>
+                            </tr>
+                        )) : (
+                            <tr>
+                                <td colSpan={4} className="px-6 py-20 text-center">
+                                    <div className="text-sm font-semibold text-slate-400 uppercase tracking-widest">No ideas found in the universal archive</div>
                                 </td>
                             </tr>
                         )}

@@ -47,6 +47,8 @@ export const GET = authorizedRoute([], async (req: NextRequest, user: any) => {
             return NextResponse.json({ error: 'Review board access denied.' }, { status: 403 });
         }
         where.status = { notIn: ['MERGED', 'ARCHIVED'] };
+    } else if (view === 'global') {
+        where.status = { in: ['ACTIVE', 'LOCKED', 'REVEALED'] };
     } else {
         where.cycleId = cycle.id;
         if (!governance.votingOpen && !canReview) {
