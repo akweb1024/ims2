@@ -487,6 +487,9 @@ export default function AnvInvoiceTemplate({
                       {subscriptionOptions.mode
                         ? ` | Mode: ${String(subscriptionOptions.mode).replaceAll("_", " + ")}`
                         : ""}
+                      {subscriptionOptions.publisher
+                        ? ` | Publisher: ${subscriptionOptions.publisher}`
+                        : ""}
                     </div>
                   )}
                 </td>

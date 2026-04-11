@@ -824,6 +824,9 @@ export default function GlobalProInvoiceTemplate({
                       {subscriptionOptions.mode
                         ? ` | Mode: ${String(subscriptionOptions.mode).replaceAll("_", " + ")}`
                         : ""}
+                      {subscriptionOptions.publisher
+                        ? ` | Publisher: ${subscriptionOptions.publisher}`
+                        : ""}
                     </div>
                   )}
                 </td>

@@ -47,6 +47,7 @@ export interface ProductCatalogueFormData {
   subscriptionFrequency: string;
   subscriptionYear: number | "";
   subscriptionMode: string;
+  subscriptionPublisher: string;
   isPhysicalDeliverable: boolean;
   trackInventory: boolean;
 }
@@ -85,6 +86,7 @@ export const DEFAULT_FORM_DATA: ProductCatalogueFormData = {
   subscriptionFrequency: "ANNUAL",
   subscriptionYear: new Date().getFullYear(),
   subscriptionMode: "PRINT",
+  subscriptionPublisher: "Stm Journals",
   isPhysicalDeliverable: false,
   trackInventory: false,
 };
@@ -149,6 +151,11 @@ const SUBSCRIPTION_MODE_OPTIONS = [
   { value: "PRINT", label: "Print" },
   { value: "DIGITAL", label: "Digital" },
   { value: "PRINT_DIGITAL", label: "Print + Digital" },
+];
+
+const SUBSCRIPTION_PUBLISHER_OPTIONS = [
+  { value: "Stm Journals", label: "Stm Journals" },
+  { value: "JournalsPub", label: "JournalsPub" },
 ];
 
 const normalizeDomainList = (payload: any): string[] => {
@@ -732,6 +739,10 @@ export default function ProductCatalogueForm({
                       nextCategory === "JOURNAL_SUBSCRIPTION"
                         ? value.subscriptionMode || "PRINT"
                         : "",
+                    subscriptionPublisher:
+                      nextCategory === "JOURNAL_SUBSCRIPTION"
+                        ? value.subscriptionPublisher || "Stm Journals"
+                        : "",
                   });
                 }}
                 className="w-full h-11 rounded-xl border border-slate-200 bg-white pl-3.5 pr-9 text-sm font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 transition-all appearance-none cursor-pointer"
@@ -768,7 +779,7 @@ export default function ProductCatalogueForm({
               </div>
             </div>
 
-            <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1.2fr)_220px_minmax(0,1.2fr)]">
+            <div className="grid grid-cols-1 gap-4 lg:grid-cols-4">
               <div className="space-y-1.5">
                 <FieldLabel required>Frequency</FieldLabel>
                 <select
@@ -807,6 +818,21 @@ export default function ProductCatalogueForm({
                   className="w-full h-11 rounded-xl border border-slate-200 bg-white px-3.5 text-sm font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 transition-all"
                 >
                   {SUBSCRIPTION_MODE_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="space-y-1.5">
+                <FieldLabel required>Publisher</FieldLabel>
+                <select
+                  value={value.subscriptionPublisher}
+                  onChange={(e) => setField("subscriptionPublisher", e.target.value)}
+                  className="w-full h-11 rounded-xl border border-slate-200 bg-white px-3.5 text-sm font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 transition-all"
+                >
+                  {SUBSCRIPTION_PUBLISHER_OPTIONS.map((option) => (
                     <option key={option.value} value={option.value}>
                       {option.label}
                     </option>

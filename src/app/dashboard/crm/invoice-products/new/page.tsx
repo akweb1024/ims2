@@ -21,6 +21,7 @@ const buildPayload = (form: ProductCatalogueFormData) => {
             frequency: form.subscriptionFrequency || "ANNUAL",
             year: Number(form.subscriptionYear) || new Date().getFullYear(),
             mode: form.subscriptionMode || "PRINT",
+            publisher: form.subscriptionPublisher || "Stm Journals",
           },
         }
       : null;
