@@ -75,7 +75,7 @@ export default function LogisticsPage() {
             }
         } catch (error) { console.error(error); }
         finally { setLoading(false); }
-    }, [courierFilter, query, statusFilter]);
+    }, [courierFilter, query, statusFilter, page]);
 
     const fetchCouriers = useCallback(async () => {
         try {
