@@ -449,6 +449,7 @@ export default function InvoiceProductsPage() {
       subscriptionFrequency: subscriptionOptions.frequency || "ANNUAL",
       subscriptionYear: subscriptionOptions.year || new Date().getFullYear(),
       subscriptionMode: subscriptionOptions.mode || "PRINT",
+      subscriptionPublisher: subscriptionOptions.publisher || "Stm Journals",
       isPhysicalDeliverable: Boolean(inventorySettings.isPhysicalDeliverable),
       trackInventory: Boolean(inventorySettings.trackInventory),
     });
@@ -793,6 +794,7 @@ export default function InvoiceProductsPage() {
       "subscriptionFrequency",
       "subscriptionYear",
       "subscriptionMode",
+      "subscriptionPublisher",
       "notes",
     ];
     const csvContent =
@@ -814,6 +816,7 @@ export default function InvoiceProductsPage() {
           "ANNUAL",
           String(new Date().getFullYear()),
           "PRINT",
+          "Stm Journals",
           "Sample journal subscription product",
         ].join(","),
         [
@@ -828,6 +831,7 @@ export default function InvoiceProductsPage() {
           "9983",
           "CRS-001",
           "Education and Social Sciences",
+          "",
           "",
           "",
           "",
@@ -869,6 +873,7 @@ export default function InvoiceProductsPage() {
       "Subscription Frequency",
       "Subscription Year",
       "Subscription Mode",
+      "Subscription Publisher",
       "Tags",
       "Notes",
       "Is Featured",
@@ -897,6 +902,7 @@ export default function InvoiceProductsPage() {
       escapeCsv((p.productAttributes as any)?.subscriptionOptions?.frequency || ""),
       (p.productAttributes as any)?.subscriptionOptions?.year || "",
       escapeCsv((p.productAttributes as any)?.subscriptionOptions?.mode || ""),
+      escapeCsv((p.productAttributes as any)?.subscriptionOptions?.publisher || ""),
       escapeCsv(Array.isArray(p.tags) ? p.tags.join(", ") : ""),
       escapeCsv(p.notes || ""),
       p.isFeatured ? "YES" : "NO",

@@ -85,6 +85,8 @@ export const POST = authorizedRoute(
             row.subscriptionYear || row["Subscription Year"] || null;
           const subscriptionMode =
             row.subscriptionMode || row["Subscription Mode"] || null;
+          const subscriptionPublisher =
+            row.subscriptionPublisher || row["Subscription Publisher"] || null;
           const notes = row.notes || row.Notes || null;
           const taxIncluded = parseBoolean(
             row.taxIncluded || row["Tax Included"],
@@ -105,7 +107,7 @@ export const POST = authorizedRoute(
 
           const productAttributes =
             category === "JOURNAL_SUBSCRIPTION" &&
-            (subscriptionFrequency || subscriptionYearRaw || subscriptionMode)
+            (subscriptionFrequency || subscriptionYearRaw || subscriptionMode || subscriptionPublisher)
               ? {
                   subscriptionOptions: {
                     frequency: (subscriptionFrequency || "ANNUAL").toUpperCase(),
@@ -116,6 +118,7 @@ export const POST = authorizedRoute(
                       /\s*\+\s*/g,
                       "_",
                     ),
+                    publisher: subscriptionPublisher || "Stm Journals",
                   },
                 }
               : undefined;
