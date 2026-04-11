@@ -158,42 +158,35 @@ const isJournalSubscriptionItem = (
   return text.includes("journal");
 };
 
-const getInstitutionType = (customer: CustomerTaxProfile) =>
-  normalizeUpper(customer.institutionType || customer.institution?.type);
-
-const isCommercialInstitutionType = (institutionType: string) =>
-  new Set(["CORPORATE", "GOVERNMENT", "AGENCY", "HOSPITAL", "NGO", "OTHER"]).has(
-    institutionType,
-  );
 
 const getJournalDomesticTaxRate = ({
   customer,
   subscriptionMode,
+  taxCategory,
 }: {
   customer: CustomerTaxProfile;
   subscriptionMode: string;
+  taxCategory: string;
 }) => {
   const customerType = normalizeUpper(customer.customerType);
 
-  // Rule 2: Educational institution subscriptions are 0% GST.
+  // Rule 1: Institute (Educational) Journal subscriptions are 0% GST for all types (Print, Digital, Print+Digital)
   if (customerType === "INSTITUTION") {
-    const institutionType = getInstitutionType(customer);
-    if (institutionType && isCommercialInstitutionType(institutionType)) {
-      return 18;
-    }
     return 0;
   }
 
-  // Rule 3: Agency/commercial subscriptions are 18%.
-  if (customerType === "AGENCY") return 18;
+  // Determine if it is strictly a purely Print subscription
+  const isPrintOnly =
+    subscriptionMode === "PRINT" || taxCategory === "PRINT_JOURNAL";
 
-  // Rule 1 + Rule 3 for individuals.
-  if (customerType === "INDIVIDUAL") {
-    // Print-only individual subscription: 0%; otherwise treat as commercial 18%.
-    if (subscriptionMode === "PRINT") return 0;
+  // Rule 2: Agency or Individual: 0% for Print, 18% for Digital or Print+Digital
+  if (customerType === "AGENCY" || customerType === "INDIVIDUAL") {
+    if (isPrintOnly) return 0;
     return 18;
   }
 
+  // Fallback for unknown customer types
+  if (isPrintOnly) return 0;
   return 18;
 };
 
@@ -279,6 +272,7 @@ export const calculateInvoiceTaxBreakdown = ({
         itemTaxRate = getJournalDomesticTaxRate({
           customer,
           subscriptionMode,
+          taxCategory: category,
         });
       } else {
         itemTaxRate = getTaxRateForCategory(
