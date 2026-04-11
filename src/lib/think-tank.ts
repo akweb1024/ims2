@@ -2068,7 +2068,7 @@ export const serializeThinkTankIdea = (idea: Prisma.ThinkTankIdeaGetPayload<{ in
     currentUserHash?: string | null;
     revealQuestionIdentity?: boolean;
 }) => {
-    const reveal = options?.reveal || idea.status === 'REVEALED';
+    const reveal = options?.reveal === true;
     const revealQuestionIdentity = Boolean(options?.revealQuestionIdentity);
     const metadata = (idea.metadata as Record<string, any> | null) || {};
     const currentVote = options?.currentUserHash
@@ -2220,7 +2220,7 @@ export const createIdeaWithParticipants = async (params: {
     let cycle;
     if (params.cycleId) {
         const existingCycle = await prisma.thinkTankIdeaCycle.findUnique({
-            where: { id: params.cycleId, companyId: params.user.companyId! }
+            where: { id: params.cycleId }
         });
         if (!existingCycle) {
             throw new ValidationError('Selected cycle is invalid or does not exist.');

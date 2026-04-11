@@ -127,7 +127,7 @@ export const GET = authorizedRoute([], async (req: NextRequest, user: any) => {
             remainingPoints: pointAccount.remainingPoints,
         },
         ideas: ideas.map((idea) => serializeThinkTankIdea(idea, {
-            reveal: view === 'results',
+            reveal: user.role === 'SUPER_ADMIN',
             includeDuplicates: view === 'my' || view === 'review',
             currentUserHash: userHash,
             revealQuestionIdentity: user.role === 'SUPER_ADMIN',
@@ -320,6 +320,10 @@ export const POST = authorizedRoute([], async (req: NextRequest, user: any) => {
     }
 
     return NextResponse.json({
-        idea: serializeThinkTankIdea(idea, { includeDuplicates: true }),
+        idea: serializeThinkTankIdea(idea, {
+            reveal: user.role === 'SUPER_ADMIN',
+            includeDuplicates: true,
+            revealQuestionIdentity: user.role === 'SUPER_ADMIN',
+        }),
     }, { status: 201 });
 });

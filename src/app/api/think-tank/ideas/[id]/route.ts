@@ -33,7 +33,7 @@ export const GET = authorizedRoute([], async (_req: NextRequest, user: any, cont
 
     return NextResponse.json({
         idea: serializeThinkTankIdea(idea, {
-            reveal: idea.status === 'REVEALED',
+            reveal: user.role === 'SUPER_ADMIN',
             includeDuplicates: true,
             currentUserHash: userHash,
             revealQuestionIdentity: user.role === 'SUPER_ADMIN',
@@ -130,6 +130,7 @@ export const PATCH = authorizedRoute([], async (req: NextRequest, user: any, con
 
     return NextResponse.json({
         idea: serializeThinkTankIdea(updated, {
+            reveal: user.role === 'SUPER_ADMIN',
             includeDuplicates: true,
             currentUserHash: userHash,
             revealQuestionIdentity: user.role === 'SUPER_ADMIN',

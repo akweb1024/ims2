@@ -23,6 +23,6 @@ export const GET = authorizedRoute([], async (_req: NextRequest, user: any) => {
     });
 
     return NextResponse.json({
-        ideas: ideas.map((idea) => serializeThinkTankIdea(idea, { reveal: true })),
+        ideas: ideas.map((idea) => serializeThinkTankIdea(idea, { reveal: user.role === 'SUPER_ADMIN' })),
     });
 });
