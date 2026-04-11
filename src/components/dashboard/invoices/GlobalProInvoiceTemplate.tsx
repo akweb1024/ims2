@@ -57,7 +57,7 @@ export default function GlobalProInvoiceTemplate({
   const derivedTaxAmt = derivedSubtotal * (derivedTaxRate / 100);
 
   const subtotal = derivedSubtotal;
-  const taxAmt = invoice.tax != null && invoice.tax > 0 ? invoice.tax : derivedTaxAmt;
+  const taxAmt = invoice.tax != null ? invoice.tax : derivedTaxAmt;
 
   // Bug 1 fix: when invoice.total === invoice.amount (erroneous storage — total was
   // saved as subtotal instead of subtotal+tax), recompute from amount + stored tax.
@@ -73,10 +73,11 @@ export default function GlobalProInvoiceTemplate({
     invoice.sgstRate != null ? invoice.sgstRate : (taxContext.isDomestic && taxContext.isSameStateSupply ? 9 : 0);
   const igstRate =
     invoice.igstRate != null ? invoice.igstRate : (taxContext.isDomestic && !taxContext.isSameStateSupply ? derivedTaxRate : 0);
-  // Use != null so a stored value of 0 (zero-rated) is respected instead of falling through to derived
-  const cgstAmount = invoice.cgst != null && invoice.cgst > 0 ? invoice.cgst : (igstRate > 0 ? 0 : taxAmt / 2);
-  const sgstAmount = invoice.sgst != null && invoice.sgst > 0 ? invoice.sgst : (igstRate > 0 ? 0 : taxAmt / 2);
-  const igstAmount = invoice.igst != null && invoice.igst > 0 ? invoice.igst : (igstRate > 0 ? taxAmt : 0);
+  
+  // Respect explicit 0 values from DB instead of strictly requiring > 0.
+  const cgstAmount = invoice.cgst != null ? invoice.cgst : (igstRate > 0 ? 0 : taxAmt / 2);
+  const sgstAmount = invoice.sgst != null ? invoice.sgst : (igstRate > 0 ? 0 : taxAmt / 2);
+  const igstAmount = invoice.igst != null ? invoice.igst : (igstRate > 0 ? taxAmt : 0);
 
   const displayInvoiceNumber =
     invoice.status === "PAID"
