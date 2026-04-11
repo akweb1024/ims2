@@ -587,6 +587,19 @@ export default function ThinkTankPortal({ mode, ideaId }: { mode: PortalMode; id
         await refresh();
     };
 
+    const handleMergeCyclesFromUI = async () => {
+        setError('');
+        try {
+            const response = await fetch('/api/think-tank/maintenance/merge-cycles', { method: 'POST' });
+            const payload = await response.json();
+            if (!response.ok) throw new Error(payload.error || 'Failed to merge cycles.');
+            alert(payload.message || 'Successfully merged old company-scoped data globally! The ideas should now be visible.');
+            await refresh();
+        } catch (error: any) {
+            alert('Merge failed: ' + error.message);
+        }
+    };
+
     const handleAddComment = async (ideaId: string, content: string) => {
         setError('');
         const response = await fetch(`/api/think-tank/ideas/${ideaId}/comments`, {
@@ -994,6 +1007,26 @@ export default function ThinkTankPortal({ mode, ideaId }: { mode: PortalMode; id
                         updating={updatingVoteMonitor}
                         onAction={handleVoteMonitorAction}
                     />
+
+                    {/* Database Merge Migration Control */}
+                    <div className="rounded-[2rem] border-2 border-rose-600 bg-rose-50 p-8 shadow-sm relative overflow-hidden">
+                        <div className="absolute top-0 right-0 w-32 h-32 bg-rose-600 translate-x-16 -translate-y-16 rotate-45" />
+                        <h3 className="text-xl font-black text-rose-900 tracking-tight uppercase">Database Repair: <br/>Unlock Global Visibility</h3>
+                        <p className="mt-4 text-sm text-rose-800 leading-6 max-w-3xl">
+                            If employees from different companies are unable to see each others' ideas, it is because older database records are isolating them by company cycle. 
+                            Click this button to run the secure server-side migration that permanently destroys those old company boundaries and fuses them all into a single, global innovation pool.
+                        </p>
+                        <button
+                            onClick={() => {
+                                if (confirm('Verify: Merge all separated company cycles into a single global cycle? This will instantly resolve the visual problem.')) {
+                                    handleMergeCyclesFromUI();
+                                }
+                            }}
+                            className="mt-6 rounded-2xl bg-rose-600 px-6 py-4 text-sm font-bold tracking-wide text-white transition hover:bg-rose-700 uppercase"
+                        >
+                            Fix Global Visuals (Merge Cycles Now)
+                        </button>
+                    </div>
                 </div>
             );
         }
