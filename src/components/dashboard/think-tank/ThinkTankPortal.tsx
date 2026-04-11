@@ -2006,7 +2006,7 @@ function GlobalPoolTable({
                                 </td>
                                 <td className="rounded-r-2xl border-y border-r border-slate-100 px-6 py-6 text-right">
                                     <Link
-                                        href={`/dashboard/think-tank/vote/${idea.id}`}
+                                        href={`/dashboard/think-tank/explorer/${idea.id}`}
                                         className="inline-flex items-center gap-2 rounded-xl bg-slate-950 px-5 py-3 text-xs font-black uppercase tracking-widest text-white transition-all hover:bg-[#FF4500] hover:shadow-lg hover:shadow-[#FF4500]/20"
                                     >
                                         View Details
