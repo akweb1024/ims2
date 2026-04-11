@@ -20,7 +20,7 @@ export const POST = authorizedRoute(['SUPER_ADMIN'], async (_req: NextRequest) =
         }
 
         let mergedCount = 0;
-        let consolidatedInfo = [];
+        const consolidatedInfo: { window: Date; mergedDuplicates: number }[] = [];
 
         for (const key in groups) {
             const group = groups[key];

@@ -1013,7 +1013,7 @@ export default function ThinkTankPortal({ mode, ideaId }: { mode: PortalMode; id
                         <div className="absolute top-0 right-0 w-32 h-32 bg-rose-600 translate-x-16 -translate-y-16 rotate-45" />
                         <h3 className="text-xl font-black text-rose-900 tracking-tight uppercase">Database Repair: <br/>Unlock Global Visibility</h3>
                         <p className="mt-4 text-sm text-rose-800 leading-6 max-w-3xl">
-                            If employees from different companies are unable to see each others' ideas, it is because older database records are isolating them by company cycle. 
+                            If employees from different companies are unable to see each others&apos; ideas, it is because older database records are isolating them by company cycle. 
                             Click this button to run the secure server-side migration that permanently destroys those old company boundaries and fuses them all into a single, global innovation pool.
                         </p>
                         <button
