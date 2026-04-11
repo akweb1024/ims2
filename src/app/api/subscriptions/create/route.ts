@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { verifyToken } from '@/lib/auth-legacy';
 import { logger } from '@/lib/logger';
 import { generateFallbackInvoiceNumber } from '@/lib/invoice-number';
+import { calculateInvoiceTaxBreakdown } from '@/lib/invoice-tax';
 
 export async function POST(request: NextRequest) {
     try {
@@ -129,30 +130,31 @@ export async function POST(request: NextRequest) {
             });
         }
 
-        // Apply Discount and Tax
-        const discountAmount = subtotal * (appliedDiscountRate / 100);
-        const taxableAmount = subtotal - discountAmount;
-        const taxAmount = taxableAmount * (Number(taxRate) / 100);
-        const finalTotal = taxableAmount + taxAmount;
+        // Apply Discount and Tax via standard builder
+        const taxBreakdown = calculateInvoiceTaxBreakdown({
+            customer: { ...customer, currency },
+            company: { stateCode: company?.stateCode || '' },
+            items: invoiceLineItems.map(item => ({
+                ...item,
+                amount: item.total
+            })),
+            discountAmount: subtotal * (appliedDiscountRate / 100),
+            defaultTaxRate: Number(taxRate) || 18,
+        });
 
-        // Calculate SGST/CGST/IGST for the invoice
-        const companyStateCode = company?.stateCode;
-        const placeOfSupplyCode = (customer as any).shippingStateCode || (customer as any).billingStateCode;
-        
-        let cgst = 0, sgst = 0, igst = 0;
-        let cgstRate = 0, sgstRate = 0, igstRate = 0;
-        
-        if (Number(taxRate) > 0) {
-            if (companyStateCode && placeOfSupplyCode && companyStateCode === placeOfSupplyCode) {
-                cgstRate = Number(taxRate) / 2;
-                sgstRate = Number(taxRate) / 2;
-                cgst = taxAmount / 2;
-                sgst = taxAmount / 2;
-            } else {
-                igstRate = Number(taxRate);
-                igst = taxAmount;
-            }
-        }
+        const discountAmount = taxBreakdown.subtotal - taxBreakdown.taxableSubtotal;
+        const taxableAmount = taxBreakdown.taxableSubtotal;
+        const taxAmount = taxBreakdown.tax;
+        const finalTotal = taxBreakdown.total;
+
+        const cgst = taxBreakdown.cgst;
+        const sgst = taxBreakdown.sgst;
+        const igst = taxBreakdown.igst;
+        const cgstRate = taxBreakdown.cgstRate;
+        const sgstRate = taxBreakdown.sgstRate;
+        const igstRate = taxBreakdown.igstRate;
+        const placeOfSupplyCode = taxBreakdown.placeOfSupplyCode || (customer as any).shippingStateCode || (customer as any).billingStateCode;
+        const companyStateCode = taxBreakdown.companyStateCode || company?.stateCode;
 
         // Branding Snapshot
         const brandSnapshot = {

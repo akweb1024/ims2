@@ -7,6 +7,7 @@ import {
     proformaCreateSchema,
     validateData,
 } from '@/lib/validation/schemas';
+import { calculateInvoiceTaxBreakdown } from '@/lib/invoice-tax';
 
 const db = prisma as any;
 
@@ -22,45 +23,40 @@ function computeFinancials(
     placeOfSupplyCode?: string | null
 ) {
     let subtotal = 0;
-    const processedItems = lineItems.map((item: any) => {
+    const itemsWithTotal = lineItems.map((item: any) => {
         const lineTotal = Number(item.unitPrice || 0) * Number(item.quantity || 1);
         subtotal += lineTotal;
-        return { ...item, total: lineTotal };
+        return { ...item, total: lineTotal, amount: lineTotal }; // Map total to amount for tax breakdown
     });
 
     let discountAmount = 0;
     if (discountType === 'PERCENTAGE') discountAmount = subtotal * ((discountValue || 0) / 100);
     else if (discountType === 'FIXED') discountAmount = Math.min(discountValue || 0, subtotal);
 
-    const taxableAmount = subtotal - discountAmount;
-    const taxAmount = taxableAmount * (taxRate / 100);
-    const total = taxableAmount + taxAmount;
+    const taxBreakdown = calculateInvoiceTaxBreakdown({
+        customer: { currency: 'INR' }, // mock mostly for defaults
+        company: { stateCode: companyStateCode },
+        items: itemsWithTotal,
+        discountAmount,
+        defaultTaxRate: taxRate,
+    });
 
-    // GST split (Indian compliance)
-    let cgst = 0, sgst = 0, igst = 0;
-    let cgstRate = 0, sgstRate = 0, igstRate = 0;
-    if (taxRate > 0) {
-        const intraState = companyStateCode && placeOfSupplyCode
-            && companyStateCode === placeOfSupplyCode;
-        if (intraState) {
-            cgstRate = taxRate / 2;
-            sgstRate = taxRate / 2;
-            cgst = taxAmount / 2;
-            sgst = taxAmount / 2;
-        } else {
-            igstRate = taxRate;
-            igst = taxAmount;
-        }
-    }
+    // We must manually overwrite placeOfSupply for proforma logic here if needed
+    // However taxBreakdown determines jurisdiction dynamically which is generally preferred
+    const finalPlaceOfSupply = placeOfSupplyCode || taxBreakdown.placeOfSupplyCode;
 
     return {
-        processedItems,
+        processedItems: itemsWithTotal,
         subtotal,
         discountAmount,
-        taxAmount,
-        total,
-        cgst, sgst, igst,
-        cgstRate, sgstRate, igstRate,
+        taxAmount: taxBreakdown.tax,
+        total: taxBreakdown.taxableSubtotal + taxBreakdown.tax,
+        cgst: taxBreakdown.cgst,
+        sgst: taxBreakdown.sgst,
+        igst: taxBreakdown.igst,
+        cgstRate: taxBreakdown.cgstRate,
+        sgstRate: taxBreakdown.sgstRate,
+        igstRate: taxBreakdown.igstRate,
     };
 }
 
@@ -183,7 +179,7 @@ export const POST = authorizedRoute(
                 input.discountValue || 0,
                 input.taxRate || 18,
                 companyStateCode,
-                placeOfSupplyCode
+                placeOfSupplyCode || customer.shippingStateCode || customer.billingStateCode
             );
 
             const proformaNumber = await nextProformaNumber(user.companyId);
