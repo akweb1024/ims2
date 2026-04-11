@@ -10,7 +10,6 @@ import CustomerAssignmentManager from '@/components/dashboard/CustomerAssignment
 import { useCustomer, useCustomerMutations } from '@/hooks/useCRM';
 import { getHealthBadgeColor, getScoreColor } from '@/lib/predictions';
 import AgencyPerformanceDashboard from '@/components/dashboard/AgencyPerformanceDashboard';
-import ProformaInvoicePanel from '@/components/dashboard/ProformaInvoicePanel';
 
 
 export default function CustomerDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -806,19 +805,25 @@ export default function CustomerDetailPage({ params }: { params: Promise<{ id: s
                         {activeTab === 'subscriptions' && (
                             <div className="space-y-6">
 
-                                {/* ── Proforma Invoice Panel ───────────────── */}
-                                <ProformaInvoicePanel
-                                    customerId={customer.id}
-                                    customerName={customer.name}
-                                    customerEmail={customer.primaryEmail}
-                                    currency={customer.subscriptions?.[0]?.currency || 'INR'}
-                                    userRole={userRole}
-                                    onConversionSuccess={(invoiceId, subscriptionId) => {
-                                        // Refresh customer data to show new active subscription
-                                        fetchCustomer();
-                                        setActiveTab('billing');
-                                    }}
-                                />
+                                {/* ── Invoice Generation CTA ───────────────── */}
+                                <div className="card-premium bg-gradient-to-br from-primary-50 to-white flex flex-col sm:flex-row items-center justify-between p-6">
+                                    <div>
+                                        <h3 className="text-lg font-bold text-secondary-900 flex items-center gap-2">
+                                            <span>📄</span> Generate Invoice / Proforma
+                                        </h3>
+                                        <p className="text-sm text-secondary-500 mt-1">
+                                            Create a new invoice. Subscriptions will be automatically generated upon payment.
+                                        </p>
+                                    </div>
+                                    <div className="mt-4 sm:mt-0">
+                                        <Link
+                                            href={`/dashboard/crm/invoices/new?customerId=${customer.id}`}
+                                            className="btn btn-primary shadow-lg shadow-primary-500/30"
+                                        >
+                                            Create New Invoice →
+                                        </Link>
+                                    </div>
+                                </div>
 
                                 {/* ── Existing Subscriptions ───────────────── */}
                                 {customer.subscriptions.length > 0 && (

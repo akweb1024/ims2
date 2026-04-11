@@ -130,6 +130,18 @@ export const PATCH = authorizedRoute(
                         total: body.total,
                         lineItems: nextLineItems,
                         brandId: body.brandId,
+                        taxRate: body.taxRate !== undefined ? body.taxRate : undefined,
+                        cgst: body.cgst !== undefined ? body.cgst : undefined,
+                        sgst: body.sgst !== undefined ? body.sgst : undefined,
+                        igst: body.igst !== undefined ? body.igst : undefined,
+                        cgstRate: body.cgstRate !== undefined ? body.cgstRate : undefined,
+                        sgstRate: body.sgstRate !== undefined ? body.sgstRate : undefined,
+                        igstRate: body.igstRate !== undefined ? body.igstRate : undefined,
+                        couponId: body.couponId !== undefined ? body.couponId : undefined,
+                        couponCode: body.couponCode !== undefined ? body.couponCode : undefined,
+                        discountType: body.discountType !== undefined ? body.discountType : undefined,
+                        discountValue: body.discountValue !== undefined ? body.discountValue : undefined,
+                        discountAmount: body.discountAmount !== undefined ? body.discountAmount : undefined,
                         updatedAt: new Date()
                     }
                 });

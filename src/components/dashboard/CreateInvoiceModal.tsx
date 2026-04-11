@@ -1042,6 +1042,14 @@ export default function CreateInvoiceModal({
             discountType: couponResult?.coupon?.discountType || null,
             discountValue: couponResult?.coupon?.discountValue || 0,
             discountAmount: couponResult?.discountAmount || 0,
+            
+            // Tax Breakdown
+            cgst: taxBreakdown.cgst,
+            sgst: taxBreakdown.sgst,
+            igst: taxBreakdown.igst,
+            cgstRate: taxBreakdown.cgstRate,
+            sgstRate: taxBreakdown.sgstRate,
+            igstRate: taxBreakdown.igstRate,
           }),
         },
       );
