@@ -457,7 +457,7 @@ export default function ThinkTankPortal({ mode, ideaId }: { mode: PortalMode; id
                 hasSubmittedIdea: (ideasPayload.submittedUserIds || []).includes(candidate.id),
             })));
 
-            if (mode === 'vote' && ideaId) {
+            if ((mode === 'vote' || mode === 'explorer') && ideaId) {
                 const ideaRes = await fetch(`/api/think-tank/ideas/${ideaId}`, { cache: 'no-store' });
                 const ideaPayload = await ideaRes.json();
                 if (!ideaRes.ok) {
@@ -751,7 +751,7 @@ export default function ThinkTankPortal({ mode, ideaId }: { mode: PortalMode; id
             return <GuidelinesGate config={THINK_TANK_GUIDELINES['my-ideas']} onAcknowledge={() => acknowledgeGuidelines('my-ideas')} />;
         }
 
-        if (mode === 'vote' && !acknowledgements.vote) {
+        if ((mode === 'vote' || mode === 'explorer') && !acknowledgements.vote) {
             return <GuidelinesGate config={THINK_TANK_GUIDELINES.vote} onAcknowledge={() => acknowledgeGuidelines('vote')} />;
         }
 
