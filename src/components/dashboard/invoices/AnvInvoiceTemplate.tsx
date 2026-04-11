@@ -68,6 +68,8 @@ export default function AnvInvoiceTemplate({
     ? storedTotal               // DB total is correct (genuinely different from subtotal)
     : (storedAmount + taxAmt);  // recompute: total was stored as amount (bug in old records)
 
+  const discount = invoice.discountAmount || invoice.discount || 0;
+
   const cgstRate =
     invoice.cgstRate != null ? invoice.cgstRate : (taxContext.isDomestic && taxContext.isSameStateSupply ? 9 : 0);
   const sgstRate =
@@ -525,6 +527,14 @@ export default function AnvInvoiceTemplate({
               {derivedSubtotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}
             </span>
           </div>
+          {discount > 0 && (
+            <div className="row-total">
+              <span className="total-label text-[10px] text-green-700">Discount {invoice.couponCode ? `(${invoice.couponCode})` : ""}:</span>
+              <span className="total-val text-[11px] font-bold text-green-700">
+                -{discount.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+              </span>
+            </div>
+          )}
           {isExport ? (
             <div className="border border-blue-200 bg-blue-50 px-3 py-2 text-[10px] leading-relaxed text-blue-900 rounded">
               <div className="font-bold">Export Invoice / Proforma Invoice</div>

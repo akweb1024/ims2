@@ -66,7 +66,7 @@ export default function GlobalProInvoiceTemplate({
   const grandTotal = storedTotal > 0 && storedTotal !== storedAmount
     ? storedTotal                  // DB total is correct (genuinely different from amount)
     : (storedAmount + taxAmt);     // recompute: total was stored as amount (bug in old records)
-  const discount = invoice.discount || 0;
+  const discount = invoice.discountAmount || invoice.discount || 0;
   const cgstRate =
     invoice.cgstRate != null ? invoice.cgstRate : (taxContext.isDomestic && taxContext.isSameStateSupply ? 9 : 0);
   const sgstRate =
@@ -981,7 +981,7 @@ export default function GlobalProInvoiceTemplate({
                 fontSize: "10px",
               }}
             >
-              <span style={{ color: "#64748b", fontWeight: 600 }}>Discount:</span>
+              <span style={{ color: "#64748b", fontWeight: 600 }}>Discount {invoice.couponCode ? `(Coupon: ${invoice.couponCode})` : ""}:</span>
               <span style={{ fontWeight: 700, color: "#16a34a" }}>
                 − {currencySymbol}
                 {discount.toLocaleString(undefined, { minimumFractionDigits: 2 })}
