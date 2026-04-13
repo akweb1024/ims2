@@ -138,6 +138,10 @@ const YEAR_OPTIONS = Array.from(
 
 const SUBSCRIPTION_FREQUENCY_OPTIONS = [
   { value: "ANNUAL", label: "Annual" },
+  { value: "SINGLE_COPY", label: "Single Copy" },
+  { value: "1ST_ISSUE", label: "1st Issue" },
+  { value: "2ND_ISSUE", label: "2nd Issue" },
+  { value: "3RD_ISSUE", label: "3rd Issue" },
   { value: "ISSUE_WISE", label: "Issue Wise" },
   { value: "BI_ANNUAL", label: "(Jan-June, July-Dec) - Bi-Annual" },
   {
