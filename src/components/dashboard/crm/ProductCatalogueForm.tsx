@@ -159,7 +159,7 @@ const SUBSCRIPTION_MODE_OPTIONS = [
 
 
 
-const SUBSCRIPTION_PUBLISHER_OPTIONS = [
+export const SUBSCRIPTION_PUBLISHER_OPTIONS = [
   { value: "STM Journals", label: "STM Journals" },
   { value: "JournalsPub", label: "JournalsPub" },
 ];

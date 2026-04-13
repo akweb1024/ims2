@@ -45,6 +45,7 @@ import VariantAdminPanel from "@/components/dashboard/crm/VariantAdminPanel";
 import ProductCatalogueForm, {
   DEFAULT_FORM_DATA,
   PREDEFINED_DOMAINS,
+  SUBSCRIPTION_PUBLISHER_OPTIONS,
   type ProductCatalogueFormData,
 } from "@/components/dashboard/crm/ProductCatalogueForm";
 
@@ -270,6 +271,7 @@ export default function InvoiceProductsPage() {
   const [subscriptionModeFilter, setSubscriptionModeFilter] = useState("");
   const [subscriptionFrequencyFilter, setSubscriptionFrequencyFilter] = useState("");
   const [subscriptionYearFilter, setSubscriptionYearFilter] = useState("");
+  const [subscriptionPublisherFilter, setSubscriptionPublisherFilter] = useState("");
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(100);
   const [sortBy, setSortBy] = useState("createdAt");
@@ -338,6 +340,7 @@ export default function InvoiceProductsPage() {
         ...(subscriptionModeFilter && { subscriptionMode: subscriptionModeFilter }),
         ...(subscriptionFrequencyFilter && { subscriptionFrequency: subscriptionFrequencyFilter }),
         ...(subscriptionYearFilter && { subscriptionYear: subscriptionYearFilter }),
+        ...(subscriptionPublisherFilter && { subscriptionPublisher: subscriptionPublisherFilter }),
       });
       const res = await fetch(`/api/invoice-products?${params}`, {
         headers: authH,
@@ -364,6 +367,7 @@ export default function InvoiceProductsPage() {
     subscriptionModeFilter,
     subscriptionFrequencyFilter,
     subscriptionYearFilter,
+    subscriptionPublisherFilter,
     sortBy,
     sortDir,
     authH,
@@ -1348,14 +1352,36 @@ export default function InvoiceProductsPage() {
                   })}
                 </select>
               </div>
+
+              <div className="flex flex-col gap-1.5 flex-1 min-w-[150px] max-w-[200px]">
+                <label className="text-[10px] font-bold text-secondary-500 uppercase tracking-wider pl-1">
+                  Publisher
+                </label>
+                <select
+                  className="h-10 px-3 text-sm font-medium border border-secondary-200 rounded-xl focus:border-primary-500 bg-secondary-50 outline-none transition-colors"
+                  value={subscriptionPublisherFilter}
+                  onChange={(e) => {
+                    setSubscriptionPublisherFilter(e.target.value);
+                    setPage(1);
+                  }}
+                >
+                  <option value="">All Publishers</option>
+                  {SUBSCRIPTION_PUBLISHER_OPTIONS.map((pub) => (
+                    <option key={pub.value} value={pub.value}>
+                      {pub.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
               
-              {(domainFilter || subscriptionModeFilter || subscriptionFrequencyFilter || subscriptionYearFilter) && (
+              {(domainFilter || subscriptionModeFilter || subscriptionFrequencyFilter || subscriptionYearFilter || subscriptionPublisherFilter) && (
                 <button
                   onClick={() => {
                     setDomainFilter("");
                     setSubscriptionModeFilter("");
                     setSubscriptionFrequencyFilter("");
                     setSubscriptionYearFilter("");
+                    setSubscriptionPublisherFilter("");
                     setPage(1);
                   }}
                   className="h-10 px-4 text-xs font-semibold text-secondary-500 bg-secondary-100 hover:bg-secondary-200 hover:text-secondary-700 rounded-xl transition-colors"

@@ -99,6 +99,7 @@ export const GET = authorizedRoute(
       const subscriptionFrequency = searchParams.get("subscriptionFrequency");
       const subscriptionYear = searchParams.get("subscriptionYear");
       const subscriptionMode = searchParams.get("subscriptionMode");
+      const subscriptionPublisher = searchParams.get("subscriptionPublisher");
       const page = Math.max(1, parseInt(searchParams.get("page") || "1"));
       const pageSize = Math.min(
         Math.max(1, parseInt(searchParams.get("pageSize") || "20")),
@@ -136,7 +137,7 @@ export const GET = authorizedRoute(
       if (domain) where.domain = domain;
 
       if (category === "JOURNAL_SUBSCRIPTION") {
-        if (subscriptionFrequency || subscriptionYear || subscriptionMode) {
+        if (subscriptionFrequency || subscriptionYear || subscriptionMode || subscriptionPublisher) {
           if (!where.AND) where.AND = [];
           if (subscriptionFrequency) {
             where.AND.push({
@@ -159,6 +160,14 @@ export const GET = authorizedRoute(
               productAttributes: {
                 path: ["subscriptionOptions", "mode"],
                 equals: subscriptionMode,
+              },
+            });
+          }
+          if (subscriptionPublisher) {
+            where.AND.push({
+              productAttributes: {
+                path: ["subscriptionOptions", "publisher"],
+                equals: subscriptionPublisher,
               },
             });
           }
