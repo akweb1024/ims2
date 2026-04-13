@@ -267,7 +267,7 @@ export default function InvoiceProductsPage() {
   const [activeFilter, setActiveFilter] = useState("");
   const [featuredOnly, setFeaturedOnly] = useState(false);
   const [page, setPage] = useState(1);
-  const [pageSize] = useState(20);
+  const [pageSize, setPageSize] = useState(100);
   const [sortBy, setSortBy] = useState("createdAt");
   const [sortDir, setSortDir] = useState("desc");
 
@@ -1501,33 +1501,49 @@ export default function InvoiceProductsPage() {
             )}
 
             {/* Pagination */}
-            {totalPages > 1 && (
-              <div className="p-8 border-t border-secondary-100 flex items-center justify-between bg-secondary-50/30">
-                <p className="text-[12px] font-medium text-secondary-500">
-                  Showing {(page - 1) * pageSize + 1}–
-                  {Math.min(page * pageSize, total)} of {total} products
-                </p>
+            {total > 0 && (
+              <div className="p-8 border-t border-secondary-100 flex flex-col sm:flex-row items-center justify-between gap-4 bg-secondary-50/30">
                 <div className="flex items-center gap-4">
-                  <button
-                    onClick={() => setPage((p) => Math.max(1, p - 1))}
-                    disabled={page === 1}
-                    className="h-10 w-10 flex items-center justify-center rounded-xl bg-white border border-secondary-200 text-secondary-400 hover:text-primary-600 disabled:opacity-20 transition-all font-black"
+                  <p className="text-[12px] font-medium text-secondary-500">
+                    Showing {(page - 1) * pageSize + 1}–
+                    {Math.min(page * pageSize, total)} of {total} products
+                  </p>
+                  <select
+                    value={pageSize}
+                    onChange={(e) => {
+                      setPageSize(Number(e.target.value));
+                      setPage(1);
+                    }}
+                    className="h-8 rounded-lg border border-secondary-200 bg-white px-2 text-xs font-medium text-secondary-600 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
                   >
-                    <ChevronRight size={18} className="rotate-180" />
-                  </button>
-                  <span className="text-sm font-semibold text-secondary-900">
-                    Page {page}{" "}
-                    <span className="mx-2 text-secondary-200">of</span>{" "}
-                    {totalPages}
-                  </span>
-                  <button
-                    onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                    disabled={page === totalPages}
-                    className="h-10 w-10 flex items-center justify-center rounded-xl bg-white border border-secondary-200 text-secondary-400 hover:text-primary-600 disabled:opacity-20 transition-all font-black"
-                  >
-                    <ChevronRight size={18} />
-                  </button>
+                    <option value={100}>100 per page</option>
+                    <option value={300}>300 per page</option>
+                    <option value={500}>500 per page</option>
+                  </select>
                 </div>
+                {totalPages > 1 && (
+                  <div className="flex items-center gap-4">
+                    <button
+                      onClick={() => setPage((p) => Math.max(1, p - 1))}
+                      disabled={page === 1}
+                      className="h-10 w-10 flex items-center justify-center rounded-xl bg-white border border-secondary-200 text-secondary-400 hover:text-primary-600 disabled:opacity-20 transition-all font-black"
+                    >
+                      <ChevronRight size={18} className="rotate-180" />
+                    </button>
+                    <span className="text-sm font-semibold text-secondary-900">
+                      Page {page}{" "}
+                      <span className="mx-2 text-secondary-200">of</span>{" "}
+                      {totalPages}
+                    </span>
+                    <button
+                      onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                      disabled={page === totalPages}
+                      className="h-10 w-10 flex items-center justify-center rounded-xl bg-white border border-secondary-200 text-secondary-400 hover:text-primary-600 disabled:opacity-20 transition-all font-black"
+                    >
+                      <ChevronRight size={18} />
+                    </button>
+                  </div>
+                )}
               </div>
             )}
           </div>
