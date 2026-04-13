@@ -266,6 +266,10 @@ export default function InvoiceProductsPage() {
   const [pricingFilter, setPricingFilter] = useState("");
   const [activeFilter, setActiveFilter] = useState("");
   const [featuredOnly, setFeaturedOnly] = useState(false);
+  const [domainFilter, setDomainFilter] = useState("");
+  const [subscriptionModeFilter, setSubscriptionModeFilter] = useState("");
+  const [subscriptionFrequencyFilter, setSubscriptionFrequencyFilter] = useState("");
+  const [subscriptionYearFilter, setSubscriptionYearFilter] = useState("");
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(100);
   const [sortBy, setSortBy] = useState("createdAt");
@@ -330,6 +334,10 @@ export default function InvoiceProductsPage() {
         ...(pricingFilter && { pricingModel: pricingFilter }),
         ...(activeFilter !== "" && { isActive: activeFilter }),
         ...(featuredOnly && { isFeatured: "true" }),
+        ...(domainFilter && { domain: domainFilter }),
+        ...(subscriptionModeFilter && { subscriptionMode: subscriptionModeFilter }),
+        ...(subscriptionFrequencyFilter && { subscriptionFrequency: subscriptionFrequencyFilter }),
+        ...(subscriptionYearFilter && { subscriptionYear: subscriptionYearFilter }),
       });
       const res = await fetch(`/api/invoice-products?${params}`, {
         headers: authH,
@@ -352,6 +360,10 @@ export default function InvoiceProductsPage() {
     pricingFilter,
     activeFilter,
     featuredOnly,
+    domainFilter,
+    subscriptionModeFilter,
+    subscriptionFrequencyFilter,
+    subscriptionYearFilter,
     sortBy,
     sortDir,
     authH,
@@ -1246,6 +1258,113 @@ export default function InvoiceProductsPage() {
               </div>
             </div>
           </div>
+
+          {categoryFilter === "JOURNAL_SUBSCRIPTION" && (
+            <div className="flex flex-wrap gap-4 pt-2 pb-6 border-b border-secondary-100 items-end animate-in fade-in slide-in-from-top-2">
+              <div className="flex flex-col gap-1.5 flex-1 min-w-[200px] max-w-[250px]">
+                <label className="text-[10px] font-bold text-secondary-500 uppercase tracking-wider pl-1">
+                  Domain / Industry
+                </label>
+                <select
+                  className="h-10 px-3 text-sm font-medium border border-secondary-200 rounded-xl focus:border-primary-500 bg-secondary-50 outline-none transition-colors"
+                  value={domainFilter}
+                  onChange={(e) => {
+                    setDomainFilter(e.target.value);
+                    setPage(1);
+                  }}
+                >
+                  <option value="">All Domains</option>
+                  {PREDEFINED_DOMAINS.map((domain) => (
+                    <option key={domain} value={domain}>
+                      {domain}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="flex flex-col gap-1.5 flex-1 min-w-[150px] max-w-[200px]">
+                <label className="text-[10px] font-bold text-secondary-500 uppercase tracking-wider pl-1">
+                  Format
+                </label>
+                <select
+                  className="h-10 px-3 text-sm font-medium border border-secondary-200 rounded-xl focus:border-primary-500 bg-secondary-50 outline-none transition-colors"
+                  value={subscriptionModeFilter}
+                  onChange={(e) => {
+                    setSubscriptionModeFilter(e.target.value);
+                    setPage(1);
+                  }}
+                >
+                  <option value="">All Formats</option>
+                  <option value="PRINT">Print</option>
+                  <option value="DIGITAL">Digital</option>
+                  <option value="PRINT_DIGITAL">Print + Digital</option>
+                </select>
+              </div>
+
+              <div className="flex flex-col gap-1.5 flex-1 min-w-[150px] max-w-[200px]">
+                <label className="text-[10px] font-bold text-secondary-500 uppercase tracking-wider pl-1">
+                  Frequency
+                </label>
+                <select
+                  className="h-10 px-3 text-sm font-medium border border-secondary-200 rounded-xl focus:border-primary-500 bg-secondary-50 outline-none transition-colors"
+                  value={subscriptionFrequencyFilter}
+                  onChange={(e) => {
+                    setSubscriptionFrequencyFilter(e.target.value);
+                    setPage(1);
+                  }}
+                >
+                  <option value="">All Frequencies</option>
+                  <option value="SINGLE_COPY">Single Copy</option>
+                  <option value="1ST_ISSUE">1st Issue</option>
+                  <option value="2ND_ISSUE">2nd Issue</option>
+                  <option value="3RD_ISSUE">3rd Issue</option>
+                  <option value="ANNUAL">Annual</option>
+                  <option value="BI_ANNUAL">Bi-Annual</option>
+                  <option value="TRI_ANNUAL">Tri-Annual</option>
+                  <option value="BI_MONTHLY">Bi-Monthly</option>
+                </select>
+              </div>
+
+              <div className="flex flex-col gap-1.5 flex-1 min-w-[120px] max-w-[150px]">
+                <label className="text-[10px] font-bold text-secondary-500 uppercase tracking-wider pl-1">
+                  Year
+                </label>
+                <select
+                  className="h-10 px-3 text-sm font-medium border border-secondary-200 rounded-xl focus:border-primary-500 bg-secondary-50 outline-none transition-colors"
+                  value={subscriptionYearFilter}
+                  onChange={(e) => {
+                    setSubscriptionYearFilter(e.target.value);
+                    setPage(1);
+                  }}
+                >
+                  <option value="">All Years</option>
+                  {Array.from({ length: 11 }, (_, i) => {
+                    const y = new Date().getFullYear() - 2 + i;
+                    return (
+                      <option key={y} value={y.toString()}>
+                        {y}
+                      </option>
+                    );
+                  })}
+                </select>
+              </div>
+              
+              {(domainFilter || subscriptionModeFilter || subscriptionFrequencyFilter || subscriptionYearFilter) && (
+                <button
+                  onClick={() => {
+                    setDomainFilter("");
+                    setSubscriptionModeFilter("");
+                    setSubscriptionFrequencyFilter("");
+                    setSubscriptionYearFilter("");
+                    setPage(1);
+                  }}
+                  className="h-10 px-4 text-xs font-semibold text-secondary-500 bg-secondary-100 hover:bg-secondary-200 hover:text-secondary-700 rounded-xl transition-colors"
+                >
+                  Clear Filters
+                </button>
+              )}
+            </div>
+          )}
 
           {/* Bulk Actions */}
           {selected.size > 0 && (

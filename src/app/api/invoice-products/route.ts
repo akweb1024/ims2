@@ -95,10 +95,14 @@ export const GET = authorizedRoute(
       const isActive = searchParams.get("isActive");
       const isFeatured = searchParams.get("isFeatured");
       const tags = searchParams.get("tags")?.split(",").filter(Boolean);
+      const domain = searchParams.get("domain");
+      const subscriptionFrequency = searchParams.get("subscriptionFrequency");
+      const subscriptionYear = searchParams.get("subscriptionYear");
+      const subscriptionMode = searchParams.get("subscriptionMode");
       const page = Math.max(1, parseInt(searchParams.get("page") || "1"));
       const pageSize = Math.min(
         Math.max(1, parseInt(searchParams.get("pageSize") || "20")),
-        100,
+        2000,
       );
       const sortBy = searchParams.get("sortBy") || "createdAt";
       const sortDir = searchParams.get("sortDir") === "asc" ? "asc" : "desc";
@@ -129,6 +133,37 @@ export const GET = authorizedRoute(
         where.isActive = isActive === "true";
       if (isFeatured === "true") where.isFeatured = true;
       if (tags && tags.length > 0) where.tags = { hasSome: tags };
+      if (domain) where.domain = domain;
+
+      if (category === "JOURNAL_SUBSCRIPTION") {
+        if (subscriptionFrequency || subscriptionYear || subscriptionMode) {
+          if (!where.AND) where.AND = [];
+          if (subscriptionFrequency) {
+            where.AND.push({
+              productAttributes: {
+                path: ["subscriptionOptions", "frequency"],
+                equals: subscriptionFrequency,
+              },
+            });
+          }
+          if (subscriptionYear) {
+            where.AND.push({
+              productAttributes: {
+                path: ["subscriptionOptions", "year"],
+                equals: parseInt(subscriptionYear, 10),
+              },
+            });
+          }
+          if (subscriptionMode) {
+            where.AND.push({
+              productAttributes: {
+                path: ["subscriptionOptions", "mode"],
+                equals: subscriptionMode,
+              },
+            });
+          }
+        }
+      }
 
       const validSortFields = [
         "name",

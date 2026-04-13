@@ -294,7 +294,7 @@ export default function CreateInvoiceModal({
       const params = new URLSearchParams({
         q: query,
         isActive: "true",
-        pageSize: "50",
+        pageSize: "2000",
       });
       if (catCategoryFilter) params.set("category", catCategoryFilter);
       const res = await fetch(

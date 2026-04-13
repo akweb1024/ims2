@@ -53,11 +53,11 @@ export const POST = authorizedRoute(
 
       let count = 0;
       const failedRows: Array<{ row: number; name?: string; error: string }> = [];
-      await db.$transaction(async (tx: any) => {
-        for (let index = 0; index < rows.length; index++) {
-          const row = rows[index];
-          const name = row.name || row.Name;
-          if (!name || !String(name).trim()) continue;
+      
+      for (let index = 0; index < rows.length; index++) {
+        const row = rows[index];
+        const name = row.name || row.Name;
+        if (!name || !String(name).trim()) continue;
 
           const category = normalizeCategory(row.category || row.Category);
 
@@ -132,6 +132,7 @@ export const POST = authorizedRoute(
               : undefined;
 
           try {
+            const skuCleaned = sku ? String(sku).trim() : null;
             const dataToSave = {
               name: String(name).trim(),
               type,
@@ -143,7 +144,7 @@ export const POST = authorizedRoute(
               taxIncluded,
               hsnCode,
               sacCode,
-              sku: sku ? String(sku).trim() : null,
+              sku: skuCleaned,
               domain: domain ? String(domain).trim() : null,
               notes,
               productAttributes,
@@ -158,19 +159,31 @@ export const POST = authorizedRoute(
             };
 
             if (id) {
-              const existing = await tx.invoiceProduct.findUnique({ where: { id } });
+              const existing = await db.invoiceProduct.findUnique({ where: { id } });
               if (existing) {
-                await tx.invoiceProduct.update({
+                await db.invoiceProduct.update({
                   where: { id },
                   data: dataToSave,
                 });
               } else {
-                await tx.invoiceProduct.create({
+                await db.invoiceProduct.create({
+                  data: { ...dataToSave, createdByUserId: user.id },
+                });
+              }
+            } else if (skuCleaned) {
+              const existingSku = await db.invoiceProduct.findUnique({ where: { sku: skuCleaned } });
+              if (existingSku) {
+                await db.invoiceProduct.update({
+                  where: { sku: skuCleaned },
+                  data: dataToSave,
+                });
+              } else {
+                await db.invoiceProduct.create({
                   data: { ...dataToSave, createdByUserId: user.id },
                 });
               }
             } else {
-              await tx.invoiceProduct.create({
+              await db.invoiceProduct.create({
                 data: { ...dataToSave, createdByUserId: user.id },
               });
             }
@@ -183,7 +196,6 @@ export const POST = authorizedRoute(
             });
           }
         }
-      });
 
       return NextResponse.json({
         message:
