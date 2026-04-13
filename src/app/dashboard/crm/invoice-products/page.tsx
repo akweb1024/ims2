@@ -449,7 +449,7 @@ export default function InvoiceProductsPage() {
       subscriptionFrequency: subscriptionOptions.frequency || "ANNUAL",
       subscriptionYear: subscriptionOptions.year || new Date().getFullYear(),
       subscriptionMode: subscriptionOptions.mode || "PRINT",
-      subscriptionPublisher: subscriptionOptions.publisher || "Stm Journals",
+      subscriptionPublisher: subscriptionOptions.publisher || "STM Journals",
       isPhysicalDeliverable: Boolean(inventorySettings.isPhysicalDeliverable),
       trackInventory: Boolean(inventorySettings.trackInventory),
     });
@@ -816,7 +816,7 @@ export default function InvoiceProductsPage() {
           "ANNUAL",
           String(new Date().getFullYear()),
           "PRINT",
-          "Stm Journals",
+          "STM Journals",
           "Sample journal subscription product",
         ].join(","),
         [

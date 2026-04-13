@@ -105,6 +105,14 @@ export const POST = authorizedRoute(
             .map((tag) => tag.trim())
             .filter(Boolean);
 
+          const id = row.id || row.ID || row.Id || null;
+          const billingCycle = row.billingCycle || row.BillingCycle || row["Billing Cycle"] || null;
+          const unit = row.unit || row.Unit || "unit";
+          const minQuantityRaw = row.minQuantity || row.MinQuantity || row["Min Quantity"];
+          const minQuantity = minQuantityRaw ? parseNumber(minQuantityRaw) : 1;
+          const maxQuantityRaw = row.maxQuantity || row.MaxQuantity || row["Max Quantity"];
+          const maxQuantity = maxQuantityRaw ? parseNumber(maxQuantityRaw) : null;
+
           const productAttributes =
             category === "JOURNAL_SUBSCRIPTION" &&
             (subscriptionFrequency || subscriptionYearRaw || subscriptionMode || subscriptionPublisher)
@@ -118,35 +126,54 @@ export const POST = authorizedRoute(
                       /\s*\+\s*/g,
                       "_",
                     ),
-                    publisher: subscriptionPublisher || "Stm Journals",
+                    publisher: subscriptionPublisher || "STM Journals",
                   },
                 }
               : undefined;
 
           try {
-            await tx.invoiceProduct.create({
-              data: {
-                name: String(name).trim(),
-                type,
-                category,
-                pricingModel,
-                priceINR: type === "VARIABLE" ? 0 : priceINR,
-                priceUSD: type === "VARIABLE" ? 0 : priceUSD,
-                taxRate,
-                taxIncluded,
-                hsnCode,
-                sacCode,
-                sku: sku ? String(sku).trim() : null,
-                domain: domain ? String(domain).trim() : null,
-                notes,
-                productAttributes,
-                tags,
-                isActive,
-                isFeatured,
-                companyId: user.companyId || null,
-                createdByUserId: user.id,
-              },
-            });
+            const dataToSave = {
+              name: String(name).trim(),
+              type,
+              category,
+              pricingModel,
+              priceINR: type === "VARIABLE" ? 0 : priceINR,
+              priceUSD: type === "VARIABLE" ? 0 : priceUSD,
+              taxRate,
+              taxIncluded,
+              hsnCode,
+              sacCode,
+              sku: sku ? String(sku).trim() : null,
+              domain: domain ? String(domain).trim() : null,
+              notes,
+              productAttributes,
+              tags,
+              isActive,
+              isFeatured,
+              companyId: user.companyId || null,
+              billingCycle,
+              unit,
+              minQuantity: minQuantity || 1,
+              maxQuantity,
+            };
+
+            if (id) {
+              const existing = await tx.invoiceProduct.findUnique({ where: { id } });
+              if (existing) {
+                await tx.invoiceProduct.update({
+                  where: { id },
+                  data: dataToSave,
+                });
+              } else {
+                await tx.invoiceProduct.create({
+                  data: { ...dataToSave, createdByUserId: user.id },
+                });
+              }
+            } else {
+              await tx.invoiceProduct.create({
+                data: { ...dataToSave, createdByUserId: user.id },
+              });
+            }
             count++;
           } catch (rowError: any) {
             failedRows.push({

@@ -86,7 +86,7 @@ export const DEFAULT_FORM_DATA: ProductCatalogueFormData = {
   subscriptionFrequency: "ANNUAL",
   subscriptionYear: new Date().getFullYear(),
   subscriptionMode: "PRINT",
-  subscriptionPublisher: "Stm Journals",
+  subscriptionPublisher: "STM Journals",
   isPhysicalDeliverable: false,
   trackInventory: false,
 };
@@ -153,8 +153,10 @@ const SUBSCRIPTION_MODE_OPTIONS = [
   { value: "PRINT_DIGITAL", label: "Print + Digital" },
 ];
 
+
+
 const SUBSCRIPTION_PUBLISHER_OPTIONS = [
-  { value: "Stm Journals", label: "Stm Journals" },
+  { value: "STM Journals", label: "STM Journals" },
   { value: "JournalsPub", label: "JournalsPub" },
 ];
 
@@ -741,7 +743,7 @@ export default function ProductCatalogueForm({
                         : "",
                     subscriptionPublisher:
                       nextCategory === "JOURNAL_SUBSCRIPTION"
-                        ? value.subscriptionPublisher || "Stm Journals"
+                        ? value.subscriptionPublisher || "STM Journals"
                         : "",
                   });
                 }}
