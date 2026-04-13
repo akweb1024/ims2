@@ -343,6 +343,22 @@ export default function CreateInvoiceModal({
     [catProducts],
   );
 
+  const availableCatalogueYears = useMemo(
+    () =>
+      Array.from(
+        new Set(
+          catProducts
+            .filter((p: any) => p.category === "JOURNAL_SUBSCRIPTION")
+            .flatMap((p: any) => [
+              p.productAttributes?.subscriptionOptions?.year,
+              ...(p.variants || []).map((v: any) => v.attributes?.year),
+            ])
+            .filter(Boolean),
+        ),
+      ).sort((a: any, b: any) => Number(b) - Number(a)),
+    [catProducts],
+  );
+
   const visibleCatalogueProducts = useMemo(() => {
     return catProducts.filter((product: any) => {
       if (catDomainFilter && product.domain !== catDomainFilter) {
@@ -2022,7 +2038,14 @@ export default function CreateInvoiceModal({
                         >
                           <option value="">All Frequencies</option>
                           <option value="ANNUAL">Annual</option>
+                          <option value="SINGLE_COPY">Single Copy</option>
+                          <option value="1ST_ISSUE">1st Issue</option>
+                          <option value="2ND_ISSUE">2nd Issue</option>
+                          <option value="3RD_ISSUE">3rd Issue</option>
                           <option value="ISSUE_WISE">Issue Wise</option>
+                          <option value="BI_ANNUAL">Bi-Annual</option>
+                          <option value="TRI_ANNUAL">Tri-Annual</option>
+                          <option value="BI_MONTHLY">Bi-Monthly</option>
                         </select>
                         <select
                           value={subscriptionYearFilter}
@@ -2030,10 +2053,7 @@ export default function CreateInvoiceModal({
                           className="input-premium w-full min-w-0"
                         >
                           <option value="">All Years</option>
-                          {Array.from(
-                            { length: 10 },
-                            (_, i) => new Date().getFullYear() + i - 2,
-                          ).map((year) => (
+                          {availableCatalogueYears.map((year: any) => (
                             <option key={year} value={year}>
                               {year}
                             </option>
@@ -2127,7 +2147,17 @@ export default function CreateInvoiceModal({
                                     {product.category === "JOURNAL_SUBSCRIPTION" && subscriptionOptions && (
                                       <div className="flex flex-wrap gap-2">
                                         <span className="rounded-full bg-indigo-50 px-3 py-1 text-[10px] font-black uppercase tracking-widest text-indigo-700">
-                                          {subscriptionOptions.frequency === "ISSUE_WISE" ? "Issue Wise" : "Annual"}
+                                          {{
+                                            ANNUAL: "Annual",
+                                            SINGLE_COPY: "Single Copy",
+                                            "1ST_ISSUE": "1st Issue",
+                                            "2ND_ISSUE": "2nd Issue",
+                                            "3RD_ISSUE": "3rd Issue",
+                                            ISSUE_WISE: "Issue Wise",
+                                            BI_ANNUAL: "Bi-Annual",
+                                            TRI_ANNUAL: "Tri-Annual",
+                                            BI_MONTHLY: "Bi-Monthly",
+                                          }[subscriptionOptions.frequency as string] || subscriptionOptions.frequency?.replace(/_/g, " ")}
                                         </span>
                                         {subscriptionOptions.year && (
                                           <span className="rounded-full border border-gray-200 bg-white px-3 py-1 text-[10px] font-black uppercase tracking-widest text-gray-600">
@@ -2166,7 +2196,17 @@ export default function CreateInvoiceModal({
                                         {product.category === "JOURNAL_SUBSCRIPTION" && subscriptionOptions && (
                                           <div className="hidden lg:flex items-center gap-1.5 shrink-0">
                                             <span className="rounded text-[9px] font-black uppercase tracking-widest text-indigo-700 bg-indigo-50 px-2 py-0.5">
-                                              {subscriptionOptions.frequency === "ISSUE_WISE" ? "Issue" : "Annual"}
+                                              {{
+                                                ANNUAL: "Annual",
+                                                SINGLE_COPY: "Single Copy",
+                                                "1ST_ISSUE": "1st",
+                                                "2ND_ISSUE": "2nd",
+                                                "3RD_ISSUE": "3rd",
+                                                ISSUE_WISE: "Issue",
+                                                BI_ANNUAL: "Bi-Ann",
+                                                TRI_ANNUAL: "Tri-Ann",
+                                                BI_MONTHLY: "Bi-Mon",
+                                              }[subscriptionOptions.frequency as string] || subscriptionOptions.frequency?.replace(/_/g, " ")}
                                             </span>
                                             {subscriptionOptions.mode && (
                                               <span className="rounded border border-gray-200 bg-white text-[9px] font-black uppercase tracking-widest text-gray-600 px-2 py-0.5">
