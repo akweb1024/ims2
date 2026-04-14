@@ -495,7 +495,7 @@ model KnowledgeArticleRevision {
 model CustomerProfile {
   id                  String               @id @default(uuid())
   userId              String               @unique
-  customerType        CustomerType
+  customerType        CustomerType         @default(INDIVIDUAL)
   assignedToUserId    String?
   name                String
   organizationName    String?

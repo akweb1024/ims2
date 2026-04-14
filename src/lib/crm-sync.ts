@@ -1,4 +1,5 @@
 import { prisma } from './prisma';
+import { CustomerType } from '@prisma/client';
 import { updateLeadScore } from './crm-scoring';
 
 type LeadSource = 'CONFERENCE_REGISTRATION' | 'COURSE_ENROLLMENT' | 'MANUAL' | 'EXTERNAL_API';
@@ -11,6 +12,7 @@ interface LeadData {
     source: LeadSource;
     notes?: string;
     companyId: string;
+    customerType?: CustomerType;
 }
 
 const LEAD_ASSIGNMENT_CURSOR_KEY = 'lead_assignment_cursor';
@@ -72,6 +74,7 @@ export async function syncToCrmLead(data: LeadData) {
                 userId: user.id,
                 leadStatus: 'NEW',
                 assignedToUserId: assignedToUserId, // Assign to executive
+                customerType: data.customerType || 'INDIVIDUAL',
             }
         });
 

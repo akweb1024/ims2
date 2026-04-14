@@ -65,7 +65,6 @@ export async function sendReviewerReminders() {
             await prisma.reviewAssignment.update({
                 where: { id: assignment.id },
                 data: { 
-                    // @ts-expect-error - Assuming we might need a migration for this specific field
                     reminderSent: true 
                 }
             });
