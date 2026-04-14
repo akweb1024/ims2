@@ -281,7 +281,7 @@ export async function PATCH(
             const updatedProfile = await tx.customerProfile.update({
                 where: { id: id },
                 data: {
-                    ...customerProfileData,
+                    ...(customerProfileData as any),
                     ...(assignedToUserId !== undefined && {
                         assignedTo: toNullableString(assignedToUserId)
                             ? { connect: { id: String(toNullableString(assignedToUserId)) } }
