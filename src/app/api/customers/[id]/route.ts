@@ -245,12 +245,7 @@ export async function PATCH(
             ...(profileData.organizationName !== undefined && { organizationName: toNullableString(profileData.organizationName) }),
             ...(profileData.primaryPhone !== undefined && { primaryPhone: String(profileData.primaryPhone) }),
             ...(profileData.secondaryEmail !== undefined && { secondaryEmail: toNullableString(profileData.secondaryEmail) }),
-            ...(profileData.designation !== undefined && {
-                designation: (() => {
-                    const designation = toNullableString(profileData.designation);
-                    return designation && CUSTOMER_DESIGNATIONS.has(designation) ? designation as any : null;
-                })()
-            }),
+            ...(profileData.designation !== undefined && { designation: toNullableString(profileData.designation) }),
             ...(profileData.billingAddress !== undefined && { billingAddress: toNullableString(profileData.billingAddress) }),
             ...(profileData.billingCity !== undefined && { billingCity: toNullableString(profileData.billingCity) }),
             ...(profileData.billingState !== undefined && { billingState: toNullableString(profileData.billingState) }),
@@ -263,6 +258,7 @@ export async function PATCH(
             ...(profileData.shippingStateCode !== undefined && { shippingStateCode: toNullableString(profileData.shippingStateCode) }),
             ...(profileData.shippingPincode !== undefined && { shippingPincode: toNullableString(profileData.shippingPincode) }),
             ...(profileData.shippingCountry !== undefined && { shippingCountry: toNullableString(profileData.shippingCountry) ?? 'India' }),
+            ...(profileData.shippingEnduserName !== undefined && { shippingEnduserName: toNullableString(profileData.shippingEnduserName) }),
             ...(profileData.gstVatTaxId !== undefined && { gstVatTaxId: toNullableString(profileData.gstVatTaxId) }),
         };
 
@@ -289,7 +285,7 @@ export async function PATCH(
                 }
             });
 
-            if (institutionDetails && updatedProfile.customerType === 'INSTITUTION') {
+            if (institutionDetails && (updatedProfile.organizationType === 'INSTITUTION' || updatedProfile.organizationType === 'UNIVERSITY')) {
                 const mappedInstitutionDetails = {
                     category: toNullableString(institutionDetails.category) || toNullableString(institutionDetails.vspName) || 'GENERAL',
                     ipRange: toNullableString(institutionDetails.ipRange) || toNullableString(institutionDetails.ipRanges),

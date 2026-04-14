@@ -17,7 +17,8 @@ export async function GET(req: NextRequest) {
     // Fetch from CustomerProfile
     const profileAgencies = await prisma.customerProfile.findMany({
       where: {
-        customerType: "AGENCY",
+        customerType: "ORGANIZATION",
+        organizationType: "AGENCY",
         OR: [
           { name: { contains: search, mode: "insensitive" } },
           { primaryEmail: { contains: search, mode: "insensitive" } },
@@ -56,7 +57,8 @@ export async function GET(req: NextRequest) {
     // Map Institutions to match CustomerProfile structure
     const mappedInstitutions = institutionAgencies.map((inst: any) => ({
       ...inst,
-      customerType: "AGENCY",
+      customerType: "ORGANIZATION",
+      organizationType: "AGENCY",
       organizationName: inst.name, // Use name as organizationName for institutes
       isInstitution: true,
       agencyDetails: {
@@ -144,7 +146,8 @@ export async function POST(req: NextRequest) {
       const profile = await tx.customerProfile.create({
         data: {
           userId: newUser.id,
-          customerType: "AGENCY",
+          customerType: "ORGANIZATION",
+          organizationType: "AGENCY",
           name,
           organizationName,
           primaryEmail,

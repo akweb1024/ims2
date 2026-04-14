@@ -494,13 +494,14 @@ async function main() {
 
     // Get customer profiles
     const institutionProfiles = await prisma.customerProfile.findMany({
-        where: { customerType: 'INSTITUTION' },
+        where: { customerType: 'ORGANIZATION', organizationType: 'INSTITUTION' },
     });
 
     const agencyProfile = await prisma.customerProfile.findFirst({
-        where: { customerType: 'AGENCY' },
-        include: { agencyDetails: true },
+        where: { customerType: 'ORGANIZATION', organizationType: 'AGENCY' },
     });
+
+    const agencyId = agencyProfile?.id;
 
     // Create active subscriptions for institutions
     for (let i = 0; i < institutionProfiles.length; i++) {

@@ -25,6 +25,8 @@ export default function EditInstitutionPage() {
         code: '',
         type: 'UNIVERSITY',
         category: '',
+        universityCategory: '',
+        universityId: '',
         establishedYear: '',
         accreditation: '',
         primaryEmail: '',
@@ -58,11 +60,14 @@ export default function EditInstitutionPage() {
         assignedToUserId: ''
     });
 
-    const institutionTypes = [
-        'UNIVERSITY', 'COLLEGE', 'SCHOOL', 'RESEARCH_INSTITUTE',
-        'CORPORATE', 'LIBRARY', 'GOVERNMENT', 'HOSPITAL',
-        'NGO', 'AGENCY', 'OTHER'
+    const institutionTypes = ['UNIVERSITY', 'COLLEGE', 'RESEARCH_INSTITUTE', 'OTHER'];
+    
+    const universityCategories = [
+        'CENTRAL_UNIVERSITY', 'STATE_UNIVERSITY', 'GOVERNMENT_UNIVERSITY', 
+        'DEEMED_UNIVERSITY', 'PRIVATE_UNIVERSITY'
     ];
+
+    const [universities, setUniversities] = useState<any[]>([]);
 
     useEffect(() => {
         const user = localStorage.getItem('user');
@@ -81,6 +86,15 @@ export default function EditInstitutionPage() {
                     .catch(err => console.error('Failed to fetch staff', err));
             }
         }
+        
+        // Fetch universities for affiliation dropdown
+        fetch('/api/institutions?type=UNIVERSITY&limit=1000')
+            .then(res => res.json())
+            .then(data => {
+                const unis = Array.isArray(data) ? data : (data.data || []);
+                setUniversities(unis);
+            })
+            .catch(console.error);
     }, []);
 
     useEffect(() => {
@@ -98,6 +112,8 @@ export default function EditInstitutionPage() {
                         code: data.code || '',
                         type: data.type || 'UNIVERSITY',
                         category: data.category || '',
+                        universityCategory: data.universityCategory || '',
+                        universityId: data.universityId || '',
                         establishedYear: data.establishedYear?.toString() || '',
                         accreditation: data.accreditation || '',
                         primaryEmail: data.primaryEmail || '',
@@ -210,7 +226,9 @@ export default function EditInstitutionPage() {
                     shippingCity: isShippingSame ? formData.billingCity : formData.shippingCity,
                     shippingState: isShippingSame ? formData.billingState : formData.shippingState,
                     shippingCountry: isShippingSame ? formData.billingCountry : formData.shippingCountry,
-                    shippingPincode: isShippingSame ? formData.billingPincode : formData.shippingPincode
+                    shippingPincode: isShippingSame ? formData.billingPincode : formData.shippingPincode,
+                    universityCategory: formData.type === 'UNIVERSITY' ? formData.universityCategory : null,
+                    universityId: formData.type === 'COLLEGE' ? formData.universityId : null
                 })
             });
 
@@ -325,6 +343,40 @@ export default function EditInstitutionPage() {
                                     onChange={(e) => setFormData({ ...formData, category: e.target.value })}
                                 />
                             </div>
+
+                            {formData.type === 'UNIVERSITY' && (
+                                <div>
+                                    <label className="label text-emerald-700 font-bold">University Category *</label>
+                                    <select
+                                        className="input border-emerald-200 focus:ring-emerald-50"
+                                        value={formData.universityCategory}
+                                        onChange={(e) => setFormData({ ...formData, universityCategory: e.target.value })}
+                                        required
+                                    >
+                                        <option value="">Select Category</option>
+                                        {universityCategories.map(cat => (
+                                            <option key={cat} value={cat}>{cat.replace('_', ' ')}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                            )}
+
+                            {formData.type === 'COLLEGE' && (
+                                <div>
+                                    <label className="label text-indigo-700 font-bold">Affiliated University</label>
+                                    <select
+                                        className="input border-indigo-200 focus:ring-indigo-50"
+                                        value={formData.universityId}
+                                        onChange={(e) => setFormData({ ...formData, universityId: e.target.value })}
+                                    >
+                                        <option value="">-- Independent/None --</option>
+                                        {universities.map(u => (
+                                            <option key={u.id} value={u.id}>{u.name}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                            )}
+
                             <div>
                                 <label className="label">Primary Domain</label>
                                 <input

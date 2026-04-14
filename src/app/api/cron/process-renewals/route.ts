@@ -59,14 +59,16 @@ export async function POST(req: NextRequest) {
                     ...template
                 });
 
-                // 2. Create In-App Notification
-                await createNotification({
-                    userId: sub.customerProfile.userId,
-                    title: 'Subscription Expiring Soon',
-                    message: `Your subscription for ${journalName} expires in ${days} days. Renew now!`,
-                    type: 'WARNING',
-                    link: `/dashboard/crm/subscriptions/${sub.id}`
-                });
+                // 2. Create In-App Notification if user has an account
+                if (sub.customerProfile.userId) {
+                    await createNotification({
+                        userId: sub.customerProfile.userId,
+                        title: 'Subscription Expiring Soon',
+                        message: `Your subscription for ${journalName} expires in ${days} days. Renew now!`,
+                        type: 'WARNING',
+                        link: `/dashboard/crm/subscriptions/${sub.id}`
+                    });
+                }
 
                 // 3. Log Communication
                 await prisma.communicationLog.create({

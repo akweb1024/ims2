@@ -28,6 +28,18 @@ export default function CustomerDetailPage({ params }: { params: Promise<{ id: s
     const [activeFollowUpId, setActiveFollowUpId] = useState<string | null>(null);
     const [isShippingSame, setIsShippingSame] = useState(true);
     const [dispatchDrafts, setDispatchDrafts] = useState<Record<string, any>>({});
+    const [agencies, setAgencies] = useState<any[]>([]);
+    
+    // Organization Edit States
+    const [customerTypeType, setCustomerTypeType] = useState(customer?.customerType || 'INDIVIDUAL');
+    const [organizationType, setOrganizationType] = useState('');
+    const [governanceType, setGovernanceType] = useState('PRIVATE');
+    const [universityCategory, setUniversityCategory] = useState('STATE');
+    const [affiliatedUniversityId, setAffiliatedUniversityId] = useState('');
+    const [associatedAgencyId, setAssociatedAgencyId] = useState('');
+    const [hasAgency, setHasAgency] = useState(false);
+    const [discountOffered, setDiscountOffered] = useState<number>(10);
+    const [region, setRegion] = useState('');
 
     const formRef = useRef<HTMLDivElement>(null);
 
@@ -47,7 +59,22 @@ export default function CustomerDetailPage({ params }: { params: Promise<{ id: s
         fetch('/api/institutions', { headers: { 'Authorization': `Bearer ${token}` } })
             .then(res => res.json())
             .then(data => setInstitutions(Array.isArray(data) ? data : (data.data || [])));
+            
+        fetch('/api/agencies', { headers: { 'Authorization': `Bearer ${token}` } })
+            .then(res => res.json())
+            .then(data => setAgencies(Array.isArray(data) ? data : (data.data || [])));
         
+        // Ensure values reset based on Customer
+        setCustomerTypeType(customer.customerType || 'INDIVIDUAL');
+        setOrganizationType(customer.organizationType || '');
+        setGovernanceType(customer.governanceType || 'PRIVATE');
+        setUniversityCategory(customer.universityCategory || 'STATE');
+        setAffiliatedUniversityId(customer.affiliatedUniversityId || '');
+        setAssociatedAgencyId(customer.associatedAgencyId || '');
+        setHasAgency(!!customer.associatedAgencyId);
+        setDiscountOffered(customer.discountOffered || 10);
+        setRegion(customer.region || '');
+
         // Set initial same as billing state
         const isSame = !customer.shippingAddress || (
             customer.shippingAddress === customer.billingAddress &&
@@ -241,6 +268,16 @@ export default function CustomerDetailPage({ params }: { params: Promise<{ id: s
             assignedToUserId: formData.get('assignedToUserId') || null,
             assignedToUserIds: formData.getAll('assignedToUserIds'),
             
+            // Core Identity Classification
+            customerType: customerTypeType,
+            organizationType: organizationType || null,
+            governanceType: governanceType || null,
+            universityCategory: universityCategory || null,
+            affiliatedUniversityId: affiliatedUniversityId || null,
+            associatedAgencyId: hasAgency ? associatedAgencyId : null,
+            discountOffered: discountOffered,
+            region: region || null,
+            
             // Structured Fields
             billingAddress: formData.get('billingAddress'),
             billingCity: formData.get('billingCity'),
@@ -255,6 +292,8 @@ export default function CustomerDetailPage({ params }: { params: Promise<{ id: s
             shippingStateCode: isShippingSame ? formData.get('billingStateCode') : formData.get('shippingStateCode'),
             shippingPincode: isShippingSame ? formData.get('billingPincode') : formData.get('shippingPincode'),
             shippingCountry: isShippingSame ? (formData.get('billingCountry') || 'India') : (formData.get('shippingCountry') || 'India'),
+            
+            shippingEnduserName: formData.get('shippingEnduserName') || null,
 
             gstVatTaxId: formData.get('gstVatTaxId'),
         };
@@ -444,6 +483,10 @@ export default function CustomerDetailPage({ params }: { params: Promise<{ id: s
                                         {!isShippingSame ? (
                                             <>
                                                 <div className="md:col-span-2 animate-in fade-in slide-in-from-top-1 duration-200">
+                                                    <label className="label">End User Name (Receiving Person)</label>
+                                                    <input name="shippingEnduserName" className="input" defaultValue={customer.shippingEnduserName} placeholder="Optional" />
+                                                </div>
+                                                <div className="md:col-span-2">
                                                     <label className="label">Street / Building</label>
                                                     <textarea name="shippingAddress" className="input h-20" defaultValue={customer.shippingAddress || customer.billingAddress}></textarea>
                                                 </div>
@@ -476,27 +519,33 @@ export default function CustomerDetailPage({ params }: { params: Promise<{ id: s
                                     </div>
 
                                     <div>
-                                        <label className="label">Link to institution</label>
-                                        <select name="institutionId" className="input" defaultValue={customer.institutionId || ''}>
-                                            <option value="">None / individual customer</option>
-                                            {institutions.map(inst => (
-                                                <option key={inst.id} value={inst.id}>{inst.name} ({inst.code})</option>
-                                            ))}
+                                        <label className="label">Customer Type</label>
+                                        <select className="input font-bold" value={customerTypeType} onChange={(e) => setCustomerTypeType(e.target.value)}>
+                                            <option value="INDIVIDUAL">Individual Person</option>
+                                            <option value="ORGANIZATION">Organization / Institution</option>
                                         </select>
                                     </div>
 
                                     <div>
                                         <label className="label">Role / designation</label>
-                                        <select name="designation" className="input" defaultValue={customer.designation || ''}>
-                                            <option value="">Select role</option>
-                                            {[
-                                                'STUDENT', 'TEACHER', 'FACULTY', 'HOD', 'PRINCIPAL', 'DEAN',
-                                                'RESEARCHER', 'LIBRARIAN', 'ACCOUNTANT', 'DIRECTOR', 'REGISTRAR',
-                                                'VICE_CHANCELLOR', 'CHANCELLOR', 'STAFF', 'OTHER'
-                                            ].map(d => (
-                                                <option key={d} value={d}>{d.replace('_', ' ')}</option>
-                                            ))}
-                                        </select>
+                                        <datalist id="editDesignationOptions">
+                                            <option value="LIBRARIAN" />
+                                            <option value="HOD" />
+                                            <option value="DEAN" />
+                                            <option value="STUDENT" />
+                                            <option value="RESEARCHER" />
+                                            <option value="DIRECTOR" />
+                                            <option value="PRINCIPAL" />
+                                            <option value="PURCHASE MANAGER" />
+                                            <option value="OTHER" />
+                                        </datalist>
+                                        <input 
+                                            name="designation" 
+                                            className="input" 
+                                            defaultValue={customer.designation?.replace('_', ' ') || ''} 
+                                            list="editDesignationOptions"
+                                            placeholder="Select or type role"
+                                        />
                                     </div>
 
                                     {/* Assignment - Only for Admins/Managers */}
@@ -524,25 +573,88 @@ export default function CustomerDetailPage({ params }: { params: Promise<{ id: s
                                     )}
                                 </div>
 
-                                {customer.customerType === 'INSTITUTION' && (
-                                    <div className="pt-4 border-t border-secondary-100">
-                                        <h4 className="font-bold text-secondary-900 mb-4">Institution details</h4>
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                            <div>
-                                                <label className="label">VSP Name</label>
-                                                <input name="vspName" className="input" defaultValue={customer.institutionDetails?.vspName} />
-                                            </div>
-                                            <div>
-                                                <label className="label">Total Seats</label>
-                                                <input name="totalSeats" type="number" className="input" defaultValue={customer.institutionDetails?.totalSeats} />
-                                            </div>
-                                            <div className="md:col-span-2">
-                                                <label className="label">IP Ranges (Comma separated)</label>
-                                                <textarea name="ipRanges" className="input h-20" defaultValue={customer.institutionDetails?.ipRanges}></textarea>
-                                            </div>
-                                        </div>
-                                    </div>
-                                )}
+                                {customerTypeType === 'ORGANIZATION' && (
+                                      <div className="md:col-span-2 space-y-6 animate-in fade-in zoom-in duration-300 bg-indigo-50/50 p-6 rounded-2xl border border-indigo-100">
+                                          
+                                          {/* Governance & Classification Row */}
+                                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                              <div>
+                                                  <label className="block text-[11px] font-black uppercase tracking-widest text-gray-500 mb-2">Governance Type</label>
+                                                  <select className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-indigo-500 focus:ring-indigo-500 font-semibold" value={governanceType} onChange={(e) => setGovernanceType(e.target.value)}>
+                                                      <option value="PRIVATE">Private</option>
+                                                      <option value="GOVERNMENT">Government / Public</option>
+                                                  </select>
+                                              </div>
+                                              <div>
+                                                  <label className="block text-[11px] font-black uppercase tracking-widest text-gray-500 mb-2">Organization Classification</label>
+                                                  <select className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-indigo-500 focus:ring-indigo-500 font-semibold text-indigo-900" value={organizationType} onChange={(e) => {
+                                                      setOrganizationType(e.target.value);
+                                                      if(e.target.value !== 'INSTITUTION') setAffiliatedUniversityId('');
+                                                      if(e.target.value !== 'AGENCY') { setDiscountOffered(10); setRegion(''); }
+                                                  }}>
+                                                      <option value="">-- Select Classification --</option>
+                                                      <option value="UNIVERSITY">University</option>
+                                                      <option value="INSTITUTION">Institution / College</option>
+                                                      <option value="AGENCY">Agency / Partner</option>
+                                                      <option value="COMPANY">Company / Corporate</option>
+                                                  </select>
+                                              </div>
+                                          </div>
+
+                                          {/* Context Renderers */}
+                                          {organizationType === 'UNIVERSITY' && (
+                                              <div className="pt-4 border-t border-indigo-100 flex items-center gap-6">
+                                                  <label className="text-[11px] font-black uppercase tracking-widest text-gray-500">University Category :</label>
+                                                  <div className="flex items-center gap-4">
+                                                      <label className="flex items-center gap-2 cursor-pointer text-sm font-bold text-gray-700"><input type="radio" value="STATE" checked={universityCategory==='STATE'} onChange={()=>setUniversityCategory('STATE')} className="w-4 h-4 text-indigo-600" /> State</label>
+                                                      <label className="flex items-center gap-2 cursor-pointer text-sm font-bold text-gray-700"><input type="radio" value="CENTRAL" checked={universityCategory==='CENTRAL'} onChange={()=>setUniversityCategory('CENTRAL')} className="w-4 h-4 text-indigo-600" /> Central</label>
+                                                      <label className="flex items-center gap-2 cursor-pointer text-sm font-bold text-gray-700"><input type="radio" value="PRIVATE" checked={universityCategory==='PRIVATE'} onChange={()=>setUniversityCategory('PRIVATE')} className="w-4 h-4 text-indigo-600" /> Private</label>
+                                                  </div>
+                                              </div>
+                                          )}
+
+                                          {organizationType === 'INSTITUTION' && (
+                                              <div className="pt-4 border-t border-indigo-100 grid grid-cols-1 md:grid-cols-2 gap-6">
+                                                  <div>
+                                                      <label className="block text-sm font-bold text-gray-700 mb-2">Affiliation (Optional)</label>
+                                                      <select className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-indigo-500 focus:ring-indigo-500" value={affiliatedUniversityId} onChange={(e) => setAffiliatedUniversityId(e.target.value)}>
+                                                          <option value="">Self-Affiliated (None)</option>
+                                                          {institutions.filter((i:any) => i.organizationType === 'UNIVERSITY' || i.type === 'UNIVERSITY').map((u:any) => (
+                                                              <option key={u.id} value={u.id}>{u.name.toUpperCase()} [{u.code}]</option>
+                                                          ))}
+                                                      </select>
+                                                  </div>
+                                                  <div>
+                                                      <label className="block text-sm font-bold text-gray-700 mb-2 flex items-center gap-2">
+                                                          <input type="checkbox" checked={hasAgency} onChange={(e) => setHasAgency(e.target.checked)} className="w-4 h-4 text-indigo-600 rounded" />
+                                                          Associated Agency?
+                                                      </label>
+                                                      {hasAgency && (
+                                                          <select className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-indigo-500 focus:ring-indigo-500" value={associatedAgencyId} onChange={(e) => setAssociatedAgencyId(e.target.value)}>
+                                                              <option value="">-- Select Agency --</option>
+                                                              {agencies.map((a:any) => (
+                                                                  <option key={a.id} value={a.id}>{a.name.toUpperCase()} [{a.primaryEmail}]</option>
+                                                              ))}
+                                                          </select>
+                                                      )}
+                                                  </div>
+                                              </div>
+                                          )}
+
+                                          {organizationType === 'AGENCY' && (
+                                              <div className="pt-4 border-t border-indigo-100 grid grid-cols-1 md:grid-cols-2 gap-6">
+                                                  <div>
+                                                      <label className="block text-sm font-bold text-gray-700 mb-2">Discount Offered (%)</label>
+                                                      <input type="number" step="0.1" value={discountOffered} onChange={(e)=>setDiscountOffered(parseFloat(e.target.value)||0)} className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-indigo-500 focus:ring-indigo-500" />
+                                                  </div>
+                                                  <div>
+                                                      <label className="block text-sm font-bold text-gray-700 mb-2">Operational Area / Region</label>
+                                                      <input type="text" placeholder="e.g. APAC" value={region} onChange={(e)=>setRegion(e.target.value)} className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-indigo-500 focus:ring-indigo-500" />
+                                                  </div>
+                                              </div>
+                                          )}
+                                      </div>
+                                  )}
 
                                 <div className="flex justify-end space-x-3 mt-8">
                                     <button

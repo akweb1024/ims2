@@ -56,7 +56,7 @@ export async function POST(request: NextRequest) {
                 include: { agencyDetails: true }
             });
 
-            if (!agency || agency.customerType !== 'AGENCY') {
+            if (!agency || agency.organizationType !== 'AGENCY') {
                 return NextResponse.json({ error: 'Invalid Agency' }, { status: 400 });
             }
 

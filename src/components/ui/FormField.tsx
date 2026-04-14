@@ -17,6 +17,7 @@ interface FormFieldProps {
     defaultValue?: string | number;
     onChange?: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => void;
     loading?: boolean;
+    list?: string;
 }
 
 
@@ -36,6 +37,7 @@ export default function FormField({
     defaultValue,
     onChange: customOnChange,
     loading = false,
+    list,
 }: FormFieldProps) {
 
     const baseInputClasses = `
@@ -111,6 +113,7 @@ export default function FormField({
                     disabled={disabled}
                     defaultValue={defaultValue}
                     className={inputClasses}
+                    list={list}
                     aria-invalid={error ? 'true' : 'false'}
                     aria-describedby={error ? errorId : helpText ? helpId : undefined}
                 />

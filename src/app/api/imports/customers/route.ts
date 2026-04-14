@@ -41,8 +41,19 @@ export async function POST(req: NextRequest) {
                 continue;
             }
 
-            const type = (item.customertype || item.type || 'INDIVIDUAL').toUpperCase() as CustomerType;
-            const role = type === 'AGENCY' ? 'AGENCY' : 'CUSTOMER';
+            const rawType = (item.customertype || item.type || 'INDIVIDUAL').toUpperCase();
+            let type: any = 'INDIVIDUAL';
+            let orgType = null;
+            if (rawType === 'AGENCY') {
+                type = 'ORGANIZATION'; orgType = 'AGENCY';
+            } else if (rawType === 'INSTITUTION') {
+                type = 'ORGANIZATION'; orgType = 'INSTITUTION';
+            } else if (rawType === 'UNIVERSITY') {
+                type = 'ORGANIZATION'; orgType = 'UNIVERSITY';
+            } else if (rawType === 'ORGANIZATION') {
+                type = 'ORGANIZATION';
+            }
+            const role = orgType === 'AGENCY' ? 'AGENCY' : 'CUSTOMER';
             const hashedPassword = await bcrypt.hash('customer123', 12);
 
             // Handle Designation
@@ -76,6 +87,7 @@ export async function POST(req: NextRequest) {
                     data: {
                         userId: user.id,
                         customerType: type,
+                        organizationType: orgType,
                         name: name,
                         primaryEmail: email,
                         organizationName: item.organizationname || item.college || item.university,

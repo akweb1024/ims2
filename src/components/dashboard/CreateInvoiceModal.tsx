@@ -30,6 +30,9 @@ import {
   Filter,
   LayoutGrid,
   List,
+  Mail,
+  Settings,
+  UserCog,
 } from "lucide-react";
 
 const getCurrencySymbol = (curr: string) => {
@@ -193,6 +196,7 @@ export default function CreateInvoiceModal({
   });
   const [isShippingSame, setIsShippingSame] = useState(true);
   const [creatingCustomerLoading, setCreatingCustomerLoading] = useState(false);
+  const [isEditingCustomer, setIsEditingCustomer] = useState(false);
   const [isFetchingPincode, setIsFetchingPincode] = useState(false);
   const [institutions, setInstitutions] = useState<any[]>([]);
   const [prefilledInstitution, setPrefilledInstitution] = useState<any>(null);
@@ -940,8 +944,11 @@ export default function CreateInvoiceModal({
     setCreatingCustomerLoading(true);
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch("/api/customers", {
-        method: "POST",
+      const url = isEditingCustomer ? `/api/customers/${selectedCustomer.id}` : "/api/customers";
+      const method = isEditingCustomer ? "PATCH" : "POST";
+      
+      const res = await fetch(url, {
+        method,
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
@@ -958,6 +965,7 @@ export default function CreateInvoiceModal({
         setSelectedCustomer(customer);
         setStep(2);
         setIsCreatingCustomer(false);
+        setIsEditingCustomer(false);
         setNewCustomerForm({
           name: "",
           primaryEmail: "",
@@ -985,11 +993,11 @@ export default function CreateInvoiceModal({
         setIsShippingSame(true);
       } else {
         const err = await res.json();
-        alert(err.error || "Failed to create customer");
+        alert(err.error || `Failed to ${isEditingCustomer ? 'update' : 'create'} customer`);
       }
     } catch (error) {
       console.error(error);
-      alert("An error occurred while creating customer");
+      alert(`An error occurred while ${isEditingCustomer ? 'updating' : 'creating'} customer`);
     } finally {
       setCreatingCustomerLoading(false);
     }
@@ -1093,6 +1101,158 @@ export default function CreateInvoiceModal({
   };
 
   if (!isOpen) return null;
+
+  const handleEditCurrentCustomer = () => {
+    if (!selectedCustomer) return;
+    setNewCustomerForm({
+      name: selectedCustomer.name || "",
+      primaryEmail: selectedCustomer.primaryEmail || "",
+      primaryPhone: selectedCustomer.primaryPhone || "",
+      secondaryPhone: selectedCustomer.secondaryPhone || "",
+      customerType: selectedCustomer.customerType || "INDIVIDUAL",
+      organizationName: selectedCustomer.organizationName || "",
+      designation: selectedCustomer.designation || "",
+      institutionId: selectedCustomer.institutionId || "",
+      gstVatTaxId: selectedCustomer.gstVatTaxId || "",
+      billingAddress: selectedCustomer.billingAddress || "",
+      billingCity: selectedCustomer.billingCity || "",
+      billingState: selectedCustomer.billingState || "",
+      billingStateCode: selectedCustomer.billingStateCode || "",
+      billingPincode: selectedCustomer.billingPincode || "",
+      billingCountry: selectedCustomer.billingCountry || "India",
+      shippingAddress: selectedCustomer.shippingAddress || "",
+      shippingCity: selectedCustomer.shippingCity || "",
+      shippingState: selectedCustomer.shippingState || "",
+      shippingStateCode: selectedCustomer.shippingStateCode || "",
+      shippingPincode: selectedCustomer.shippingPincode || "",
+      shippingCountry: selectedCustomer.shippingCountry || "India",
+      notes: selectedCustomer.notes || "",
+    });
+    setIsShippingSame(selectedCustomer.billingAddress === selectedCustomer.shippingAddress && selectedCustomer.billingPincode === selectedCustomer.shippingPincode);
+    setIsCreatingCustomer(true);
+    setIsEditingCustomer(true);
+    setStep(1);
+  };
+
+  const renderSelectedCustomer = () => {
+    if (!selectedCustomer) return null;
+    return (
+      <div className="bg-white rounded-[2rem] border border-primary-100 shadow-xl shadow-primary-50/50 overflow-hidden mb-6 animate-fadeIn">
+        <div className="bg-gradient-to-r from-primary-50 to-white px-6 py-4 border-b border-primary-100 flex items-center justify-between transition-all">
+          <div className="flex items-center gap-4 text-left">
+            <div className="w-12 h-12 rounded-2xl bg-primary-600 text-white flex items-center justify-center shadow-lg shadow-primary-200">
+              <User size={24} />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h3 className="text-lg font-black text-secondary-900 uppercase tracking-tight italic">
+                  {selectedCustomer.name}
+                </h3>
+                <span className={`text-[10px] px-2 py-0.5 rounded-full font-black uppercase tracking-widest ${
+                  selectedCustomer.customerType === 'INSTITUTION' 
+                    ? 'bg-green-100 text-green-700 border border-green-200' 
+                    : selectedCustomer.customerType === 'AGENCY'
+                    ? 'bg-amber-100 text-amber-700 border border-amber-200'
+                    : 'bg-blue-100 text-blue-700 border border-blue-200'
+                }`}>
+                  {selectedCustomer.customerType}
+                </span>
+              </div>
+              <p className="text-[10px] font-bold text-secondary-400 uppercase tracking-widest">
+                {selectedCustomer.customerCode || 'Registered Profile'}
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleEditCurrentCustomer}
+              className="flex items-center gap-2 px-3 py-2 bg-primary-50 border border-primary-200 rounded-xl text-xs font-black text-primary-700 hover:bg-primary-100 hover:border-primary-300 transition-all uppercase tracking-widest shadow-sm"
+            >
+              <UserCog size={14} className="text-primary-500" />
+              Edit Profile
+            </button>
+            <button
+              onClick={() => {
+                setSelectedCustomer(null);
+                setStep(1);
+                setIsEditingCustomer(false);
+                setIsCreatingCustomer(false);
+              }}
+              className="flex items-center gap-2 px-3 py-2 bg-white border border-secondary-100 rounded-xl text-xs font-black text-secondary-600 hover:bg-secondary-50 hover:border-secondary-200 transition-all uppercase tracking-widest shadow-sm"
+            >
+              <X size={14} className="text-secondary-400" />
+              Change
+            </button>
+          </div>
+        </div>
+        <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6 text-left">
+          <div className="space-y-4">
+            <div className="flex items-start gap-3">
+              <div className="mt-1 w-8 h-8 rounded-lg bg-secondary-50 flex items-center justify-center text-secondary-400">
+                <Mail size={16} />
+              </div>
+              <div className="flex flex-col">
+                <span className="text-[9px] font-black text-secondary-300 uppercase tracking-widest leading-none mb-1">Electronic Mail</span>
+                <span className="text-sm font-bold text-secondary-700">{selectedCustomer.primaryEmail}</span>
+              </div>
+            </div>
+            <div className="flex items-start gap-3">
+              <div className="mt-1 w-8 h-8 rounded-lg bg-secondary-50 flex items-center justify-center text-secondary-400">
+                <Phone size={16} />
+              </div>
+              <div className="flex flex-col">
+                <span className="text-[9px] font-black text-secondary-300 uppercase tracking-widest leading-none mb-1">Signal Vector</span>
+                <span className="text-sm font-bold text-secondary-700">{selectedCustomer.primaryPhone}</span>
+              </div>
+            </div>
+            {selectedCustomer.gstVatTaxId && (
+              <div className="flex items-start gap-3 border-t border-secondary-50 pt-4">
+                <div className="mt-1 w-8 h-8 rounded-lg bg-primary-50 flex items-center justify-center text-primary-400">
+                  <CreditCard size={16} />
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-[9px] font-black text-primary-400 uppercase tracking-widest leading-none mb-1">GSTIN / Tax Hash</span>
+                  <span className="text-sm font-black text-primary-700 font-mono italic px-2 py-0.5 bg-primary-50 rounded-md w-fit">
+                    {selectedCustomer.gstVatTaxId}
+                  </span>
+                </div>
+              </div>
+            )}
+          </div>
+          <div className="space-y-4 md:border-l border-secondary-50 md:pl-6 leading-normal">
+            <div className="flex items-start gap-3">
+              <div className="mt-1 w-8 h-8 rounded-lg bg-indigo-50 flex items-center justify-center text-indigo-400">
+                <MapPin size={16} />
+              </div>
+              <div className="flex flex-col text-left">
+                <span className="text-[9px] font-black text-indigo-400 uppercase tracking-widest leading-none mb-1 italic">Billing Coordinates</span>
+                <div className="text-[11px] font-bold text-secondary-600 uppercase tracking-[0.05em] leading-relaxed">
+                  {selectedCustomer.billingAddress}
+                  <br />
+                  <span className="text-secondary-900">{selectedCustomer.billingCity}</span>
+                  {selectedCustomer.billingState && <span className="text-secondary-400"> / {selectedCustomer.billingState}</span>}
+                  <br />
+                  <span className="text-indigo-600">{selectedCustomer.billingPincode}</span>
+                  <span className="text-secondary-300"> • {selectedCustomer.billingCountry}</span>
+                </div>
+              </div>
+            </div>
+            {selectedCustomer.organizationName && (
+              <div className="flex items-start gap-3 border-t border-secondary-50 pt-4">
+                <div className="mt-1 w-8 h-8 rounded-lg bg-amber-50 flex items-center justify-center text-amber-400">
+                  <Building2 size={16} />
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-[9px] font-black text-amber-400 uppercase tracking-widest leading-none mb-1 italic">Affiliated Entity</span>
+                  <span className="text-[11px] font-black text-secondary-900 uppercase italic leading-none">{selectedCustomer.organizationName}</span>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  };
 
   const modalBody = (
       <div className="bg-white rounded-3xl w-full max-w-1xl  overflow-hidden shadow-2xl flex flex-col relative">
@@ -1361,15 +1521,26 @@ export default function CreateInvoiceModal({
             <div className="p-8 space-y-6 overflow-y-auto">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-bold text-gray-800">
-                  {isCreatingCustomer
+                  {isEditingCustomer
+                    ? "Update Customer Details"
+                    : isCreatingCustomer
                     ? "New Customer Details"
                     : "Select Customer"}
                 </h3>
                 <button
-                  onClick={() => setIsCreatingCustomer(!isCreatingCustomer)}
+                  onClick={() => {
+                    if (isEditingCustomer) {
+                      setIsEditingCustomer(false);
+                      setIsCreatingCustomer(false);
+                    } else {
+                      setIsCreatingCustomer(!isCreatingCustomer);
+                    }
+                  }}
                   className="text-sm font-bold text-primary-600 hover:text-primary-700 underline flex items-center gap-1"
                 >
-                  {isCreatingCustomer
+                  {isEditingCustomer
+                    ? "← Cancel Update"
+                    : isCreatingCustomer
                     ? "← Search Existing"
                     : "+ Create New Customer"}
                 </button>
@@ -1970,6 +2141,8 @@ export default function CreateInvoiceModal({
             </div>
           ) : step === 2 ? (
             <div className="space-y-6">
+              {renderSelectedCustomer()}
+
               {invoiceContext === "agency" && selectedCustomer && (
                 <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
                   You are creating an invoice directly from the agency workspace for{" "}
@@ -2277,27 +2450,7 @@ export default function CreateInvoiceModal({
             </div>
           ) : (
             <div className="space-y-6">
-              <div className="flex items-center justify-between bg-primary-50 p-4 rounded-xl border border-primary-100">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-primary-100 text-primary-600 flex items-center justify-center">
-                    <User size={20} />
-                  </div>
-                  <div>
-                    <p className="font-bold text-gray-900">
-                      {selectedCustomer?.name}
-                    </p>
-                    <p className="text-xs text-primary-600">
-                      {selectedCustomer?.organizationName}
-                    </p>
-                  </div>
-                </div>
-                <button
-                  onClick={() => setStep(1)}
-                  className="text-xs font-bold text-primary-600 hover:underline"
-                >
-                  Change
-                </button>
-              </div>
+              {renderSelectedCustomer()}
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>

@@ -89,14 +89,22 @@ export const customerSchema = z.object({
     secondaryPhone: optionalPhoneSchema,
 
     // Customer Type
-    type: z.enum(['INDIVIDUAL', 'INSTITUTION', 'AGENCY']),
+    type: z.enum(['INDIVIDUAL', 'ORGANIZATION']),
 
-    // Organization (optional for individuals)
-    organizationName: z.string().optional(),
-    designation: z.string().optional(),
+    // Deep Organization Classification (optional for individuals)
+    organizationType: z.enum(['UNIVERSITY', 'INSTITUTION', 'AGENCY', 'COMPANY']).optional().nullable(),
+    governanceType: z.enum(['PRIVATE', 'GOVERNMENT']).optional().nullable(),
+    universityCategory: z.enum(['STATE', 'CENTRAL', 'PRIVATE']).optional().nullable(),
+    discountOffered: z.union([z.number(), z.string().transform(v => parseFloat(v) || 0)]).optional().nullable(),
+    region: z.string().optional().nullable(),
 
-    // Institution Link
-    institutionId: z.string().optional(),
+    organizationName: z.string().optional().nullable(),
+    designation: z.string().optional().nullable(),
+
+    // Institutional Hierarchies
+    affiliatedUniversityId: z.string().optional().nullable(),
+    associatedAgencyId: z.string().optional().nullable(),
+    institutionId: z.string().optional().nullable(), // Legacy constraint
 
     // GST / Tax Information
     gstVatTaxId: z.string().optional(),
@@ -116,6 +124,7 @@ export const customerSchema = z.object({
     shippingStateCode: z.string().optional(),
     shippingPincode: z.string().optional(),
     shippingCountry: z.string().optional().default('India'),
+    shippingEnduserName: z.string().optional(),
 
     // Legacy / Convenience fields
     notes: z.string().optional(),

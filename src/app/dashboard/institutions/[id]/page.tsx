@@ -83,6 +83,7 @@ export default function InstitutionDetailPage() {
     const identityBadges = [
         { label: institution.code, tone: 'bg-primary-50 text-primary-700 border-primary-100' },
         { label: institution.type.replace(/_/g, ' '), tone: 'bg-secondary-100 text-secondary-700 border-secondary-200' },
+        ...(institution.universityCategory ? [{ label: institution.universityCategory.replace(/_/g, ' '), tone: 'bg-indigo-50 text-indigo-700 border-indigo-100' }] : []),
         { label: institution.affiliationStatus?.replace(/_/g, ' ') || 'SELF AFFILIATED', tone: 'bg-emerald-50 text-emerald-700 border-emerald-100' },
     ];
     const tabs = [
@@ -319,6 +320,12 @@ export default function InstitutionDetailPage() {
                         <div>
                             <p className="text-[10px] font-black text-secondary-400 uppercase tracking-[0.18em] leading-none mb-1">Category</p>
                             <p className="text-sm font-bold text-secondary-900">{institution.category}</p>
+                        </div>
+                    )}
+                    {institution.universityCategory && (
+                        <div>
+                            <p className="text-[10px] font-black text-emerald-600 uppercase tracking-[0.18em] leading-none mb-1">University Classification</p>
+                            <p className="text-sm font-bold text-secondary-900">{institution.universityCategory.replace(/_/g, ' ')}</p>
                         </div>
                     )}
                     <div>

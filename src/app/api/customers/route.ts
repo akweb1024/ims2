@@ -150,6 +150,7 @@ export const POST = authorizedRoute(
             shippingStateCode,
             shippingPincode,
             shippingCountry,
+            shippingEnduserName,
 
             // Legacy support
             city,
@@ -163,6 +164,8 @@ export const POST = authorizedRoute(
             secondaryPhone,
             institutionDetails,
             institutionId, 
+            institutionType,
+            universityId,
             designation, 
             assignedToUserId,
             companyId 
@@ -171,6 +174,30 @@ export const POST = authorizedRoute(
 
         if (!name || !primaryEmail || !customerType) {
             throw new ValidationError('Missing required fields: name, primaryEmail, and customerType are required');
+        }
+
+        let actualCustomerType = customerType;
+        let actualOrganizationType = null;
+        let actualInstitutionType = institutionType;
+
+        if (customerType === 'AGENCY') {
+            actualCustomerType = 'ORGANIZATION';
+            actualOrganizationType = 'AGENCY';
+        } else if (customerType === 'INSTITUTION') {
+            actualCustomerType = 'ORGANIZATION';
+            actualOrganizationType = 'INSTITUTION';
+        } else if (customerType === 'UNIVERSITY') {
+            actualCustomerType = 'ORGANIZATION';
+            actualOrganizationType = 'UNIVERSITY';
+            actualInstitutionType = 'UNIVERSITY';
+        } else if (customerType === 'COMPANY') {
+            actualCustomerType = 'ORGANIZATION';
+            actualOrganizationType = 'COMPANY';
+        } else if (customerType === 'ORGANIZATION') {
+            actualCustomerType = 'ORGANIZATION';
+            actualOrganizationType = institutionType;
+        } else {
+            actualCustomerType = 'INDIVIDUAL';
         }
 
         // Determine target company
@@ -189,7 +216,7 @@ export const POST = authorizedRoute(
                 data: {
                     email: primaryEmail,
                     password: '$2a$10$p/9p.0vY8Z6Z.p/9p.0vY8Z6Z.p/9p.0vY8Z6Z.p/9p.0v', // Mock hashed password "password123"
-                    role: customerType === 'AGENCY' ? 'AGENCY' : 'CUSTOMER',
+                    role: actualOrganizationType === 'AGENCY' ? 'AGENCY' : 'CUSTOMER',
                     companyId: targetCompanyId
                 }
             });
@@ -198,7 +225,7 @@ export const POST = authorizedRoute(
             let finalInstitutionId = institutionId;
             let finalAgencyId = null;
 
-            if (customerType === 'INSTITUTION' && organizationName) {
+            if (actualCustomerType === 'INSTITUTION' && organizationName) {
                 const existingInst = await tx.institution.findFirst({
                     where: { name: organizationName }
                 });
@@ -209,7 +236,7 @@ export const POST = authorizedRoute(
                         data: {
                             name: organizationName,
                             code: organizationName.substring(0, 3).toUpperCase() + '-' + Math.floor(1000 + Math.random() * 9000),
-                            type: 'UNIVERSITY',
+                            type: actualInstitutionType === 'UNIVERSITY' ? 'UNIVERSITY' : 'COLLEGE',
                             primaryEmail: primaryEmail,
                             primaryPhone: primaryPhone || '',
                             address: billingAddress || '',
@@ -222,9 +249,9 @@ export const POST = authorizedRoute(
                     });
                     finalInstitutionId = newInst.id;
                 }
-            } else if (customerType === 'AGENCY' && organizationName) {
+            } else if (actualOrganizationType === 'AGENCY' && organizationName) {
                 const existingAgency = await tx.customerProfile.findFirst({
-                    where: { organizationName, customerType: 'AGENCY' }
+                    where: { organizationName, customerType: 'ORGANIZATION', organizationType: 'AGENCY' }
                 });
                 if (existingAgency) {
                     finalAgencyId = existingAgency.id;
@@ -248,7 +275,8 @@ export const POST = authorizedRoute(
                     companyId: targetCompanyId,
                     name,
                     organizationName,
-                    customerType,
+                    customerType: actualCustomerType,
+                    organizationType: actualOrganizationType,
                     primaryEmail,
                     primaryPhone: primaryPhone || '',
                     
@@ -266,6 +294,7 @@ export const POST = authorizedRoute(
                     shippingStateCode: shippingStateCode || billingStateCode,
                     shippingPincode: shippingPincode || billingPincode || pincode,
                     shippingCountry: shippingCountry || billingCountry || country || 'India',
+                    shippingEnduserName: shippingEnduserName || null,
 
                     // Legacy 
                     city: city || billingCity,
@@ -286,7 +315,7 @@ export const POST = authorizedRoute(
 
 
 
-            if (customerType === 'INSTITUTION' && institutionDetails) {
+            if ((actualOrganizationType === 'INSTITUTION' || actualOrganizationType === 'UNIVERSITY') && institutionDetails) {
                 await tx.institutionDetails.create({
                     data: {
                         customerProfileId: customer.id,
@@ -300,7 +329,7 @@ export const POST = authorizedRoute(
                 });
             }
 
-            if (customerType === 'AGENCY') {
+            if (actualCustomerType === 'AGENCY') {
                 await (tx.agencyDetails as any).create({
                     data: {
                         customerProfileId: customer.id,
@@ -314,10 +343,10 @@ export const POST = authorizedRoute(
             }
 
             // Sync with Institution if it exists and has universityId
-            if (finalInstitutionId && body.universityId) {
+            if (finalInstitutionId && universityId) {
                 await (tx.institution as any).update({
                     where: { id: finalInstitutionId },
-                    data: { universityId: body.universityId }
+                    data: { universityId: universityId }
                 });
             }
 

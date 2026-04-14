@@ -494,8 +494,15 @@ model KnowledgeArticleRevision {
 
 model CustomerProfile {
   id                  String               @id @default(uuid())
-  userId              String               @unique
+  userId              String?              @unique
   customerType        CustomerType         @default(INDIVIDUAL)
+  governanceType      GovernanceType?
+  organizationType    OrganizationType?
+  universityCategory  UniversityCategory?
+  affiliatedUniversityId String?
+  associatedAgencyId     String?
+  discountOffered     Float?               @default(10)
+  region              String?
   assignedToUserId    String?
   name                String
   organizationName    String?
@@ -519,7 +526,7 @@ model CustomerProfile {
   createdAt           DateTime             @default(now())
   updatedAt           DateTime             @updatedAt
   companyId           String?
-  designation         CustomerDesignation?
+  designation         String?
   institutionId       String?
   billingCity         String?
   billingCountry      String?              @default("India")
@@ -531,6 +538,7 @@ model CustomerProfile {
   shippingPincode     String?
   shippingState       String?
   shippingStateCode   String?
+  shippingEnduserName String?
   zoneCode            String?
   agencyId            String?
   agencyDetails       AgencyDetails?
@@ -542,8 +550,14 @@ model CustomerProfile {
   assignedTo          User?                @relation("AssignedCustomers", fields: [assignedToUserId], references: [id])
   company             Company?             @relation(fields: [companyId], references: [id])
   institution         Institution?         @relation("InstitutionToCustomers", fields: [institutionId], references: [id])
-  user                User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user                User?                @relation(fields: [userId], references: [id], onDelete: Cascade)
   deals               Deal[]
+
+  affiliatedUniversity    CustomerProfile?   @relation("UniversityToAffiliateCustomer", fields: [affiliatedUniversityId], references: [id])
+  affiliates              CustomerProfile[]  @relation("UniversityToAffiliateCustomer")
+
+  associatedAgencyCentral CustomerProfile?   @relation("AgencyToAssociatedInstitutions", fields: [associatedAgencyId], references: [id])
+  associatedInstitutions  CustomerProfile[]  @relation("AgencyToAssociatedInstitutions")
   dispatchOrders      DispatchOrder[]
   agencyInstitutions  Institution[]        @relation("AgencyInstitutions")
   institutionDetails  InstitutionDetails?
@@ -692,6 +706,7 @@ model Institution {
   domain              String?
   agencyId            String?
   universityId        String?
+  universityCategory  UniversityCategory?
   communications      CommunicationLog[]
   customers           CustomerProfile[]    @relation("InstitutionToCustomers")
   agency              CustomerProfile?     @relation("AgencyInstitutions", fields: [agencyId], references: [id])
@@ -5574,8 +5589,19 @@ enum UserRole {
 
 enum CustomerType {
   INDIVIDUAL
+  ORGANIZATION
+}
+
+enum GovernanceType {
+  PRIVATE
+  GOVERNMENT
+}
+
+enum OrganizationType {
+  UNIVERSITY
   INSTITUTION
   AGENCY
+  COMPANY
 }
 
 enum KnowledgeArticleStatus {
@@ -5615,6 +5641,15 @@ enum InstitutionType {
   NGO
   AGENCY
   OTHER
+}
+
+// Classification for UNIVERSITY-type institutions
+enum UniversityCategory {
+  CENTRAL_UNIVERSITY
+  STATE_UNIVERSITY
+  GOVERNMENT_UNIVERSITY
+  DEEMED_UNIVERSITY
+  PRIVATE_UNIVERSITY
 }
 
 enum CustomerDesignation {

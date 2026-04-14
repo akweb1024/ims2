@@ -21,8 +21,19 @@ export default function NewCustomerPage() {
     const [userRole, setUserRole] = useState('CUSTOMER');
     const [loading, setLoading] = useState(false);
     const [institutions, setInstitutions] = useState<any[]>([]);
+    const [agencies, setAgencies] = useState<any[]>([]);
     const [isShippingSame, setIsShippingSame] = useState(true);
     const [isFetchingPincode, setIsFetchingPincode] = useState(false);
+    
+    // Org Advanced Types
+    const [governanceType, setGovernanceType] = useState('PRIVATE');
+    const [organizationType, setOrganizationType] = useState('');
+    const [universityCategory, setUniversityCategory] = useState('STATE');
+    const [affiliatedUniversityId, setAffiliatedUniversityId] = useState('');
+    const [hasAgency, setHasAgency] = useState(false);
+    const [associatedAgencyId, setAssociatedAgencyId] = useState('');
+    const [discountOffered, setDiscountOffered] = useState(10);
+    const [region, setRegion] = useState('');
 
     const {
         register,
@@ -76,12 +87,12 @@ export default function NewCustomerPage() {
     }, [isShippingSame, billingAddress, watch, setValue]);
 
     useEffect(() => {
-        if (customerType === 'AGENCY') {
+        if (organizationType === 'AGENCY') {
             setUserRole('AGENCY');
         } else {
             setUserRole('CUSTOMER');
         }
-    }, [customerType]);
+    }, [organizationType]);
 
     useEffect(() => {
         const userData = localStorage.getItem('user');
@@ -95,17 +106,22 @@ export default function NewCustomerPage() {
             router.push('/login');
         }
 
-        const fetchInstitutions = async () => {
+        const fetchOrganizations = async () => {
             const token = localStorage.getItem('token');
-            const res = await fetch('/api/institutions', {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            if (res.ok) {
-                const data = await res.json();
+            const [resInst, resAgencies] = await Promise.all([
+                fetch('/api/institutions', { headers: { 'Authorization': `Bearer ${token}` } }),
+                fetch('/api/agencies', { headers: { 'Authorization': `Bearer ${token}` } })
+            ]);
+            if (resInst.ok) {
+                const data = await resInst.json();
                 setInstitutions(Array.isArray(data) ? data : (data.data || []));
             }
+            if (resAgencies.ok) {
+                const data = await resAgencies.json();
+                setAgencies(Array.isArray(data) ? data : (data.data || []));
+            }
         };
-        fetchInstitutions();
+        fetchOrganizations();
     }, [router]);
 
     const handlePincodeLookup = async (pincode: string, target: 'billing' | 'shipping') => {
@@ -146,16 +162,22 @@ export default function NewCustomerPage() {
 
     const onSubmit = async (data: CustomerFormData) => {
         setLoading(true);
-
         try {
             const token = localStorage.getItem('token');
-
             const payload = {
                 name: data.name,
                 primaryEmail: data.email,
                 primaryPhone: data.phone,
                 secondaryPhone: data.secondaryPhone || null,
                 customerType: data.type,
+                organizationType: organizationType || null,
+                governanceType: governanceType || null,
+                universityCategory: universityCategory || null,
+                affiliatedUniversityId: affiliatedUniversityId || null,
+                associatedAgencyId: hasAgency ? associatedAgencyId : null,
+                discountOffered: discountOffered,
+                region: region || null,
+                
                 organizationName: data.organizationName || null,
                 designation: data.designation || null,
                 institutionId: data.institutionId || null,
@@ -173,9 +195,13 @@ export default function NewCustomerPage() {
                 shippingStateCode: data.shippingStateCode || data.billingStateCode || null,
                 shippingPincode: data.shippingPincode || data.billingPincode || null,
                 shippingCountry: data.shippingCountry || data.billingCountry || 'India',
-
+                
+                shippingEnduserName: (data as any).shippingEnduserName || null,
+                
                 gstVatTaxId: data.gstVatTaxId || null,
                 notes: data.notes || null,
+                
+                // Cleaned legacy fields
             };
 
             const res = await fetch('/api/customers', {
@@ -311,49 +337,119 @@ export default function NewCustomerPage() {
                                       error={errors.type}
                                       className="input-premium"
                                       options={[
-                                          { value: 'INDIVIDUAL', label: 'Individual' },
-                                          { value: 'INSTITUTION', label: 'Institution / Organization' },
-                                          { value: 'AGENCY', label: 'Agency / Partner' },
+                                          { value: 'INDIVIDUAL', label: 'Individual Person' },
+                                          { value: 'ORGANIZATION', label: 'Organization / Institution' },
                                       ]}
                                   />
 
-                                  <FormField
-                                      label="Job Title / Designation"
-                                      name="designation"
-                                      type="text"
-                                      placeholder="e.g. Librarian, Director, Manager"
-                                      register={register}
-                                      error={errors.designation}
-                                      className="input-premium"
-                                  />
-                              </div>
+                                  {customerType === 'ORGANIZATION' && (
+                                      <div className="md:col-span-2 lg:col-span-3 space-y-6 animate-in fade-in zoom-in duration-300 bg-indigo-50/50 p-6 rounded-2xl border border-indigo-100">
+                                          
+                                          {/* Governance & Classification Row */}
+                                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                              <div>
+                                                  <label className="block text-[11px] font-black uppercase tracking-widest text-gray-500 mb-2">Governance Type</label>
+                                                  <select className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-indigo-500 focus:ring-indigo-500 font-semibold" value={governanceType} onChange={(e) => setGovernanceType(e.target.value)}>
+                                                      <option value="PRIVATE">Private</option>
+                                                      <option value="GOVERNMENT">Government / Public</option>
+                                                  </select>
+                                              </div>
+                                              <div>
+                                                  <label className="block text-[11px] font-black uppercase tracking-widest text-gray-500 mb-2">Organization Classification</label>
+                                                  <select className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-indigo-500 focus:ring-indigo-500 font-semibold text-indigo-900" value={organizationType} onChange={(e) => {
+                                                      setOrganizationType(e.target.value);
+                                                      if(e.target.value !== 'INSTITUTION') setAffiliatedUniversityId('');
+                                                      if(e.target.value !== 'AGENCY') { setDiscountOffered(10); setRegion(''); }
+                                                  }}>
+                                                      <option value="">-- Select Classification --</option>
+                                                      <option value="UNIVERSITY">University</option>
+                                                      <option value="INSTITUTION">Institution / College</option>
+                                                      <option value="AGENCY">Agency / Partner</option>
+                                                      <option value="COMPANY">Company / Corporate</option>
+                                                  </select>
+                                              </div>
+                                          </div>
 
-                              <div className="mt-10 pt-10 border-t border-secondary-50 grid grid-cols-1 lg:grid-cols-2 gap-8">
-                                  <FormField
-                                      label="Organization / Company Name"
-                                      name="organizationName"
-                                      type="text"
-                                      placeholder="e.g. Global Academy, Enterprise Corp"
-                                      register={register}
-                                      error={errors.organizationName}
-                                      className="input-premium"
-                                  />
+                                          {/* Dynamic Context Renderers */}
+                                          {organizationType === 'UNIVERSITY' && (
+                                              <div className="pt-4 border-t border-indigo-100 flex items-center gap-6">
+                                                  <label className="text-[11px] font-black uppercase tracking-widest text-gray-500">University Category :</label>
+                                                  <div className="flex items-center gap-4">
+                                                      <label className="flex items-center gap-2 cursor-pointer text-sm font-bold text-gray-700 hover:text-indigo-600"><input type="radio" value="STATE" checked={universityCategory==='STATE'} onChange={()=>setUniversityCategory('STATE')} className="w-4 h-4 text-indigo-600" /> State</label>
+                                                      <label className="flex items-center gap-2 cursor-pointer text-sm font-bold text-gray-700 hover:text-indigo-600"><input type="radio" value="CENTRAL" checked={universityCategory==='CENTRAL'} onChange={()=>setUniversityCategory('CENTRAL')} className="w-4 h-4 text-indigo-600" /> Central</label>
+                                                      <label className="flex items-center gap-2 cursor-pointer text-sm font-bold text-gray-700 hover:text-indigo-600"><input type="radio" value="PRIVATE" checked={universityCategory==='PRIVATE'} onChange={()=>setUniversityCategory('PRIVATE')} className="w-4 h-4 text-indigo-600" /> Private</label>
+                                                  </div>
+                                              </div>
+                                          )}
 
-                                  <FormField
-                                      label="Institution"
-                                      name="institutionId"
-                                      type="select"
-                                      register={register}
-                                      error={errors.institutionId}
-                                      className="input-premium"
-                                      options={[
-                                          { value: '', label: '-- None / Not Linked --' },
-                                          ...institutions.map(inst => ({
-                                              value: inst.id,
-                                              label: `${inst.name.toUpperCase()} [${inst.code}]`
-                                          }))
-                                      ]}
-                                  />
+                                          {organizationType === 'INSTITUTION' && (
+                                              <div className="pt-4 border-t border-indigo-100 grid grid-cols-1 md:grid-cols-2 gap-6">
+                                                  <div>
+                                                      <label className="block text-sm font-bold text-gray-700 mb-2">Affiliation (Optional)</label>
+                                                      <select className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-indigo-500 focus:ring-indigo-500" value={affiliatedUniversityId} onChange={(e) => setAffiliatedUniversityId(e.target.value)}>
+                                                          <option value="">Self-Affiliated (None)</option>
+                                                          {institutions.filter((i:any) => i.organizationType === 'UNIVERSITY' || i.type === 'UNIVERSITY').map((u:any) => (
+                                                              <option key={u.id} value={u.id}>{u.name.toUpperCase()} [{u.code}]</option>
+                                                          ))}
+                                                      </select>
+                                                  </div>
+                                                  <div>
+                                                      <label className="block text-sm font-bold text-gray-700 mb-2 flex items-center gap-2">
+                                                          <input type="checkbox" checked={hasAgency} onChange={(e) => setHasAgency(e.target.checked)} className="w-4 h-4 text-indigo-600 rounded" />
+                                                          Associated Agency?
+                                                      </label>
+                                                      {hasAgency && (
+                                                          <select className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-indigo-500 focus:ring-indigo-500" value={associatedAgencyId} onChange={(e) => setAssociatedAgencyId(e.target.value)}>
+                                                              <option value="">-- Select Agency --</option>
+                                                              {agencies.map((a:any) => (
+                                                                  <option key={a.id} value={a.id}>{a.name.toUpperCase()} [{a.primaryEmail}]</option>
+                                                              ))}
+                                                          </select>
+                                                      )}
+                                                  </div>
+                                              </div>
+                                          )}
+
+                                          {organizationType === 'AGENCY' && (
+                                              <div className="pt-4 border-t border-indigo-100 grid grid-cols-1 md:grid-cols-2 gap-6">
+                                                  <div>
+                                                      <label className="block text-sm font-bold text-gray-700 mb-2">Discount Offered (%)</label>
+                                                      <input type="number" step="0.1" value={discountOffered} onChange={(e)=>setDiscountOffered(parseFloat(e.target.value)||0)} className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-indigo-500 focus:ring-indigo-500" />
+                                                  </div>
+                                                  <div>
+                                                      <label className="block text-sm font-bold text-gray-700 mb-2">Operational Area / Region</label>
+                                                      <input type="text" placeholder="e.g. North India, Global, APAC" value={region} onChange={(e)=>setRegion(e.target.value)} className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-indigo-500 focus:ring-indigo-500" />
+                                                  </div>
+                                              </div>
+                                          )}
+                                      </div>
+                                  )}
+
+
+
+                                  <div>
+                                      <datalist id="designationOptions">
+                                          <option value="LIBRARIAN" />
+                                          <option value="HOD" />
+                                          <option value="DEAN" />
+                                          <option value="STUDENT" />
+                                          <option value="RESEARCHER" />
+                                          <option value="DIRECTOR" />
+                                          <option value="PRINCIPAL" />
+                                          <option value="PURCHASE MANAGER" />
+                                          <option value="OTHER" />
+                                      </datalist>
+                                      <FormField
+                                          label="Job Title / Designation"
+                                          name="designation"
+                                          type="text"
+                                          placeholder="e.g. Librarian, Director, Manager"
+                                          register={register}
+                                          error={errors.designation}
+                                          className="input-premium"
+                                          list="designationOptions"
+                                      />
+                                  </div>
                               </div>
                          </div>
                     </div>
@@ -438,6 +534,17 @@ export default function NewCustomerPage() {
                                    </div>
                               </div>
                               <div className="p-10">
+                                   <div className="mb-8">
+                                        <FormField
+                                            label="End User Name"
+                                            name="shippingEnduserName"
+                                            type="text"
+                                            placeholder="Person or Dept receiving the shipment (Optional)"
+                                            register={register}
+                                            error={errors.shippingEnduserName}
+                                            className="input-premium"
+                                        />
+                                   </div>
                                    {!isShippingSame ? (
                                        <div className="space-y-8 animate-in fade-in zoom-in-95 duration-500">
                                             <FormField
