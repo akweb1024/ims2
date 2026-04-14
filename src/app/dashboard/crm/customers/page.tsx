@@ -27,6 +27,8 @@ const getBadgeVariant = (type: string): 'primary' | 'success' | 'warning' | 'sec
     switch (type) {
         case 'INDIVIDUAL': return 'primary';
         case 'INSTITUTION': return 'success';
+        case 'UNIVERSITY': return 'success';
+        case 'COMPANY': return 'warning';
         case 'AGENCY': return 'warning';
         default: return 'secondary';
     }
@@ -322,10 +324,12 @@ export default function CRMCustomersPage() {
 
                                         {/* Type badge */}
                                         <td className="px-4 py-4 text-center">
-                                            <CRMBadge variant={getBadgeVariant(customer.customerType)} dot>
-                                                {customer.customerType === 'INDIVIDUAL' ? 'Person'
-                                                    : customer.customerType === 'INSTITUTION' ? 'Institution'
-                                                    : 'Agency'}
+                                            <CRMBadge variant={getBadgeVariant(customer.organizationType || customer.customerType)} dot>
+                                                {customer.organizationType 
+                                                    ? customer.organizationType.replace('_', ' ')
+                                                    : customer.customerType === 'INDIVIDUAL' 
+                                                    ? 'Person'
+                                                    : customer.customerType}
                                             </CRMBadge>
                                         </td>
 

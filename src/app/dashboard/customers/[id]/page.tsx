@@ -64,16 +64,19 @@ export default function CustomerDetailPage({ params }: { params: Promise<{ id: s
             .then(res => res.json())
             .then(data => setAgencies(Array.isArray(data) ? data : (data.data || [])));
         
-        // Ensure values reset based on Customer
-        setCustomerTypeType(customer.customerType || 'INDIVIDUAL');
-        setOrganizationType(customer.organizationType || '');
+        // Normalized hierarchical states
+        const isLegacyOrg = ['AGENCY', 'INSTITUTION', 'COMPANY', 'UNIVERSITY'].includes(customer.customerType);
+        
+        setCustomerTypeType(isLegacyOrg ? 'ORGANIZATION' : (customer.customerType || 'INDIVIDUAL'));
+        setOrganizationType(customer.organizationType || (isLegacyOrg ? customer.customerType : ''));
+        
         setGovernanceType(customer.governanceType || 'PRIVATE');
         setUniversityCategory(customer.universityCategory || 'STATE');
         setAffiliatedUniversityId(customer.affiliatedUniversityId || '');
         setAssociatedAgencyId(customer.associatedAgencyId || '');
         setHasAgency(!!customer.associatedAgencyId);
-        setDiscountOffered(customer.discountOffered || 10);
-        setRegion(customer.region || '');
+        setDiscountOffered(customer.discountOffered || customer.agencyDetails?.discountRate || 10);
+        setRegion(customer.region || customer.agencyDetails?.territory || '');
 
         // Set initial same as billing state
         const isSame = !customer.shippingAddress || (

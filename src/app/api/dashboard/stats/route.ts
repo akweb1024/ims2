@@ -34,8 +34,8 @@ export const GET = authorizedRoute(
                     where: { userId },
                     include: { agencyDetails: true }
                 });
-                if (profile?.agencyDetails) {
-                    whereClause = { ...whereClause, agencyId: profile.agencyDetails.id };
+                if (profile?.organizationType === 'AGENCY') {
+                    whereClause = { ...whereClause, agencyId: profile.id };
                 }
             } else if (role === 'EXECUTIVE') {
                 whereClause = { ...whereClause, salesExecutiveId: userId };
@@ -91,7 +91,7 @@ export const GET = authorizedRoute(
                 prisma.subscription.count({ where: { ...whereClause, status: 'REQUESTED' } }),
                 role === 'CUSTOMER' ? Promise.resolve(1) : prisma.customerProfile.count({
                     where: role === 'AGENCY'
-                        ? { agencyDetails: { id: whereClause.agencyId || 'none' } }
+                        ? { id: whereClause.agencyId || 'none' }
                         : whereClause.salesExecutiveId
                             ? { subscriptions: { some: { salesExecutiveId: whereClause.salesExecutiveId } } }
                             : { companyId: userCompanyId || undefined }

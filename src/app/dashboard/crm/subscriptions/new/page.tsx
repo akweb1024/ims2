@@ -109,8 +109,8 @@ export default function NewSubscriptionPage() {
         setSelectedAgency(agency);
 
         let discount = 0;
-        if (agency && agency.agencyDetails?.discountRate) {
-            discount = agency.agencyDetails.discountRate;
+        if (agency) {
+            discount = agency.discountOffered || agency.agencyDetails?.discountRate || 0;
         }
 
         setDiscountDisplay(discount);
@@ -250,7 +250,7 @@ export default function NewSubscriptionPage() {
                                 .filter(c => {
                                     const term = customerSearch.toLowerCase();
                                     return (
-                                        c.customerType !== 'AGENCY' && (
+                                        c.organizationType !== 'AGENCY' && (
                                             c.name.toLowerCase().includes(term) ||
                                             (c.organizationName && c.organizationName.toLowerCase().includes(term)) ||
                                             c.primaryEmail.toLowerCase().includes(term))
@@ -273,8 +273,14 @@ export default function NewSubscriptionPage() {
                                             <div className="text-sm text-secondary-500">{c.organizationName || c.primaryEmail}</div>
                                         </div>
                                         <div className="flex items-center gap-3">
-                                            <div className={`badge ${c.customerType === 'INSTITUTION' ? 'badge-success' : 'badge-primary'}`}>
-                                                {c.customerType}
+                                            <div className={`badge ${
+                                                c.organizationType === 'INSTITUTION' || c.organizationType === 'UNIVERSITY' 
+                                                    ? 'badge-success' 
+                                                    : c.organizationType === 'COMPANY' 
+                                                    ? 'badge-warning' 
+                                                    : 'badge-primary'
+                                            }`}>
+                                                {c.organizationType || c.customerType}
                                             </div>
                                             <svg className={`w-5 h-5 transition-transform ${formData.customerProfileId === c.id ? 'text-primary-600 translate-x-1' : 'text-secondary-300 group-hover:translate-x-1'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
@@ -282,7 +288,7 @@ export default function NewSubscriptionPage() {
                                         </div>
                                     </button>
                                 ))}
-                            {customers.filter(c => c.customerType !== 'AGENCY').length === 0 && (
+                            {customers.filter(c => c.organizationType !== 'AGENCY').length === 0 && (
                                 <div className="text-center py-10 text-secondary-400 italic">
                                     No customers found. (Agencies excluded from subscription target)
                                 </div>
@@ -543,13 +549,13 @@ export default function NewSubscriptionPage() {
                                         <option value="">-- Choose Agency --</option>
                                         {agencies.map(a => (
                                             <option key={a.id} value={a.id}>
-                                                {a.name} ({a.agencyDetails?.discountRate}% Off)
+                                                {a.name} ({a.discountOffered || a.agencyDetails?.discountRate || 0}% Off)
                                             </option>
                                         ))}
                                     </select>
                                     {selectedAgency && (
                                         <p className="text-xs text-primary-600 font-bold mt-1">
-                                            Applying {selectedAgency.agencyDetails?.discountRate}% Discount
+                                            Applying {selectedAgency.discountOffered || selectedAgency.agencyDetails?.discountRate || 0}% Discount
                                         </p>
                                     )}
                                 </div>

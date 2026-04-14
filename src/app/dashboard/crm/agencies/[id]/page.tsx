@@ -208,7 +208,7 @@ export default function AgencyDetailPage({ params }: { params: Promise<{ id: str
                                 <span>{customer.primaryEmail}</span>
                                 <span>•</span>
                                 <span className="font-mono text-xs bg-secondary-100 px-2 py-0.5 rounded">
-                                    Discount: {customer.agencyDetails?.discountRate}%
+                                    Discount: {customer.discountOffered || customer.agencyDetails?.discountRate || 0}%
                                 </span>
                             </div>
                         </div>
@@ -338,7 +338,7 @@ export default function AgencyDetailPage({ params }: { params: Promise<{ id: str
                                         </div>
                                         <div>
                                             <label className="text-sm text-secondary-500">Territory</label>
-                                            <p className="font-medium text-secondary-900">{customer.agencyDetails?.territory || 'Not Specified'}</p>
+                                            <p className="font-medium text-secondary-900">{customer.region || customer.agencyDetails?.territory || 'Not Specified'}</p>
                                         </div>
                                         <div>
                                             <label className="text-sm text-secondary-500">Commission Terms</label>

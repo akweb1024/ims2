@@ -41,9 +41,32 @@ export async function POST(request: NextRequest) {
         // Hash password
         const hashedPassword = await hashPassword(password);
 
+        // Determine hierarchical classification
+        let actualCustomerType = customerType;
+        let actualOrganizationType = null;
+
+        if (customerType === 'AGENCY') {
+            actualCustomerType = 'ORGANIZATION';
+            actualOrganizationType = 'AGENCY';
+        } else if (customerType === 'INSTITUTION') {
+            actualCustomerType = 'ORGANIZATION';
+            actualOrganizationType = 'INSTITUTION';
+        } else if (customerType === 'UNIVERSITY') {
+            actualCustomerType = 'ORGANIZATION';
+            actualOrganizationType = 'UNIVERSITY';
+        } else if (customerType === 'COMPANY') {
+            actualCustomerType = 'ORGANIZATION';
+            actualOrganizationType = 'COMPANY';
+        } else if (customerType === 'ORGANIZATION') {
+            actualCustomerType = 'ORGANIZATION';
+            actualOrganizationType = category;
+        } else if (customerType === 'INDIVIDUAL') {
+            actualCustomerType = 'INDIVIDUAL';
+        }
+
         // Determine user role based on customer type
         let userRole: UserRole = UserRole.CUSTOMER;
-        if (customerType === 'AGENCY') {
+        if (actualOrganizationType === 'AGENCY') {
             userRole = UserRole.AGENCY;
         }
 
@@ -55,22 +78,24 @@ export async function POST(request: NextRequest) {
                 role: userRole,
                 customerProfile: {
                     create: {
-                        customerType: customerType as CustomerType,
+                        customerType: actualCustomerType as CustomerType,
+                        organizationType: actualOrganizationType as any,
                         name,
                         organizationName: organizationName || null,
                         primaryEmail: email,
                         primaryPhone,
                         country: country || null,
-                        ...(customerType === 'INSTITUTION' && category
+                        region: territory || null,
+                        ...(actualOrganizationType === 'INSTITUTION' || actualOrganizationType === 'UNIVERSITY'
                             ? {
                                 institutionDetails: {
                                     create: {
-                                        category,
+                                        category: category || 'GENERAL',
                                     },
                                 },
                             }
                             : {}),
-                        ...(customerType === 'AGENCY' && territory
+                        ...(actualOrganizationType === 'AGENCY'
                             ? {
                                 agencyDetails: {
                                     create: {

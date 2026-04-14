@@ -329,14 +329,14 @@ export const POST = authorizedRoute(
                 });
             }
 
-            if (actualCustomerType === 'AGENCY') {
+            if (actualOrganizationType === 'AGENCY') {
                 await (tx.agencyDetails as any).create({
                     data: {
                         customerProfileId: customer.id,
-                        territory: body.territory || null,
+                        territory: body.territory || body.region || null,
                         region: body.region || null,
                         primaryContact: body.primaryContact || name,
-                        discountRate: body.discountRate ? parseFloat(body.discountRate) : 0,
+                        discountRate: body.discountOffered ? parseFloat(body.discountOffered) : (body.discountRate ? parseFloat(body.discountRate) : 0),
                         discountTier: body.discountTier || 'GOLD'
                     }
                 });

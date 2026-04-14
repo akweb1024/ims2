@@ -1149,13 +1149,13 @@ export default function CreateInvoiceModal({
                   {selectedCustomer.name}
                 </h3>
                 <span className={`text-[10px] px-2 py-0.5 rounded-full font-black uppercase tracking-widest ${
-                  selectedCustomer.customerType === 'INSTITUTION' 
+                  selectedCustomer.organizationType === 'INSTITUTION' || selectedCustomer.organizationType === 'UNIVERSITY'
                     ? 'bg-green-100 text-green-700 border border-green-200' 
-                    : selectedCustomer.customerType === 'AGENCY'
+                    : selectedCustomer.organizationType === 'AGENCY'
                     ? 'bg-amber-100 text-amber-700 border border-amber-200'
                     : 'bg-blue-100 text-blue-700 border border-blue-200'
                 }`}>
-                  {selectedCustomer.customerType}
+                  {selectedCustomer.organizationType || selectedCustomer.customerType}
                 </span>
               </div>
               <p className="text-[10px] font-bold text-secondary-400 uppercase tracking-widest">

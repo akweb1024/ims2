@@ -252,7 +252,7 @@ export default function AgencyList({ userRole }: { userRole: string }) {
                                                  <span className="text-[9px] font-black uppercase tracking-widest">Growth Matrix</span>
                                             </div>
                                             <span className="text-[10px] font-black text-primary-800 uppercase tracking-tight">
-                                                {agency.agencyDetails.discountTier || 'GOLD'} • {agency.agencyDetails.discountRate}%
+                                                {agency.agencyDetails?.discountTier || 'GOLD'} • {agency.discountOffered || agency.agencyDetails?.discountRate || 0}%
                                             </span>
                                         </div>
                                         <div className="flex flex-col gap-2 p-3 bg-indigo-50/50 rounded-2xl border border-indigo-100/50 group-hover:bg-indigo-50 transition-colors">
@@ -261,7 +261,7 @@ export default function AgencyList({ userRole }: { userRole: string }) {
                                                  <span className="text-[9px] font-black uppercase tracking-widest">Deployment</span>
                                             </div>
                                             <span className="text-[10px] font-black text-indigo-800 uppercase tracking-tight truncate">
-                                                {agency.agencyDetails.territory || 'Universal Scope'}
+                                                {agency.region || agency.agencyDetails?.territory || 'Universal Scope'}
                                             </span>
                                         </div>
                                     </div>

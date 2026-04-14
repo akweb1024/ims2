@@ -10,6 +10,7 @@ export async function GET(req: NextRequest) {
         }
 
         let agencyId: string | undefined;
+        let commissionRate = 10;
 
         if (decoded.role === 'AGENCY') {
             const profile = await prisma.customerProfile.findUnique({
@@ -26,7 +27,8 @@ export async function GET(req: NextRequest) {
                     committedPayouts: 0
                 });
             }
-            agencyId = profile.agencyDetails.id;
+            agencyId = profile.id; // Use primary customer Profile ID, since subscriptions are attached directly!
+            commissionRate = profile.discountOffered || profile.agencyDetails?.discountRate || 10;
         }
 
         // Calculate commissions
@@ -43,7 +45,6 @@ export async function GET(req: NextRequest) {
         });
 
         const totalValue = activeSubscriptions.reduce((acc, sub) => acc + sub.total, 0);
-        const commissionRate = 10; // 10% default
         const totalEarned = totalValue * (commissionRate / 100);
 
         const payoutWhere: any = {};

@@ -246,6 +246,21 @@ export async function PATCH(
             ...(profileData.primaryPhone !== undefined && { primaryPhone: String(profileData.primaryPhone) }),
             ...(profileData.secondaryEmail !== undefined && { secondaryEmail: toNullableString(profileData.secondaryEmail) }),
             ...(profileData.designation !== undefined && { designation: toNullableString(profileData.designation) }),
+            
+            ...(profileData.customerType !== undefined && { customerType: profileData.customerType }),
+            ...(profileData.organizationType !== undefined && { organizationType: toNullableString(profileData.organizationType) as any }),
+            ...(profileData.governanceType !== undefined && { governanceType: toNullableString(profileData.governanceType) as any }),
+            ...(profileData.universityCategory !== undefined && { 
+                universityCategory: (toNullableString(profileData.universityCategory) === 'STATE' ? 'STATE_UNIVERSITY' :
+                                   toNullableString(profileData.universityCategory) === 'CENTRAL' ? 'CENTRAL_UNIVERSITY' :
+                                   toNullableString(profileData.universityCategory) === 'PRIVATE' ? 'PRIVATE_UNIVERSITY' :
+                                   toNullableString(profileData.universityCategory)) as any 
+            }),
+            ...(profileData.affiliatedUniversityId !== undefined && { affiliatedUniversityId: toNullableString(profileData.affiliatedUniversityId) }),
+            ...(profileData.associatedAgencyId !== undefined && { associatedAgencyId: toNullableString(profileData.associatedAgencyId) }),
+            ...(profileData.discountOffered !== undefined && { discountOffered: Number(profileData.discountOffered) }),
+            ...(profileData.region !== undefined && { region: toNullableString(profileData.region) }),
+
             ...(profileData.billingAddress !== undefined && { billingAddress: toNullableString(profileData.billingAddress) }),
             ...(profileData.billingCity !== undefined && { billingCity: toNullableString(profileData.billingCity) }),
             ...(profileData.billingState !== undefined && { billingState: toNullableString(profileData.billingState) }),
