@@ -4,6 +4,8 @@ import { authorizedRoute } from '@/lib/middleware-auth';
 import { createErrorResponse } from '@/lib/api-utils';
 
 import { getRazorpayInstance } from '@/lib/razorpay';
+import { syncToCrmLead } from '@/lib/crm-sync';
+import { logger } from '@/lib/logger';
  
 // Self-enrollment endpoint for students
 export const POST = authorizedRoute(
@@ -120,6 +122,17 @@ export const POST = authorizedRoute(
                 }
             });
  
+            // Update Lead Score / CRM Sync
+            if (course.companyId) {
+                syncToCrmLead({
+                    name: user.name || 'Student',
+                    email: user.email,
+                    source: 'COURSE_ENROLLMENT',
+                    companyId: course.companyId,
+                    notes: `Enrolled in course: ${course.title} (ID: ${courseId})`
+                }).catch(err => logger.error('LMS-CRM Sync Failed', err));
+            }
+
             return NextResponse.json({
                 success: true,
                 message: 'Successfully enrolled in the course',

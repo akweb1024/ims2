@@ -7,6 +7,7 @@ import CustomerGrowthChart from './CustomerGrowthChart';
 import AlertsPanel from './AlertsPanel';
 import CRMClientLayout from './CRMClientLayout';
 import LeadAssignmentSettings from './LeadAssignmentSettings';
+import CRMConversionFunnel from './CRMConversionFunnel';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
 import { prisma } from '@/lib/prisma';
 import { CRMPageShell } from '@/components/crm/CRMPageShell';
@@ -114,7 +115,7 @@ export default async function CRMDashboardPage() {
                     <LeadAssignmentSettings />
 
                     <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
-                        <div className="lg:col-span-8 space-y-10">
+                        <div className="lg:col-span-7 space-y-10">
                             <div className="bg-secondary-950 p-8 md:p-12 rounded-[4rem] border border-white/5 shadow-2xl relative overflow-hidden group">
                                 <div className="absolute right-0 top-0 w-1/2 h-full bg-gradient-to-l from-primary-600/10 to-transparent pointer-events-none" />
                                 <div className="absolute -bottom-10 -right-10 opacity-5 blur-2xl group-hover:scale-150 transition-transform duration-1000">

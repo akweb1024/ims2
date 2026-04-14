@@ -4,6 +4,7 @@ import { authorizedRoute } from '@/lib/middleware-auth';
 import { handleApiError, ValidationError } from '@/lib/error-handler';
 import { logger } from '@/lib/logger';
 import { calculatePredictions } from '@/lib/predictions';
+import { updateLeadScore } from '@/lib/crm-scoring';
 
 export const POST = authorizedRoute(
     ['SUPER_ADMIN', 'EXECUTIVE', 'MANAGER', 'FINANCE_ADMIN'],
@@ -78,6 +79,9 @@ export const POST = authorizedRoute(
             });
 
             logger.info('Communication log created', { logId: log.id, createdBy: user.id, channel });
+
+            // Update Lead Score asynchronously
+            updateLeadScore(customerProfileId).catch(err => logger.error('Async lead score update failed', err));
 
             return NextResponse.json(log, { status: 201 });
         } catch (error: any) {

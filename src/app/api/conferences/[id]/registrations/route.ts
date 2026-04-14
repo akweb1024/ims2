@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { authorizedRoute } from '@/lib/middleware-auth';
 import { createErrorResponse } from '@/lib/api-utils';
 import { buildConferenceRegistrationFollowupSummary } from '@/lib/conference-followups';
+import { syncToCrmLead } from '@/lib/crm-sync';
 
 export const GET = authorizedRoute(
     [],
@@ -130,6 +131,23 @@ export const POST = authorizedRoute(
 
                 return reg;
             });
+
+            const conference = await prisma.conference.findUnique({
+                where: { id: conferenceId },
+                select: { companyId: true }
+            });
+
+            if (conference?.companyId) {
+                syncToCrmLead({
+                    name: body.name,
+                    email: body.email,
+                    phone: body.phone,
+                    organization: body.organization,
+                    source: 'CONFERENCE_REGISTRATION',
+                    companyId: conference.companyId,
+                    notes: `Registered for conference ID: ${conferenceId}. Ticket: ${ticketType.name}`
+                }).catch(err => console.error('Delayed CRM Sync Failure:', err));
+            }
 
             return NextResponse.json(registration);
         } catch (error) {
