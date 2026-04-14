@@ -180,11 +180,13 @@ export default function CreateInvoiceModal({
     billingAddress: "",
     billingCity: "",
     billingState: "",
+    billingStateCode: "",
     billingPincode: "",
     billingCountry: "India",
     shippingAddress: "",
     shippingCity: "",
     shippingState: "",
+    shippingStateCode: "",
     shippingPincode: "",
     shippingCountry: "India",
     notes: "",
@@ -226,16 +228,19 @@ export default function CreateInvoiceModal({
           if (target === 'billing') {
             upd.billingCity = city;
             upd.billingState = state;
+            upd.billingStateCode = detail.StateCode || "";
             upd.billingCountry = 'India';
             if (isShippingSame) {
               upd.shippingCity = city;
               upd.shippingState = state;
+              upd.shippingStateCode = detail.StateCode || "";
               upd.shippingCountry = 'India';
               upd.shippingPincode = pincode;
             }
           } else {
             upd.shippingCity = city;
             upd.shippingState = state;
+            upd.shippingStateCode = detail.StateCode || "";
             upd.shippingCountry = 'India';
           }
           return upd;
@@ -966,11 +971,13 @@ export default function CreateInvoiceModal({
           billingAddress: "",
           billingCity: "",
           billingState: "",
+          billingStateCode: "",
           billingPincode: "",
           billingCountry: "India",
           shippingAddress: "",
           shippingCity: "",
           shippingState: "",
+          shippingStateCode: "",
           shippingPincode: "",
           shippingCountry: "India",
           notes: "",
@@ -1380,19 +1387,19 @@ export default function CreateInvoiceModal({
                         <Info size={16} />
                       </div>
                       <h4 className="text-xs font-black text-gray-900 uppercase tracking-widest italic">
-                        Basic Intel
+                        Primary Identity
                       </h4>
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">
                       <div>
                         <label className="label">
-                          Full Identity Name{" "}
+                          Full Name{" "}
                           <span className="text-red-500">*</span>
                         </label>
                         <input
-                          className="input-premium w-full bg-white"
-                          placeholder="EX: JOHNATHAN PROTOCOL"
+                          className="input-premium w-full bg-white font-bold"
+                          placeholder="e.g. John Smith"
                           value={newCustomerForm.name}
                           onChange={(e) =>
                             setNewCustomerForm({
@@ -1405,13 +1412,13 @@ export default function CreateInvoiceModal({
                       </div>
                       <div>
                         <label className="label">
-                          Primary Signal (Email){" "}
+                          Primary Email{" "}
                           <span className="text-red-500">*</span>
                         </label>
                         <input
-                          className="input-premium w-full bg-white"
+                          className="input-premium w-full bg-white font-bold"
                           type="email"
-                          placeholder="INTEL@CRYPTO.COM"
+                          placeholder="e.g. john@company.com"
                           value={newCustomerForm.primaryEmail}
                           onChange={(e) =>
                             setNewCustomerForm({
@@ -1427,11 +1434,11 @@ export default function CreateInvoiceModal({
                     <div className="grid grid-cols-2 gap-4">
                       <div>
                         <label className="label">
-                          Primary Vector (Phone){" "}
+                          Primary Phone{" "}
                           <span className="text-red-500">*</span>
                         </label>
                         <input
-                          className="input-premium w-full bg-white"
+                          className="input-premium w-full bg-white font-bold"
                           placeholder="e.g. +91 9876543210"
                           value={newCustomerForm.primaryPhone}
                           onChange={(e) =>
@@ -1444,10 +1451,10 @@ export default function CreateInvoiceModal({
                         />
                       </div>
                       <div>
-                        <label className="label">Secondary Signal Mode</label>
+                        <label className="label">Alternate Phone / Contact</label>
                         <input
-                          className="input-premium w-full bg-white"
-                          placeholder="OPTIONAL VECTOR"
+                          className="input-premium w-full bg-white font-bold"
+                          placeholder="e.g. +91 98765 43210 (optional)"
                           value={newCustomerForm.secondaryPhone}
                           onChange={(e) =>
                             setNewCustomerForm({
@@ -1461,9 +1468,9 @@ export default function CreateInvoiceModal({
 
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <label className="label">Classification Type</label>
+                        <label className="label">Customer Type</label>
                         <select
-                          className="input-premium w-full bg-white"
+                          className="input-premium w-full bg-white font-bold"
                           value={newCustomerForm.customerType}
                           onChange={(e) =>
                             setNewCustomerForm({
@@ -1473,20 +1480,20 @@ export default function CreateInvoiceModal({
                           }
                         >
                           <option value="INDIVIDUAL">
-                            SINGLE UNIT (INDIVIDUAL)
+                            INDIVIDUAL
                           </option>
                           <option value="INSTITUTION">
-                            ORGANIZATIONAL NODE (INST)
+                            INSTITUTION / ORGANIZATION
                           </option>
                           <option value="AGENCY">
-                            EXTERNAL AGENT (AGENCY)
+                            AGENCY / PARTNER
                           </option>
                         </select>
                       </div>
                       <div>
-                        <label className="label">Functional Designation</label>
+                        <label className="label">Job Title / Designation</label>
                         <select
-                          className="input-premium w-full bg-white"
+                          className="input-premium w-full bg-white font-bold"
                           value={newCustomerForm.designation}
                           onChange={(e) =>
                             setNewCustomerForm({
@@ -1507,11 +1514,11 @@ export default function CreateInvoiceModal({
                     <div className="grid grid-cols-2 gap-4">
                       <div>
                         <label className="label">
-                          Organization Designation
+                          Organization / Company Name
                         </label>
                         <input
-                          className="input-premium w-full bg-white"
-                          placeholder="GLOBAL ACADEMY / ENTERPRISE X"
+                          className="input-premium w-full bg-white font-bold"
+                          placeholder="e.g. Global Academy, Enterprise Corp"
                           value={newCustomerForm.organizationName}
                           onChange={(e) =>
                             setNewCustomerForm({
@@ -1523,10 +1530,10 @@ export default function CreateInvoiceModal({
                       </div>
                       <div>
                         <label className="label">
-                          Global Matrix Bind (Institution)
+                          Institution
                         </label>
                         <select
-                          className="input-premium w-full bg-white"
+                          className="input-premium w-full bg-white font-bold"
                           value={newCustomerForm.institutionId}
                           onChange={(e) =>
                             setNewCustomerForm({
@@ -1535,7 +1542,7 @@ export default function CreateInvoiceModal({
                             })
                           }
                         >
-                          <option value="">-- NO MATRIX BIND --</option>
+                          <option value="">-- NONE / NOT LINKED --</option>
                           {institutions.map((inst) => (
                             <option key={inst.id} value={inst.id}>
                               {inst.name.toUpperCase()} [{inst.code}]
@@ -1553,16 +1560,16 @@ export default function CreateInvoiceModal({
                         <CreditCard size={16} />
                       </div>
                       <h4 className="text-xs font-black text-indigo-900 uppercase tracking-widest italic">
-                        Billing Matrix
+                        Billing Address
                       </h4>
                     </div>
 
                     <div className="grid grid-cols-1 gap-4">
                       <div>
-                        <label className="label">GSTIN / VAT ID Protocol</label>
+                        <label className="label">GSTIN / VAT / Tax ID</label>
                         <input
-                          className="input-premium w-full bg-white"
-                          placeholder="TAX-XXXXXX-XXXX"
+                          className="input-premium w-full bg-white font-bold"
+                          placeholder="e.g. 27AAAAA0000A1Z5"
                           value={newCustomerForm.gstVatTaxId}
                           onChange={(e) =>
                             setNewCustomerForm({
@@ -1573,10 +1580,10 @@ export default function CreateInvoiceModal({
                         />
                       </div>
                       <div>
-                        <label className="label">Base Street Coordinates</label>
+                        <label className="label">Street Address</label>
                         <textarea
-                          className="input-premium w-full bg-white min-h-[60px]"
-                          placeholder="BUILDING, STREET, BLOCK..."
+                          className="input-premium w-full bg-white min-h-[60px] font-bold"
+                          placeholder="BUILDING, STREET, AREA..."
                           value={newCustomerForm.billingAddress}
                           onChange={(e) => {
                             const val = e.target.value;
@@ -1592,41 +1599,9 @@ export default function CreateInvoiceModal({
 
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <label className="label">Sector / City</label>
-                        <input
-                          className="input-premium w-full bg-white"
-                          value={newCustomerForm.billingCity}
-                          onChange={(e) => {
-                            const val = e.target.value;
-                            setNewCustomerForm((prev) => {
-                              const upd = { ...prev, billingCity: val };
-                              if (isShippingSame) upd.shippingCity = val;
-                              return upd;
-                            });
-                          }}
-                        />
-                      </div>
-                      <div>
-                        <label className="label">Region / State</label>
-                        <input
-                          className="input-premium w-full bg-white"
-                          value={newCustomerForm.billingState}
-                          onChange={(e) => {
-                            const val = e.target.value;
-                            setNewCustomerForm((prev) => {
-                              const upd = { ...prev, billingState: val };
-                              if (isShippingSame) upd.shippingState = val;
-                              return upd;
-                            });
-                          }}
-                        />
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
                         <label className="label">Zone Code</label>
                         <input
-                          className="input-premium w-full bg-white"
+                          className="input-premium w-full bg-white font-bold"
                           value={newCustomerForm.billingPincode}
                           onChange={(e) => {
                             const val = e.target.value.replace(/\D/g, '').slice(0, 6);
@@ -1643,9 +1618,58 @@ export default function CreateInvoiceModal({
                         {isFetchingPincode && <span className="text-[10px] text-blue-500 animate-pulse mt-1 block">Fetching details...</span>}
                       </div>
                       <div>
-                        <label className="label">Nation</label>
+                        <label className="label">City</label>
                         <input
-                          className="input-premium w-full bg-white"
+                          className="input-premium w-full bg-white font-bold"
+                          value={newCustomerForm.billingCity}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            setNewCustomerForm((prev) => {
+                              const upd = { ...prev, billingCity: val };
+                              if (isShippingSame) upd.shippingCity = val;
+                              return upd;
+                            });
+                          }}
+                        />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="label">State / Region</label>
+                        <div className="flex gap-2">
+                          <input
+                            className="input-premium flex-1 bg-white font-bold"
+                            placeholder="State"
+                            value={newCustomerForm.billingState}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              setNewCustomerForm((prev) => {
+                                const upd = { ...prev, billingState: val };
+                                if (isShippingSame) upd.shippingState = val;
+                                return upd;
+                              });
+                            }}
+                          />
+                          <input
+                            className="input-premium w-16 bg-white font-bold text-center p-0"
+                            placeholder="Code"
+                            maxLength={2}
+                            value={newCustomerForm.billingStateCode}
+                            onChange={(e) => {
+                              const val = e.target.value.toUpperCase();
+                              setNewCustomerForm((prev) => {
+                                const upd = { ...prev, billingStateCode: val };
+                                if (isShippingSame) upd.shippingStateCode = val;
+                                return upd;
+                              });
+                            }}
+                          />
+                        </div>
+                      </div>
+                      <div>
+                        <label className="label">Country</label>
+                        <input
+                          className="input-premium w-full bg-white font-bold"
                           value={newCustomerForm.billingCountry}
                           onChange={(e) => {
                             const val = e.target.value;
@@ -1668,7 +1692,7 @@ export default function CreateInvoiceModal({
                           <Globe size={16} />
                         </div>
                         <h4 className="text-xs font-black text-blue-900 uppercase tracking-widest italic">
-                          Shipping Matrix
+                          Shipping Address
                         </h4>
                       </div>
                       <div className="flex items-center gap-2">
@@ -1686,6 +1710,7 @@ export default function CreateInvoiceModal({
                                 shippingAddress: prev.billingAddress,
                                 shippingCity: prev.billingCity,
                                 shippingState: prev.billingState,
+                                shippingStateCode: prev.billingStateCode,
                                 shippingPincode: prev.billingPincode,
                                 shippingCountry: prev.billingCountry,
                               }));
@@ -1704,11 +1729,11 @@ export default function CreateInvoiceModal({
                       <div className="space-y-4 animate-fadeIn">
                         <div>
                           <label className="label">
-                            Target Street Coordinates
+                            Street Address
                           </label>
                           <textarea
-                            className="input-premium w-full bg-white min-h-[60px]"
-                            placeholder="ENTER DEPLOYMENT ADDRESS"
+                            className="input-premium w-full bg-white min-h-[60px] font-bold"
+                            placeholder="BUILDING, STREET, AREA..."
                             value={newCustomerForm.shippingAddress}
                             onChange={(e) =>
                               setNewCustomerForm({
@@ -1720,37 +1745,9 @@ export default function CreateInvoiceModal({
                         </div>
                         <div className="grid grid-cols-2 gap-4">
                           <div>
-                            <label className="label">Sector / City</label>
-                            <input
-                              className="input-premium w-full bg-white"
-                              value={newCustomerForm.shippingCity}
-                              onChange={(e) =>
-                                setNewCustomerForm({
-                                  ...newCustomerForm,
-                                  shippingCity: e.target.value,
-                                })
-                              }
-                            />
-                          </div>
-                          <div>
-                            <label className="label">Region / State</label>
-                            <input
-                              className="input-premium w-full bg-white"
-                              value={newCustomerForm.shippingState}
-                              onChange={(e) =>
-                                setNewCustomerForm({
-                                  ...newCustomerForm,
-                                  shippingState: e.target.value,
-                                })
-                              }
-                            />
-                          </div>
-                        </div>
-                        <div className="grid grid-cols-2 gap-4">
-                          <div>
                             <label className="label">Zone Code</label>
                             <input
-                              className="input-premium w-full bg-white"
+                              className="input-premium w-full bg-white font-bold"
                               value={newCustomerForm.shippingPincode}
                               onChange={(e) => {
                                 const val = e.target.value.replace(/\D/g, '').slice(0, 6);
@@ -1766,9 +1763,52 @@ export default function CreateInvoiceModal({
                             {isFetchingPincode && <span className="text-[10px] text-blue-500 animate-pulse mt-1 block">Fetching details...</span>}
                           </div>
                           <div>
-                            <label className="label">Nation</label>
+                            <label className="label">City</label>
                             <input
-                              className="input-premium w-full bg-white"
+                              className="input-premium w-full bg-white font-bold"
+                              value={newCustomerForm.shippingCity}
+                              onChange={(e) =>
+                                setNewCustomerForm({
+                                  ...newCustomerForm,
+                                  shippingCity: e.target.value,
+                                })
+                              }
+                            />
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <label className="label">State / Region</label>
+                            <div className="flex gap-2">
+                              <input
+                                className="input-premium flex-1 bg-white font-bold"
+                                placeholder="State"
+                                value={newCustomerForm.shippingState}
+                                onChange={(e) =>
+                                  setNewCustomerForm({
+                                    ...newCustomerForm,
+                                    shippingState: e.target.value,
+                                  })
+                                }
+                              />
+                              <input
+                                className="input-premium w-16 bg-white font-bold text-center p-0"
+                                placeholder="Code"
+                                maxLength={2}
+                                value={newCustomerForm.shippingStateCode}
+                                onChange={(e) =>
+                                  setNewCustomerForm({
+                                    ...newCustomerForm,
+                                    shippingStateCode: e.target.value.toUpperCase(),
+                                  })
+                                }
+                              />
+                            </div>
+                          </div>
+                          <div>
+                            <label className="label">Country</label>
+                            <input
+                              className="input-premium w-full bg-white font-bold"
                               value={newCustomerForm.shippingCountry}
                               onChange={(e) =>
                                 setNewCustomerForm({
@@ -1785,9 +1825,8 @@ export default function CreateInvoiceModal({
                         <div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center mb-2 animate-pulse border border-blue-100">
                           <Zap size={20} />
                         </div>
-                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
-                          Mirroring Fiscal Coordinates
-                        </p>
+                        <p className="text-[10px] font-black text-blue-400 uppercase tracking-widest leading-none">Coordinates Synced</p>
+                        <p className="text-[8px] font-bold text-gray-300 uppercase tracking-widest mt-1">Shipping same as billing</p>
                       </div>
                     )}
                   </div>
@@ -1799,14 +1838,14 @@ export default function CreateInvoiceModal({
                         <ClipboardList size={16} />
                       </div>
                       <h4 className="text-xs font-black text-purple-900 uppercase tracking-widest italic">
-                        Strategic Intel
+                        Internal Archive
                       </h4>
                     </div>
                     <div>
-                      <label className="label">Observation Log</label>
+                      <label className="label">Internal Notes</label>
                       <textarea
-                        className="input-premium w-full bg-white min-h-[100px] border-dashed"
-                        placeholder="DOCUMENT INTERNAL INTEL, SPECIFIC BIASES, OR OPERATIONAL PREFERENCES..."
+                        className="input-premium w-full bg-white min-h-[100px] border-dashed font-medium text-xs"
+                        placeholder="Any internal notes, preferences, or special instructions about this customer..."
                         value={newCustomerForm.notes}
                         onChange={(e) =>
                           setNewCustomerForm({
@@ -1825,8 +1864,8 @@ export default function CreateInvoiceModal({
                       className="btn btn-primary w-full py-4 text-base font-bold shadow-lg shadow-primary-200"
                     >
                       {creatingCustomerLoading
-                        ? "Propagating..."
-                        : "Initialize Profile & Continue"}
+                        ? "Initializing..."
+                        : "Create Customer & Continue"}
                     </button>
                   </div>
                 </form>
