@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import crypto from 'crypto';
 import { logger } from '@/lib/logger';
+import { sendEmail, EmailTemplates } from '@/lib/email';
 
 export async function POST(request: NextRequest) {
     try {
@@ -48,20 +49,14 @@ export async function POST(request: NextRequest) {
 
             logger.info('Password reset requested', { userId: user.id });
 
-            // In production, you would send an email here:
-            /*
+            // Send email
+            const template = EmailTemplates.forgotPassword(user.name || user.email, resetUrl);
             await sendEmail({
                 to: email,
-                subject: 'Password Reset Request',
-                html: `
-                    <h1>Password Reset Request</h1>
-                    <p>You requested to reset your password. Click the link below to reset it:</p>
-                    <a href="${resetUrl}">Reset Password</a>
-                    <p>This link will expire in 1 hour.</p>
-                    <p>If you didn't request this, please ignore this email.</p>
-                `,
+                subject: template.subject,
+                text: template.text,
+                html: template.html,
             });
-            */
         }
 
         // Always return success message

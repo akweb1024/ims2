@@ -384,5 +384,116 @@ export const EmailTemplates = {
                 <p>Best regards,<br/>The Performance System</p>
             </div>
         `
+    }),
+ 
+    forgotPassword: (userName: string, resetUrl: string) => ({
+        subject: 'Reset your password - STM Journals',
+        text: `Dear ${userName}, you requested to reset your password. Click the following link: ${resetUrl}. This link will expire in 1 hour.`,
+        html: `
+            <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 8px;">
+                <h1 style="color: #2563eb;">Password Reset Request</h1>
+                <p>Dear <strong>${userName}</strong>,</p>
+                <p>You requested to reset your password for your account at <strong>STM Journals</strong>.</p>
+                <p>Click the button below to set a new password. This link is only valid for <strong>1 hour</strong>.</p>
+                <div style="text-align: center; margin: 30px 0;">
+                    <a href="${resetUrl}" 
+                       style="background: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold;">
+                       Reset Password
+                    </a>
+                </div>
+                <p>If you did not request this, please ignore this email or contact support if you have concerns.</p>
+                <p>Best regards,<br/>The STM Team</p>
+            </div>
+        `
+    }),
+ 
+    passwordResetConfirmation: (userName: string) => ({
+        subject: 'Password Reset Successful - STM Journals',
+        text: `Dear ${userName}, your password has been successfully reset.`,
+        html: `
+            <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 8px;">
+                <h1 style="color: #16a34a;">Password Reset Successful</h1>
+                <p>Dear <strong>${userName}</strong>,</p>
+                <p>This is to confirm that your password for <strong>STM Journals</strong> has been successfully updated.</p>
+                <p>If you did not perform this action, please contact our support team immediately to secure your account.</p>
+                <div style="text-align: center; margin: 30px 0;">
+                    <a href="${process.env.NEXT_PUBLIC_APP_URL}/login" 
+                       style="background: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold;">
+                       Log In Now
+                    </a>
+                </div>
+                <p>Best regards,<br/>The STM Team</p>
+            </div>
+        `
+    }),
+ 
+    reviewerReminder: (reviewerName: string, articleTitle: string, dueDate: string, assignmentId: string) => ({
+        subject: 'Reminder: Review Due Soon - STM Journals',
+        text: `Dear ${reviewerName}, this is a reminder that your review for "${articleTitle}" is due on ${dueDate}.`,
+        html: `
+            <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 8px;">
+                <h1 style="color: #f59e0b;">Review Reminder</h1>
+                <p>Dear <strong>${reviewerName}</strong>,</p>
+                <p>This is a friendly reminder regarding your pending review assignment for the manuscript:</p>
+                <div style="background: #f8fafc; padding: 15px; border-radius: 4px; border-left: 4px solid #f59e0b; margin: 20px 0;">
+                    <strong style="display: block; color: #1e293b;">${articleTitle}</strong>
+                </div>
+                <p>The review is due by: <strong style="color: #e11d48;">${dueDate}</strong></p>
+                <p>Please log in to the reviewer portal to submit your report or request an extension if needed.</p>
+                <div style="text-align: center; margin: 30px 0;">
+                    <a href="${process.env.NEXT_PUBLIC_APP_URL}/dashboard/reviewer/assignments/${assignmentId}" 
+                       style="background: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold;">
+                       Access Reviewer Portal
+                    </a>
+                </div>
+                <p>Thank you for your valuable contribution to the scientific community.</p>
+                <p>Best regards,<br/>The Editorial Team</p>
+            </div>
+        `
+    }),
+ 
+    reviewCertificateIssued: (reviewerName: string, journalName: string, certNumber: string) => ({
+        subject: 'Certificate Issued: Thank you for your Review - ${journalName}',
+        text: `Dear ${reviewerName}, a certificate for your review contribution has been issued. Certificate Number: ${certNumber}`,
+        html: `
+            <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 8px;">
+                <h1 style="color: #16a34a;">Certificate Issued</h1>
+                <p>Dear <strong>${reviewerName}</strong>,</p>
+                <p>On behalf of <strong>${journalName}</strong>, we would like to thank you for your commitment and the quality of your recent review service.</p>
+                <p>A digital certificate acknowledging your contribution has been issued and is now available in your researcher profile.</p>
+                <div style="background: #f0fdf4; padding: 15px; border-radius: 4px; border: 1px solid #bbf7d0; margin: 20px 0; text-align: center;">
+                    <p style="margin: 0; font-size: 14px; color: #166534;">Certificate Reference:</p>
+                    <strong style="font-size: 20px; color: #15803d; font-family: monospace;">${certNumber}</strong>
+                </div>
+                <div style="text-align: center; margin: 30px 0;">
+                    <a href="${process.env.NEXT_PUBLIC_APP_URL}/dashboard/reviewer/certificates" 
+                       style="background: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold;">
+                       View Certificate
+                    </a>
+                </div>
+                <p>We look forward to collaborating with you on future manuscripts.</p>
+                <p>Warm regards,<br/>The Editor-in-Chief</p>
+            </div>
+        `
+    }),
+ 
+    courseEnrollmentSuccess: (userName: string, courseTitle: string, dashboardUrl: string) => ({
+        subject: `Enrollment Confirmed: ${courseTitle} - STM Journals`,
+        text: `Dear ${userName}, your enrollment for "${courseTitle}" is now active. Log in to start learning.`,
+        html: `
+            <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 8px;">
+                <h1 style="color: #0ea5e9;">Welcome to the Course!</h1>
+                <p>Dear <strong>${userName}</strong>,</p>
+                <p>We are excited to confirm that your enrollment for the course <strong>"${courseTitle}"</strong> is now <strong>ACTIVE</strong>.</p>
+                <p>You can now access all course materials, lessons, and quizzes directly from your student dashboard.</p>
+                <div style="text-align: center; margin: 30px 0;">
+                    <a href="${dashboardUrl}" 
+                       style="background: #0ea5e9; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold;">
+                       Start Learning Now
+                    </a>
+                </div>
+                <p>Happy learning!<br/>The STM Journals LMS Team</p>
+            </div>
+        `
     })
 };

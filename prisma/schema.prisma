@@ -298,6 +298,7 @@ model User {
   itTaskComments                 ITTaskComment[]                  @relation("ITTaskComments")
   itTaskStatusChanges            ITTaskStatusHistory[]            @relation("ITStatusChanger")
   itTimeEntries                  ITTimeEntry[]                    @relation("ITTimeEntries")
+  conferenceFeedbacks            ConferenceFeedback[]
   assignedInstitutions           Institution[]                    @relation("InstitutionOwner")
   mentoredInternships            Internship[]                     @relation("InternshipMentor")
   internshipApplications         InternshipApplication[]
@@ -2897,6 +2898,7 @@ model Conference {
   sponsors         ConferenceSponsor[]
   ticketTypes      ConferenceTicketType[]
   tracks           ConferenceTrack[]
+  feedbacks        ConferenceFeedback[]
 }
 
 model ConferenceTicketType {
@@ -3667,6 +3669,20 @@ model ReviewCertificate {
   @@index([reviewerId])
   @@index([certificateNumber])
   @@index([journalId])
+}
+ 
+model ConferenceFeedback {
+  id              String     @id @default(uuid())
+  conferenceId    String
+  userId          String?
+  rating          Int        @default(5) // 1-5 scale
+  content         String     @db.Text
+  category        String?    @default("GENERAL") // VENUE, CONTENT, SPEAKER, etc.
+  createdAt       DateTime   @default(now())
+  conference      Conference @relation(fields: [conferenceId], references: [id], onDelete: Cascade)
+  user            User?      @relation(fields: [userId], references: [id])
+ 
+  @@index([conferenceId])
 }
 
 model WebsiteMonitor {

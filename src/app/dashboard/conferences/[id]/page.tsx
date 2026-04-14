@@ -21,7 +21,7 @@ export default function ConferenceDetailPage() {
     const [conference, setConference] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [userRole, setUserRole] = useState('');
-    const [activeTab, setActiveTab] = useState<'overview' | 'tickets' | 'tracks' | 'sponsors' | 'committee'>('overview');
+    const [activeTab, setActiveTab] = useState<'overview' | 'tickets' | 'tracks' | 'sponsors' | 'committee' | 'insights'>('overview');
     const [editMode, setEditMode] = useState(false);
     const [editData, setEditData] = useState<any>({});
 
@@ -39,6 +39,32 @@ export default function ConferenceDetailPage() {
     const [checkedItems, setCheckedItems] = useState<string[]>([]);
     const [followupPage, setFollowupPage] = useState(1);
     const [followupPageSize, setFollowupPageSize] = useState(10);
+ 
+    const [analytics, setAnalytics] = useState<any>(null);
+    const [feedbackData, setFeedbackData] = useState<any>(null);
+    const [fetchingInsights, setFetchingInsights] = useState(false);
+ 
+    const fetchInsights = useCallback(async () => {
+        try {
+            setFetchingInsights(true);
+            const token = localStorage.getItem('token');
+            const [anaRes, feedRes] = await Promise.all([
+                fetch(`/api/conferences/${conferenceId}/analytics`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                }),
+                fetch(`/api/conferences/${conferenceId}/feedback`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                })
+            ]);
+ 
+            if (anaRes.ok) setAnalytics(await anaRes.json());
+            if (feedRes.ok) setFeedbackData(await feedRes.json());
+        } catch (error) {
+            console.error('Fetch Insights Error:', error);
+        } finally {
+            setFetchingInsights(false);
+        }
+    }, [conferenceId]);
 
 
 
@@ -217,11 +243,10 @@ export default function ConferenceDetailPage() {
     }, [fetchConferenceFollowups, followupPage, followupPageSize]);
 
     useEffect(() => {
-        if (activeTab === 'committee') {
-            fetchCommittee();
-            fetchUsers();
+        if (activeTab === 'insights') {
+            fetchInsights();
         }
-    }, [activeTab, fetchCommittee, fetchUsers]);
+    }, [activeTab, fetchCommittee, fetchUsers, fetchInsights]);
 
     const handleUpdate = async () => {
         try {
@@ -650,6 +675,16 @@ export default function ConferenceDetailPage() {
                     >
                         <Users size={16} className="inline mr-2" />
                         Committee ({committeeMembers.length || 0})
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('insights')}
+                        className={`inline-flex items-center rounded-2xl px-5 py-3 font-bold transition-all ${activeTab === 'insights'
+                            ? 'bg-sky-600 text-white shadow-lg shadow-sky-200'
+                            : 'text-secondary-500 hover:bg-slate-50 hover:text-secondary-900'
+                            }`}
+                    >
+                        <Brain size={16} className="inline mr-2" />
+                        Insights & Feedback
                     </button>
                     </div>
                 </div>
@@ -1406,6 +1441,82 @@ export default function ConferenceDetailPage() {
                                     </div>
                                 </div>
                             )}
+
+                        {activeTab === 'insights' && (
+                            <div className="space-y-6">
+                                {fetchingInsights ? (
+                                    <div className="p-12 text-center text-slate-500 font-bold">Analyzing conference data...</div>
+                                ) : (
+                                    <>
+                                        {/* Analytics Overview */}
+                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                            <div className="card-premium p-6 bg-white border-l-4 border-emerald-500">
+                                                <h4 className="text-xs font-bold text-slate-400 uppercase mb-2">Total Revenue</h4>
+                                                <div className="text-3xl font-black text-slate-900">₹{analytics?.overview?.totalRevenue.toLocaleString() || 0}</div>
+                                                <p className="text-xs text-emerald-600 mt-2 font-bold">Real-time aggregation</p>
+                                            </div>
+                                            <div className="card-premium p-6 bg-white border-l-4 border-sky-500">
+                                                <h4 className="text-xs font-bold text-slate-400 uppercase mb-2">Paper Submissions</h4>
+                                                <div className="text-3xl font-black text-slate-900">{analytics?.overview?.totalPapers || 0}</div>
+                                                <p className="text-xs text-sky-600 mt-2 font-bold">Academics active</p>
+                                            </div>
+                                            <div className="card-premium p-6 bg-white border-l-4 border-amber-500">
+                                                <h4 className="text-xs font-bold text-slate-400 uppercase mb-2">Attendee Sentiment</h4>
+                                                <div className="text-3xl font-black text-slate-900">{feedbackData?.statistics?.averageRating.toFixed(1) || '0.0'} / 5.0</div>
+                                                <p className="text-xs text-amber-600 mt-2 font-bold">Based on {feedbackData?.statistics?.totalResponses || 0} reviews</p>
+                                            </div>
+                                        </div>
+
+                                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                            {/* Tickets & Tracks distribution */}
+                                            <div className="card-premium p-6">
+                                                <h3 className="font-bold text-lg mb-6 border-b pb-4">Revenue by Ticket Type</h3>
+                                                <div className="space-y-4">
+                                                    {analytics?.tickets?.length > 0 ? analytics.tickets.map((t: any, i: number) => (
+                                                        <div key={i} className="flex items-center gap-4">
+                                                            <div className="w-24 text-sm font-bold text-slate-500 truncate">{t.name}</div>
+                                                            <div className="flex-1 h-3 bg-slate-100 rounded-full overflow-hidden">
+                                                                <div 
+                                                                    className="h-full bg-sky-500 transition-all duration-1000" 
+                                                                    style={{ width: `${analytics.overview.totalRevenue > 0 ? (t.revenue / analytics.overview.totalRevenue) * 100 : 0}%` }}
+                                                                ></div>
+                                                            </div>
+                                                            <div className="w-20 text-right text-sm font-black text-slate-900">₹{t.revenue.toLocaleString()}</div>
+                                                        </div>
+                                                    )) : <p className="text-center text-slate-400 py-4 text-sm">No ticket data available</p>}
+                                                </div>
+                                            </div>
+
+                                            {/* Recent Feedback */}
+                                            <div className="card-premium p-6 max-h-[500px] overflow-y-auto">
+                                                <h3 className="font-bold text-lg mb-6 border-b pb-4">Latest Feedback</h3>
+                                                {feedbackData?.feedbacks.length === 0 ? (
+                                                    <p className="text-slate-400 text-center py-8 italic text-sm">No feedback received yet.</p>
+                                                ) : (
+                                                    <div className="space-y-4">
+                                                        {feedbackData?.feedbacks.map((f: any, i: number) => (
+                                                            <div key={i} className="p-4 bg-slate-50 rounded-xl border border-slate-100">
+                                                                <div className="flex justify-between items-start mb-2">
+                                                                    <div className="flex items-center gap-2">
+                                                                        <span className="bg-amber-100 text-amber-700 px-2 py-0.5 rounded text-[10px] font-black italic">
+                                                                            {f.rating} ★
+                                                                        </span>
+                                                                        <span className="text-xs font-bold text-slate-900">{f.user?.name || f.user?.email || 'Anonymous'}</span>
+                                                                    </div>
+                                                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{f.category}</span>
+                                                                </div>
+                                                                <p className="text-sm text-slate-600 italic">&quot;{f.content}&quot;</p>
+                                                                <div className="text-[10px] text-slate-400 mt-2 text-right">{new Date(f.createdAt).toLocaleDateString()}</div>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </>
+                                )}
+                            </div>
+                        )}
                         </div>
                     </div>
                 )}

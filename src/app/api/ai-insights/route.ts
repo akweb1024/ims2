@@ -173,6 +173,49 @@ export async function GET(req: NextRequest) {
         severity: "critical",
       }));
 
+      // 5. SYSTEM GROWTH TRENDS (Last 6 Months)
+      const months = [];
+      for (let i = 5; i >= 0; i--) {
+        const d = new Date();
+        d.setMonth(d.getMonth() - i);
+        months.push({
+          month: d.toLocaleString('default', { month: 'short' }),
+          start: new Date(d.getFullYear(), d.getMonth(), 1),
+          end: new Date(d.getFullYear(), d.getMonth() + 1, 0)
+        });
+      }
+
+      const growthTrend = await Promise.all(months.map(async (m) => {
+        const [revenue, enrollments] = await Promise.all([
+          prisma.payment.aggregate({
+            where: {
+              paymentDate: { gte: m.start, lte: m.end },
+              ...(user.role !== 'SUPER_ADMIN' ? { companyId: user.companyId } : {})
+            },
+            _sum: { amount: true }
+          }),
+          prisma.courseEnrollment.count({
+            where: {
+              enrolledAt: { gte: m.start, lte: m.end }
+            }
+          })
+        ]);
+        return {
+          month: m.month,
+          revenue: revenue._sum.amount || 0,
+          enrollments: enrollments || 0
+        };
+      }));
+
+      // 6. LMS PERFORMANCE
+      const lmsStats = await prisma.courseEnrollment.aggregate({
+        where: {
+          ...(user.role !== 'SUPER_ADMIN' ? { course: { companyId: user.companyId } } : {})
+        },
+        _avg: { progress: true },
+        _count: { _all: true }
+      });
+
       return NextResponse.json({
         metrics: {
           revenue: { current: currentRevenue, growth: growthParams.toFixed(1) },
@@ -182,8 +225,13 @@ export async function GET(req: NextRequest) {
             supportVelocity,
           },
           market: { activeClients: activeSubscribers },
+          lms: {
+            avgProgress: (lmsStats._avg.progress || 0).toFixed(1),
+            totalEnrollments: lmsStats._count._all
+          }
         },
         decisionFeed: [...flightRisks, ...revenueRisks].slice(0, 5),
+        growthTrend
       });
     }
 

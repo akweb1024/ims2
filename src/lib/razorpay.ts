@@ -112,3 +112,27 @@ export async function getCompanyConfigs(companyId: string, category: string, key
         return {};
     }
 }
+ 
+/**
+ * Validate Razorpay Payment Signature
+ */
+import crypto from 'crypto';
+ 
+export function validateSignature(orderId: string, paymentId: string, signature: string, keySecret: string): boolean {
+    const body = orderId + '|' + paymentId;
+    const expectedSignature = crypto
+        .createHmac('sha256', keySecret)
+        .update(body)
+        .digest('hex');
+        
+    return expectedSignature === signature;
+}
+ 
+export function validateWebhookSignature(payload: string, signature: string, secret: string): boolean {
+    const expectedSignature = crypto
+        .createHmac('sha256', secret)
+        .update(payload)
+        .digest('hex');
+        
+    return expectedSignature === signature;
+}

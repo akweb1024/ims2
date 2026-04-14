@@ -82,26 +82,26 @@ export default function ExecutiveDashboardPage() {
                             </div>
                         </div>
 
-                        {/* Market Reach */}
-                        <div className="card-premium bg-white p-8 border-l-8 border-amber-500 relative overflow-hidden group hover:shadow-xl transition-all">
+                        {/* LMS Performance */}
+                        <div className="card-premium bg-white p-8 border-l-8 border-violet-500 relative overflow-hidden group hover:shadow-xl transition-all">
                             <div className="absolute right-0 top-0 p-6 opacity-5 group-hover:opacity-10 transition-opacity">
-                                <span className="text-9xl">🚀</span>
+                                <span className="text-9xl">🎓</span>
                             </div>
-                            <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Market Reach</h3>
+                            <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">LMS Performance</h3>
                             <div className="flex items-baseline gap-2 mb-2">
-                                <span className="text-4xl font-black text-slate-900">{stats.metrics.market.activeClients}</span>
+                                <span className="text-4xl font-black text-slate-900">{stats.metrics.lms?.avgProgress}%</span>
                             </div>
-                            <p className="text-xs font-bold text-amber-600 bg-amber-50 px-2 py-1 rounded inline-block">Active Subscribers</p>
+                            <p className="text-xs font-bold text-violet-600 bg-violet-50 px-2 py-1 rounded inline-block">Avg. Course Progress</p>
                         </div>
                     </div>
                 )}
-
+ 
                 {/* AI Decision Feed */}
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                     <div className="lg:col-span-2">
                         <div className="bg-slate-900 rounded-[2rem] p-8 text-white relative overflow-hidden shadow-2xl">
                             <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/20 rounded-full blur-3xl -mr-20 -mt-20"></div>
-
+ 
                             <div className="flex justify-between items-center mb-8 relative z-10">
                                 <h3 className="text-xl font-bold flex items-center gap-3">
                                     <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
@@ -111,7 +111,7 @@ export default function ExecutiveDashboardPage() {
                                     LIVE FEED
                                 </div>
                             </div>
-
+ 
                             <div className="space-y-4 relative z-10">
                                 {stats?.decisionFeed.length === 0 ? (
                                     <div className="p-10 text-center border border-dashed border-slate-700 rounded-2xl text-slate-500 font-mono">
@@ -132,7 +132,7 @@ export default function ExecutiveDashboardPage() {
                                                 </span>
                                             </div>
                                             <p className="text-slate-400 text-sm mb-3 font-medium">{item.description}</p>
-
+ 
                                             <div className="bg-slate-900/50 p-3 rounded-lg border-l-2 border-indigo-400">
                                                 <p className="text-[10px] uppercase font-bold text-indigo-400 mb-1">Recommended Action</p>
                                                 <p className="text-sm font-bold">{item.action}</p>
@@ -143,31 +143,34 @@ export default function ExecutiveDashboardPage() {
                             </div>
                         </div>
                     </div>
-
+ 
                     <div className="bg-white rounded-[2rem] p-8 border border-slate-200 shadow-xl">
-                        <h3 className="text-lg font-black text-slate-900 uppercase tracking-widest mb-6 border-b border-slate-100 pb-4">System Growth</h3>
-                        {/* Placeholder Chart Visualization */}
+                        <h3 className="text-lg font-black text-slate-900 uppercase tracking-widest mb-6 border-b border-slate-100 pb-4">Revenue Growth</h3>
+                        {/* Dynamic Chart Visualization */}
                         <div className="h-64 flex items-end justify-between px-4 pb-4 border-b border-slate-200 mb-4 gap-2">
-                            {[40, 65, 45, 70, 55, 80, 60].map((h, i) => (
-                                <div key={i} className="w-full bg-slate-100 hover:bg-indigo-500 transition-colors rounded-t-lg relative group" style={{ height: `${h}%` }}>
-                                    <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-[10px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity">
-                                        {h}%
+                            {stats?.growthTrend?.map((data: any, i: number) => {
+                                // Calculate height relative to max revenue in trend
+                                const maxRevenue = Math.max(...stats.growthTrend.map((t: any) => t.revenue), 100);
+                                const height = (data.revenue / maxRevenue) * 100;
+                                return (
+                                    <div key={i} className="w-full bg-slate-100 hover:bg-indigo-500 transition-all duration-500 rounded-t-lg relative group" style={{ height: `${Math.max(height, 5)}%` }}>
+                                        <div className="absolute -top-12 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-[10px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-20">
+                                            ₹{data.revenue.toLocaleString()}
+                                        </div>
+                                        <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 text-[10px] font-bold text-slate-400 uppercase">
+                                            {data.month}
+                                        </div>
                                     </div>
-                                </div>
-                            ))}
+                                );
+                            })}
                         </div>
-                        <div className="flex justify-between text-xs font-bold text-slate-400 uppercase">
-                            <span>Mon</span>
-                            <span>Tue</span>
-                            <span>Wed</span>
-                            <span>Thu</span>
-                            <span>Fri</span>
-                            <span>Sat</span>
-                            <span>Sun</span>
-                        </div>
-                        <div className="mt-8 p-4 bg-indigo-50 rounded-xl">
-                            <p className="text-indigo-900 font-bold text-sm mb-1">Insight</p>
-                            <p className="text-indigo-700 text-xs leading-relaxed">System activity peaks on Thursdays. Recommend scheduling maintenance on Sundays.</p>
+                        <div className="mt-12 p-4 bg-indigo-50 rounded-xl">
+                            <p className="text-indigo-900 font-bold text-sm mb-1">AI Insight</p>
+                            <p className="text-indigo-700 text-xs leading-relaxed">
+                                {stats?.metrics?.revenue?.growth >= 0 
+                                    ? `Revenue is trending UP by ${stats.metrics.revenue.growth}% this month. Scaling operations recommended.`
+                                    : `Revenue has dipped by ${Math.abs(stats.metrics.revenue.growth)}%. Review client retention strategies.`}
+                            </p>
                         </div>
                     </div>
                 </div>
