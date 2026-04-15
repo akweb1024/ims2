@@ -634,11 +634,6 @@ export default function InvoiceDetailPage({
               customer.billingStateCode ||
               customer.state) !== company.stateCode)));
 
-  const taxLabel = isExport
-    ? `Tax (${taxContext.jurisdictionLabel})`
-    : isIGST
-      ? `${taxContext.jurisdictionLabel}`
-      : taxContext.jurisdictionLabel;
   const subtotal = invoice.amount || 0;
   const taxAmt = invoice.tax || 0;
   const grandTotal = invoice.total || 0;
@@ -1622,7 +1617,7 @@ export default function InvoiceDetailPage({
 
                   <div className="sum-row grand-total-row border-t border-black pt-2">
                     <span className="sum-label text-black font-black text-xs">
-                      Total ({invoice.currency || "INR"})::
+                      Total ({invoice.currency || "INR"}):
                     </span>
                     <span className="sum-value text-black font-black text-base">
                       {currencySymbol}
@@ -1640,9 +1635,9 @@ export default function InvoiceDetailPage({
             </div>
 
             <div className="px-4 py-2 italic text-[9px] border-b border-gray-700">
-              The sum of {currencySymbol}
-              {grandTotal.toLocaleString()}/- is a payment on account of
-              subscription by {identity.paymentMode || "NEFT/RTGS"}.
+              Payment Ref: Subscription payment on account of{" "}
+              {customer.name || "client"} via{" "}
+              {identity.paymentMode || "NEFT/RTGS"}.
             </div>
             <div className="px-4 py-3 text-[10px] border-b border-gray-700 bg-blue-50/60 leading-relaxed">
               <div className="font-black uppercase tracking-widest text-[9px] text-blue-900">
@@ -1673,16 +1668,24 @@ export default function InvoiceDetailPage({
                   )}
                   {identity.terms || (
                     <>
-                      1. All subscription amount mentioned is as per year fee
-                      (Between January and December).
+                      1. All subscription amount mentioned is as per year fee.
                       <br />
-                      2. Missing numbers will not be supplied if claims are
-                      received more than six months.
+                      2. Missing numbers will not be supplied after six months.
                       <br />
                       3. The Publisher cannot accept responsibility for foreign
                       delivery when records indicate posting has been made.
                       <br />
-                      4. Invoice subject to realization of demand draft/cheque.
+                      4. {taxContext.customerSegmentLabel}: {taxContext.taxNote}
+                      <br />
+                      5. GST Applicability: {taxContext.gstApplicabilityLabel}
+                      <br />
+                      {taxContext.isDomestic && (
+                        <>
+                          6. Place of Supply: {taxContext.jurisdictionLabel}
+                          <br />
+                        </>
+                      )}
+                      7. Subject to local jurisdiction only.
                     </>
                   )}
                 </div>
