@@ -6,6 +6,7 @@ import FormattedDate from '@/components/common/FormattedDate';
 import { Search, Plus, FileText, ShoppingCart, Loader2, ArrowRight, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Link from 'next/link';
+import { getCustomerDisplayType } from '@/lib/customer-display';
 
 export default function PurchaseOrdersPage() {
     const [purchaseOrders, setPurchaseOrders] = useState<any[]>([]);
@@ -250,7 +251,7 @@ export default function PurchaseOrdersPage() {
                         onClick={() => setActiveTab('customer')}
                         className={`px-6 py-2.5 rounded-xl font-bold text-sm tracking-wide transition-all ${activeTab === 'customer' ? 'bg-white shadow-sm text-primary-600' : 'text-secondary-500 hover:text-secondary-700'}`}
                     >
-                        Customer Orders (To Dispatch)
+                        Account Orders (To Dispatch)
                     </button>
                 </div>
 
@@ -293,7 +294,7 @@ export default function PurchaseOrdersPage() {
                             <thead>
                                 <tr className="bg-secondary-50 border-b border-secondary-100 text-[10px] uppercase font-black tracking-widest text-secondary-500">
                                     <th className="px-6 py-4">PO Details</th>
-                                    <th className="px-6 py-4">Vendor / Customer</th>
+                                    <th className="px-6 py-4">Vendor / Account</th>
                                     <th className="px-6 py-4">Total Amount</th>
                                     <th className="px-6 py-4">Status</th>
                                     <th className="px-6 py-4">Expected Date / Validity</th>
@@ -375,7 +376,7 @@ export default function PurchaseOrdersPage() {
                                         </td>
                                         <td className="px-6 py-4 text-sm font-bold">
                                             <Link href={`/dashboard/customers/${pf.customerProfileId}`} className="text-primary-700 hover:text-primary-900 hover:underline">
-                                                {pf.customerProfile?.organizationName || pf.customerProfile?.name || 'Unknown'} (Customer)
+                                                {pf.customerProfile?.organizationName || pf.customerProfile?.name || 'Unknown'} ({getCustomerDisplayType(pf.customerProfile)})
                                             </Link>
                                         </td>
                                         <td className="px-6 py-4">
@@ -419,7 +420,7 @@ export default function PurchaseOrdersPage() {
                             <thead>
                                 <tr className="bg-secondary-50 border-b border-secondary-100 text-[10px] uppercase font-black tracking-widest text-secondary-500">
                                     <th className="px-6 py-4">Invoice Details</th>
-                                    <th className="px-6 py-4">Customer</th>
+                                    <th className="px-6 py-4">Account</th>
                                     <th className="px-6 py-4">Total Amount</th>
                                     <th className="px-6 py-4">Status</th>
                                     <th className="px-6 py-4">Dispatch Status</th>
@@ -453,6 +454,9 @@ export default function PurchaseOrdersPage() {
                                         <td className="px-6 py-4 text-sm">
                                             <p className="font-bold text-secondary-700">
                                                 {inv.customerProfile?.name || inv.subscription?.customerProfile?.name || 'N/A'}
+                                            </p>
+                                            <p className="text-[10px] font-black uppercase tracking-widest mt-0.5 text-primary-600">
+                                                {getCustomerDisplayType(inv.customerProfile || inv.subscription?.customerProfile)}
                                             </p>
                                             <p className="text-xs text-secondary-500">
                                                 {inv.shippingCity}, {inv.shippingCountry}

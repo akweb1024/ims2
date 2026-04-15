@@ -205,7 +205,7 @@ export default function NewSubscriptionPage() {
                     </button>
                     <div>
                         <h1 className="text-3xl font-bold text-secondary-900">New Subscription</h1>
-                        <p className="text-secondary-500">Create a new journal subscription package for a customer</p>
+                        <p className="text-secondary-500">Create a new journal subscription package for an account</p>
                     </div>
                 </div>
 
@@ -218,7 +218,7 @@ export default function NewSubscriptionPage() {
                                 {s}
                             </div>
                             <span className={`text-xs mt-2 font-medium ${step >= s ? 'text-primary-600' : 'text-secondary-400'}`}>
-                                {s === 1 ? 'Customer' : s === 2 ? 'Selection' : 'Details'}
+                                {s === 1 ? 'Account' : s === 2 ? 'Selection' : 'Details'}
                             </span>
                         </div>
                     ))}
@@ -229,7 +229,7 @@ export default function NewSubscriptionPage() {
                 {step === 1 && (
                     <div className="card-premium p-6 space-y-6 animate-in fade-in slide-in-from-bottom-4">
                         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                            <h3 className="text-xl font-bold text-secondary-900">Step 1: Select Customer</h3>
+                            <h3 className="text-xl font-bold text-secondary-900">Step 1: Select Account</h3>
                             <div className="relative w-full md:w-72">
                                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-secondary-400">
                                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -238,7 +238,7 @@ export default function NewSubscriptionPage() {
                                 </span>
                                 <input
                                     type="text"
-                                    placeholder="Search customers..."
+                                    placeholder="Search accounts..."
                                     className="input pl-10 w-full"
                                     value={customerSearch}
                                     onChange={(e) => setCustomerSearch(e.target.value)}
@@ -293,7 +293,7 @@ export default function NewSubscriptionPage() {
                                 ))}
                             {customers.filter(c => c.organizationType !== 'AGENCY').length === 0 && (
                                 <div className="text-center py-10 text-secondary-400 italic">
-                                    No customers found. (Agencies excluded from subscription target)
+                                    No accounts found. (Agencies excluded from subscription target)
                                 </div>
                             )}
                         </div>
@@ -581,7 +581,7 @@ export default function NewSubscriptionPage() {
                         <div className="bg-primary-50 p-6 rounded-2xl space-y-4">
                             <h4 className="font-bold text-primary-900">Summary</h4>
                             <div className="flex justify-between text-sm">
-                                <span className="text-primary-700">Customer</span>
+                                <span className="text-primary-700">Account</span>
                                 <span className="font-bold text-primary-900">{customers.find(c => c.id === formData.customerProfileId)?.name}</span>
                             </div>
                             <div className="flex justify-between text-sm">

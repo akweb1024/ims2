@@ -17,6 +17,7 @@ import {
     CRMBadge,
     CRMRowAction,
 } from '@/components/crm/CRMPageShell';
+import { getCustomerDisplayType } from '@/lib/customer-display';
 import { 
     FileText, Plus, Download, Search, Filter, 
     MoreHorizontal, Eye, CreditCard, Clock, CheckCircle2,
@@ -188,7 +189,7 @@ export default function InvoicesPage() {
                         <thead>
                             <tr className="bg-secondary-50/50">
                                 <th className="text-[10px] font-black uppercase tracking-widest text-secondary-500 py-5">Invoice ID</th>
-                                <th className="text-[10px] font-black uppercase tracking-widest text-secondary-500 py-5">Customer</th>
+                                <th className="text-[10px] font-black uppercase tracking-widest text-secondary-500 py-5">Account</th>
                                 <th className="text-[10px] font-black uppercase tracking-widest text-secondary-500 py-5">Due Date</th>
                                 <th className="text-[10px] font-black uppercase tracking-widest text-secondary-500 py-5">Amount</th>
                                 <th className="text-[10px] font-black uppercase tracking-widest text-secondary-500 py-5">Status</th>
@@ -218,6 +219,9 @@ export default function InvoicesPage() {
                                             <div className="flex flex-col">
                                                 <p className="font-bold text-secondary-900 text-xs uppercase tracking-tight">
                                                     {inv.customerProfile?.name || inv.subscription?.customerProfile?.name || 'Unmapped'}
+                                                </p>
+                                                <p className="text-[10px] font-black uppercase tracking-widest mt-0.5 text-primary-600">
+                                                    {getCustomerDisplayType(inv.customerProfile || inv.subscription?.customerProfile)}
                                                 </p>
                                                 <p className="text-[10px] text-secondary-400 font-bold uppercase tracking-widest mt-0.5 opacity-60">
                                                     {inv.customerProfile?.organizationName || inv.subscription?.customerProfile?.organizationName || 'N/A'}

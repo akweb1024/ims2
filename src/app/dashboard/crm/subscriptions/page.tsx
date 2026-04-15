@@ -18,6 +18,7 @@ import {
     CRMPageShell,
     CRMStatCard
 } from '@/components/crm/CRMPageShell';
+import { getCustomerDisplayType } from '@/lib/customer-display';
 import { 
     BookOpen, Download, Plus, Bell, Eye, 
     ShieldCheck, Calendar, Activity, Zap, 
@@ -240,7 +241,7 @@ export default function SubscriptionsPage() {
                              <thead>
                                  <tr className="bg-secondary-50/50 border-b border-secondary-100">
                                      <th className="px-8 py-5 text-[10px] font-black uppercase tracking-widest text-secondary-400 italic">Subscription ID</th>
-                                     <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-secondary-400 italic">Customer (Organization)</th>
+                                     <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-secondary-400 italic">Account (Organization)</th>
                                      <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-secondary-400 italic">Temporal Range</th>
                                      <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-secondary-400 italic">Valuation</th>
                                      <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-secondary-400 italic">Status Protocol</th>
@@ -278,11 +279,13 @@ export default function SubscriptionsPage() {
                                                       <div className="w-10 h-10 rounded-xl bg-secondary-100/50 flex items-center justify-center text-secondary-400 group-hover:bg-primary-50 group-hover:text-primary-600 transition-all">
                                                            <Briefcase size={18} />
                                                       </div>
-                                                      <div className="flex flex-col min-w-0">
-                                                          <span className="font-black text-secondary-900 text-[11px] uppercase truncate max-w-[180px]">{sub.customerProfile.name}</span>
-                                                          <span className="text-[9px] font-black text-secondary-300 uppercase truncate max-w-[180px] tracking-widest mt-0.5">{sub.customerProfile.organizationName || 'INDIVIDUAL_NODE'}</span>
-                                                      </div>
-                                                 </div>
+                                                          <div className="flex flex-col min-w-0">
+                                                              <span className="font-black text-secondary-900 text-[11px] uppercase truncate max-w-[180px]">{sub.customerProfile.name}</span>
+                                                              <span className="text-[9px] font-black text-secondary-300 uppercase truncate max-w-[180px] tracking-widest mt-0.5">
+                                                                  {getCustomerDisplayType(sub.customerProfile)}
+                                                              </span>
+                                                          </div>
+                                                     </div>
                                              </td>
                                              <td className="px-6 py-6">
                                                  <div className="flex flex-col gap-1.5">

@@ -1459,7 +1459,7 @@ export default function CreateInvoiceModal({
               {editId ? "Edit Invoice" : "Create New Invoice"}
             </h2>
             <p className="text-sm text-gray-500">
-              Step {step}: {step === 1 ? "Customer Detail" : step === 2 ? "Products Detail" : "Summary"}
+              Step {step}: {step === 1 ? "Account Detail" : step === 2 ? "Products Detail" : "Summary"}
             </p>
           </div>
           <button
@@ -1473,7 +1473,7 @@ export default function CreateInvoiceModal({
         <div className="border-b border-gray-100 bg-white/80 px-4 py-4 sm:px-6">
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
             {[
-              { id: 1, title: "Customer Detail", hint: selectedCustomer ? selectedCustomer.name : "Choose customer" },
+              { id: 1, title: "Account Detail", hint: selectedCustomer ? selectedCustomer.name : "Choose account" },
               { id: 2, title: "Products Detail", hint: hasSelectedProducts ? `${selectedProductCount} selected` : "Pick products" },
               { id: 3, title: "Summary", hint: "Review and create" },
             ].map((phase) => (
@@ -1523,10 +1523,10 @@ export default function CreateInvoiceModal({
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-bold text-gray-800">
                   {isEditingCustomer
-                    ? "Update Customer Details"
+                    ? "Update Account Details"
                     : isCreatingCustomer
-                    ? "New Customer Details"
-                    : "Select Customer"}
+                    ? "New Account Details"
+                    : "Select Account"}
                 </h3>
                 <button
                   onClick={() => {
@@ -1543,7 +1543,7 @@ export default function CreateInvoiceModal({
                     ? "← Cancel Update"
                     : isCreatingCustomer
                     ? "← Search Existing"
-                    : "+ Create New Customer"}
+                    : "+ Create New Account"}
                 </button>
               </div>
 
@@ -2017,7 +2017,7 @@ export default function CreateInvoiceModal({
                       <label className="label">Internal Notes</label>
                       <textarea
                         className="input-premium w-full bg-white min-h-[100px] border-dashed font-medium text-xs"
-                        placeholder="Any internal notes, preferences, or special instructions about this customer..."
+                        placeholder="Any internal notes, preferences, or special instructions about this account..."
                         value={newCustomerForm.notes}
                         onChange={(e) =>
                           setNewCustomerForm({
@@ -2037,7 +2037,7 @@ export default function CreateInvoiceModal({
                     >
                       {creatingCustomerLoading
                         ? "Initializing..."
-                        : "Create Customer & Continue"}
+                        : "Create Account & Continue"}
                     </button>
                   </div>
                 </form>
@@ -2048,8 +2048,8 @@ export default function CreateInvoiceModal({
                       You are creating an invoice from the institution workspace for{" "}
                       <span className="font-bold">{prefilledInstitution.name}</span>.
                       {prefilledInstitution.linkedPaidCustomers?.length
-                        ? " Select a linked customer below or create a new customer already mapped to this institution."
-                        : " Create a new customer profile already mapped to this institution to continue."}
+                        ? " Select a linked account below or create a new account already mapped to this institution."
+                        : " Create a new account profile already mapped to this institution to continue."}
                     </div>
                   )}
                   <div className="relative">
@@ -2075,7 +2075,7 @@ export default function CreateInvoiceModal({
                             Linked Customers
                           </div>
                           <p className="mt-1 text-sm text-sky-800">
-                            Quick-pick a paid customer already related to this institution.
+                            Quick-pick a paid account already related to this institution.
                           </p>
                         </div>
                       )}
@@ -2119,7 +2119,7 @@ export default function CreateInvoiceModal({
                     {customerSearch && customers.length === 0 && !loading && (
                       <div className="text-center py-8">
                         <p className="text-gray-500 mb-4 font-medium">
-                          No customer found named &ldquo;{customerSearch}&rdquo;
+                          No account found named &ldquo;{customerSearch}&rdquo;
                         </p>
                         <button
                           onClick={() => {
@@ -2132,7 +2132,7 @@ export default function CreateInvoiceModal({
                           className="btn btn-secondary border-dashed"
                         >
                           + Create &ldquo;{customerSearch}&rdquo; as new
-                          customer
+                          account
                         </button>
                       </div>
                     )}
@@ -2896,7 +2896,7 @@ export default function CreateInvoiceModal({
                   <span className="text-[10px] font-black bg-primary-100 text-primary-700 px-2 py-0.5 rounded-full uppercase tracking-widest">{selectedProductCount} Products</span>
                 </div>
                 <div className="rounded-lg border border-gray-200 bg-white px-3 py-2 shadow-sm">
-                  <div className="text-[9px] font-black uppercase tracking-widest text-gray-400 mb-1">Customer</div>
+                  <div className="text-[9px] font-black uppercase tracking-widest text-gray-400 mb-1">Account</div>
                   <div className="font-bold text-gray-900 text-xs truncate">{selectedCustomer?.name}</div>
                 </div>
               </div>
