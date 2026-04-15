@@ -1,11 +1,15 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import GuidelineHelp from '@/components/dashboard/GuidelineHelp';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { getCustomerBadgeVariant, getCustomerDisplayType } from '@/lib/customer-display';
+import {
+    calculateInvoiceTaxBreakdown,
+    resolveJournalSubscriptionMode,
+} from '@/lib/invoice-tax';
 
 export default function NewSubscriptionPage() {
     const router = useRouter();
@@ -25,6 +29,7 @@ export default function NewSubscriptionPage() {
     // Agency State
     const [selectedAgency, setSelectedAgency] = useState<any>(null);
     const [discountDisplay, setDiscountDisplay] = useState(0);
+    const [companyStateCode, setCompanyStateCode] = useState('');
 
     const [formData, setFormData] = useState({
         customerProfileId: '',
@@ -75,7 +80,8 @@ export default function NewSubscriptionPage() {
             // Only fetch customers if not a customer role
             const fetchCustomers = role !== 'CUSTOMER';
 
-            const [custRes, jourRes, agencyRes] = await Promise.all([
+            const [profileRes, custRes, jourRes, agencyRes] = await Promise.all([
+                fetch('/api/profile', { headers: { 'Authorization': `Bearer ${token}` } }),
                 fetchCustomers
                     ? fetch('/api/customers?limit=100', { headers: { 'Authorization': `Bearer ${token}` } })
                     : Promise.resolve(null),
@@ -83,6 +89,10 @@ export default function NewSubscriptionPage() {
                 fetch('/api/agencies?limit=100', { headers: { 'Authorization': `Bearer ${token}` } })
             ]);
 
+            if (profileRes.ok) {
+                const profile = await profileRes.json();
+                setCompanyStateCode(profile.company?.stateCode || '');
+            }
             if (custRes && custRes.ok) {
                 const data = await custRes.json();
                 setCustomers(data.data);
@@ -127,6 +137,7 @@ export default function NewSubscriptionPage() {
 
         const price = formData.currency === 'INR' ? (plan.priceINR || 0) : (plan.priceUSD || 0);
         const planName = `${plan.planType} - ${plan.format}${plan.issue && plan.issue !== 'ALL' ? ` (${plan.issue})` : ''} [${plan.subscriptionYear}]`;
+        const subscriptionMode = resolveJournalSubscriptionMode(plan.format || plan.planType);
 
         const planDuration = plan.duration || 365;
         const newEndDate = new Date(new Date(formData.startDate).getTime() + (planDuration * 24 * 60 * 60 * 1000)).toISOString().split('T')[0];
@@ -140,7 +151,8 @@ export default function NewSubscriptionPage() {
                 quantity: 1,
                 journalName: journal.name,
                 planName: planName,
-                price: price
+                price: price,
+                subscriptionMode,
             }]
         });
     };
@@ -166,7 +178,7 @@ export default function NewSubscriptionPage() {
                 },
                 body: JSON.stringify({
                     ...formData,
-                    taxRate
+                    taxRate: previewTaxBreakdown.effectiveTaxRate || taxRate
                 })
             });
 
@@ -185,11 +197,44 @@ export default function NewSubscriptionPage() {
         }
     };
 
-    const subtotalAmount = formData.items.reduce((acc, item) => acc + (item.price * item.quantity), 0);
+    const selectedCustomer = customers.find(c => c.id === formData.customerProfileId);
+    const previewLineItems = useMemo(() => {
+        return formData.items.map((item) => ({
+            description: item.planName || item.journalName || 'Journal Subscription',
+            quantity: item.quantity || 1,
+            amount: (item.price || 0) * (item.quantity || 1),
+            taxCategory: item.subscriptionMode === 'DIGITAL'
+                ? 'DIGITAL_ACCESS'
+                : item.subscriptionMode === 'PRINT_DIGITAL'
+                    ? 'STANDARD'
+                    : 'PRINT_JOURNAL',
+            productCategory: 'JOURNAL_SUBSCRIPTION',
+            productAttributes: {
+                subscriptionOptions: {
+                    mode: item.subscriptionMode || 'PRINT',
+                },
+            },
+        }));
+    }, [formData.items]);
+
+    const previewTaxBreakdown = useMemo(() => {
+        const subtotal = previewLineItems.reduce((acc, item) => acc + Number(item.amount || 0), 0);
+        const discountAmount = selectedAgency ? (subtotal * (discountDisplay / 100)) : 0;
+
+        return calculateInvoiceTaxBreakdown({
+            customer: selectedCustomer || {},
+            company: { stateCode: companyStateCode },
+            items: previewLineItems,
+            discountAmount,
+            defaultTaxRate: Number(taxRate) || 18,
+        });
+    }, [companyStateCode, discountDisplay, previewLineItems, selectedAgency, selectedCustomer, taxRate]);
+
+    const subtotalAmount = previewTaxBreakdown.subtotal;
     const discountAmount = selectedAgency ? (subtotalAmount * (discountDisplay / 100)) : 0;
-    const taxableAmount = subtotalAmount - discountAmount;
-    const taxAmount = taxableAmount * (taxRate / 100);
-    const totalAmount = taxableAmount + taxAmount;
+    const taxableAmount = previewTaxBreakdown.taxableSubtotal;
+    const taxAmount = previewTaxBreakdown.tax;
+    const totalAmount = previewTaxBreakdown.total;
 
     const currencySymbol = formData.currency === 'INR' ? '₹' : (formData.currency === 'USD' ? '$' : (formData.currency === 'EUR' ? '€' : (formData.currency === 'GBP' ? '£' : '$')));
 
@@ -600,9 +645,16 @@ export default function NewSubscriptionPage() {
                             )}
                             <div className="flex justify-between text-sm">
                                 <span className="text-secondary-600 font-bold">
-                                    {taxType === 'DOMESTIC' ? 'GST (18%)' : 'Tax (International)'}
+                                    {previewTaxBreakdown.isExport
+                                        ? 'Tax (International)'
+                                        : previewTaxBreakdown.tax === 0
+                                            ? 'GST (0%)'
+                                            : previewTaxBreakdown.jurisdictionLabel}
                                 </span>
                                 <span className="font-bold text-secondary-600">+{currencySymbol}{taxAmount.toLocaleString()}</span>
+                            </div>
+                            <div className="text-[10px] font-bold uppercase tracking-widest text-secondary-500">
+                                {previewTaxBreakdown.customerSegmentLabel}: {previewTaxBreakdown.taxNote}
                             </div>
                             <div className="flex justify-between text-lg pt-2 border-t border-primary-300">
                                 <span className="font-bold text-primary-900 uppercase">Total Amount</span>

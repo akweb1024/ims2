@@ -635,10 +635,10 @@ export default function InvoiceDetailPage({
               customer.state) !== company.stateCode)));
 
   const taxLabel = isExport
-    ? "Export (0% Tax)"
+    ? `Tax (${taxContext.jurisdictionLabel})`
     : isIGST
-      ? `IGST (${invoice.igstRate || invoice.taxRate || 18}%)`
-      : `CGST + SGST (${(invoice.cgstRate ? invoice.cgstRate + invoice.sgstRate : invoice.taxRate) || 18}%)`;
+      ? `${taxContext.jurisdictionLabel}`
+      : taxContext.jurisdictionLabel;
   const subtotal = invoice.amount || 0;
   const taxAmt = invoice.tax || 0;
   const grandTotal = invoice.total || 0;
@@ -1030,7 +1030,7 @@ export default function InvoiceDetailPage({
           <div className="flex flex-col gap-6">
             <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
               <div>
-                <h3 className="text-lg font-bold text-secondary-900">Dispatch Tracking</h3>
+                <h3 className="text-lg font-bold text-secondary-900">Shipment Tracking</h3>
                 <p className="text-sm text-secondary-500">
                   Create and manage shipment status, courier partner, and tracking details for this invoice.
                 </p>
@@ -1085,9 +1085,9 @@ export default function InvoiceDetailPage({
                 )}
                 <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 rounded-2xl border border-secondary-100 bg-secondary-50 p-4">
                   <div>
-                  <p className="font-semibold text-secondary-900">No dispatch record yet</p>
+                  <p className="font-semibold text-secondary-900">No shipment record yet</p>
                   <p className="text-sm text-secondary-500">
-                    Create a dispatch from the invoice shipping address and line items stored on this invoice.
+                    Create a shipment from the invoice shipping address and line items stored on this invoice.
                   </p>
                   </div>
                   <button
@@ -1095,7 +1095,7 @@ export default function InvoiceDetailPage({
                     disabled={dispatchSaving}
                     className="btn btn-primary"
                   >
-                    {dispatchSaving ? "Creating..." : "Create Dispatch"}
+                    {dispatchSaving ? "Creating..." : "Create Shipment"}
                   </button>
                 </div>
               </div>
@@ -1136,7 +1136,7 @@ export default function InvoiceDetailPage({
                       {Array.isArray(currentDispatch?.items) ? currentDispatch.items.length : 0} item(s)
                     </p>
                     <p className="mt-1 text-sm text-secondary-600">
-                      Type: {currentDispatch?.fulfillmentType === "DIGITAL" ? "Digital Access" : "Print Dispatch"}
+                      Type: {currentDispatch?.fulfillmentType === "DIGITAL" ? "Digital Access" : "Print Shipment"}
                     </p>
                     <p className="text-sm text-secondary-600">
                       {currentDispatch?.fulfillmentType === "DIGITAL"
@@ -1184,17 +1184,17 @@ export default function InvoiceDetailPage({
                     />
                   </div>
                   <div>
-                    <label className="label">Tracking / AWB Number</label>
+                    <label className="label">Tracking / AWB Reference</label>
                     <input
                       className="input"
                       value={dispatchForm.trackingNumber}
                       onChange={(e) => setDispatchForm((prev) => ({ ...prev, trackingNumber: e.target.value }))}
-                      placeholder="Serial or consignment number"
+                      placeholder="Serial or consignment reference"
                       disabled={currentDispatch?.fulfillmentType === "DIGITAL"}
                     />
                   </div>
                   <div>
-                    <label className="label">Dispatch Status</label>
+                    <label className="label">Shipment Status</label>
                     <select
                       className="input"
                       value={dispatchForm.status}
@@ -1220,7 +1220,7 @@ export default function InvoiceDetailPage({
 
                 <div className="flex justify-end">
                   <button onClick={handleUpdateDispatch} disabled={dispatchSaving} className="btn btn-primary">
-                    {dispatchSaving ? "Saving..." : "Save Dispatch"}
+                    {dispatchSaving ? "Saving..." : "Save Shipment"}
                   </button>
                 </div>
               </>
@@ -1577,13 +1577,15 @@ export default function InvoiceDetailPage({
 
                   {isExport ? (
                     <div className="sum-row text-gray-500 italic">
-                      <span className="sum-label">Export (0% Tax):</span>
+                      <span className="sum-label">
+                        Tax ({taxContext.jurisdictionLabel}):
+                      </span>
                       <span className="sum-value">0.00</span>
                     </div>
                   ) : isIGST ? (
                     <div className="sum-row">
                       <span className="sum-label">
-                        IGST ({invoice.igstRate || invoice.taxRate}%):
+                        {taxContext.jurisdictionLabel}:
                       </span>
                       <span className="sum-value">
                         {(invoice.igst || taxAmt).toLocaleString(undefined, {
@@ -1650,10 +1652,10 @@ export default function InvoiceDetailPage({
                 {taxContext.customerSegmentLabel}: {taxContext.taxNote}
               </div>
               <div className="mt-1">
-                {taxContext.isDomestic ? "For India" : "Non Indian Customer"}: {taxContext.gstApplicabilityLabel}
+                GST Applicability: {taxContext.gstApplicabilityLabel}
               </div>
               <div className="mt-1">
-                {taxContext.isDomestic ? (taxContext.isSameStateSupply ? "Uttar Pradesh" : "Other State") : "Jurisdiction"}: {taxContext.jurisdictionLabel}
+                {taxContext.isDomestic ? "Place of Supply" : "Jurisdiction"}: {taxContext.jurisdictionLabel}
               </div>
             </div>
 

@@ -2,6 +2,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getAuthenticatedUser } from '@/lib/auth-legacy';
 import { generateFallbackInvoiceNumber } from '@/lib/invoice-number';
+import {
+    calculateInvoiceTaxBreakdown,
+    resolveJournalSubscriptionMode,
+} from '@/lib/invoice-tax';
 
 export async function POST(req: NextRequest) {
     try {
@@ -25,7 +29,8 @@ export async function POST(req: NextRequest) {
 
         // 2. Get Customer Profile
         const customerProfile = await prisma.customerProfile.findUnique({
-            where: { userId: decoded.id }
+            where: { userId: decoded.id },
+            include: { company: true }
         });
 
         if (!customerProfile) {
@@ -48,6 +53,12 @@ export async function POST(req: NextRequest) {
             const price = currency === 'USD' ? plan.priceUSD : plan.priceINR;
             const amount = price * (item.quantity || 1);
             selectedCurrencyTotal += amount;
+            const subscriptionMode = resolveJournalSubscriptionMode(plan.format || plan.planType);
+            const taxCategory = subscriptionMode === 'DIGITAL'
+                ? 'DIGITAL_ACCESS'
+                : subscriptionMode === 'PRINT'
+                    ? 'PRINT_JOURNAL'
+                    : 'STANDARD';
 
             subscriptionItems.push({
                 journalId: plan.journalId,
@@ -63,13 +74,28 @@ export async function POST(req: NextRequest) {
                 quantity: item.quantity || 1,
                 price: price,
                 amount: amount,
-                description: plan.journal?.name || 'Journal Subscription'
+                description: plan.journal?.name || 'Journal Subscription',
+                taxCategory,
+                productCategory: 'JOURNAL_SUBSCRIPTION',
+                productAttributes: {
+                    subscriptionOptions: {
+                        mode: subscriptionMode,
+                    },
+                },
             });
         }
 
-        // 4. Final Calculations
-        const taxAmount = selectedCurrencyTotal * (Number(taxRate) / 100);
-        const totalAmount = selectedCurrencyTotal + taxAmount;
+        // 4. Final Calculations via shared tax engine
+        const taxBreakdown = calculateInvoiceTaxBreakdown({
+            customer: { ...customerProfile, currency },
+            company: { stateCode: customerProfile.company?.stateCode || '' },
+            items: invoiceLineItems,
+            defaultTaxRate: Number(taxRate) || 18,
+        });
+
+        const subtotalAmount = taxBreakdown.subtotal;
+        const taxAmount = taxBreakdown.tax;
+        const totalAmount = taxBreakdown.total;
 
         // 5. Create Subscription and Invoice in Transaction
         const subscription = await prisma.subscription.create({
@@ -80,7 +106,7 @@ export async function POST(req: NextRequest) {
                 endDate: new Date(new Date().setFullYear(new Date().getFullYear() + 1)),
                 status: 'PENDING_PAYMENT',
                 currency,
-                subtotal: selectedCurrencyTotal,
+                subtotal: subtotalAmount,
                 tax: taxAmount,
                 total: totalAmount,
                 items: {
@@ -96,7 +122,7 @@ export async function POST(req: NextRequest) {
                         ),
                         customerProfileId: customerProfile.id,
                         currency,
-                        amount: selectedCurrencyTotal,
+                        amount: subtotalAmount,
                         tax: taxAmount,
                         total: totalAmount,
                         status: 'UNPAID',

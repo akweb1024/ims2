@@ -251,7 +251,7 @@ export default function PurchaseOrdersPage() {
                         onClick={() => setActiveTab('customer')}
                         className={`px-6 py-2.5 rounded-xl font-bold text-sm tracking-wide transition-all ${activeTab === 'customer' ? 'bg-white shadow-sm text-primary-600' : 'text-secondary-500 hover:text-secondary-700'}`}
                     >
-                        Account Orders (To Dispatch)
+                        Account Orders (To Ship)
                     </button>
                 </div>
 
@@ -423,7 +423,7 @@ export default function PurchaseOrdersPage() {
                                     <th className="px-6 py-4">Account</th>
                                     <th className="px-6 py-4">Total Amount</th>
                                     <th className="px-6 py-4">Status</th>
-                                    <th className="px-6 py-4">Dispatch Status</th>
+                                    <th className="px-6 py-4">Shipment Status</th>
                                     <th className="px-6 py-4"></th>
                                 </tr>
                             </thead>
@@ -507,7 +507,7 @@ export default function PurchaseOrdersPage() {
                                                     className="btn-premium py-1.5 px-3 text-xs w-full text-center"
                                                     onClick={() => openDispatchModal(inv)}
                                                 >
-                                                    Generate Ship
+                                                    Generate Shipment
                                                 </button>
                                             )}
                                         </td>
@@ -607,7 +607,7 @@ export default function PurchaseOrdersPage() {
                     <div className="bg-white rounded-[2rem] shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
                         <div className="px-8 py-6 border-b border-secondary-100 flex justify-between items-center sticky top-0 bg-white/90 backdrop-blur z-10">
                             <div>
-                                <h2 className="text-2xl font-black text-secondary-900">Push to Logistics</h2>
+                                <h2 className="text-2xl font-black text-secondary-900">Create Shipment</h2>
                                 <p className="text-sm font-medium text-secondary-500">Invoice {selectedInvoice.invoiceNumber}</p>
                             </div>
                             <button onClick={() => setDispatchModalOpen(false)} className="text-3xl text-secondary-300 hover:text-secondary-900">&times;</button>
@@ -644,7 +644,7 @@ export default function PurchaseOrdersPage() {
                                     <input className="input" value={dispatchForm.trackingNumber} onChange={e => setDispatchForm({...dispatchForm, trackingNumber: e.target.value})} />
                                 </div>
                                 <div>
-                                    <label className="label">Custom Partner (if other)</label>
+                                    <label className="label">Carrier Partner Name (Optional)</label>
                                     <input className="input" value={dispatchForm.partnerName} onChange={e => setDispatchForm({...dispatchForm, partnerName: e.target.value})} />
                                 </div>
                             </div>

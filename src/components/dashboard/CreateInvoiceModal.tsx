@@ -2516,8 +2516,7 @@ export default function CreateInvoiceModal({
                   <div className="mt-2 p-2 bg-amber-50 rounded-lg border border-amber-100">
                     <p className="text-[10px] text-amber-700 font-bold flex items-center gap-1.5 uppercase tracking-tighter">
                       <Zap size={10} className="fill-amber-500" />
-                      TAX NOTE: 0% GST on Print Journals. 18% GST on
-                      Online/Digital access.
+                      {taxBreakdown.customerSegmentLabel}: {taxBreakdown.taxNote}
                     </p>
                   </div>
                 </div>
@@ -2803,7 +2802,7 @@ export default function CreateInvoiceModal({
                 {taxBreakdown.isExport ? (
                   <div className="flex justify-between items-center text-sm">
                     <span className="text-secondary-500 font-medium uppercase tracking-wider">
-                      Tax (International)
+                      Tax ({taxBreakdown.jurisdictionLabel})
                     </span>
                     <span className="text-secondary-900 font-bold">
                       {getCurrencySymbol(currency)} 0
@@ -2814,7 +2813,7 @@ export default function CreateInvoiceModal({
                     {taxBreakdown.cgst > 0 && (
                       <div className="flex justify-between items-center text-sm">
                         <span className="text-secondary-500 font-medium uppercase tracking-wider">
-                          CGST (9%)
+                          CGST ({taxBreakdown.cgstRate}%)
                         </span>
                         <span className="text-secondary-900 font-bold">
                           {getCurrencySymbol(currency)}{" "}
@@ -2825,7 +2824,7 @@ export default function CreateInvoiceModal({
                     {taxBreakdown.sgst > 0 && (
                       <div className="flex justify-between items-center text-sm">
                         <span className="text-secondary-500 font-medium uppercase tracking-wider">
-                          SGST (9%)
+                          SGST ({taxBreakdown.sgstRate}%)
                         </span>
                         <span className="text-secondary-900 font-bold">
                           {getCurrencySymbol(currency)}{" "}
@@ -2836,7 +2835,7 @@ export default function CreateInvoiceModal({
                     {taxBreakdown.igst > 0 && (
                       <div className="flex justify-between items-center text-sm">
                         <span className="text-secondary-500 font-medium uppercase tracking-wider">
-                          IGST (18%)
+                          {taxBreakdown.jurisdictionLabel}
                         </span>
                         <span className="text-secondary-900 font-bold">
                           {getCurrencySymbol(currency)}{" "}
@@ -2847,7 +2846,7 @@ export default function CreateInvoiceModal({
                     {taxBreakdown.tax === 0 && !taxBreakdown.isExport && (
                       <div className="flex justify-between items-center text-sm">
                         <span className="text-secondary-500 font-medium uppercase tracking-wider">
-                          GST (0% - Exempt Products)
+                          {taxBreakdown.jurisdictionLabel}
                         </span>
                         <span className="text-secondary-900 font-bold">
                           {getCurrencySymbol(currency)} 0

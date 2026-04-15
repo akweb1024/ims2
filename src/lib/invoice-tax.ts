@@ -24,6 +24,7 @@ type ProductTaxMetadata = {
 
 type CustomerTaxProfile = {
   customerType?: string | null;
+  organizationType?: string | null;
   institutionType?: string | null;
   institution?: { type?: string | null } | null;
   billingCountry?: string | null;
@@ -43,6 +44,69 @@ const normalize = (value?: string | null) => (value || "").trim().toLowerCase();
 const normalizeUpper = (value?: string | null) =>
   (value || "").trim().toUpperCase();
 
+const EDUCATIONAL_SEGMENTS = new Set([
+  "INSTITUTION",
+  "UNIVERSITY",
+  "COLLEGE",
+  "SCHOOL",
+  "LIBRARY",
+  "RESEARCH_INSTITUTE",
+]);
+
+export const resolveCustomerTaxSegment = (customer: CustomerTaxProfile) => {
+  const rawSegment = normalizeUpper(
+    customer.organizationType ||
+      customer.customerType ||
+      customer.institutionType ||
+      customer.institution?.type,
+  );
+
+  if (!rawSegment) return "UNKNOWN";
+  if (rawSegment === "ORGANIZATION") {
+    const institutionHint = normalizeUpper(
+      customer.institutionType || customer.institution?.type,
+    );
+    if (EDUCATIONAL_SEGMENTS.has(institutionHint)) {
+      return institutionHint === "UNIVERSITY" ? "UNIVERSITY" : "INSTITUTION";
+    }
+  }
+
+  if (EDUCATIONAL_SEGMENTS.has(rawSegment)) {
+    return rawSegment === "UNIVERSITY" ? "UNIVERSITY" : "INSTITUTION";
+  }
+
+  return rawSegment;
+};
+
+export const resolveJournalSubscriptionMode = (value?: string | null) => {
+  const normalized = normalizeUpper(value)
+    .replace(/[\s+-]+/g, "_")
+    .replace(/__+/g, "_");
+
+  if (!normalized) return "PRINT";
+
+  if (
+    normalized.includes("PRINT_DIGITAL") ||
+    normalized.includes("HYBRID")
+  ) {
+    return "PRINT_DIGITAL";
+  }
+
+  if (
+    normalized.includes("DIGITAL") ||
+    normalized.includes("ONLINE") ||
+    normalized.includes("EJOURNAL")
+  ) {
+    return "DIGITAL";
+  }
+
+  if (normalized.includes("PRINT")) {
+    return "PRINT";
+  }
+
+  return "PRINT";
+};
+
 export const normalizeStateCode = (value?: string | null) => {
   const normalized = (value || "").trim().toUpperCase();
   if (!normalized) return "";
@@ -52,12 +116,18 @@ export const normalizeStateCode = (value?: string | null) => {
 
 export const getCustomerSegmentLabel = (customerType?: string | null) => {
   switch ((customerType || "").toUpperCase()) {
+    case "UNIVERSITY":
+      return "University";
     case "INSTITUTION":
-      return "College/University";
+      return "Institution";
     case "AGENCY":
-      return "Subscription Agent";
+      return "Agency";
+    case "COMPANY":
+      return "Company";
     case "INDIVIDUAL":
-      return "Individual Scholar";
+      return "Individual";
+    case "ORGANIZATION":
+      return "Organization";
     default:
       return "Customer";
   }
@@ -143,7 +213,7 @@ const resolveSubscriptionMode = (
   const productMode =
     product?.productAttributes?.subscriptionOptions?.mode ||
     product?.productAttributes?.mode;
-  return normalizeUpper(itemMode || productMode);
+  return resolveJournalSubscriptionMode(itemMode || productMode);
 };
 
 const isJournalSubscriptionItem = (
@@ -168,19 +238,25 @@ const getJournalDomesticTaxRate = ({
   subscriptionMode: string;
   taxCategory: string;
 }) => {
-  const customerType = normalizeUpper(customer.customerType);
+  const customerSegment = resolveCustomerTaxSegment(customer);
 
-  // Rule 1: Institute (Educational) Journal subscriptions are 0% GST for all types (Print, Digital, Print+Digital)
-  if (customerType === "INSTITUTION") {
+  // Rule 1: Educational accounts (Institutions and Universities) are 0% GST for all journal subscriptions.
+  if (customerSegment === "INSTITUTION" || customerSegment === "UNIVERSITY") {
     return 0;
   }
 
-  // Determine if it is strictly a purely Print subscription
+  // Determine if it is strictly a purely Print subscription.
+  const normalizedMode = resolveJournalSubscriptionMode(subscriptionMode);
   const isPrintOnly =
-    subscriptionMode === "PRINT" || taxCategory === "PRINT_JOURNAL";
+    normalizedMode === "PRINT" || taxCategory === "PRINT_JOURNAL";
 
-  // Rule 2: Agency or Individual: 0% for Print, 18% for Digital or Print+Digital
-  if (customerType === "AGENCY" || customerType === "INDIVIDUAL") {
+  // Rule 2: Commercial and standard accounts: 0% for Print, 18% for Digital or Print+Digital.
+  if (
+    customerSegment === "AGENCY" ||
+    customerSegment === "INDIVIDUAL" ||
+    customerSegment === "COMPANY" ||
+    customerSegment === "ORGANIZATION"
+  ) {
     if (isPrintOnly) return 0;
     return 18;
   }
@@ -220,9 +296,11 @@ export const buildInvoiceTaxContext = (
       : isSameStateSupply
         ? "CGST (9%), SGST (9%)"
         : "IGST (18%)",
-    customerSegmentLabel: getCustomerSegmentLabel(customer.customerType),
+    customerSegmentLabel: getCustomerSegmentLabel(
+      resolveCustomerTaxSegment(customer),
+    ),
     taxNote:
-      "TAX NOTE: 0% GST on Print Journals. 18% GST on Online/Digital access.",
+      "TAX NOTE: 0% GST on Print Journals. Educational accounts stay exempt on all journal subscriptions.",
   };
 };
 

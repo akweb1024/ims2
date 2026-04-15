@@ -180,7 +180,7 @@ export default function CustomerDetailPage({ params }: { params: Promise<{ id: s
         { id: 'subscriptions', name: 'Subscriptions', icon: '📚' },
         { id: 'communication', name: 'Follow-up', icon: '💬' },
         { id: 'billing', name: 'Billing', icon: '💰' },
-        { id: 'dispatch', name: 'Dispatch', icon: '🚚' },
+        { id: 'dispatch', name: 'Shipment', icon: '🚚' },
     ];
 
     const handleCreateDispatchFromInvoice = async (invoiceId: string) => {
@@ -1136,12 +1136,12 @@ export default function CustomerDetailPage({ params }: { params: Promise<{ id: s
                                                                                 onClick={() => handleCreateDispatchFromInvoice(invoice.id)}
                                                                                 className="btn btn-primary py-1 text-xs"
                                                                             >
-                                                                                Create Dispatch
+                                                                                Create Shipment
                                                                             </button>
                                                                         )}
                                                                         {Array.isArray(invoice.dispatchOrders) && invoice.dispatchOrders.length > 0 && (
                                                                             <span className="badge badge-secondary">
-                                                                                {invoice.dispatchOrders.length} fulfilment{invoice.dispatchOrders.length > 1 ? 's' : ''}
+                                                                                {invoice.dispatchOrders.length} shipment{invoice.dispatchOrders.length > 1 ? 's' : ''}
                                                                             </span>
                                                                         )}
                                                                         <Link
@@ -1167,14 +1167,14 @@ export default function CustomerDetailPage({ params }: { params: Promise<{ id: s
                                 <div className="card-premium overflow-hidden">
                                     <div className="flex items-center justify-between p-6 border-b border-secondary-100">
                                         <div>
-                                            <h3 className="text-lg font-bold text-secondary-900">Dispatch History</h3>
-                                            <p className="text-sm text-secondary-500">Track invoice-linked deliveries for this customer.</p>
+                                            <h3 className="text-lg font-bold text-secondary-900">Shipment History</h3>
+                                            <p className="text-sm text-secondary-500">Track invoice-linked shipments for this customer.</p>
                                         </div>
                                     </div>
                                     <div className="space-y-4 p-6">
                                         {(!customer.dispatchOrders || customer.dispatchOrders.length === 0) ? (
                                             <div className="rounded-xl border border-secondary-100 bg-secondary-50 p-6 text-center text-secondary-500">
-                                                No dispatch records yet. Create one from a customer invoice.
+                                                No shipment records yet. Create one from a customer invoice.
                                             </div>
                                         ) : (
                                             customer.dispatchOrders.map((dispatch: any) => (
@@ -1183,7 +1183,7 @@ export default function CustomerDetailPage({ params }: { params: Promise<{ id: s
                                                         <div className="space-y-2">
                                                             <div className="flex flex-wrap items-center gap-2">
                                                                 <span className="font-bold text-secondary-900">
-                                                                    {dispatch.invoice?.invoiceNumber || 'Manual Dispatch'}
+                                                                    {dispatch.invoice?.invoiceNumber || 'Manual shipment'}
                                                                 </span>
                                                                 <span className="badge badge-secondary">{dispatch.status.replace(/_/g, ' ')}</span>
                                                                 <span className="badge badge-primary">
@@ -1194,7 +1194,7 @@ export default function CustomerDetailPage({ params }: { params: Promise<{ id: s
                                                             </div>
                                                             <p className="text-sm text-secondary-600">
                                                                 {dispatch.recipientName} • {dispatch.fulfillmentType === 'DIGITAL'
-                                                                    ? 'Online access fulfilment'
+                                                                    ? 'Online access shipment'
                                                                     : [dispatch.city, dispatch.state].filter(Boolean).join(', ') || 'Address pending'}
                                                             </p>
                                                             <p className="text-xs text-secondary-500">
@@ -1242,7 +1242,7 @@ export default function CustomerDetailPage({ params }: { params: Promise<{ id: s
                                                                 ...prev,
                                                                 [dispatch.id]: { ...prev[dispatch.id], trackingNumber: e.target.value },
                                                             }))}
-                                                            placeholder="Tracking / AWB number"
+                                                            placeholder="Tracking / AWB reference"
                                                             disabled={dispatch.fulfillmentType === 'DIGITAL'}
                                                         />
                                                         <input
@@ -1252,7 +1252,7 @@ export default function CustomerDetailPage({ params }: { params: Promise<{ id: s
                                                                 ...prev,
                                                                 [dispatch.id]: { ...prev[dispatch.id], partnerName: e.target.value },
                                                             }))}
-                                                            placeholder="Partner name"
+                                                            placeholder="Carrier partner name"
                                                             disabled={dispatch.fulfillmentType === 'DIGITAL'}
                                                         />
                                                         <textarea
@@ -1262,7 +1262,7 @@ export default function CustomerDetailPage({ params }: { params: Promise<{ id: s
                                                                 ...prev,
                                                                 [dispatch.id]: { ...prev[dispatch.id], remarks: e.target.value },
                                                             }))}
-                                                            placeholder="Dispatch remarks"
+                                                            placeholder="Shipment remarks"
                                                         />
                                                     </div>
                                                     <div className="mt-4 flex justify-end">
@@ -1270,7 +1270,7 @@ export default function CustomerDetailPage({ params }: { params: Promise<{ id: s
                                                             onClick={() => handleSaveDispatch(dispatch.id)}
                                                             className="btn btn-primary py-2 text-xs"
                                                         >
-                                                            Save Dispatch
+                                                            Save Shipment
                                                         </button>
                                                     </div>
                                                 </div>

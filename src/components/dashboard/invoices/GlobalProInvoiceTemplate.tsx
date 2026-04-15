@@ -1007,7 +1007,7 @@ export default function GlobalProInvoiceTemplate({
               <div style={{ fontWeight: 700 }}>
                 Export Invoice / Proforma Invoice
               </div>
-              <div>Non-Indian Customer: GST not applicable.</div>
+              <div>International Supply: GST not applicable.</div>
             </div>
           ) : igstRate > 0 ? (
             <div
@@ -1019,7 +1019,7 @@ export default function GlobalProInvoiceTemplate({
               }}
             >
               <span style={{ color: "#64748b", fontWeight: 600 }}>
-                IGST ({igstRate}%):
+                {taxContext.jurisdictionLabel}:
               </span>
               <span style={{ fontWeight: 700 }}>
                 {currencySymbol}
@@ -1122,7 +1122,7 @@ export default function GlobalProInvoiceTemplate({
                   "Taxable Value",
                   `CGST (${cgstRate}%)`,
                   `SGST (${sgstRate}%)`,
-                  `IGST (${igstRate}%)`,
+                  `Tax`,
                   "Total Tax",
                 ].map(
                   (h, i) => (
@@ -1231,9 +1231,9 @@ export default function GlobalProInvoiceTemplate({
                 <li>Payment is due within the period specified above.</li>
                 <li>All prices are in {invoice.currency || "INR"} unless stated otherwise.</li>
                 <li>{taxContext.customerSegmentLabel}: {taxContext.taxNote}</li>
-                <li>{taxContext.isDomestic ? "For India" : "Non Indian Customer"}: {taxContext.gstApplicabilityLabel}</li>
+                <li>GST Applicability: {taxContext.gstApplicabilityLabel}</li>
                 {taxContext.isDomestic && (
-                  <li>{taxContext.isSameStateSupply ? "Uttar Pradesh" : "Other State"}: {taxContext.jurisdictionLabel}</li>
+                  <li>Place of Supply: {taxContext.jurisdictionLabel}</li>
                 )}
                 <li>
                   {isExport

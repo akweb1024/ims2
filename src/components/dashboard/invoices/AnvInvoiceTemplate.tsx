@@ -541,11 +541,13 @@ export default function AnvInvoiceTemplate({
           {isExport ? (
             <div className="border border-blue-200 bg-blue-50 px-3 py-2 text-[10px] leading-relaxed text-blue-900 rounded">
               <div className="font-bold">Export Invoice / Proforma Invoice</div>
-              <div>Non-Indian Customer: GST not applicable.</div>
+              <div>International Supply: GST not applicable.</div>
             </div>
           ) : igstRate > 0 ? (
             <div className="row-total">
-              <span className="total-label text-[10px]">IGST ({igstRate}%):</span>
+              <span className="total-label text-[10px]">
+                {taxContext.jurisdictionLabel}:
+              </span>
               <span className="total-val text-[11px] font-bold">
                 {igstAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })}
               </span>
@@ -589,7 +591,7 @@ export default function AnvInvoiceTemplate({
                 <th>Taxable Val</th>
                 <th>{`CGST (${cgstRate}%)`}</th>
                 <th>{`SGST (${sgstRate}%)`}</th>
-                <th>{`IGST (${igstRate}%)`}</th>
+                <th>Tax</th>
                 <th>Total Tax</th>
               </tr>
             </thead>
@@ -643,9 +645,9 @@ export default function AnvInvoiceTemplate({
             <li>Missing numbers will not be supplied after six months.</li>
             <li>Publisher is not responsible for foreign delivery issues.</li>
             <li>{taxContext.customerSegmentLabel}: {taxContext.taxNote}</li>
-            <li>{taxContext.isDomestic ? "For India" : "Non Indian Customer"}: {taxContext.gstApplicabilityLabel}</li>
+            <li>GST Applicability: {taxContext.gstApplicabilityLabel}</li>
             {taxContext.isDomestic && (
-              <li>{taxContext.isSameStateSupply ? "Uttar Pradesh" : "Other State"}: {taxContext.jurisdictionLabel}</li>
+              <li>Place of Supply: {taxContext.jurisdictionLabel}</li>
             )}
             <li>Subject to Raipur Jurisdiction only.</li>
           </ol>

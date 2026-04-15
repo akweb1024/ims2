@@ -291,7 +291,7 @@ export default function LogisticsPage() {
                 <div className="flex justify-between items-end">
                     <div>
                         <h1 className="text-3xl font-black text-secondary-900 tracking-tighter">Smart Logistics</h1>
-                        <p className="text-secondary-500 font-medium">Predictive dispatch tracking and carrier performance intelligence.</p>
+                        <p className="text-secondary-500 font-medium">Predictive shipment tracking and carrier performance intelligence.</p>
                     </div>
                     <div className="flex bg-secondary-100 p-1 rounded-2xl">
                         {(['OVERVIEW', 'ORDERS', 'COURIERS'] as ViewType[]).map((t) => (
@@ -461,11 +461,11 @@ export default function LogisticsPage() {
                                             <th className="px-6 py-4 w-12">
                                                 <input type="checkbox" className="rounded" onChange={(e) => setSelectedOrders(e.target.checked ? orders.map(o => o.id) : [])} checked={selectedOrders.length === orders.length && orders.length > 0} />
                                             </th>
-                                            <th className="px-6 py-4">Invoice</th>
-                                            <th className="px-6 py-4">Cycle / Destination</th>
-                                            <th className="px-6 py-4">Courier / Tracking</th>
-                                            <th className="px-6 py-4">Shipment Weights</th>
-                                            <th className="px-6 py-4">Status</th>
+                                            <th className="px-6 py-4">Invoice / Shipment</th>
+                                            <th className="px-6 py-4">Recipient / Destination</th>
+                                            <th className="px-6 py-4">Carrier / Tracking</th>
+                                            <th className="px-6 py-4">Shipment Weight</th>
+                                            <th className="px-6 py-4">Shipment Status</th>
                                             <th className="px-6 py-4">Last Updated</th>
                                             <th className="px-6 py-4 text-right">Actions</th>
                                         </tr>
@@ -488,7 +488,7 @@ export default function LogisticsPage() {
                                                             </p>
                                                         </div>
                                                     ) : (
-                                                        <span className="text-xs text-secondary-400">Manual</span>
+                                                        <span className="text-xs text-secondary-400">Manual shipment</span>
                                                     )}
                                                 </td>
                                                 <td className="px-6 py-4">
@@ -604,21 +604,21 @@ export default function LogisticsPage() {
                     <div className="fixed inset-0 bg-secondary-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
                         <div className="bg-white rounded-[2.5rem] p-10 max-w-lg w-full max-h-[90vh] overflow-y-auto shadow-2xl relative">
                             <button onClick={() => setIsCreatingOrder(false)} className="absolute top-6 right-8 text-2xl text-secondary-300 hover:text-secondary-900 transition-colors">×</button>
-                            <h3 className="text-2xl font-black text-secondary-900 mb-6">Dispatch Origin</h3>
+                            <h3 className="text-2xl font-black text-secondary-900 mb-6">Shipment Origin</h3>
                             <form onSubmit={handleCreateOrder} className="space-y-4">
                                 <div>
                                     <label className="label">Invoice ID (Optional)</label>
-                                    <input name="invoiceId" className="input" placeholder="Paste invoice UUID to create invoice-linked dispatch" />
+                                    <input name="invoiceId" className="input" placeholder="Paste invoice UUID to create invoice-linked shipment" />
                                 </div>
                                 <div>
-                                    <label className="label">Customer / Institution</label>
+                                    <label className="label">Customer / Account</label>
                                     <select name="customerProfileId" className="input">
                                         <option value="">Select Customer (Optional)</option>
                                         {customers.map(c => <option key={c.id} value={c.id}>{c.name} {c.organizationName ? `(${c.organizationName})` : ''}</option>)}
                                     </select>
                                 </div>
                                 <div>
-                                    <label className="label">Recipient Identity</label>
+                                    <label className="label">Recipient Name</label>
                                     <input name="recipientName" className="input" required placeholder="Full Name / Org" />
                                 </div>
                                 <div className="grid grid-cols-2 gap-4">
@@ -681,13 +681,13 @@ export default function LogisticsPage() {
                                     </select>
                                 </div>
                                 <div>
-                                    <label className="label">Partner Name (Optional)</label>
-                                    <input name="partnerName" className="input" placeholder="Use when courier is Other / custom partner" />
+                                    <label className="label">Carrier Partner Name (Optional)</label>
+                                    <input name="partnerName" className="input" placeholder="Use when carrier is Other / custom partner" />
                                 </div>
                                 <div className="grid grid-cols-2 gap-4">
                                     <div>
-                                        <label className="label">Tracking / AWB Number</label>
-                                        <input name="trackingNumber" className="input" placeholder="Serial / AWB number" />
+                                        <label className="label">Tracking / AWB Reference</label>
+                                        <input name="trackingNumber" className="input" placeholder="Serial / AWB reference" />
                                     </div>
                                     <div>
                                         <label className="label">Weight (kg)</label>
@@ -712,7 +712,7 @@ export default function LogisticsPage() {
                             <button onClick={closeOrderDetail} className="absolute top-5 right-6 text-2xl text-secondary-300 hover:text-secondary-900 transition-colors">×</button>
                             <div className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between mb-6">
                                 <div>
-                                    <h3 className="text-2xl font-black text-secondary-900">Dispatch Control Center</h3>
+                                    <h3 className="text-2xl font-black text-secondary-900">Shipment Control Center</h3>
                                     <p className="text-sm text-secondary-500">
                                         Review shipment details, courier assignment, tracking, and destination in one place.
                                     </p>
@@ -725,14 +725,14 @@ export default function LogisticsPage() {
                             </div>
 
                             {isDetailLoading ? (
-                                <div className="py-16 text-center text-secondary-500">Loading dispatch details...</div>
+                                <div className="py-16 text-center text-secondary-500">Loading shipment details...</div>
                             ) : selectedOrder ? (
                                 <div className="space-y-6">
                                     <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                                         <div className="rounded-2xl border border-secondary-100 bg-secondary-50 p-4">
                                             <p className="text-[10px] font-black uppercase tracking-widest text-secondary-400">Invoice</p>
                                             <p className="mt-2 font-semibold text-secondary-900">
-                                                {selectedOrder.invoice?.invoiceNumber || 'Manual dispatch'}
+                                                {selectedOrder.invoice?.invoiceNumber || 'Manual shipment'}
                                             </p>
                                             <p className="mt-1 text-sm text-secondary-600">
                                                 {selectedOrder.invoice?.total ? `${selectedOrder.invoice.currency === 'INR' ? '₹' : '$'}${selectedOrder.invoice.total}` : 'No invoice total'}
@@ -864,7 +864,7 @@ export default function LogisticsPage() {
                                             />
                                         </div>
                                         <div>
-                                            <label className="label">Tracking / AWB Number</label>
+                                            <label className="label">Tracking / AWB Reference</label>
                                             <input
                                                 className="input"
                                                 value={detailForm.trackingNumber}
@@ -911,7 +911,7 @@ export default function LogisticsPage() {
 
                                     {Array.isArray(selectedOrder.items) && selectedOrder.items.length > 0 && (
                                         <div className="rounded-2xl border border-secondary-100 bg-secondary-50 p-4">
-                                            <p className="text-[10px] font-black uppercase tracking-widest text-secondary-400">Dispatch Items</p>
+                                            <p className="text-[10px] font-black uppercase tracking-widest text-secondary-400">Shipment Items</p>
                                             <div className="mt-3 space-y-2">
                                                 {selectedOrder.items.map((item: any, index: number) => (
                                                     <div key={`${item.name || 'item'}-${index}`} className="flex items-start justify-between gap-4 text-sm">
@@ -940,7 +940,7 @@ export default function LogisticsPage() {
                                             </Link>
                                         )}
                                         <button onClick={handleDetailSave} disabled={isDetailSaving} className="btn btn-primary py-2 text-xs">
-                                            {isDetailSaving ? 'Saving...' : 'Save Dispatch'}
+                                            {isDetailSaving ? 'Saving...' : 'Save Shipment'}
                                         </button>
                                     </div>
                                 </div>

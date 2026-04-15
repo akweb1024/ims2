@@ -3,7 +3,10 @@ import { prisma } from '@/lib/prisma';
 import { verifyToken } from '@/lib/auth-legacy';
 import { logger } from '@/lib/logger';
 import { generateFallbackInvoiceNumber } from '@/lib/invoice-number';
-import { calculateInvoiceTaxBreakdown } from '@/lib/invoice-tax';
+import {
+    calculateInvoiceTaxBreakdown,
+    resolveJournalSubscriptionMode,
+} from '@/lib/invoice-tax';
 
 export async function POST(request: NextRequest) {
     try {
@@ -75,6 +78,7 @@ export async function POST(request: NextRequest) {
             let pINR = 0;
             let pUSD = 0;
             let description = '';
+            let subscriptionMode: string | null = null;
 
             if (item.planId) {
                 const plan = await prisma.plan.findUnique({
@@ -85,6 +89,7 @@ export async function POST(request: NextRequest) {
                 pINR = plan.priceINR;
                 pUSD = plan.priceUSD;
                 description = `Journal: ${plan.journal.name} (${plan.planType})`;
+                subscriptionMode = resolveJournalSubscriptionMode(plan.format || plan.planType);
             } else if (item.courseId) {
                 const course = await prisma.course.findUnique({ where: { id: item.courseId } });
                 if (!course) return NextResponse.json({ error: `Course ${item.courseId} not found` }, { status: 404 });
@@ -112,6 +117,12 @@ export async function POST(request: NextRequest) {
             totalInINR += pINR * qty;
             totalInUSD += pUSD * qty;
 
+            const taxCategory = subscriptionMode === 'DIGITAL'
+                ? 'DIGITAL_ACCESS'
+                : subscriptionMode === 'PRINT'
+                    ? 'PRINT_JOURNAL'
+                    : 'STANDARD';
+
             subscriptionItems.push({
                 journalId: item.journalId || null,
                 planId: item.planId || null,
@@ -126,7 +137,16 @@ export async function POST(request: NextRequest) {
                 description,
                 quantity: qty,
                 unitPrice: price,
-                total: price * qty
+                total: price * qty,
+                taxCategory,
+                productCategory: item.planId ? 'JOURNAL_SUBSCRIPTION' : null,
+                productAttributes: item.planId
+                    ? {
+                        subscriptionOptions: {
+                            mode: subscriptionMode,
+                        },
+                    }
+                    : undefined,
             });
         }
 

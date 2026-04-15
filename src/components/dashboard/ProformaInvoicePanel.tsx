@@ -1,6 +1,10 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo } from "react";
+import {
+  buildInvoiceTaxContext,
+  calculateInvoiceTaxBreakdown,
+} from "@/lib/invoice-tax";
 
 // ─── Types ─────────────────────────────────────────────────────────────────
 interface LineItem {
@@ -220,6 +224,8 @@ export default function ProformaInvoicePanel({
   const [validUntil, setValidUntil] = useState("");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
+  const [customerProfile, setCustomerProfile] = useState<any>(null);
+  const [companyStateCode, setCompanyStateCode] = useState("");
   const [lineItems, setLineItems] = useState<LineItem[]>([
     { description: "", hsnCode: "", quantity: 1, unitPrice: 0, total: 0 },
   ]);
@@ -270,6 +276,40 @@ export default function ProformaInvoicePanel({
     fetchProformas();
   }, [fetchProformas]);
 
+  useEffect(() => {
+    let isActive = true;
+
+    const fetchTaxContext = async () => {
+      if (!authHeaders.Authorization) return;
+      try {
+        const [profileRes, customerRes] = await Promise.all([
+          fetch("/api/profile", { headers: authHeaders }),
+          fetch(`/api/customers/${customerId}`, { headers: authHeaders }),
+        ]);
+
+        if (!isActive) return;
+
+        if (profileRes.ok) {
+          const profile = await profileRes.json();
+          setCompanyStateCode(profile.company?.stateCode || "");
+        }
+
+        if (customerRes.ok) {
+          const customer = await customerRes.json();
+          setCustomerProfile(customer);
+        }
+      } catch (err) {
+        console.error("Failed to load tax context for proforma preview", err);
+      }
+    };
+
+    fetchTaxContext();
+
+    return () => {
+      isActive = false;
+    };
+  }, [authHeaders, customerId]);
+
   // ── Computed financials ─────────────────────────────────────────────────
   const subtotal = lineItems.reduce((s, i) => s + i.unitPrice * i.quantity, 0);
   const discountAmount =
@@ -278,9 +318,38 @@ export default function ProformaInvoicePanel({
       : discountType === "FIXED"
         ? discountValue
         : 0;
-  const taxableAmount = subtotal - discountAmount;
-  const taxAmount = taxableAmount * (taxRate / 100);
-  const total = taxableAmount + taxAmount;
+  const previewLineItems = useMemo(
+    () =>
+      lineItems.map((item) => ({
+        description: item.description,
+        quantity: item.quantity,
+        price: item.unitPrice,
+        hsnCode: item.hsnCode || undefined,
+      })),
+    [lineItems],
+  );
+  const taxBreakdown = useMemo(
+    () =>
+      calculateInvoiceTaxBreakdown({
+        customer: { ...(customerProfile || {}), currency: pfCurrency },
+        company: { stateCode: companyStateCode },
+        items: previewLineItems,
+        discountAmount,
+        defaultTaxRate: Number(taxRate) || 18,
+      }),
+    [customerProfile, companyStateCode, discountAmount, previewLineItems, pfCurrency, taxRate],
+  );
+  const taxContext = useMemo(
+    () =>
+      buildInvoiceTaxContext(
+        { ...(customerProfile || {}), currency: pfCurrency },
+        { stateCode: companyStateCode },
+      ),
+    [customerProfile, companyStateCode, pfCurrency],
+  );
+  const taxableAmount = taxBreakdown.taxableSubtotal;
+  const taxAmount = taxBreakdown.tax;
+  const total = taxBreakdown.total;
 
   // ── Line item helpers ───────────────────────────────────────────────────
   const updateLineItem = (i: number, field: keyof LineItem, value: any) => {
@@ -1069,8 +1138,17 @@ export default function ProformaInvoicePanel({
                 </div>
               )}
               <div className="flex justify-between text-sm">
-                <span className="text-gray-300">Tax ({taxRate}%)</span>
+                <span className="text-gray-300">
+                  {taxBreakdown.isExport
+                    ? `Tax (${taxBreakdown.jurisdictionLabel})`
+                    : taxBreakdown.tax === 0
+                      ? "GST (0%)"
+                      : taxBreakdown.jurisdictionLabel}
+                </span>
                 <span className="font-bold">{FMT(taxAmount, pfCurrency)}</span>
+              </div>
+              <div className="text-[10px] text-gray-400 font-medium">
+                {taxContext.customerSegmentLabel}: {taxContext.taxNote}
               </div>
               <div className="border-t border-gray-600 pt-1.5 flex justify-between">
                 <span className="font-black text-white">Total</span>
