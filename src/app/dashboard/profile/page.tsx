@@ -223,7 +223,7 @@ export default function ProfilePage() {
                                 <p className="text-secondary-900 font-bold">{user.customerProfile.organizationName}</p>
                             </div>
                             <div>
-                                <p className="label">Customer Type</p>
+                                <p className="label">Account Type</p>
                                 <span className="badge badge-primary">{getCustomerDisplayType(user.customerProfile)}</span>
                             </div>
                         </div>

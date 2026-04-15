@@ -285,7 +285,7 @@ export default function CustomersPage() {
                                 value={typeFilter}
                                 onChange={(e) => setTypeFilter(e.target.value)}
                              >
-                                <option value="">All customer types</option>
+                                <option value="">All account types</option>
                                 <option value="INDIVIDUAL">Individual</option>
                                 <option value="INSTITUTION">Institution</option>
                                 <option value="AGENCY">Agency</option>

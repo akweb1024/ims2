@@ -150,8 +150,8 @@ export default function RegisterPage() {
                                 onChange={handleChange}
                             >
                                 <option value="INDIVIDUAL">Individual</option>
-                                <option value="INSTITUTION">Institution (University, Library, etc.)</option>
-                                <option value="AGENCY">Agency (Subscription Agent)</option>
+                                <option value="INSTITUTION">Institution</option>
+                                <option value="AGENCY">Agency</option>
                             </select>
                         </div>
 
@@ -171,14 +171,14 @@ export default function RegisterPage() {
 
                         {formData.customerType === 'INSTITUTION' && (
                             <div>
-                                <label className="block text-sm font-medium text-slate-700 mb-2">Category</label>
+                                <label className="block text-sm font-medium text-slate-700 mb-2">Institution Type</label>
                                 <select
                                     name="category"
                                     className="input w-full px-4 py-2 border rounded-lg"
                                     value={formData.category}
                                     onChange={handleChange}
                                 >
-                                    <option value="">Select Category</option>
+                                    <option value="">Select institution type</option>
                                     <option value="University">University</option>
                                     <option value="College">College</option>
                                     <option value="Research Institute">Research Institute</option>

@@ -38,7 +38,7 @@ export async function GET(req: NextRequest) {
 
         // Generate CSV
         const headers = [
-            'ID', 'Name', 'Primary Email', 'Customer Type', 'Organization',
+            'ID', 'Name', 'Primary Email', 'Account Type', 'Organization',
             'Designation', 'Institution Name', 'Institution Code',
             'Phone', 'Country', 'State', 'City', 'Active', 'Last Login',
             'Subscriptions Count', 'Comms Count'

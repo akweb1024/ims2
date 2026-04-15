@@ -755,8 +755,8 @@ function UsersContent() {
                                         <input name="state" className="input text-sm" placeholder="e.g. Delhi" title="State" />
                                     </div>
                                     <div>
-                                        <label className="label text-xs">Customer Type</label>
-                                        <select name="customerType" className="input text-sm" title="Customer Type">
+                                        <label className="label text-xs">Account Type</label>
+                                        <select name="customerType" className="input text-sm" title="Account Type">
                                             <option value="">Any</option>
                                             <option value="INSTITUTION">Institution</option>
                                             <option value="AGENCY">Agency</option>
