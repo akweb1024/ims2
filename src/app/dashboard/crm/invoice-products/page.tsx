@@ -1183,8 +1183,8 @@ export default function InvoiceProductsPage() {
         </div>
 
         {/* Operations bar */}
-        <div className="mt-8 space-y-6">
-          <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-6 border-b border-secondary-100 pb-8">
+        <div className="mt-8 space-y-5">
+          <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4 border-b border-secondary-100 pb-6">
             <div className="flex flex-wrap gap-2">
               <button
                 onClick={() => {
@@ -1192,10 +1192,10 @@ export default function InvoiceProductsPage() {
                   setPage(1);
                 }}
                 className={cn(
-                  "px-5 py-2.5 rounded-xl text-[12px] font-semibold transition-all border",
+                  "px-4 py-2 rounded-xl text-[11px] font-medium transition-all border",
                   categoryFilter === ""
-                    ? "bg-secondary-950 text-white border-secondary-950 shadow-xl"
-                    : "bg-white text-secondary-500 border-secondary-200 hover:border-primary-300"
+                    ? "bg-secondary-950 text-white border-secondary-950 shadow-md"
+                    : "bg-white text-secondary-500 border-secondary-200 hover:border-primary-300 hover:bg-secondary-50"
                 )}
               >
                 All Products{" "}
@@ -1209,10 +1209,10 @@ export default function InvoiceProductsPage() {
                     setPage(1);
                   }}
                   className={cn(
-                    "px-5 py-2.5 rounded-xl text-[12px] font-semibold transition-all border",
+                    "px-4 py-2 rounded-xl text-[11px] font-medium transition-all border",
                     categoryFilter === cat.value
-                      ? "bg-primary-600 text-white border-primary-600 shadow-xl"
-                      : "bg-white text-secondary-500 border-secondary-200 hover:shadow-lg"
+                      ? "bg-primary-600 text-white border-primary-600 shadow-md"
+                      : "bg-white text-secondary-500 border-secondary-200 hover:border-secondary-300 hover:bg-secondary-50"
                   )}
                 >
                   {cat.icon} {cat.label}
@@ -1220,14 +1220,14 @@ export default function InvoiceProductsPage() {
               ))}
             </div>
 
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2.5">
               <div className="relative group">
                 <Search
-                  className="absolute left-4 top-1/2 -translate-y-1/2 text-secondary-300 group-focus-within:text-primary-600 transition-colors"
-                  size={18}
+                  className="absolute left-3.5 top-1/2 -translate-y-1/2 text-secondary-300 group-focus-within:text-primary-600 transition-colors"
+                  size={16}
                 />
                 <input
-                  className="h-12 w-full sm:w-[320px] bg-secondary-50 border-secondary-100 rounded-2xl pl-12 pr-6 text-sm font-medium text-secondary-950 placeholder-secondary-400 focus:bg-white focus:ring-primary-500/20 transition-all border focus:border-primary-100"
+                  className="h-11 w-full sm:w-[300px] bg-secondary-50 border-secondary-100 rounded-2xl pl-10 pr-4 text-sm font-medium text-secondary-950 placeholder-secondary-400 focus:bg-white focus:ring-primary-500/20 transition-all border focus:border-primary-100"
                   placeholder="Search by name, SKU, or domain..."
                   value={q}
                   onChange={(e) => {
@@ -1236,159 +1236,165 @@ export default function InvoiceProductsPage() {
                   }}
                 />
               </div>
-              <div className="flex items-center gap-2 p-1 bg-secondary-100 rounded-xl">
+              <div className="flex items-center gap-1.5 p-1 bg-secondary-100 rounded-xl">
                 <button
                   onClick={() => setSortBy("name")}
                   className={cn(
-                    "p-2 rounded-lg transition-all",
+                    "p-1.5 rounded-lg transition-all",
                     sortBy === "name"
                       ? "bg-white shadow-sm text-primary-600"
                       : "text-secondary-400 hover:text-secondary-600"
                   )}
                 >
-                  <BarChart3 size={18} />
+                  <BarChart3 size={16} />
                 </button>
                 <button
                   onClick={() => setSortBy("createdAt")}
                   className={cn(
-                    "p-2 rounded-lg transition-all",
+                    "p-1.5 rounded-lg transition-all",
                     sortBy === "createdAt"
                       ? "bg-white shadow-sm text-primary-600"
                       : "text-secondary-400 hover:text-secondary-600"
                   )}
                 >
-                  <Activity size={18} />
+                  <Activity size={16} />
                 </button>
               </div>
             </div>
           </div>
 
           {categoryFilter === "JOURNAL_SUBSCRIPTION" && (
-            <div className="flex flex-wrap gap-4 pt-2 pb-6 border-b border-secondary-100 items-end animate-in fade-in slide-in-from-top-2">
-              <div className="flex flex-col gap-1.5 flex-1 min-w-[200px] max-w-[250px]">
-                <label className="text-[10px] font-bold text-secondary-500 uppercase tracking-wider pl-1">
-                  Domain / Industry
-                </label>
-                <select
-                  className="h-10 px-3 text-sm font-medium border border-secondary-200 rounded-xl focus:border-primary-500 bg-secondary-50 outline-none transition-colors"
-                  value={domainFilter}
-                  onChange={(e) => {
-                    setDomainFilter(e.target.value);
-                    setPage(1);
-                  }}
-                >
-                  <option value="">All Domains</option>
-                  {PREDEFINED_DOMAINS.map((domain) => (
-                    <option key={domain} value={domain}>
-                      {domain}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="flex flex-col gap-1.5 flex-1 min-w-[150px] max-w-[200px]">
-                <label className="text-[10px] font-bold text-secondary-500 uppercase tracking-wider pl-1">
-                  Format
-                </label>
-                <select
-                  className="h-10 px-3 text-sm font-medium border border-secondary-200 rounded-xl focus:border-primary-500 bg-secondary-50 outline-none transition-colors"
-                  value={subscriptionModeFilter}
-                  onChange={(e) => {
-                    setSubscriptionModeFilter(e.target.value);
-                    setPage(1);
-                  }}
-                >
-                  <option value="">All Formats</option>
-                  <option value="PRINT">Print</option>
-                  <option value="DIGITAL">Digital</option>
-                  <option value="PRINT_DIGITAL">Print + Digital</option>
-                </select>
-              </div>
-
-              <div className="flex flex-col gap-1.5 flex-1 min-w-[150px] max-w-[200px]">
-                <label className="text-[10px] font-bold text-secondary-500 uppercase tracking-wider pl-1">
-                  Frequency
-                </label>
-                <select
-                  className="h-10 px-3 text-sm font-medium border border-secondary-200 rounded-xl focus:border-primary-500 bg-secondary-50 outline-none transition-colors"
-                  value={subscriptionFrequencyFilter}
-                  onChange={(e) => {
-                    setSubscriptionFrequencyFilter(e.target.value);
-                    setPage(1);
-                  }}
-                >
-                  <option value="">All Frequencies</option>
-                  <option value="SINGLE_COPY">Single Copy</option>
-                  <option value="1ST_ISSUE">1st Issue</option>
-                  <option value="2ND_ISSUE">2nd Issue</option>
-                  <option value="3RD_ISSUE">3rd Issue</option>
-                  <option value="ANNUAL">Annual</option>
-                  <option value="BI_ANNUAL">Bi-Annual</option>
-                  <option value="TRI_ANNUAL">Tri-Annual</option>
-                  <option value="BI_MONTHLY">Bi-Monthly</option>
-                </select>
-              </div>
-
-              <div className="flex flex-col gap-1.5 flex-1 min-w-[120px] max-w-[150px]">
-                <label className="text-[10px] font-bold text-secondary-500 uppercase tracking-wider pl-1">
-                  Year
-                </label>
-                <select
-                  className="h-10 px-3 text-sm font-medium border border-secondary-200 rounded-xl focus:border-primary-500 bg-secondary-50 outline-none transition-colors"
-                  value={subscriptionYearFilter}
-                  onChange={(e) => {
-                    setSubscriptionYearFilter(e.target.value);
-                    setPage(1);
-                  }}
-                >
-                  <option value="">All Years</option>
-                  {Array.from({ length: 11 }, (_, i) => {
-                    const y = new Date().getFullYear() - 2 + i;
-                    return (
-                      <option key={y} value={y.toString()}>
-                        {y}
+            <div className="space-y-3 pt-2 pb-6 border-b border-secondary-100 animate-in fade-in slide-in-from-top-2">
+              <div className="grid grid-cols-1 gap-2.5 md:grid-cols-3">
+                <div className="flex flex-col gap-1.25">
+                  <label className="text-[9px] font-semibold text-secondary-500 uppercase tracking-[0.18em] pl-0.5">
+                    Domain / Industry
+                  </label>
+                  <select
+                    className="h-10 px-3 text-sm font-medium border border-secondary-200 rounded-xl focus:border-primary-500 bg-secondary-50 outline-none transition-colors"
+                    value={domainFilter}
+                    onChange={(e) => {
+                      setDomainFilter(e.target.value);
+                      setPage(1);
+                    }}
+                  >
+                    <option value="">All Domains</option>
+                    {PREDEFINED_DOMAINS.map((domain) => (
+                      <option key={domain} value={domain}>
+                        {domain}
                       </option>
-                    );
-                  })}
-                </select>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="flex flex-col gap-1.25">
+                  <label className="text-[9px] font-semibold text-secondary-500 uppercase tracking-[0.18em] pl-0.5">
+                    Format
+                  </label>
+                  <select
+                    className="h-10 px-3 text-sm font-medium border border-secondary-200 rounded-xl focus:border-primary-500 bg-secondary-50 outline-none transition-colors"
+                    value={subscriptionModeFilter}
+                    onChange={(e) => {
+                      setSubscriptionModeFilter(e.target.value);
+                      setPage(1);
+                    }}
+                  >
+                    <option value="">All Formats</option>
+                    <option value="PRINT">Print</option>
+                    <option value="DIGITAL">Digital</option>
+                    <option value="PRINT_DIGITAL">Print + Digital</option>
+                  </select>
+                </div>
+
+                <div className="flex flex-col gap-1.25">
+                  <label className="text-[9px] font-semibold text-secondary-500 uppercase tracking-[0.18em] pl-0.5">
+                    Frequency
+                  </label>
+                  <select
+                    className="h-10 px-3 text-sm font-medium border border-secondary-200 rounded-xl focus:border-primary-500 bg-secondary-50 outline-none transition-colors"
+                    value={subscriptionFrequencyFilter}
+                    onChange={(e) => {
+                      setSubscriptionFrequencyFilter(e.target.value);
+                      setPage(1);
+                    }}
+                  >
+                    <option value="">All Frequencies</option>
+                    <option value="SINGLE_COPY">Single Copy</option>
+                    <option value="1ST_ISSUE">1st Issue</option>
+                    <option value="2ND_ISSUE">2nd Issue</option>
+                    <option value="3RD_ISSUE">3rd Issue</option>
+                    <option value="ANNUAL">Annual</option>
+                    <option value="BI_ANNUAL">Bi-Annual</option>
+                    <option value="TRI_ANNUAL">Tri-Annual</option>
+                    <option value="BI_MONTHLY">Bi-Monthly</option>
+                  </select>
+                </div>
               </div>
 
-              <div className="flex flex-col gap-1.5 flex-1 min-w-[150px] max-w-[200px]">
-                <label className="text-[10px] font-bold text-secondary-500 uppercase tracking-wider pl-1">
-                  Publisher
-                </label>
-                <select
-                  className="h-10 px-3 text-sm font-medium border border-secondary-200 rounded-xl focus:border-primary-500 bg-secondary-50 outline-none transition-colors"
-                  value={subscriptionPublisherFilter}
-                  onChange={(e) => {
-                    setSubscriptionPublisherFilter(e.target.value);
-                    setPage(1);
-                  }}
-                >
-                  <option value="">All Publishers</option>
-                  {SUBSCRIPTION_PUBLISHER_OPTIONS.map((pub) => (
-                    <option key={pub.value} value={pub.value}>
-                      {pub.label}
-                    </option>
-                  ))}
-                </select>
+              <div className="grid grid-cols-1 gap-2.5 md:grid-cols-[minmax(120px,140px)_minmax(180px,200px)_auto] md:items-end">
+                <div className="flex flex-col gap-1.25">
+                  <label className="text-[9px] font-semibold text-secondary-500 uppercase tracking-[0.18em] pl-0.5">
+                    Year
+                  </label>
+                  <select
+                    className="h-10 px-3 text-sm font-medium border border-secondary-200 rounded-xl focus:border-primary-500 bg-secondary-50 outline-none transition-colors"
+                    value={subscriptionYearFilter}
+                    onChange={(e) => {
+                      setSubscriptionYearFilter(e.target.value);
+                      setPage(1);
+                    }}
+                  >
+                    <option value="">All Years</option>
+                    {Array.from({ length: 11 }, (_, i) => {
+                      const y = new Date().getFullYear() - 2 + i;
+                      return (
+                        <option key={y} value={y.toString()}>
+                          {y}
+                        </option>
+                      );
+                    })}
+                  </select>
+                </div>
+
+                <div className="flex flex-col gap-1.25">
+                  <label className="text-[9px] font-semibold text-secondary-500 uppercase tracking-[0.18em] pl-0.5">
+                    Publisher
+                  </label>
+                  <select
+                    className="h-10 px-3 text-sm font-medium border border-secondary-200 rounded-xl focus:border-primary-500 bg-secondary-50 outline-none transition-colors"
+                    value={subscriptionPublisherFilter}
+                    onChange={(e) => {
+                      setSubscriptionPublisherFilter(e.target.value);
+                      setPage(1);
+                    }}
+                  >
+                    <option value="">All Publishers</option>
+                    {SUBSCRIPTION_PUBLISHER_OPTIONS.map((pub) => (
+                      <option key={pub.value} value={pub.value}>
+                        {pub.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="flex items-end">
+                  {(domainFilter || subscriptionModeFilter || subscriptionFrequencyFilter || subscriptionYearFilter || subscriptionPublisherFilter) && (
+                    <button
+                      onClick={() => {
+                        setDomainFilter("");
+                        setSubscriptionModeFilter("");
+                        setSubscriptionFrequencyFilter("");
+                        setSubscriptionYearFilter("");
+                        setSubscriptionPublisherFilter("");
+                        setPage(1);
+                      }}
+                      className="h-10 px-3.5 text-[11px] font-medium text-secondary-500 bg-secondary-50 hover:bg-secondary-100 hover:text-secondary-700 rounded-lg border border-secondary-200 transition-colors shrink-0"
+                    >
+                      Clear Filters
+                    </button>
+                  )}
+                </div>
               </div>
-              
-              {(domainFilter || subscriptionModeFilter || subscriptionFrequencyFilter || subscriptionYearFilter || subscriptionPublisherFilter) && (
-                <button
-                  onClick={() => {
-                    setDomainFilter("");
-                    setSubscriptionModeFilter("");
-                    setSubscriptionFrequencyFilter("");
-                    setSubscriptionYearFilter("");
-                    setSubscriptionPublisherFilter("");
-                    setPage(1);
-                  }}
-                  className="h-10 px-4 text-xs font-semibold text-secondary-500 bg-secondary-100 hover:bg-secondary-200 hover:text-secondary-700 rounded-xl transition-colors"
-                >
-                  Clear Filters
-                </button>
-              )}
             </div>
           )}
 
@@ -1442,15 +1448,15 @@ export default function InvoiceProductsPage() {
                 </span>
               </div>
             ) : products.length === 0 ? (
-              <div className="py-40 text-center group">
-                <div className="w-24 h-24 bg-secondary-50 text-secondary-200 border border-secondary-100 rounded-[2.5rem] flex items-center justify-center mx-auto mb-8 group-hover:rotate-12 transition-transform duration-1000">
-                  <Box size={48} strokeWidth={1} />
+              <div className="py-24 text-center group max-w-md mx-auto">
+                <div className="w-20 h-20 bg-secondary-50 text-secondary-200 border border-secondary-100 rounded-3xl flex items-center justify-center mx-auto mb-6 group-hover:rotate-6 transition-transform duration-700">
+                  <Box size={38} strokeWidth={1.1} />
                 </div>
-                <h3 className="text-xl font-black text-secondary-900 uppercase tracking-tight">
+                <h3 className="text-lg font-bold text-secondary-900 uppercase tracking-tight">
                   No products found
                 </h3>
-                <p className="text-sm font-medium text-secondary-500 mt-3">
-                  Try clearing filters or add a new product.
+                <p className="text-sm font-medium text-secondary-500 mt-2.5">
+                  Clear filters or add a product.
                 </p>
               </div>
             ) : (

@@ -267,6 +267,8 @@ export default function CreateInvoiceModal({
     useState("");
   const [subscriptionYearFilter, setSubscriptionYearFilter] = useState("");
   const [subscriptionModeFilter, setSubscriptionModeFilter] = useState("");
+  const [subscriptionPublisherFilter, setSubscriptionPublisherFilter] =
+    useState("");
   const [catProducts, setCatProducts] = useState<any[]>([]);
   const [selectedProductForVariant, setSelectedProductForVariant] =
     useState<any>(null);
@@ -369,6 +371,19 @@ export default function CreateInvoiceModal({
     [catProducts],
   );
 
+  const availableCataloguePublishers = useMemo(
+    () =>
+      Array.from(
+        new Set(
+          catProducts
+            .filter((p: any) => p.category === "JOURNAL_SUBSCRIPTION")
+            .map((p: any) => p.productAttributes?.subscriptionOptions?.publisher)
+            .filter(Boolean),
+        ),
+      ).sort((a: any, b: any) => String(a).localeCompare(String(b))),
+    [catProducts],
+  );
+
   const visibleCatalogueProducts = useMemo(() => {
     return catProducts.filter((product: any) => {
       if (catDomainFilter && product.domain !== catDomainFilter) {
@@ -400,6 +415,13 @@ export default function CreateInvoiceModal({
         return false;
       }
 
+      if (
+        subscriptionPublisherFilter &&
+        String(subscriptionOptions.publisher || "") !== subscriptionPublisherFilter
+      ) {
+        return false;
+      }
+
       return true;
     });
   }, [
@@ -409,6 +431,7 @@ export default function CreateInvoiceModal({
     subscriptionFrequencyFilter,
     subscriptionYearFilter,
     subscriptionModeFilter,
+    subscriptionPublisherFilter,
   ]);
 
   // Unified product selection handler
@@ -2157,143 +2180,179 @@ export default function CreateInvoiceModal({
                 </div>
               )}
               <div className="rounded-2xl border border-primary-100 bg-primary-50/70 p-4">
-                <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                <div className="flex flex-col gap-2.5 md:flex-row md:items-center md:justify-between">
                   <div>
-                    <h3 className="text-lg font-bold text-gray-900">Products Detail</h3>
-                    <p className="text-sm text-gray-500">
+                    <h3 className="text-base font-bold text-gray-900">Products Detail</h3>
+                    <p className="text-[13px] leading-snug text-gray-500">
                       Filter the catalogue and select multiple products with one pass. Selected items will be added to the invoice summary.
                     </p>
                   </div>
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2.5">
                     <div className="rounded-xl bg-white p-1 border border-primary-100 flex items-center shadow-sm">
                       <button
                         title="Tabular View"
                         type="button"
                         onClick={(e) => { e.preventDefault(); setProductViewFormat("tabular"); }}
-                        className={`p-2 rounded-lg transition-all ${productViewFormat === "tabular" ? "bg-primary-50 text-primary-700 font-bold shadow-sm" : "text-gray-400 hover:text-gray-700 hover:bg-gray-50"}`}
+                        className={`p-1.5 rounded-lg transition-all ${productViewFormat === "tabular" ? "bg-primary-50 text-primary-700 font-semibold shadow-sm" : "text-gray-400 hover:text-gray-700 hover:bg-gray-50"}`}
                       >
-                        <List size={18} />
+                        <List size={16} />
                       </button>
                       <button
                         title="Grid View"
                         type="button"
                         onClick={(e) => { e.preventDefault(); setProductViewFormat("grid"); }}
-                        className={`p-2 rounded-lg transition-all ${productViewFormat === "grid" ? "bg-primary-50 text-primary-700 font-bold shadow-sm" : "text-gray-400 hover:text-gray-700 hover:bg-gray-50"}`}
+                        className={`p-1.5 rounded-lg transition-all ${productViewFormat === "grid" ? "bg-primary-50 text-primary-700 font-semibold shadow-sm" : "text-gray-400 hover:text-gray-700 hover:bg-gray-50"}`}
                       >
-                        <LayoutGrid size={18} />
+                        <LayoutGrid size={16} />
                       </button>
                     </div>
                   </div>
                 </div>
               </div>
 
-              <div className="space-y-4">
-                  <div
-                    className={productViewFormat === 'grid' ? `grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3 ${
-                      catCategoryFilter === "JOURNAL_SUBSCRIPTION"
-                        ? "2xl:grid-cols-[minmax(0,1.3fr)_minmax(180px,220px)_minmax(180px,220px)_minmax(150px,180px)_minmax(180px,220px)_minmax(180px,220px)]"
-                        : ""
-                    }` : `flex flex-col gap-4`}
-                  >
-                    <div className="relative">
-                      <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
-                      <input
-                        type="text"
-                        value={catSearch}
-                        onChange={(e) => setCatSearch(e.target.value)}
-                        placeholder="Search catalogue products..."
-                        className="input-premium w-full min-w-0 pl-11"
-                      />
-                    </div>
-                    <div className="relative">
-                      <Filter size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+              <div className="space-y-3">
+                <div className="grid grid-cols-1 gap-2.5 md:grid-cols-3">
+                  <div className="relative w-full">
+                    <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
+                    <input
+                      type="text"
+                      value={catSearch}
+                      onChange={(e) => setCatSearch(e.target.value)}
+                      placeholder="Search catalogue products..."
+                      className="input-premium h-11 w-full min-w-0 pl-10 pr-4"
+                    />
+                  </div>
+                  <div className="relative w-full">
+                    <Filter size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
+                    <select
+                      value={catCategoryFilter}
+                      onChange={(e) => {
+                        const nextCategory = e.target.value;
+                        setCatCategoryFilter(nextCategory);
+                        if (nextCategory !== "JOURNAL_SUBSCRIPTION") {
+                          setSubscriptionFrequencyFilter("");
+                          setSubscriptionYearFilter("");
+                          setSubscriptionModeFilter("");
+                          setSubscriptionPublisherFilter("");
+                        }
+                      }}
+                      className="input-premium h-11 w-full min-w-0 pl-10 pr-4"
+                    >
+                      {invoiceProductCategories.map((category) => (
+                        <option key={category.value || "ALL"} value={category.value}>
+                          {category.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="relative w-full">
+                    <Globe size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
+                    <select
+                      value={catDomainFilter}
+                      onChange={(e) => setCatDomainFilter(e.target.value)}
+                      className="input-premium h-11 w-full min-w-0 pl-10 pr-4"
+                    >
+                      <option value="">All Domains</option>
+                      {availableCatalogueDomains.map((domain) => (
+                        <option key={domain} value={domain}>
+                          {domain}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                {catCategoryFilter === "JOURNAL_SUBSCRIPTION" && (
+                  <div className="grid grid-cols-1 gap-2.5 md:grid-cols-[minmax(180px,190px)_minmax(150px,160px)_minmax(170px,180px)_minmax(190px,210px)_auto] md:items-end">
+                    <div className="relative w-full">
+                      <Tag size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
                       <select
-                        value={catCategoryFilter}
-                        onChange={(e) => {
-                          const nextCategory = e.target.value;
-                          setCatCategoryFilter(nextCategory);
-                          if (nextCategory !== "JOURNAL_SUBSCRIPTION") {
+                        value={subscriptionFrequencyFilter}
+                        onChange={(e) => setSubscriptionFrequencyFilter(e.target.value)}
+                        className="input-premium h-11 w-full min-w-0 pl-10 pr-4"
+                      >
+                        <option value="">All Frequencies</option>
+                        <option value="ANNUAL">Annual</option>
+                        <option value="SINGLE_COPY">Single Copy</option>
+                        <option value="1ST_ISSUE">1st Issue</option>
+                        <option value="2ND_ISSUE">2nd Issue</option>
+                        <option value="3RD_ISSUE">3rd Issue</option>
+                        <option value="ISSUE_WISE">Issue Wise</option>
+                        <option value="BI_ANNUAL">Bi-Annual</option>
+                        <option value="TRI_ANNUAL">Tri-Annual</option>
+                        <option value="BI_MONTHLY">Bi-Monthly</option>
+                      </select>
+                    </div>
+                    <div className="relative w-full">
+                      <Calendar size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
+                      <select
+                        value={subscriptionYearFilter}
+                        onChange={(e) => setSubscriptionYearFilter(e.target.value)}
+                        className="input-premium h-11 w-full min-w-0 pl-10 pr-4"
+                      >
+                        <option value="">All Years</option>
+                        {availableCatalogueYears.map((year: any) => (
+                          <option key={year} value={year}>
+                            {year}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="relative w-full">
+                      <Settings size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
+                      <select
+                        value={subscriptionModeFilter}
+                        onChange={(e) => setSubscriptionModeFilter(e.target.value)}
+                        className="input-premium h-11 w-full min-w-0 pl-10 pr-4"
+                      >
+                        <option value="">All Modes</option>
+                        <option value="PRINT">Print</option>
+                        <option value="DIGITAL">Digital</option>
+                        <option value="PRINT_DIGITAL">Print + Digital</option>
+                      </select>
+                    </div>
+                    <div className="relative w-full">
+                      <Building2 size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
+                      <select
+                        value={subscriptionPublisherFilter}
+                        onChange={(e) => setSubscriptionPublisherFilter(e.target.value)}
+                        className="input-premium h-11 w-full min-w-0 pl-10 pr-4"
+                      >
+                        <option value="">All Publishers</option>
+                        {availableCataloguePublishers.map((publisher: any) => (
+                          <option key={publisher} value={publisher}>
+                            {publisher}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="flex items-end">
+                      {(catDomainFilter || subscriptionModeFilter || subscriptionFrequencyFilter || subscriptionYearFilter || subscriptionPublisherFilter) && (
+                        <button
+                          onClick={() => {
+                            setCatDomainFilter("");
+                            setSubscriptionModeFilter("");
                             setSubscriptionFrequencyFilter("");
                             setSubscriptionYearFilter("");
-                            setSubscriptionModeFilter("");
-                          }
-                        }}
-                        className="input-premium w-full min-w-0 pl-11"
-                      >
-                        {invoiceProductCategories.map((category) => (
-                          <option key={category.value || "ALL"} value={category.value}>
-                            {category.label}
-                          </option>
-                        ))}
-                      </select>
+                            setSubscriptionPublisherFilter("");
+                          }}
+                          className="h-11 px-3.5 text-[11px] font-medium text-secondary-500 bg-secondary-50 hover:bg-secondary-100 hover:text-secondary-700 rounded-lg border border-secondary-200 transition-colors shrink-0"
+                        >
+                          Clear Filters
+                        </button>
+                      )}
                     </div>
-                    <div className="relative">
-                      <Globe size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
-                      <select
-                        value={catDomainFilter}
-                        onChange={(e) => setCatDomainFilter(e.target.value)}
-                        className="input-premium w-full min-w-0 pl-11"
-                      >
-                        <option value="">All Domains</option>
-                        {availableCatalogueDomains.map((domain) => (
-                          <option key={domain} value={domain}>
-                            {domain}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                    {catCategoryFilter === "JOURNAL_SUBSCRIPTION" && (
-                      <>
-                        <select
-                          value={subscriptionFrequencyFilter}
-                          onChange={(e) => setSubscriptionFrequencyFilter(e.target.value)}
-                          className="input-premium w-full min-w-0"
-                        >
-                          <option value="">All Frequencies</option>
-                          <option value="ANNUAL">Annual</option>
-                          <option value="SINGLE_COPY">Single Copy</option>
-                          <option value="1ST_ISSUE">1st Issue</option>
-                          <option value="2ND_ISSUE">2nd Issue</option>
-                          <option value="3RD_ISSUE">3rd Issue</option>
-                          <option value="ISSUE_WISE">Issue Wise</option>
-                          <option value="BI_ANNUAL">Bi-Annual</option>
-                          <option value="TRI_ANNUAL">Tri-Annual</option>
-                          <option value="BI_MONTHLY">Bi-Monthly</option>
-                        </select>
-                        <select
-                          value={subscriptionYearFilter}
-                          onChange={(e) => setSubscriptionYearFilter(e.target.value)}
-                          className="input-premium w-full min-w-0"
-                        >
-                          <option value="">All Years</option>
-                          {availableCatalogueYears.map((year: any) => (
-                            <option key={year} value={year}>
-                              {year}
-                            </option>
-                          ))}
-                        </select>
-                        <select
-                          value={subscriptionModeFilter}
-                          onChange={(e) => setSubscriptionModeFilter(e.target.value)}
-                          className="input-premium w-full min-w-0"
-                        >
-                          <option value="">All Modes</option>
-                          <option value="PRINT">Print</option>
-                          <option value="DIGITAL">Digital</option>
-                          <option value="PRINT_DIGITAL">Print + Digital</option>
-                        </select>
-                      </>
-                    )}
                   </div>
+                )}
 
                   <div className={productViewFormat === 'grid' ? "grid grid-cols-1 gap-3 xl:grid-cols-2" : "flex flex-col gap-2"}>
                     {catLoading ? (
-                      <div className="col-span-full rounded-2xl border border-dashed border-gray-200 bg-gray-50 p-8 text-center text-sm text-gray-500">
+                      <div className="col-span-full rounded-2xl border border-dashed border-gray-200 bg-gray-50 px-5 py-8 text-center text-sm text-gray-500">
                         Loading product catalogue...
                       </div>
                     ) : visibleCatalogueProducts.length === 0 ? (
-                      <div className="col-span-full rounded-2xl border border-dashed border-gray-200 bg-gray-50 p-8 text-center text-sm text-gray-500">
-                        No products matched the current filters.
+                      <div className="col-span-full rounded-2xl border border-dashed border-gray-200 bg-gray-50 px-5 py-8 text-center text-sm text-gray-500">
+                        No matching products.
                       </div>
                     ) : (
                       visibleCatalogueProducts.map((product: any) => {
