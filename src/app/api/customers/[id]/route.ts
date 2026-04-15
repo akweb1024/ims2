@@ -256,8 +256,6 @@ export async function PATCH(
                                    toNullableString(profileData.universityCategory) === 'PRIVATE' ? 'PRIVATE_UNIVERSITY' :
                                    toNullableString(profileData.universityCategory)) as any 
             }),
-            ...(profileData.affiliatedUniversityId !== undefined && { affiliatedUniversityId: toNullableString(profileData.affiliatedUniversityId) }),
-            ...(profileData.associatedAgencyId !== undefined && { associatedAgencyId: toNullableString(profileData.associatedAgencyId) }),
             ...(profileData.discountOffered !== undefined && { discountOffered: Number(profileData.discountOffered) }),
             ...(profileData.region !== undefined && { region: toNullableString(profileData.region) }),
 
@@ -290,6 +288,16 @@ export async function PATCH(
                     ...(profileData.institutionId !== undefined && {
                         institution: toNullableString(profileData.institutionId)
                             ? { connect: { id: String(toNullableString(profileData.institutionId)) } }
+                            : { disconnect: true }
+                    }),
+                    ...(profileData.affiliatedUniversityId !== undefined && {
+                        affiliatedUniversity: toNullableString(profileData.affiliatedUniversityId)
+                            ? { connect: { id: String(toNullableString(profileData.affiliatedUniversityId)) } }
+                            : { disconnect: true }
+                    }),
+                    ...(profileData.associatedAgencyId !== undefined && {
+                        associatedAgencyCentral: toNullableString(profileData.associatedAgencyId)
+                            ? { connect: { id: String(toNullableString(profileData.associatedAgencyId)) } }
                             : { disconnect: true }
                     }),
                     ...(cleanAssignedExecutiveIds !== undefined && {
@@ -337,6 +345,49 @@ export async function PATCH(
 
     } catch (error) {
         logger.error('Update Customer Error:', error);
+        return NextResponse.json({ error: error instanceof Error ? error.message : 'Internal Server Error' }, { status: 500 });
+    }
+}
+
+export async function DELETE(
+    _req: NextRequest,
+    { params }: { params: Promise<{ id: string }> }
+) {
+    try {
+        const { id } = await params;
+        const decoded = await getAuthenticatedUser();
+
+        if (!decoded || !['SUPER_ADMIN', 'ADMIN'].includes(decoded.role)) {
+            return NextResponse.json({ error: 'Forbidden: Only Super Admin or Admin can delete customers' }, { status: 403 });
+        }
+
+        const customer = await prisma.customerProfile.findUnique({
+            where: { id },
+            select: { id: true, name: true }
+        });
+
+        if (!customer) {
+            return NextResponse.json({ error: 'Customer not found' }, { status: 404 });
+        }
+
+        await prisma.$transaction(async (tx) => {
+            await tx.customerProfile.delete({ where: { id } });
+
+            await tx.auditLog.create({
+                data: {
+                    userId: decoded.id,
+                    action: 'delete',
+                    entity: 'customer_profile',
+                    entityId: id,
+                    changes: JSON.stringify({ name: customer.name, deletedBy: decoded.id })
+                }
+            });
+        });
+
+        return NextResponse.json({ success: true, message: 'Customer deleted successfully' });
+
+    } catch (error) {
+        logger.error('Delete Customer Error:', error);
         return NextResponse.json({ error: error instanceof Error ? error.message : 'Internal Server Error' }, { status: 500 });
     }
 }

@@ -12,7 +12,7 @@ import { cn } from '@/lib/classnames';
 import FormattedDate from '@/components/common/FormattedDate';
 import {
     Users, User, Building2, Briefcase, Plus, Eye, MessageSquare,
-    Mail, Phone, Globe, MapPin, ChevronRight, Filter, Target, UserCheck, X
+    Mail, Phone, Globe, MapPin, ChevronRight, Filter, Target, UserCheck, X, Trash2, AlertTriangle
 } from 'lucide-react';
 
 // ─── Customer type tabs ────────────────────────────────────────────────────────
@@ -48,6 +48,8 @@ export default function CRMCustomersPage() {
     const [showBulkModal, setShowBulkModal] = useState(false);
     const [assignTargetId, setAssignTargetId] = useState('');
     const [actionLoading, setActionLoading] = useState(false);
+    const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
+    const [deleteLoading, setDeleteLoading] = useState(false);
 
     // Counts per type for tab badges
     const [typeCounts, setTypeCounts] = useState<Record<string, number>>({});
@@ -139,6 +141,27 @@ export default function CRMCustomersPage() {
     };
 
     const isManager = ['SUPER_ADMIN', 'ADMIN', 'MANAGER'].includes(userRole);
+    const isAdmin = ['SUPER_ADMIN', 'ADMIN'].includes(userRole);
+
+    const handleDelete = async () => {
+        if (!deleteTarget) return;
+        setDeleteLoading(true);
+        try {
+            const res = await fetch(`/api/customers/${deleteTarget.id}`, { method: 'DELETE' });
+            if (res.ok) {
+                setDeleteTarget(null);
+                fetchCustomers();
+                fetchCounts();
+            } else {
+                const d = await res.json();
+                alert(d.error || 'Failed to delete customer');
+            }
+        } catch {
+            alert('Network error');
+        } finally {
+            setDeleteLoading(false);
+        }
+    };
 
     return (
         <CRMClientLayout>
@@ -395,6 +418,15 @@ export default function CRMCustomersPage() {
                                                 >
                                                     <ChevronRight size={16} />
                                                 </CRMRowAction>
+                                                {isAdmin && (
+                                                    <button
+                                                        onClick={() => setDeleteTarget({ id: customer.id, name: customer.name })}
+                                                        title="Delete customer"
+                                                        className="w-8 h-8 flex items-center justify-center rounded-lg border border-red-200 text-red-400 hover:bg-red-50 hover:text-red-600 hover:border-red-400 transition-all active:scale-95"
+                                                    >
+                                                        <Trash2 size={14} />
+                                                    </button>
+                                                )}
                                             </div>
                                         </td>
                                     </tr>
@@ -415,6 +447,40 @@ export default function CRMCustomersPage() {
                         />
                     </div>
                 </div>
+
+                {/* ── Delete Confirm Modal ─────────────────────────── */}
+                <CRMModal
+                    open={!!deleteTarget}
+                    onClose={() => setDeleteTarget(null)}
+                    title="Delete Customer"
+                    subtitle={`This action is permanent and cannot be undone.`}
+                >
+                    <div className="space-y-6">
+                        <div className="flex items-start gap-4 p-4 bg-red-50 rounded-2xl border border-red-100">
+                            <AlertTriangle size={20} className="text-red-500 mt-0.5 shrink-0" />
+                            <div>
+                                <p className="text-sm font-bold text-red-800">You are about to delete:</p>
+                                <p className="text-sm text-red-700 mt-0.5 font-semibold">{deleteTarget?.name}</p>
+                                <p className="text-xs text-red-600 mt-2">All related subscriptions, invoices, communications, and assignments will also be permanently removed.</p>
+                            </div>
+                        </div>
+                        <div className="flex gap-3 pt-2">
+                            <button
+                                onClick={() => setDeleteTarget(null)}
+                                className="flex-1 px-4 py-3 rounded-xl border border-secondary-200 text-[10px] font-black uppercase tracking-wider text-secondary-500 hover:bg-secondary-50 transition-all"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleDelete}
+                                disabled={deleteLoading}
+                                className="flex-1 bg-red-600 text-white px-4 py-3 rounded-xl text-[10px] font-black uppercase tracking-wider hover:bg-red-700 disabled:opacity-50 transition-all"
+                            >
+                                {deleteLoading ? 'Deleting...' : 'Yes, Delete'}
+                            </button>
+                        </div>
+                    </div>
+                </CRMModal>
 
                 {/* ── Bulk Assign Modal ────────────────────────────── */}
                 <CRMModal

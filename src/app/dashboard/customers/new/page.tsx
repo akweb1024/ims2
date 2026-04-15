@@ -7,6 +7,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import FormField from '@/components/ui/FormField';
+import DesignationCombobox from '@/components/crm/DesignationCombobox';
 import { customerSchema, type CustomerFormData } from '@/lib/validation/schemas';
 import { showSuccess, showError } from '@/lib/toast';
 import { CRMPageShell } from '@/components/crm/CRMPageShell';
@@ -34,6 +35,7 @@ export default function NewCustomerPage() {
     const [associatedAgencyId, setAssociatedAgencyId] = useState('');
     const [discountOffered, setDiscountOffered] = useState(10);
     const [region, setRegion] = useState('');
+    const [designationValue, setDesignationValue] = useState('');
 
     const {
         register,
@@ -428,30 +430,17 @@ export default function NewCustomerPage() {
 
 
                                   <div>
-                                      <datalist id="designationOptions">
-                                          <option value="LIBRARIAN" />
-                                          <option value="HOD" />
-                                          <option value="DEAN" />
-                                          <option value="STUDENT" />
-                                          <option value="RESEARCHER" />
-                                          <option value="DIRECTOR" />
-                                          <option value="PRINCIPAL" />
-                                          <option value="PURCHASE MANAGER" />
-                                          <option value="OTHER" />
-                                      </datalist>
-                                      <FormField
-                                          label="Job Title / Designation"
-                                          name="designation"
-                                          type="text"
-                                          placeholder="e.g. Librarian, Director, Manager"
-                                          register={register}
-                                          error={errors.designation}
-                                          className="input-premium"
-                                          list="designationOptions"
+                                      <label className="block text-[11px] font-black uppercase tracking-widest text-secondary-500 mb-2">
+                                          Job Title / Designation
+                                      </label>
+                                      <DesignationCombobox
+                                          value={designationValue}
+                                          onChange={v => { setDesignationValue(v); setValue('designation', v, { shouldValidate: true }); }}
+                                          error={errors.designation?.message as string | undefined}
                                       />
-                                  </div>
-                              </div>
-                         </div>
+                                   </div>
+                               </div>
+                          </div>
                     </div>
 
                     {/* Address */}

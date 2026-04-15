@@ -10,6 +10,7 @@ import CustomerAssignmentManager from '@/components/dashboard/CustomerAssignment
 import { useCustomer, useCustomerMutations } from '@/hooks/useCRM';
 import { getHealthBadgeColor, getScoreColor } from '@/lib/predictions';
 import AgencyPerformanceDashboard from '@/components/dashboard/AgencyPerformanceDashboard';
+import DesignationCombobox from '@/components/crm/DesignationCombobox';
 
 
 export default function CustomerDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -40,6 +41,7 @@ export default function CustomerDetailPage({ params }: { params: Promise<{ id: s
     const [hasAgency, setHasAgency] = useState(false);
     const [discountOffered, setDiscountOffered] = useState<number>(10);
     const [region, setRegion] = useState('');
+    const [designationEditValue, setDesignationEditValue] = useState('');
 
     const formRef = useRef<HTMLDivElement>(null);
 
@@ -77,6 +79,7 @@ export default function CustomerDetailPage({ params }: { params: Promise<{ id: s
         setHasAgency(!!customer.associatedAgencyId);
         setDiscountOffered(customer.discountOffered || customer.agencyDetails?.discountRate || 10);
         setRegion(customer.region || customer.agencyDetails?.territory || '');
+        setDesignationEditValue(customer.designation || '');
 
         // Set initial same as billing state
         const isSame = !customer.shippingAddress || (
@@ -407,15 +410,17 @@ export default function CustomerDetailPage({ params }: { params: Promise<{ id: s
                 {showEditModal && (
                     <div className="fixed inset-0 z-50 flex items-center justify-center bg-secondary-900/50 backdrop-blur-sm p-4">
                         <div className="bg-white rounded-3xl p-8 max-w-2xl w-full shadow-2xl max-h-[90vh] overflow-y-auto">
-                            <h2 className="text-2xl font-bold text-secondary-900 mb-6">Edit customer</h2>
+                            <h2 className="text-2xl font-bold text-secondary-900 mb-6">Edit Customer</h2>
                             <form onSubmit={handleUpdate} className="space-y-6">
+
+                                {/* ── Contact Info ── */}
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div>
-                                        <label className="label">Contact name</label>
+                                        <label className="label">Contact Name *</label>
                                         <input name="name" className="input" defaultValue={customer.name} required />
                                     </div>
                                     <div>
-                                        <label className="label">Company / organization</label>
+                                        <label className="label">Company / Organization</label>
                                         <input name="organizationName" className="input" defaultValue={customer.organizationName} />
                                     </div>
                                     <div>
@@ -430,28 +435,133 @@ export default function CustomerDetailPage({ params }: { params: Promise<{ id: s
                                         <label className="label">Website</label>
                                         <input name="website" className="input" defaultValue={customer.website} placeholder="https://" />
                                     </div>
-                                    
-                                    <div className="md:col-span-2 pt-4 border-t border-secondary-100">
-                                        <h4 className="font-bold text-secondary-900 mb-2">Address and tax details</h4>
+                                </div>
+
+                                {/* ── Customer Type + Designation ── */}
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t border-secondary-100">
+                                    <div>
+                                        <label className="label">Customer Type</label>
+                                        <select className="input font-bold" value={customerTypeType} onChange={e => setCustomerTypeType(e.target.value)}>
+                                            <option value="INDIVIDUAL">Individual Person</option>
+                                            <option value="ORGANIZATION">Organization / Institution</option>
+                                        </select>
                                     </div>
+                                    <div>
+                                        <label className="label">Job Title / Designation</label>
+                                        {/* hidden input so FormData picks up current value */}
+                                        <input type="hidden" name="designation" value={designationEditValue} />
+                                        <DesignationCombobox
+                                            value={designationEditValue}
+                                            onChange={setDesignationEditValue}
+                                        />
+                                    </div>
+                                </div>
+
+                                {/* ── Organization Classification Panel ── */}
+                                {customerTypeType === 'ORGANIZATION' && (
+                                    <div className="space-y-6 animate-in fade-in zoom-in duration-300 bg-indigo-50/50 p-6 rounded-2xl border border-indigo-100">
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            <div>
+                                                <label className="block text-[11px] font-black uppercase tracking-widest text-gray-500 mb-2">Governance Type</label>
+                                                <select className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-indigo-500 font-semibold" value={governanceType} onChange={e => setGovernanceType(e.target.value)}>
+                                                    <option value="PRIVATE">Private</option>
+                                                    <option value="GOVERNMENT">Government / Public</option>
+                                                </select>
+                                            </div>
+                                            <div>
+                                                <label className="block text-[11px] font-black uppercase tracking-widest text-gray-500 mb-2">Organization Classification</label>
+                                                <select className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-indigo-500 font-semibold text-indigo-900" value={organizationType} onChange={e => {
+                                                    setOrganizationType(e.target.value);
+                                                    if (e.target.value !== 'INSTITUTION') setAffiliatedUniversityId('');
+                                                    if (e.target.value !== 'AGENCY') { setDiscountOffered(10); setRegion(''); }
+                                                }}>
+                                                    <option value="">-- Select Classification --</option>
+                                                    <option value="UNIVERSITY">University</option>
+                                                    <option value="INSTITUTION">Institution / College</option>
+                                                    <option value="AGENCY">Agency / Partner</option>
+                                                    <option value="COMPANY">Company / Corporate</option>
+                                                </select>
+                                            </div>
+                                        </div>
+
+                                        {organizationType === 'UNIVERSITY' && (
+                                            <div className="pt-4 border-t border-indigo-100 flex items-center gap-6">
+                                                <label className="text-[11px] font-black uppercase tracking-widest text-gray-500">University Category:</label>
+                                                <div className="flex items-center gap-4">
+                                                    {['STATE', 'CENTRAL', 'PRIVATE'].map(cat => (
+                                                        <label key={cat} className="flex items-center gap-2 cursor-pointer text-sm font-bold text-gray-700">
+                                                            <input type="radio" value={cat} checked={universityCategory === cat} onChange={() => setUniversityCategory(cat)} className="w-4 h-4 text-indigo-600" />
+                                                            {cat.charAt(0) + cat.slice(1).toLowerCase()}
+                                                        </label>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {organizationType === 'INSTITUTION' && (
+                                            <div className="pt-4 border-t border-indigo-100 grid grid-cols-1 md:grid-cols-2 gap-6">
+                                                <div>
+                                                    <label className="block text-sm font-bold text-gray-700 mb-2">Affiliation (Optional)</label>
+                                                    <select className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-indigo-500" value={affiliatedUniversityId} onChange={e => setAffiliatedUniversityId(e.target.value)}>
+                                                        <option value="">Self-Affiliated (None)</option>
+                                                        {institutions.filter((i: any) => i.organizationType === 'UNIVERSITY' || i.type === 'UNIVERSITY').map((u: any) => (
+                                                            <option key={u.id} value={u.id}>{u.name.toUpperCase()} [{u.code}]</option>
+                                                        ))}
+                                                    </select>
+                                                </div>
+                                                <div>
+                                                    <label className="block text-sm font-bold text-gray-700 mb-2 flex items-center gap-2">
+                                                        <input type="checkbox" checked={hasAgency} onChange={e => setHasAgency(e.target.checked)} className="w-4 h-4 text-indigo-600 rounded" />
+                                                        Associated Agency?
+                                                    </label>
+                                                    {hasAgency && (
+                                                        <select className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-indigo-500" value={associatedAgencyId} onChange={e => setAssociatedAgencyId(e.target.value)}>
+                                                            <option value="">-- Select Agency --</option>
+                                                            {agencies.map((a: any) => (
+                                                                <option key={a.id} value={a.id}>{a.name.toUpperCase()} [{a.primaryEmail}]</option>
+                                                            ))}
+                                                        </select>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {organizationType === 'AGENCY' && (
+                                            <div className="pt-4 border-t border-indigo-100 grid grid-cols-1 md:grid-cols-2 gap-6">
+                                                <div>
+                                                    <label className="block text-sm font-bold text-gray-700 mb-2">Discount Offered (%)</label>
+                                                    <input type="number" step="0.1" value={discountOffered} onChange={e => setDiscountOffered(parseFloat(e.target.value) || 0)} className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-indigo-500" />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-sm font-bold text-gray-700 mb-2">Operational Area / Region</label>
+                                                    <input type="text" placeholder="e.g. APAC" value={region} onChange={e => setRegion(e.target.value)} className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-indigo-500" />
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+
+                                {/* ── Address ── */}
+                                <div className="space-y-4 pt-4 border-t border-secondary-100">
+                                    <h4 className="font-bold text-secondary-900">Address &amp; Tax Details</h4>
 
                                     <div>
                                         <label className="label">GSTIN / VAT ID</label>
                                         <input name="gstVatTaxId" className="input" defaultValue={customer.gstVatTaxId} placeholder="Optional" />
                                     </div>
 
-                                    <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4 bg-secondary-50/50 p-4 rounded-2xl border border-secondary-100">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-secondary-50/50 p-4 rounded-2xl border border-secondary-100">
                                         <div className="md:col-span-2 font-bold text-sm text-secondary-700">Billing Address</div>
                                         <div className="md:col-span-2">
                                             <label className="label">Street / Building</label>
                                             <textarea name="billingAddress" className="input h-20" defaultValue={customer.billingAddress}></textarea>
                                         </div>
                                         <div>
-                                            <label className="label">Billing City</label>
+                                            <label className="label">City</label>
                                             <input name="billingCity" className="input" defaultValue={customer.billingCity} />
                                         </div>
                                         <div>
-                                            <label className="label">Billing State</label>
+                                            <label className="label">State</label>
                                             <input name="billingState" className="input" defaultValue={customer.billingState} />
                                         </div>
                                         <div>
@@ -459,22 +569,22 @@ export default function CustomerDetailPage({ params }: { params: Promise<{ id: s
                                             <input name="billingStateCode" className="input" defaultValue={customer.billingStateCode} />
                                         </div>
                                         <div>
-                                            <label className="label">Billing Pincode</label>
+                                            <label className="label">Pincode</label>
                                             <input name="billingPincode" className="input" defaultValue={customer.billingPincode} />
                                         </div>
-                                        <div>
-                                            <label className="label">Billing Country</label>
+                                        <div className="md:col-span-2">
+                                            <label className="label">Country</label>
                                             <input name="billingCountry" className="input" defaultValue={customer.billingCountry || 'India'} />
                                         </div>
                                     </div>
 
-                                    <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4 bg-primary-50/10 p-4 rounded-2xl border border-primary-100/20">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-primary-50/10 p-4 rounded-2xl border border-primary-100/20">
                                         <div className="md:col-span-2 flex items-center justify-between">
                                             <div className="font-bold text-sm text-primary-700">Shipping Address</div>
                                             <button
                                                 type="button"
                                                 onClick={() => setIsShippingSame(!isShippingSame)}
-                                                className={`flex items-center gap-2 group transition-all duration-300 ${isShippingSame ? 'text-primary-600' : 'text-secondary-400 hover:text-primary-500'}`}
+                                                className={`flex items-center gap-2 transition-all duration-300 ${isShippingSame ? 'text-primary-600' : 'text-secondary-400 hover:text-primary-500'}`}
                                             >
                                                 <div className={`w-8 h-4 rounded-full relative transition-colors duration-300 ${isShippingSame ? 'bg-primary-600' : 'bg-secondary-200'}`}>
                                                     <div className={`absolute top-0.5 w-3 h-3 bg-white rounded-full transition-all duration-300 ${isShippingSame ? 'left-4.5' : 'left-0.5'}`}></div>
@@ -482,10 +592,10 @@ export default function CustomerDetailPage({ params }: { params: Promise<{ id: s
                                                 <span className="text-[10px] font-black uppercase tracking-tight">Same as billing</span>
                                             </button>
                                         </div>
-                                        
+
                                         {!isShippingSame ? (
                                             <>
-                                                <div className="md:col-span-2 animate-in fade-in slide-in-from-top-1 duration-200">
+                                                <div className="md:col-span-2">
                                                     <label className="label">End User Name (Receiving Person)</label>
                                                     <input name="shippingEnduserName" className="input" defaultValue={customer.shippingEnduserName} placeholder="Optional" />
                                                 </div>
@@ -494,11 +604,11 @@ export default function CustomerDetailPage({ params }: { params: Promise<{ id: s
                                                     <textarea name="shippingAddress" className="input h-20" defaultValue={customer.shippingAddress || customer.billingAddress}></textarea>
                                                 </div>
                                                 <div>
-                                                    <label className="label">Shipping City</label>
+                                                    <label className="label">City</label>
                                                     <input name="shippingCity" className="input" defaultValue={customer.shippingCity || customer.billingCity} />
                                                 </div>
                                                 <div>
-                                                    <label className="label">Shipping State</label>
+                                                    <label className="label">State</label>
                                                     <input name="shippingState" className="input" defaultValue={customer.shippingState || customer.billingState} />
                                                 </div>
                                                 <div>
@@ -506,11 +616,11 @@ export default function CustomerDetailPage({ params }: { params: Promise<{ id: s
                                                     <input name="shippingStateCode" className="input" defaultValue={customer.shippingStateCode || customer.billingStateCode} />
                                                 </div>
                                                 <div>
-                                                    <label className="label">Shipping Pincode</label>
+                                                    <label className="label">Pincode</label>
                                                     <input name="shippingPincode" className="input" defaultValue={customer.shippingPincode || customer.billingPincode} />
                                                 </div>
-                                                <div>
-                                                    <label className="label">Shipping Country</label>
+                                                <div className="md:col-span-2">
+                                                    <label className="label">Country</label>
                                                     <input name="shippingCountry" className="input" defaultValue={customer.shippingCountry || customer.billingCountry || 'India'} />
                                                 </div>
                                             </>
@@ -520,158 +630,32 @@ export default function CustomerDetailPage({ params }: { params: Promise<{ id: s
                                             </div>
                                         )}
                                     </div>
-
-                                    <div>
-                                        <label className="label">Customer Type</label>
-                                        <select className="input font-bold" value={customerTypeType} onChange={(e) => setCustomerTypeType(e.target.value)}>
-                                            <option value="INDIVIDUAL">Individual Person</option>
-                                            <option value="ORGANIZATION">Organization / Institution</option>
-                                        </select>
-                                    </div>
-
-                                    <div>
-                                        <label className="label">Role / designation</label>
-                                        <datalist id="editDesignationOptions">
-                                            <option value="LIBRARIAN" />
-                                            <option value="HOD" />
-                                            <option value="DEAN" />
-                                            <option value="STUDENT" />
-                                            <option value="RESEARCHER" />
-                                            <option value="DIRECTOR" />
-                                            <option value="PRINCIPAL" />
-                                            <option value="PURCHASE MANAGER" />
-                                            <option value="OTHER" />
-                                        </datalist>
-                                        <input 
-                                            name="designation" 
-                                            className="input" 
-                                            defaultValue={customer.designation?.replace('_', ' ') || ''} 
-                                            list="editDesignationOptions"
-                                            placeholder="Select or type role"
-                                        />
-                                    </div>
-
-                                    {/* Assignment - Only for Admins/Managers */}
-                                    {['SUPER_ADMIN', 'MANAGER'].includes(userRole) && (
-                                        <div className="md:col-span-2 pt-4 border-t border-secondary-100">
-                                            <h4 className="font-bold text-secondary-900 mb-2">Customer ownership</h4>
-                                            <label className="label">Assign to team members (Ctrl+Click to select more than one)</label>
-                                            <select
-                                                name="assignedToUserIds"
-                                                multiple
-                                                className="input h-32"
-                                                defaultValue={customer.assignedExecutives?.map((ex: any) => ex.id) || []}
-                                            >
-                                                {/* We need to fetch staff list. For now, populating on click if possible or pre-fetch */}
-                                                {staffList.map((staff: any) => (
-                                                    <option key={staff.id} value={staff.id}>
-                                                        {staff.email} ({staff.role})
-                                                    </option>
-                                                ))}
-                                            </select>
-                                            <p className="text-[10px] text-secondary-500 mt-1 italic">
-                                                Selected team members will be able to work on this customer.
-                                            </p>
-                                        </div>
-                                    )}
                                 </div>
 
-                                {customerTypeType === 'ORGANIZATION' && (
-                                      <div className="md:col-span-2 space-y-6 animate-in fade-in zoom-in duration-300 bg-indigo-50/50 p-6 rounded-2xl border border-indigo-100">
-                                          
-                                          {/* Governance & Classification Row */}
-                                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                              <div>
-                                                  <label className="block text-[11px] font-black uppercase tracking-widest text-gray-500 mb-2">Governance Type</label>
-                                                  <select className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-indigo-500 focus:ring-indigo-500 font-semibold" value={governanceType} onChange={(e) => setGovernanceType(e.target.value)}>
-                                                      <option value="PRIVATE">Private</option>
-                                                      <option value="GOVERNMENT">Government / Public</option>
-                                                  </select>
-                                              </div>
-                                              <div>
-                                                  <label className="block text-[11px] font-black uppercase tracking-widest text-gray-500 mb-2">Organization Classification</label>
-                                                  <select className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-indigo-500 focus:ring-indigo-500 font-semibold text-indigo-900" value={organizationType} onChange={(e) => {
-                                                      setOrganizationType(e.target.value);
-                                                      if(e.target.value !== 'INSTITUTION') setAffiliatedUniversityId('');
-                                                      if(e.target.value !== 'AGENCY') { setDiscountOffered(10); setRegion(''); }
-                                                  }}>
-                                                      <option value="">-- Select Classification --</option>
-                                                      <option value="UNIVERSITY">University</option>
-                                                      <option value="INSTITUTION">Institution / College</option>
-                                                      <option value="AGENCY">Agency / Partner</option>
-                                                      <option value="COMPANY">Company / Corporate</option>
-                                                  </select>
-                                              </div>
-                                          </div>
+                                {/* ── Assignment ── */}
+                                {['SUPER_ADMIN', 'MANAGER'].includes(userRole) && (
+                                    <div className="pt-4 border-t border-secondary-100">
+                                        <h4 className="font-bold text-secondary-900 mb-2">Customer Ownership</h4>
+                                        <label className="label">Assign to team members (Ctrl+Click for multiple)</label>
+                                        <select
+                                            name="assignedToUserIds"
+                                            multiple
+                                            className="input h-32"
+                                            defaultValue={customer.assignedExecutives?.map((ex: any) => ex.id) || []}
+                                        >
+                                            {staffList.map((staff: any) => (
+                                                <option key={staff.id} value={staff.id}>
+                                                    {staff.email} ({staff.role})
+                                                </option>
+                                            ))}
+                                        </select>
+                                        <p className="text-[10px] text-secondary-500 mt-1 italic">Selected team members will be able to work on this customer.</p>
+                                    </div>
+                                )}
 
-                                          {/* Context Renderers */}
-                                          {organizationType === 'UNIVERSITY' && (
-                                              <div className="pt-4 border-t border-indigo-100 flex items-center gap-6">
-                                                  <label className="text-[11px] font-black uppercase tracking-widest text-gray-500">University Category :</label>
-                                                  <div className="flex items-center gap-4">
-                                                      <label className="flex items-center gap-2 cursor-pointer text-sm font-bold text-gray-700"><input type="radio" value="STATE" checked={universityCategory==='STATE'} onChange={()=>setUniversityCategory('STATE')} className="w-4 h-4 text-indigo-600" /> State</label>
-                                                      <label className="flex items-center gap-2 cursor-pointer text-sm font-bold text-gray-700"><input type="radio" value="CENTRAL" checked={universityCategory==='CENTRAL'} onChange={()=>setUniversityCategory('CENTRAL')} className="w-4 h-4 text-indigo-600" /> Central</label>
-                                                      <label className="flex items-center gap-2 cursor-pointer text-sm font-bold text-gray-700"><input type="radio" value="PRIVATE" checked={universityCategory==='PRIVATE'} onChange={()=>setUniversityCategory('PRIVATE')} className="w-4 h-4 text-indigo-600" /> Private</label>
-                                                  </div>
-                                              </div>
-                                          )}
-
-                                          {organizationType === 'INSTITUTION' && (
-                                              <div className="pt-4 border-t border-indigo-100 grid grid-cols-1 md:grid-cols-2 gap-6">
-                                                  <div>
-                                                      <label className="block text-sm font-bold text-gray-700 mb-2">Affiliation (Optional)</label>
-                                                      <select className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-indigo-500 focus:ring-indigo-500" value={affiliatedUniversityId} onChange={(e) => setAffiliatedUniversityId(e.target.value)}>
-                                                          <option value="">Self-Affiliated (None)</option>
-                                                          {institutions.filter((i:any) => i.organizationType === 'UNIVERSITY' || i.type === 'UNIVERSITY').map((u:any) => (
-                                                              <option key={u.id} value={u.id}>{u.name.toUpperCase()} [{u.code}]</option>
-                                                          ))}
-                                                      </select>
-                                                  </div>
-                                                  <div>
-                                                      <label className="block text-sm font-bold text-gray-700 mb-2 flex items-center gap-2">
-                                                          <input type="checkbox" checked={hasAgency} onChange={(e) => setHasAgency(e.target.checked)} className="w-4 h-4 text-indigo-600 rounded" />
-                                                          Associated Agency?
-                                                      </label>
-                                                      {hasAgency && (
-                                                          <select className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-indigo-500 focus:ring-indigo-500" value={associatedAgencyId} onChange={(e) => setAssociatedAgencyId(e.target.value)}>
-                                                              <option value="">-- Select Agency --</option>
-                                                              {agencies.map((a:any) => (
-                                                                  <option key={a.id} value={a.id}>{a.name.toUpperCase()} [{a.primaryEmail}]</option>
-                                                              ))}
-                                                          </select>
-                                                      )}
-                                                  </div>
-                                              </div>
-                                          )}
-
-                                          {organizationType === 'AGENCY' && (
-                                              <div className="pt-4 border-t border-indigo-100 grid grid-cols-1 md:grid-cols-2 gap-6">
-                                                  <div>
-                                                      <label className="block text-sm font-bold text-gray-700 mb-2">Discount Offered (%)</label>
-                                                      <input type="number" step="0.1" value={discountOffered} onChange={(e)=>setDiscountOffered(parseFloat(e.target.value)||0)} className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-indigo-500 focus:ring-indigo-500" />
-                                                  </div>
-                                                  <div>
-                                                      <label className="block text-sm font-bold text-gray-700 mb-2">Operational Area / Region</label>
-                                                      <input type="text" placeholder="e.g. APAC" value={region} onChange={(e)=>setRegion(e.target.value)} className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-indigo-500 focus:ring-indigo-500" />
-                                                  </div>
-                                              </div>
-                                          )}
-                                      </div>
-                                  )}
-
-                                <div className="flex justify-end space-x-3 mt-8">
-                                    <button
-                                        type="button"
-                                        onClick={() => setShowEditModal(false)}
-                                        className="btn btn-secondary"
-                                    >
-                                        Cancel
-                                    </button>
-                                    <button
-                                        type="submit"
-                                        disabled={actionLoading}
-                                        className="btn btn-primary px-10"
-                                    >
+                                <div className="flex justify-end gap-3 mt-8">
+                                    <button type="button" onClick={() => setShowEditModal(false)} className="btn btn-secondary">Cancel</button>
+                                    <button type="submit" disabled={actionLoading} className="btn btn-primary px-10">
                                         {actionLoading ? 'Saving...' : 'Save Changes'}
                                     </button>
                                 </div>

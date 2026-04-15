@@ -5,7 +5,7 @@ import Link from 'next/link';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/classnames';
-import { Users, TrendingUp, FileText, Phone, BarChart3 } from 'lucide-react';
+import { Users, TrendingUp, FileText, Phone, BarChart3, Tags } from 'lucide-react';
 
 // ─── CRM Navigation Tab definition ─────────────────────────────────────────────
 const tabs = [
@@ -43,6 +43,13 @@ const tabs = [
         icon: <BarChart3 size={14} />,
         color: 'text-primary-500',
         matchPaths: ['/dashboard/crm/insights'],
+    },
+    {
+        label: 'Designations',
+        href: '/dashboard/crm/designations',
+        icon: <Tags size={14} />,
+        color: 'text-teal-500',
+        matchPaths: ['/dashboard/crm/designations'],
     },
 ];
 
