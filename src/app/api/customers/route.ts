@@ -4,7 +4,7 @@ import { Prisma } from '@prisma/client';
 import { authorizedRoute } from '@/lib/middleware-auth';
 import { handleApiError, ValidationError } from '@/lib/error-handler';
 import { logger } from '@/lib/logger';
-import { CustomerType } from '@/types';
+import { buildCustomerTypeWhere } from '@/lib/customer-filter';
 
 export const GET = authorizedRoute(
     ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'EXECUTIVE', 'FINANCE_ADMIN'],
@@ -16,7 +16,7 @@ export const GET = authorizedRoute(
         const page = parseInt(searchParams.get('page') || '1');
         const limit = parseInt(searchParams.get('limit') || '10');
         const search = searchParams.get('search') || '';
-        const type = searchParams.get('type') as CustomerType | null;
+        const type = searchParams.get('type');
         const state = searchParams.get('state');
         const country = searchParams.get('country');
 
@@ -38,8 +38,9 @@ export const GET = authorizedRoute(
                 { city: { contains: search, mode: 'insensitive' } }
             ];
         }
-        if (type) {
-            where.customerType = type;
+        const typeWhere = buildCustomerTypeWhere(type);
+        if (typeWhere) {
+            Object.assign(where, typeWhere);
         }
         if (state) {
             where.state = { contains: state, mode: 'insensitive' };

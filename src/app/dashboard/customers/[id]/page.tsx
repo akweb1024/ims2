@@ -11,6 +11,7 @@ import { useCustomer, useCustomerMutations } from '@/hooks/useCRM';
 import { getHealthBadgeColor, getScoreColor } from '@/lib/predictions';
 import AgencyPerformanceDashboard from '@/components/dashboard/AgencyPerformanceDashboard';
 import DesignationCombobox from '@/components/crm/DesignationCombobox';
+import { getCustomerBadgeVariant, getCustomerDisplayType } from '@/lib/customer-display';
 
 
 export default function CustomerDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -175,7 +176,7 @@ export default function CustomerDetailPage({ params }: { params: Promise<{ id: s
 
     const tabs = [
         { id: 'overview', name: 'Overview', icon: '📋' },
-        ...(customer.customerType === 'AGENCY' ? [{ id: 'performance', name: 'Performance', icon: '📈' }] : []),
+        ...(customer.organizationType === 'AGENCY' ? [{ id: 'performance', name: 'Performance', icon: '📈' }] : []),
         { id: 'subscriptions', name: 'Subscriptions', icon: '📚' },
         { id: 'communication', name: 'Follow-up', icon: '💬' },
         { id: 'billing', name: 'Billing', icon: '💰' },
@@ -304,7 +305,7 @@ export default function CustomerDetailPage({ params }: { params: Promise<{ id: s
             gstVatTaxId: formData.get('gstVatTaxId'),
         };
 
-        if (customer.customerType === 'INSTITUTION') {
+        if (organizationType === 'INSTITUTION' || organizationType === 'UNIVERSITY') {
             payload.institutionDetails = {
                 vspName: formData.get('vspName'),
                 ipRanges: formData.get('ipRanges'),
@@ -371,8 +372,8 @@ export default function CustomerDetailPage({ params }: { params: Promise<{ id: s
                             <div className="flex items-center mt-1 space-x-3 text-secondary-500">
                                 <span>{customer.primaryEmail}</span>
                                 <span>•</span>
-                                <span className={`badge ${customer.customerType === 'INSTITUTION' ? 'badge-success' : 'badge-primary'}`}>
-                                    {customer.customerType}
+                                <span className={`badge ${getCustomerBadgeVariant(customer) === 'success' ? 'badge-success' : 'badge-primary'}`}>
+                                    {getCustomerDisplayType(customer)}
                                 </span>
                                 {customer.institution && (
                                     <>
@@ -420,7 +421,7 @@ export default function CustomerDetailPage({ params }: { params: Promise<{ id: s
                                         <input name="name" className="input" defaultValue={customer.name} required />
                                     </div>
                                     <div>
-                                        <label className="label">Company / Organization</label>
+                                        <label className="label">Organization Name</label>
                                         <input name="organizationName" className="input" defaultValue={customer.organizationName} />
                                     </div>
                                     <div>
@@ -440,10 +441,10 @@ export default function CustomerDetailPage({ params }: { params: Promise<{ id: s
                                 {/* ── Customer Type + Designation ── */}
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t border-secondary-100">
                                     <div>
-                                        <label className="label">Customer Type</label>
+                                        <label className="label">Account Type</label>
                                         <select className="input font-bold" value={customerTypeType} onChange={e => setCustomerTypeType(e.target.value)}>
-                                            <option value="INDIVIDUAL">Individual Person</option>
-                                            <option value="ORGANIZATION">Organization / Institution</option>
+                                            <option value="INDIVIDUAL">Individual</option>
+                                            <option value="ORGANIZATION">Organization</option>
                                         </select>
                                     </div>
                                     <div>
@@ -465,28 +466,28 @@ export default function CustomerDetailPage({ params }: { params: Promise<{ id: s
                                                 <label className="block text-[11px] font-black uppercase tracking-widest text-gray-500 mb-2">Governance Type</label>
                                                 <select className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-indigo-500 font-semibold" value={governanceType} onChange={e => setGovernanceType(e.target.value)}>
                                                     <option value="PRIVATE">Private</option>
-                                                    <option value="GOVERNMENT">Government / Public</option>
+                                                    <option value="GOVERNMENT">Government</option>
                                                 </select>
                                             </div>
                                             <div>
-                                                <label className="block text-[11px] font-black uppercase tracking-widest text-gray-500 mb-2">Organization Classification</label>
+                                                <label className="block text-[11px] font-black uppercase tracking-widest text-gray-500 mb-2">Organization Type</label>
                                                 <select className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-indigo-500 font-semibold text-indigo-900" value={organizationType} onChange={e => {
                                                     setOrganizationType(e.target.value);
                                                     if (e.target.value !== 'INSTITUTION') setAffiliatedUniversityId('');
                                                     if (e.target.value !== 'AGENCY') { setDiscountOffered(10); setRegion(''); }
                                                 }}>
-                                                    <option value="">-- Select Classification --</option>
+                                                    <option value="">Select organization type</option>
                                                     <option value="UNIVERSITY">University</option>
-                                                    <option value="INSTITUTION">Institution / College</option>
-                                                    <option value="AGENCY">Agency / Partner</option>
-                                                    <option value="COMPANY">Company / Corporate</option>
+                                                    <option value="INSTITUTION">Institution</option>
+                                                    <option value="AGENCY">Agency</option>
+                                                    <option value="COMPANY">Company</option>
                                                 </select>
                                             </div>
                                         </div>
 
                                         {organizationType === 'UNIVERSITY' && (
                                             <div className="pt-4 border-t border-indigo-100 flex items-center gap-6">
-                                                <label className="text-[11px] font-black uppercase tracking-widest text-gray-500">University Category:</label>
+                                                <label className="text-[11px] font-black uppercase tracking-widest text-gray-500">University Category</label>
                                                 <div className="flex items-center gap-4">
                                                     {['STATE', 'CENTRAL', 'PRIVATE'].map(cat => (
                                                         <label key={cat} className="flex items-center gap-2 cursor-pointer text-sm font-bold text-gray-700">
@@ -501,7 +502,7 @@ export default function CustomerDetailPage({ params }: { params: Promise<{ id: s
                                         {organizationType === 'INSTITUTION' && (
                                             <div className="pt-4 border-t border-indigo-100 grid grid-cols-1 md:grid-cols-2 gap-6">
                                                 <div>
-                                                    <label className="block text-sm font-bold text-gray-700 mb-2">Affiliation (Optional)</label>
+                                                    <label className="block text-sm font-bold text-gray-700 mb-2">University Affiliation</label>
                                                     <select className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-indigo-500" value={affiliatedUniversityId} onChange={e => setAffiliatedUniversityId(e.target.value)}>
                                                         <option value="">Self-Affiliated (None)</option>
                                                         {institutions.filter((i: any) => i.organizationType === 'UNIVERSITY' || i.type === 'UNIVERSITY').map((u: any) => (
@@ -512,7 +513,7 @@ export default function CustomerDetailPage({ params }: { params: Promise<{ id: s
                                                 <div>
                                                     <label className="block text-sm font-bold text-gray-700 mb-2 flex items-center gap-2">
                                                         <input type="checkbox" checked={hasAgency} onChange={e => setHasAgency(e.target.checked)} className="w-4 h-4 text-indigo-600 rounded" />
-                                                        Associated Agency?
+                                                        Linked Agency
                                                     </label>
                                                     {hasAgency && (
                                                         <select className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-indigo-500" value={associatedAgencyId} onChange={e => setAssociatedAgencyId(e.target.value)}>
@@ -529,11 +530,11 @@ export default function CustomerDetailPage({ params }: { params: Promise<{ id: s
                                         {organizationType === 'AGENCY' && (
                                             <div className="pt-4 border-t border-indigo-100 grid grid-cols-1 md:grid-cols-2 gap-6">
                                                 <div>
-                                                    <label className="block text-sm font-bold text-gray-700 mb-2">Discount Offered (%)</label>
+                                                    <label className="block text-sm font-bold text-gray-700 mb-2">Agency Discount (%)</label>
                                                     <input type="number" step="0.1" value={discountOffered} onChange={e => setDiscountOffered(parseFloat(e.target.value) || 0)} className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-indigo-500" />
                                                 </div>
                                                 <div>
-                                                    <label className="block text-sm font-bold text-gray-700 mb-2">Operational Area / Region</label>
+                                                    <label className="block text-sm font-bold text-gray-700 mb-2">Territory / Region</label>
                                                     <input type="text" placeholder="e.g. APAC" value={region} onChange={e => setRegion(e.target.value)} className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-indigo-500" />
                                                 </div>
                                             </div>
@@ -875,7 +876,7 @@ export default function CustomerDetailPage({ params }: { params: Promise<{ id: s
                                 )}
 
                                 {/* Type Specific Info */}
-                                {customer.customerType === 'INSTITUTION' && customer.institutionDetails && (
+                                {(customer.organizationType === 'INSTITUTION' || customer.organizationType === 'UNIVERSITY') && customer.institutionDetails && (
                                     <div className="card-premium">
                                         <h3 className="text-lg font-bold text-secondary-900 mb-4">Institution details</h3>
                                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -897,7 +898,7 @@ export default function CustomerDetailPage({ params }: { params: Promise<{ id: s
                             </div>
                         )}
 
-                        {activeTab === 'performance' && customer.customerType === 'AGENCY' && customer.agencyDetails && (
+                        {activeTab === 'performance' && customer.organizationType === 'AGENCY' && customer.agencyDetails && (
                             <AgencyPerformanceDashboard details={customer.agencyDetails} />
                         )}
 

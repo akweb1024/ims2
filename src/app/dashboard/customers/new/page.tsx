@@ -331,7 +331,7 @@ export default function NewCustomerPage() {
                                   />
 
                                   <FormField
-                                      label="Customer Type"
+                                      label="Account Type"
                                       name="type"
                                       type="select"
                                       required
@@ -339,8 +339,8 @@ export default function NewCustomerPage() {
                                       error={errors.type}
                                       className="input-premium"
                                       options={[
-                                          { value: 'INDIVIDUAL', label: 'Individual Person' },
-                                          { value: 'ORGANIZATION', label: 'Organization / Institution' },
+                                          { value: 'INDIVIDUAL', label: 'Individual' },
+                                          { value: 'ORGANIZATION', label: 'Organization' },
                                       ]}
                                   />
 
@@ -353,21 +353,21 @@ export default function NewCustomerPage() {
                                                   <label className="block text-[11px] font-black uppercase tracking-widest text-gray-500 mb-2">Governance Type</label>
                                                   <select className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-indigo-500 focus:ring-indigo-500 font-semibold" value={governanceType} onChange={(e) => setGovernanceType(e.target.value)}>
                                                       <option value="PRIVATE">Private</option>
-                                                      <option value="GOVERNMENT">Government / Public</option>
+                                                      <option value="GOVERNMENT">Government</option>
                                                   </select>
                                               </div>
                                               <div>
-                                                  <label className="block text-[11px] font-black uppercase tracking-widest text-gray-500 mb-2">Organization Classification</label>
+                                                  <label className="block text-[11px] font-black uppercase tracking-widest text-gray-500 mb-2">Organization Type</label>
                                                   <select className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-indigo-500 focus:ring-indigo-500 font-semibold text-indigo-900" value={organizationType} onChange={(e) => {
                                                       setOrganizationType(e.target.value);
                                                       if(e.target.value !== 'INSTITUTION') setAffiliatedUniversityId('');
                                                       if(e.target.value !== 'AGENCY') { setDiscountOffered(10); setRegion(''); }
                                                   }}>
-                                                      <option value="">-- Select Classification --</option>
+                                                      <option value="">Select organization type</option>
                                                       <option value="UNIVERSITY">University</option>
-                                                      <option value="INSTITUTION">Institution / College</option>
-                                                      <option value="AGENCY">Agency / Partner</option>
-                                                      <option value="COMPANY">Company / Corporate</option>
+                                                      <option value="INSTITUTION">Institution</option>
+                                                      <option value="AGENCY">Agency</option>
+                                                      <option value="COMPANY">Company</option>
                                                   </select>
                                               </div>
                                           </div>
@@ -375,7 +375,7 @@ export default function NewCustomerPage() {
                                           {/* Dynamic Context Renderers */}
                                           {organizationType === 'UNIVERSITY' && (
                                               <div className="pt-4 border-t border-indigo-100 flex items-center gap-6">
-                                                  <label className="text-[11px] font-black uppercase tracking-widest text-gray-500">University Category :</label>
+                                                  <label className="text-[11px] font-black uppercase tracking-widest text-gray-500">University Category</label>
                                                   <div className="flex items-center gap-4">
                                                       <label className="flex items-center gap-2 cursor-pointer text-sm font-bold text-gray-700 hover:text-indigo-600"><input type="radio" value="STATE" checked={universityCategory==='STATE'} onChange={()=>setUniversityCategory('STATE')} className="w-4 h-4 text-indigo-600" /> State</label>
                                                       <label className="flex items-center gap-2 cursor-pointer text-sm font-bold text-gray-700 hover:text-indigo-600"><input type="radio" value="CENTRAL" checked={universityCategory==='CENTRAL'} onChange={()=>setUniversityCategory('CENTRAL')} className="w-4 h-4 text-indigo-600" /> Central</label>
@@ -387,7 +387,7 @@ export default function NewCustomerPage() {
                                           {organizationType === 'INSTITUTION' && (
                                               <div className="pt-4 border-t border-indigo-100 grid grid-cols-1 md:grid-cols-2 gap-6">
                                                   <div>
-                                                      <label className="block text-sm font-bold text-gray-700 mb-2">Affiliation (Optional)</label>
+                                                      <label className="block text-sm font-bold text-gray-700 mb-2">University Affiliation</label>
                                                       <select className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-indigo-500 focus:ring-indigo-500" value={affiliatedUniversityId} onChange={(e) => setAffiliatedUniversityId(e.target.value)}>
                                                           <option value="">Self-Affiliated (None)</option>
                                                           {institutions.filter((i:any) => i.organizationType === 'UNIVERSITY' || i.type === 'UNIVERSITY').map((u:any) => (
@@ -398,7 +398,7 @@ export default function NewCustomerPage() {
                                                   <div>
                                                       <label className="block text-sm font-bold text-gray-700 mb-2 flex items-center gap-2">
                                                           <input type="checkbox" checked={hasAgency} onChange={(e) => setHasAgency(e.target.checked)} className="w-4 h-4 text-indigo-600 rounded" />
-                                                          Associated Agency?
+                                                          Linked Agency
                                                       </label>
                                                       {hasAgency && (
                                                           <select className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-indigo-500 focus:ring-indigo-500" value={associatedAgencyId} onChange={(e) => setAssociatedAgencyId(e.target.value)}>
@@ -415,11 +415,11 @@ export default function NewCustomerPage() {
                                           {organizationType === 'AGENCY' && (
                                               <div className="pt-4 border-t border-indigo-100 grid grid-cols-1 md:grid-cols-2 gap-6">
                                                   <div>
-                                                      <label className="block text-sm font-bold text-gray-700 mb-2">Discount Offered (%)</label>
+                                                      <label className="block text-sm font-bold text-gray-700 mb-2">Agency Discount (%)</label>
                                                       <input type="number" step="0.1" value={discountOffered} onChange={(e)=>setDiscountOffered(parseFloat(e.target.value)||0)} className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-indigo-500 focus:ring-indigo-500" />
                                                   </div>
                                                   <div>
-                                                      <label className="block text-sm font-bold text-gray-700 mb-2">Operational Area / Region</label>
+                                                      <label className="block text-sm font-bold text-gray-700 mb-2">Territory / Region</label>
                                                       <input type="text" placeholder="e.g. North India, Global, APAC" value={region} onChange={(e)=>setRegion(e.target.value)} className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-indigo-500 focus:ring-indigo-500" />
                                                   </div>
                                               </div>

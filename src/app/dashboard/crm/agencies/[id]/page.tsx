@@ -8,6 +8,7 @@ import FormattedDate from '@/components/common/FormattedDate';
 import CommunicationForm from '@/components/dashboard/CommunicationForm';
 import { useCustomer, useCustomerMutations } from '@/hooks/useCRM';
 import AgencyPerformanceDashboard from '@/components/dashboard/AgencyPerformanceDashboard';
+import { getCustomerDisplayType } from '@/lib/customer-display';
 
 export default function AgencyDetailPage({ params }: { params: Promise<{ id: string }> }) {
     const { id } = use(params);
@@ -199,7 +200,7 @@ export default function AgencyDetailPage({ params }: { params: Promise<{ id: str
                             <div className="flex items-center gap-3">
                                 <h1 className="text-3xl font-bold text-secondary-900">{customer.name}</h1>
                                 <span className="px-2 py-0.5 bg-purple-100 text-purple-700 text-xs font-black rounded uppercase tracking-wider">
-                                    AGENCY
+                                    {getCustomerDisplayType(customer)}
                                 </span>
                             </div>
                             <div className="flex items-center mt-1 space-x-3 text-secondary-500">

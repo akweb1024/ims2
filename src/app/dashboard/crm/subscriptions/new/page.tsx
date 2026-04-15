@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import GuidelineHelp from '@/components/dashboard/GuidelineHelp';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
+import { getCustomerBadgeVariant, getCustomerDisplayType } from '@/lib/customer-display';
 
 export default function NewSubscriptionPage() {
     const router = useRouter();
@@ -274,13 +275,15 @@ export default function NewSubscriptionPage() {
                                         </div>
                                         <div className="flex items-center gap-3">
                                             <div className={`badge ${
-                                                c.organizationType === 'INSTITUTION' || c.organizationType === 'UNIVERSITY' 
-                                                    ? 'badge-success' 
-                                                    : c.organizationType === 'COMPANY' 
-                                                    ? 'badge-warning' 
+                                                getCustomerBadgeVariant(c) === 'success'
+                                                    ? 'badge-success'
+                                                    : getCustomerBadgeVariant(c) === 'warning'
+                                                    ? 'badge-warning'
+                                                    : getCustomerBadgeVariant(c) === 'primary'
+                                                    ? 'badge-primary'
                                                     : 'badge-primary'
                                             }`}>
-                                                {c.organizationType || c.customerType}
+                                                {getCustomerDisplayType(c)}
                                             </div>
                                             <svg className={`w-5 h-5 transition-transform ${formData.customerProfileId === c.id ? 'text-primary-600 translate-x-1' : 'text-secondary-300 group-hover:translate-x-1'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />

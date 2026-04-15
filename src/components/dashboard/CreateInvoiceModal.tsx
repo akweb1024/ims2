@@ -56,6 +56,7 @@ import {
   calculateInvoiceTaxBreakdown,
   resolveItemTaxCategory,
 } from "@/lib/invoice-tax";
+import { getCustomerDisplayType } from "@/lib/customer-display";
 
 const customerDesignationOptions = [
   { value: "", label: "Select designation" },
@@ -1155,7 +1156,7 @@ export default function CreateInvoiceModal({
                     ? 'bg-amber-100 text-amber-700 border border-amber-200'
                     : 'bg-blue-100 text-blue-700 border border-blue-200'
                 }`}>
-                  {selectedCustomer.organizationType || selectedCustomer.customerType}
+                  {getCustomerDisplayType(selectedCustomer)}
                 </span>
               </div>
               <p className="text-[10px] font-bold text-secondary-400 uppercase tracking-widest">
@@ -1639,7 +1640,7 @@ export default function CreateInvoiceModal({
 
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <label className="label">Customer Type</label>
+                        <label className="label">Account Type</label>
                         <select
                           className="input-premium w-full bg-white font-bold"
                           value={newCustomerForm.customerType}
@@ -1651,13 +1652,13 @@ export default function CreateInvoiceModal({
                           }
                         >
                           <option value="INDIVIDUAL">
-                            INDIVIDUAL
+                            Individual
                           </option>
                           <option value="INSTITUTION">
-                            INSTITUTION / ORGANIZATION
+                            Institution
                           </option>
                           <option value="AGENCY">
-                            AGENCY / PARTNER
+                            Agency
                           </option>
                         </select>
                       </div>
@@ -1685,7 +1686,7 @@ export default function CreateInvoiceModal({
                     <div className="grid grid-cols-2 gap-4">
                       <div>
                         <label className="label">
-                          Organization / Company Name
+                          Organization Name
                         </label>
                         <input
                           className="input-premium w-full bg-white font-bold"
@@ -1701,7 +1702,7 @@ export default function CreateInvoiceModal({
                       </div>
                       <div>
                         <label className="label">
-                          Institution
+                          Linked Institution
                         </label>
                         <select
                           className="input-premium w-full bg-white font-bold"
@@ -2096,16 +2097,16 @@ export default function CreateInvoiceModal({
                             <span
                               className={`text-[10px] px-1.5 py-0.5 rounded font-black uppercase
                                                             ${
-                                                              c.customerType ===
-                                                              "INSTITUTION"
+                                                              c.organizationType === "INSTITUTION" ||
+                                                              c.organizationType === "UNIVERSITY"
                                                                 ? "bg-green-100 text-green-700"
-                                                                : c.customerType ===
+                                                                : c.organizationType ===
                                                                     "AGENCY"
                                                                   ? "bg-amber-100 text-amber-700"
                                                                   : "bg-blue-100 text-blue-700"
                                                             }`}
                             >
-                              {c.customerType}
+                              {getCustomerDisplayType(c)}
                             </span>
                           </div>
                           <p className="text-sm text-gray-500">

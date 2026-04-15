@@ -25,6 +25,7 @@ import {
     MoreHorizontal, Target, CheckSquare, X,
     Mail, Briefcase, ChevronRight
 } from 'lucide-react';
+import { getCustomerBadgeVariant, getCustomerDisplayType } from '@/lib/customer-display';
 
 export default function CustomersPage() {
     const router = useRouter();
@@ -204,15 +205,6 @@ export default function CustomersPage() {
         }
     };
 
-    const getBadgeVariant = (type: string): 'primary' | 'success' | 'warning' | 'secondary' => {
-        switch (type) {
-            case 'INDIVIDUAL': return 'primary';
-            case 'INSTITUTION': return 'success';
-            case 'AGENCY': return 'warning';
-            default: return 'secondary';
-        }
-    };
-
     return (
         <DashboardLayout userRole={userRole}>
             <CRMPageShell
@@ -381,8 +373,8 @@ export default function CustomersPage() {
                                             </div>
                                         </td>
                                         <td className="py-5">
-                                            <CRMBadge variant={getBadgeVariant(customer.customerType)} dot>
-                                                {customer.customerType}
+                                            <CRMBadge variant={getCustomerBadgeVariant(customer)} dot>
+                                                {getCustomerDisplayType(customer)}
                                             </CRMBadge>
                                         </td>
                                         <td className="py-5">

@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CRMSearchInput, CRMBadge, CRMRowAction, CRMModal, CRMStatCard } from '@/components/crm/CRMPageShell';
+import { formatDisplayLabel } from '@/lib/customer-display';
 
 export default function InstitutionList({ userRole }: { userRole: string }) {
     const router = useRouter();
@@ -258,7 +259,7 @@ export default function InstitutionList({ userRole }: { userRole: string }) {
                          >
                             <option value="ALL">Universal Core Types</option>
                             {institutionTypes.map(type => (
-                                <option key={type} value={type}>{type.replace('_', ' ')}</option>
+                                <option key={type} value={type}>{formatDisplayLabel(type)}</option>
                             ))}
                          </select>
                     </div>
@@ -361,7 +362,7 @@ export default function InstitutionList({ userRole }: { userRole: string }) {
                                         <div className="flex items-center gap-2 flex-wrap">
                                             <span className="text-[9px] font-black text-indigo-600 bg-indigo-50 border border-indigo-100 px-2 py-0.5 rounded-lg uppercase tracking-widest">{institution.code}</span>
                                             <span className="text-[9px] font-black text-secondary-400 uppercase tracking-widest opacity-60">
-                                                {institution.type?.replace('_', ' ') || 'ENTITY MODEL'}
+                                                {institution.type ? formatDisplayLabel(institution.type) : 'ENTITY MODEL'}
                                             </span>
                                             <span className={`text-[9px] font-black px-2 py-0.5 rounded-lg uppercase tracking-widest border ${
                                                 institution.affiliationStatus === 'AFFILIATED'
@@ -370,7 +371,7 @@ export default function InstitutionList({ userRole }: { userRole: string }) {
                                                         ? 'bg-purple-50 text-purple-700 border-purple-100'
                                                         : 'bg-emerald-50 text-emerald-700 border-emerald-100'
                                             }`}>
-                                                {institution.affiliationStatus?.replace(/_/g, ' ') || 'SELF AFFILIATED'}
+                                                {institution.affiliationStatus ? formatDisplayLabel(institution.affiliationStatus) : 'Self Affiliated'}
                                             </span>
                                         </div>
                                     </div>

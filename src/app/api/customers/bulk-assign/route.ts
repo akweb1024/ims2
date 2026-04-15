@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getAuthenticatedUser } from '@/lib/auth-legacy';
 import { createNotification } from '@/lib/system-notifications';
+import { buildCustomerTypeWhere } from '@/lib/customer-filter';
 
 export async function POST(req: NextRequest) {
     try {
@@ -31,7 +32,8 @@ export async function POST(req: NextRequest) {
             // Apply filters
             if (filters.country) where.country = { contains: filters.country };
             if (filters.state) where.state = { contains: filters.state };
-            if (filters.customerType) where.customerType = filters.customerType;
+            const typeWhere = buildCustomerTypeWhere(filters.customerType);
+            if (typeWhere) Object.assign(where, typeWhere);
             if (filters.organizationName) where.organizationName = { contains: filters.organizationName };
         } else {
             return NextResponse.json({ error: 'Either specific customers or filters are required' }, { status: 400 });

@@ -14,6 +14,7 @@ import {
     Users, User, Building2, Briefcase, Plus, Eye, MessageSquare,
     Mail, Phone, Globe, MapPin, ChevronRight, Filter, Target, UserCheck, X, Trash2, AlertTriangle
 } from 'lucide-react';
+import { getCustomerBadgeVariant, getCustomerDisplayType } from '@/lib/customer-display';
 
 // ─── Customer type tabs ────────────────────────────────────────────────────────
 const TYPE_TABS = [
@@ -22,17 +23,6 @@ const TYPE_TABS = [
     { value: 'INSTITUTION', label: 'Institutions', icon: <Building2 size={13} />, color: 'text-emerald-600' },
     { value: 'AGENCY', label: 'Agencies', icon: <Briefcase size={13} />, color: 'text-amber-600' },
 ] as const;
-
-const getBadgeVariant = (type: string): 'primary' | 'success' | 'warning' | 'secondary' => {
-    switch (type) {
-        case 'INDIVIDUAL': return 'primary';
-        case 'INSTITUTION': return 'success';
-        case 'UNIVERSITY': return 'success';
-        case 'COMPANY': return 'warning';
-        case 'AGENCY': return 'warning';
-        default: return 'secondary';
-    }
-};
 
 export default function CRMCustomersPage() {
     const router = useRouter();
@@ -347,12 +337,8 @@ export default function CRMCustomersPage() {
 
                                         {/* Type badge */}
                                         <td className="px-4 py-4 text-center">
-                                            <CRMBadge variant={getBadgeVariant(customer.organizationType || customer.customerType)} dot>
-                                                {customer.organizationType 
-                                                    ? customer.organizationType.replace('_', ' ')
-                                                    : customer.customerType === 'INDIVIDUAL' 
-                                                    ? 'Person'
-                                                    : customer.customerType}
+                                            <CRMBadge variant={getCustomerBadgeVariant(customer)} dot>
+                                                {getCustomerDisplayType(customer)}
                                             </CRMBadge>
                                         </td>
 

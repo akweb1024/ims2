@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import FormattedDate from '@/components/common/FormattedDate';
+import { getCustomerDisplayType } from '@/lib/customer-display';
 
 export default function ProfilePage() {
     const [user, setUser] = useState<any>(null);
@@ -223,7 +224,7 @@ export default function ProfilePage() {
                             </div>
                             <div>
                                 <p className="label">Customer Type</p>
-                                <span className="badge badge-primary">{user.customerProfile.customerType}</span>
+                                <span className="badge badge-primary">{getCustomerDisplayType(user.customerProfile)}</span>
                             </div>
                         </div>
                     </div>
