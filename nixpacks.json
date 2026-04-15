@@ -18,7 +18,7 @@
     },
     "install": {
       "cmds": [
-        "NODE_ENV=development npm install --no-audit --no-fund"
+        "NODE_ENV=development npm ci --no-audit --no-fund"
       ]
     },
     "build": {
