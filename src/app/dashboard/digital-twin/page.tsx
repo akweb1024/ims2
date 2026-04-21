@@ -4,25 +4,30 @@ import { useEffect, useState } from 'react';
 import { EmployeeTwinCard } from '@/components/digital-twin/EmployeeTwinCard';
 import { InventoryTwinCard } from '@/components/digital-twin/InventoryTwinCard';
 import { EmployeeTwin, InventoryTwin } from '@/lib/digital-twin/twin-engine';
+import { DashboardSkeleton } from '@/components/ui/skeletons/DashboardSkeleton';
+import { Badge } from '@/components/ui/Badge';
 
 export default function DigitalTwinPage() {
     const [data, setData] = useState<{ employees: EmployeeTwin[], inventory: InventoryTwin[] } | null>(null);
     const [loading, setLoading] = useState(true);
     const [hoveredEmployeeId, setHoveredEmployeeId] = useState<string | null>(null);
     const [hoveredInventoryId, setHoveredInventoryId] = useState<string | null>(null);
+    const [lastSync, setLastSync] = useState<Date | null>(null);
+    const [syncError, setSyncError] = useState<boolean>(false);
 
     useEffect(() => {
         const fetchData = async () => {
             try {
                 const res = await fetch('/api/digital-twin/status');
-                if (!res.ok) {
-                    const errorText = await res.text();
-                    throw new Error(`Failed to fetch: ${res.status} ${errorText}`);
-                }
+                if (!res.ok) throw new Error('API Failure');
+                
                 const json = await res.json();
                 setData(json);
+                setLastSync(new Date());
+                setSyncError(false);
             } catch (err) {
                 console.error('Failed to sync twin state', err);
+                setSyncError(true);
             } finally {
                 setLoading(false);
             }
@@ -42,22 +47,27 @@ export default function DigitalTwinPage() {
         ? data?.employees.filter(e => e.linkedInventoryIds.includes(hoveredInventoryId)).map(e => e.id) || [] 
         : hoveredEmployeeId ? [hoveredEmployeeId] : [];
 
-    if (loading) return (
-        <div className="flex items-center justify-center min-h-[60vh] bg-[#050505]">
-            <div className="flex flex-col items-center gap-4">
-                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>
-                <p className="text-white/40 text-xs tracking-widest uppercase">Initializing Twin Nodes...</p>
-            </div>
-        </div>
-    );
+    if (loading) return <DashboardSkeleton title="Digital Twin Hub" />;
 
     return (
         <div className="min-h-screen bg-[#050505] p-8 text-white selection:bg-indigo-500 selection:text-white">
             <header className="mb-12">
-                <div className="flex items-center gap-4 mb-2">
-                    <div className="px-3 py-1 rounded-full bg-indigo-500/20 border border-indigo-500/10 text-indigo-400 text-[10px] font-bold tracking-widest uppercase">
-                        Real-time DTO Engine v2.0
+                <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-3">
+                        <div className="px-3 py-1 rounded-full bg-indigo-500/20 border border-indigo-500/10 text-indigo-400 text-[10px] font-bold tracking-widest uppercase">
+                            DTO Engine v2.1 • Production Ready
+                        </div>
+                        {syncError && (
+                            <Badge className="bg-red-500/20 text-red-400 border-red-500/40 animate-pulse">
+                                Sync Interrupted
+                            </Badge>
+                        )}
                     </div>
+                    {lastSync && (
+                        <span className="text-[10px] text-white/30 uppercase tracking-tighter">
+                            Last Intel Sync: {lastSync.toLocaleTimeString()}
+                        </span>
+                    )}
                 </div>
                 <h1 className="text-5xl font-black tracking-tight mb-4 bg-gradient-to-r from-white to-white/30 bg-clip-text text-transparent">
                     Digital Twin <span className="text-indigo-500">Dashboard</span>
@@ -122,11 +132,6 @@ export default function DigitalTwinPage() {
                         )}
                     </div>
                 </section>
-
-                {/* Visual Connection Lines Overlay - Conceptual Enhancement */}
-                <div className="absolute inset-0 pointer-events-none overflow-hidden">
-                    {/* Floating Data Particles could be added here for extra polish */}
-                </div>
             </div>
 
             {/* Background Decorative Elements */}
