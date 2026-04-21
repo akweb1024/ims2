@@ -63,7 +63,6 @@ export async function getEmployeeTwinStatus(companyId: string): Promise<Employee
     startOfToday.setHours(0, 0, 0, 0);
 
     const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
 
     const employees = await prisma.employeeProfile.findMany({
       where: { 
