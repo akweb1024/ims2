@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { EmployeeTwinCard } from '@/components/digital-twin/EmployeeTwinCard';
 import { InventoryTwinCard } from '@/components/digital-twin/InventoryTwinCard';
 import { EmployeeTwin, InventoryTwin } from '@/lib/digital-twin/twin-engine';
-import { DashboardSkeleton } from '@/components/ui/skeletons/DashboardSkeleton';
+import { DashboardSkeleton } from '@/components/ui/skeletons';
 import { Badge } from '@/components/ui/Badge';
 
 export default function DigitalTwinPage() {
