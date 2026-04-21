@@ -88,12 +88,20 @@ export async function getEmployeeTwinStatus(companyId: string): Promise<Employee
     });
 
     const todayStr = new Date().toISOString().split('T')[0];
+    const startOfToday = new Date();
+    startOfToday.setHours(0, 0, 0, 0);
 
     const result = employees.map(emp => {
       const weekAttendanceDates = emp.attendance.map(
         (a: { date: Date }) => new Date(a.date).toISOString().split('T')[0]
       );
-      const isClockedIn = weekAttendanceDates.includes(todayStr);
+      
+      // An employee is actively clocked in if they have any attendance record today (local time)
+      // This replicates the old prism query filter: gte: new Date(new Date().setHours(0,0,0,0))
+      const isClockedIn = emp.attendance.some(
+        (a: { date: Date }) => new Date(a.date).getTime() >= startOfToday.getTime()
+      );
+      
       const tasks = emp.user?.tasks || [];
       const taskCount = tasks.length;
       const linkedInventoryIds = Array.from(new Set(
