@@ -98,14 +98,6 @@ export async function getEmployeeTwinStatus(companyId: string): Promise<Employee
           select: {
             id: true,
             name: true,
-            thinkTankIdeas: {
-              where: { createdAt: { gte: thirtyDaysAgo } },
-              select: { id: true }
-            },
-            thinkTankVotes: {
-              where: { createdAt: { gte: thirtyDaysAgo } },
-              select: { id: true }
-            },
             tasks: {
               where: { status: { not: 'COMPLETED' } },
               select: { inventoryItemId: true }
@@ -133,11 +125,9 @@ export async function getEmployeeTwinStatus(companyId: string): Promise<Employee
       
       const isOnLeave = emp.leaveRequests && emp.leaveRequests.length > 0;
       
-      // Calculate Engagement Score
+      // Calculate Engagement Score using known metrics (Work Reports)
       const reportsWeight = (emp.workReports?.length || 0) * 10; // 10 pts per report this week
-      const ideasWeight = (emp.user?.thinkTankIdeas?.length || 0) * 5; // 5 pts per idea last 30d
-      const votesWeight = (emp.user?.thinkTankVotes?.length || 0) * 2; // 2 pts per vote last 30d
-      const rawScore = reportsWeight + ideasWeight + votesWeight;
+      const rawScore = reportsWeight;
       const engagementScore = Math.min(100, Math.max(0, rawScore));
 
       const tasks = emp.user?.tasks || [];
