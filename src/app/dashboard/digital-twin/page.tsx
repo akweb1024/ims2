@@ -6,8 +6,10 @@ import { InventoryTwinCard } from '@/components/digital-twin/InventoryTwinCard';
 import { AlertCenter } from '@/components/digital-twin/AlertCenter';
 import { DispatchPanel } from '@/components/digital-twin/DispatchPanel';
 import { NetworkGraphView } from '@/components/digital-twin/NetworkGraphView';
+import { IntelligencePanel } from '@/components/digital-twin/IntelligencePanel';
 import { EmployeeTwin, InventoryTwin, TwinSummary } from '@/lib/digital-twin/twin-engine';
 import { exportTwinToCSV } from '@/lib/digital-twin/export-twin';
+import { runIntelligenceEngine, IntelligenceSummary } from '@/lib/digital-twin/intelligence';
 import { DashboardSkeleton } from '@/components/ui/skeletons';
 import { Badge } from '@/components/ui/Badge';
 
@@ -15,6 +17,7 @@ type TwinData = { employees: EmployeeTwin[]; inventory: InventoryTwin[]; summary
 
 type FilterStatus = 'ALL' | 'ACTIVE' | 'OVERLOADED' | 'OFFLINE_ALERT' | 'OFFLINE' | 'CRITICAL' | 'WARNING' | 'HEALTHY';
 type ViewMode = 'grid' | 'network';
+type StreamMode = 'sse' | 'poll';
 
 const POLL_INTERVAL = 10000;
 
@@ -49,8 +52,10 @@ const Particles = () => (
 
 export default function DigitalTwinPage() {
     const [data, setData] = useState<TwinData | null>(null);
+    const [intelligence, setIntelligence] = useState<IntelligenceSummary | null>(null);
     const [loading, setLoading] = useState(true);
     const [viewMode, setViewMode] = useState<ViewMode>('grid');
+    const [streamMode] = useState<StreamMode>('sse');
     const [hoveredEmployeeId, setHoveredEmployeeId] = useState<string | null>(null);
     const [hoveredInventoryId, setHoveredInventoryId] = useState<string | null>(null);
     const [lastSync, setLastSync] = useState<Date | null>(null);
@@ -66,22 +71,44 @@ export default function DigitalTwinPage() {
 
     const intervalRef = useRef<NodeJS.Timeout | null>(null);
     const countdownRef = useRef<NodeJS.Timeout | null>(null);
+    const eventSourceRef = useRef<EventSource | null>(null);
+
+    const applySnapshot = useCallback((json: TwinData) => {
+        setData(json);
+        setIntelligence(runIntelligenceEngine(json.employees, json.inventory));
+        setLastSync(new Date());
+        setSyncError(false);
+        setCountdown(POLL_INTERVAL / 1000);
+        setLoading(false);
+    }, []);
 
     const fetchData = useCallback(async () => {
         try {
             const res = await fetch('/api/digital-twin/status');
             if (!res.ok) throw new Error('API Failure');
             const json = await res.json();
-            setData(json);
-            setLastSync(new Date());
-            setSyncError(false);
-            setCountdown(POLL_INTERVAL / 1000);
+            applySnapshot(json);
         } catch {
             setSyncError(true);
-        } finally {
             setLoading(false);
         }
-    }, []);
+    }, [applySnapshot]);
+
+    // SSE connection setup
+    const connectSSE = useCallback(() => {
+        if (eventSourceRef.current) eventSourceRef.current.close();
+        const es = new EventSource('/api/digital-twin/stream');
+        eventSourceRef.current = es;
+        es.onmessage = (e) => {
+            try {
+                const json = JSON.parse(e.data);
+                if (!json.error) applySnapshot(json);
+                else setSyncError(true);
+            } catch { setSyncError(true); }
+        };
+        es.onerror = () => { setSyncError(true); setLoading(false); };
+        es.onopen = () => setSyncError(false);
+    }, [applySnapshot]);
 
     const handleExport = () => {
         if (!data) return;
@@ -92,26 +119,34 @@ export default function DigitalTwinPage() {
         }, 100);
     };
 
+    // Attempt SSE first; fallback to polling if SSE fails
     useEffect(() => {
-        fetchData();
-    }, [fetchData]);
+        try {
+            connectSSE();
+        } catch {
+            fetchData();
+        }
+        return () => { eventSourceRef.current?.close(); };
+    }, [connectSSE, fetchData]);
 
+    // Polling-based countdown timer (visible even in SSE mode for UX)
     useEffect(() => {
         if (intervalRef.current) clearInterval(intervalRef.current);
         if (countdownRef.current) clearInterval(countdownRef.current);
 
-        if (isPolling) {
+        if (isPolling && streamMode === 'poll') {
             intervalRef.current = setInterval(fetchData, POLL_INTERVAL);
-            countdownRef.current = setInterval(() => {
-                setCountdown(c => (c <= 1 ? POLL_INTERVAL / 1000 : c - 1));
-            }, 1000);
         }
+
+        countdownRef.current = setInterval(() => {
+            setCountdown(c => (c <= 1 ? 5 : c - 1)); // SSE fires every 5s
+        }, 1000);
 
         return () => {
             if (intervalRef.current) clearInterval(intervalRef.current);
             if (countdownRef.current) clearInterval(countdownRef.current);
         };
-    }, [isPolling, fetchData]);
+    }, [isPolling, streamMode, fetchData]);
 
     // Derived highlighting
     const highlightedInventoryIds = hoveredEmployeeId 
@@ -178,7 +213,7 @@ export default function DigitalTwinPage() {
                     <div className="flex items-center justify-between mb-3">
                         <div className="flex items-center gap-3">
                             <div className="px-3 py-1 rounded-full bg-indigo-500/20 border border-indigo-500/10 text-indigo-400 text-[10px] font-bold tracking-widest uppercase">
-                                DTO Engine v3.0 · Command Center
+                                DTO Engine v3.0 · AI Command Center
                             </div>
                             {syncError && (
                                 <Badge className="bg-red-500/20 text-red-400 border-red-500/40 animate-pulse">
@@ -250,6 +285,16 @@ export default function DigitalTwinPage() {
                             </div>
                         ))}
                     </div>
+                )}
+
+                {/* AI Intelligence Engine Panel */}
+                {intelligence && data && (
+                    <IntelligencePanel
+                        intelligence={intelligence}
+                        employees={data.employees}
+                        inventory={data.inventory}
+                        onDispatch={openDispatch}
+                    />
                 )}
 
                 {/* View Mode Toggle + Search & Filters */}
