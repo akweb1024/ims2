@@ -69,15 +69,10 @@ export async function getEmployeeTwinStatus(companyId: string): Promise<Employee
         officialEmail: true,
         employeeId: true,
         attendance: {
-          where: { date: { gte: new Date(new Date().setHours(0, 0, 0, 0)) } },
-          select: { id: true, date: true },
-          take: 1,
-          orderBy: { date: 'desc' }
-        },
-        weekAttendance: {
+          // Fetch last 7 days — today's presence is derived in the map below
           where: { date: { gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) } },
           select: { date: true },
-          orderBy: { date: 'asc' }
+          orderBy: { date: 'desc' }
         },
         user: {
           select: {
@@ -92,8 +87,13 @@ export async function getEmployeeTwinStatus(companyId: string): Promise<Employee
       }
     });
 
+    const todayStr = new Date().toISOString().split('T')[0];
+
     const result = employees.map(emp => {
-      const isClockedIn = emp.attendance.length > 0;
+      const weekAttendanceDates = emp.attendance.map(
+        (a: { date: Date }) => new Date(a.date).toISOString().split('T')[0]
+      );
+      const isClockedIn = weekAttendanceDates.includes(todayStr);
       const tasks = emp.user?.tasks || [];
       const taskCount = tasks.length;
       const linkedInventoryIds = Array.from(new Set(
@@ -113,9 +113,7 @@ export async function getEmployeeTwinStatus(companyId: string): Promise<Employee
         lastActive: emp.updatedAt,
         bandwidth: Math.max(0, 100 - (taskCount * 15)),
         linkedInventoryIds,
-        weeklyAttendance: (emp as any).weekAttendance?.map((a: any) => 
-          new Date(a.date).toISOString().split('T')[0]
-        ) || []
+        weeklyAttendance: weekAttendanceDates,
       };
     });
 
