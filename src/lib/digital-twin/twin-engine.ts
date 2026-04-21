@@ -18,6 +18,9 @@ export interface EmployeeTwin {
   weeklyAttendance: string[]; // ISO date strings for days attended in the past 7 days
   isOnLeave?: boolean;
   engagementScore?: number;
+  activeDealsCount?: number;
+  activeTicketsCount?: number;
+  activeReviewsCount?: number;
 }
 
 export interface InventoryTwin {
@@ -100,6 +103,22 @@ export async function getEmployeeTwinStatus(companyId: string): Promise<Employee
             tasks: {
               where: { status: { not: 'COMPLETED' } },
               select: { inventoryItemId: true }
+            },
+            deals: {
+              where: { stage: { notIn: ['CLOSED_WON', 'CLOSED_LOST'] } },
+              select: { id: true }
+            },
+            assignedTickets: {
+              where: { status: { in: ['OPEN', 'IN_PROGRESS'] } },
+              select: { id: true }
+            },
+            paperReviews: {
+              where: { decision: 'PENDING' },
+              select: { id: true }
+            },
+            manuscriptDrafts: {
+              where: { isSubmitted: false },
+              select: { id: true }
             }
           }
         }
@@ -131,6 +150,11 @@ export async function getEmployeeTwinStatus(companyId: string): Promise<Employee
 
       const tasks = emp.user?.tasks || [];
       const taskCount = tasks.length;
+      
+      const activeDealsCount = emp.user?.deals?.length || 0;
+      const activeTicketsCount = emp.user?.assignedTickets?.length || 0;
+      const activeReviewsCount = (emp.user?.paperReviews?.length || 0) + (emp.user?.manuscriptDrafts?.length || 0);
+
       const linkedInventoryIds = Array.from(new Set(
         tasks.map(t => t.inventoryItemId).filter(id => !!id) as string[]
       ));
@@ -151,7 +175,10 @@ export async function getEmployeeTwinStatus(companyId: string): Promise<Employee
         linkedInventoryIds,
         weeklyAttendance: weekAttendanceDates,
         isOnLeave,
-        engagementScore
+        engagementScore,
+        activeDealsCount,
+        activeTicketsCount,
+        activeReviewsCount,
       };
     });
 

@@ -18,6 +18,7 @@ type TwinData = { employees: EmployeeTwin[]; inventory: InventoryTwin[]; summary
 type FilterStatus = 'ALL' | 'ACTIVE' | 'OVERLOADED' | 'OFFLINE_ALERT' | 'OFFLINE' | 'CRITICAL' | 'WARNING' | 'HEALTHY';
 type ViewMode = 'grid' | 'network';
 type StreamMode = 'sse' | 'poll';
+export type LensType = 'LOGISTICS' | 'SALES' | 'SERVICE' | 'EDITORIAL';
 
 const POLL_INTERVAL = 10000;
 
@@ -62,6 +63,7 @@ export default function DigitalTwinPage() {
     const [syncError, setSyncError] = useState(false);
     const [isPolling, setIsPolling] = useState(true);
     const [countdown, setCountdown] = useState(POLL_INTERVAL / 1000);
+    const [activeLens, setActiveLens] = useState<LensType>('LOGISTICS');
     const [search, setSearch] = useState('');
     const [empFilter, setEmpFilter] = useState<FilterStatus>('ALL');
     const [invFilter, setInvFilter] = useState<FilterStatus>('ALL');
@@ -267,6 +269,18 @@ export default function DigitalTwinPage() {
                     <p className="text-white/40 max-w-2xl leading-relaxed text-sm">
                         <span className="text-indigo-400 font-bold">Smart Dispatch Active:</span> Real-time operational threads between human capital and physical assets.
                     </p>
+
+                    <div className="flex bg-white/5 rounded-xl p-1 mt-8 w-max mx-auto border border-white/10 relative z-10 backdrop-blur-md shadow-2xl">
+                        {(['LOGISTICS', 'SALES', 'SERVICE', 'EDITORIAL'] as LensType[]).map(lens => (
+                            <button
+                                key={lens}
+                                onClick={() => setActiveLens(lens)}
+                                className={`px-6 py-2.5 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all duration-300 ${activeLens === lens ? 'bg-indigo-500 text-white shadow-xl shadow-indigo-500/20' : 'text-white/40 hover:text-white/80 hover:bg-white/5'}`}
+                            >
+                                {lens}
+                            </button>
+                        ))}
+                    </div>
                 </header>
 
                 {/* Summary Bar */}
@@ -376,7 +390,8 @@ export default function DigitalTwinPage() {
                             {filteredEmployees.map(emp => (
                                 <EmployeeTwinCard 
                                     key={emp.id} 
-                                    employee={emp} 
+                                    employee={emp}
+                                    activeLens={activeLens} 
                                     isHighlighted={highlightedEmployeeIds.includes(emp.id)}
                                     onHover={() => setHoveredEmployeeId(emp.id)}
                                     onLeave={() => setHoveredEmployeeId(null)}

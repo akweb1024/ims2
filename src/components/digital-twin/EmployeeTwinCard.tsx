@@ -13,13 +13,15 @@ const statusColors: Record<string, string> = {
 };
 
 export const EmployeeTwinCard = ({ 
-    employee, 
+    employee,
+    activeLens = 'LOGISTICS', 
     isHighlighted, 
     onHover, 
     onLeave,
     onDispatch
 }: { 
     employee: EmployeeTwin;
+    activeLens?: 'LOGISTICS' | 'SALES' | 'SERVICE' | 'EDITORIAL';
     isHighlighted?: boolean;
     onHover?: () => void;
     onLeave?: () => void;
@@ -96,8 +98,12 @@ export const EmployeeTwinCard = ({
                     <div className={`p-2 rounded-xl border transition-all duration-500 ${
                         isHighlighted ? 'bg-indigo-500/20 border-indigo-500/30' : 'bg-white/5 border-white/5'
                     }`}>
-                        <p className="text-[10px] uppercase tracking-wider text-white/40 mb-1">Tasks</p>
-                        <p className={`text-lg font-bold transition-colors ${isHighlighted ? 'text-indigo-300' : 'text-white'}`}>{employee.taskCount}</p>
+                        <p className="text-[10px] uppercase tracking-wider text-white/40 mb-1">
+                            {activeLens === 'SALES' ? 'Deals' : activeLens === 'SERVICE' ? 'Tickets' : activeLens === 'EDITORIAL' ? 'Reviews' : 'Tasks'}
+                        </p>
+                        <p className={`text-lg font-bold transition-colors ${isHighlighted ? 'text-indigo-300' : 'text-white'}`}>
+                            {activeLens === 'SALES' ? (employee.activeDealsCount || 0) : activeLens === 'SERVICE' ? (employee.activeTicketsCount || 0) : activeLens === 'EDITORIAL' ? (employee.activeReviewsCount || 0) : employee.taskCount}
+                        </p>
                     </div>
                     <div className={`p-2 rounded-xl border transition-all duration-500 ${
                         isHighlighted ? 'bg-indigo-500/20 border-indigo-500/30' : 'bg-white/5 border-white/5'
@@ -113,13 +119,23 @@ export const EmployeeTwinCard = ({
                     </div>
                 </div>
 
-                {isHighlighted && employee.linkedInventoryIds.length > 0 && (
+                {isHighlighted && (activeLens === 'LOGISTICS' ? employee.linkedInventoryIds.length > 0 : (
+                    (activeLens === 'SALES' ? (employee.activeDealsCount||0) : activeLens === 'SERVICE' ? (employee.activeTicketsCount||0) : (employee.activeReviewsCount||0)) > 0
+                )) && (
                     <div className="pt-2 animate-in fade-in slide-in-from-top-1 duration-300">
-                        <p className="text-[9px] uppercase tracking-tighter text-indigo-400 font-bold mb-1">Tracking Assets</p>
-                        <div className="flex gap-1">
-                            {employee.linkedInventoryIds.map(id => (
-                                <div key={id} className="w-1.5 h-1.5 rounded-full bg-indigo-500 shadow-[0_0_8px_rgba(99,102,241,0.8)]" />
-                            ))}
+                        <p className="text-[9px] uppercase tracking-tighter text-indigo-400 font-bold mb-1">
+                            {activeLens === 'LOGISTICS' ? 'Tracking Assets' : activeLens === 'SALES' ? 'Active Deals' : activeLens === 'SERVICE' ? 'Open Tickets' : 'Active Reviews'}
+                        </p>
+                        <div className="flex gap-1 flex-wrap">
+                            {activeLens === 'LOGISTICS' ? (
+                                employee.linkedInventoryIds.map(id => (
+                                    <div key={id} className="w-1.5 h-1.5 rounded-full bg-indigo-500 shadow-[0_0_8px_rgba(99,102,241,0.8)]" />
+                                ))
+                            ) : (
+                                Array.from({ length: Math.min(15, activeLens === 'SALES' ? (employee.activeDealsCount||0) : activeLens === 'SERVICE' ? (employee.activeTicketsCount||0) : (employee.activeReviewsCount||0)) }).map((_, idx) => (
+                                    <div key={idx} className="w-1.5 h-1.5 rounded-full bg-indigo-500 shadow-[0_0_8px_rgba(99,102,241,0.8)]" />
+                                ))
+                            )}
                         </div>
                     </div>
                 )}
