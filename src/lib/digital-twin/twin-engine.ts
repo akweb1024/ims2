@@ -9,6 +9,7 @@ export interface EmployeeTwin {
   taskCount: number;
   lastActive: Date;
   bandwidth: number;
+  linkedInventoryIds: string[];
 }
 
 export interface InventoryTwin {
@@ -48,6 +49,9 @@ export async function getEmployeeTwinStatus(companyId: string): Promise<Employee
   return employees.map(emp => {
     const isClockedIn = emp.attendance.length > 0;
     const taskCount = emp.user?.tasks?.length || 0;
+    const linkedInventoryIds = Array.from(new Set(
+      emp.user?.tasks?.map(t => (t as any).inventoryItemId).filter(id => !!id) as string[]
+    ));
     
     let status: TwinStatus = isClockedIn ? 'ACTIVE' : 'OFFLINE';
     if (isClockedIn && taskCount > 5) status = 'OVERLOADED';
@@ -60,6 +64,7 @@ export async function getEmployeeTwinStatus(companyId: string): Promise<Employee
       taskCount,
       lastActive: emp.updatedAt,
       bandwidth: Math.max(0, 100 - (taskCount * 15)),
+      linkedInventoryIds
     };
   });
 }

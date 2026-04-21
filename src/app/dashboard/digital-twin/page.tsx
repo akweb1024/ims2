@@ -8,6 +8,8 @@ import { EmployeeTwin, InventoryTwin } from '@/lib/digital-twin/twin-engine';
 export default function DigitalTwinPage() {
     const [data, setData] = useState<{ employees: EmployeeTwin[], inventory: InventoryTwin[] } | null>(null);
     const [loading, setLoading] = useState(true);
+    const [hoveredEmployeeId, setHoveredEmployeeId] = useState<string | null>(null);
+    const [hoveredInventoryId, setHoveredInventoryId] = useState<string | null>(null);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -31,6 +33,15 @@ export default function DigitalTwinPage() {
         return () => clearInterval(interval);
     }, []);
 
+    // Derived highlighting logic
+    const highlightedInventoryIds = hoveredEmployeeId 
+        ? data?.employees.find(e => e.id === hoveredEmployeeId)?.linkedInventoryIds || [] 
+        : hoveredInventoryId ? [hoveredInventoryId] : [];
+
+    const highlightedEmployeeIds = hoveredInventoryId 
+        ? data?.employees.filter(e => e.linkedInventoryIds.includes(hoveredInventoryId)).map(e => e.id) || [] 
+        : hoveredEmployeeId ? [hoveredEmployeeId] : [];
+
     if (loading) return (
         <div className="flex items-center justify-center min-h-[60vh] bg-[#050505]">
             <div className="flex flex-col items-center gap-4">
@@ -41,25 +52,25 @@ export default function DigitalTwinPage() {
     );
 
     return (
-        <div className="min-h-screen bg-[#050505] p-8 text-white">
+        <div className="min-h-screen bg-[#050505] p-8 text-white selection:bg-indigo-500 selection:text-white">
             <header className="mb-12">
                 <div className="flex items-center gap-4 mb-2">
                     <div className="px-3 py-1 rounded-full bg-indigo-500/20 border border-indigo-500/10 text-indigo-400 text-[10px] font-bold tracking-widest uppercase">
-                        Real-time DTO Engine v1.0
+                        Real-time DTO Engine v2.0
                     </div>
                 </div>
                 <h1 className="text-5xl font-black tracking-tight mb-4 bg-gradient-to-r from-white to-white/30 bg-clip-text text-transparent">
                     Digital Twin <span className="text-indigo-500">Dashboard</span>
                 </h1>
                 <p className="text-white/40 max-w-2xl leading-relaxed text-sm">
-                    Visualizing the logical link between your human capital and physical inventory. 
-                    A real-time representation of organizational bandwidth and stock velocity.
+                    <span className="text-indigo-400 font-bold">Smart Dispatch Active:</span> Visualizing the logical threads between your human capital and physical nodes. 
+                    Hover over a node to trace operational connectivity.
                 </p>
             </header>
 
-            <div className="grid grid-cols-1 xl:grid-cols-2 gap-16">
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-16 relative">
                 {/* Employee Hub */}
-                <section>
+                <section className="duration-500 transition-opacity" style={{ opacity: hoveredInventoryId && highlightedEmployeeIds.length === 0 ? 0.3 : 1 }}>
                     <div className="flex items-center justify-between mb-8">
                         <div className="flex items-center gap-3">
                             <div className="w-1 h-6 bg-purple-500 rounded-full" />
@@ -69,7 +80,13 @@ export default function DigitalTwinPage() {
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         {data?.employees.map(emp => (
-                            <EmployeeTwinCard key={emp.id} employee={emp} />
+                            <EmployeeTwinCard 
+                                key={emp.id} 
+                                employee={emp} 
+                                isHighlighted={highlightedEmployeeIds.includes(emp.id)}
+                                onHover={() => setHoveredEmployeeId(emp.id)}
+                                onLeave={() => setHoveredEmployeeId(null)}
+                            />
                         ))}
                         {(data?.employees.length === 0) && (
                             <div className="col-span-full py-12 text-center bg-white/5 border border-dashed border-white/10 rounded-2xl">
@@ -80,7 +97,7 @@ export default function DigitalTwinPage() {
                 </section>
 
                 {/* Inventory Hub */}
-                <section>
+                <section className="duration-500 transition-opacity" style={{ opacity: hoveredEmployeeId && highlightedInventoryIds.length === 0 ? 0.3 : 1 }}>
                     <div className="flex items-center justify-between mb-8">
                         <div className="flex items-center gap-3">
                             <div className="w-1 h-6 bg-indigo-500 rounded-full" />
@@ -90,7 +107,13 @@ export default function DigitalTwinPage() {
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         {data?.inventory.map(item => (
-                            <InventoryTwinCard key={item.id} item={item} />
+                            <InventoryTwinCard 
+                                key={item.id} 
+                                item={item} 
+                                isHighlighted={highlightedInventoryIds.includes(item.id)}
+                                onHover={() => setHoveredInventoryId(item.id)}
+                                onLeave={() => setHoveredInventoryId(null)}
+                            />
                         ))}
                         {(data?.inventory.length === 0) && (
                             <div className="col-span-full py-12 text-center bg-white/5 border border-dashed border-white/10 rounded-2xl">
@@ -99,6 +122,11 @@ export default function DigitalTwinPage() {
                         )}
                     </div>
                 </section>
+
+                {/* Visual Connection Lines Overlay - Conceptual Enhancement */}
+                <div className="absolute inset-0 pointer-events-none overflow-hidden">
+                    {/* Floating Data Particles could be added here for extra polish */}
+                </div>
             </div>
 
             {/* Background Decorative Elements */}

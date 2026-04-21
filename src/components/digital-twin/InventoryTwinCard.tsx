@@ -7,9 +7,27 @@ const statusColors: Record<string, string> = {
   CRITICAL: 'bg-red-500/20 text-red-100 border-red-500/40 border animate-pulse',
 };
 
-export const InventoryTwinCard = ({ item }: { item: InventoryTwin }) => {
+export const InventoryTwinCard = ({ 
+  item, 
+  isHighlighted, 
+  onHover, 
+  onLeave 
+}: { 
+  item: InventoryTwin;
+  isHighlighted?: boolean;
+  onHover?: () => void;
+  onLeave?: () => void;
+}) => {
   return (
-    <div className="p-6 rounded-2xl bg-white/5 backdrop-blur-xl border border-white/10 hover:border-indigo-500/50 transition-all duration-300 shadow-2xl">
+    <div 
+      onMouseEnter={onHover}
+      onMouseLeave={onLeave}
+      className={`p-6 rounded-2xl transition-all duration-500 shadow-2xl border ${
+        isHighlighted 
+          ? 'bg-indigo-500/20 border-indigo-500 scale-[1.02] z-10 shadow-indigo-500/20' 
+          : 'bg-white/5 border-white/10 hover:border-indigo-500/50'
+      }`}
+    >
       <div className="flex items-center justify-between mb-4">
         <div>
           <h3 className="font-bold text-white tracking-tight truncate max-w-[180px]">{item.name}</h3>
@@ -37,7 +55,7 @@ export const InventoryTwinCard = ({ item }: { item: InventoryTwin }) => {
             <div 
               style={{ width: `${Math.min(100, (item.quantity / (item.minLevel * 2 || 1)) * 100)}%` }} 
               className={`shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center ${
-                item.status === 'CRITICAL' ? 'bg-red-500' : 'bg-indigo-500'
+                item.status === 'CRITICAL' ? 'bg-red-500' : isHighlighted ? 'bg-white' : 'bg-indigo-500'
               } transition-all duration-1000`}
             ></div>
           </div>
@@ -48,9 +66,11 @@ export const InventoryTwinCard = ({ item }: { item: InventoryTwin }) => {
           </div>
         </div>
 
-        <div className="flex items-center gap-2 px-3 py-2 bg-indigo-500/10 rounded-lg border border-indigo-500/20">
-          <div className="w-2 h-2 rounded-full bg-indigo-400 animate-pulse" />
-          <p className="text-[10px] text-indigo-300 font-bold">Velocity: {item.velocity} events / recent</p>
+        <div className={`flex items-center gap-2 px-3 py-2 rounded-lg border transition-all duration-500 ${
+          isHighlighted ? 'bg-white/10 border-white/20' : 'bg-indigo-500/10 border-indigo-500/20'
+        }`}>
+          <div className={`w-2 h-2 rounded-full animate-pulse ${isHighlighted ? 'bg-white' : 'bg-indigo-400'}`} />
+          <p className={`text-[10px] font-bold ${isHighlighted ? 'text-white' : 'text-indigo-300'}`}>Velocity: {item.velocity} events / recent</p>
         </div>
       </div>
     </div>
