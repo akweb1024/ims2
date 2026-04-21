@@ -47,7 +47,7 @@ export default function DigitalTwinPage() {
         ? data?.employees.filter(e => e.linkedInventoryIds.includes(hoveredInventoryId)).map(e => e.id) || [] 
         : hoveredEmployeeId ? [hoveredEmployeeId] : [];
 
-    if (loading) return <DashboardSkeleton title="Digital Twin Hub" />;
+    if (loading) return <DashboardSkeleton />;
 
     return (
         <div className="min-h-screen bg-[#050505] p-8 text-white selection:bg-indigo-500 selection:text-white">
