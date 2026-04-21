@@ -29,6 +29,7 @@ export const ALL_MODULES: NavModule[] = [
                 title: 'Workspace',
                 items: [
                     { name: 'Dashboard', href: '/dashboard', icon: '📊', roles: ['*'] },
+                    { name: 'Digital Twin', href: '/dashboard/digital-twin', icon: '🌍', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER'] },
                     { name: 'Staff Portal', href: '/dashboard/staff-portal', icon: '🏢', roles: ['*'] },
                     { name: 'Think Tank', href: '/dashboard/think-tank', icon: '💡', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'TEAM_LEADER', 'EXECUTIVE', 'EMPLOYEE', 'HR_MANAGER', 'HR', 'FINANCE_ADMIN', 'IT_MANAGER', 'IT_ADMIN', 'IT_SUPPORT'] },
                     { name: 'Problems', href: '/dashboard/problems', icon: '🚨', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'TEAM_LEADER', 'EXECUTIVE', 'EMPLOYEE', 'HR_MANAGER', 'HR', 'FINANCE_ADMIN', 'IT_MANAGER', 'IT_ADMIN', 'IT_SUPPORT', 'EDITOR', 'EDITOR_IN_CHIEF', 'JOURNAL_MANAGER'] },
