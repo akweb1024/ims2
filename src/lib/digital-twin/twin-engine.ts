@@ -4,7 +4,7 @@ import { logger } from "@/lib/logger";
 /**
  * Valid states for Digital Twin nodes
  */
-export type TwinStatus = 'ACTIVE' | 'OFFLINE' | 'OVERLOADED' | 'OFFLINE_ALERT' | 'CRITICAL' | 'WARNING' | 'HEALTHY';
+export type TwinStatus = 'ACTIVE' | 'OFFLINE' | 'OVERLOADED' | 'OFFLINE_ALERT' | 'CRITICAL' | 'WARNING' | 'HEALTHY' | 'ON_LEAVE';
 
 export interface EmployeeTwin {
   id: string;
@@ -16,6 +16,8 @@ export interface EmployeeTwin {
   bandwidth: number;
   linkedInventoryIds: string[];
   weeklyAttendance: string[]; // ISO date strings for days attended in the past 7 days
+  isOnLeave?: boolean;
+  engagementScore?: number;
 }
 
 export interface InventoryTwin {
@@ -57,6 +59,12 @@ export function computeTwinSummary(employees: EmployeeTwin[], inventory: Invento
 export async function getEmployeeTwinStatus(companyId: string): Promise<EmployeeTwin[]> {
   const startTime = Date.now();
   try {
+    const startOfToday = new Date();
+    startOfToday.setHours(0, 0, 0, 0);
+
+    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+
     const employees = await prisma.employeeProfile.findMany({
       where: { 
           user: { 
@@ -68,9 +76,21 @@ export async function getEmployeeTwinStatus(companyId: string): Promise<Employee
         updatedAt: true,
         officialEmail: true,
         employeeId: true,
+        leaveRequests: {
+          where: {
+            status: 'APPROVED',
+            startDate: { lte: new Date() },
+            endDate: { gte: startOfToday }
+          },
+          select: { id: true }
+        },
+        workReports: {
+          where: { date: { gte: sevenDaysAgo } },
+          select: { id: true }
+        },
         attendance: {
           // Fetch last 7 days — today's presence is derived in the map below
-          where: { date: { gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) } },
+          where: { date: { gte: sevenDaysAgo } },
           select: { date: true },
           orderBy: { date: 'desc' }
         },
@@ -78,6 +98,14 @@ export async function getEmployeeTwinStatus(companyId: string): Promise<Employee
           select: {
             id: true,
             name: true,
+            thinkTankIdeas: {
+              where: { createdAt: { gte: thirtyDaysAgo } },
+              select: { id: true }
+            },
+            thinkTankVotes: {
+              where: { createdAt: { gte: thirtyDaysAgo } },
+              select: { id: true }
+            },
             tasks: {
               where: { status: { not: 'COMPLETED' } },
               select: { inventoryItemId: true }
@@ -91,8 +119,6 @@ export async function getEmployeeTwinStatus(companyId: string): Promise<Employee
       `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
       
     const todayStr = getLocalDateStr(new Date());
-    const startOfToday = new Date();
-    startOfToday.setHours(0, 0, 0, 0);
 
     const result = employees.map(emp => {
       const weekAttendanceDates = emp.attendance.map(
@@ -105,6 +131,15 @@ export async function getEmployeeTwinStatus(companyId: string): Promise<Employee
         (a: { date: Date }) => new Date(a.date).getTime() >= startOfToday.getTime()
       );
       
+      const isOnLeave = emp.leaveRequests && emp.leaveRequests.length > 0;
+      
+      // Calculate Engagement Score
+      const reportsWeight = (emp.workReports?.length || 0) * 10; // 10 pts per report this week
+      const ideasWeight = (emp.user?.thinkTankIdeas?.length || 0) * 5; // 5 pts per idea last 30d
+      const votesWeight = (emp.user?.thinkTankVotes?.length || 0) * 2; // 2 pts per vote last 30d
+      const rawScore = reportsWeight + ideasWeight + votesWeight;
+      const engagementScore = Math.min(100, Math.max(0, rawScore));
+
       const tasks = emp.user?.tasks || [];
       const taskCount = tasks.length;
       const linkedInventoryIds = Array.from(new Set(
@@ -112,8 +147,9 @@ export async function getEmployeeTwinStatus(companyId: string): Promise<Employee
       ));
       
       let status: TwinStatus = isClockedIn ? 'ACTIVE' : 'OFFLINE';
-      if (isClockedIn && taskCount > 5) status = 'OVERLOADED';
-      if (!isClockedIn && taskCount > 0) status = 'OFFLINE_ALERT';
+      if (isOnLeave) status = 'ON_LEAVE';
+      else if (isClockedIn && taskCount > 5) status = 'OVERLOADED';
+      else if (!isClockedIn && taskCount > 0) status = 'OFFLINE_ALERT';
 
       return {
         id: emp.id,
@@ -125,6 +161,8 @@ export async function getEmployeeTwinStatus(companyId: string): Promise<Employee
         bandwidth: Math.max(0, 100 - (taskCount * 15)),
         linkedInventoryIds,
         weeklyAttendance: weekAttendanceDates,
+        isOnLeave,
+        engagementScore
       };
     });
 

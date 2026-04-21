@@ -9,6 +9,7 @@ const statusColors: Record<string, string> = {
     OVERLOADED: 'bg-red-500/20 text-red-400 border-red-500/40',
     OFFLINE_ALERT: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/40',
     OFFLINE: 'bg-gray-500/20 text-gray-400 border-gray-500/40',
+    ON_LEAVE: 'bg-orange-500/20 text-orange-400 border-orange-500/40',
 };
 
 export const EmployeeTwinCard = ({ 
@@ -51,9 +52,11 @@ export const EmployeeTwinCard = ({
                 transition: tilt.x === 0 ? 'transform 0.5s ease' : 'transform 0.1s ease'
             }}
             className={`group relative p-6 rounded-2xl transition-all duration-500 shadow-2xl border ${
-                isHighlighted 
-                    ? 'bg-indigo-500/20 border-indigo-500 scale-[1.02] z-10 shadow-indigo-500/20' 
-                    : 'bg-white/5 border-white/10 hover:border-white/20 hover:shadow-indigo-500/5'
+                employee.isOnLeave 
+                    ? 'bg-orange-900/10 border-orange-500/20 opacity-70'
+                    : isHighlighted 
+                        ? 'bg-indigo-500/20 border-indigo-500 scale-[1.02] z-10 shadow-indigo-500/20' 
+                        : 'bg-white/5 border-white/10 hover:border-white/20 hover:shadow-indigo-500/5'
             }`}
         >
             <div className="flex items-center justify-between mb-4">
@@ -89,18 +92,24 @@ export const EmployeeTwinCard = ({
                     </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                    <div className={`p-3 rounded-xl border transition-all duration-500 ${
+                <div className="grid grid-cols-3 gap-2">
+                    <div className={`p-2 rounded-xl border transition-all duration-500 ${
                         isHighlighted ? 'bg-indigo-500/20 border-indigo-500/30' : 'bg-white/5 border-white/5'
                     }`}>
-                        <p className="text-[10px] uppercase tracking-wider text-white/40 mb-1">Active Tasks</p>
-                        <p className={`text-xl font-bold transition-colors ${isHighlighted ? 'text-indigo-300' : 'text-white'}`}>{employee.taskCount}</p>
+                        <p className="text-[10px] uppercase tracking-wider text-white/40 mb-1">Tasks</p>
+                        <p className={`text-lg font-bold transition-colors ${isHighlighted ? 'text-indigo-300' : 'text-white'}`}>{employee.taskCount}</p>
                     </div>
-                    <div className={`p-3 rounded-xl border transition-all duration-500 ${
+                    <div className={`p-2 rounded-xl border transition-all duration-500 ${
                         isHighlighted ? 'bg-indigo-500/20 border-indigo-500/30' : 'bg-white/5 border-white/5'
                     }`}>
-                        <p className="text-[10px] uppercase tracking-wider text-white/40 mb-1">Last Sync</p>
-                        <p className="text-xs font-medium text-white/80">{new Date(employee.lastActive).toLocaleTimeString()}</p>
+                        <p className="text-[10px] uppercase tracking-wider text-white/40 mb-1">Engage</p>
+                        <p className={`text-lg font-bold transition-colors ${isHighlighted ? 'text-indigo-300' : 'text-white'}`}>{employee.engagementScore || 0}</p>
+                    </div>
+                    <div className={`p-2 rounded-xl border transition-all duration-500 ${
+                        isHighlighted ? 'bg-indigo-500/20 border-indigo-500/30' : 'bg-white/5 border-white/5'
+                    }`}>
+                        <p className="text-[10px] uppercase tracking-wider text-white/40 mb-1">Sync</p>
+                        <p className="text-[10px] font-medium text-white/80 mt-1">{new Date(employee.lastActive).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
                     </div>
                 </div>
 
@@ -156,7 +165,7 @@ export const EmployeeTwinCard = ({
             )}
 
             {/* Dispatch Button */}
-            {onDispatch && (
+            {onDispatch && !employee.isOnLeave && (
                 <button
                     onClick={e => { e.stopPropagation(); onDispatch(); }}
                     className="absolute bottom-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-[9px] font-bold uppercase tracking-widest text-indigo-400 hover:text-indigo-300 px-2 py-1 rounded-lg bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/20 hover:border-indigo-500/40"

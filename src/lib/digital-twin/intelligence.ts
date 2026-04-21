@@ -59,16 +59,23 @@ export function predictOverload(employees: EmployeeTwin[]): OverloadPrediction[]
             let risk: RiskLevel | null = null;
             let reason = '';
 
+            if (emp.status === 'ON_LEAVE') return null;
+
+            // Highly engaged employees (score > 70) have slightly higher tolerance before burnout
+            const isHighlyEngaged = (emp.engagementScore || 0) > 70;
+            const highThreshold = isHighlyEngaged ? 20 : 30;
+            const medThreshold = isHighlyEngaged ? 45 : 55;
+
             if (emp.status === 'OVERLOADED') {
                 risk = 'HIGH';
                 reason = `Currently overloaded with ${emp.taskCount} active tasks and ${emp.bandwidth}% bandwidth remaining.`;
             } else if (emp.status === 'OFFLINE_ALERT') {
                 risk = 'HIGH';
                 reason = `Offline with ${emp.taskCount} unresolved tasks. Urgent reassignment recommended.`;
-            } else if (emp.bandwidth < 30 && emp.status === 'ACTIVE') {
+            } else if (emp.bandwidth < highThreshold && emp.status === 'ACTIVE') {
                 risk = 'HIGH';
                 reason = `Only ${emp.bandwidth}% bandwidth remaining. One more task will trigger overload.`;
-            } else if (emp.bandwidth < 55 && emp.status === 'ACTIVE') {
+            } else if (emp.bandwidth < medThreshold && emp.status === 'ACTIVE') {
                 risk = 'MEDIUM';
                 reason = `Bandwidth at ${emp.bandwidth}%. Approaching capacity threshold.`;
             }
@@ -181,9 +188,13 @@ export function computeHealthScore(
     let penalty = 0;
 
     employees.forEach(e => {
-        if (e.status === 'OVERLOADED') penalty += 20;
+        if (e.status === 'ON_LEAVE') penalty += 0; // Neutral impact
+        else if (e.status === 'OVERLOADED') penalty += 20;
         else if (e.status === 'OFFLINE_ALERT') penalty += 15;
         else if (e.bandwidth < 30) penalty += 8;
+        
+        // Bonus for high organizational engagement across active roster
+        if (e.status !== 'ON_LEAVE' && (e.engagementScore || 0) > 80) penalty -= 2;
     });
 
     inventory.forEach(i => {
