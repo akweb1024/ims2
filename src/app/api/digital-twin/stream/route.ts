@@ -35,9 +35,6 @@ export async function GET(req: NextRequest) {
 
     const stream = new ReadableStream({
         start(controller) {
-            let intervalId: ReturnType<typeof setInterval>;
-            let heartbeatId: ReturnType<typeof setInterval>;
-
             const sendSnapshot = async () => {
                 try {
                     const [employees, inventory] = await Promise.all([
@@ -62,17 +59,17 @@ export async function GET(req: NextRequest) {
 
             // Send immediately on connect, then every 5 seconds
             sendSnapshot();
-            intervalId = setInterval(sendSnapshot, 5000);
+            const intervalId = setInterval(sendSnapshot, 5000);
 
             // Heartbeat ping every 25s to keep connection alive through proxies
-            heartbeatId = setInterval(() => {
+            const heartbeatId = setInterval(() => {
                 controller.enqueue(encoder.encode(': ping\n\n'));
             }, 25000);
 
             req.signal.addEventListener('abort', () => {
                 clearInterval(intervalId);
                 clearInterval(heartbeatId);
-                try { controller.close(); } catch {}
+                try { controller.close(); } catch { /* already closed */ }
                 logger.debug('SSE stream closed by client', { companyId });
             });
         },
