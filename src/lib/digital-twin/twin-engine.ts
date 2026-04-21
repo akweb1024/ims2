@@ -8,12 +8,14 @@ export type TwinStatus = 'ACTIVE' | 'OFFLINE' | 'OVERLOADED' | 'OFFLINE_ALERT' |
 
 export interface EmployeeTwin {
   id: string;
+  userId: string;
   name: string;
   status: TwinStatus;
   taskCount: number;
   lastActive: Date;
   bandwidth: number;
   linkedInventoryIds: string[];
+  weeklyAttendance: string[]; // ISO date strings for days attended in the past 7 days
 }
 
 export interface InventoryTwin {
@@ -25,6 +27,27 @@ export interface InventoryTwin {
   status: TwinStatus;
   warehouse: string;
   velocity: number;
+}
+
+export interface TwinSummary {
+  activeEmployees: number;
+  offlineAlerts: number;
+  overloadedStaff: number;
+  criticalItems: number;
+  warningItems: number;
+  activeThreads: number;
+}
+
+/** Computes the top-level summary from aggregated twin data */
+export function computeTwinSummary(employees: EmployeeTwin[], inventory: InventoryTwin[]): TwinSummary {
+  return {
+    activeEmployees: employees.filter(e => e.status === 'ACTIVE').length,
+    offlineAlerts: employees.filter(e => e.status === 'OFFLINE_ALERT').length,
+    overloadedStaff: employees.filter(e => e.status === 'OVERLOADED').length,
+    criticalItems: inventory.filter(i => i.status === 'CRITICAL').length,
+    warningItems: inventory.filter(i => i.status === 'WARNING').length,
+    activeThreads: employees.reduce((acc, e) => acc + e.linkedInventoryIds.length, 0),
+  };
 }
 
 /**
@@ -51,8 +74,14 @@ export async function getEmployeeTwinStatus(companyId: string): Promise<Employee
           take: 1,
           orderBy: { date: 'desc' }
         },
+        weekAttendance: {
+          where: { date: { gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) } },
+          select: { date: true },
+          orderBy: { date: 'asc' }
+        },
         user: {
           select: {
+            id: true,
             name: true,
             tasks: {
               where: { status: { not: 'COMPLETED' } },
@@ -77,12 +106,16 @@ export async function getEmployeeTwinStatus(companyId: string): Promise<Employee
 
       return {
         id: emp.id,
+        userId: emp.user?.id || '',
         name: emp.user?.name || emp.officialEmail || emp.employeeId || 'Unnamed Employee',
         status,
         taskCount,
         lastActive: emp.updatedAt,
         bandwidth: Math.max(0, 100 - (taskCount * 15)),
-        linkedInventoryIds
+        linkedInventoryIds,
+        weeklyAttendance: (emp as any).weekAttendance?.map((a: any) => 
+          new Date(a.date).toISOString().split('T')[0]
+        ) || []
       };
     });
 

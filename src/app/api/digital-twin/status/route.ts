@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { authorizedRoute } from '@/lib/middleware-auth';
 import { handleApiError } from '@/lib/error-handler';
 import { logger } from '@/lib/logger';
-import { getEmployeeTwinStatus, getInventoryTwinStatus } from '@/lib/digital-twin/twin-engine';
+import { getEmployeeTwinStatus, getInventoryTwinStatus, computeTwinSummary } from '@/lib/digital-twin/twin-engine';
 
 export const GET = authorizedRoute(
     ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'EXECUTIVE', 'FINANCE_ADMIN'],
@@ -20,7 +20,9 @@ export const GET = authorizedRoute(
                 getInventoryTwinStatus(companyId)
             ]);
 
+            const summary = computeTwinSummary(employees, inventory);
             const duration = Date.now() - startTime;
+
             logger.apiRequest('GET', req.nextUrl.pathname, 200, duration, { 
                 employeeCount: employees.length,
                 inventoryCount: inventory.length
@@ -29,6 +31,7 @@ export const GET = authorizedRoute(
             return NextResponse.json({
                 employees,
                 inventory,
+                summary,
                 timestamp: new Date().toISOString()
             });
 
