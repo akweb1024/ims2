@@ -222,10 +222,19 @@ const isJournalSubscriptionItem = (
 ) => {
   const category = normalizeUpper(item.productCategory || product?.category);
   if (category === "JOURNAL_SUBSCRIPTION") return true;
+  
   const text = normalize(
     [item.description, item.productCategory, product?.category].filter(Boolean).join(" "),
   );
-  return text.includes("journal");
+  
+  // Strong indicators
+  if (text.includes("journal") || text.includes("periodical") || text.includes("subscription")) return true;
+  
+  // Attributes-based check
+  const hasSubOptions = item.productAttributes?.subscriptionOptions || product?.productAttributes?.subscriptionOptions;
+  if (hasSubOptions) return true;
+
+  return false;
 };
 
 
@@ -245,24 +254,27 @@ const getJournalDomesticTaxRate = ({
     return 0;
   }
 
-  // Determine if it is strictly a purely Print subscription.
   const normalizedMode = resolveJournalSubscriptionMode(subscriptionMode);
-  const isPrintOnly =
-    normalizedMode === "PRINT" || taxCategory === "PRINT_JOURNAL";
 
-  // Rule 2: Commercial and standard accounts: 0% for Print, 18% for Digital or Print+Digital.
-  if (
-    customerSegment === "AGENCY" ||
-    customerSegment === "INDIVIDUAL" ||
-    customerSegment === "COMPANY" ||
-    customerSegment === "ORGANIZATION"
-  ) {
-    if (isPrintOnly) return 0;
+  // Rule 2: Explicit hybrid or digital mode always attracts GST
+  if (normalizedMode === "PRINT_DIGITAL" || normalizedMode === "DIGITAL") {
     return 18;
   }
 
-  // Fallback for unknown customer types
-  if (isPrintOnly) return 0;
+  // Rule 3: Categorization-based overrides
+  // If categorization says Digital Access, it attracts GST regardless of mode (safety fallback)
+  if (taxCategory === "DIGITAL_ACCESS") {
+    return 18;
+  }
+
+  // Rule 4: Pure print logic
+  const isStrictlyPrint = normalizedMode === "PRINT" || taxCategory === "PRINT_JOURNAL";
+  
+  if (isStrictlyPrint) {
+    return 0;
+  }
+
+  // Default fallback for commercial/other accounts
   return 18;
 };
 

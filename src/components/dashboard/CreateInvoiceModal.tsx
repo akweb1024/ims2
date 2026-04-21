@@ -142,7 +142,11 @@ export default function CreateInvoiceModal({
   const [companyStateCode, setCompanyStateCode] = useState<string>("");
 
   // Step 2: Invoice Details
-  const [dueDate, setDueDate] = useState("");
+  const [dueDate, setDueDate] = useState(() => {
+    const d = new Date();
+    d.setDate(d.getDate() + 15);
+    return d.toISOString().split("T")[0];
+  });
   const [items, setItems] = useState<InvoiceItem[]>([
     {
       id: 1,
@@ -858,7 +862,9 @@ export default function CreateInvoiceModal({
       setStep(1);
       setSelectedCustomer(null);
       setInstitutionCustomerResolved(false);
-      setDueDate("");
+      const d = new Date();
+      d.setDate(d.getDate() + 15);
+      setDueDate(d.toISOString().split("T")[0]);
       setItems([
         {
           id: 1,
@@ -1279,7 +1285,7 @@ export default function CreateInvoiceModal({
   };
 
   const modalBody = (
-      <div className="bg-white rounded-3xl w-full max-w-1xl  overflow-hidden shadow-2xl flex flex-col relative">
+      <div className="bg-white rounded-3xl w-full max-w-6xl max-h-[90vh] overflow-hidden shadow-2xl flex flex-col relative text-left">
         {/* Product Catalogue & Variants Overlay */}
         {showProductModal && (
           <div className="absolute inset-0 z-[60] bg-white flex flex-col animate-slideIn">
@@ -2980,7 +2986,7 @@ export default function CreateInvoiceModal({
           )}
         </div>
 
-        <div className="p-6 border-t border-gray-100 bg-gray-50 flex justify-end gap-3 relative z-50">
+        <div className="p-6 border-t border-gray-100 bg-gray-50 flex justify-end gap-3 sticky bottom-0 z-[100] shadow-[0_-10px_20px_rgba(0,0,0,0.02)]">
           <button
             onClick={onClose}
             className="btn bg-white border border-gray-200 text-gray-600 hover:bg-gray-50"
