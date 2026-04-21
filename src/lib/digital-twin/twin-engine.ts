@@ -87,13 +87,16 @@ export async function getEmployeeTwinStatus(companyId: string): Promise<Employee
       }
     });
 
-    const todayStr = new Date().toISOString().split('T')[0];
+    const getLocalDateStr = (d: Date) => 
+      `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+      
+    const todayStr = getLocalDateStr(new Date());
     const startOfToday = new Date();
     startOfToday.setHours(0, 0, 0, 0);
 
     const result = employees.map(emp => {
       const weekAttendanceDates = emp.attendance.map(
-        (a: { date: Date }) => new Date(a.date).toISOString().split('T')[0]
+        (a: { date: Date }) => getLocalDateStr(new Date(a.date))
       );
       
       // An employee is actively clocked in if they have any attendance record today (local time)
