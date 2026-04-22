@@ -235,8 +235,9 @@ export default function RazorpayTrackerPage() {
                     <div className="flex items-center gap-3">
                         <div className="text-right">
                             <p className="text-[10px] font-black text-secondary-400 uppercase tracking-widest">Last Sync</p>
-                            <p className="text-xs font-bold text-secondary-600">
+                            <p className={`text-xs font-bold ${data?.lastSync?.status === 'FAILED' ? 'text-red-500' : 'text-secondary-600'}`}>
                                 {data?.lastSync ? new Date(data.lastSync.lastSyncAt).toLocaleString() : 'Never'}
+                                {data?.lastSync?.status === 'FAILED' && <span className="ml-1 text-[10px] uppercase">(Failed)</span>}
                             </p>
                         </div>
                         {/* Auto-sync countdown badge */}

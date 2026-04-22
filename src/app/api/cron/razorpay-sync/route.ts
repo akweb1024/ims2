@@ -73,14 +73,22 @@ export async function GET(req: Request) {
         // 2. Sync Logic
         for (const account of accountsToSync) {
             try {
-                const lastSync = await prisma.razorpaySync.findFirst({
-                    where: { status: 'SUCCESS' },
-                    orderBy: { lastSyncAt: 'desc' },
+                logger.info(`Processing Razorpay sync for account`, { alias: account.alias, companyId: account.companyId });
+
+                // 2.1 Determine "From" point per account (Self-Correcting)
+                // We look for the latest payment recorded in our DB for this account's company
+                // This is much more robust than relying on a global sync timestamp.
+                const latestPayment = await prisma.payment.findFirst({
+                    where: { 
+                        companyId: account.companyId,
+                        razorpayPaymentId: { not: null }
+                    },
+                    orderBy: { paymentDate: 'desc' }
                 });
 
-                // Use 10-minute overlap
-                const from = lastSync 
-                    ? Math.floor(lastSync.lastSyncAt.getTime() / 1000) - 600 
+                // Use 1-hour overlap for safety, or 30 days if no payments found
+                const from = latestPayment 
+                    ? Math.floor(latestPayment.paymentDate.getTime() / 1000) - 3600 
                     : Math.floor(Date.now() / 1000) - (30 * 24 * 60 * 60);
 
                 const rpInstance = new Razorpay({
@@ -91,6 +99,7 @@ export async function GET(req: Request) {
                 let hasMore = true;
                 let skip = 0;
                 const count = 100;
+                let accountSyncedCount = 0;
 
                 while (hasMore) {
                     const payments: any = await rpInstance.payments.all({
@@ -153,6 +162,7 @@ export async function GET(req: Request) {
                             },
                         });
                         syncedCount++;
+                        accountSyncedCount++;
 
                         // Post Journal
                         if (savedPayment.companyId) {
@@ -171,6 +181,8 @@ export async function GET(req: Request) {
                         if (skip > 5000) break;
                     }
                 }
+                
+                logger.info(`Account sync completed`, { alias: account.alias, synced: accountSyncedCount });
             } catch (accErr) {
                 logger.error(`Failed to sync account`, accErr, { alias: account.alias });
             }

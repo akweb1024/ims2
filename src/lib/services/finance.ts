@@ -261,17 +261,30 @@ export class FinanceService {
         });
         if (!payment) throw new Error('Payment not found');
 
+        const reference = referenceOverride || payment.razorpayPaymentId || payment.transactionId || 'CASH';
+
+        // 1. Double-Check Idempotency: Avoid double-posting the same payment
+        if (reference !== 'CASH') {
+            const existing = await prisma.journalEntry.findFirst({
+                where: { 
+                    companyId: String(companyId),
+                    reference: reference
+                }
+            });
+            if (existing) return existing;
+        }
+
         const bankAccount = await prisma.account.findFirst({ where: { companyId: String(companyId), code: '1000' } });
-        const arAccount = await prisma.account.findFirst({ where: { companyId: String(companyId), code: '1200' } }); // Crediting AR since it pays off invoice
+        const arAccount = await prisma.account.findFirst({ where: { companyId: String(companyId), code: '1200' } });
 
         if (!bankAccount || !arAccount) throw new Error('Default accounts missing');
 
         const amount = new Prisma.Decimal(payment.amount);
 
-        await this.createJournalEntry(companyId, {
+        return await this.createJournalEntry(companyId, {
             date: payment.paymentDate,
             description: `Payment Received ${payment.invoice ? `for #${payment.invoice.invoiceNumber}` : ''}`,
-            reference: referenceOverride || payment.transactionId || 'CASH',
+            reference: reference,
             lines: [
                 { accountId: bankAccount.id, debit: amount, credit: 0, description: 'Bank Deposit' },
                 { accountId: arAccount.id, debit: 0, credit: amount, description: 'Payment applied to AR' }
