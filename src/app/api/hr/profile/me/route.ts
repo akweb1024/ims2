@@ -15,6 +15,7 @@ export const GET = authorizedRoute(
                             name: true,
                             email: true,
                             role: true,
+                            isActive: true,
                             companies: { select: { name: true, website: true, address: true, logoUrl: true } },
                             department: { select: { id: true, name: true } }
                         }
@@ -32,10 +33,11 @@ export const GET = authorizedRoute(
 
             if (!profile) return createErrorResponse('Profile not found', 404);
 
-            // Flatten department for frontend compatibility
+            // Flatten department and status for frontend compatibility
             const response = {
                 ...profile,
-                department: profile.user?.department
+                department: profile.user?.department,
+                isActive: profile.user?.isActive
             };
 
             return NextResponse.json(response);
