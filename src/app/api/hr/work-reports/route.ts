@@ -31,6 +31,8 @@ export const GET = authorizedRoute(
             const employeeId = searchParams.get('employeeId');
             const startDate = searchParams.get('startDate');
             const endDate = searchParams.get('endDate');
+            const monthStr = searchParams.get('month');
+            const yearStr = searchParams.get('year');
             const category = searchParams.get('category');
             const status = searchParams.get('status');
             let targetEmployeeId = employeeId;
@@ -99,10 +101,33 @@ export const GET = authorizedRoute(
             }
 
             // Date Filtering
-            if (startDate || endDate) {
+            if (startDate || endDate || yearStr || monthStr) {
                 where.date = {};
                 if (startDate) where.date.gte = getISTDateRange(startDate).start;
                 if (endDate) where.date.lte = getISTDateRange(endDate).end;
+
+                if (yearStr || monthStr) {
+                    let istStart: Date;
+                    let istEnd: Date;
+
+                    if (yearStr && !monthStr) {
+                        const year = parseInt(yearStr);
+                        istStart = new Date(Date.UTC(year, 0, 1, 0, 0, 0));
+                        istStart = new Date(istStart.getTime() - (330 * 60000));
+                        istEnd = new Date(Date.UTC(year, 11, 31, 23, 59, 59));
+                        istEnd = new Date(istEnd.getTime() - (330 * 60000));
+                    } else {
+                        const year = parseInt(yearStr || String(new Date().getFullYear()));
+                        const month = parseInt(monthStr || String(new Date().getMonth() + 1));
+                        const start = new Date(Date.UTC(year, month - 1, 1, 0, 0, 0));
+                        istStart = new Date(start.getTime() - (330 * 60000));
+                        const end = new Date(Date.UTC(year, month, 0, 23, 59, 59));
+                        istEnd = new Date(end.getTime() - (330 * 60000));
+                    }
+
+                    if (istStart) where.date.gte = istStart;
+                    if (istEnd) where.date.lte = istEnd;
+                }
             }
 
             // Category Filtering

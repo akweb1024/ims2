@@ -91,9 +91,10 @@ export default function StaffPortalPage() {
         setLoading(true);
         const token = localStorage.getItem('token');
         try {
+            const year = new Date().getFullYear();
             const results = await Promise.all([
-                fetch('/api/hr/attendance', { headers: { 'Authorization': `Bearer ${token}` } }),
-                fetch('/api/hr/work-reports?employeeId=self', { headers: { 'Authorization': `Bearer ${token}` } }),
+                fetch(`/api/hr/attendance?year=${year}`, { headers: { 'Authorization': `Bearer ${token}` } }),
+                fetch(`/api/hr/work-reports?employeeId=self&year=${year}`, { headers: { 'Authorization': `Bearer ${token}` } }),
                 fetch('/api/hr/salary-slips', { headers: { 'Authorization': `Bearer ${token}` } }),
                 fetch('/api/hr/leave-requests', { headers: { 'Authorization': `Bearer ${token}` } }),
                 fetch('/api/hr/performance', { headers: { 'Authorization': `Bearer ${token}` } }),
@@ -148,18 +149,35 @@ export default function StaffPortalPage() {
 
 
     const handleMonthChange = async (year: number, month: number) => {
+        // If the years match the current year, we likely already have the data locally.
+        // However, we refetch to ensure freshness for the specific month.
+        // Since we now support year-only fetches, we keep this as is for targeted refreshes.
         const token = localStorage.getItem('token');
-        if (!token) return;
         try {
             const results = await Promise.all([
                 fetch(`/api/hr/attendance?year=${year}&month=${month + 1}`, { headers: { 'Authorization': `Bearer ${token}` } }),
                 fetch(`/api/hr/work-reports?employeeId=self&year=${year}&month=${month + 1}`, { headers: { 'Authorization': `Bearer ${token}` } })
             ]);
-            
-            if (results[0].ok) setAttendance(await results[0].json());
-            if (results[1].ok) setWorkReports(await results[1].json());
-        } catch (err) {
-            console.error('Failed to refetch attendance for month', err);
+
+            if (results[0].ok) {
+                const newData = await results[0].json();
+                setAttendance(prev => {
+                    // Merge new data with existing, avoiding duplicates
+                    const existingIds = new Set(prev.map(a => a.id));
+                    const filteredNew = newData.filter((a: any) => !existingIds.has(a.id));
+                    return [...prev, ...filteredNew].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+                });
+            }
+            if (results[1].ok) {
+                const newData = await results[1].json();
+                setWorkReports(prev => {
+                    const existingIds = new Set(prev.map(r => r.id));
+                    const filteredNew = newData.filter((r: any) => !existingIds.has(r.id));
+                    return [...prev, ...filteredNew].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+                });
+            }
+        } catch (error) {
+            console.error("Error updating month data:", error);
         }
     };
 
@@ -570,7 +588,7 @@ export default function StaffPortalPage() {
                                     </thead>
                                     <tbody>
                                         {attendance.length === 0 ? (
-                                            <tr><td colSpan={6} className="text-center py-10 text-secondary-500">No records found</td></tr>
+                                            <tr><td colSpan={5} className="text-center py-10 text-secondary-500">No records found</td></tr>
                                         ) : attendance.map(a => (
                                             <tr key={a.id}>
                                                 <td className="font-bold">{formatToISTDate(a.date)}</td>

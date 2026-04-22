@@ -14,16 +14,32 @@ export const GET = authorizedRoute(
     async (req: NextRequest, user) => {
         try {
             const { searchParams } = new URL(req.url);
-            const month = parseInt(searchParams.get('month') || String(new Date().getMonth() + 1));
-            const year = parseInt(searchParams.get('year') || String(new Date().getFullYear()));
+            const monthStr = searchParams.get('month');
+            const yearStr = searchParams.get('year');
             const showAll = searchParams.get('all') === 'true';
 
-            const startDate = new Date(Date.UTC(year, month - 1, 1, 0, 0, 0));
-            // Subtract 5.30 hours to get the UTC point that is 00:00 IST
-            const istStart = new Date(startDate.getTime() - (330 * 60000));
+            let istStart: Date;
+            let istEnd: Date;
 
-            const endDate = new Date(Date.UTC(year, month, 0, 23, 59, 59));
-            const istEnd = new Date(endDate.getTime() - (330 * 60000));
+            if (yearStr && !monthStr) {
+                // Year-only fetch
+                const year = parseInt(yearStr);
+                istStart = new Date(Date.UTC(year, 0, 1, 0, 0, 0));
+                istStart = new Date(istStart.getTime() - (330 * 60000)); // 00:00 IST Jan 1
+                
+                istEnd = new Date(Date.UTC(year, 11, 31, 23, 59, 59));
+                istEnd = new Date(istEnd.getTime() - (330 * 60000)); // 23:59 IST Dec 31
+            } else {
+                // Specific month or default to current
+                const month = parseInt(monthStr || String(new Date().getMonth() + 1));
+                const year = parseInt(yearStr || String(new Date().getFullYear()));
+
+                const startDate = new Date(Date.UTC(year, month - 1, 1, 0, 0, 0));
+                istStart = new Date(startDate.getTime() - (330 * 60000));
+
+                const endDate = new Date(Date.UTC(year, month, 0, 23, 59, 59));
+                istEnd = new Date(endDate.getTime() - (330 * 60000));
+            }
 
             const where: Prisma.AttendanceWhereInput = {
                 date: {

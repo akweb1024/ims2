@@ -126,8 +126,8 @@ export default function AttendanceCalendar({ attendance, workReports, onDateClic
 
             <div className="p-2 sm:p-6">
                 <div className="grid grid-cols-7 gap-1 sm:gap-4 mb-4">
-                    {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map(d => (
-                        <div key={d} className="text-center text-[8px] sm:text-[10px] font-black text-secondary-400 uppercase tracking-widest">{d}</div>
+                    {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((d, i) => (
+                        <div key={`${d}-${i}`} className="text-center text-[8px] sm:text-[10px] font-black text-secondary-400 uppercase tracking-widest">{d}</div>
                     ))}
                 </div>
 
