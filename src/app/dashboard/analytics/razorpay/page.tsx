@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import {
     AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -50,56 +50,45 @@ export default function RazorpayTrackerPage() {
         setTimeout(() => setToast(null), 5000);
     }, []);
 
-    const runAutoSync = useCallback(async () => {
-        try {
-            const token = localStorage.getItem('token');
-            const res = await fetch('/api/cron/razorpay-sync?force=true', {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            const result = await res.json();
-            if (res.ok) {
-                showToast(`Auto-sync complete. ${result.syncedCount} new transactions found.`, 'success');
-                fetchData();
-            } else {
-                showToast(`Auto-sync failed: ${result.error || 'Unknown error'}`, 'error');
-            }
-        } catch (err) {
-            console.error('Auto-sync error:', err);
-            showToast('Auto-sync network error.', 'error');
-        }
-    }, [fetchData, showToast]);
-
-    const runAutoSyncRef = useRef(runAutoSync);
-
-    useEffect(() => {
-        runAutoSyncRef.current = runAutoSync;
-    }, [runAutoSync]);
-
     useEffect(() => {
         const user = localStorage.getItem('user');
         if (user) setUserRole(JSON.parse(user).role);
-        
-        setNextSyncIn(AUTO_SYNC_INTERVAL_MS);
-
-        const intervalId = setInterval(() => {
-            if (runAutoSyncRef.current) {
-                runAutoSyncRef.current();
-            }
-        }, AUTO_SYNC_INTERVAL_MS);
-
-        const countId = setInterval(() => {
-            setNextSyncIn(prev => prev <= 1000 ? AUTO_SYNC_INTERVAL_MS : prev - 1000);
-        }, 1000);
-
-        return () => {
-            clearInterval(intervalId);
-            clearInterval(countId);
-        };
-    }, []); // Empty deps so it never resets on filter changes
+    }, []);
 
     useEffect(() => {
         fetchData();
     }, [fetchData]);
+
+    useEffect(() => {
+        const refreshId = setInterval(() => {
+            fetchData();
+        }, 60 * 1000);
+
+        return () => clearInterval(refreshId);
+    }, [fetchData]);
+
+    useEffect(() => {
+        const lastSyncAt = data?.lastSync?.lastSyncAt
+            ? new Date(data.lastSync.lastSyncAt).getTime()
+            : null;
+
+        const computeRemaining = () => {
+            if (!lastSyncAt) {
+                return AUTO_SYNC_INTERVAL_MS;
+            }
+
+            const nextScheduledAt = lastSyncAt + AUTO_SYNC_INTERVAL_MS;
+            return Math.max(0, nextScheduledAt - Date.now());
+        };
+
+        setNextSyncIn(computeRemaining());
+
+        const countId = setInterval(() => {
+            setNextSyncIn(computeRemaining());
+        }, 1000);
+
+        return () => clearInterval(countId);
+    }, [data?.lastSync?.lastSyncAt]);
 
     const handleManualSync = async () => {
         setIsSyncing(true);
@@ -242,7 +231,7 @@ export default function RazorpayTrackerPage() {
                         </div>
                         {/* Auto-sync countdown badge */}
                         <div className="flex flex-col items-center px-4 py-2 bg-secondary-50 border border-secondary-200 rounded-2xl min-w-[110px]">
-                            <span className="text-[9px] font-black text-secondary-400 uppercase tracking-widest">Next Auto-Sync</span>
+                            <span className="text-[9px] font-black text-secondary-400 uppercase tracking-widest">Server Auto-Sync</span>
                             <span className="text-sm font-black text-primary-600 font-mono tracking-tighter mt-0.5">{formatCountdown(nextSyncIn)}</span>
                         </div>
                         <button
