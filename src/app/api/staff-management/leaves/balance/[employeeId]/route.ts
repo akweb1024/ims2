@@ -16,6 +16,7 @@ export const GET = authorizedRoute(
                     id: true,
                     name: true,
                     email: true,
+                    companyId: true,
                     employeeProfile: {
                         select: {
                             leaveBalance: true,
@@ -29,6 +30,10 @@ export const GET = authorizedRoute(
 
             if (!employee) {
                 return NextResponse.json({ error: 'Employee not found' }, { status: 404 });
+            }
+
+            if (user.companyId && employee.companyId !== user.companyId) {
+                return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
             }
 
             return NextResponse.json({
@@ -54,10 +59,28 @@ export const PUT = authorizedRoute(
         try {
             const { employeeId } = params;
             const body = await req.json();
-            const { adjustment, reason } = body;
+            const { adjustment } = body;
 
             if (adjustment === undefined) {
                 return NextResponse.json({ error: 'Adjustment value is required' }, { status: 400 });
+            }
+
+            const adjustmentValue = Number(adjustment);
+            if (!Number.isFinite(adjustmentValue)) {
+                return NextResponse.json({ error: 'Adjustment must be a valid number' }, { status: 400 });
+            }
+
+            const employee = await prisma.user.findUnique({
+                where: { id: employeeId },
+                select: { id: true, companyId: true }
+            });
+
+            if (!employee) {
+                return NextResponse.json({ error: 'Employee not found' }, { status: 404 });
+            }
+
+            if (user.companyId && employee.companyId !== user.companyId) {
+                return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
             }
 
             // Update employee profile with manual adjustment
@@ -65,10 +88,13 @@ export const PUT = authorizedRoute(
                 where: { userId: employeeId },
                 data: {
                     manualLeaveAdjustment: {
-                        increment: adjustment
+                        increment: adjustmentValue
                     },
                     currentLeaveBalance: {
-                        increment: adjustment
+                        increment: adjustmentValue
+                    },
+                    leaveBalance: {
+                        increment: adjustmentValue
                     }
                 }
             });

@@ -11,6 +11,7 @@ export const GET = authorizedRoute(
             const { searchParams } = new URL(req.url);
             const companyId = searchParams.get('companyId');
             const employeeId = searchParams.get('employeeId');
+            const departmentId = searchParams.get('departmentId');
 
             const where: any = {
                 employeeProfile: {
@@ -26,6 +27,10 @@ export const GET = authorizedRoute(
 
             if (employeeId && employeeId !== 'all') {
                 where.id = employeeId;
+            }
+
+            if (departmentId && departmentId !== 'all') {
+                where.departmentId = departmentId;
             }
 
             const employees = await prisma.user.findMany({
