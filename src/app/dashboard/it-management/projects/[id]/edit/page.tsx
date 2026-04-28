@@ -154,7 +154,7 @@ export default function EditProjectPage() {
             <DashboardLayout>
                 <div className="min-h-[80vh] flex flex-col items-center justify-center space-y-4">
                     <div className="h-12 w-12 border-4 border-blue-600/20 border-t-blue-600 rounded-full animate-spin" />
-                    <p className="font-black text-slate-400 uppercase tracking-widest text-xs">Acessing Project Core...</p>
+                    <p className="font-black text-slate-400 uppercase tracking-widest text-xs">Accessing Project Core...</p>
                 </div>
             </DashboardLayout>
         );
@@ -172,8 +172,8 @@ export default function EditProjectPage() {
                                 <ArrowLeft className="h-5 w-5" />
                             </button>
                             <div>
-                                <h1 className="text-4xl font-black text-slate-900 tracking-tight mb-1">Re-architect Project</h1>
-                                <p className="text-xs font-black text-slate-400 uppercase tracking-[0.2em]">Operational Correction Protocol</p>
+                                <h1 className="text-4xl font-black text-slate-900 tracking-tight mb-1">Edit Project</h1>
+                                <p className="text-xs font-black text-slate-400 uppercase tracking-[0.2em]">Update project details, team, status and milestones</p>
                             </div>
                         </div>
                     </motion.div>
@@ -214,9 +214,9 @@ export default function EditProjectPage() {
 
                                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
                                         <div className="space-y-2">
-                                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Class</label>
+                                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Category</label>
                                             <select value={formData.category} onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                                                className="w-full bg-slate-50 border border-slate-100 rounded-[1.2rem] px-6 py-4 text-xs font-black text-slate-900 uppercase focus:bg-white outline-none"
+                                                className="w-full bg-slate-50 border border-slate-100 rounded-[1.2rem] px-6 py-4 text-xs font-semibold text-slate-900 focus:bg-white outline-none"
                                             >
                                                 <option value="DEVELOPMENT">Development</option>
                                                 <option value="INFRASTRUCTURE">Infrastructure</option>
@@ -224,9 +224,9 @@ export default function EditProjectPage() {
                                             </select>
                                         </div>
                                         <div className="space-y-2">
-                                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">State</label>
+                                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Status</label>
                                             <select value={formData.status} onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                                                className="w-full bg-slate-50 border border-slate-100 rounded-[1.2rem] px-6 py-4 text-xs font-black text-slate-900 uppercase focus:bg-white outline-none"
+                                                className="w-full bg-slate-50 border border-slate-100 rounded-[1.2rem] px-6 py-4 text-xs font-semibold text-slate-900 focus:bg-white outline-none"
                                             >
                                                 <option value="PLANNING">Planning</option>
                                                 <option value="IN_PROGRESS">Active</option>
@@ -238,7 +238,7 @@ export default function EditProjectPage() {
                                         <div className="space-y-2">
                                             <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Type</label>
                                             <select value={formData.type} onChange={(e) => setFormData({ ...formData, type: e.target.value })}
-                                                className="w-full bg-slate-50 border border-slate-100 rounded-[1.2rem] px-6 py-4 text-xs font-black text-slate-900 uppercase focus:bg-white outline-none"
+                                                className="w-full bg-slate-50 border border-slate-100 rounded-[1.2rem] px-6 py-4 text-xs font-semibold text-slate-900 focus:bg-white outline-none"
                                             >
                                                 <option value="SUPPORT">Support</option>
                                                 <option value="DEPLOYMENT">Deployment</option>
@@ -246,6 +246,39 @@ export default function EditProjectPage() {
                                                 <option value="REVENUE">Revenue</option>
                                                 <option value="SERVICE_REQUEST">Service Request</option>
                                             </select>
+                                        </div>
+                                        <div className="space-y-2">
+                                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Priority</label>
+                                            <select value={formData.priority} onChange={(e) => setFormData({ ...formData, priority: e.target.value })}
+                                                className="w-full bg-slate-50 border border-slate-100 rounded-[1.2rem] px-6 py-4 text-xs font-semibold text-slate-900 focus:bg-white outline-none"
+                                            >
+                                                <option value="LOW">Low</option>
+                                                <option value="MEDIUM">Medium</option>
+                                                <option value="HIGH">High</option>
+                                                <option value="URGENT">Urgent</option>
+                                            </select>
+                                        </div>
+                                    </div>
+
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                        <div className="space-y-2">
+                                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Start Date</label>
+                                            <input
+                                                type="date"
+                                                value={formData.startDate}
+                                                onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
+                                                className="w-full bg-slate-50 border border-slate-100 rounded-[1.2rem] px-6 py-4 text-xs font-semibold text-slate-900 focus:bg-white outline-none"
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">End Date</label>
+                                            <input
+                                                type="date"
+                                                value={formData.endDate}
+                                                onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
+                                                className={`w-full bg-slate-50 border ${errors.endDate ? 'border-rose-300' : 'border-slate-100'} rounded-[1.2rem] px-6 py-4 text-xs font-semibold text-slate-900 focus:bg-white outline-none`}
+                                            />
+                                            {errors.endDate && <p className="text-[10px] font-black text-rose-500 uppercase tracking-widest ml-1">{errors.endDate}</p>}
                                         </div>
                                     </div>
                                 </div>
