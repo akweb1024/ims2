@@ -178,7 +178,7 @@ export default function EditProjectPage() {
                         </div>
                     </motion.div>
 
-                    <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    <form id="edit-project-form" onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                         
                         {/* Main Interaction Column */}
                         <div className="lg:col-span-2 space-y-8">
@@ -431,6 +431,38 @@ export default function EditProjectPage() {
 
                         </div>
                     </form>
+
+                    {/* Persistent Actions: keeps save visible even when sidebar action card is off-screen */}
+                    <div className="fixed bottom-4 left-4 right-4 z-40 lg:hidden">
+                        <div className="bg-white/95 backdrop-blur-xl border border-slate-200 rounded-2xl shadow-2xl p-3 flex items-center gap-3">
+                            <button
+                                type="submit"
+                                form="edit-project-form"
+                                disabled={saving}
+                                className="flex-1 py-3 bg-slate-900 text-white rounded-xl font-black text-[11px] uppercase tracking-wider disabled:opacity-50"
+                            >
+                                {saving ? 'Saving...' : 'Save Changes'}
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => router.back()}
+                                className="px-4 py-3 bg-slate-100 text-slate-600 rounded-xl font-black text-[11px] uppercase tracking-wider"
+                            >
+                                Cancel
+                            </button>
+                        </div>
+                    </div>
+
+                    <div className="hidden lg:block fixed bottom-6 right-6 z-40">
+                        <button
+                            type="submit"
+                            form="edit-project-form"
+                            disabled={saving}
+                            className="px-6 py-4 bg-slate-900 text-white rounded-2xl font-black text-xs uppercase tracking-[0.2em] shadow-2xl shadow-slate-400/40 hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50"
+                        >
+                            {saving ? 'Saving...' : 'Save Changes'}
+                        </button>
+                    </div>
                     <WebsiteQuickAddModal 
                         isOpen={showQuickAddWebsite}
                         onClose={() => setShowQuickAddWebsite(false)}
