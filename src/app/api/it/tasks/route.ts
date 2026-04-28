@@ -174,60 +174,77 @@ export const POST = authorizedRoute(
       }
 
       const taskCount = await prisma.iTTask.count({ where: { companyId } });
-      const taskCode = `TSK-${new Date().getFullYear()}-${String(taskCount + 1).padStart(5, "0")}`;
+      const codeYear = new Date().getFullYear();
+      let taskCode = "";
+      let task = null;
 
-      const task = await prisma.iTTask.create({
-        data: {
-          company: { connect: { id: companyId } },
-          project: validatedData.projectId
-            ? { connect: { id: validatedData.projectId } }
-            : undefined,
-          taskCode,
-          title: validatedData.title,
-          description: validatedData.description,
-          category: validatedData.category,
-          type: validatedData.type,
-          priority: validatedData.priority,
-          status: validatedData.status,
-          progressPercent: !isNaN(
-            parseInt(validatedData.progressPercent?.toString() || "0"),
-          )
-            ? parseInt(validatedData.progressPercent!.toString())
-            : 0,
-          assignedTo: validatedData.assignedToId
-            ? { connect: { id: validatedData.assignedToId } }
-            : undefined,
-          createdBy: { connect: { id: user.id } },
-          reporter: validatedData.reporterId
-            ? { connect: { id: validatedData.reporterId } }
-            : undefined,
-          startDate: validatedData.startDate
-            ? new Date(validatedData.startDate)
-            : null,
-          dueDate: calculatedDueDate,
-          estimatedHours: validatedData.estimatedHours
-            ? parseFloat(validatedData.estimatedHours.toString())
-            : null,
-          isRevenueBased: validatedData.isRevenueBased,
-          estimatedValue: !isNaN(
-            parseFloat(validatedData.estimatedValue?.toString() || "0"),
-          )
-            ? parseFloat(validatedData.estimatedValue!.toString())
-            : 0,
-          currency: validatedData.currency,
-          itDepartmentCut: effectiveItCut as any,
-          tags: validatedData.tags,
-          dependencies: validatedData.dependencies,
-          service: validatedData.serviceId
-            ? { connect: { id: validatedData.serviceId } }
-            : undefined,
-        },
-        include: {
-          project: { select: { id: true, name: true, projectCode: true } },
-          assignedTo: { select: { id: true, name: true, email: true } },
-          createdBy: { select: { id: true, name: true, email: true } },
-        },
-      });
+      for (let offset = 1; offset <= 25; offset++) {
+        taskCode = `TSK-${codeYear}-${String(taskCount + offset).padStart(5, "0")}`;
+        try {
+          task = await prisma.iTTask.create({
+            data: {
+              company: { connect: { id: companyId } },
+              project: validatedData.projectId
+                ? { connect: { id: validatedData.projectId } }
+                : undefined,
+              taskCode,
+              title: validatedData.title,
+              description: validatedData.description,
+              category: validatedData.category,
+              type: validatedData.type,
+              priority: validatedData.priority,
+              status: validatedData.status,
+              progressPercent: !isNaN(
+                parseInt(validatedData.progressPercent?.toString() || "0"),
+              )
+                ? parseInt(validatedData.progressPercent!.toString())
+                : 0,
+              assignedTo: validatedData.assignedToId
+                ? { connect: { id: validatedData.assignedToId } }
+                : undefined,
+              createdBy: { connect: { id: user.id } },
+              reporter: validatedData.reporterId
+                ? { connect: { id: validatedData.reporterId } }
+                : undefined,
+              startDate: validatedData.startDate
+                ? new Date(validatedData.startDate)
+                : null,
+              dueDate: calculatedDueDate,
+              estimatedHours: validatedData.estimatedHours
+                ? parseFloat(validatedData.estimatedHours.toString())
+                : null,
+              isRevenueBased: validatedData.isRevenueBased,
+              estimatedValue: !isNaN(
+                parseFloat(validatedData.estimatedValue?.toString() || "0"),
+              )
+                ? parseFloat(validatedData.estimatedValue!.toString())
+                : 0,
+              currency: validatedData.currency,
+              itDepartmentCut: effectiveItCut as any,
+              tags: validatedData.tags,
+              dependencies: validatedData.dependencies,
+              service: validatedData.serviceId
+                ? { connect: { id: validatedData.serviceId } }
+                : undefined,
+            },
+            include: {
+              project: { select: { id: true, name: true, projectCode: true } },
+              assignedTo: { select: { id: true, name: true, email: true } },
+              createdBy: { select: { id: true, name: true, email: true } },
+            },
+          });
+          break;
+        } catch (createError: any) {
+          if (createError?.code === "P2002") continue;
+          throw createError;
+        }
+      }
+
+      if (!task) {
+        throw new ValidationError(
+          "Unable to generate a unique task code. Please retry.",
+        );
+      }
 
       // Create initial status history entry
       await prisma.iTTaskStatusHistory.create({
