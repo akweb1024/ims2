@@ -45,7 +45,8 @@ export async function updateLeaveRequestStatus(
     leaveId: string,
     status: string,
     adminId: string,
-    tx: Prisma.TransactionClient = prisma
+    tx: Prisma.TransactionClient = prisma,
+    managerComment?: string
 ) {
     // 1. Fetch current leave request with employee profile
     const existing = await tx.leaveRequest.findUnique({
@@ -67,7 +68,8 @@ export async function updateLeaveRequestStatus(
         where: { id: leaveId },
         data: {
             status: status as any,
-            approvedById: adminId
+            approvedById: adminId,
+            managerComment: managerComment?.trim() ? managerComment.trim() : null
         }
     });
 

@@ -4,6 +4,8 @@ import { authorizedRoute } from '@/lib/middleware-auth';
 import { updateLeaveRequestStatus } from '@/lib/services/leave-service';
 import { logger } from '@/lib/logger';
 
+const ALLOWED_LEAVE_STATUSES = new Set(['PENDING', 'APPROVED', 'REJECTED']);
+
 // GET /api/staff-management/leaves - List leave requests
 export const GET = authorizedRoute(
     ['SUPER_ADMIN', 'ADMIN', 'HR_MANAGER', 'HR'],
@@ -98,9 +100,35 @@ export const PUT = authorizedRoute(
                 return NextResponse.json({ error: 'Leave ID and status are required' }, { status: 400 });
             }
 
+            if (!ALLOWED_LEAVE_STATUSES.has(status)) {
+                return NextResponse.json(
+                    { error: 'Invalid status. Allowed values: PENDING, APPROVED, REJECTED' },
+                    { status: 400 }
+                );
+            }
+
+            const leaveForAccess = await prisma.leaveRequest.findUnique({
+                where: { id: leaveId },
+                include: {
+                    employee: {
+                        include: {
+                            user: { select: { companyId: true } }
+                        }
+                    }
+                }
+            });
+
+            if (!leaveForAccess) {
+                return NextResponse.json({ error: 'Leave request not found' }, { status: 404 });
+            }
+
+            if (user.companyId && leaveForAccess.employee?.user?.companyId !== user.companyId) {
+                return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+            }
+
             // Use centralized service for status update and balance/ledger synchronization
             const leave = await prisma.$transaction(async (tx) => {
-                return await updateLeaveRequestStatus(leaveId, status, user.id, tx);
+                return await updateLeaveRequestStatus(leaveId, status, user.id, tx, comment);
             });
 
             return NextResponse.json({ message: 'Leave updated successfully', leave });

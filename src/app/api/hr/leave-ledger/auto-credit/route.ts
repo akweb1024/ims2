@@ -5,13 +5,18 @@ import { logger } from '@/lib/logger';
 export async function GET(req: NextRequest) {
     try {
         // Secure the cron endpoint
+        const cronSecret = process.env.CRON_SECRET;
+        if (!cronSecret) {
+            return NextResponse.json({ error: 'CRON_SECRET is not configured' }, { status: 500 });
+        }
+
         const authHeader = req.headers.get('authorization');
-        const expectedAuth = `Bearer ${process.env.CRON_SECRET || 'changeme'}`;
+        const expectedAuth = `Bearer ${cronSecret}`;
         
         // Example check: if(!authHeader || authHeader !== expectedAuth)
         // Adjust depending on your actual cron scheduler. If using Vercel Cron, you can check req.headers.get('User-Agent') === 'Vercel-Cron'
         // For general safety, we check the secret here.
-        if (authHeader !== expectedAuth && process.env.NODE_ENV === 'production') {
+        if (authHeader !== expectedAuth) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 

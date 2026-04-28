@@ -5,7 +5,10 @@ import { logger } from '@/lib/logger';
 import { hashPassword } from '@/lib/auth-legacy';
 import crypto from 'crypto';
 
-const ENCRYPTION_KEY = process.env.CONFIG_ENCRYPTION_KEY || 'your-32-character-secret-key!!';
+const ENCRYPTION_KEY = process.env.CONFIG_ENCRYPTION_KEY;
+if (!ENCRYPTION_KEY) {
+  throw new Error('CONFIG_ENCRYPTION_KEY is required');
+}
 const ALGORITHM = 'aes-256-cbc';
 
 function decrypt(text: string): string {
