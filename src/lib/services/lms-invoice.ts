@@ -6,10 +6,14 @@ import { hashPassword } from '@/lib/auth-legacy';
 import crypto from 'crypto';
 
 const ENCRYPTION_KEY = process.env.CONFIG_ENCRYPTION_KEY;
-if (!ENCRYPTION_KEY) {
-  throw new Error('CONFIG_ENCRYPTION_KEY is required');
-}
 const ALGORITHM = 'aes-256-cbc';
+
+function getEncryptionKey(): string {
+  if (!ENCRYPTION_KEY) {
+    throw new Error('CONFIG_ENCRYPTION_KEY is required');
+  }
+  return ENCRYPTION_KEY;
+}
 
 function decrypt(text: string): string {
   try {
@@ -17,7 +21,7 @@ function decrypt(text: string): string {
     if (parts.length < 2) return text;
     const iv = Buffer.from(parts.shift()!, 'hex');
     const encryptedText = parts.join(':');
-    const key = crypto.scryptSync(ENCRYPTION_KEY, 'salt', 32);
+    const key = crypto.scryptSync(getEncryptionKey(), 'salt', 32);
     const decipher = crypto.createDecipheriv(ALGORITHM, key, iv);
     let decrypted = decipher.update(encryptedText, 'hex', 'utf8');
     decrypted += decipher.final('utf8');
