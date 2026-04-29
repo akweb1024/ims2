@@ -224,8 +224,18 @@ export const PATCH = authorizedRoute(
                 gstin, stateCode, cinNo, panNo, iecCode,
                 bankName, bankAccountHolder, bankAccountNumber, bankIfscCode, bankSwiftCode,
                 paymentMode, brandRelationType, invoiceCompanyLogoUrl,
-                regdOfficeAddress, salesOfficeAddress, invoiceTerms
+                regdOfficeAddress, salesOfficeAddress, invoiceTerms,
+                invoicePrefix, proformaPrefix, invoiceNextNumber, proformaNextNumber
             } = body;
+
+            const normalizedInvoiceNextNumber =
+                invoiceNextNumber !== undefined && invoiceNextNumber !== null
+                    ? Math.max(1, Number(invoiceNextNumber) || 1)
+                    : undefined;
+            const normalizedProformaNextNumber =
+                proformaNextNumber !== undefined && proformaNextNumber !== null
+                    ? Math.max(1, Number(proformaNextNumber) || 1)
+                    : undefined;
 
             const before = await prisma.company.findUnique({
                 where: { id },
@@ -278,6 +288,10 @@ export const PATCH = authorizedRoute(
                     ...(regdOfficeAddress !== undefined && { regdOfficeAddress }),
                     ...(salesOfficeAddress !== undefined && { salesOfficeAddress }),
                     ...(invoiceTerms !== undefined && { invoiceTerms }),
+                    ...(invoicePrefix !== undefined && { invoicePrefix }),
+                    ...(proformaPrefix !== undefined && { proformaPrefix }),
+                    ...(normalizedInvoiceNextNumber !== undefined && { invoiceNextNumber: normalizedInvoiceNextNumber }),
+                    ...(normalizedProformaNextNumber !== undefined && { proformaNextNumber: normalizedProformaNextNumber }),
                 },
                 include: {
                     _count: {
