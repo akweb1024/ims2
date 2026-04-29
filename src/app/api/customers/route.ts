@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { Prisma } from '@prisma/client';
 import { authorizedRoute } from '@/lib/middleware-auth';
-import { handleApiError, ValidationError } from '@/lib/error-handler';
+import { ConflictError, handleApiError, ValidationError } from '@/lib/error-handler';
 import { logger } from '@/lib/logger';
 import { buildCustomerTypeWhere } from '@/lib/customer-filter';
 
@@ -128,6 +128,7 @@ export const POST = authorizedRoute(
     ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'EXECUTIVE', 'FINANCE_ADMIN'],
     async (req: NextRequest, user) => {
     try {
+        const { searchParams } = new URL(req.url);
         const body = await req.json();
         const {
             name,
@@ -169,9 +170,14 @@ export const POST = authorizedRoute(
             universityId,
             designation, 
             assignedToUserId,
-            companyId 
+            companyId,
+            idempotent: idempotentInBody
         } = body;
 
+        const isIdempotentCreate =
+            searchParams.get('idempotent') === 'true' ||
+            idempotentInBody === true ||
+            idempotentInBody === 'true';
 
         if (!name || !primaryEmail || !customerType) {
             throw new ValidationError('Missing required fields: name, primaryEmail, and customerType are required');
@@ -210,7 +216,10 @@ export const POST = authorizedRoute(
                 where: { primaryEmail }
             });
             if (existing) {
-                throw new Error('Customer with this email already exists');
+                if (isIdempotentCreate) {
+                    return { customer: existing, wasCreated: false };
+                }
+                throw new ConflictError('Customer with this email already exists');
             }
 
             const user = await tx.user.create({
@@ -361,12 +370,16 @@ export const POST = authorizedRoute(
                 }
             });
 
-            return customer;
+            return { customer, wasCreated: true };
         });
 
-        logger.info('Customer created', { customerId: result.id, createdBy: user.id });
+        logger.info('Customer create handled', {
+            customerId: result.customer.id,
+            createdBy: user.id,
+            wasCreated: result.wasCreated
+        });
 
-        return NextResponse.json(result);
+        return NextResponse.json(result.customer, { status: result.wasCreated ? 201 : 200 });
 
     } catch (error) {
         return handleApiError(error, req.nextUrl.pathname);
