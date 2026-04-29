@@ -1,3 +1,5 @@
+import { deriveStateCodeFromState, normalizeStateCode } from "@/lib/india-state-code";
+
 type TaxCategory = "PRINT_JOURNAL" | "DIGITAL_ACCESS" | "STANDARD";
 
 type TaxableItemInput = {
@@ -105,13 +107,6 @@ export const resolveJournalSubscriptionMode = (value?: string | null) => {
   }
 
   return "PRINT";
-};
-
-export const normalizeStateCode = (value?: string | null) => {
-  const normalized = (value || "").trim().toUpperCase();
-  if (!normalized) return "";
-  if (/^\d+$/.test(normalized)) return normalized.padStart(2, "0");
-  return normalized;
 };
 
 export const getCustomerSegmentLabel = (customerType?: string | null) => {
@@ -286,10 +281,14 @@ export const buildInvoiceTaxContext = (
     customer.shippingCountry || customer.billingCountry || "India";
   const isCurrencyExport = customer.currency && customer.currency.toUpperCase() !== "INR";
   const isDomestic = isIndianSupply(country) && !isCurrencyExport;
-  const placeOfSupplyCode = normalizeStateCode(
+  const placeOfSupplyCode = deriveStateCodeFromState(
     customer.shippingStateCode || customer.billingStateCode,
+    customer.shippingState || customer.billingState,
   );
-  const companyStateCode = normalizeStateCode(company.stateCode);
+  const companyStateCode = deriveStateCodeFromState(
+    company.stateCode,
+    null,
+  );
   const isSameStateSupply =
     isDomestic && !!placeOfSupplyCode && !!companyStateCode
       ? placeOfSupplyCode === companyStateCode

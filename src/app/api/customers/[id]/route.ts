@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { getAuthenticatedUser } from '@/lib/auth-legacy';
 import { logger } from '@/lib/logger';
 import { buildTrackingMetadata } from '@/lib/dispatch';
+import { deriveStateCodeFromState } from '@/lib/india-state-code';
 
 const toNullableString = (value: unknown) => {
     if (value === undefined) return undefined;
@@ -304,6 +305,25 @@ export async function PATCH(
             ...(profileData.shippingEnduserName !== undefined && { shippingEnduserName: toNullableString(profileData.shippingEnduserName) }),
             ...(profileData.gstVatTaxId !== undefined && { gstVatTaxId: toNullableString(profileData.gstVatTaxId) }),
         };
+
+        const resolvedBillingStateCode = deriveStateCodeFromState(
+            profileData.billingStateCode,
+            profileData.billingState,
+        );
+        const resolvedShippingStateCode = deriveStateCodeFromState(
+            profileData.shippingStateCode,
+            profileData.shippingState || profileData.billingState,
+        );
+
+        if (profileData.billingState !== undefined || profileData.billingStateCode !== undefined) {
+            (customerProfileData as any).billingStateCode = resolvedBillingStateCode || null;
+        }
+        if (profileData.shippingState !== undefined || profileData.shippingStateCode !== undefined) {
+            (customerProfileData as any).shippingStateCode =
+                resolvedShippingStateCode ||
+                resolvedBillingStateCode ||
+                null;
+        }
 
         const result = await prisma.$transaction(async (tx) => {
             const updatedProfile = await tx.customerProfile.update({

@@ -111,6 +111,17 @@ export const POST = authorizedRoute(
         productMetadata,
       });
 
+      if (taxBreakdown.isDomestic && !taxBreakdown.placeOfSupplyCode) {
+        throw new ValidationError(
+          "Missing customer state code for GST calculation. Please update billing/shipping state details.",
+        );
+      }
+      if (taxBreakdown.isDomestic && !taxBreakdown.companyStateCode) {
+        throw new ValidationError(
+          "Missing company state code for GST calculation. Please configure company state code.",
+        );
+      }
+
       const updated = await prisma.invoice.update({
         where: { id },
         data: {
@@ -155,4 +166,3 @@ export const POST = authorizedRoute(
     }
   },
 );
-

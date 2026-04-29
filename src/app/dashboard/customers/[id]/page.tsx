@@ -346,6 +346,50 @@ export default function CustomerDetailPage({ params }: { params: Promise<{ id: s
         }
     };
 
+    const handlePincodeAutofill = async (
+        pincode: string,
+        target: 'billing' | 'shipping',
+        formEl: HTMLFormElement,
+    ) => {
+        if ((pincode || '').trim().length !== 6) return;
+        try {
+            const response = await fetch(`/api/pincode?pincode=${pincode.trim()}`);
+            const data = await response.json();
+            if (!data?.[0] || data[0].Status !== 'Success' || !data[0].PostOffice?.[0]) return;
+
+            const detail = data[0].PostOffice[0];
+            const city = detail.District || '';
+            const state = detail.State || '';
+            const stateCode = detail.StateCode || '';
+
+            const setInputValue = (name: string, value: string) => {
+                const input = formEl.querySelector<HTMLInputElement | HTMLTextAreaElement>(`[name="${name}"]`);
+                if (input) input.value = value;
+            };
+
+            if (target === 'billing') {
+                setInputValue('billingCity', city);
+                setInputValue('billingState', state);
+                setInputValue('billingStateCode', stateCode);
+                setInputValue('billingCountry', 'India');
+                if (isShippingSame) {
+                    setInputValue('shippingCity', city);
+                    setInputValue('shippingState', state);
+                    setInputValue('shippingStateCode', stateCode);
+                    setInputValue('shippingCountry', 'India');
+                    setInputValue('shippingPincode', pincode.trim());
+                }
+            } else {
+                setInputValue('shippingCity', city);
+                setInputValue('shippingState', state);
+                setInputValue('shippingStateCode', stateCode);
+                setInputValue('shippingCountry', 'India');
+            }
+        } catch (error) {
+            console.error('Pincode autofill failed:', error);
+        }
+    };
+
     return (
         <DashboardLayout userRole={userRole}>
             <div className="space-y-6">
@@ -571,7 +615,17 @@ export default function CustomerDetailPage({ params }: { params: Promise<{ id: s
                                         </div>
                                         <div>
                                             <label className="label">Pincode</label>
-                                            <input name="billingPincode" className="input" defaultValue={customer.billingPincode} />
+                                            <input
+                                                name="billingPincode"
+                                                className="input"
+                                                defaultValue={customer.billingPincode}
+                                                onBlur={(e) => {
+                                                    const formEl = e.currentTarget.form;
+                                                    if (formEl) {
+                                                        void handlePincodeAutofill(e.currentTarget.value, 'billing', formEl);
+                                                    }
+                                                }}
+                                            />
                                         </div>
                                         <div className="md:col-span-2">
                                             <label className="label">Country</label>
@@ -618,7 +672,17 @@ export default function CustomerDetailPage({ params }: { params: Promise<{ id: s
                                                 </div>
                                                 <div>
                                                     <label className="label">Pincode</label>
-                                                    <input name="shippingPincode" className="input" defaultValue={customer.shippingPincode || customer.billingPincode} />
+                                                    <input
+                                                        name="shippingPincode"
+                                                        className="input"
+                                                        defaultValue={customer.shippingPincode || customer.billingPincode}
+                                                        onBlur={(e) => {
+                                                            const formEl = e.currentTarget.form;
+                                                            if (formEl) {
+                                                                void handlePincodeAutofill(e.currentTarget.value, 'shipping', formEl);
+                                                            }
+                                                        }}
+                                                    />
                                                 </div>
                                                 <div className="md:col-span-2">
                                                     <label className="label">Country</label>

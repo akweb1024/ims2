@@ -249,6 +249,17 @@ export const POST = authorizedRoute(
         const igstRate = taxBreakdown.igstRate;
         const effectiveTaxRate = taxBreakdown.effectiveTaxRate;
 
+        if (taxBreakdown.isDomestic && !taxBreakdown.placeOfSupplyCode) {
+            throw new ValidationError(
+                'Missing customer state code for GST calculation. Please update billing/shipping state details.',
+            );
+        }
+        if (taxBreakdown.isDomestic && !taxBreakdown.companyStateCode) {
+            throw new ValidationError(
+                'Missing company state code for GST calculation. Please configure company state code.',
+            );
+        }
+
         const newInvoice = await prisma.$transaction(async (tx: any) => {
             // Generate globally-unique invoice & proforma numbers (entity-code-embedded)
             const { invoiceNumber, proformaNumber } = await generateInvoiceNumbers(

@@ -138,20 +138,24 @@ export default function NewCustomerPage() {
                 const detail = data[0].PostOffice[0];
                 const city = detail.District;
                 const state = detail.State;
+                const stateCode = detail.StateCode || '';
                 
                 if (target === 'billing') {
                     setValue('billingCity', city, { shouldValidate: true, shouldDirty: true });
                     setValue('billingState', state, { shouldValidate: true, shouldDirty: true });
+                    setValue('billingStateCode', stateCode, { shouldValidate: true, shouldDirty: true });
                     setValue('billingCountry', 'India', { shouldValidate: true, shouldDirty: true });
                     if (isShippingSame) {
                         setValue('shippingCity', city, { shouldValidate: true, shouldDirty: true });
                         setValue('shippingState', state, { shouldValidate: true, shouldDirty: true });
+                        setValue('shippingStateCode', stateCode, { shouldValidate: true, shouldDirty: true });
                         setValue('shippingCountry', 'India', { shouldValidate: true, shouldDirty: true });
                         setValue('shippingPincode', pincode, { shouldValidate: true, shouldDirty: true });
                     }
                 } else {
                     setValue('shippingCity', city, { shouldValidate: true, shouldDirty: true });
                     setValue('shippingState', state, { shouldValidate: true, shouldDirty: true });
+                    setValue('shippingStateCode', stateCode, { shouldValidate: true, shouldDirty: true });
                     setValue('shippingCountry', 'India', { shouldValidate: true, shouldDirty: true });
                 }
             }

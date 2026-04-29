@@ -5,6 +5,7 @@ import { authorizedRoute } from '@/lib/middleware-auth';
 import { ConflictError, handleApiError, ValidationError } from '@/lib/error-handler';
 import { logger } from '@/lib/logger';
 import { buildCustomerTypeWhere } from '@/lib/customer-filter';
+import { deriveStateCodeFromState } from '@/lib/india-state-code';
 
 export const GET = authorizedRoute(
     ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'EXECUTIVE', 'FINANCE_ADMIN'],
@@ -210,6 +211,15 @@ export const POST = authorizedRoute(
             idempotentInBody === true ||
             idempotentInBody === 'true';
 
+        const resolvedBillingStateCode = deriveStateCodeFromState(
+            billingStateCode,
+            billingState || state,
+        ) || null;
+        const resolvedShippingStateCode = deriveStateCodeFromState(
+            shippingStateCode || billingStateCode,
+            shippingState || billingState || state,
+        ) || resolvedBillingStateCode;
+
         if (!name || !primaryEmail || !customerType) {
             throw new ValidationError('Missing required fields: name, primaryEmail, and customerType are required');
         }
@@ -325,14 +335,14 @@ export const POST = authorizedRoute(
                     billingAddress,
                     billingCity,
                     billingState,
-                    billingStateCode,
+                    billingStateCode: resolvedBillingStateCode,
                     billingPincode,
                     billingCountry: billingCountry || country || 'India',
 
                     shippingAddress: shippingAddress || billingAddress,
                     shippingCity: shippingCity || billingCity || city,
                     shippingState: shippingState || billingState || state,
-                    shippingStateCode: shippingStateCode || billingStateCode,
+                    shippingStateCode: resolvedShippingStateCode,
                     shippingPincode: shippingPincode || billingPincode || pincode,
                     shippingCountry: shippingCountry || billingCountry || country || 'India',
                     shippingEnduserName: shippingEnduserName || null,
