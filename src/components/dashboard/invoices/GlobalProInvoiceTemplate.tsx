@@ -5,6 +5,7 @@ import Image from "next/image";
 import { QRCodeSVG } from "qrcode.react";
 import FormattedDate from "@/components/common/FormattedDate";
 import { buildInvoiceTaxContext } from "@/lib/invoice-tax";
+import SafeHTML from "@/components/common/SafeHTML";
 
 interface GlobalProInvoiceTemplateProps {
   invoice: any;
@@ -105,6 +106,8 @@ export default function GlobalProInvoiceTemplate({
     DRAFT: { bg: "#f0f9ff", text: "#0369a1", border: "#7dd3fc" },
   };
   const statusStyle = statusColorMap[invoice.status] || statusColorMap["VOID"];
+  const termsHtml = typeof identity.terms === "string" ? identity.terms.trim() : "";
+  const hasRichTerms = /<\/?[a-z][\s\S]*>/i.test(termsHtml);
 
   return (
     <div
@@ -1169,99 +1172,15 @@ export default function GlobalProInvoiceTemplate({
         </div>
       )}
 
-      {/* ═══════════ TERMS + SIGNATURE ═══════════ */}
+      {/* ═══════════ SIGNATURE ═══════════ */}
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "1.5fr 1fr",
+          gridTemplateColumns: "1fr",
           borderBottom: "1.5px solid #e2e8f0",
-          minHeight: "110px",
+          minHeight: "88px",
         }}
       >
-        {/* Terms */}
-        <div
-          style={{
-            padding: "12px 16px",
-            borderRight: "1px solid #e2e8f0",
-          }}
-        >
-          <div
-            style={{
-              fontSize: "8px",
-              fontWeight: 800,
-              color: accentColor,
-              textTransform: "uppercase",
-              letterSpacing: "1.5px",
-              marginBottom: "6px",
-            }}
-          >
-            Terms &amp; Conditions
-          </div>
-          {isExport && (
-            <div
-              style={{
-                fontWeight: 700,
-                color: "#1e3a8a",
-                background: "#dbeafe",
-                border: "1px solid #93c5fd",
-                padding: "4px 8px",
-                borderRadius: "4px",
-                fontSize: "9px",
-                marginBottom: "8px",
-                textTransform: "uppercase",
-                letterSpacing: "0.5px",
-              }}
-            >
-              SUPPLY MEANT FOR EXPORT UNDER BOND OR LETTER OF UNDERTAKING WITHOUT PAYMENT OF INTEGRATED TAX.
-            </div>
-          )}
-          <ol
-            style={{
-              margin: 0,
-              padding: "0 0 0 14px",
-              fontSize: "8.5px",
-              color: "#475569",
-              lineHeight: 1.7,
-            }}
-          >
-            {identity.terms ? (
-              <li>{identity.terms}</li>
-            ) : (
-              <>
-                <li>Payment is due within the period specified above.</li>
-                <li>All prices are in {invoice.currency || "INR"} unless stated otherwise.</li>
-                <li>{taxContext.customerSegmentLabel}: {taxContext.taxNote}</li>
-                <li>GST Applicability: {taxContext.gstApplicabilityLabel}</li>
-                {taxContext.isDomestic && (
-                  <li>Place of Supply: {taxContext.jurisdictionLabel}</li>
-                )}
-                <li>
-                  {isExport
-                    ? "This is an export invoice — zero-rated supply under GST (IGST Act)."
-                    : "Subject to local jurisdiction only."}
-                </li>
-                <li>Please quote the invoice number in all correspondence.</li>
-              </>
-            )}
-          </ol>
-          <div
-            style={{
-              marginTop: "8px",
-              fontSize: "8.5px",
-              background: "#eff6ff",
-              border: "1px dashed #93c5fd",
-              borderRadius: "4px",
-              padding: "4px 8px",
-              color: "#1e40af",
-              fontWeight: 600,
-            }}
-          >
-            📌 Payment Ref: {invoice.description || `Payment for services rendered to ${customer.name || "client"}`}
-            <br />
-            {taxContext.customerSegmentLabel}: {taxContext.taxNote}
-          </div>
-        </div>
-
         {/* Signature */}
         <div
           style={{
@@ -1417,6 +1336,101 @@ export default function GlobalProInvoiceTemplate({
               [EXPORT INVOICE — ZERO RATED SUPPLY]
             </span>
           )}
+        </div>
+      </div>
+
+      {/* ═══════════ TERMS (AT END) ═══════════ */}
+      <div
+        style={{
+          borderTop: "1.5px solid #e2e8f0",
+          padding: "12px 16px 16px",
+          background: "#fff",
+        }}
+      >
+        <div
+          style={{
+            fontSize: "9px",
+            fontWeight: 900,
+            color: accentColor,
+            textTransform: "uppercase",
+            letterSpacing: "1.5px",
+            marginBottom: "8px",
+          }}
+        >
+          Terms &amp; Conditions
+        </div>
+        {isExport && (
+          <div
+            style={{
+              fontWeight: 700,
+              color: "#1e3a8a",
+              background: "#dbeafe",
+              border: "1px solid #93c5fd",
+              padding: "5px 9px",
+              borderRadius: "4px",
+              fontSize: "9px",
+              marginBottom: "10px",
+              textTransform: "uppercase",
+              letterSpacing: "0.5px",
+            }}
+          >
+            SUPPLY MEANT FOR EXPORT UNDER BOND OR LETTER OF UNDERTAKING WITHOUT PAYMENT OF INTEGRATED TAX.
+          </div>
+        )}
+        {hasRichTerms ? (
+          <SafeHTML
+            html={termsHtml}
+            className="!text-[11px] !leading-relaxed !text-slate-700 [&_p]:my-1 [&_ol]:my-2 [&_ul]:my-2 [&_li]:my-0.5"
+          />
+        ) : termsHtml ? (
+          <div
+            style={{
+              whiteSpace: "pre-wrap",
+              fontSize: "10px",
+              color: "#475569",
+              lineHeight: 1.7,
+            }}
+          >
+            {termsHtml}
+          </div>
+        ) : (
+          <ol
+            style={{
+              margin: 0,
+              padding: "0 0 0 16px",
+              fontSize: "10px",
+              color: "#475569",
+              lineHeight: 1.7,
+            }}
+          >
+            <li>Payment is due within the period specified above.</li>
+            <li>All prices are in {invoice.currency || "INR"} unless stated otherwise.</li>
+            <li>{taxContext.customerSegmentLabel}: {taxContext.taxNote}</li>
+            <li>GST Applicability: {taxContext.gstApplicabilityLabel}</li>
+            {taxContext.isDomestic && <li>Place of Supply: {taxContext.jurisdictionLabel}</li>}
+            <li>
+              {isExport
+                ? "This is an export invoice — zero-rated supply under GST (IGST Act)."
+                : "Subject to local jurisdiction only."}
+            </li>
+            <li>Please quote the invoice number in all correspondence.</li>
+          </ol>
+        )}
+        <div
+          style={{
+            marginTop: "10px",
+            fontSize: "9px",
+            background: "#eff6ff",
+            border: "1px dashed #93c5fd",
+            borderRadius: "4px",
+            padding: "5px 9px",
+            color: "#1e40af",
+            fontWeight: 600,
+          }}
+        >
+          Payment Ref: {invoice.description || `Payment for services rendered to ${customer.name || "client"}`}
+          <br />
+          {taxContext.customerSegmentLabel}: {taxContext.taxNote}
         </div>
       </div>
     </div>

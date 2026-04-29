@@ -7,6 +7,7 @@ import CompanyClientLayout from "../companies/CompanyClientLayout";
 import CompanyAnalyticsOverview from "@/components/dashboard/company/CompanyAnalyticsOverview";
 import WorkforceAnalytics from "@/components/dashboard/company/WorkforceAnalytics";
 import { DashboardSkeleton } from "@/components/ui/skeletons";
+import RichTextEditor from "@/components/common/RichTextEditor";
 
 export default function CompanyPage() {
   const [company, setCompany] = useState<any>(null);
@@ -1042,15 +1043,15 @@ export default function CompanyPage() {
                       label="Invoice Terms & Conditions"
                       hint="Standard legal terms that appear at the bottom of every invoice"
                     >
-                      <textarea
-                        className="input-premium min-h-[150px]"
+                      <RichTextEditor
                         value={invoiceSettings.invoiceTerms}
-                        onChange={(e) =>
+                        onChange={(value) =>
                           setInvoiceSettings({
                             ...invoiceSettings,
-                            invoiceTerms: e.target.value,
+                            invoiceTerms: value,
                           })
                         }
+                        className="bg-white rounded-2xl"
                         placeholder="1. Payment is due within... 2. All disputes subject to..."
                       />
                     </Field>
