@@ -323,12 +323,21 @@ export const POST = authorizedRoute(
             }
 
             // Reserve stock for physical + inventory-tracked items on invoice creation
-            const reservedLineItems = await applyInvoiceStockReservations(tx, {
-                invoiceId: created.id,
-                companyId: user.companyId,
-                lineItems: finalProcessedItems,
-                userId: user.id,
-            });
+            let reservedLineItems = finalProcessedItems;
+            try {
+                reservedLineItems = await applyInvoiceStockReservations(tx, {
+                    invoiceId: created.id,
+                    companyId: user.companyId ?? customer.companyId ?? created.companyId,
+                    lineItems: finalProcessedItems,
+                    userId: user.id,
+                });
+            } catch (reservationError: any) {
+                // Convert stock/inventory reservation failures to user-facing validation errors.
+                const message = reservationError instanceof Error
+                    ? reservationError.message
+                    : 'Failed to reserve inventory for invoice items';
+                throw new ValidationError(message);
+            }
 
             if (JSON.stringify(reservedLineItems) !== JSON.stringify(finalProcessedItems)) {
                 return tx.invoice.update({
