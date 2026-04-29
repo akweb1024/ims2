@@ -13,6 +13,7 @@ import {
   CRMTable,
   CRMTableLoading,
   CRMTableEmpty,
+  CRMTableError,
   CRMPagination,
   CRMBadge,
   CRMRowAction,
@@ -47,6 +48,7 @@ export default function LeadsPage() {
   const router = useRouter();
   const [leads, setLeads] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [pagination, setPagination] = useState({
@@ -71,8 +73,9 @@ export default function LeadsPage() {
   const [employees, setEmployees] = useState<any[]>([]);
   const [assignedToFilter, setAssignedToFilter] = useState("");
 
-  const fetchLeads = useCallback(async () => {
+  const fetchLeads = useCallback(async (signal?: AbortSignal) => {
     setLoading(true);
+    setError(null);
     try {
       const params = new URLSearchParams({
         page: pagination.page.toString(),
@@ -82,14 +85,19 @@ export default function LeadsPage() {
         ...(assignedToFilter && { assignedToUserId: assignedToFilter }),
       });
 
-      const res = await fetch(`/api/crm/leads?${params}`);
+      const res = await fetch(`/api/crm/leads?${params}`, { signal });
       if (res.ok) {
         const data = await res.json();
         setLeads(data.data);
         setPagination(data.pagination);
+      } else {
+        const data = await res.json().catch(() => ({}));
+        setError(data?.message || data?.error || "Failed to fetch prospects");
       }
     } catch (error) {
+      if ((error as Error).name === "AbortError") return;
       console.error("Failed to fetch leads", error);
+      setError("Network error while loading prospects");
     } finally {
       setLoading(false);
     }
@@ -111,11 +119,19 @@ export default function LeadsPage() {
   }, []);
 
   useEffect(() => {
+    const controller = new AbortController();
     const timer = setTimeout(() => {
-      fetchLeads();
+      fetchLeads(controller.signal);
     }, 300);
-    return () => clearTimeout(timer);
+    return () => {
+      clearTimeout(timer);
+      controller.abort();
+    };
   }, [fetchLeads]);
+
+  useEffect(() => {
+    setPagination((p) => (p.page === 1 ? p : { ...p, page: 1 }));
+  }, [search, statusFilter, assignedToFilter]);
 
   const handleCreateLead = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -335,6 +351,8 @@ export default function LeadsPage() {
               <tbody className="divide-y divide-secondary-50">
                 {loading ? (
                   <CRMTableLoading rows={6} colSpan={6} />
+                ) : error ? (
+                  <CRMTableError message={error} onRetry={() => fetchLeads()} colSpan={6} />
                 ) : leads.length === 0 ? (
                     <CRMTableEmpty
                       icon={<UserPlus size={48} strokeWidth={1} />}

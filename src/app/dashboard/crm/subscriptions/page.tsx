@@ -53,20 +53,17 @@ export default function SubscriptionsPage() {
         if (userData) setUserRole(JSON.parse(userData).role);
     }, []);
 
-    const fetchSubscriptions = useCallback(async () => {
+    const fetchSubscriptions = useCallback(async (signal?: AbortSignal) => {
         setLoading(true);
         setError(null);
         try {
-            const token = localStorage.getItem('token');
             const params = new URLSearchParams({
                 page: pagination.page.toString(),
                 limit: pagination.limit.toString(),
                 search,
                 ...(statusFilter && { status: statusFilter })
             });
-            const res = await fetch(`/api/subscriptions?${params}`, {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
+            const res = await fetch(`/api/subscriptions?${params}`, { signal });
             if (res.ok) {
                 const result = await res.json();
                 setSubscriptions(result.data);
@@ -75,7 +72,8 @@ export default function SubscriptionsPage() {
                 const err = await res.json();
                 setError(err.message || err.error || 'Subscription sync failed');
             }
-        } catch {
+        } catch (error) {
+            if ((error as Error).name === 'AbortError') return;
             setError('Global Network Desync');
         } finally {
             setLoading(false);
@@ -83,16 +81,21 @@ export default function SubscriptionsPage() {
     }, [pagination.page, pagination.limit, search, statusFilter]);
 
     useEffect(() => {
-        const timer = setTimeout(() => fetchSubscriptions(), 300);
-        return () => clearTimeout(timer);
+        const controller = new AbortController();
+        const timer = setTimeout(() => fetchSubscriptions(controller.signal), 300);
+        return () => {
+            clearTimeout(timer);
+            controller.abort();
+        };
     }, [fetchSubscriptions]);
+
+    useEffect(() => {
+        setPagination((p) => (p.page === 1 ? p : { ...p, page: 1 }));
+    }, [search, statusFilter]);
 
     const handleExport = async () => {
         try {
-            const token = localStorage.getItem('token');
-            const res = await fetch('/api/exports/subscriptions', {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
+            const res = await fetch('/api/exports/subscriptions');
             if (res.ok) {
                 const blob = await res.blob();
                 const url = window.URL.createObjectURL(blob);

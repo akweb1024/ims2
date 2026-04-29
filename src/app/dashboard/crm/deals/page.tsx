@@ -32,6 +32,7 @@ export default function DealsPage() {
     const searchParams = useSearchParams();
     const [deals, setDeals] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [leads, setLeads] = useState<any[]>([]);
     const [createLoading, setCreateLoading] = useState(false);
@@ -41,33 +42,47 @@ export default function DealsPage() {
     });
     const leadIdFromQuery = searchParams.get('leadId');
 
-    const fetchDeals = useCallback(async () => {
+    const fetchDeals = useCallback(async (signal?: AbortSignal) => {
         setLoading(true);
+        setError(null);
         try {
-            const res = await fetch('/api/crm/deals');
+            const res = await fetch('/api/crm/deals', { signal });
             if (res.ok) {
                 const data = await res.json();
                 setDeals(data);
+            } else {
+                const data = await res.json().catch(() => ({}));
+                setError(data?.message || data?.error || 'Failed to fetch deals');
             }
         } catch (error) {
+            if ((error as Error).name === 'AbortError') return;
             console.error('Failed to fetch deals', error);
+            setError('Network error while loading deals');
         } finally {
             setLoading(false);
         }
     }, []);
 
-    const fetchLeadsForSelect = async () => {
+    const fetchLeadsForSelect = async (signal?: AbortSignal) => {
         try {
-            const res = await fetch('/api/crm/leads?limit=100');
+            const res = await fetch('/api/crm/leads?limit=100', { signal });
             if (res.ok) {
                 const data = await res.json();
                 setLeads(data.data);
             }
-        } catch (e) { console.error(e); }
+        } catch (e) {
+            if ((e as Error).name === 'AbortError') return;
+            console.error(e);
+        }
     };
 
     useEffect(() => {
-        fetchDeals(); fetchLeadsForSelect();
+        const controller = new AbortController();
+        Promise.all([
+            fetchDeals(controller.signal),
+            fetchLeadsForSelect(controller.signal)
+        ]);
+        return () => controller.abort();
     }, [fetchDeals]);
 
     useEffect(() => {
@@ -195,6 +210,12 @@ export default function DealsPage() {
                           </button>
                      </div>
                 </div>
+
+                {error && (
+                    <div className="mt-6 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-700">
+                        {error}
+                    </div>
+                )}
 
                 <div className="mt-8 flex gap-8 h-[calc(100vh-320px)] min-w-full overflow-x-auto pb-10 custom-scrollbar group/matrix">
                     {STAGES.map(stage => {
