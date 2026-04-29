@@ -7,9 +7,11 @@ import { AlertCenter } from '@/components/digital-twin/AlertCenter';
 import { DispatchPanel } from '@/components/digital-twin/DispatchPanel';
 import { NetworkGraphView } from '@/components/digital-twin/NetworkGraphView';
 import { IntelligencePanel } from '@/components/digital-twin/IntelligencePanel';
+import { TracePanel } from '@/components/digital-twin/TracePanel';
 import { EmployeeTwin, InventoryTwin, TwinSummary } from '@/lib/digital-twin/twin-engine';
 import { exportTwinToCSV } from '@/lib/digital-twin/export-twin';
 import { runIntelligenceEngine, IntelligenceSummary } from '@/lib/digital-twin/intelligence';
+import type { TwinTracePayload } from '@/lib/digital-twin/trace-types';
 import { DashboardSkeleton } from '@/components/ui/skeletons';
 import { Badge } from '@/components/ui/Badge';
 
@@ -54,6 +56,8 @@ const Particles = () => (
 export default function DigitalTwinPage() {
     const [data, setData] = useState<TwinData | null>(null);
     const [intelligence, setIntelligence] = useState<IntelligenceSummary | null>(null);
+    const [trace, setTrace] = useState<TwinTracePayload | null>(null);
+    const [traceLoading, setTraceLoading] = useState(true);
     const [loading, setLoading] = useState(true);
     const [viewMode, setViewMode] = useState<ViewMode>('grid');
     const [streamMode] = useState<StreamMode>('sse');
@@ -96,6 +100,19 @@ export default function DigitalTwinPage() {
         }
     }, [applySnapshot]);
 
+    const fetchTrace = useCallback(async () => {
+        try {
+            const res = await fetch('/api/digital-twin/traces?days=14&limit=120');
+            if (!res.ok) throw new Error('Trace API Failure');
+            const json = await res.json();
+            setTrace(json);
+        } catch {
+            setTrace(null);
+        } finally {
+            setTraceLoading(false);
+        }
+    }, []);
+
     // SSE connection setup
     const connectSSE = useCallback(() => {
         if (eventSourceRef.current) eventSourceRef.current.close();
@@ -130,6 +147,12 @@ export default function DigitalTwinPage() {
         }
         return () => { eventSourceRef.current?.close(); };
     }, [connectSSE, fetchData]);
+
+    useEffect(() => {
+        fetchTrace();
+        const traceInterval = setInterval(fetchTrace, 60000);
+        return () => clearInterval(traceInterval);
+    }, [fetchTrace]);
 
     // Polling-based countdown timer (visible even in SSE mode for UX)
     useEffect(() => {
@@ -310,6 +333,8 @@ export default function DigitalTwinPage() {
                         onDispatch={openDispatch}
                     />
                 )}
+
+                <TracePanel trace={trace} loading={traceLoading} />
 
                 {/* View Mode Toggle + Search & Filters */}
                 <div className="flex flex-wrap items-center gap-3 mb-8">
