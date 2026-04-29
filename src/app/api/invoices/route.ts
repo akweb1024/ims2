@@ -16,8 +16,8 @@ export const GET = authorizedRoute(
     try {
         // Parse Query Parameters
         const { searchParams } = new URL(req.url);
-        const page = parseInt(searchParams.get('page') || '1');
-        const limit = parseInt(searchParams.get('limit') || '10');
+        const page = Math.max(1, parseInt(searchParams.get('page') || '1'));
+        const limit = Math.min(100, Math.max(1, parseInt(searchParams.get('limit') || '10')));
         const status = searchParams.get('status') as InvoiceStatus | null;
         const search = searchParams.get('search') || '';
 
@@ -35,27 +35,37 @@ export const GET = authorizedRoute(
             where.status = status;
         }
 
+        const andFilters: any[] = [];
+
         if (search) {
-            where.OR = [
-                { invoiceNumber: { contains: search } },
-                { subscription: { customerProfile: { name: { contains: search } } } },
-                { subscription: { customerProfile: { organizationName: { contains: search } } } },
-                { customerProfile: { name: { contains: search } } },
-                { customerProfile: { organizationName: { contains: search } } }
-            ];
+            andFilters.push({
+                OR: [
+                    { invoiceNumber: { contains: search, mode: 'insensitive' } },
+                    { subscription: { customerProfile: { name: { contains: search, mode: 'insensitive' } } } },
+                    { subscription: { customerProfile: { organizationName: { contains: search, mode: 'insensitive' } } } },
+                    { customerProfile: { name: { contains: search, mode: 'insensitive' } } },
+                    { customerProfile: { organizationName: { contains: search, mode: 'insensitive' } } }
+                ]
+            });
         }
 
         // Role-based filtering: Customers only see their own invoices
         if (user.role === 'CUSTOMER') {
             const profile = await prisma.customerProfile.findUnique({ where: { userId: user.id } });
             if (profile) {
-                where.OR = [
-                    { customerProfileId: profile.id },
-                    { subscription: { customerProfileId: profile.id } }
-                ];
+                andFilters.push({
+                    OR: [
+                        { customerProfileId: profile.id },
+                        { subscription: { customerProfileId: profile.id } }
+                    ]
+                });
             } else {
                 return NextResponse.json({ data: [], pagination: { page, limit, total: 0, totalPages: 0 } });
             }
+        }
+
+        if (andFilters.length > 0) {
+            where.AND = andFilters;
         }
 
         // 4. Fetch Invoices
@@ -129,6 +139,9 @@ export const POST = authorizedRoute(
         });
 
         if (!customer) throw new NotFoundError('Customer');
+        if (user.role !== 'SUPER_ADMIN' && customer.companyId !== user.companyId) {
+            throw new ValidationError('Invalid customer reference for this company');
+        }
 
         // Fetch Company for Snapshots and Number Generation
         const company = await prisma.company.findUnique({
@@ -356,7 +369,7 @@ export const POST = authorizedRoute(
                 description,
                 currency,
                 lineItems: finalProcessedItems,
-                companyId: user.companyId,
+                companyId: company.id,
                 brandId: brandId || null,
                 // Coupon / Discount
                 couponId: couponId || null,
@@ -380,7 +393,7 @@ export const POST = authorizedRoute(
             try {
                 reservedLineItems = await applyInvoiceStockReservations(tx, {
                     invoiceId: created.id,
-                    companyId: user.companyId ?? customer.companyId ?? created.companyId,
+                    companyId: company.id,
                     lineItems: finalProcessedItems,
                     userId: user.id,
                 });

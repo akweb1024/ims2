@@ -32,7 +32,8 @@ export async function GET(req: NextRequest, props: { params: Promise<{ id: strin
             tracking: buildTrackingMetadata(order),
         });
     } catch (error: any) {
-        return NextResponse.json({ error: error.message }, { status: 500 });
+        console.error('Logistics Order Fetch Error:', error);
+        return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
     }
 }
 
@@ -101,6 +102,7 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ id: str
             tracking: buildTrackingMetadata(order),
         });
     } catch (error: any) {
-        return NextResponse.json({ error: error.message }, { status: 500 });
+        console.error('Logistics Order Update Error:', error);
+        return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
     }
 }

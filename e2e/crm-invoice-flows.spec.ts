@@ -178,4 +178,5 @@ test.describe("CRM Invoice and Product Flows", () => {
     expect(invoiceRes.status(), `Unexpected 500: ${await invoiceRes.text()}`).not.toBe(500);
     expect([201, 400]).toContain(invoiceRes.status());
   });
+
 });

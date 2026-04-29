@@ -33,11 +33,15 @@ export default function InvoicesPage() {
     const [userRole, setUserRole] = useState('CUSTOMER');
     const [pagination, setPagination] = useState({ page: 1, totalPages: 1 });
     const [searchTerm, setSearchTerm] = useState('');
+    const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState('');
     const searchParams = useSearchParams();
     const openedFromQuery = useRef(false);
+    const activeRequestRef = useRef(0);
 
-    const fetchInvoices = useCallback(async () => {
+    const fetchInvoices = useCallback(async (signal?: AbortSignal) => {
+        const requestId = Date.now();
+        activeRequestRef.current = requestId;
         setLoading(true);
         setError(null);
         try {
@@ -46,13 +50,15 @@ export default function InvoicesPage() {
                 page: pagination.page.toString(),
                 limit: '10',
                 status: statusFilter,
-                search: searchTerm
+                search: debouncedSearchTerm
             });
 
             const res = await fetch(`/api/invoices?${params}`, {
-                headers: { 'Authorization': `Bearer ${token}` }
+                headers: { 'Authorization': `Bearer ${token}` },
+                signal,
             });
 
+            if (activeRequestRef.current !== requestId) return;
             if (res.ok) {
                 const data = await res.json();
                 setInvoices(data.data);
@@ -62,11 +68,14 @@ export default function InvoicesPage() {
                 setError(err.error || 'Failed to fetch invoices');
             }
         } catch (err) {
+            if ((err as Error).name === 'AbortError') return;
             setError('An error occurred while fetching invoices');
         } finally {
-            setLoading(false);
+            if (activeRequestRef.current === requestId) {
+                setLoading(false);
+            }
         }
-    }, [pagination.page, statusFilter, searchTerm]);
+    }, [pagination.page, statusFilter, debouncedSearchTerm]);
 
     useEffect(() => {
         const userData = localStorage.getItem('user');
@@ -74,7 +83,12 @@ export default function InvoicesPage() {
             const user = JSON.parse(userData);
             setUserRole(user.role);
         }
-        fetchInvoices();
+    }, []);
+
+    useEffect(() => {
+        const controller = new AbortController();
+        fetchInvoices(controller.signal);
+        return () => controller.abort();
     }, [fetchInvoices]);
 
     useEffect(() => {
@@ -86,17 +100,15 @@ export default function InvoicesPage() {
         }
     }, [searchParams]);
 
-    // Handle debounce for search
     useEffect(() => {
         const timer = setTimeout(() => {
+            setDebouncedSearchTerm(searchTerm);
             if (pagination.page !== 1) {
                 setPagination(prev => ({ ...prev, page: 1 }));
-            } else {
-                fetchInvoices();
             }
         }, 500);
         return () => clearTimeout(timer);
-    }, [searchTerm, pagination.page, fetchInvoices]);
+    }, [searchTerm, pagination.page]);
 
     const getStatusVariant = (status: string): BadgeVariant => {
         switch (status) {

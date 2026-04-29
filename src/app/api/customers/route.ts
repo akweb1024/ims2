@@ -58,17 +58,36 @@ export const GET = authorizedRoute(
             baseWhere.country = { contains: country, mode: 'insensitive' };
         }
 
-        // Executive Restriction: Only see assigned customers (primary or shared)
+        // Executive Restriction: Only see assigned customers (primary or shared).
+        // Keep this as an AND constraint so search filters are not widened.
         if (user.role === 'EXECUTIVE') {
-            where.OR = [
-                ...(where.OR || []),
-                { assignedToUserId: user.id },
-                { assignedExecutives: { some: { id: user.id } } }
+            const existingWhereAnd = Array.isArray(where.AND)
+                ? where.AND
+                : where.AND
+                    ? [where.AND]
+                    : [];
+            const existingBaseWhereAnd = Array.isArray(baseWhere.AND)
+                ? baseWhere.AND
+                : baseWhere.AND
+                    ? [baseWhere.AND]
+                    : [];
+            where.AND = [
+                ...existingWhereAnd,
+                {
+                    OR: [
+                        { assignedToUserId: user.id },
+                        { assignedExecutives: { some: { id: user.id } } }
+                    ]
+                }
             ];
-            baseWhere.OR = [
-                ...(baseWhere.OR || []),
-                { assignedToUserId: user.id },
-                { assignedExecutives: { some: { id: user.id } } }
+            baseWhere.AND = [
+                ...existingBaseWhereAnd,
+                {
+                    OR: [
+                        { assignedToUserId: user.id },
+                        { assignedExecutives: { some: { id: user.id } } }
+                    ]
+                }
             ];
         }
 
@@ -254,7 +273,10 @@ export const POST = authorizedRoute(
         const result = await prisma.$transaction(async (tx) => {
             // Check if email already exists
             const existing = await tx.customerProfile.findFirst({
-                where: { primaryEmail }
+                where: {
+                    primaryEmail,
+                    companyId: targetCompanyId || undefined,
+                }
             });
             if (existing) {
                 if (isIdempotentCreate) {

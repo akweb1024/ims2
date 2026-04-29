@@ -18,28 +18,6 @@ export async function GET(req: NextRequest) {
         }
         await ensureDefaultCouriers();
 
-        const invoiceCandidates = await prisma.invoice.findMany({
-            where: {
-                ...(user.role === 'SUPER_ADMIN' ? {} : { companyId: user.companyId }),
-            },
-            include: {
-                customerProfile: true,
-                subscription: {
-                    include: {
-                        customerProfile: true,
-                    },
-                },
-            },
-            orderBy: { createdAt: 'desc' },
-            take: 200,
-        });
-
-        await Promise.all(
-            invoiceCandidates
-                .filter((invoice) => Array.isArray(invoice.lineItems) && invoice.lineItems.length > 0)
-                .map((invoice) => ensureInvoiceFulfillmentRecords(invoice, user.id)),
-        );
-
         const { searchParams } = new URL(req.url);
         const limit = parseInt(searchParams.get('limit') || '50');
         const page = parseInt(searchParams.get('page') || '1');
@@ -154,7 +132,7 @@ export async function GET(req: NextRequest) {
 
     } catch (error: any) {
         console.error('Logistics API Error:', error);
-        return NextResponse.json({ error: error.message }, { status: 500 });
+        return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
     }
 }
 
@@ -350,6 +328,7 @@ export async function POST(req: NextRequest) {
         });
 
     } catch (error: any) {
-        return NextResponse.json({ error: error.message }, { status: 500 });
+        console.error('Logistics Create Error:', error);
+        return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
     }
 }

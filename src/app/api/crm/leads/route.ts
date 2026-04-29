@@ -4,6 +4,7 @@ import { authorizedRoute } from "@/lib/middleware-auth";
 import { ConflictError, handleApiError, ValidationError } from "@/lib/error-handler";
 import { logger } from "@/lib/logger";
 import { resolveLeadOwner } from "@/lib/crm/lead-assignment";
+import { hashPassword } from "@/lib/auth-legacy";
 import { z } from "zod";
 
 const createLeadSchema = z.object({
@@ -125,11 +126,12 @@ export const POST = authorizedRoute(
       }
 
       if (!leadUser) {
+        const hashedPassword = await hashPassword(`TEMP_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`);
         leadUser = await prisma.user.create({
           data: {
             email: validatedData.primaryEmail,
             name: validatedData.name,
-            password: "TEMP_PASSWORD_" + Date.now(),
+            password: hashedPassword,
             role: "CUSTOMER",
             companyId: user.companyId,
             isActive: true,
