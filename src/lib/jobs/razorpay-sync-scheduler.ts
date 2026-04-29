@@ -5,7 +5,6 @@ const SCHEDULER_TICK_MS = Number(process.env.RAZORPAY_SYNC_SCHEDULER_TICK_MS || 
 const INITIAL_DELAY_MS = Number(process.env.RAZORPAY_SYNC_INITIAL_DELAY_MS || 60 * 1000);
 
 declare global {
-    // eslint-disable-next-line no-var
     var __razorpaySyncSchedulerStarted: boolean | undefined;
 }
 

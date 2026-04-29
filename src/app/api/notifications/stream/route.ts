@@ -23,20 +23,6 @@ export async function GET(req: NextRequest) {
         async start(controller) {
             const encoder = new TextEncoder();
             let isClosed = false;
-            let intervalId: ReturnType<typeof setInterval> | undefined;
-
-            const closeStream = () => {
-                if (isClosed) return;
-                isClosed = true;
-                if (intervalId) {
-                    clearInterval(intervalId);
-                }
-                try {
-                    controller.close();
-                } catch {
-                    // Stream may already be closed by runtime/consumer.
-                }
-            };
 
             // Function to fetch and send unread notifications
             const sendNotifications = async () => {
@@ -66,9 +52,20 @@ export async function GET(req: NextRequest) {
             await sendNotifications();
 
             // Then send updates every 15 seconds
-            intervalId = setInterval(async () => {
+            const intervalId = setInterval(async () => {
                 await sendNotifications();
             }, 15000);
+
+            const closeStream = () => {
+                if (isClosed) return;
+                isClosed = true;
+                clearInterval(intervalId);
+                try {
+                    controller.close();
+                } catch {
+                    // Stream may already be closed by runtime/consumer.
+                }
+            };
 
             // Cleanup when parsing fails or connection drops
             req.signal.addEventListener('abort', closeStream);
