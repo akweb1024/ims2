@@ -14,6 +14,22 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
         const body = await req.json();
         const { name, logoUrl, companyLogoUrl, tagline, address, email, website, brandRelationType } = body;
 
+        const before = await prisma.brand.findUnique({
+            where: { id },
+            select: {
+                legalEntityName: true,
+                gstin: true,
+                bankName: true,
+                bankAccountNumber: true,
+                bankIfscCode: true,
+                invoicePrefix: true,
+                proformaPrefix: true,
+                invoiceNextNumber: true,
+                proformaNextNumber: true,
+                brandRelationType: true,
+            }
+        });
+
         const brand = await prisma.brand.update({
             where: { id },
             data: {
@@ -43,6 +59,30 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
                 proformaPrefix: body.proformaPrefix,
                 invoiceNextNumber: body.invoiceNextNumber,
                 proformaNextNumber: body.proformaNextNumber
+            }
+        });
+
+        await prisma.auditLog.create({
+            data: {
+                userId: decoded.id,
+                action: 'UPDATE_INVOICE_CONFIG_BRAND',
+                entity: 'brand',
+                entityId: id,
+                changes: {
+                    before,
+                    after: {
+                        legalEntityName: brand.legalEntityName,
+                        gstin: brand.gstin,
+                        bankName: brand.bankName,
+                        bankAccountNumber: brand.bankAccountNumber,
+                        bankIfscCode: brand.bankIfscCode,
+                        invoicePrefix: brand.invoicePrefix,
+                        proformaPrefix: brand.proformaPrefix,
+                        invoiceNextNumber: brand.invoiceNextNumber,
+                        proformaNextNumber: brand.proformaNextNumber,
+                        brandRelationType: brand.brandRelationType,
+                    }
+                }
             }
         });
 

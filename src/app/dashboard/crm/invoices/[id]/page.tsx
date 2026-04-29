@@ -6,7 +6,6 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import FormattedDate from "@/components/common/FormattedDate";
-import AnvInvoiceTemplate from "@/components/dashboard/invoices/AnvInvoiceTemplate";
 import GlobalProInvoiceTemplate from "@/components/dashboard/invoices/GlobalProInvoiceTemplate";
 import { buildInvoiceTaxContext } from "@/lib/invoice-tax";
 
@@ -150,9 +149,7 @@ export default function InvoiceDetailPage({
     reference: "",
     notes: "",
   });
-  const [templateType, setTemplateType] = useState<"standard" | "anv" | "globalpro">(
-    "globalpro",
-  );
+  const templateType = "globalpro";
   const [couriers, setCouriers] = useState<any[]>([]);
   const [dispatchSaving, setDispatchSaving] = useState(false);
   const [selectedDispatchId, setSelectedDispatchId] = useState<string | null>(null);
@@ -935,15 +932,9 @@ export default function InvoiceDetailPage({
             Exit Preview
           </button>
           <div className="flex flex-wrap gap-2">
-            <select
-              className="btn btn-secondary rounded-xl px-4 py-2 outline-none appearance-none cursor-pointer bg-white"
-              value={templateType}
-              onChange={(e) => setTemplateType(e.target.value as any)}
-            >
-              <option value="standard">Standard Template</option>
-              <option value="anv">ANV Premium (Raipur Style)</option>
-              <option value="globalpro">🌐 GlobalPro — Indian Business (Global)</option>
-            </select>
+            <div className="btn btn-secondary rounded-xl px-4 py-2 bg-white cursor-default">
+              🌐 GlobalPro Template
+            </div>
             <button
               className="btn btn-secondary rounded-xl px-4 py-2"
               onClick={() => window.print()}
@@ -1224,27 +1215,17 @@ export default function InvoiceDetailPage({
         </div>
 
         {/* ─── PREMIUM TAX INVOICE DOCUMENT ─── */}
-        {templateType === "anv" ? (
-          <div className="print-content shadow-2xl">
-            <AnvInvoiceTemplate
-              invoice={invoice}
-              identity={identity}
-              currencySymbol={currencySymbol}
-              numberToWords={numberToWords}
-              invoiceTitle={invoiceTitle}
-            />
-          </div>
-        ) : templateType === "globalpro" ? (
-          <div className="print-content shadow-2xl">
-            <GlobalProInvoiceTemplate
-              invoice={invoice}
-              identity={identity}
-              currencySymbol={currencySymbol}
-              numberToWords={numberToWords}
-              invoiceTitle={invoiceTitle}
-            />
-          </div>
-        ) : (
+        <div className="print-content shadow-2xl">
+          <GlobalProInvoiceTemplate
+            invoice={invoice}
+            identity={identity}
+            currencySymbol={currencySymbol}
+            numberToWords={numberToWords}
+            invoiceTitle={invoiceTitle}
+          />
+        </div>
+        {/* Legacy template retained below but not rendered */}
+        {false && (
           <div className="print-content ref-invoice shadow-2xl">
             {/* HEADER */}
             <div className="inv-header flex items-center justify-between">

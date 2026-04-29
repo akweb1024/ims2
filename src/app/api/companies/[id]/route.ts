@@ -227,6 +227,25 @@ export const PATCH = authorizedRoute(
                 regdOfficeAddress, salesOfficeAddress, invoiceTerms
             } = body;
 
+            const before = await prisma.company.findUnique({
+                where: { id },
+                select: {
+                    legalEntityName: true,
+                    gstin: true,
+                    stateCode: true,
+                    bankName: true,
+                    bankAccountNumber: true,
+                    bankIfscCode: true,
+                    invoicePrefix: true,
+                    proformaPrefix: true,
+                    invoiceNextNumber: true,
+                    proformaNextNumber: true,
+                    brandRelationType: true,
+                    invoiceCompanyLogoUrl: true,
+                    invoiceTerms: true,
+                }
+            });
+
             const company = await prisma.company.update({
                 where: { id },
                 data: {
@@ -278,6 +297,33 @@ export const PATCH = authorizedRoute(
                     entity: 'company',
                     entityId: id,
                     changes: JSON.stringify(body)
+                }
+            });
+
+            await prisma.auditLog.create({
+                data: {
+                    userId: decoded.id,
+                    action: 'UPDATE_INVOICE_CONFIG',
+                    entity: 'company',
+                    entityId: id,
+                    changes: {
+                        before,
+                        after: {
+                            legalEntityName: company.legalEntityName,
+                            gstin: company.gstin,
+                            stateCode: company.stateCode,
+                            bankName: company.bankName,
+                            bankAccountNumber: company.bankAccountNumber,
+                            bankIfscCode: company.bankIfscCode,
+                            invoicePrefix: company.invoicePrefix,
+                            proformaPrefix: company.proformaPrefix,
+                            invoiceNextNumber: company.invoiceNextNumber,
+                            proformaNextNumber: company.proformaNextNumber,
+                            brandRelationType: company.brandRelationType,
+                            invoiceCompanyLogoUrl: company.invoiceCompanyLogoUrl,
+                            invoiceTerms: (company as any).invoiceTerms,
+                        }
+                    }
                 }
             });
 

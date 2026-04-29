@@ -68,11 +68,34 @@ export const POST = authorizedRoute(
 
             logger.info('Brand created', { brandId: brand.id, createdBy: user.id });
 
+            await prisma.auditLog.create({
+                data: {
+                    userId: user.id,
+                    action: 'CREATE_INVOICE_CONFIG_BRAND',
+                    entity: 'brand',
+                    entityId: brand.id,
+                    changes: {
+                        after: {
+                            legalEntityName: brand.legalEntityName,
+                            gstin: brand.gstin,
+                            stateCode: brand.stateCode,
+                            bankName: brand.bankName,
+                            bankAccountNumber: brand.bankAccountNumber,
+                            bankIfscCode: brand.bankIfscCode,
+                            invoicePrefix: brand.invoicePrefix,
+                            proformaPrefix: brand.proformaPrefix,
+                            invoiceNextNumber: brand.invoiceNextNumber,
+                            proformaNextNumber: brand.proformaNextNumber,
+                            brandRelationType: brand.brandRelationType,
+                        }
+                    }
+                }
+            });
+
             return NextResponse.json(brand, { status: 201 });
         } catch (error) {
             return handleApiError(error, req.nextUrl.pathname);
         }
     }
 );
-
 

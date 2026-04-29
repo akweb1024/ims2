@@ -8,6 +8,7 @@ import { logger } from '@/lib/logger';
 import { generateInvoiceNumbers } from '@/lib/invoice-number';
 import { calculateInvoiceTaxBreakdown } from '@/lib/invoice-tax';
 import { applyInvoiceStockReservations } from '@/lib/invoice-stock-reservation';
+import { validateInvoiceConfig } from '@/lib/invoice-config';
 
 export const GET = authorizedRoute(
     [],
@@ -135,6 +136,47 @@ export const POST = authorizedRoute(
         });
         
         if (!company) throw new NotFoundError('Company');
+
+        const invoiceConfigToValidate: any = brandId
+            ? await prisma.brand.findUnique({
+                where: { id: brandId },
+                select: {
+                    legalEntityName: true,
+                    gstin: true,
+                    bankName: true,
+                    bankAccountNumber: true,
+                    bankIfscCode: true,
+                    invoicePrefix: true,
+                    proformaPrefix: true,
+                    invoiceNextNumber: true,
+                    proformaNextNumber: true,
+                },
+            })
+            : {
+                legalEntityName: company.legalEntityName,
+                gstin: company.gstin,
+                stateCode: company.stateCode,
+                bankName: company.bankName,
+                bankAccountNumber: company.bankAccountNumber,
+                bankIfscCode: company.bankIfscCode,
+                invoicePrefix: company.invoicePrefix,
+                proformaPrefix: company.proformaPrefix,
+                invoiceNextNumber: company.invoiceNextNumber,
+                proformaNextNumber: company.proformaNextNumber,
+            };
+
+        if (brandId && !invoiceConfigToValidate) {
+            throw new ValidationError('Selected brand for invoice was not found');
+        }
+        if (brandId && invoiceConfigToValidate) {
+            invoiceConfigToValidate.stateCode = company.stateCode;
+        }
+        const configCheck = validateInvoiceConfig(invoiceConfigToValidate);
+        if (!configCheck.valid) {
+            throw new ValidationError(
+                `Invoice configuration is incomplete. Missing: ${configCheck.missing.join(', ')}`,
+            );
+        }
 
         let brandSnapshot: any = {
             brandRelationType: company?.brandRelationType || 'A Brand of' as string,
