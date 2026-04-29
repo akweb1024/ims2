@@ -42,9 +42,14 @@ export async function GET(
             return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
         }
 
+        const customerScope =
+            decoded.role === 'SUPER_ADMIN'
+                ? { id }
+                : { id, companyId: decoded.companyId };
+
         // 2. Fetch Customer Details
-        const customer = await prisma.customerProfile.findUnique({
-            where: { id },
+        const customer = await prisma.customerProfile.findFirst({
+            where: customerScope,
             include: {
                 user: {
                     select: {
@@ -225,6 +230,31 @@ export async function PATCH(
             return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
         }
 
+        const existingCustomer = await prisma.customerProfile.findFirst({
+            where:
+                decoded.role === 'SUPER_ADMIN'
+                    ? { id }
+                    : { id, companyId: decoded.companyId },
+            select: {
+                id: true,
+                assignedToUserId: true,
+                assignedExecutives: { select: { id: true } },
+            },
+        });
+
+        if (!existingCustomer) {
+            return NextResponse.json({ error: 'Customer not found' }, { status: 404 });
+        }
+
+        if (decoded.role === 'EXECUTIVE') {
+            const isAssigned =
+                existingCustomer.assignedToUserId === decoded.id ||
+                existingCustomer.assignedExecutives.some((e) => e.id === decoded.id);
+            if (!isAssigned) {
+                return NextResponse.json({ error: 'Forbidden: You are not assigned to this customer' }, { status: 403 });
+            }
+        }
+
         const body = await req.json();
         const {
             institutionDetails,
@@ -361,8 +391,11 @@ export async function DELETE(
             return NextResponse.json({ error: 'Forbidden: Only Super Admin or Admin can delete customers' }, { status: 403 });
         }
 
-        const customer = await prisma.customerProfile.findUnique({
-            where: { id },
+        const customer = await prisma.customerProfile.findFirst({
+            where:
+                decoded.role === 'SUPER_ADMIN'
+                    ? { id }
+                    : { id, companyId: decoded.companyId },
             select: { id: true, name: true }
         });
 

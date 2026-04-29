@@ -67,7 +67,7 @@ export const PATCH = authorizedRoute(
 
             // Safety check: ensure lead belongs to company
             const existing = await prisma.customerProfile.findFirst({
-                where: { id, companyId: user.companyId }
+                where: { id, companyId: user.companyId, leadStatus: { not: null } }
             });
 
             if (!existing) {
@@ -94,7 +94,7 @@ export const DELETE = authorizedRoute(
 
             // Check ownership/access
             const lead = await prisma.customerProfile.findFirst({
-                where: { id, companyId: user.companyId }
+                where: { id, companyId: user.companyId, leadStatus: { not: null } }
             });
 
             if (!lead) {

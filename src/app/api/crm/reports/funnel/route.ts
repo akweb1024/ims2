@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { authorizedRoute } from '@/lib/middleware-auth';
+import { handleApiError } from '@/lib/error-handler';
 
 export const GET = authorizedRoute(
     ['SUPER_ADMIN', 'ADMIN', 'MANAGER'],
@@ -37,7 +38,7 @@ export const GET = authorizedRoute(
             ]);
 
             const funnelData = [
-                { stage: 'Proposals', count: leadsCount, percentage: 100 },
+                { stage: 'Leads', count: leadsCount, percentage: 100 },
                 { 
                     stage: 'Qualified', 
                     count: qualifiedCount, 
@@ -57,8 +58,7 @@ export const GET = authorizedRoute(
 
             return NextResponse.json(funnelData);
         } catch (error) {
-            console.error('Funnel Report Error:', error);
-            return NextResponse.json({ error: 'Failed to generate funnel report' }, { status: 500 });
+            return handleApiError(error, req.nextUrl.pathname);
         }
     }
 );

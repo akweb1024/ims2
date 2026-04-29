@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { authorizedRoute } from "@/lib/middleware-auth";
-import { handleApiError, ValidationError } from "@/lib/error-handler";
+import { ConflictError, handleApiError, ValidationError } from "@/lib/error-handler";
 import { logger } from "@/lib/logger";
 import { resolveLeadOwner } from "@/lib/crm/lead-assignment";
 import { z } from "zod";
@@ -103,10 +103,26 @@ export const POST = authorizedRoute(
       const body = await req.json();
       const validatedData = createLeadSchema.parse(body);
 
+      const existingLeadInCompany = await prisma.customerProfile.findFirst({
+        where: {
+          companyId: user.companyId,
+          primaryEmail: validatedData.primaryEmail,
+          leadStatus: { not: null },
+        },
+        select: { id: true },
+      });
+      if (existingLeadInCompany) {
+        throw new ConflictError("Lead with this email already exists in your company");
+      }
+
       // Check if user already exists with this email
       let leadUser = await prisma.user.findUnique({
         where: { email: validatedData.primaryEmail },
       });
+
+      if (leadUser && leadUser.companyId !== user.companyId) {
+        throw new ConflictError("A user with this email already exists in another company");
+      }
 
       if (!leadUser) {
         leadUser = await prisma.user.create({

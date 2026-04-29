@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { authorizedRoute } from '@/lib/middleware-auth';
-import { handleApiError } from '@/lib/error-handler';
+import { handleApiError, ValidationError } from '@/lib/error-handler';
 
 export const GET = authorizedRoute(
     ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'TEAM_LEADER', 'EXECUTIVE'],
@@ -48,6 +48,32 @@ export const PATCH = authorizedRoute(
 
             if (!existing) {
                 return NextResponse.json({ error: 'Deal not found' }, { status: 404 });
+            }
+
+            if (body.customerId) {
+                const customer = await prisma.customerProfile.findFirst({
+                    where: {
+                        id: body.customerId,
+                        companyId: user.companyId
+                    },
+                    select: { id: true }
+                });
+                if (!customer) {
+                    throw new ValidationError('Invalid customer reference for this company');
+                }
+            }
+
+            if (body.ownerId) {
+                const owner = await prisma.user.findFirst({
+                    where: {
+                        id: body.ownerId,
+                        companyId: user.companyId
+                    },
+                    select: { id: true, isActive: true }
+                });
+                if (!owner || !owner.isActive) {
+                    throw new ValidationError('Invalid owner reference for this company');
+                }
             }
 
             const updatedDeal = await prisma.$transaction(async (tx) => {

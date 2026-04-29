@@ -73,7 +73,6 @@ export default function NewSubscriptionPage() {
         }
 
         const fetchData = async () => {
-            const token = localStorage.getItem('token');
             const searchParams = new URLSearchParams(window.location.search);
             const preSelectedId = searchParams.get('customerId');
 
@@ -81,12 +80,12 @@ export default function NewSubscriptionPage() {
             const fetchCustomers = role !== 'CUSTOMER';
 
             const [profileRes, custRes, jourRes, agencyRes] = await Promise.all([
-                fetch('/api/profile', { headers: { 'Authorization': `Bearer ${token}` } }),
+                fetch('/api/profile'),
                 fetchCustomers
-                    ? fetch('/api/customers?limit=100', { headers: { 'Authorization': `Bearer ${token}` } })
+                    ? fetch('/api/customers?limit=100')
                     : Promise.resolve(null),
-                fetch('/api/journals', { headers: { 'Authorization': `Bearer ${token}` } }),
-                fetch('/api/agencies?limit=100', { headers: { 'Authorization': `Bearer ${token}` } })
+                fetch('/api/journals'),
+                fetch('/api/agencies?limit=100')
             ]);
 
             if (profileRes.ok) {
@@ -167,14 +166,12 @@ export default function NewSubscriptionPage() {
     const handleSubmit = async () => {
         setLoading(true);
         try {
-            const token = localStorage.getItem('token');
             const endpoint = userRole === 'CUSTOMER' ? '/api/customer/subscriptions' : '/api/subscriptions/create';
 
             const res = await fetch(endpoint, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
                 },
                 body: JSON.stringify({
                     ...formData,

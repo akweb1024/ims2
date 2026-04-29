@@ -11,7 +11,7 @@ export const POST = authorizedRoute(
 
             // Find the lead
             const lead = await prisma.customerProfile.findFirst({
-                where: { id, companyId: user.companyId }
+                where: { id, companyId: user.companyId, leadStatus: { not: null } }
             });
 
             if (!lead) {

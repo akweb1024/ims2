@@ -19,24 +19,30 @@ export const GET = authorizedRoute(
         const type = searchParams.get('type');
         const state = searchParams.get('state');
         const country = searchParams.get('country');
+        const includeTypeCounts = searchParams.get('includeTypeCounts') === 'true';
 
         const skip = (page - 1) * limit;
 
         const where: Prisma.CustomerProfileWhereInput = {};
+        const baseWhere: Prisma.CustomerProfileWhereInput = {};
         const userCompanyId = user.companyId;
 
         if (userCompanyId) {
             where.companyId = userCompanyId;
             where.leadStatus = null; // Exclude leads
+            baseWhere.companyId = userCompanyId;
+            baseWhere.leadStatus = null; // Exclude leads
         }
 
         if (search) {
-            where.OR = [
-                { name: { contains: search, mode: 'insensitive' } },
-                { organizationName: { contains: search, mode: 'insensitive' } },
-                { primaryEmail: { contains: search, mode: 'insensitive' } },
-                { city: { contains: search, mode: 'insensitive' } }
+            const searchOr: Prisma.CustomerProfileWhereInput[] = [
+                { name: { contains: search, mode: Prisma.QueryMode.insensitive } },
+                { organizationName: { contains: search, mode: Prisma.QueryMode.insensitive } },
+                { primaryEmail: { contains: search, mode: Prisma.QueryMode.insensitive } },
+                { city: { contains: search, mode: Prisma.QueryMode.insensitive } }
             ];
+            where.OR = searchOr;
+            baseWhere.OR = searchOr;
         }
         const typeWhere = buildCustomerTypeWhere(type);
         if (typeWhere) {
@@ -44,9 +50,11 @@ export const GET = authorizedRoute(
         }
         if (state) {
             where.state = { contains: state, mode: 'insensitive' };
+            baseWhere.state = { contains: state, mode: 'insensitive' };
         }
         if (country) {
             where.country = { contains: country, mode: 'insensitive' };
+            baseWhere.country = { contains: country, mode: 'insensitive' };
         }
 
         // Executive Restriction: Only see assigned customers (primary or shared)
@@ -56,10 +64,15 @@ export const GET = authorizedRoute(
                 { assignedToUserId: user.id },
                 { assignedExecutives: { some: { id: user.id } } }
             ];
+            baseWhere.OR = [
+                ...(baseWhere.OR || []),
+                { assignedToUserId: user.id },
+                { assignedExecutives: { some: { id: user.id } } }
+            ];
         }
 
         // 3. Fetch
-        const [customers, total] = await Promise.all([
+        const [customers, total, typeCounts] = await Promise.all([
             prisma.customerProfile.findMany({
                 where,
                 skip,
@@ -105,7 +118,15 @@ export const GET = authorizedRoute(
                     }
                 }
             }),
-            prisma.customerProfile.count({ where })
+            prisma.customerProfile.count({ where }),
+            includeTypeCounts
+                ? Promise.all([
+                    prisma.customerProfile.count({ where: baseWhere }),
+                    prisma.customerProfile.count({ where: { ...baseWhere, ...buildCustomerTypeWhere('INDIVIDUAL') } }),
+                    prisma.customerProfile.count({ where: { ...baseWhere, ...buildCustomerTypeWhere('INSTITUTION') } }),
+                    prisma.customerProfile.count({ where: { ...baseWhere, ...buildCustomerTypeWhere('AGENCY') } }),
+                ])
+                : Promise.resolve(null)
         ]);
 
         return NextResponse.json({
@@ -115,7 +136,17 @@ export const GET = authorizedRoute(
                 limit,
                 total,
                 totalPages: Math.ceil(total / limit)
-            }
+            },
+            ...(includeTypeCounts && typeCounts
+                ? {
+                    typeCounts: {
+                        all: typeCounts[0],
+                        individual: typeCounts[1],
+                        institution: typeCounts[2],
+                        agency: typeCounts[3],
+                    }
+                }
+                : {})
         });
 
     } catch (error) {

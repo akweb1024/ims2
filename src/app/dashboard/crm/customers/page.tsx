@@ -87,16 +87,14 @@ export default function CRMCustomersPage() {
     // Fetch counts for tab badges (once, no filter)
     const fetchCounts = useCallback(async () => {
         try {
-            const all = await fetch('/api/customers?limit=1');
-            const ind = await fetch('/api/customers?limit=1&type=INDIVIDUAL');
-            const ins = await fetch('/api/customers?limit=1&type=INSTITUTION');
-            const age = await fetch('/api/customers?limit=1&type=AGENCY');
-            const [a, i, n, g] = await Promise.all([all.json(), ind.json(), ins.json(), age.json()]);
+            const res = await fetch('/api/customers?limit=1&includeTypeCounts=true');
+            if (!res.ok) return;
+            const data = await res.json();
             setTypeCounts({
-                '': a.pagination?.total ?? 0,
-                'INDIVIDUAL': i.pagination?.total ?? 0,
-                'INSTITUTION': n.pagination?.total ?? 0,
-                'AGENCY': g.pagination?.total ?? 0,
+                '': data.typeCounts?.all ?? 0,
+                'INDIVIDUAL': data.typeCounts?.individual ?? 0,
+                'INSTITUTION': data.typeCounts?.institution ?? 0,
+                'AGENCY': data.typeCounts?.agency ?? 0,
             });
         } catch { /* silent */ }
     }, []);
