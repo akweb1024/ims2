@@ -102,4 +102,80 @@ test.describe("CRM Invoice and Product Flows", () => {
     await expect(page.getByRole("button", { name: /Summary/i })).toBeVisible();
     await expect(page.getByText("Select Customer")).toBeVisible();
   });
+
+  test("should not return 500 when creating invoice with inventory-tracked product", async ({
+    page,
+    request,
+  }) => {
+    const customersRes = await request.get("/api/customers?limit=20");
+    expect(customersRes.ok()).toBeTruthy();
+    const customersPayload = await customersRes.json();
+    const customer = customersPayload?.data?.[0];
+    expect(customer?.id).toBeTruthy();
+
+    const uniqueSuffix = Date.now();
+    const sku = `PW-AUTO-${uniqueSuffix}`;
+    const productRes = await request.post("/api/invoice-products", {
+      data: {
+        name: `Playwright Inventory Product ${uniqueSuffix}`,
+        type: "SIMPLE",
+        category: "MISC",
+        pricingModel: "FIXED",
+        priceINR: 3800,
+        priceUSD: 50,
+        taxRate: 18,
+        sku,
+        productAttributes: {
+          inventorySettings: {
+            isPhysicalDeliverable: true,
+            trackInventory: true,
+          },
+        },
+      },
+    });
+    expect(productRes.ok()).toBeTruthy();
+    const createdProduct = await productRes.json();
+    expect(createdProduct?.id).toBeTruthy();
+
+    const dueDate = new Date();
+    dueDate.setDate(dueDate.getDate() + 15);
+    const dueDateIso = dueDate.toISOString().split("T")[0];
+
+    const invoiceRes = await request.post("/api/invoices", {
+      data: {
+        customerProfileId: customer.id,
+        dueDate: dueDateIso,
+        description: "",
+        lineItems: [
+          {
+            id: uniqueSuffix,
+            description: `${createdProduct.name} (${sku})`,
+            hsnCode: "2843",
+            quantity: 1,
+            price: 3800,
+            productId: createdProduct.id,
+            variantId: null,
+            taxCategory: "STANDARD",
+            productCategory: "MISC",
+            productTags: [],
+            productAttributes: {
+              inventorySettings: {
+                isPhysicalDeliverable: true,
+                trackInventory: true,
+              },
+            },
+          },
+        ],
+        taxRate: 18,
+        amount: 3800,
+        tax: 684,
+        total: 4484,
+        currency: "INR",
+      },
+    });
+
+    // Regression assertion: inventory validation can fail, but must not be a 500.
+    expect(invoiceRes.status(), `Unexpected 500: ${await invoiceRes.text()}`).not.toBe(500);
+    expect([201, 400]).toContain(invoiceRes.status());
+  });
 });
