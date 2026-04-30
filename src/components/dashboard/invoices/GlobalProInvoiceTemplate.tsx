@@ -13,6 +13,7 @@ interface GlobalProInvoiceTemplateProps {
   currencySymbol: string;
   numberToWords: (num: number, currency: string) => string;
   invoiceTitle: string;
+  copyLabel?: string;
 }
 
 export default function GlobalProInvoiceTemplate({
@@ -21,6 +22,7 @@ export default function GlobalProInvoiceTemplate({
   currencySymbol,
   numberToWords,
   invoiceTitle,
+  copyLabel,
 }: GlobalProInvoiceTemplateProps) {
   const customer =
     invoice.subscription?.customerProfile || invoice.customerProfile || {};
@@ -251,6 +253,25 @@ export default function GlobalProInvoiceTemplate({
           >
             {invoiceTitle}
           </div>
+          {copyLabel && (
+            <div
+              style={{
+                background: "rgba(255,255,255,0.9)",
+                border: "1px solid rgba(255,255,255,0.85)",
+                borderRadius: "999px",
+                padding: "2px 10px",
+                color: accentDark,
+                fontSize: "9px",
+                fontWeight: 900,
+                letterSpacing: "1px",
+                textTransform: "uppercase",
+                display: "inline-block",
+                marginBottom: "6px",
+              }}
+            >
+              {copyLabel}
+            </div>
+          )}
           {invoice.status !== "UNPAID" && (
             <div
               style={{
@@ -346,6 +367,26 @@ export default function GlobalProInvoiceTemplate({
               </span>
               <span style={{ fontWeight: 700, fontSize: "11px", color: "#dc2626" }}>
                 <FormattedDate date={invoice.dueDate} />
+              </span>
+            </div>
+          )}
+          {invoice.purchaseOrderNumber && (
+            <div style={{ marginTop: "6px" }}>
+              <span
+                style={{
+                  fontSize: "8px",
+                  fontWeight: 800,
+                  color: "#94a3b8",
+                  textTransform: "uppercase",
+                  letterSpacing: "1px",
+                  display: "block",
+                  marginBottom: "2px",
+                }}
+              >
+                PO No.
+              </span>
+              <span style={{ fontWeight: 800, fontSize: "11px" }}>
+                {invoice.purchaseOrderNumber}
               </span>
             </div>
           )}

@@ -158,6 +158,7 @@ export default function CreateInvoiceModal({
     },
   ]);
   const [description, setDescription] = useState("");
+  const [purchaseOrderNumber, setPurchaseOrderNumber] = useState("");
   const [journalResults, setJournalResults] = useState<{
     [key: number]: any[];
   }>({});
@@ -824,6 +825,7 @@ export default function CreateInvoiceModal({
           const data = await res.json();
           setDueDate(data.dueDate?.split("T")[0] || "");
           setDescription(data.description || "");
+          setPurchaseOrderNumber(data.purchaseOrderNumber || "");
           setItems(Array.isArray(data.lineItems) ? data.lineItems : []);
           setTaxRate(data.taxRate || 18);
           setCurrency(data.currency || "INR");
@@ -876,6 +878,7 @@ export default function CreateInvoiceModal({
         },
       ]);
       setDescription("");
+      setPurchaseOrderNumber("");
       setCouponResult(null);
       setCouponCode("");
     }
@@ -1064,6 +1067,7 @@ export default function CreateInvoiceModal({
             customerProfileId: selectedCustomer.id,
             dueDate,
             description,
+            purchaseOrderNumber: purchaseOrderNumber || null,
             lineItems: items.map(
               ({
                 id,
@@ -2540,6 +2544,20 @@ export default function CreateInvoiceModal({
                     className="input-premium"
                   />
                 </div>
+              </div>
+
+              <div>
+                <label className="label">Purchase Order No. (Optional)</label>
+                <input
+                  type="text"
+                  className="input-premium"
+                  placeholder="e.g. PO-12345"
+                  value={purchaseOrderNumber}
+                  onChange={(e) => setPurchaseOrderNumber(e.target.value)}
+                />
+                <p className="text-[10px] text-gray-500 mt-1">
+                  If provided, this is printed on the invoice as “PO No.”
+                </p>
               </div>
 
               <div>

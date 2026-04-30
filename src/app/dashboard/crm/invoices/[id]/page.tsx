@@ -144,6 +144,7 @@ export default function InvoiceDetailPage({
   const [isSyncing, setIsSyncing] = useState(false);
   const [isRecalculatingTax, setIsRecalculatingTax] = useState(false);
   const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
+  const [includeAllCopies, setIncludeAllCopies] = useState(true);
   const [paymentForm, setPaymentForm] = useState({
     method: "bank-transfer",
     reference: "",
@@ -402,37 +403,65 @@ export default function InvoiceDetailPage({
         ),
       );
 
-      const canvas = await html2canvas(printClone, {
-        scale: 2,
-        useCORS: true,
-        backgroundColor: "#ffffff",
-        logging: false,
-        imageTimeout: 0,
-      });
-      if (offscreenHost?.parentNode) {
-        offscreenHost.parentNode.removeChild(offscreenHost);
-        offscreenHost = null;
-      }
-
-      const imgData = canvas.toDataURL("image/png");
       const pdf = new jsPDF("p", "pt", "a4");
       const pageWidth = pdf.internal.pageSize.getWidth();
       const pageHeight = pdf.internal.pageSize.getHeight();
       const margin = 20;
       const usableWidth = pageWidth - margin * 2;
-      const scaledHeight = (canvas.height * usableWidth) / canvas.width;
+      const copyNodes = Array.from(
+        printClone.querySelectorAll(".invoice-copy"),
+      ) as HTMLElement[];
+      const renderTargets = copyNodes.length > 0 ? copyNodes : [printClone];
 
-      let remainingHeight = scaledHeight;
-      let yPosition = margin;
+      let isFirst = true;
+      for (const renderTarget of renderTargets) {
+        const canvas = await html2canvas(renderTarget, {
+          scale: 2,
+          useCORS: true,
+          backgroundColor: "#ffffff",
+          logging: false,
+          imageTimeout: 0,
+        });
 
-      pdf.addImage(imgData, "PNG", margin, yPosition, usableWidth, scaledHeight);
-      remainingHeight -= pageHeight - margin * 2;
+        const imgData = canvas.toDataURL("image/png");
+        const scaledHeight = (canvas.height * usableWidth) / canvas.width;
 
-      while (remainingHeight > 0) {
-        pdf.addPage();
-        yPosition = margin - (scaledHeight - remainingHeight);
-        pdf.addImage(imgData, "PNG", margin, yPosition, usableWidth, scaledHeight);
+        if (!isFirst) {
+          pdf.addPage();
+        }
+        isFirst = false;
+
+        let remainingHeight = scaledHeight;
+        let yPosition = margin;
+
+        pdf.addImage(
+          imgData,
+          "PNG",
+          margin,
+          yPosition,
+          usableWidth,
+          scaledHeight,
+        );
         remainingHeight -= pageHeight - margin * 2;
+
+        while (remainingHeight > 0) {
+          pdf.addPage();
+          yPosition = margin - (scaledHeight - remainingHeight);
+          pdf.addImage(
+            imgData,
+            "PNG",
+            margin,
+            yPosition,
+            usableWidth,
+            scaledHeight,
+          );
+          remainingHeight -= pageHeight - margin * 2;
+        }
+      }
+
+      if (offscreenHost?.parentNode) {
+        offscreenHost.parentNode.removeChild(offscreenHost);
+        offscreenHost = null;
       }
 
       const invoiceNo = (displayInvoiceNumber || invoice?.invoiceNumber || "invoice")
@@ -722,8 +751,18 @@ export default function InvoiceDetailPage({
                         box-shadow: none !important; 
                         width: 100% !important;
                     }
+                    .invoice-copy {
+                        break-after: page;
+                        page-break-after: always;
+                    }
+                    .invoice-copy:last-child {
+                        break-after: auto;
+                        page-break-after: auto;
+                    }
                     body { background: white !important; font-family: "Segoe UI", Arial, sans-serif !important; }
                 }
+
+                .invoice-copy { margin-bottom: 24px; }
                 
                 .ref-invoice {
                     color: #000;
@@ -932,6 +971,15 @@ export default function InvoiceDetailPage({
             Exit Preview
           </button>
           <div className="flex flex-wrap gap-2">
+            <label className="flex items-center gap-2 rounded-xl px-4 py-2 border border-gray-200 bg-white text-[12px] font-semibold cursor-pointer select-none">
+              <input
+                type="checkbox"
+                className="h-4 w-4"
+                checked={includeAllCopies}
+                onChange={(e) => setIncludeAllCopies(e.target.checked)}
+              />
+              All Copies
+            </label>
             <div className="btn btn-secondary rounded-xl px-4 py-2 bg-white cursor-default">
               🌐 GlobalPro Template
             </div>
@@ -1216,13 +1264,50 @@ export default function InvoiceDetailPage({
 
         {/* ─── PREMIUM TAX INVOICE DOCUMENT ─── */}
         <div className="print-content shadow-2xl">
-          <GlobalProInvoiceTemplate
-            invoice={invoice}
-            identity={identity}
-            currencySymbol={currencySymbol}
-            numberToWords={numberToWords}
-            invoiceTitle={invoiceTitle}
-          />
+          <div className="invoice-copy">
+            <GlobalProInvoiceTemplate
+              invoice={invoice}
+              identity={identity}
+              currencySymbol={currencySymbol}
+              numberToWords={numberToWords}
+              invoiceTitle={invoiceTitle}
+              copyLabel="ORIGINAL"
+            />
+          </div>
+          {includeAllCopies && (
+            <>
+              <div className="invoice-copy">
+                <GlobalProInvoiceTemplate
+                  invoice={invoice}
+                  identity={identity}
+                  currencySymbol={currencySymbol}
+                  numberToWords={numberToWords}
+                  invoiceTitle={invoiceTitle}
+                  copyLabel="DUPLICATE COPY"
+                />
+              </div>
+              <div className="invoice-copy">
+                <GlobalProInvoiceTemplate
+                  invoice={invoice}
+                  identity={identity}
+                  currencySymbol={currencySymbol}
+                  numberToWords={numberToWords}
+                  invoiceTitle={invoiceTitle}
+                  copyLabel="OFFICE COPY"
+                />
+              </div>
+              <div className="invoice-copy">
+                <GlobalProInvoiceTemplate
+                  invoice={invoice}
+                  identity={identity}
+                  currencySymbol={currencySymbol}
+                  numberToWords={numberToWords}
+                  invoiceTitle={invoiceTitle}
+                  copyLabel="PURCHASE ORDER"
+                />
+              </div>
+            </>
+          )}
         </div>
         {/* Legacy template retained below but not rendered */}
         {false && (

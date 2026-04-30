@@ -125,6 +125,12 @@ export const PATCH = authorizedRoute(
                     data: {
                         dueDate: body.dueDate ? new Date(body.dueDate) : undefined,
                         description: body.description,
+                        purchaseOrderNumber:
+                            body.purchaseOrderNumber !== undefined
+                                ? (typeof body.purchaseOrderNumber === 'string'
+                                    ? (body.purchaseOrderNumber.trim() || null)
+                                    : null)
+                                : undefined,
                         amount: body.amount,
                         tax: body.tax,
                         total: body.total,

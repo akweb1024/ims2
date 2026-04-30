@@ -90,6 +90,7 @@ export default function PublicInvoicePage({ params }: { params: Promise<{ id: st
                     currencySymbol={currencySymbol}
                     numberToWords={numberToWords}
                     invoiceTitle={invoiceTitle}
+                    copyLabel="ORIGINAL"
                 />
             ) : (
                 <GlobalProInvoiceTemplate
@@ -98,6 +99,7 @@ export default function PublicInvoicePage({ params }: { params: Promise<{ id: st
                     currencySymbol={currencySymbol}
                     numberToWords={(n) => numberToWords(n, invoice.currency)}
                     invoiceTitle={invoiceTitle}
+                    copyLabel="ORIGINAL"
                 />
             )}
             <div className="p-4 text-center bg-gray-100 print:hidden">

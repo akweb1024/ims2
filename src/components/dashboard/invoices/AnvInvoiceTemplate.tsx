@@ -12,6 +12,7 @@ interface AnvInvoiceTemplateProps {
   currencySymbol: string;
   numberToWords: (num: number, currency: string) => string;
   invoiceTitle: string;
+  copyLabel?: string;
 }
 
 export default function AnvInvoiceTemplate({
@@ -20,6 +21,7 @@ export default function AnvInvoiceTemplate({
   currencySymbol,
   numberToWords,
   invoiceTitle,
+  copyLabel,
 }: AnvInvoiceTemplateProps) {
   const customer =
     invoice.subscription?.customerProfile || invoice.customerProfile || {};
@@ -318,6 +320,13 @@ export default function AnvInvoiceTemplate({
           <h2 className="text-gray-500 font-bold mb-1 uppercase tracking-widest">
             {invoiceTitle}
           </h2>
+          {copyLabel && (
+            <div className="mb-1">
+              <span className="inline-block px-2 py-0.5 rounded-full border border-black text-[9px] font-black uppercase tracking-widest">
+                {copyLabel}
+              </span>
+            </div>
+          )}
           <h1>{identity.name}</h1>
           <p className="text-[10px] font-medium leading-tight max-w-sm mx-auto mt-1">
             {identity.address}
@@ -351,6 +360,12 @@ export default function AnvInvoiceTemplate({
               <FormattedDate date={invoice.createdAt} />
             </span>
           </div>
+          {invoice.purchaseOrderNumber && (
+            <div className="mt-2">
+              <label>PO No.</label>
+              <span className="font-bold">{invoice.purchaseOrderNumber}</span>
+            </div>
+          )}
         </div>
         <div className="meta-box border-r">
           <label>Bank Details</label>

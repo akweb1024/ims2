@@ -1095,6 +1095,7 @@ model Invoice {
   id                      String               @id @default(uuid())
   subscriptionId          String?
   invoiceNumber           String               @unique
+  purchaseOrderNumber     String?
   currency                String               @default("INR")
   amount                  Float
   tax                     Float
