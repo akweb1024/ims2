@@ -20,8 +20,8 @@ import {
 } from '@/lib/error-handler';
 
 const IST_TIMEZONE = 'Asia/Kolkata';
-const THINK_TANK_KEY = process.env.THINK_TANK_ENCRYPTION_KEY || process.env.CONFIG_ENCRYPTION_KEY || 'think-tank-encryption-key-32ch';
-const CONFIG_ENCRYPTION_KEY = process.env.CONFIG_ENCRYPTION_KEY || 'your-32-character-secret-key!!';
+const THINK_TANK_KEY = process.env.THINK_TANK_ENCRYPTION_KEY || process.env.CONFIG_ENCRYPTION_KEY;
+const CONFIG_ENCRYPTION_KEY = process.env.CONFIG_ENCRYPTION_KEY;
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || process.env.GOOGLE_AI_API_KEY || '';
 const EMBEDDING_MODEL = process.env.THINK_TANK_EMBEDDING_MODEL || 'text-embedding-004';
 const DUPLICATE_THRESHOLD = 0.85;
@@ -278,8 +278,22 @@ const makeIstDate = (year: number, month: number, day: number, time = '00:00:00'
 
 export const hashIdentity = (value: string) => crypto.createHash('sha256').update(value).digest('hex');
 
-const getKey = () => crypto.scryptSync(THINK_TANK_KEY, 'think-tank-salt', 32);
-const getConfigKey = () => crypto.scryptSync(CONFIG_ENCRYPTION_KEY, 'salt', 32);
+const getRequiredThinkTankKey = () => {
+    if (!THINK_TANK_KEY) {
+        throw new Error('THINK_TANK_ENCRYPTION_KEY or CONFIG_ENCRYPTION_KEY is required');
+    }
+    return THINK_TANK_KEY;
+};
+
+const getRequiredConfigKey = () => {
+    if (!CONFIG_ENCRYPTION_KEY) {
+        throw new Error('CONFIG_ENCRYPTION_KEY is required');
+    }
+    return CONFIG_ENCRYPTION_KEY;
+};
+
+const getKey = () => crypto.scryptSync(getRequiredThinkTankKey(), 'think-tank-salt', 32);
+const getConfigKey = () => crypto.scryptSync(getRequiredConfigKey(), 'salt', 32);
 
 export const encryptThinkTankIdentity = (plainText: string) => {
     const iv = crypto.randomBytes(16);

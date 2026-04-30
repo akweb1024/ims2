@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { razorpay } from '@/lib/razorpay';
 import Razorpay from 'razorpay';
 import { getAuthenticatedUser } from '@/lib/auth-legacy';
 import { FinanceService } from '@/lib/services/finance';

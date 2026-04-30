@@ -63,10 +63,24 @@ export async function getRazorpayInstance(companyId: string): Promise<Razorpay> 
  * Legacy instance for backward compatibility (uses env variables)
  * @deprecated Use getRazorpayInstance(companyId) instead
  */
-export const razorpay = new Razorpay({
-    key_id: process.env.RAZORPAY_KEY_ID || 'placeholder',
-    key_secret: process.env.RAZORPAY_KEY_SECRET || 'placeholder',
-});
+const getLegacyRazorpayCredentials = () => {
+    const keyId = process.env.RAZORPAY_KEY_ID;
+    const keySecret = process.env.RAZORPAY_KEY_SECRET;
+
+    if (!keyId || !keySecret) {
+        throw new Error('RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET are required for legacy Razorpay usage');
+    }
+
+    return { keyId, keySecret };
+};
+
+export const razorpay = (() => {
+    const { keyId, keySecret } = getLegacyRazorpayCredentials();
+    return new Razorpay({
+        key_id: keyId,
+        key_secret: keySecret,
+    });
+})();
 
 /**
  * Get any configuration value for a company

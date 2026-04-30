@@ -7,13 +7,19 @@ export async function GET(req: Request) {
     const { searchParams } = new URL(req.url);
     const force = searchParams.get('force') === 'true';
 
-    // Check for authorization (Optional: CRON_SECRET)
+    // Manual forced sync from UI requires an authenticated admin session.
     const authHeader = req.headers.get('authorization');
-    const authUser = await getAuthenticatedUser();
-
-    if (process.env.CRON_SECRET && authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
-        // Fallback: check if it's a valid user session for manual sync from UI
-        if (!authUser && process.env.CRON_SECRET) {
+    if (force) {
+        const authUser = await getAuthenticatedUser();
+        if (!authUser || !['SUPER_ADMIN', 'ADMIN', 'FINANCE_ADMIN'].includes(authUser.role)) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
+    } else {
+        // Scheduled sync requires CRON_SECRET and a valid bearer token.
+        if (!process.env.CRON_SECRET) {
+            return NextResponse.json({ error: 'CRON_SECRET is not configured' }, { status: 500 });
+        }
+        if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
     }
