@@ -51,15 +51,23 @@ export default function PurchaseOrdersPage() {
         items: [{ description: '', quantity: 1, unitPrice: 0 }]
     });
 
+    const getAuthHeaders = (): Record<string, string> => {
+        const headers: Record<string, string> = {};
+        const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+        if (token) headers.Authorization = `Bearer ${token}`;
+        return headers;
+    };
+
     const loadData = useCallback(async () => {
         setLoading(true);
         try {
+            const authHeaders = getAuthHeaders();
             const [poRes, vendorRes, invoiceRes, couriersRes, proformaRes] = await Promise.all([
-                fetch(`/api/supply-chain/purchase-orders?search=${encodeURIComponent(searchTerm)}&status=${filterStatus}`),
-                fetch(`/api/supply-chain/vendors`),
-                fetch(`/api/invoices?status=PAID&search=${encodeURIComponent(searchTerm)}`),
-                fetch(`/api/logistics/couriers`),
-                fetch(`/api/proforma?search=${encodeURIComponent(searchTerm)}`)
+                fetch(`/api/supply-chain/purchase-orders?search=${encodeURIComponent(searchTerm)}&status=${filterStatus}`, { headers: authHeaders }),
+                fetch(`/api/supply-chain/vendors`, { headers: authHeaders }),
+                fetch(`/api/invoices?status=PAID&search=${encodeURIComponent(searchTerm)}`, { headers: authHeaders }),
+                fetch(`/api/logistics/couriers`, { headers: authHeaders }),
+                fetch(`/api/proforma?search=${encodeURIComponent(searchTerm)}`, { headers: authHeaders })
             ]);
             
             if (poRes.ok) setPurchaseOrders(await poRes.json());
@@ -94,9 +102,10 @@ export default function PurchaseOrdersPage() {
         if(!formData.vendorId) return toast.error('Please select a vendor.');
         
         try {
+            const authHeaders = getAuthHeaders();
             const res = await fetch('/api/supply-chain/purchase-orders', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { ...authHeaders, 'Content-Type': 'application/json' },
                 body: JSON.stringify(formData)
             });
 
