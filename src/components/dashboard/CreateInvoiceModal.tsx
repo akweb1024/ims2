@@ -142,6 +142,9 @@ export default function CreateInvoiceModal({
   const [companyStateCode, setCompanyStateCode] = useState<string>("");
 
   // Step 2: Invoice Details
+  const [invoiceDate, setInvoiceDate] = useState(() => {
+    return new Date().toISOString().split("T")[0];
+  });
   const [dueDate, setDueDate] = useState(() => {
     const d = new Date();
     d.setDate(d.getDate() + 15);
@@ -823,6 +826,10 @@ export default function CreateInvoiceModal({
         });
         if (res.ok) {
           const data = await res.json();
+          const invoiceDateValue = (data.invoiceDate || data.createdAt || "")
+            .toString()
+            .slice(0, 10);
+          setInvoiceDate(invoiceDateValue || new Date().toISOString().split("T")[0]);
           setDueDate(data.dueDate?.split("T")[0] || "");
           setDescription(data.description || "");
           setPurchaseOrderNumber(data.purchaseOrderNumber || "");
@@ -866,6 +873,7 @@ export default function CreateInvoiceModal({
       setInstitutionCustomerResolved(false);
       const d = new Date();
       d.setDate(d.getDate() + 15);
+      setInvoiceDate(new Date().toISOString().split("T")[0]);
       setDueDate(d.toISOString().split("T")[0]);
       setItems([
         {
@@ -1065,6 +1073,7 @@ export default function CreateInvoiceModal({
           },
           body: JSON.stringify({
             customerProfileId: selectedCustomer.id,
+            invoiceDate,
             dueDate,
             description,
             purchaseOrderNumber: purchaseOrderNumber || null,
@@ -2527,9 +2536,9 @@ export default function CreateInvoiceModal({
                   <label className="label">Invoice Date</label>
                   <input
                     type="date"
-                    disabled
-                    value={new Date().toISOString().split("T")[0]}
-                    className="input-premium bg-gray-50"
+                    value={invoiceDate}
+                    onChange={(e) => setInvoiceDate(e.target.value)}
+                    className="input-premium"
                   />
                 </div>
                 <div>

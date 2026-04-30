@@ -118,10 +118,12 @@ export const POST = authorizedRoute(
     try {
         const body = await req.json();
         const { customerProfileId, brandId, couponId, couponCode, discountType, discountValue, discountAmount,
-                dueDate, lineItems, description, purchaseOrderNumber, taxRate = 0, currency = 'INR' } = body;
+                dueDate, lineItems, description, purchaseOrderNumber, invoiceDate, taxRate = 0, currency = 'INR' } = body;
 
         const normalizedPurchaseOrderNumber =
             typeof purchaseOrderNumber === 'string' ? purchaseOrderNumber.trim() : null;
+        const normalizedInvoiceDate =
+            typeof invoiceDate === 'string' ? invoiceDate.trim() : null;
 
         if (!customerProfileId || !lineItems || lineItems.length === 0) {
             throw new ValidationError('customerProfileId and at least one lineItem are required');
@@ -334,6 +336,7 @@ export const POST = authorizedRoute(
                 customerProfileId,
                 dueDate: new Date(dueDate),
                 purchaseOrderNumber: normalizedPurchaseOrderNumber || null,
+                invoiceDate: normalizedInvoiceDate ? new Date(normalizedInvoiceDate) : undefined,
                 amount: subtotal,
                 tax,
                 total,

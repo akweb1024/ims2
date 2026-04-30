@@ -343,11 +343,11 @@ export default function GlobalProInvoiceTemplate({
                 display: "block",
                 marginBottom: "2px",
               }}
-            >
+              >
               Date
             </span>
             <span style={{ fontWeight: 700, fontSize: "11px" }}>
-              <FormattedDate date={invoice.createdAt} />
+              <FormattedDate date={invoice.invoiceDate || invoice.createdAt} />
             </span>
           </div>
           {invoice.dueDate && (

@@ -357,7 +357,7 @@ export default function AnvInvoiceTemplate({
           <div>
             <label>{invoiceTitle} Date</label>
             <span className="font-bold">
-              <FormattedDate date={invoice.createdAt} />
+              <FormattedDate date={invoice.invoiceDate || invoice.createdAt} />
             </span>
           </div>
           {invoice.purchaseOrderNumber && (

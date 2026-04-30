@@ -99,6 +99,7 @@ const DEFAULT_CATEGORIES = [
   { value: "APC", label: "APC", icon: "📝" },
   { value: "CERTIFICATE", label: "Certificate", icon: "🏅" },
   { value: "DIGITAL_SERVICE", label: "Digital Service", icon: "💻" },
+  { value: "REINSTE", label: "Reinste", icon: "🧾" },
   { value: "MISC", label: "Miscellaneous", icon: "📦" },
 ];
 

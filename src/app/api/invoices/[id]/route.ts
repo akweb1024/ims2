@@ -131,6 +131,14 @@ export const PATCH = authorizedRoute(
                                     ? (body.purchaseOrderNumber.trim() || null)
                                     : null)
                                 : undefined,
+                        invoiceDate:
+                            body.invoiceDate !== undefined
+                                ? (typeof body.invoiceDate === 'string'
+                                    ? (body.invoiceDate.trim()
+                                        ? new Date(body.invoiceDate.trim())
+                                        : null)
+                                    : null)
+                                : undefined,
                         amount: body.amount,
                         tax: body.tax,
                         total: body.total,

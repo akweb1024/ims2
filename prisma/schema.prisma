@@ -1096,6 +1096,7 @@ model Invoice {
   subscriptionId          String?
   invoiceNumber           String               @unique
   purchaseOrderNumber     String?
+  invoiceDate             DateTime?
   currency                String               @default("INR")
   amount                  Float
   tax                     Float
@@ -5544,6 +5545,7 @@ enum InvoiceProductCategory {
   APC
   CERTIFICATE
   DIGITAL_SERVICE
+  REINSTE
   MISC
 }
 

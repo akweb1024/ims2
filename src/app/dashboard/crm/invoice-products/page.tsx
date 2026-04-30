@@ -94,6 +94,12 @@ const CATEGORIES = [
     color: "bg-teal-50 text-teal-700 border-teal-200",
   },
   {
+    value: "REINSTE",
+    label: "Reinste",
+    icon: "🧾",
+    color: "bg-emerald-50 text-emerald-700 border-emerald-200",
+  },
+  {
     value: "MISC",
     label: "Miscellaneous",
     icon: "📦",
