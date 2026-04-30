@@ -350,10 +350,18 @@ export default function RequestITServicePage() {
                                                             uploadData.append('file', file);
                                                             uploadData.append('category', 'documents');
                                                             try {
-                                                                const res = await fetch('/api/upload', { method: 'POST', body: uploadData });
+                                                                const token = localStorage.getItem('token');
+                                                                const res = await fetch('/api/upload', {
+                                                                    method: 'POST',
+                                                                    headers: token ? { 'Authorization': `Bearer ${token}` } : undefined,
+                                                                    body: uploadData
+                                                                });
                                                                 if (res.ok) {
                                                                     const { url } = await res.json();
                                                                     setFormData({ ...formData, attachments: [...formData.attachments, url] });
+                                                                } else {
+                                                                    const err = await res.json().catch(() => ({} as any));
+                                                                    console.error('Upload failed', err);
                                                                 }
                                                             } catch (err) {
                                                                 console.error('Upload failed', err);

@@ -54,8 +54,10 @@ export default function AddCandidateModal({ jobs, onClose, onSubmit }: AddCandid
         payload.append('category', 'documents');
         payload.append('context', 'recruitment_resume');
 
+        const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
         const response = await fetch('/api/upload', {
             method: 'POST',
+            headers: token ? { 'Authorization': `Bearer ${token}` } : undefined,
             body: payload,
         });
 

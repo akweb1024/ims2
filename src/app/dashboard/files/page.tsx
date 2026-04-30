@@ -136,13 +136,15 @@ export default function FilesPage() {
         setUploading(true);
         setUploadResults([]);
         const results: typeof uploadResults = [];
+        const token = localStorage.getItem('token');
+        const headers: Record<string, string> = token ? { Authorization: `Bearer ${token}` } : {};
         for (const f of uploadFiles) {
             const fd = new FormData();
             fd.append('file', f);
             fd.append('category', 'general');
             try {
-                const res = await fetch('/api/upload', { method: 'POST', body: fd });
-                const body = await res.json();
+                const res = await fetch('/api/upload', { method: 'POST', headers, body: fd });
+                const body = await res.json().catch(() => ({} as any));
                 results.push({ name: f.name, ok: res.ok, msg: res.ok ? 'Uploaded' : body.error ?? 'Failed' });
             } catch {
                 results.push({ name: f.name, ok: false, msg: 'Network error' });

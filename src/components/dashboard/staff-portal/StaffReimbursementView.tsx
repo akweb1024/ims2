@@ -587,7 +587,12 @@ export default function StaffReimbursementView({ fullProfile, user, onUpdateUser
         const formData = new FormData();
         formData.append('file', file);
         try {
-            const uploadRes = await fetch('/api/upload', { method: 'POST', body: formData });
+            const token = localStorage.getItem('token');
+            const uploadRes = await fetch('/api/upload', {
+                method: 'POST',
+                headers: token ? { 'Authorization': `Bearer ${token}` } : undefined,
+                body: formData
+            });
             if (uploadRes.ok) {
                 const { url } = await uploadRes.json();
                 const signatureRes = await fetch('/api/profile/signature', {
