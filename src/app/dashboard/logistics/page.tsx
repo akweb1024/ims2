@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import Link from 'next/link';
+import toast from 'react-hot-toast';
 import {
     BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
     AreaChart, Area, Cell, PieChart, Pie
@@ -24,6 +25,8 @@ export default function LogisticsPage() {
     const [page, setPage] = useState(1);
     const [totalOrders, setTotalOrders] = useState(0);
     const [selectedOrders, setSelectedOrders] = useState<string[]>([]);
+    const [bulkUpdating, setBulkUpdating] = useState(false);
+    const [rowUpdatingId, setRowUpdatingId] = useState<string | null>(null);
     const [customers, setCustomers] = useState<any[]>([]);
     const [selectedOrder, setSelectedOrder] = useState<any>(null);
     const [isOrderDetailOpen, setIsOrderDetailOpen] = useState(false);
@@ -136,7 +139,8 @@ export default function LogisticsPage() {
                 setIsCreatingOrder(false);
                 fetchData();
             } else {
-                alert('Failed to create order');
+                const data = await res.json().catch(() => null);
+                toast.error(data?.error || 'Failed to create order');
             }
         } catch (error) { console.error(error); }
     };
@@ -145,6 +149,7 @@ export default function LogisticsPage() {
         if (!selectedOrders.length) return;
         if (!confirm(`Update ${selectedOrders.length} orders to ${newStatus}?`)) return;
         try {
+            setBulkUpdating(true);
             const token = localStorage.getItem('token');
             const res = await fetch('/api/logistics/orders/bulk', {
                 method: 'PUT',
@@ -157,12 +162,18 @@ export default function LogisticsPage() {
             if (res.ok) {
                 setSelectedOrders([]);
                 fetchData();
+                toast.success('Bulk status updated');
+            } else {
+                const data = await res.json().catch(() => null);
+                toast.error(data?.error || 'Bulk update failed');
             }
         } catch (error) { console.error(error); }
+        finally { setBulkUpdating(false); }
     };
 
     const handleStatusUpdate = async (id: string, status: string) => {
         try {
+            setRowUpdatingId(id);
             const token = localStorage.getItem('token');
             const res = await fetch(`/api/logistics/orders/${id}`, {
                 method: 'PATCH',
@@ -172,8 +183,15 @@ export default function LogisticsPage() {
                 },
                 body: JSON.stringify({ status })
             });
-            if (res.ok) fetchData();
+            if (res.ok) {
+                fetchData();
+                toast.success('Status updated');
+            } else {
+                const data = await res.json().catch(() => null);
+                toast.error(data?.error || 'Failed to update status');
+            }
         } catch (error) { console.error(error); }
+        finally { setRowUpdatingId(null); }
     };
 
     const handleTrack = (order: any) => {
@@ -219,7 +237,7 @@ export default function LogisticsPage() {
             setSelectedOrder(order);
             syncDetailForm(order);
         } catch (error: any) {
-            alert(error.message || 'Failed to load dispatch details');
+            toast.error(error.message || 'Failed to load dispatch details');
             setIsOrderDetailOpen(false);
             setSelectedOrder(null);
         } finally {
@@ -256,9 +274,9 @@ export default function LogisticsPage() {
             setSelectedOrder(data);
             syncDetailForm(data);
             fetchData();
-            alert('Dispatch updated successfully');
+            toast.success('Dispatch updated successfully');
         } catch (error: any) {
-            alert(error.message || 'Failed to update dispatch');
+            toast.error(error.message || 'Failed to update dispatch');
         } finally {
             setIsDetailSaving(false);
         }
@@ -433,26 +451,42 @@ export default function LogisticsPage() {
                             </select>
                         </div>
 
-                        <div className="flex justify-between items-center bg-secondary-50 p-2 rounded-xl mb-4">
-                            <div className="flex items-center gap-4 pl-4">
-                                <span className="text-xs font-bold text-secondary-500">{selectedOrders.length} selected</span>
-                                {selectedOrders.length > 0 && (
-                                    <select
-                                        className="input py-1 text-xs"
-                                        onChange={(e) => {
-                                            if(e.target.value) handleBulkStatusUpdate(e.target.value);
-                                            e.target.value = "";
-                                        }}
-                                    >
-                                        <option value="">Bulk Status Update...</option>
-                                        <option value="PROCESSING">Processing</option>
-                                        <option value="READY_TO_SHIP">Ready to Ship</option>
-                                        <option value="SHIPPED">Shipped</option>
-                                        <option value="DELIVERED">Delivered</option>
-                                    </select>
-                                )}
-                            </div>
-                        </div>
+	                        <div className="flex justify-between items-center bg-secondary-50 p-2 rounded-xl mb-4">
+	                            <div className="flex items-center gap-4 pl-4">
+	                                <span className="text-xs font-bold text-secondary-500">{selectedOrders.length} selected</span>
+	                                {selectedOrders.length > 0 && (
+	                                    <div className="flex items-center gap-2">
+	                                        <select
+	                                            className="input py-1 text-xs"
+	                                            disabled={bulkUpdating}
+	                                            onChange={(e) => {
+	                                                if (e.target.value) handleBulkStatusUpdate(e.target.value);
+	                                                e.target.value = "";
+	                                            }}
+	                                        >
+	                                            <option value="">{bulkUpdating ? 'Updating...' : 'Bulk Status Update...'}</option>
+	                                            <option value="PROCESSING">Processing</option>
+	                                            <option value="READY_TO_SHIP">Ready to Ship</option>
+	                                            <option value="SHIPPED">Shipped</option>
+	                                            <option value="DELIVERED">Delivered</option>
+	                                        </select>
+	                                        <button
+	                                            type="button"
+	                                            className="btn btn-secondary py-1 text-xs"
+	                                            onClick={() => setSelectedOrders([])}
+	                                            disabled={bulkUpdating}
+	                                        >
+	                                            Clear
+	                                        </button>
+	                                    </div>
+	                                )}
+	                            </div>
+	                            {selectedOrders.length > 0 && (
+	                                <div className="pr-4 text-[10px] font-bold text-secondary-400 uppercase tracking-widest">
+	                                    Bulk actions apply to selected rows on this page
+	                                </div>
+	                            )}
+	                        </div>
                         <div className="card-premium p-0 overflow-hidden">
                             <div className="overflow-x-auto">
                                 <table className="w-full text-left text-sm text-secondary-600">
@@ -507,17 +541,18 @@ export default function LogisticsPage() {
                                                 <td className="px-6 py-4">
                                                     <span className="font-black text-secondary-900">{order.fulfillmentType === 'DIGITAL' ? '--' : (order.weight || '--')} {order.fulfillmentType === 'DIGITAL' ? '' : 'kg'}</span>
                                                 </td>
-                                                <td className="px-6 py-4">
-                                                    {['SUPER_ADMIN', 'ADMIN', 'MANAGER'].includes(userRole) ? (
-                                                        <select
-                                                            value={order.status}
-                                                            onChange={(e) => handleStatusUpdate(order.id, e.target.value)}
-                                                            className="bg-transparent text-[10px] font-black uppercase text-primary-600 cursor-pointer hover:underline outline-none"
-                                                        >
-                                                            <option value="PENDING">Pending</option>
-                                                            <option value="PROCESSING">Processing</option>
-                                                            <option value="READY_TO_SHIP">Ready to Ship</option>
-                                                            <option value="SHIPPED">Shipped</option>
+	                                                <td className="px-6 py-4">
+	                                                    {['SUPER_ADMIN', 'ADMIN', 'MANAGER'].includes(userRole) ? (
+	                                                        <select
+	                                                            value={order.status}
+	                                                            disabled={rowUpdatingId === order.id || bulkUpdating}
+	                                                            onChange={(e) => handleStatusUpdate(order.id, e.target.value)}
+	                                                            className="bg-transparent text-[10px] font-black uppercase text-primary-600 cursor-pointer hover:underline outline-none disabled:opacity-60"
+	                                                        >
+	                                                            <option value="PENDING">Pending</option>
+	                                                            <option value="PROCESSING">Processing</option>
+	                                                            <option value="READY_TO_SHIP">Ready to Ship</option>
+	                                                            <option value="SHIPPED">Shipped</option>
                                                             <option value="IN_TRANSIT">In Transit</option>
                                                             <option value="DELIVERED">Delivered</option>
                                                             <option value="RETURNED">Returned</option>

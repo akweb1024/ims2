@@ -61,7 +61,7 @@ export async function GET(req: NextRequest) {
             });
 
             const skus = products
-                .map((p) => p.sku)
+                .flatMap((p: any) => [p.sku, ...(p.variants || []).map((v: any) => v.sku)])
                 .filter((sku): sku is string => Boolean(sku));
 
             const inventoryBySku = new Map<string, any>();
@@ -100,7 +100,8 @@ export async function GET(req: NextRequest) {
                             quantity: Number(variant.stockQuantity || 0),
                             minStockLevel,
                             unitPrice: Number(variant.priceINR ?? product.priceINR ?? 0),
-                            warehouse: null,
+                            inventoryItemId: variant.sku ? inventoryBySku.get(variant.sku)?.id || null : null,
+                            warehouse: variant.sku ? inventoryBySku.get(variant.sku)?.warehouse || null : null,
                         }));
                     }
 
@@ -162,6 +163,104 @@ export async function POST(req: NextRequest) {
         const data = await req.json();
         const action = data.action;
         const companyId = user.companyId || data.companyId;
+
+        if (action === 'UPSERT_INVENTORY_META') {
+            if (!companyId || !data.sku) {
+                return NextResponse.json({ error: 'sku is required.' }, { status: 400 });
+            }
+
+            const sku = String(data.sku).trim();
+            if (!sku) {
+                return NextResponse.json({ error: 'sku is required.' }, { status: 400 });
+            }
+
+            const warehouseId =
+                data.warehouseId === undefined
+                    ? undefined
+                    : data.warehouseId
+                        ? String(data.warehouseId)
+                        : null;
+
+            if (warehouseId) {
+                const warehouse = await prisma.warehouse.findFirst({
+                    where: {
+                        id: warehouseId,
+                        ...(user.role === 'SUPER_ADMIN' ? {} : { companyId: user.companyId }),
+                    },
+                    select: { id: true },
+                });
+                if (!warehouse) {
+                    return NextResponse.json({ error: 'Warehouse not found' }, { status: 404 });
+                }
+            }
+
+            const existing = await prisma.inventoryItem.findUnique({
+                where: { sku_companyId: { sku, companyId } },
+            });
+
+            const nextMin = data.minStockLevel === undefined ? undefined : Number(data.minStockLevel);
+            if (nextMin !== undefined && (!Number.isFinite(nextMin) || nextMin < 0)) {
+                return NextResponse.json({ error: 'minStockLevel must be a non-negative number' }, { status: 400 });
+            }
+            const nextUnit = data.unitPrice === undefined ? undefined : Number(data.unitPrice);
+            if (nextUnit !== undefined && (!Number.isFinite(nextUnit) || nextUnit < 0)) {
+                return NextResponse.json({ error: 'unitPrice must be a non-negative number' }, { status: 400 });
+            }
+
+            const updated = await prisma.inventoryItem.upsert({
+                where: { sku_companyId: { sku, companyId } },
+                update: {
+                    name: data.name !== undefined ? String(data.name).trim() : undefined,
+                    category: data.category !== undefined ? String(data.category).trim() : undefined,
+                    description: data.description !== undefined ? (data.description ? String(data.description) : null) : undefined,
+                    warehouseId,
+                    minStockLevel: nextMin,
+                    unitPrice: nextUnit,
+                },
+                create: {
+                    companyId,
+                    sku,
+                    name: String(data.name || sku).trim() || sku,
+                    category: String(data.category || 'GENERAL').trim() || 'GENERAL',
+                    description: data.description ? String(data.description) : null,
+                    warehouseId: warehouseId ?? null,
+                    minStockLevel: Number.isFinite(nextMin as any) ? (nextMin as number) : 0,
+                    unitPrice: Number.isFinite(nextUnit as any) ? (nextUnit as number) : 0,
+                    quantity: 0,
+                },
+            });
+
+            await createAuditLog({
+                userId: user.id,
+                action: existing ? 'UPDATE' : 'CREATE',
+                entity: 'INVENTORY_ITEM',
+                entityId: updated.id,
+                changes: {
+                    sku,
+                    from: existing
+                        ? {
+                            name: existing.name,
+                            category: existing.category,
+                            description: existing.description,
+                            warehouseId: existing.warehouseId,
+                            minStockLevel: existing.minStockLevel,
+                            unitPrice: existing.unitPrice,
+                        }
+                        : null,
+                    to: {
+                        name: updated.name,
+                        category: updated.category,
+                        description: updated.description,
+                        warehouseId: updated.warehouseId,
+                        minStockLevel: updated.minStockLevel,
+                        unitPrice: updated.unitPrice,
+                    },
+                },
+                ipAddress: req.headers.get('x-forwarded-for') || 'API',
+            });
+
+            return NextResponse.json(updated);
+        }
 
         if (action === 'ADJUST_PRODUCT_STOCK') {
             if (!companyId || !data.productId || !Number.isFinite(Number(data.delta))) {

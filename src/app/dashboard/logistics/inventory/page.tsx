@@ -2,9 +2,10 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
-import FormattedDate from '@/components/common/FormattedDate';
-import { Search, Plus, Package, MapPin, AlertTriangle, Loader2, ArrowRight } from 'lucide-react';
+import { Search, Plus, Package, MapPin, AlertTriangle, Loader2, ArrowRight, Pencil, Save } from 'lucide-react';
 import toast from 'react-hot-toast';
+
+type StockFilter = 'ALL' | 'LOW_STOCK' | 'OUT_OF_STOCK' | 'HEALTHY';
 
 export default function InventoryLedgerPage() {
     const [inventory, setInventory] = useState<any[]>([]);
@@ -12,6 +13,12 @@ export default function InventoryLedgerPage() {
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [showCreateModal, setShowCreateModal] = useState(false);
+    const [warehouseFilter, setWarehouseFilter] = useState<string>('ALL');
+    const [stockFilter, setStockFilter] = useState<StockFilter>('ALL');
+    const [unallocatedOnly, setUnallocatedOnly] = useState(false);
+    const [selectedItem, setSelectedItem] = useState<any | null>(null);
+    const [showEditModal, setShowEditModal] = useState(false);
+    const [saving, setSaving] = useState(false);
     
     // Form state
     const [formData, setFormData] = useState({
@@ -22,17 +29,27 @@ export default function InventoryLedgerPage() {
         quantity: 0,
         minStockLevel: 10,
         unitPrice: 0,
-        description: ''
-    });
+	        description: ''
+	    });
 
-    const fetchInventory = useCallback(async () => {
-        setLoading(true);
-        try {
-            const res = await fetch(`/api/logistics/inventory?source=products&search=${encodeURIComponent(searchTerm)}`);
-            if (res.ok) {
-                const data = await res.json();
-                setInventory(data.inventory);
-                setWarehouses(data.warehouses);
+	    const getAuthHeaders = (): Record<string, string> => {
+	        const headers: Record<string, string> = {};
+	        const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+	        if (token) headers.Authorization = `Bearer ${token}`;
+	        return headers;
+	    };
+
+	    const fetchInventory = useCallback(async () => {
+	        setLoading(true);
+	        try {
+	            const authHeaders = getAuthHeaders();
+	            const res = await fetch(`/api/logistics/inventory?source=products&search=${encodeURIComponent(searchTerm)}`, {
+	                headers: authHeaders,
+	            });
+	            if (res.ok) {
+	                const data = await res.json();
+	                setInventory(data.inventory);
+	                setWarehouses(data.warehouses);
             } else {
                 toast.error('Failed to load inventory');
             }
@@ -49,17 +66,18 @@ export default function InventoryLedgerPage() {
         return () => clearTimeout(timeout);
     }, [fetchInventory]);
 
-    const handleCreate = async (e: React.FormEvent) => {
-        e.preventDefault();
-        try {
-            const res = await fetch('/api/logistics/inventory', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(formData)
-            });
+	    const handleCreate = async (e: React.FormEvent) => {
+	        e.preventDefault();
+	        try {
+	            const authHeaders = getAuthHeaders();
+	            const res = await fetch('/api/logistics/inventory', {
+	                method: 'POST',
+	                headers: { ...authHeaders, 'Content-Type': 'application/json' },
+	                body: JSON.stringify(formData)
+	            });
 
-            if (res.ok) {
-                toast.success('Item added to Inventory successfully!');
+	            if (res.ok) {
+	                toast.success('Item added to Inventory successfully!');
                 setShowCreateModal(false);
                 setFormData({ sku: '', name: '', category: 'GENERAL', warehouseId: '', quantity: 0, minStockLevel: 10, unitPrice: 0, description: '' });
                 fetchInventory();
@@ -84,16 +102,17 @@ export default function InventoryLedgerPage() {
             toast.error('Enter a valid non-zero number.');
             return;
         }
-        const notes = prompt('Optional note for audit log:', 'Manual adjustment') || 'Manual adjustment';
+	        const notes = prompt('Optional note for audit log:', 'Manual adjustment') || 'Manual adjustment';
 
-        try {
-            const res = await fetch('/api/logistics/inventory', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    action: 'ADJUST_PRODUCT_STOCK',
-                    productId: item.productId,
-                    variantId: item.variantId,
+	        try {
+	            const authHeaders = getAuthHeaders();
+	            const res = await fetch('/api/logistics/inventory', {
+	                method: 'POST',
+	                headers: { ...authHeaders, 'Content-Type': 'application/json' },
+	                body: JSON.stringify({
+	                    action: 'ADJUST_PRODUCT_STOCK',
+	                    productId: item.productId,
+	                    variantId: item.variantId,
                     delta,
                     notes,
                 }),
@@ -116,6 +135,105 @@ export default function InventoryLedgerPage() {
         if (current === 0) return 'bg-danger-100 text-danger-700';
         if (current <= min) return 'bg-warning-100 text-warning-700 font-bold';
         return 'bg-success-100 text-success-700';
+    };
+
+    const visibleInventory = inventory.filter((item: any) => {
+        if (warehouseFilter !== 'ALL') {
+            if (warehouseFilter === 'UNALLOCATED') {
+                if (item.warehouse?.id) return false;
+            } else if (item.warehouse?.id !== warehouseFilter) {
+                return false;
+            }
+        }
+        if (unallocatedOnly && item.warehouse?.id) return false;
+        const qty = Number(item.quantity || 0);
+        const min = Number(item.minStockLevel || 0);
+        if (stockFilter === 'OUT_OF_STOCK') return qty === 0;
+        if (stockFilter === 'LOW_STOCK') return qty > 0 && qty <= min;
+        if (stockFilter === 'HEALTHY') return qty > min;
+        return true;
+    });
+
+    const upsertInventoryMeta = async (payload: any) => {
+        const authHeaders = getAuthHeaders();
+        const res = await fetch('/api/logistics/inventory', {
+            method: 'POST',
+            headers: { ...authHeaders, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'UPSERT_INVENTORY_META', ...payload }),
+        });
+        if (!res.ok) {
+            const data = await res.json().catch(() => null);
+            throw new Error(data?.error || 'Failed to save');
+        }
+        return await res.json();
+    };
+
+    const openEdit = (item: any) => {
+        setSelectedItem({
+            ...item,
+            _edit: {
+                warehouseId: item.warehouse?.id || '',
+                minStockLevel: item.minStockLevel ?? 10,
+                unitPrice: item.unitPrice ?? 0,
+                name: item.name || '',
+                category: item.category || 'GENERAL',
+                sku: item.sku || '',
+            },
+        });
+        setShowEditModal(true);
+    };
+
+    const handleQuickAssignWarehouse = async (item: any, warehouseId: string) => {
+        if (!item?.sku) return toast.error('Missing SKU');
+        try {
+            setSaving(true);
+            await upsertInventoryMeta({
+                sku: item.sku,
+                name: item.name,
+                category: item.category,
+                warehouseId: warehouseId || null,
+                minStockLevel: item.minStockLevel,
+                unitPrice: item.unitPrice,
+            });
+            toast.success('Warehouse updated');
+            fetchInventory();
+        } catch (err: any) {
+            console.error(err);
+            toast.error(err.message || 'Failed to update warehouse');
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    const handleSaveMeta = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!selectedItem?._edit?.sku) return;
+        const edit = selectedItem._edit;
+        const minStockLevel = Number(edit.minStockLevel);
+        const unitPrice = Number(edit.unitPrice);
+        if (!Number.isFinite(minStockLevel) || minStockLevel < 0) return toast.error('Min stock must be >= 0');
+        if (!Number.isFinite(unitPrice) || unitPrice < 0) return toast.error('Unit price must be >= 0');
+
+        try {
+            setSaving(true);
+            await upsertInventoryMeta({
+                sku: edit.sku,
+                name: edit.name,
+                category: edit.category,
+                warehouseId: edit.warehouseId || null,
+                minStockLevel,
+                unitPrice,
+            });
+            toast.success('Inventory meta saved');
+            setShowEditModal(false);
+            setSelectedItem(null);
+            fetchInventory();
+        } catch (err: any) {
+            console.error(err);
+            toast.error(err.message || 'Failed to save');
+        } finally {
+            setSaving(false);
+        }
     };
 
     return (
@@ -156,13 +274,40 @@ export default function InventoryLedgerPage() {
                         />
                     </div>
                     
-                    <div className="flex gap-4 items-center">
+                    <div className="flex flex-col md:flex-row gap-2 md:items-center">
+                        <select
+                            className="bg-secondary-50 rounded-2xl px-4 py-3 outline-none font-bold text-secondary-700 border border-secondary-200"
+                            value={warehouseFilter}
+                            onChange={(e) => setWarehouseFilter(e.target.value)}
+                        >
+                            <option value="ALL">All Warehouses</option>
+                            <option value="UNALLOCATED">Unallocated</option>
+                            {warehouses.map((w: any) => (
+                                <option key={w.id} value={w.id}>
+                                    {w.name}
+                                </option>
+                            ))}
+                        </select>
+                        <select
+                            className="bg-secondary-50 rounded-2xl px-4 py-3 outline-none font-bold text-secondary-700 border border-secondary-200"
+                            value={stockFilter}
+                            onChange={(e) => setStockFilter(e.target.value as StockFilter)}
+                        >
+                            <option value="ALL">All Stock</option>
+                            <option value="OUT_OF_STOCK">Out of stock</option>
+                            <option value="LOW_STOCK">Low stock</option>
+                            <option value="HEALTHY">Healthy</option>
+                        </select>
+                        <label className="flex items-center gap-2 bg-secondary-50 border border-secondary-200 rounded-2xl px-4 py-3 text-sm font-bold text-secondary-700 select-none">
+                            <input type="checkbox" checked={unallocatedOnly} onChange={(e) => setUnallocatedOnly(e.target.checked)} />
+                            Unallocated only
+                        </label>
                         <div className="flex items-center gap-2 text-xs font-bold text-danger-600 uppercase bg-danger-50 px-3 py-1.5 rounded-lg border border-danger-100">
-                            <AlertTriangle size={14} /> 
-                            {inventory.filter(i => i.quantity <= i.minStockLevel).length} Low Stock
+                            <AlertTriangle size={14} />
+                            {visibleInventory.filter((i) => i.quantity <= i.minStockLevel).length} Low Stock
                         </div>
                         <div className="text-sm font-bold text-secondary-500 uppercase tracking-widest px-4 border-l border-secondary-200">
-                            Total Assets: {inventory.length}
+                            Total Assets: {visibleInventory.length}
                         </div>
                     </div>
                 </div>
@@ -173,15 +318,15 @@ export default function InventoryLedgerPage() {
                         <Loader2 className="animate-spin mb-4 text-primary-500" size={40} />
                         <p className="font-bold">Scanning warehouse ledgers...</p>
                     </div>
-                ) : inventory.length === 0 ? (
+                ) : visibleInventory.length === 0 ? (
                     <div className="text-center p-20 bg-secondary-50 rounded-3xl border border-secondary-200 border-dashed">
                         <Package size={48} className="mx-auto text-secondary-300 mb-4" />
                         <h2 className="text-xl font-black text-secondary-800">No Tracked Product Inventory Found</h2>
-                        <p className="text-secondary-500 mt-2">Enable Physical Deliverable + Track Inventory in CRM product settings first.</p>
+                        <p className="text-secondary-500 mt-2">Try changing filters or enable Physical Deliverable + Track Inventory in CRM product settings.</p>
                     </div>
                 ) : (
                     <div className="grid grid-cols-1 lg:grid-cols-3 md:grid-cols-2 gap-6">
-                        {inventory.map((item) => (
+                        {visibleInventory.map((item) => (
                             <div key={item.id} className="bg-white rounded-3xl p-6 shadow-lg shadow-secondary-100/50 border border-secondary-100 hover:-translate-y-1 hover:border-primary-200 hover:shadow-xl hover:shadow-primary-100/50 transition-all group flex flex-col h-full relative overflow-hidden">
                                 
                                 {/* Status Glow */}
@@ -211,13 +356,37 @@ export default function InventoryLedgerPage() {
                                     </div>
                                 </div>
                                 
-                                <div className="flex-1 space-y-3 mt-4 pt-4 border-t border-secondary-50 pl-2">
-                                    <div className="flex items-center gap-3 text-sm font-medium">
-                                        <MapPin size={16} className="text-secondary-400" />
-                                        <span className={item.warehouse?.name ? 'text-secondary-700 font-bold bg-primary-50 px-2 py-0.5 rounded text-primary-700' : 'text-secondary-400 italic'}>
-                                            {item.warehouse?.name || 'Unallocated Virtual'}
-                                        </span>
-                                    </div>
+	                                <div className="flex-1 space-y-3 mt-4 pt-4 border-t border-secondary-50 pl-2">
+	                                    <div className="flex items-center gap-3 text-sm font-medium">
+	                                        <MapPin size={16} className="text-secondary-400" />
+	                                        <div className="flex items-center gap-2 flex-wrap">
+	                                            <span className={item.warehouse?.name ? 'text-secondary-700 font-bold bg-primary-50 px-2 py-0.5 rounded text-primary-700' : 'text-secondary-400 italic'}>
+	                                                {item.warehouse?.name || 'Unallocated'}
+	                                            </span>
+	                                            <select
+	                                                className="bg-white border border-secondary-200 rounded-lg px-2 py-1 text-[10px] font-black tracking-widest text-secondary-700 hover:border-primary-200 transition-colors"
+	                                                value={item.warehouse?.id || ''}
+	                                                onChange={(e) => handleQuickAssignWarehouse(item, e.target.value)}
+	                                                disabled={saving}
+	                                                title="Assign warehouse"
+	                                            >
+	                                                <option value="">Unallocated</option>
+	                                                {warehouses.map((w: any) => (
+	                                                    <option key={w.id} value={w.id}>
+	                                                        {w.name}
+	                                                    </option>
+	                                                ))}
+	                                            </select>
+	                                            <button
+	                                                type="button"
+	                                                onClick={() => openEdit(item)}
+	                                                className="p-2 rounded-xl bg-white border border-secondary-200 shadow-sm text-secondary-700 hover:text-primary-700 hover:border-primary-200 transition-colors"
+	                                                title="Edit inventory meta"
+	                                            >
+	                                                <Pencil size={16} />
+	                                            </button>
+	                                        </div>
+	                                    </div>
                                     
                                     <div className="bg-secondary-50 p-3 rounded-2xl flex justify-between items-center border border-secondary-100 mt-2">
                                         <div>
@@ -315,6 +484,95 @@ export default function InventoryLedgerPage() {
                                 </button>
                                 <button type="submit" className="btn-premium px-8 py-2.5 rounded-xl shadow-lg shadow-primary-500/20">
                                     Initialize Item Profile
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            {/* Edit Meta Modal */}
+            {showEditModal && selectedItem && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-secondary-900/40 backdrop-blur-sm animate-in fade-in duration-200">
+                    <div className="bg-white rounded-[2rem] shadow-2xl w-full max-w-lg overflow-hidden animate-in zoom-in-95 duration-200 border border-secondary-100">
+                        <div className="px-8 py-6 border-b border-secondary-100 bg-gradient-to-br from-secondary-50 to-white">
+                            <h2 className="text-2xl font-black text-secondary-900">Edit Inventory Meta</h2>
+                            <p className="text-secondary-500 font-medium text-sm mt-1 font-mono">{selectedItem.sku}</p>
+                        </div>
+
+                        <form onSubmit={handleSaveMeta} className="p-8 space-y-6">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div className="col-span-1 md:col-span-2 space-y-2">
+                                    <label className="text-xs font-black tracking-widest text-secondary-500 uppercase">Name</label>
+                                    <input
+                                        type="text"
+                                        className="input-premium w-full"
+                                        value={selectedItem._edit.name}
+                                        onChange={(e) => setSelectedItem({ ...selectedItem, _edit: { ...selectedItem._edit, name: e.target.value } })}
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-xs font-black tracking-widest text-secondary-500 uppercase">Warehouse</label>
+                                    <select
+                                        className="input-premium w-full"
+                                        value={selectedItem._edit.warehouseId}
+                                        onChange={(e) => setSelectedItem({ ...selectedItem, _edit: { ...selectedItem._edit, warehouseId: e.target.value } })}
+                                    >
+                                        <option value="">Unallocated</option>
+                                        {warehouses.map((w: any) => (
+                                            <option key={w.id} value={w.id}>
+                                                {w.name}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-xs font-black tracking-widest text-secondary-500 uppercase">Category</label>
+                                    <input
+                                        type="text"
+                                        className="input-premium w-full"
+                                        value={selectedItem._edit.category}
+                                        onChange={(e) => setSelectedItem({ ...selectedItem, _edit: { ...selectedItem._edit, category: e.target.value } })}
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-xs font-black tracking-widest text-secondary-500 uppercase">Min Stock</label>
+                                    <input
+                                        type="number"
+                                        min="0"
+                                        className="input-premium w-full"
+                                        value={selectedItem._edit.minStockLevel}
+                                        onChange={(e) => setSelectedItem({ ...selectedItem, _edit: { ...selectedItem._edit, minStockLevel: e.target.value } })}
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-xs font-black tracking-widest text-secondary-500 uppercase">Unit Price (₹)</label>
+                                    <input
+                                        type="number"
+                                        min="0"
+                                        step="0.01"
+                                        className="input-premium w-full"
+                                        value={selectedItem._edit.unitPrice}
+                                        onChange={(e) => setSelectedItem({ ...selectedItem, _edit: { ...selectedItem._edit, unitPrice: e.target.value } })}
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="pt-6 border-t border-secondary-100 flex justify-end gap-3">
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setShowEditModal(false);
+                                        setSelectedItem(null);
+                                    }}
+                                    className="px-6 py-2.5 rounded-xl font-bold text-secondary-600 hover:bg-secondary-100 transition-colors"
+                                    disabled={saving}
+                                >
+                                    Cancel
+                                </button>
+                                <button type="submit" className="btn-premium px-8 py-2.5 rounded-xl shadow-lg shadow-primary-500/20 flex items-center gap-2" disabled={saving}>
+                                    <Save size={16} />
+                                    {saving ? 'Saving...' : 'Save'}
                                 </button>
                             </div>
                         </form>

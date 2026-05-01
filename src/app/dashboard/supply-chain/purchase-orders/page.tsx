@@ -19,6 +19,7 @@ export default function PurchaseOrdersPage() {
     const [filterStatus, setFilterStatus] = useState('ALL');
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [activeTab, setActiveTab] = useState<'vendor' | 'customer'>('vendor');
+    const [poUpdatingId, setPoUpdatingId] = useState<string | null>(null);
     
     // Dispatch Management State
     const [dispatchModalOpen, setDispatchModalOpen] = useState(false);
@@ -88,14 +89,40 @@ export default function PurchaseOrdersPage() {
             console.error('Fetch error:', err);
             toast.error('Network error');
         } finally {
-            setLoading(false);
-        }
-    }, [searchTerm, filterStatus]);
+        setLoading(false);
+    }
+}, [searchTerm, filterStatus]);
 
-    useEffect(() => {
-        const timeout = setTimeout(loadData, 300);
-        return () => clearTimeout(timeout);
-    }, [loadData]);
+    const handleUpdatePO = async (po: any, nextStatus: string) => {
+        if (!po?.id) return;
+        if (!nextStatus || nextStatus === po.status) return;
+        try {
+            setPoUpdatingId(po.id);
+            const authHeaders = getAuthHeaders();
+            const res = await fetch(`/api/supply-chain/purchase-orders/${po.id}`, {
+                method: 'PATCH',
+                headers: { ...authHeaders, 'Content-Type': 'application/json' },
+                body: JSON.stringify({ status: nextStatus }),
+            });
+            if (res.ok) {
+                toast.success('Purchase order status updated');
+                loadData();
+            } else {
+                const data = await res.json().catch(() => null);
+                toast.error(data?.error || 'Failed to update PO');
+            }
+        } catch (err) {
+            console.error(err);
+            toast.error('Network error');
+        } finally {
+            setPoUpdatingId(null);
+        }
+    };
+
+useEffect(() => {
+    const timeout = setTimeout(loadData, 300);
+    return () => clearTimeout(timeout);
+}, [loadData]);
 
     const handleCreate = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -343,14 +370,28 @@ export default function PurchaseOrdersPage() {
                                             </p>
                                         </td>
                                         <td className="px-6 py-4">
-                                            <span className={`px-2 py-1 rounded-lg font-black uppercase text-[10px] tracking-wider ${
-                                                po.status === 'DRAFT' ? 'bg-secondary-100 text-secondary-600' :
-                                                po.status === 'ISSUED' ? 'bg-blue-100 text-blue-700' :
-                                                po.status === 'COMPLETED' ? 'bg-emerald-100 text-emerald-700' :
-                                                'bg-amber-100 text-amber-700'
-                                            }`}>
-                                                {po.status}
-                                            </span>
+                                            <div className="flex items-center gap-2">
+                                                <span className={`px-2 py-1 rounded-lg font-black uppercase text-[10px] tracking-wider ${
+                                                    po.status === 'DRAFT' ? 'bg-secondary-100 text-secondary-600' :
+                                                    po.status === 'ISSUED' ? 'bg-blue-100 text-blue-700' :
+                                                    po.status === 'COMPLETED' ? 'bg-emerald-100 text-emerald-700' :
+                                                    'bg-amber-100 text-amber-700'
+                                                }`}>
+                                                    {po.status}
+                                                </span>
+                                                <select
+                                                    className="bg-white border border-secondary-200 rounded-lg px-2 py-1 text-[10px] font-black tracking-widest text-secondary-700 hover:border-primary-200 transition-colors"
+                                                    value={po.status}
+                                                    disabled={poUpdatingId === po.id}
+                                                    onChange={(e) => handleUpdatePO(po, e.target.value)}
+                                                    title="Update PO status"
+                                                >
+                                                    <option value="DRAFT">DRAFT</option>
+                                                    <option value="ISSUED">ISSUED</option>
+                                                    <option value="PARTIAL">PARTIAL</option>
+                                                    <option value="COMPLETED">COMPLETED</option>
+                                                </select>
+                                            </div>
                                         </td>
                                         <td className="px-6 py-4 text-xs font-semibold text-secondary-500">
                                             {po.expectedDate ? <FormattedDate date={po.expectedDate} /> : 'TBA'}

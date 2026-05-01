@@ -2,15 +2,20 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
-import FormattedDate from '@/components/common/FormattedDate';
-import { Search, Plus, Store, Mail, Phone, MapPin, Loader2, ArrowRight } from 'lucide-react';
+import { Search, Plus, Store, Mail, Phone, MapPin, Loader2, Pencil, Power } from 'lucide-react';
 import toast from 'react-hot-toast';
+
+type VendorStatusFilter = 'ALL' | 'ACTIVE' | 'INACTIVE';
 
 export default function VendorsPage() {
     const [vendors, setVendors] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [showCreateModal, setShowCreateModal] = useState(false);
+    const [statusFilter, setStatusFilter] = useState<VendorStatusFilter>('ACTIVE');
+    const [editVendor, setEditVendor] = useState<any | null>(null);
+    const [showEditModal, setShowEditModal] = useState(false);
+    const [saving, setSaving] = useState(false);
     
     // Form state
     const [formData, setFormData] = useState({
@@ -20,18 +25,38 @@ export default function VendorsPage() {
         phone: '',
         address: '',
         taxId: '',
-        status: 'ACTIVE'
+	        status: 'ACTIVE'
+	    });
+
+    const [editFormData, setEditFormData] = useState({
+        name: '',
+        contactName: '',
+        email: '',
+        phone: '',
+        address: '',
+        taxId: '',
+        status: 'ACTIVE',
     });
 
-    const fetchVendors = useCallback(async () => {
-        setLoading(true);
-        try {
-            const res = await fetch(`/api/supply-chain/vendors?search=${encodeURIComponent(searchTerm)}`);
-            if (res.ok) {
-                setVendors(await res.json());
-            } else {
-                toast.error('Failed to load vendors');
-            }
+	    const getAuthHeaders = (): Record<string, string> => {
+	        const headers: Record<string, string> = {};
+	        const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+	        if (token) headers.Authorization = `Bearer ${token}`;
+	        return headers;
+	    };
+
+	    const fetchVendors = useCallback(async () => {
+	        setLoading(true);
+	        try {
+	            const authHeaders = getAuthHeaders();
+	            const res = await fetch(`/api/supply-chain/vendors?search=${encodeURIComponent(searchTerm)}`, {
+	                headers: authHeaders,
+	            });
+	            if (res.ok) {
+	                setVendors(await res.json());
+	            } else {
+	                toast.error('Failed to load vendors');
+	            }
         } catch (err) {
             console.error('Fetch error:', err);
             toast.error('Network error');
@@ -45,17 +70,23 @@ export default function VendorsPage() {
         return () => clearTimeout(timeout);
     }, [fetchVendors]);
 
-    const handleCreate = async (e: React.FormEvent) => {
-        e.preventDefault();
-        try {
-            const res = await fetch('/api/supply-chain/vendors', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(formData)
-            });
+    const visibleVendors = vendors.filter((vendor) => {
+        if (statusFilter === 'ALL') return true;
+        return vendor.status === statusFilter;
+    });
 
-            if (res.ok) {
-                toast.success('Vendor created successfully!');
+	    const handleCreate = async (e: React.FormEvent) => {
+	        e.preventDefault();
+	        try {
+	            const authHeaders = getAuthHeaders();
+	            const res = await fetch('/api/supply-chain/vendors', {
+	                method: 'POST',
+	                headers: { ...authHeaders, 'Content-Type': 'application/json' },
+	                body: JSON.stringify(formData)
+	            });
+
+	            if (res.ok) {
+	                toast.success('Vendor created successfully!');
                 setShowCreateModal(false);
                 setFormData({ name: '', contactName: '', email: '', phone: '', address: '', taxId: '', status: 'ACTIVE' });
                 fetchVendors();
@@ -66,6 +97,78 @@ export default function VendorsPage() {
         } catch (err) {
             console.error(err);
             toast.error('Network error. Try again.');
+        }
+    };
+
+    const openEdit = (vendor: any) => {
+        setEditVendor(vendor);
+        setEditFormData({
+            name: vendor.name || '',
+            contactName: vendor.contactName || '',
+            email: vendor.email || '',
+            phone: vendor.phone || '',
+            address: vendor.address || '',
+            taxId: vendor.taxId || '',
+            status: vendor.status || 'ACTIVE',
+        });
+        setShowEditModal(true);
+    };
+
+    const handleUpdateVendor = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!editVendor?.id) return;
+        try {
+            setSaving(true);
+            const authHeaders = getAuthHeaders();
+            const res = await fetch(`/api/supply-chain/vendors/${editVendor.id}`, {
+                method: 'PATCH',
+                headers: { ...authHeaders, 'Content-Type': 'application/json' },
+                body: JSON.stringify(editFormData),
+            });
+
+            if (res.ok) {
+                toast.success('Vendor updated');
+                setShowEditModal(false);
+                setEditVendor(null);
+                fetchVendors();
+            } else {
+                const data = await res.json().catch(() => null);
+                toast.error(data?.error || 'Failed to update vendor');
+            }
+        } catch (err) {
+            console.error(err);
+            toast.error('Network error. Try again.');
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    const handleToggleVendorStatus = async (vendor: any) => {
+        if (!vendor?.id) return;
+        const nextStatus = vendor.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE';
+        const ok = confirm(`${nextStatus === 'INACTIVE' ? 'Deactivate' : 'Activate'} vendor "${vendor.name}"?`);
+        if (!ok) return;
+
+        try {
+            setSaving(true);
+            const authHeaders = getAuthHeaders();
+            const res = await fetch(`/api/supply-chain/vendors/${vendor.id}`, {
+                method: 'PATCH',
+                headers: { ...authHeaders, 'Content-Type': 'application/json' },
+                body: JSON.stringify({ status: nextStatus }),
+            });
+            if (res.ok) {
+                toast.success(`Vendor ${nextStatus === 'INACTIVE' ? 'deactivated' : 'activated'}`);
+                fetchVendors();
+            } else {
+                const data = await res.json().catch(() => null);
+                toast.error(data?.error || 'Failed to update vendor');
+            }
+        } catch (err) {
+            console.error(err);
+            toast.error('Network error. Try again.');
+        } finally {
+            setSaving(false);
         }
     };
 
@@ -106,8 +209,22 @@ export default function VendorsPage() {
                             onChange={(e) => setSearchTerm(e.target.value)}
                         />
                     </div>
+                    <div className="flex items-center gap-2 bg-secondary-50 border border-secondary-200 rounded-2xl p-1">
+                        {(['ALL', 'ACTIVE', 'INACTIVE'] as VendorStatusFilter[]).map((s) => (
+                            <button
+                                key={s}
+                                type="button"
+                                onClick={() => setStatusFilter(s)}
+                                className={`px-3 py-2 rounded-xl text-xs font-black tracking-widest transition-colors ${
+                                    statusFilter === s ? 'bg-white shadow-sm text-primary-700' : 'text-secondary-500 hover:text-secondary-700'
+                                }`}
+                            >
+                                {s === 'ALL' ? 'ALL' : s === 'ACTIVE' ? 'ACTIVE' : 'INACTIVE'}
+                            </button>
+                        ))}
+                    </div>
                     <div className="flex items-center gap-2 text-sm font-bold text-secondary-500 uppercase tracking-widest px-4">
-                        <span>Total Records: {vendors.length}</span>
+                        <span>Total Records: {visibleVendors.length}</span>
                     </div>
                 </div>
 
@@ -117,7 +234,7 @@ export default function VendorsPage() {
                         <Loader2 className="animate-spin mb-4 text-primary-500" size={40} />
                         <p className="font-bold">Loading directory...</p>
                     </div>
-                ) : vendors.length === 0 ? (
+                ) : visibleVendors.length === 0 ? (
                     <div className="text-center p-20 bg-secondary-50 rounded-3xl border border-secondary-200 border-dashed">
                         <Store size={48} className="mx-auto text-secondary-300 mb-4" />
                         <h2 className="text-xl font-black text-secondary-800">No Vendors Found</h2>
@@ -125,7 +242,7 @@ export default function VendorsPage() {
                     </div>
                 ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {vendors.map((vendor) => (
+                        {visibleVendors.map((vendor) => (
                             <div key={vendor.id} className="bg-white rounded-3xl p-6 shadow-lg shadow-secondary-100/50 border border-secondary-100 hover:border-primary-200 hover:shadow-xl hover:shadow-primary-100 transition-all group">
                                 <div className="flex justify-between items-start mb-4">
                                     <div className="flex items-center gap-4">
@@ -144,6 +261,29 @@ export default function VendorsPage() {
                                                 </span>
                                             </div>
                                         </div>
+                                    </div>
+                                    <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <button
+                                            type="button"
+                                            onClick={() => openEdit(vendor)}
+                                            className="p-2 rounded-xl bg-white border border-secondary-200 shadow-sm text-secondary-700 hover:text-primary-700 hover:border-primary-200 transition-colors"
+                                            title="Edit vendor"
+                                        >
+                                            <Pencil size={16} />
+                                        </button>
+                                        <button
+                                            type="button"
+                                            disabled={saving}
+                                            onClick={() => handleToggleVendorStatus(vendor)}
+                                            className={`p-2 rounded-xl bg-white border shadow-sm transition-colors ${
+                                                vendor.status === 'ACTIVE'
+                                                    ? 'border-danger-200 text-danger-600 hover:bg-danger-50'
+                                                    : 'border-emerald-200 text-emerald-700 hover:bg-emerald-50'
+                                            }`}
+                                            title={vendor.status === 'ACTIVE' ? 'Deactivate vendor' : 'Activate vendor'}
+                                        >
+                                            <Power size={16} />
+                                        </button>
                                     </div>
                                 </div>
                                 
@@ -172,6 +312,12 @@ export default function VendorsPage() {
                                             <span className="line-clamp-2">{vendor.address}</span>
                                         </div>
                                     )}
+                                    {vendor.taxId && (
+                                        <div className="flex items-start gap-3 text-secondary-600 text-sm font-medium">
+                                            <span className="text-[10px] font-black tracking-widest text-secondary-400 uppercase mt-0.5">GST</span>
+                                            <span className="font-mono text-xs">{vendor.taxId}</span>
+                                        </div>
+                                    )}
                                 </div>
                                 
                                 <div className="mt-6 flex justify-between items-center px-4 py-3 bg-secondary-50 rounded-2xl">
@@ -179,8 +325,12 @@ export default function VendorsPage() {
                                         <span className="text-[10px] font-black text-secondary-400 uppercase tracking-widest">Linked POs</span>
                                         <span className="font-bold text-sm text-secondary-900">{vendor._count?.purchaseOrders || 0}</span>
                                     </div>
-                                    <button className="text-primary-600 group-hover:text-primary-700 bg-white p-2 rounded-xl shadow-sm border border-secondary-200 transition-colors">
-                                        <ArrowRight size={16} />
+                                    <button
+                                        type="button"
+                                        onClick={() => openEdit(vendor)}
+                                        className="text-primary-700 bg-white px-3 py-2 rounded-xl shadow-sm border border-secondary-200 hover:border-primary-200 transition-colors text-xs font-black tracking-widest"
+                                    >
+                                        Manage
                                     </button>
                                 </div>
                             </div>
@@ -232,6 +382,106 @@ export default function VendorsPage() {
                                 </button>
                                 <button type="submit" className="btn-premium px-8 py-2.5 rounded-xl shadow-lg shadow-primary-500/20">
                                     Save Vendor
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            {/* Edit Modal */}
+            {showEditModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-secondary-900/40 backdrop-blur-sm animate-in fade-in duration-200">
+                    <div className="bg-white rounded-[2rem] shadow-2xl w-full max-w-lg overflow-hidden animate-in zoom-in-95 duration-200 border border-secondary-100">
+                        <div className="px-8 py-6 border-b border-secondary-100 bg-gradient-to-br from-secondary-50 to-white">
+                            <h2 className="text-2xl font-black text-secondary-900">Edit Vendor</h2>
+                            <p className="text-secondary-500 font-medium text-sm mt-1">Update supplier details and status.</p>
+                        </div>
+
+                        <form onSubmit={handleUpdateVendor} className="p-8 space-y-6">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div className="col-span-1 md:col-span-2 space-y-2">
+                                    <label className="text-xs font-black tracking-widest text-secondary-500 uppercase">Vendor Name *</label>
+                                    <input
+                                        required
+                                        type="text"
+                                        className="input-premium w-full"
+                                        value={editFormData.name}
+                                        onChange={(e) => setEditFormData({ ...editFormData, name: e.target.value })}
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-xs font-black tracking-widest text-secondary-500 uppercase">Contact Person</label>
+                                    <input
+                                        type="text"
+                                        className="input-premium w-full"
+                                        value={editFormData.contactName}
+                                        onChange={(e) => setEditFormData({ ...editFormData, contactName: e.target.value })}
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-xs font-black tracking-widest text-secondary-500 uppercase">Tax ID / GSTIN</label>
+                                    <input
+                                        type="text"
+                                        className="input-premium w-full"
+                                        value={editFormData.taxId}
+                                        onChange={(e) => setEditFormData({ ...editFormData, taxId: e.target.value })}
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-xs font-black tracking-widest text-secondary-500 uppercase">Email Address</label>
+                                    <input
+                                        type="email"
+                                        className="input-premium w-full"
+                                        value={editFormData.email}
+                                        onChange={(e) => setEditFormData({ ...editFormData, email: e.target.value })}
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-xs font-black tracking-widest text-secondary-500 uppercase">Phone Number</label>
+                                    <input
+                                        type="text"
+                                        className="input-premium w-full"
+                                        value={editFormData.phone}
+                                        onChange={(e) => setEditFormData({ ...editFormData, phone: e.target.value })}
+                                    />
+                                </div>
+                                <div className="col-span-1 md:col-span-2 space-y-2">
+                                    <label className="text-xs font-black tracking-widest text-secondary-500 uppercase">Billing Address</label>
+                                    <textarea
+                                        className="input-premium w-full py-3"
+                                        rows={2}
+                                        value={editFormData.address}
+                                        onChange={(e) => setEditFormData({ ...editFormData, address: e.target.value })}
+                                    ></textarea>
+                                </div>
+                                <div className="col-span-1 md:col-span-2 space-y-2">
+                                    <label className="text-xs font-black tracking-widest text-secondary-500 uppercase">Status</label>
+                                    <select
+                                        className="input-premium w-full"
+                                        value={editFormData.status}
+                                        onChange={(e) => setEditFormData({ ...editFormData, status: e.target.value })}
+                                    >
+                                        <option value="ACTIVE">ACTIVE</option>
+                                        <option value="INACTIVE">INACTIVE</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div className="pt-6 border-t border-secondary-100 flex justify-end gap-3">
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setShowEditModal(false);
+                                        setEditVendor(null);
+                                    }}
+                                    className="px-6 py-2.5 rounded-xl font-bold text-secondary-600 hover:bg-secondary-100 transition-colors"
+                                    disabled={saving}
+                                >
+                                    Cancel
+                                </button>
+                                <button type="submit" className="btn-premium px-8 py-2.5 rounded-xl shadow-lg shadow-primary-500/20" disabled={saving}>
+                                    {saving ? 'Saving...' : 'Save Changes'}
                                 </button>
                             </div>
                         </form>
