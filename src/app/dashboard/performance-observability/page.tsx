@@ -34,12 +34,27 @@ type CronStatus = {
   companySnapshots: number;
 };
 
+type CronHealth = 'HEALTHY' | 'STALE' | 'FAILED';
+
 export default function PerformanceObservabilityPage() {
   const [metrics, setMetrics] = useState<Metric[]>([]);
   const [events, setEvents] = useState<EventRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [running, setRunning] = useState(false);
   const [cronStatus, setCronStatus] = useState<CronStatus | null>(null);
+
+  const cronHealth = useMemo((): { status: CronHealth; label: string } => {
+    if (!cronStatus) return { status: 'FAILED', label: 'failed' };
+
+    const cadence = cronStatus.cadence === '60m' ? '60m' : '15m';
+    const thresholdMinutes = cadence === '15m' ? 20 : 75;
+    const failedMinutes = thresholdMinutes * 2;
+    const ageMinutes = (Date.now() - new Date(cronStatus.ranAt).getTime()) / (1000 * 60);
+
+    if (ageMinutes > failedMinutes) return { status: 'FAILED', label: 'failed' };
+    if (ageMinutes > thresholdMinutes) return { status: 'STALE', label: 'stale' };
+    return { status: 'HEALTHY', label: 'healthy' };
+  }, [cronStatus]);
 
   const load = async () => {
     setLoading(true);
@@ -113,7 +128,20 @@ export default function PerformanceObservabilityPage() {
             </button>
           </div>
           <div className="mt-4 rounded-xl border border-emerald-100 bg-emerald-50/40 p-3">
-            <div className="text-[10px] font-black uppercase tracking-wider text-emerald-700">Last Cron Run</div>
+            <div className="flex items-center justify-between">
+              <div className="text-[10px] font-black uppercase tracking-wider text-emerald-700">Last Cron Run</div>
+              <span
+                className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider ${
+                  cronHealth.status === 'HEALTHY'
+                    ? 'bg-emerald-100 text-emerald-700'
+                    : cronHealth.status === 'STALE'
+                      ? 'bg-amber-100 text-amber-700'
+                      : 'bg-rose-100 text-rose-700'
+                }`}
+              >
+                {cronHealth.label}
+              </span>
+            </div>
             {!cronStatus ? (
               <div className="text-xs text-emerald-800 mt-1">No cron run recorded yet.</div>
             ) : (
