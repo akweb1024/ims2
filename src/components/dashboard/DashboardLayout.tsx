@@ -254,9 +254,10 @@ export default function DashboardLayout({ children, userRole: propUserRole = 'CU
     const user = session?.user as any;
     const finalRole = user?.role || propUserRole;
 
+    const canUseAllCompanies = user?.role === 'SUPER_ADMIN';
     const displayRole = mounted && user?.companyId
         ? (user.company?.name || finalRole.replace('_', ' '))
-        : (mounted ? 'All Companies' : finalRole.replace('_', ' '));
+        : (mounted ? (canUseAllCompanies ? 'All Companies' : finalRole.replace('_', ' ')) : finalRole.replace('_', ' '));
     const displayEmail = mounted && user?.email ? user.email.split('@')[0] : 'User';
     const displayFullEmail = mounted && user?.email ? user.email : 'user@example.com';
 

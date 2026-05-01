@@ -20,18 +20,7 @@ export const POST = authorizedRoute(
             let hasAccess = false;
 
             if (isAllCompany) {
-                if (user.role === 'SUPER_ADMIN') {
-                    hasAccess = true;
-                } else {
-                    const userWithCompanies = await prisma.user.findUnique({
-                        where: { id: user.id },
-                        select: { companyId: true, companies: { select: { id: true } } }
-                    });
-                    const accessible = new Set<string>();
-                    if (userWithCompanies?.companyId) accessible.add(userWithCompanies.companyId);
-                    userWithCompanies?.companies.forEach(c => accessible.add(c.id));
-                    hasAccess = accessible.size > 1;
-                }
+                hasAccess = user.role === 'SUPER_ADMIN';
             } else if (user.role === 'SUPER_ADMIN') {
                 const company = await prisma.company.findUnique({ where: { id: companyId } });
                 if (company) hasAccess = true;
@@ -46,6 +35,9 @@ export const POST = authorizedRoute(
             }
 
             if (!hasAccess) {
+                if (isAllCompany && user.role !== 'SUPER_ADMIN') {
+                    return createErrorResponse('Forbidden: Only SUPER_ADMIN can use All Companies mode', 403);
+                }
                 return createErrorResponse('Forbidden: No access to this company', 403);
             }
 

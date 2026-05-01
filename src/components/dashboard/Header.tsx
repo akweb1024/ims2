@@ -45,6 +45,7 @@ export default function Header({
     isImpersonating
 }: HeaderProps) {
     const router = useRouter();
+    const canUseAllCompanies = user?.role === 'SUPER_ADMIN';
     const unreadCount = notifications.filter(n => !n.isRead).length;
     const [attendance, setAttendance] = useState<any[]>([]);
     const [elapsedTime, setElapsedTime] = useState('00h 00m 00s');
@@ -401,21 +402,23 @@ export default function Header({
                                         <div className="border-t border-slate-100 py-1.5">
                                             <p className="px-4 py-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-wider">Switch Company</p>
                                             <div className="max-h-40 overflow-y-auto">
-                                                <button
-                                                    onClick={() => handleSwitchCompany('ALL')}
-                                                    className={`w-full text-left px-4 py-2.5 text-xs flex justify-between items-center transition-colors gap-2
-                                                        ${!user?.companyId ? 'bg-blue-50 text-blue-700 font-bold' : 'text-slate-600 hover:bg-slate-50'}`}
-                                                >
-                                                    <div className="flex items-center gap-2">
-                                                        <span className="text-blue-500">🌐</span>
-                                                        <span>All Companies</span>
-                                                    </div>
-                                                    {!user?.companyId && (
-                                                        <svg className="w-3.5 h-3.5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
-                                                        </svg>
-                                                    )}
-                                                </button>
+                                                {canUseAllCompanies && (
+                                                    <button
+                                                        onClick={() => handleSwitchCompany('ALL')}
+                                                        className={`w-full text-left px-4 py-2.5 text-xs flex justify-between items-center transition-colors gap-2
+                                                            ${!user?.companyId ? 'bg-blue-50 text-blue-700 font-bold' : 'text-slate-600 hover:bg-slate-50'}`}
+                                                    >
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="text-blue-500">🌐</span>
+                                                            <span>All Companies</span>
+                                                        </div>
+                                                        {!user?.companyId && (
+                                                            <svg className="w-3.5 h-3.5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                                                            </svg>
+                                                        )}
+                                                    </button>
+                                                )}
                                                 {availableCompanies.map((comp) => (
                                                     <button
                                                         key={comp.id}

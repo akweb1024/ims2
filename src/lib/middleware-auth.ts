@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSessionUser } from '@/lib/session';
 import { TokenPayload } from '@/lib/auth-legacy';
 import { handleApiError, AuthorizationError, AuthenticationError } from '@/lib/error-handler';
+import { getRequiredSensitiveModule, hasModuleAccess } from '@/lib/module-access';
+import { prisma } from '@/lib/prisma';
 
 type ProtectedRouteHandler = (req: NextRequest, user: TokenPayload, context?: any) => Promise<NextResponse>;
 
@@ -25,10 +27,38 @@ export const authorizedRoute = (allowedRoles: string[] = [], handler: ProtectedR
                 throw new AuthorizationError('Forbidden: Insufficient permissions');
             }
 
+            const requiredModule = getRequiredSensitiveModule(req.nextUrl.pathname);
+            if (requiredModule && !hasModuleAccess(user, requiredModule)) {
+                const forwardedFor = req.headers.get('x-forwarded-for');
+                const ipAddress = forwardedFor?.split(',')[0]?.trim() || req.headers.get('x-real-ip') || 'UNKNOWN';
+
+                try {
+                    await prisma.auditLog.create({
+                        data: {
+                            userId: user.id,
+                            action: 'DENY_MODULE_ACCESS',
+                            entity: 'module_access',
+                            entityId: req.nextUrl.pathname,
+                            ipAddress,
+                            changes: {
+                                method: req.method,
+                                requiredModule,
+                                userRole: user.role,
+                                userCompanyId: user.companyId || null,
+                                allowedModules: user.allowedModules || [],
+                            },
+                        },
+                    });
+                } catch (auditError) {
+                    console.error('Failed to record module access denial audit log:', auditError);
+                }
+
+                throw new AuthorizationError(`Forbidden: ${requiredModule} module access is required`);
+            }
+
             return await handler(req, user, context);
         } catch (error) {
             return handleApiError(error, req.nextUrl.pathname);
         }
     };
 };
-
