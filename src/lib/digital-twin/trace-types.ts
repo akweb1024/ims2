@@ -7,7 +7,8 @@ export interface TwinActivityEvent {
     | "TASK_COMPLETED"
     | "DISPATCH_UPDATED"
     | "STOCK_MOVEMENT"
-    | "AUDIT_EVENT";
+    | "AUDIT_EVENT"
+    | "PERFORMANCE_SIGNAL";
   title: string;
   description: string;
   severity: TraceSeverity;

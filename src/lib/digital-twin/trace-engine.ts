@@ -34,6 +34,7 @@ export async function buildTwinTrace(
     taskCompleted,
     dispatchUpdates,
     stockMovements,
+    performanceSignals,
     auditEvents,
     employeeProfiles,
     attendance7d,
@@ -96,6 +97,22 @@ export async function buildTwinTrace(
         createdAt: true,
         user: { select: { name: true, email: true } },
         inventoryItem: { select: { id: true, name: true, sku: true } },
+      },
+    }),
+    prisma.performanceSignalEvent.findMany({
+      where: { companyId, capturedAt: { gte: since } },
+      orderBy: { capturedAt: "desc" },
+      take: Math.min(limit, 150),
+      select: {
+        id: true,
+        metricKey: true,
+        metricScope: true,
+        value: true,
+        severity: true,
+        sourceModule: true,
+        sourceEntityType: true,
+        sourceEntityId: true,
+        capturedAt: true,
       },
     }),
     prisma.auditLog.findMany({
@@ -221,6 +238,19 @@ export async function buildTwinTrace(
       entityType: "inventory_item",
       entityId: m.inventoryItem.id,
       actorName: m.user?.name || m.user?.email || undefined,
+    })),
+    ...performanceSignals.map((signal) => ({
+      id: `performance-signal-${signal.id}`,
+      type: "PERFORMANCE_SIGNAL" as const,
+      title: `Signal ${signal.metricKey}`,
+      description: `${signal.metricScope} · ${signal.value} · ${signal.sourceModule}`,
+      severity: (["INFO", "SUCCESS", "WARNING", "CRITICAL"].includes(signal.severity)
+        ? signal.severity
+        : "INFO") as TraceSeverity,
+      at: signal.capturedAt.toISOString(),
+      entityType: signal.sourceEntityType || "performance_signal_event",
+      entityId: signal.sourceEntityId || signal.id,
+      actorName: undefined,
     })),
     ...auditEvents.map((a) => ({
       id: `audit-${a.id}`,

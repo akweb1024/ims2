@@ -388,6 +388,7 @@ export const ALL_MODULES: NavModule[] = [
                     { name: 'Revenue Analytics', href: '/dashboard/analytics/revenue', icon: '💰', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'TEAM_LEADER', 'HR_MANAGER'] },
                     { name: 'Analytics', href: '/dashboard/analytics', icon: '📈', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER'] },
                     { name: 'AI Predictions', href: '/dashboard/ai-insights', icon: '🤖', roles: ['SUPER_ADMIN', 'MANAGER', 'EXECUTIVE', 'FINANCE_ADMIN', 'AGENCY'] },
+                    { name: 'Performance Observatory', href: '/dashboard/performance-observability', icon: '🧭', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'HR_MANAGER', 'FINANCE_ADMIN'] },
                     { name: 'Support Tickets', href: '/dashboard/tickets', icon: '🎫', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'EXECUTIVE', 'CUSTOMER'] },
                     { name: 'Customers', href: '/dashboard/customers', icon: '🙍‍♂️', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'TEAM_LEADER', 'EXECUTIVE'] },
                 ]

@@ -136,6 +136,8 @@ model Company {
   workPlans                   WorkPlan[]
   workReports                 WorkReport[]
   workshops                   Workshop[]
+  performanceMetricDefinitions PerformanceMetricDefinition[]
+  performanceSignalEvents     PerformanceSignalEvent[]
   designations                Designation[]                @relation("CompanyToDesignation")
   users                       User[]                       @relation("UserCompanies")
 }
@@ -396,6 +398,7 @@ model User {
   taggedITProjects               ITProject[]                      @relation("ProjectTaggedEmployees")
   companies                      Company[]                        @relation("UserCompanies")
   reimbursementRecords           ReimbursementRecord[]
+  performanceSignalEvents        PerformanceSignalEvent[]
 
   @@index([email])
   @@index([role])
@@ -1644,6 +1647,7 @@ model EmployeeProfile {
   taxDeclarations          TaxDeclaration[]
   workPlans                WorkPlan[]
   workReports              WorkReport[]
+  performanceSignals       PerformanceSignalEvent[]
 }
 
 model EmployeeCompanyDesignation {
@@ -2797,6 +2801,55 @@ model CompanyPerformance {
 
   @@unique([companyId, month, year])
   @@index([month, year])
+}
+
+model PerformanceMetricDefinition {
+  id                String   @id @default(uuid())
+  companyId         String?
+  scope             String
+  key               String
+  name              String
+  description       String?
+  unit              String
+  direction         String
+  warningThreshold  Float?
+  criticalThreshold Float?
+  sourceModule      String
+  isActive          Boolean  @default(true)
+  metadata          Json?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  company           Company? @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@unique([companyId, scope, key])
+  @@index([companyId, scope])
+  @@index([isActive])
+}
+
+model PerformanceSignalEvent {
+  id                String           @id @default(uuid())
+  companyId         String
+  employeeProfileId String?
+  metricKey         String
+  metricScope       String
+  value             Float
+  baselineValue     Float?
+  severity          String           @default("INFO")
+  sourceModule      String
+  sourceEntityType  String?
+  sourceEntityId    String?
+  context           Json?
+  capturedAt        DateTime         @default(now())
+  createdAt         DateTime         @default(now())
+  createdByUserId   String?
+  company           Company          @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  createdBy         User?            @relation(fields: [createdByUserId], references: [id], onDelete: SetNull)
+  employee          EmployeeProfile? @relation(fields: [employeeProfileId], references: [id], onDelete: SetNull)
+
+  @@index([companyId, metricScope, capturedAt])
+  @@index([metricKey, capturedAt])
+  @@index([employeeProfileId, capturedAt])
+  @@index([severity, capturedAt])
 }
 
 model JournalIssue {
