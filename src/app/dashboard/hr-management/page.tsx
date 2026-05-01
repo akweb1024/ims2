@@ -197,7 +197,7 @@ const HRManagementContent = () => {
                     params.append('all', 'true');
                 }
 
-                const res = await fetch(`/api/staff-management/employees?${params.toString()}`);
+                const res = await fetch(`/api/hr/employees?format=staff&${params.toString()}`);
                 if (res.ok) {
                     const data = await res.json();
                     setFilteredEmployees(data);

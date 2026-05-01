@@ -5,11 +5,19 @@ import { authorizedRoute } from '@/lib/middleware-auth';
 import { createErrorResponse } from '@/lib/api-utils';
 import { getDownlineUserIds } from '@/lib/hierarchy';
 import { logger } from '@/lib/logger';
+import { listStaffEmployees } from '@/lib/services/hr/listStaffEmployees';
 
 export const GET = authorizedRoute(
     ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'TEAM_LEADER', 'HR_MANAGER', 'HR'], // Added HR Roles
     async (req: NextRequest, user) => {
         try {
+            const { searchParams } = new URL(req.url);
+            const format = searchParams.get('format');
+            if (format === 'staff') {
+                const data = await listStaffEmployees({ user, params: searchParams });
+                return NextResponse.json(data);
+            }
+
             if (!user.companyId && !['SUPER_ADMIN', 'ADMIN'].includes(user.role)) {
                 return createErrorResponse('Company association required', 403);
             }
@@ -36,9 +44,8 @@ export const GET = authorizedRoute(
 
             // Role-based restrictions: Manager & Team Leader see full hierarchy (cross-company)
             if (['MANAGER', 'TEAM_LEADER'].includes(user.role)) {
-                // Pass null to enable cross-company management
-                // Managers can now see all employees who report to them, regardless of company
-                const subIds = await getDownlineUserIds(user.id, null);
+                // Keep managers scoped to their company (tenant isolation)
+                const subIds = await getDownlineUserIds(user.id, user.companyId || undefined);
                 where.user = {
                     ...where.user,
                     id: { in: subIds }

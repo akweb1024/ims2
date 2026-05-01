@@ -10,7 +10,10 @@ const handler = authorizedRoute(
   async (req: NextRequest, user) => {
     try {
       const { searchParams } = new URL(req.url);
-      const companyId = searchParams.get("companyId") || user.companyId;
+      const companyId =
+        user.role === "SUPER_ADMIN"
+          ? searchParams.get("companyId") || user.companyId
+          : user.companyId;
 
       if (!companyId) {
         return createErrorResponse("Company ID required", 400);

@@ -25,8 +25,8 @@ export default function HRClientLayout({ children }: HRClientLayoutProps) {
     const navItems = [
         { name: 'Command Center', href: '/dashboard/hr-management', icon: LayoutDashboard },
         { name: 'Recruitment Hub', href: '/dashboard/recruitment', icon: Briefcase },
-        { name: 'Attendance', href: '/dashboard/staff-management?tab=attendance', icon: Clock },
-        { name: 'Performance', href: '/dashboard/hr/performance', icon: TrendingUp },
+        { name: 'Attendance', href: '/dashboard/hr-management?tab=attendance', icon: Clock },
+        { name: 'Performance', href: '/dashboard/hr-management/performance/monthly', icon: TrendingUp },
         { name: 'Staff Management', href: '/dashboard/staff-management', icon: UserCheck },
     ];
 

@@ -47,7 +47,7 @@ export const GET = authorizedRoute(
 
                 // For Manager/Team Leader, verify target is in hierarchy (cross-company)
                 if (['MANAGER', 'TEAM_LEADER'].includes(user.role)) {
-                    const subIds = await getDownlineUserIds(user.id, null); // Cross-company
+                    const subIds = await getDownlineUserIds(user.id, user.companyId || undefined);
                     const allowedUserIds = [...subIds, user.id]; // Can see self too
 
                     if (!allowedUserIds.includes(profile.userId)) {
@@ -56,15 +56,13 @@ export const GET = authorizedRoute(
                 }
 
                 where.employeeId = resolvedEmployeeId;
-                if (user.companyId) {
-                    where.employee = { user: { companyId: user.companyId } };
-                }
+                if (user.companyId) where.employee = { user: { companyId: user.companyId } };
             } else if (showAll && ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'TEAM_LEADER'].includes(user.role)) {
 
                 if (['MANAGER', 'TEAM_LEADER'].includes(user.role)) {
-                    const subIds = await getDownlineUserIds(user.id, null); // Cross-company
-                    // Usually "All" for a manager means "My Team" (across all companies)
+                    const subIds = await getDownlineUserIds(user.id, user.companyId || undefined);
                     where.employee = { userId: { in: subIds } };
+                    if (user.companyId) where.employee = { ...where.employee, user: { companyId: user.companyId } };
                 } else {
                     // Admin sees all in company
                     if (user.companyId) {
@@ -161,10 +159,14 @@ export const PATCH = authorizedRoute(
 
             // Access Control: Manager/TL can only approve/deny their own team
             if (['MANAGER', 'TEAM_LEADER'].includes(user.role)) {
-                const subIds = await getDownlineUserIds(user.id, null);
+                const subIds = await getDownlineUserIds(user.id, user.companyId || undefined);
                 if (!subIds.includes(existing.employee.userId)) {
                     return createErrorResponse('Forbidden: Not in your team', 403);
                 }
+            }
+
+            if (user.role !== 'SUPER_ADMIN' && user.companyId && existing.companyId && existing.companyId !== user.companyId) {
+                return createErrorResponse('Forbidden: Cross-company access denied', 403);
             }
 
             // Use centralized service for status update and balance/ledger synchronization

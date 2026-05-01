@@ -20,8 +20,18 @@ export const POST = authorizedRoute(
             let hasAccess = false;
 
             if (isAllCompany) {
-                // Anyone with multiple companies or SUPER_ADMIN can see "ALL"
-                hasAccess = true;
+                if (user.role === 'SUPER_ADMIN') {
+                    hasAccess = true;
+                } else {
+                    const userWithCompanies = await prisma.user.findUnique({
+                        where: { id: user.id },
+                        select: { companyId: true, companies: { select: { id: true } } }
+                    });
+                    const accessible = new Set<string>();
+                    if (userWithCompanies?.companyId) accessible.add(userWithCompanies.companyId);
+                    userWithCompanies?.companies.forEach(c => accessible.add(c.id));
+                    hasAccess = accessible.size > 1;
+                }
             } else if (user.role === 'SUPER_ADMIN') {
                 const company = await prisma.company.findUnique({ where: { id: companyId } });
                 if (company) hasAccess = true;
@@ -51,7 +61,7 @@ export const POST = authorizedRoute(
                 id: user.id,
                 email: user.email,
                 role: user.role,
-                companyId: companyId
+                companyId: isAllCompany ? undefined : companyId
             });
 
             return NextResponse.json({

@@ -25,11 +25,15 @@ export const POST = authorizedRoute(
             const isOwner = report.employee.userId === user.id;
             let isAuthorized = isOwner;
 
+            if (!isAuthorized && user.role !== 'SUPER_ADMIN' && user.companyId && report.companyId && report.companyId !== user.companyId) {
+                return createErrorResponse('Forbidden', 403);
+            }
+
             if (!isAuthorized) {
                 if (['SUPER_ADMIN', 'ADMIN'].includes(user.role)) {
                     isAuthorized = true;
                 } else if (['MANAGER', 'TEAM_LEADER'].includes(user.role)) {
-                    const subIds = await getDownlineUserIds(user.id, null);
+                    const subIds = await getDownlineUserIds(user.id, user.companyId || undefined);
                     if (subIds.includes(report.employee.userId)) {
                         isAuthorized = true;
                     }

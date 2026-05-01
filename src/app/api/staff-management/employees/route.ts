@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { authorizedRoute } from '@/lib/middleware-auth';
 import { logger } from '@/lib/logger';
-import { getDownlineUserIds } from '@/lib/hierarchy';
+import { listStaffEmployees } from '@/lib/services/hr/listStaffEmployees';
 
 // GET /api/staff-management/employees - List employees
 export const GET = authorizedRoute(
@@ -10,152 +11,7 @@ export const GET = authorizedRoute(
     async (req: NextRequest, user) => {
         try {
             const { searchParams } = new URL(req.url);
-            const companyId = searchParams.get('companyId');
-            const departmentId = searchParams.get('departmentId');
-            const id = searchParams.get('id');
-            const status = searchParams.get('status');
-
-            const where: any = {
-                employeeProfile: {
-                    isNot: null
-                }
-            };
-
-            // Filter by company
-            const showAll = searchParams.get('all') === 'true';
-
-            if (['MANAGER', 'TEAM_LEADER'].includes(user.role)) {
-                // Managers and Team Leaders see their downline (hierarchy)
-                const subIds = await getDownlineUserIds(user.id, null); // null allows cross-company if needed
-                where.id = { in: subIds };
-            } else if (companyId && companyId !== 'all') {
-                where.companyId = companyId;
-            } else if (user.companyId && !showAll) {
-                // Only restrict by user's company if NOT showAll
-                where.companyId = user.companyId;
-            } else if (!user.companyId && !showAll && user.role !== 'SUPER_ADMIN') {
-                // If no company in session and not super admin and not showAll, return nothing
-                return NextResponse.json([]);
-            }
-            // If showAll=true or (user.companyId is null and user is SUPER_ADMIN), where.companyId is omitted (Global View)
-
-            // Filter by department
-            if (departmentId && departmentId !== 'all') {
-                where.departmentId = departmentId;
-            }
-
-            // Filter by specific employee
-            if (id && id !== 'all') {
-                where.id = id;
-            }
-
-            // Filter by status
-            if (status && status !== 'all') {
-                where.isActive = status === 'ACTIVE';
-            }
-
-            const search = searchParams.get('search');
-            const searchType = searchParams.get('searchType') || 'all';
-
-            if (search) {
-                if (searchType === 'all') {
-                    where.OR = [
-                        { name: { contains: search, mode: 'insensitive' } },
-                        { email: { contains: search, mode: 'insensitive' } },
-                        { employeeProfile: { phoneNumber: { contains: search, mode: 'insensitive' } } },
-                        { employeeProfile: { employeeId: { contains: search, mode: 'insensitive' } } }
-                    ];
-                } else if (searchType === 'name') {
-                    where.name = { contains: search, mode: 'insensitive' };
-                } else if (searchType === 'email') {
-                    where.email = { contains: search, mode: 'insensitive' };
-                } else if (searchType === 'phone') {
-                    where.employeeProfile = { ...where.employeeProfile, phoneNumber: { contains: search, mode: 'insensitive' } };
-                } else if (searchType === 'id') {
-                    where.employeeProfile = { ...where.employeeProfile, employeeId: { contains: search, mode: 'insensitive' } };
-                }
-            }
-
-            const employees = await prisma.user.findMany({
-                where,
-                include: {
-                    department: {
-                        select: {
-                            id: true,
-                            name: true
-                        }
-                    },
-                    manager: {
-                        select: {
-                            id: true,
-                            name: true
-                        }
-                    },
-                    company: {
-                        select: {
-                            id: true,
-                            name: true
-                        }
-                    },
-                    employeeProfile: {
-                        include: {
-                            designatRef: true,
-                            performanceSnapshots: {
-                                orderBy: [
-                                    { year: 'desc' },
-                                    { month: 'desc' }
-                                ],
-                                take: 1
-                            }
-                        }
-                    }
-                },
-                orderBy: {
-                    name: 'asc'
-                }
-            });
-
-            // Transform data to match component expectations
-            const transformedEmployees = employees.map((emp: any) => {
-                const profile = emp.employeeProfile;
-
-                // Calculate total experience string
-                let experienceStr = '';
-                if (profile) {
-                    const years = (profile.totalExperienceYears || 0) + (profile.relevantExperienceYears || 0);
-                    const months = (profile.totalExperienceMonths || 0) + (profile.relevantExperienceMonths || 0);
-                    const totalYears = years + Math.floor(months / 12);
-                    const remainingMonths = months % 12;
-                    if (totalYears > 0) experienceStr += `${totalYears} Y `;
-                    if (remainingMonths > 0) experienceStr += `${remainingMonths} M`;
-                }
-
-                return {
-                    id: emp.id,
-                    name: emp.name,
-                    email: emp.email,
-                    phone: profile?.phoneNumber || '',
-                    companyId: emp.companyId,
-                    companyName: emp.company?.name || '-',
-                    departmentId: emp.departmentId,
-                    designationId: profile?.designationId,
-                    dateOfJoining: profile?.dateOfJoining,
-                    status: emp.isActive ? 'ACTIVE' : 'INACTIVE',
-                    department: emp.department,
-                    manager: emp.manager ? { name: emp.manager.name, id: emp.manager.id } : null,
-                    designation: profile?.designatRef ? {
-                        title: profile.designatRef.name,
-                        ...profile.designatRef
-                    } : null,
-                    // HR Specific Fields
-                    baseSalary: profile?.baseSalary || 0,
-                    skills: profile?.skills || [],
-                    performanceSnapshots: profile?.performanceSnapshots || [],
-                    calculatedTotalExperience: experienceStr.trim(),
-                    profilePicture: profile?.profilePicture
-                };
-            });
-
+            const transformedEmployees = await listStaffEmployees({ user, params: searchParams });
             return NextResponse.json(transformedEmployees);
         } catch (error) {
             logger.error('Error fetching employees:', error);
@@ -187,7 +43,7 @@ export const POST = authorizedRoute(
             }
 
             // Create user and employee profile in a transaction
-            const newEmployee = await prisma.$transaction(async (tx) => {
+            const newEmployee = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
                 // Create user
                 const user = await tx.user.create({
                     data: {
