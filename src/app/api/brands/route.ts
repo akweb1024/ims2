@@ -31,6 +31,8 @@ export const POST = authorizedRoute(
         try {
             const body = await req.json();
             const { name, companyId, logoUrl, companyLogoUrl, tagline, address, email, website, brandRelationType } = body;
+            const normalizedEntityCode = String(body.invoiceEntityCode || '').replace(/[^a-zA-Z0-9]/g, '').toUpperCase().slice(0, 6) || null;
+            const normalizedYearFormat = body.invoiceYearFormat === 'FY_SHORT' ? 'FY_SHORT' : 'CALENDAR';
 
             if (!name || !companyId) throw new ValidationError('Name and Company ID are required');
 
@@ -62,7 +64,9 @@ export const POST = authorizedRoute(
                     invoicePrefix: body.invoicePrefix,
                     proformaPrefix: body.proformaPrefix,
                     invoiceNextNumber: body.invoiceNextNumber,
-                    proformaNextNumber: body.proformaNextNumber
+                    proformaNextNumber: body.proformaNextNumber,
+                    invoiceEntityCode: normalizedEntityCode,
+                    invoiceYearFormat: normalizedYearFormat,
                 }
             });
 
@@ -86,6 +90,8 @@ export const POST = authorizedRoute(
                             proformaPrefix: brand.proformaPrefix,
                             invoiceNextNumber: brand.invoiceNextNumber,
                             proformaNextNumber: brand.proformaNextNumber,
+                            invoiceEntityCode: brand.invoiceEntityCode,
+                            invoiceYearFormat: brand.invoiceYearFormat,
                             brandRelationType: brand.brandRelationType,
                         }
                     }
@@ -98,4 +104,3 @@ export const POST = authorizedRoute(
         }
     }
 );
-

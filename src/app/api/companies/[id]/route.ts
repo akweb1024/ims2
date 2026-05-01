@@ -225,7 +225,8 @@ export const PATCH = authorizedRoute(
                 bankName, bankAccountHolder, bankAccountNumber, bankIfscCode, bankSwiftCode,
                 paymentMode, brandRelationType, invoiceCompanyLogoUrl,
                 regdOfficeAddress, salesOfficeAddress, invoiceTerms,
-                invoicePrefix, proformaPrefix, invoiceNextNumber, proformaNextNumber
+                invoicePrefix, proformaPrefix, invoiceNextNumber, proformaNextNumber,
+                invoiceEntityCode, invoiceYearFormat
             } = body;
 
             const normalizedInvoiceNextNumber =
@@ -235,6 +236,14 @@ export const PATCH = authorizedRoute(
             const normalizedProformaNextNumber =
                 proformaNextNumber !== undefined && proformaNextNumber !== null
                     ? Math.max(1, Number(proformaNextNumber) || 1)
+                    : undefined;
+            const normalizedEntityCode =
+                invoiceEntityCode !== undefined
+                    ? String(invoiceEntityCode || '').replace(/[^a-zA-Z0-9]/g, '').toUpperCase().slice(0, 6) || null
+                    : undefined;
+            const normalizedYearFormat =
+                invoiceYearFormat !== undefined
+                    ? (invoiceYearFormat === 'FY_SHORT' ? 'FY_SHORT' : 'CALENDAR')
                     : undefined;
 
             const before = await prisma.company.findUnique({
@@ -250,6 +259,8 @@ export const PATCH = authorizedRoute(
                     proformaPrefix: true,
                     invoiceNextNumber: true,
                     proformaNextNumber: true,
+                    invoiceEntityCode: true,
+                    invoiceYearFormat: true,
                     brandRelationType: true,
                     invoiceCompanyLogoUrl: true,
                     invoiceTerms: true,
@@ -292,6 +303,8 @@ export const PATCH = authorizedRoute(
                     ...(proformaPrefix !== undefined && { proformaPrefix }),
                     ...(normalizedInvoiceNextNumber !== undefined && { invoiceNextNumber: normalizedInvoiceNextNumber }),
                     ...(normalizedProformaNextNumber !== undefined && { proformaNextNumber: normalizedProformaNextNumber }),
+                    ...(normalizedEntityCode !== undefined && { invoiceEntityCode: normalizedEntityCode }),
+                    ...(normalizedYearFormat !== undefined && { invoiceYearFormat: normalizedYearFormat }),
                 },
                 include: {
                     _count: {
@@ -333,6 +346,8 @@ export const PATCH = authorizedRoute(
                             proformaPrefix: company.proformaPrefix,
                             invoiceNextNumber: company.invoiceNextNumber,
                             proformaNextNumber: company.proformaNextNumber,
+                            invoiceEntityCode: company.invoiceEntityCode,
+                            invoiceYearFormat: company.invoiceYearFormat,
                             brandRelationType: company.brandRelationType,
                             invoiceCompanyLogoUrl: company.invoiceCompanyLogoUrl,
                             invoiceTerms: (company as any).invoiceTerms,

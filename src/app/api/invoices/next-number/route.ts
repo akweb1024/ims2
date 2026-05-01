@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { authorizedRoute } from '@/lib/middleware-auth';
 import { prisma } from '@/lib/prisma';
 import { ValidationError, handleApiError } from '@/lib/error-handler';
-import { deriveEntityCode } from '@/lib/invoice-number';
+import { deriveEntityCode, getInvoiceYearLabel, sanitizeEntityCode } from '@/lib/invoice-number';
 
 export const GET = authorizedRoute(
   ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'FINANCE_ADMIN'],
@@ -10,7 +10,7 @@ export const GET = authorizedRoute(
     try {
       const { searchParams } = new URL(req.url);
       const brandId = searchParams.get('brandId');
-      const year = new Date().getFullYear();
+      const now = new Date();
 
       if (brandId) {
         const brand = await prisma.brand.findFirst({
@@ -25,17 +25,30 @@ export const GET = authorizedRoute(
             proformaPrefix: true,
             invoiceNextNumber: true,
             proformaNextNumber: true,
+            invoiceEntityCode: true,
+            invoiceYearFormat: true,
+            company: {
+              select: {
+                fiscalYearStart: true,
+                invoiceYearFormat: true,
+              }
+            }
           },
         });
         if (!brand) throw new ValidationError('Brand not found');
-        const entityCode = deriveEntityCode(brand.name || 'GEN');
+        const entityCode = sanitizeEntityCode(brand.invoiceEntityCode) || deriveEntityCode(brand.name || 'GEN');
+        const yearLabel = getInvoiceYearLabel(
+          brand.invoiceYearFormat || brand.company?.invoiceYearFormat,
+          brand.company?.fiscalYearStart,
+          now
+        );
         const invoiceSeq = Number(brand.invoiceNextNumber || 1).toString().padStart(5, '0');
         const proformaSeq = Number(brand.proformaNextNumber || 1).toString().padStart(5, '0');
         return NextResponse.json({
           scope: 'brand',
           scopeId: brand.id,
-          invoiceNumber: `${brand.invoicePrefix || 'INV-'}${entityCode}-${year}-${invoiceSeq}`,
-          proformaNumber: `${brand.proformaPrefix || 'PRO-'}${entityCode}-${year}-${proformaSeq}`,
+          invoiceNumber: `${brand.invoicePrefix || 'INV-'}${entityCode}-${yearLabel}-${invoiceSeq}`,
+          proformaNumber: `${brand.proformaPrefix || 'PRO-'}${entityCode}-${yearLabel}-${proformaSeq}`,
         });
       }
 
@@ -51,23 +64,26 @@ export const GET = authorizedRoute(
           proformaPrefix: true,
           invoiceNextNumber: true,
           proformaNextNumber: true,
+          invoiceEntityCode: true,
+          invoiceYearFormat: true,
+          fiscalYearStart: true,
         },
       });
       if (!company) throw new ValidationError('Company not found');
 
-      const entityCode = deriveEntityCode(company.name || 'GEN');
+      const entityCode = sanitizeEntityCode(company.invoiceEntityCode) || deriveEntityCode(company.name || 'GEN');
+      const yearLabel = getInvoiceYearLabel(company.invoiceYearFormat, company.fiscalYearStart, now);
       const invoiceSeq = Number(company.invoiceNextNumber || 1).toString().padStart(5, '0');
       const proformaSeq = Number(company.proformaNextNumber || 1).toString().padStart(5, '0');
 
       return NextResponse.json({
         scope: 'company',
         scopeId: company.id,
-        invoiceNumber: `${company.invoicePrefix || 'INV-'}${entityCode}-${year}-${invoiceSeq}`,
-        proformaNumber: `${company.proformaPrefix || 'PRO-'}${entityCode}-${year}-${proformaSeq}`,
+        invoiceNumber: `${company.invoicePrefix || 'INV-'}${entityCode}-${yearLabel}-${invoiceSeq}`,
+        proformaNumber: `${company.proformaPrefix || 'PRO-'}${entityCode}-${yearLabel}-${proformaSeq}`,
       });
     } catch (error) {
       return handleApiError(error, req.nextUrl.pathname);
     }
   },
 );
-

@@ -27,6 +27,29 @@ export function deriveEntityCode(name: string): string {
   return code || 'GEN'; // fallback to "GEN" (generic) if name is empty/special
 }
 
+export function sanitizeEntityCode(code?: string | null): string {
+  const normalized = (code || '')
+    .replace(/[^a-zA-Z0-9]/g, '')
+    .toUpperCase()
+    .slice(0, 6);
+  return normalized;
+}
+
+export function getInvoiceYearLabel(
+  format?: string | null,
+  fiscalYearStart?: number | null,
+  now: Date = new Date()
+): string {
+  const calendarYear = now.getFullYear();
+  if (format !== 'FY_SHORT') return String(calendarYear);
+
+  const startMonth = Number(fiscalYearStart || 4);
+  const clampedStart = Number.isFinite(startMonth) ? Math.min(12, Math.max(1, startMonth)) : 4;
+  const fiscalStartYear = now.getMonth() + 1 >= clampedStart ? calendarYear : calendarYear - 1;
+  const fiscalEndYear = fiscalStartYear + 1;
+  return `${String(fiscalStartYear).slice(-2)}-${String(fiscalEndYear).slice(-2)}`;
+}
+
 export interface GeneratedNumbers {
   invoiceNumber: string;
   proformaNumber: string;
@@ -49,7 +72,7 @@ export async function generateInvoiceNumbers(
   tx?: any
 ): Promise<GeneratedNumbers> {
   const db = tx || prisma;
-  const year = new Date().getFullYear();
+  const now = new Date();
   const MAX_ATTEMPTS = 5;
 
   let invoiceNumber = '';
@@ -66,16 +89,36 @@ export async function generateInvoiceNumbers(
             invoiceNextNumber: { increment: 1 },
             proformaNextNumber: { increment: 1 },
           },
+          select: {
+            name: true,
+            invoicePrefix: true,
+            proformaPrefix: true,
+            invoiceNextNumber: true,
+            proformaNextNumber: true,
+            invoiceEntityCode: true,
+            invoiceYearFormat: true,
+            company: {
+              select: {
+                fiscalYearStart: true,
+                invoiceYearFormat: true,
+              },
+            },
+          },
         });
 
-        const entityCode = deriveEntityCode(updatedBrand.name);
+        const entityCode = sanitizeEntityCode(updatedBrand.invoiceEntityCode) || deriveEntityCode(updatedBrand.name);
+        const yearLabel = getInvoiceYearLabel(
+          updatedBrand.invoiceYearFormat || updatedBrand.company?.invoiceYearFormat,
+          updatedBrand.company?.fiscalYearStart,
+          now
+        );
         const invPrefix = prefix ?? (updatedBrand.invoicePrefix || 'INV-');
         const proPrefix = updatedBrand.proformaPrefix || 'PRO-';
         const invSeq = (updatedBrand.invoiceNextNumber! - 1).toString().padStart(5, '0');
         const proSeq = (updatedBrand.proformaNextNumber! - 1).toString().padStart(5, '0');
 
-        invoiceNumber = `${invPrefix}${entityCode}-${year}-${invSeq}`;
-        proformaNumber = `${proPrefix}${entityCode}-${year}-${proSeq}`;
+        invoiceNumber = `${invPrefix}${entityCode}-${yearLabel}-${invSeq}`;
+        proformaNumber = `${proPrefix}${entityCode}-${yearLabel}-${proSeq}`;
       } else {
         // ─── Company-scoped number ─────────────────────────────────────
         const updatedCompany = await db.company.update({
@@ -86,14 +129,15 @@ export async function generateInvoiceNumbers(
           },
         });
 
-        const entityCode = deriveEntityCode(updatedCompany.name);
+        const entityCode = sanitizeEntityCode(updatedCompany.invoiceEntityCode) || deriveEntityCode(updatedCompany.name);
+        const yearLabel = getInvoiceYearLabel(updatedCompany.invoiceYearFormat, updatedCompany.fiscalYearStart, now);
         const invPrefix = prefix ?? (updatedCompany.invoicePrefix || 'INV-');
         const proPrefix = updatedCompany.proformaPrefix || 'PRO-';
         const invSeq = (updatedCompany.invoiceNextNumber - 1).toString().padStart(5, '0');
         const proSeq = (updatedCompany.proformaNextNumber - 1).toString().padStart(5, '0');
 
-        invoiceNumber = `${invPrefix}${entityCode}-${year}-${invSeq}`;
-        proformaNumber = `${proPrefix}${entityCode}-${year}-${proSeq}`;
+        invoiceNumber = `${invPrefix}${entityCode}-${yearLabel}-${invSeq}`;
+        proformaNumber = `${proPrefix}${entityCode}-${yearLabel}-${proSeq}`;
       }
 
       // Safety: verify no existing invoice already has these numbers

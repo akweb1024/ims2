@@ -46,6 +46,8 @@ model Company {
   salesOfficeAddress          String?
   invoiceNextNumber           Int                          @default(1)
   invoicePrefix               String?                      @default("INV-")
+  invoiceEntityCode           String?
+  invoiceYearFormat           String?                      @default("CALENDAR")
   proformaNextNumber          Int                          @default(1)
   proformaPrefix              String?                      @default("PRO-")
   accounts                    Account[]
@@ -1237,6 +1239,8 @@ model Brand {
   salesOfficeAddress String?
   invoiceNextNumber  Int?      @default(1)
   invoicePrefix      String?   @default("INV-")
+  invoiceEntityCode  String?
+  invoiceYearFormat  String?   @default("CALENDAR")
   proformaNextNumber Int?      @default(1)
   proformaPrefix     String?   @default("PRO-")
   company            Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)

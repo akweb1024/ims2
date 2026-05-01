@@ -13,6 +13,8 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
         const body = await req.json();
         const { name, logoUrl, companyLogoUrl, tagline, address, email, website, brandRelationType } = body;
+        const normalizedEntityCode = String(body.invoiceEntityCode || '').replace(/[^a-zA-Z0-9]/g, '').toUpperCase().slice(0, 6) || null;
+        const normalizedYearFormat = body.invoiceYearFormat === 'FY_SHORT' ? 'FY_SHORT' : 'CALENDAR';
 
         const before = await prisma.brand.findUnique({
             where: { id },
@@ -26,6 +28,8 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
                 proformaPrefix: true,
                 invoiceNextNumber: true,
                 proformaNextNumber: true,
+                invoiceEntityCode: true,
+                invoiceYearFormat: true,
                 brandRelationType: true,
             }
         });
@@ -58,7 +62,9 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
                 invoicePrefix: body.invoicePrefix,
                 proformaPrefix: body.proformaPrefix,
                 invoiceNextNumber: body.invoiceNextNumber,
-                proformaNextNumber: body.proformaNextNumber
+                proformaNextNumber: body.proformaNextNumber,
+                invoiceEntityCode: normalizedEntityCode,
+                invoiceYearFormat: normalizedYearFormat,
             }
         });
 
@@ -80,6 +86,8 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
                         proformaPrefix: brand.proformaPrefix,
                         invoiceNextNumber: brand.invoiceNextNumber,
                         proformaNextNumber: brand.proformaNextNumber,
+                        invoiceEntityCode: brand.invoiceEntityCode,
+                        invoiceYearFormat: brand.invoiceYearFormat,
                         brandRelationType: brand.brandRelationType,
                     }
                 }

@@ -55,6 +55,8 @@ export default function CompanyPage() {
     proformaPrefix: "PRO-",
     invoiceNextNumber: 1,
     proformaNextNumber: 1,
+    invoiceEntityCode: "",
+    invoiceYearFormat: "CALENDAR",
   });
   const [invoiceSaving, setInvoiceSaving] = useState(false);
   const [invoiceSaved, setInvoiceSaved] = useState(false);
@@ -137,6 +139,8 @@ export default function CompanyPage() {
           proformaPrefix: companyData.proformaPrefix || "PRO-",
           invoiceNextNumber: companyData.invoiceNextNumber || 1,
           proformaNextNumber: companyData.proformaNextNumber || 1,
+          invoiceEntityCode: companyData.invoiceEntityCode || "",
+          invoiceYearFormat: companyData.invoiceYearFormat || "CALENDAR",
         });
 
         // Fetch departments for this company
@@ -297,6 +301,7 @@ export default function CompanyPage() {
           parseInt(invoiceSettings.invoiceNextNumber as any) || 1,
         proformaNextNumber:
           parseInt(invoiceSettings.proformaNextNumber as any) || 1,
+        invoiceEntityCode: (invoiceSettings.invoiceEntityCode || "").toUpperCase(),
       };
 
       const res = await fetch(`/api/companies/${company.id}`, {
@@ -446,6 +451,8 @@ export default function CompanyPage() {
       proformaNextNumber: formData.get("proformaNextNumber")
         ? parseInt(formData.get("proformaNextNumber") as string)
         : null,
+      invoiceEntityCode: formData.get("invoiceEntityCode"),
+      invoiceYearFormat: formData.get("invoiceYearFormat"),
     };
 
     try {
@@ -1064,8 +1071,8 @@ export default function CompanyPage() {
                       </span>
                       Document Serial Numbering
                     </h4>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-                      <Field label="Tax Invoice Prefix" hint="e.g. INV-2026-">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-8">
+                      <Field label="Tax Invoice Prefix" hint="e.g. INV-">
                         <input
                           className="input-premium font-mono bg-white"
                           value={invoiceSettings.invoicePrefix}
@@ -1095,7 +1102,7 @@ export default function CompanyPage() {
                           }
                         />
                       </Field>
-                      <Field label="Proforma Prefix" hint="e.g. PRO-2026-">
+                      <Field label="Proforma Prefix" hint="e.g. PRO-">
                         <input
                           className="input-premium font-mono bg-white"
                           value={invoiceSettings.proformaPrefix}
@@ -1107,6 +1114,35 @@ export default function CompanyPage() {
                           }
                           placeholder="PRO-"
                         />
+                      </Field>
+                      <Field label="Entity Code Override" hint="Optional, up to 6 letters/numbers">
+                        <input
+                          className="input-premium font-mono bg-white uppercase"
+                          maxLength={6}
+                          value={invoiceSettings.invoiceEntityCode}
+                          onChange={(e) =>
+                            setInvoiceSettings({
+                              ...invoiceSettings,
+                              invoiceEntityCode: e.target.value.toUpperCase(),
+                            })
+                          }
+                          placeholder="STMJOU"
+                        />
+                      </Field>
+                      <Field label="Year Format" hint="Used in generated invoice/proforma IDs">
+                        <select
+                          className="input-premium bg-white"
+                          value={invoiceSettings.invoiceYearFormat}
+                          onChange={(e) =>
+                            setInvoiceSettings({
+                              ...invoiceSettings,
+                              invoiceYearFormat: e.target.value,
+                            })
+                          }
+                        >
+                          <option value="CALENDAR">Calendar Year (2026)</option>
+                          <option value="FY_SHORT">Fiscal Year (26-27)</option>
+                        </select>
                       </Field>
                       <Field
                         label="Proforma Next #"
@@ -2159,6 +2195,73 @@ export default function CompanyPage() {
                       defaultValue={editingBrand?.invoiceTerms || ""}
                       placeholder="Standard terms specific to this brand (falls back to company terms if empty)..."
                     />
+                  </div>
+                </div>
+
+                <div className="md:col-span-2 pt-4 border-t border-secondary-100">
+                  <h4 className="font-bold text-secondary-900 mb-4 flex items-center gap-2">
+                    🔢 Serial Numbering
+                  </h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="label">Tax Invoice Prefix</label>
+                      <input
+                        name="invoicePrefix"
+                        className="input font-mono"
+                        defaultValue={editingBrand?.invoicePrefix || "INV-"}
+                        placeholder="INV-"
+                      />
+                    </div>
+                    <div>
+                      <label className="label">Proforma Prefix</label>
+                      <input
+                        name="proformaPrefix"
+                        className="input font-mono"
+                        defaultValue={editingBrand?.proformaPrefix || "PRO-"}
+                        placeholder="PRO-"
+                      />
+                    </div>
+                    <div>
+                      <label className="label">Tax Invoice Next #</label>
+                      <input
+                        name="invoiceNextNumber"
+                        type="number"
+                        min={1}
+                        className="input font-mono"
+                        defaultValue={editingBrand?.invoiceNextNumber || 1}
+                      />
+                    </div>
+                    <div>
+                      <label className="label">Proforma Next #</label>
+                      <input
+                        name="proformaNextNumber"
+                        type="number"
+                        min={1}
+                        className="input font-mono"
+                        defaultValue={editingBrand?.proformaNextNumber || 1}
+                      />
+                    </div>
+                    <div>
+                      <label className="label">Entity Code Override</label>
+                      <input
+                        name="invoiceEntityCode"
+                        className="input font-mono uppercase"
+                        maxLength={6}
+                        defaultValue={editingBrand?.invoiceEntityCode || ""}
+                        placeholder="STMJOU"
+                      />
+                    </div>
+                    <div>
+                      <label className="label">Year Format</label>
+                      <select
+                        name="invoiceYearFormat"
+                        className="input"
+                        defaultValue={editingBrand?.invoiceYearFormat || "CALENDAR"}
+                      >
+                        <option value="CALENDAR">Calendar Year (2026)</option>
+                        <option value="FY_SHORT">Fiscal Year (26-27)</option>
+                      </select>
+                    </div>
                   </div>
                 </div>
               </div>
