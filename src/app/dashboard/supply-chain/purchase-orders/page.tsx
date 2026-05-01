@@ -137,9 +137,14 @@ useEffect(() => {
             });
 
             if (res.ok) {
+                const created = await res.json();
                 toast.success('Purchase Order Generated successfully!');
                 setShowCreateModal(false);
                 setFormData({ vendorId: '', poNumber: '', status: 'DRAFT', expectedDate: '', items: [{ description: '', quantity: 1, unitPrice: 0 }] });
+                if (created?.id) {
+                    window.location.href = `/dashboard/supply-chain/purchase-orders/${created.id}`;
+                    return;
+                }
                 loadData();
             } else {
                 const data = await res.json();
@@ -397,12 +402,20 @@ useEffect(() => {
                                             {po.expectedDate ? <FormattedDate date={po.expectedDate} /> : 'TBA'}
                                         </td>
                                         <td className="px-6 py-4 text-right">
-                                            <button 
-                                                onClick={() => setViewItemsModal({isOpen: true, title: `PO: ${po.poNumber}`, items: po.items || []})}
-                                                className="text-primary-600 font-bold text-xs hover:text-primary-700 p-2 bg-white shadow-sm border border-secondary-200 rounded-lg group-hover:shadow-md transition-all"
-                                            >
-                                                View Items ({po.items?.length || 0})
-                                            </button>
+                                            <div className="flex items-center justify-end gap-2">
+                                                <Link
+                                                    href={`/dashboard/supply-chain/purchase-orders/${po.id}`}
+                                                    className="text-secondary-700 font-bold text-xs hover:text-secondary-900 p-2 bg-white shadow-sm border border-secondary-200 rounded-lg group-hover:shadow-md transition-all"
+                                                >
+                                                    Open PO
+                                                </Link>
+                                                <button 
+                                                    onClick={() => setViewItemsModal({isOpen: true, title: `PO: ${po.poNumber}`, items: po.items || []})}
+                                                    className="text-primary-600 font-bold text-xs hover:text-primary-700 p-2 bg-white shadow-sm border border-secondary-200 rounded-lg group-hover:shadow-md transition-all"
+                                                >
+                                                    View Items ({po.items?.length || 0})
+                                                </button>
+                                            </div>
                                         </td>
                                     </tr>
                                 ))}
