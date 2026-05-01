@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { authorizedRoute } from '@/lib/middleware-auth';
 
-// HR / Super Admin: list all reimbursement records with filters
-export const GET = authorizedRoute(['SUPER_ADMIN', 'HR', 'HR_MANAGER'], async (req: NextRequest) => {
+// HR / Accounts / Super Admin: list all reimbursement records with filters
+export const GET = authorizedRoute(['SUPER_ADMIN', 'HR', 'HR_MANAGER', 'FINANCE_ADMIN'], async (req: NextRequest, user: any) => {
     try {
         const url = new URL(req.url);
         const name = url.searchParams.get('name') || '';
@@ -16,6 +16,7 @@ export const GET = authorizedRoute(['SUPER_ADMIN', 'HR', 'HR_MANAGER'], async (r
                 ...(month ? { month: parseInt(month) } : {}),
                 ...(year ? { year: parseInt(year) } : {}),
                 user: {
+                    ...(user?.role !== 'SUPER_ADMIN' && user?.companyId ? { companyId: user.companyId } : {}),
                     ...(name ? { name: { contains: name, mode: 'insensitive' } } : {}),
                     employeeProfile: employeeId
                         ? { employeeId: { contains: employeeId, mode: 'insensitive' } }

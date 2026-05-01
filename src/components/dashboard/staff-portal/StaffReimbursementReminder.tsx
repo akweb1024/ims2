@@ -4,6 +4,8 @@ import { AlertOctagon, X } from 'lucide-react';
 export default function StaffReimbursementReminder({ onNavigateToReimbursements }: { onNavigateToReimbursements: () => void }) {
     const [showPopup, setShowPopup] = useState(false);
     const [targetMonthLabel, setTargetMonthLabel] = useState('');
+    const [targetMonth, setTargetMonth] = useState<number | null>(null);
+    const [targetYear, setTargetYear] = useState<number | null>(null);
 
     useEffect(() => {
         const checkReminder = async () => {
@@ -38,6 +40,8 @@ export default function StaffReimbursementReminder({ onNavigateToReimbursements 
 
             const monthName = new Date(targetYear, targetMonth - 1).toLocaleString('default', { month: 'long' });
             setTargetMonthLabel(`${monthName} ${targetYear}`);
+            setTargetMonth(targetMonth);
+            setTargetYear(targetYear);
 
             // Check if already submitted for this target month
             try {
@@ -68,14 +72,11 @@ export default function StaffReimbursementReminder({ onNavigateToReimbursements 
     }, []);
 
     const handleDismiss = () => {
+        if (!targetMonth || !targetYear) {
+            setShowPopup(false);
+            return;
+        }
         const today = new Date();
-        const month = today.getMonth() + 1;
-        const year = today.getFullYear();
-
-        // Target is prev month
-        const targetMonth = month === 1 ? 12 : month - 1;
-        const targetYear = month === 1 ? year - 1 : year;
-
         localStorage.setItem(`reimb_dismissed_${targetMonth}_${targetYear}`, today.toDateString());
         setShowPopup(false);
     };

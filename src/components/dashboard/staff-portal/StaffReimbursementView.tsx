@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo } from 'react';
 import Image from 'next/image';
 import FormattedDate from '@/components/common/FormattedDate';
 import { Download, Search, X, FileText, ChevronDown } from 'lucide-react';
+import toast from 'react-hot-toast';
 
 // ─── Month helpers ────────────────────────────────────────────────────────────
 const MONTH_NAMES = [
@@ -130,6 +131,151 @@ ${r.employeeSignatureUrl ? `
         win.document.write(html);
         win.document.close();
         setTimeout(() => win.print(), 600);
+    }
+}
+
+function downloadMonthlyPacket(records: any[], month: number, year: number, options?: { statuses?: string[], titleSuffix?: string, showPageSummary?: boolean }) {
+    const monthName = MONTH_NAMES[(month ?? 1) - 1];
+    const statusSet = options?.statuses?.length ? new Set(options.statuses.map((s) => s.toUpperCase())) : null;
+    const safeRecords = records.filter((r) => {
+        if (!(r.month === month && r.year === year)) return false;
+        if (!statusSet) return true;
+        return statusSet.has(String(r.status || '').toUpperCase());
+    });
+    if (!safeRecords.length) return;
+
+    const sections = safeRecords.map((r: any) => {
+        const userName = r.user?.name || r.user?.email || 'Unknown';
+        const empId = r.user?.employeeProfile?.employeeId || 'N/A';
+        const filedOn = new Date(r.createdAt).toLocaleDateString('en-IN');
+        return `
+        <section class="card">
+          <div class="head">
+            <h2>Reimbursement Declaration</h2>
+            <p>${monthName} ${year}</p>
+          </div>
+          <div class="meta">
+            <div><strong>Employee:</strong> ${userName}</div>
+            <div><strong>Employee ID:</strong> ${empId}</div>
+            <div><strong>Status:</strong> ${r.status}</div>
+            <div><strong>Filed On:</strong> ${filedOn}</div>
+          </div>
+          <table>
+            <thead><tr><th>Category</th><th>Amount</th></tr></thead>
+            <tbody>
+              <tr><td>Health Care</td><td>₹${(r.healthCare ?? 0).toLocaleString('en-IN')}</td></tr>
+              <tr><td>Travelling</td><td>₹${(r.travelling ?? 0).toLocaleString('en-IN')}</td></tr>
+              <tr><td>Mobile</td><td>₹${(r.mobile ?? 0).toLocaleString('en-IN')}</td></tr>
+              <tr><td>Internet</td><td>₹${(r.internet ?? 0).toLocaleString('en-IN')}</td></tr>
+              <tr><td>Books & Periodicals</td><td>₹${(r.booksAndPeriodicals ?? 0).toLocaleString('en-IN')}</td></tr>
+              <tr class="total"><td>Total Claim</td><td>₹${(r.totalAmount ?? 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td></tr>
+            </tbody>
+          </table>
+          ${r.employeeSignatureUrl ? `
+          <div class="sig">
+            <img src="${r.employeeSignatureUrl}" alt="signature"/>
+            <span>Employee Signature</span>
+          </div>` : '<div class="sig none">No signature snapshot</div>'}
+        </section>`;
+    });
+
+    const pages: string[] = [];
+    const overallCount = safeRecords.length;
+    const overallTotal = safeRecords.reduce((sum: number, row: any) => sum + Number(row.totalAmount || 0), 0);
+    for (let index = 0; index < sections.length; index += 4) {
+        const pageRows = safeRecords.slice(index, index + 4);
+        const chunk = sections.slice(index, index + 4).join('');
+        const pageTotal = pageRows.reduce((sum: number, row: any) => sum + Number(row.totalAmount || 0), 0);
+        const isLastPage = index + 4 >= safeRecords.length;
+        const summary = options?.showPageSummary
+            ? `<div class="page-summary">
+                <span>Page Claims: <strong>${pageRows.length}</strong></span>
+                <span>Page Total: <strong>₹${pageTotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</strong></span>
+              </div>`
+            : '';
+        const overallSummary = options?.showPageSummary && isLastPage
+            ? `<div class="overall-summary">
+                <span>Overall Claims: <strong>${overallCount}</strong></span>
+                <span>Grand Total: <strong>₹${overallTotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</strong></span>
+              </div>`
+            : '';
+        pages.push(`<div class="page">${chunk}${summary}${overallSummary}</div>`);
+    }
+
+    const html = `<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Reimbursements Packet - ${monthName} ${year}${options?.titleSuffix ? ` - ${options.titleSuffix}` : ''}</title>
+  <style>
+    @page { size: A4; margin: 10mm; }
+    body { font-family: Arial, sans-serif; margin: 0; color: #111; }
+    .page {
+      min-height: 277mm;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      grid-template-rows: 1fr 1fr;
+      gap: 8mm;
+      page-break-after: always;
+      box-sizing: border-box;
+    }
+    .page-summary {
+      grid-column: 1 / -1;
+      margin-top: 2mm;
+      border-top: 1px solid #cbd5e1;
+      padding-top: 3mm;
+      display: flex;
+      justify-content: space-between;
+      font-size: 11px;
+      color: #1f2937;
+      font-weight: 700;
+    }
+    .overall-summary {
+      grid-column: 1 / -1;
+      margin-top: 2mm;
+      border-top: 2px solid #0f172a;
+      padding-top: 3mm;
+      display: flex;
+      justify-content: space-between;
+      font-size: 12px;
+      color: #0f172a;
+      font-weight: 800;
+      background: #f8fafc;
+      border-radius: 6px;
+      padding: 3mm 4mm;
+    }
+    .page:last-child { page-break-after: auto; }
+    .card {
+      border: 1px solid #d1d5db;
+      border-radius: 10px;
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      background: #fff;
+    }
+    .head { display: flex; justify-content: space-between; align-items: baseline; border-bottom: 1px solid #e5e7eb; margin-bottom: 8px; }
+    .head h2 { margin: 0; font-size: 14px; }
+    .head p { margin: 0; font-size: 11px; color: #4b5563; }
+    .meta { font-size: 11px; line-height: 1.5; margin-bottom: 8px; }
+    table { width: 100%; border-collapse: collapse; font-size: 10px; margin-bottom: 8px; }
+    th, td { border-bottom: 1px solid #f1f5f9; padding: 4px; text-align: left; }
+    th { background: #f8fafc; font-size: 9px; letter-spacing: .5px; text-transform: uppercase; }
+    .total td { font-weight: 700; background: #eff6ff; }
+    .sig { margin-top: auto; display: flex; flex-direction: column; align-items: flex-end; gap: 3px; font-size: 9px; color: #6b7280; }
+    .sig img { width: 90px; height: 30px; object-fit: contain; border-bottom: 1px solid #111; }
+    .sig.none { align-items: flex-start; font-style: italic; }
+    @media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
+  </style>
+</head>
+<body>${pages.join('')}</body>
+</html>`;
+
+    const win = window.open('', '_blank');
+    if (win) {
+        win.document.write(html);
+        win.document.close();
+        setTimeout(() => win.print(), 500);
     }
 }
 
@@ -304,6 +450,7 @@ function UserHistoryTable({ records, user }: { records: any[], user: any }) {
 function HRReimbursementTable() {
     const [records, setRecords] = useState<any[]>([]);
     const [loading, setLoading] = useState(false);
+    const [updatingId, setUpdatingId] = useState<string | null>(null);
     const [filterName, setFilterName] = useState('');
     const [filterEmpId, setFilterEmpId] = useState('');
     const [filterMonth, setFilterMonth] = useState('');
@@ -341,6 +488,32 @@ function HRReimbursementTable() {
         }
     };
 
+    const updateStatus = async (recordId: string, nextStatus: string) => {
+        if (!recordId) return;
+        try {
+            setUpdatingId(recordId);
+            const res = await fetch(`/api/hr/reimbursements/${recordId}`, {
+                method: 'PATCH',
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ status: nextStatus }),
+            });
+            if (!res.ok) {
+                const data = await res.json().catch(() => null);
+                throw new Error(data?.error || 'Failed to update status');
+            }
+            toast.success('Status updated');
+            fetchAll();
+        } catch (err: any) {
+            console.error(err);
+            toast.error(err.message || 'Failed to update status');
+        } finally {
+            setUpdatingId(null);
+        }
+    };
+
     useEffect(() => {
         fetchAll();
         // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -354,6 +527,8 @@ function HRReimbursementTable() {
     };
 
     const hasFilters = filterName || filterEmpId || filterMonth || filterYear;
+    const selectedMonthNum = filterMonth ? parseInt(filterMonth) : null;
+    const selectedYearNum = filterYear ? parseInt(filterYear) : null;
 
     return (
         <div className="card-premium overflow-hidden border-t-8 border-t-primary-500">
@@ -361,7 +536,7 @@ function HRReimbursementTable() {
                 <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
                     <div>
                         <h3 className="text-2xl font-black text-secondary-900 tracking-tight">All Reimbursements</h3>
-                        <p className="text-xs font-bold text-secondary-400 uppercase tracking-widest mt-1">HR & Super Admin View</p>
+                        <p className="text-xs font-bold text-secondary-400 uppercase tracking-widest mt-1">HR, Accounts & Super Admin View</p>
                     </div>
                     <span className="bg-primary-600 text-white px-5 py-2 rounded-2xl font-black text-sm shadow-lg shadow-primary-100">
                         {records.length} Records
@@ -421,6 +596,51 @@ function HRReimbursementTable() {
                             <X size={12} /> Clear
                         </button>
                     )}
+                    <button
+                        onClick={() => {
+                            if (!selectedMonthNum || !selectedYearNum) {
+                                toast.error('Select month and year to download monthly packet.');
+                                return;
+                            }
+                            const monthlyRows = records.filter((r: any) => r.month === selectedMonthNum && r.year === selectedYearNum);
+                            if (!monthlyRows.length) {
+                                toast.error('No reimbursements found for selected month/year.');
+                                return;
+                            }
+                            downloadMonthlyPacket(monthlyRows, selectedMonthNum, selectedYearNum);
+                        }}
+                        className="ml-auto flex items-center gap-2 px-4 py-2 text-xs font-black text-primary-700 bg-primary-50 rounded-xl border border-primary-200 hover:bg-primary-100 transition-all"
+                        title="Print-ready packet, 4 reimbursements per page"
+                    >
+                        <Download size={12} /> Download Monthly (4/Page)
+                    </button>
+                    <button
+                        onClick={() => {
+                            if (!selectedMonthNum || !selectedYearNum) {
+                                toast.error('Select month and year to download payout packet.');
+                                return;
+                            }
+                            const payoutRows = records.filter(
+                                (r: any) =>
+                                    r.month === selectedMonthNum &&
+                                    r.year === selectedYearNum &&
+                                    ['APPROVED', 'PAID'].includes(String(r.status || '').toUpperCase())
+                            );
+                            if (!payoutRows.length) {
+                                toast.error('No APPROVED/PAID claims found for selected month/year.');
+                                return;
+                            }
+                            downloadMonthlyPacket(payoutRows, selectedMonthNum, selectedYearNum, {
+                                statuses: ['APPROVED', 'PAID'],
+                                titleSuffix: 'Payout Packet',
+                                showPageSummary: true,
+                            });
+                        }}
+                        className="flex items-center gap-2 px-4 py-2 text-xs font-black text-emerald-700 bg-emerald-50 rounded-xl border border-emerald-200 hover:bg-emerald-100 transition-all"
+                        title="Accounts payout packet: APPROVED + PAID only, 4 reimbursements per page"
+                    >
+                        <Download size={12} /> Download Payout Packet
+                    </button>
                 </div>
             </div>
 
@@ -438,17 +658,18 @@ function HRReimbursementTable() {
             ) : (
                 <div className="overflow-x-auto">
                     <table className="w-full text-sm text-left">
-                        <thead className="bg-secondary-100/30 text-[10px] uppercase font-black text-secondary-400 tracking-[0.2em]">
-                            <tr>
-                                <th className="px-6 py-4">Employee</th>
-                                <th className="px-6 py-4">Emp ID</th>
-                                <th className="px-6 py-4">Period</th>
-                                <th className="px-6 py-4 text-right">Total Claim</th>
-                                <th className="px-6 py-4 text-center">Status</th>
-                                <th className="px-6 py-4">Filed On</th>
-                                <th className="px-6 py-4 text-center">Download</th>
-                            </tr>
-                        </thead>
+	                        <thead className="bg-secondary-100/30 text-[10px] uppercase font-black text-secondary-400 tracking-[0.2em]">
+	                            <tr>
+	                                <th className="px-6 py-4">Employee</th>
+	                                <th className="px-6 py-4">Emp ID</th>
+	                                <th className="px-6 py-4">Period</th>
+	                                <th className="px-6 py-4 text-right">Total Claim</th>
+	                                <th className="px-6 py-4 text-center">Status</th>
+	                                <th className="px-6 py-4 text-center">Action</th>
+	                                <th className="px-6 py-4">Filed On</th>
+	                                <th className="px-6 py-4 text-center">Download</th>
+	                            </tr>
+	                        </thead>
                         <tbody className="divide-y divide-secondary-100">
                             {records.map((r, i) => {
                                 const mn = MONTH_NAMES[(r.month ?? 1) - 1];
@@ -471,18 +692,36 @@ function HRReimbursementTable() {
                                         <td className="px-6 py-5 text-right font-mono font-black text-secondary-900 text-base">
                                             ₹{r.totalAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                                         </td>
-                                        <td className="px-6 py-5 text-center">
-                                            <span className={`inline-flex px-3 py-1.5 rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-sm ${
-                                                r.status === 'APPROVED' ? 'bg-success-500 text-white' :
-                                                r.status === 'PAID' ? 'bg-primary-600 text-white' :
-                                                'bg-amber-400 text-white'
-                                            }`}>
-                                                {r.status}
-                                            </span>
-                                        </td>
-                                        <td className="px-6 py-5 font-bold text-secondary-500 text-xs">
-                                            <FormattedDate date={r.createdAt} />
-                                        </td>
+	                                        <td className="px-6 py-5 text-center">
+	                                            <span className={`inline-flex px-3 py-1.5 rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-sm ${
+	                                                r.status === 'APPROVED' ? 'bg-success-500 text-white' :
+	                                                r.status === 'PAID' ? 'bg-primary-600 text-white' :
+	                                                'bg-amber-400 text-white'
+	                                            }`}>
+	                                                {r.status}
+	                                            </span>
+	                                        </td>
+	                                        <td className="px-6 py-5 text-center">
+	                                            <select
+	                                                className="bg-white border border-secondary-200 rounded-xl px-3 py-2 text-[10px] font-black tracking-widest text-secondary-700 hover:border-primary-200 transition-colors"
+	                                                value={r.status}
+	                                                disabled={updatingId === r.id}
+	                                                onChange={(e) => {
+	                                                    const next = e.target.value;
+	                                                    if (next === r.status) return;
+	                                                    if (!confirm(`Update ${userName}'s reimbursement (${mn} ${r.year}) to ${next}?`)) return;
+	                                                    updateStatus(r.id, next);
+	                                                }}
+	                                                title="Update status"
+	                                            >
+	                                                <option value="SUBMITTED">SUBMITTED</option>
+	                                                <option value="APPROVED">APPROVED</option>
+	                                                <option value="PAID">PAID</option>
+	                                            </select>
+	                                        </td>
+	                                        <td className="px-6 py-5 font-bold text-secondary-500 text-xs">
+	                                            <FormattedDate date={r.createdAt} />
+	                                        </td>
                                         <td className="px-6 py-5 text-center">
                                             <div className="flex items-center justify-center gap-2">
                                                 <button
@@ -520,7 +759,7 @@ export default function StaffReimbursementView({ fullProfile, user, onUpdateUser
     isAdmin?: boolean;
     defaultTab?: 'form' | 'history' | 'hr';
 }) {
-    const isHROrAdmin = isAdmin || user?.role === 'SUPER_ADMIN' || user?.role === 'HR' || user?.role === 'HR_MANAGER';
+    const isHROrAdmin = isAdmin || user?.role === 'SUPER_ADMIN' || user?.role === 'HR' || user?.role === 'HR_MANAGER' || user?.role === 'FINANCE_ADMIN';
 
     const [subTab, setSubTab] = useState<'form' | 'history' | 'hr'>(defaultTab || (isAdmin ? 'hr' : 'form'));
     const [records, setRecords] = useState<any[]>([]);
